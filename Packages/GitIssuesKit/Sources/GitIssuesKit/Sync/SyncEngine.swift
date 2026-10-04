@@ -23,11 +23,18 @@ public actor SyncEngine {
     private var loop: Task<Void, Never>?
     private var sleeper: Task<Void, Never>?
     private var kicked = false
+    /// Sync rounds completed so far, and callers waiting for a round to finish.
+    private var rounds = 0
+    private var inRound = false
+    private var waiters: [(round: Int, continuation: CheckedContinuation<Void, Never>)] = []
+    /// Works on the built-in sample data: nothing is sent anywhere, changes are confirmed locally.
+    public nonisolated let isDemo: Bool
 
-    public init(db: AppDatabase, api: GitHubAPI, status: SyncStatus) {
+    public init(db: AppDatabase, api: GitHubAPI, status: SyncStatus, demo: Bool = false) {
         self.db = db
         self.api = api
         self.status = status
+        self.isDemo = demo
     }
 
     // MARK: Control
@@ -37,7 +44,7 @@ public actor SyncEngine {
         loop = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
-                await self.cycle()
+                await self.round()
                 await self.idle()
             }
         }
@@ -47,6 +54,34 @@ public actor SyncEngine {
         loop?.cancel()
         loop = nil
         sleeper?.cancel()
+        let pending = waiters
+        waiters = []
+        for waiter in pending { waiter.continuation.resume() }
+    }
+
+    private func round() async {
+        inRound = true
+        if isDemo { await demoCycle() } else { await cycle() }
+        inRound = false
+        rounds += 1
+        let done = waiters.filter { $0.round <= rounds }
+        waiters.removeAll { $0.round <= rounds }
+        for waiter in done { waiter.continuation.resume() }
+    }
+
+    /// Runs a sync round as soon as possible and returns when it is done (pull to refresh, background refresh).
+    /// Rounds never overlap: this waits for the loop rather than running one of its own.
+    public func syncNow() async {
+        guard loop != nil else {
+            await round()
+            return
+        }
+        // A round already under way may have missed what prompted this call, so wait for the next one.
+        let target = rounds + (inRound ? 2 : 1)
+        await withCheckedContinuation { continuation in
+            waiters.append((target, continuation))
+            kick()
+        }
     }
 
     /// Asks for a sync cycle now instead of at the next poll.
@@ -68,6 +103,11 @@ public actor SyncEngine {
         if contentId != nil { kick() }
     }
 
+    /// Stops refreshing an issue that left the screen, unless another one has been watched since.
+    public func unwatchIssue(_ contentId: String) {
+        if watchedIssueId == contentId { watchedIssueId = nil }
+    }
+
     public func setPollInterval(_ seconds: TimeInterval) {
         pollInterval = seconds
     }
@@ -81,11 +121,13 @@ public actor SyncEngine {
 
     /// Sends everything that is queued, without waiting for the next cycle.
     public func pushPending() async throws {
+        guard !isDemo else { return }
         try await push()
     }
 
     /// Re-reads a project from GitHub even if nothing appears to have changed.
     public func forcePull(projectId: String) async throws {
+        guard !isDemo else { return }
         forceSweep.insert(projectId)
         try await pull(projectId: projectId)
     }
@@ -197,6 +239,7 @@ public actor SyncEngine {
     // MARK: Project list
 
     public func refreshProjects() async throws {
+        guard !isDemo else { return }
         let (viewer, projects) = try await api.viewerAndProjects()
         try await db.writer.write { db in
             try KV.setViewer(db, viewer)
@@ -223,6 +266,7 @@ public actor SyncEngine {
     // MARK: Pull
 
     public func pull(projectId: String) async throws {
+        guard !isDemo else { return }
         let meta = try await api.projectMeta(id: projectId)
 
         let (local, dirtyIds, known) = try await db.reader.read { db -> (Project?, Set<String>, [String: String]) in
@@ -656,6 +700,7 @@ public actor SyncEngine {
     // MARK: Issue detail and repository data
 
     public func loadIssueDetail(contentId: String) async throws {
+        guard !isDemo else { return }
         let detail = try await api.issueDetail(contentId: contentId)
         try await db.writer.write { db in
             try db.execute(
@@ -679,6 +724,7 @@ public actor SyncEngine {
 
     /// Labels and assignable people of a repository, for the pickers. Cached for ten minutes.
     public func loadRepoMeta(projectId: String, repoId: String, force: Bool = false) async throws {
+        guard !isDemo else { return }
         let existing = try await db.reader.read { try RepoRef.fetchOne($0, key: ["projectId": projectId, "id": repoId]) }
         if !force, let loaded = existing?.metaLoadedAt, Date().timeIntervalSince(loaded) < 600 { return }
         let meta = try await api.repoMeta(repoId: repoId)
@@ -698,7 +744,9 @@ public actor SyncEngine {
 
     /// Adds, renames, recolours, reorders or removes status columns. Needs a connection; not queued.
     public func updateOptions(projectId: String, fieldId: String, kind: OptionKind, options: [RemoteOption]) async throws {
-        let saved = try await api.updateFieldOptions(fieldId: fieldId, options: options)
+        let saved = isDemo
+            ? options.map { RemoteOption(id: $0.id ?? "demo-option-\(UUID().uuidString.lowercased())", name: $0.name, color: $0.color, descr: $0.descr) }
+            : try await api.updateFieldOptions(fieldId: fieldId, options: options)
         try await db.writer.write { db in
             try FieldOption.filter(Column("projectId") == projectId && Column("fieldId") == fieldId).deleteAll(db)
             for (index, option) in saved.enumerated() {
@@ -723,9 +771,80 @@ public actor SyncEngine {
 
     /// Adds the opinionated Priority field to a project that has none.
     public func createPriorityField(projectId: String) async throws {
+        if isDemo {
+            try await createDemoPriorityField(projectId: projectId)
+            return
+        }
         _ = try await api.createSelectField(projectId: projectId, name: "Priority", options: Defaults.priorityOptions)
         forceSweep.insert(projectId)
         lastPull[projectId] = nil
         try await pull(projectId: projectId)
+    }
+
+    // MARK: Sample data
+
+    /// A sync round on the sample data: queued changes are confirmed the way GitHub would confirm them.
+    private func demoCycle() async {
+        do {
+            try await db.writer.write { try Outbox.purgeSent($0) }
+            let pending = try await db.reader.read { db in
+                try OutboxEntry.filter(Column("state") == OutboxState.pending.rawValue).order(Column("id")).fetchAll(db)
+            }
+            guard !pending.isEmpty else {
+                await finish(.idle, syncedAt: Date())
+                return
+            }
+            await setPhase(.syncing)
+            // A moment of sending, as over a real connection.
+            try? await Task.sleep(for: .milliseconds(450))
+            for entry in pending {
+                guard let entryId = entry.id else { continue }
+                var remaps: [String: String] = [:]
+                switch entry.mutation {
+                case .createIssue(var m):
+                    let number = try await db.reader.read { db in
+                        (try Int.fetchOne(db, sql: "SELECT MAX(number) FROM item") ?? 0) + 1
+                    }
+                    let contentId = "demo-issue-\(number)"
+                    m.createdContentId = contentId
+                    m.createdNumber = number
+                    m.createdUrl = "https://github.com/\(m.repo)/issues/\(number)"
+                    try await store(entry, mutation: .createIssue(m), state: .pending)
+                    remaps = [m.itemId: "demo-item-\(number)", m.contentId: contentId]
+                case .addComment(let m):
+                    remaps = [m.commentId: "demo-comment-\(UUID().uuidString.lowercased())"]
+                default:
+                    break
+                }
+                let confirmed = remaps
+                try await db.writer.write { db in
+                    try Self.markSent(db, entryId: entryId, remaps: confirmed)
+                    // GitHub keeps a parent's sub-issue progress up to date by itself.
+                    try db.execute(sql: """
+                        UPDATE item SET
+                          subTotal = (SELECT COUNT(*) FROM subIssue s WHERE s.parentId = item.contentId),
+                          subCompleted = (SELECT COUNT(*) FROM subIssue s WHERE s.parentId = item.contentId AND s.state != 'OPEN')
+                        WHERE contentId IS NOT NULL
+                        """)
+                }
+                if !remaps.isEmpty { await publish(remaps: remaps) }
+            }
+            await finish(.idle, syncedAt: Date())
+        } catch {
+            await finish(.failed(error.localizedDescription))
+        }
+    }
+
+    private func createDemoPriorityField(projectId: String) async throws {
+        let fieldId = "demo-priority-\(projectId)"
+        try await db.writer.write { db in
+            for (index, option) in Defaults.priorityOptions.enumerated() {
+                try FieldOption(
+                    id: "\(fieldId)-\(index)", fieldId: fieldId, projectId: projectId, kind: .priority,
+                    name: option.name, color: option.color, descr: option.descr, position: index
+                ).insert(db)
+            }
+            try db.execute(sql: "UPDATE project SET priorityFieldId = ? WHERE id = ?", arguments: [fieldId, projectId])
+        }
     }
 }

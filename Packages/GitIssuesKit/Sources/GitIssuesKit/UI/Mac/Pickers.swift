@@ -1,0 +1,197 @@
+#if os(macOS)
+import SwiftUI
+
+/// A searchable list driven entirely from the keyboard: type to filter, arrows to move, Return to pick.
+struct PickerList: View {
+    var placeholder: String
+    var items: [PickerItem]
+    /// The key that opens this picker from the board, shown at the end of the search field.
+    var hint: String? = nil
+    /// Multi-select pickers stay open after a pick.
+    var staysOpen = false
+    var width: CGFloat = 260
+    var maxRows = 9
+    var fieldFont: Font = .ui
+    var onPick: (String) -> Void
+    var onClose: () -> Void
+
+    @State private var query = ""
+    @State private var index = 0
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        let visible = filtered
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                TextField(placeholder, text: $query)
+                    .textFieldStyle(.plain)
+                    .font(fieldFont)
+                    .focused($focused)
+                    .focusOnAppear()
+                if let hint { Keycap(hint) }
+            }
+                .padding(.horizontal, 12)
+                .frame(height: 40)
+                .onKeyPress(.downArrow) {
+                    index = min(index + 1, max(visible.count - 1, 0))
+                    return .handled
+                }
+                .onKeyPress(.upArrow) {
+                    index = max(index - 1, 0)
+                    return .handled
+                }
+                .onKeyPress(.escape) {
+                    onClose()
+                    return .handled
+                }
+                .onKeyPress(phases: .down) { press in
+                    // Number keys pick directly while nothing has been typed.
+                    guard query.isEmpty, let item = items.first(where: { $0.shortcut == press.characters }) else { return .ignored }
+                    pick(item)
+                    return .handled
+                }
+                .onSubmit {
+                    if visible.indices.contains(index) { pick(visible[index]) }
+                }
+            Rectangle().fill(Theme.popoverBorder).frame(height: 1)
+
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(Array(visible.enumerated()), id: \.element.id) { position, item in
+                            PickerRow(item: item, active: position == index)
+                                .id(item.id)
+                                .onTapGesture { pick(item) }
+                                .onHover { if $0 { index = position } }
+                        }
+                        if visible.isEmpty {
+                            Text("No matches")
+                                .foregroundStyle(Theme.textSecondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 12)
+                                .frame(height: 32)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                .scrollIndicators(.never)
+                .frame(height: min(CGFloat(max(visible.count, 1)), CGFloat(maxRows)) * 32 + 8)
+                .onChange(of: index) {
+                    if visible.indices.contains(index) { proxy.scrollTo(visible[index].id) }
+                }
+            }
+        }
+        .frame(width: width)
+        .font(.ui)
+        .foregroundStyle(Theme.text)
+        .onAppear {
+            focused = true
+            // Single-choice pickers start on the current value, so Return keeps it.
+            if !staysOpen, let current = items.firstIndex(where: \.selected) { index = current }
+        }
+        .onChange(of: query) { index = 0 }
+    }
+
+    private var filtered: [PickerItem] {
+        guard !query.isEmpty else { return items }
+        return items
+            .compactMap { item -> (PickerItem, Int)? in
+                let score = max(fuzzyScore(query, item.title) ?? -1, item.subtitle.flatMap { fuzzyScore(query, $0) } ?? -1)
+                return score >= 0 ? (item, score) : nil
+            }
+            .sorted { $0.1 > $1.1 }
+            .map(\.0)
+    }
+
+    private func pick(_ item: PickerItem) {
+        onPick(item.id)
+        if !staysOpen { onClose() }
+    }
+}
+
+struct PickerRow: View {
+    var item: PickerItem
+    var active: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            item.icon.frame(width: 18, height: 18)
+            if let prefix = item.prefix {
+                Text(prefix).font(.small).monospacedDigit().foregroundStyle(Theme.textTertiary).lineLimit(1)
+            }
+            Text(item.title).lineLimit(1).truncationMode(.tail)
+            if let subtitle = item.subtitle {
+                Text(subtitle).foregroundStyle(Theme.textSecondary).lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            if let trailing = item.trailing { trailing }
+            if item.selected {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.textBody)
+            }
+            if let shortcut = item.shortcut {
+                Text(shortcut)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(active ? Theme.textSecondary : Theme.textTertiary)
+                    .frame(minWidth: 12, alignment: .trailing)
+            }
+        }
+        .padding(.horizontal, 8)
+        .frame(height: 32)
+        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(active ? Theme.popoverSelected : .clear))
+        .padding(.horizontal, 4)
+        .contentShape(Rectangle())
+    }
+}
+
+/// A picker for one property of one issue, as shown in dropdowns and the command palette.
+struct ItemPicker: View {
+    @Environment(AppModel.self) private var model
+    var kind: PickerKind
+    var itemId: String
+    var width: CGFloat?
+    var fieldFont: Font = .ui
+    var close: () -> Void
+
+    var body: some View {
+        if let item = model.allItems.first(where: { $0.id == itemId }) {
+            PickerList(
+                placeholder: kind.placeholder,
+                items: model.pickerItems(kind, for: item),
+                hint: kind.hint,
+                staysOpen: kind.staysOpen,
+                width: width ?? kind.width,
+                maxRows: 10,
+                fieldFont: fieldFont,
+                onPick: { model.pick(kind, id: $0, for: item) },
+                onClose: close
+            )
+        }
+    }
+}
+
+/// A property value that opens its picker in a dropdown when clicked.
+struct PropertyButton<Label: View>: View {
+    var kind: PickerKind
+    var item: Item
+    @ViewBuilder var label: Label
+
+    @State private var open = false
+
+    var body: some View {
+        Button {
+            open = true
+        } label: {
+            label
+                .padding(.horizontal, 8)
+                .frame(minHeight: 28)
+                .hoverFill(active: open)
+        }
+        .buttonStyle(PlainPressStyle())
+        .dropdown(isPresented: $open) { close in
+            ItemPicker(kind: kind, itemId: item.id, close: close)
+        }
+    }
+}
+#endif

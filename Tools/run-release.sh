@@ -10,7 +10,7 @@ bundle_id=$(xcodebuild -project GitIssues.xcodeproj -scheme GitIssues -configura
 
 echo "Building…"
 if ! xcodebuild -project GitIssues.xcodeproj -scheme GitIssues -configuration Release \
-     -destination 'platform=macOS,arch=arm64' -derivedDataPath build/DerivedData build -quiet; then
+     -destination 'platform=macOS,arch=arm64' -derivedDataPath build/DerivedData -allowProvisioningUpdates build -quiet; then
   echo "Build failed; the running app was left alone." >&2
   exit 1
 fi

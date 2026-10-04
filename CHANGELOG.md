@@ -8,6 +8,21 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Git Issues for iPhone and iPad.** The same app, built from the same project, with sync, the offline queue,
+  conflict handling and every action shared with the Mac. On the iPhone: My Issues, Projects and Search as tabs, lists
+  grouped by status with folding sections and pinned headers, swipe actions (done, assign, delete), the issue menu on a
+  long press, the description edited in place with live Markdown styling, properties as chips, sub-issues, comments,
+  new issues and sub-issues, statuses and section order to edit, and pull to refresh. On the iPad: a sidebar with every
+  project, the board with drag and drop, the issue beside its properties, and the Mac's keyboard shortcuts.
+- The GitHub login is shared between Mac, iPhone and iPad through iCloud Keychain. A Mac signed in with the GitHub CLI
+  asks once whether to share it. "Sign Out Everywhere" signs out all devices.
+- Sample data: two sample projects to try the app without a GitHub account ("Explore with Sample Data" on iOS).
+- The iPhone and iPad send queued changes when the app goes to the background and refresh now and then in the
+  background, so they open up to date.
+- UI tests for every feature of the iPhone and iPad app (`Tools/test-ios.sh`), and `Tools/testflight.sh` to upload
+  builds to TestFlight.
+- [PRIVACY.md](PRIVACY.md): what the app stores and sends, to link from the App Store listing.
+
 - Clicking an issue's priority, status, labels, assignees or sub-issue count, on a card or in the list, opens a
   dropdown right there, as in Linear: the search field has focus, number keys pick, and the current value is
   checked. The sub-issue count lists the sub-issues and opens the one you pick. The parts light up on hover.
@@ -30,6 +45,11 @@ All notable changes to this project are recorded here. The format follows
 - Sub-issue rows show their priority, in the same order as list rows.
 
 ### Changed
+
+- The project is one app for Mac, iPhone and iPad. Code shared by all of them lives in `UI/Shared`, the rest in
+  `UI/Mac` and `UI/iOS`.
+- The GitHub OAuth client ID is set in `Config/Local.xcconfig` (`GITHUB_CLIENT_ID`) rather than in `Info.plist`, so
+  forks don't use yours.
 
 - New app icon: a card lifted off a board, in the accent colour. It's an Icon Composer icon, so it follows light and
   dark mode by itself (and the tinted and clear styles). Settings offers it fixed in light or dark, and on violet;

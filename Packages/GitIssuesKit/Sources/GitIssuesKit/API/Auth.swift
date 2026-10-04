@@ -1,19 +1,32 @@
 import Foundation
 import Security
 
-/// Stores the GitHub token in the login keychain.
+/// Keeps the GitHub token in the keychain.
+///
+/// The token is stored once for all of the user's devices: as a synchronizable item in iCloud Keychain, in the
+/// app's keychain access group, so signing in on the Mac signs in the iPhone and iPad too. Builds that are not
+/// signed with a team have no access group; they keep the token on this device only.
 public enum KeychainTokenStore {
     private static let service = "com.lukaskbl.GitIssues.github-token"
     private static let account = "github.com"
 
-    public static func read() -> String? {
-        let query: [String: Any] = [
+    private static func query(shared: Bool) -> [String: Any] {
+        var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
         ]
+        if shared {
+            query[kSecAttrSynchronizable as String] = true
+            query[kSecUseDataProtectionKeychain as String] = true
+        }
+        return query
+    }
+
+    private static func read(shared: Bool) -> String? {
+        var query = query(shared: shared)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: AnyObject?
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else {
             return nil
@@ -21,28 +34,66 @@ public enum KeychainTokenStore {
         return String(data: data, encoding: .utf8)
     }
 
+    /// The token, preferring the one shared with the user's other devices.
+    public static func read() -> String? {
+        read(shared: true) ?? read(shared: false)
+    }
+
+    /// The token another of the user's devices shared through iCloud Keychain, if any.
+    public static func readShared() -> String? {
+        read(shared: true)
+    }
+
     @discardableResult
-    public static func save(_ token: String) -> Bool {
-        delete()
-        let attributes: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecValueData as String: Data(token.utf8),
-        ]
+    private static func save(_ token: String, shared: Bool) -> Bool {
+        SecItemDelete(query(shared: shared) as CFDictionary)
+        var attributes = query(shared: shared)
+        attributes[kSecValueData as String] = Data(token.utf8)
+        // Readable after the first unlock, so syncing in the background works while the device is locked.
+        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
         return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
     }
 
-    public static func delete() {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-        ]
-        SecItemDelete(query as CFDictionary)
+    /// Saves the token for all of the user's devices, or for this one where sharing isn't possible.
+    /// Returns whether it is shared.
+    @discardableResult
+    public static func save(_ token: String) -> Bool {
+        if save(token, shared: true) {
+            SecItemDelete(query(shared: false) as CFDictionary)
+            return true
+        }
+        save(token, shared: false)
+        return false
+    }
+
+    /// Saves the token for the user's other devices only, leaving this device's way of signing in alone.
+    @discardableResult
+    public static func share(_ token: String) -> Bool {
+        save(token, shared: true)
+    }
+
+    /// Forgets the token on this device; with `everywhere`, also the copy shared with the other devices.
+    public static func delete(everywhere: Bool) {
+        SecItemDelete(query(shared: false) as CFDictionary)
+        if everywhere { SecItemDelete(query(shared: true) as CFDictionary) }
+    }
+
+    #if os(macOS)
+    /// Whether this build may use iCloud Keychain: it needs a keychain access group, which needs a team.
+    public static var canShare: Bool {
+        guard let task = SecTaskCreateFromSelf(nil) else { return false }
+        return SecTaskCopyValueForEntitlement(task, "keychain-access-groups" as CFString, nil) != nil
+    }
+    #endif
+
+    /// Moves a token saved by an earlier version (on this device only) to the shared place, when it can.
+    public static func migrateToShared() {
+        guard read(shared: true) == nil, let local = read(shared: false) else { return }
+        if save(local, shared: true) { SecItemDelete(query(shared: false) as CFDictionary) }
     }
 }
 
+#if os(macOS)
 /// Reads the token of an existing GitHub CLI login. Meant for development builds.
 public enum GitHubCLI {
     public static func executableURL() -> URL? {
@@ -79,6 +130,13 @@ public enum GitHubCLI {
         }
     }
 }
+#endif
+
+/// A fixed token, for checking one before it is saved.
+struct FixedToken: TokenSource {
+    var value: String
+    func token() async throws -> String { value }
+}
 
 /// The app's single source of truth for the GitHub token.
 public actor AuthStore: TokenSource {
@@ -88,6 +146,9 @@ public actor AuthStore: TokenSource {
     }
 
     private static let methodKey = "auth.method"
+    /// Set when the user signed out on this device while their other devices stay signed in, so the shared
+    /// login is not picked up again by itself.
+    private static let declinedKey = "auth.sharedLoginDeclined"
     private var cached: String?
 
     public init() {}
@@ -98,6 +159,23 @@ public actor AuthStore: TokenSource {
 
     public nonisolated var isSignedIn: Bool { method != nil }
 
+    /// Signs in with the login another of the user's devices shared through iCloud Keychain, unless the user
+    /// signed out of it on this device. Returns whether this device is signed in now.
+    @discardableResult
+    public nonisolated func adoptSharedLogin(force: Bool = false) -> Bool {
+        if isSignedIn { return true }
+        guard force || !UserDefaults.standard.bool(forKey: Self.declinedKey),
+              KeychainTokenStore.readShared() != nil else { return false }
+        UserDefaults.standard.set(Method.keychain.rawValue, forKey: Self.methodKey)
+        UserDefaults.standard.removeObject(forKey: Self.declinedKey)
+        return true
+    }
+
+    /// Whether a login shared by another device is waiting to be used here.
+    public nonisolated var sharedLoginAvailable: Bool {
+        KeychainTokenStore.readShared() != nil
+    }
+
     public func token() async throws -> String {
         if let cached { return cached }
         let token: String
@@ -106,7 +184,11 @@ public actor AuthStore: TokenSource {
             guard let stored = KeychainTokenStore.read() else { throw APIError.noToken }
             token = stored
         case .githubCLI:
+            #if os(macOS)
             token = try await GitHubCLI.token()
+            #else
+            throw APIError.noToken
+            #endif
         case nil:
             throw APIError.noToken
         }
@@ -114,20 +196,43 @@ public actor AuthStore: TokenSource {
         return token
     }
 
+    /// Checks a token with GitHub before it is saved, so a typo is caught at once.
+    public static func validate(_ token: String) async throws {
+        let api = GitHubAPI(client: GraphQLClient(tokenSource: FixedToken(value: token)))
+        _ = try await api.viewerAndProjects()
+    }
+
     public func signIn(token: String) {
         KeychainTokenStore.save(token)
         UserDefaults.standard.set(Method.keychain.rawValue, forKey: Self.methodKey)
+        UserDefaults.standard.removeObject(forKey: Self.declinedKey)
         cached = token
     }
 
+    #if os(macOS)
     public func signInWithGitHubCLI() async throws {
         cached = try await GitHubCLI.token()
         UserDefaults.standard.set(Method.githubCLI.rawValue, forKey: Self.methodKey)
+        UserDefaults.standard.removeObject(forKey: Self.declinedKey)
     }
 
-    public func signOut() {
-        KeychainTokenStore.delete()
+    /// Puts the GitHub CLI's token into iCloud Keychain, so the iPhone and iPad sign in with it.
+    public func shareGitHubCLILogin() async throws -> Bool {
+        let token = try await GitHubCLI.token()
+        return KeychainTokenStore.share(token)
+    }
+    #endif
+
+    /// Signs this device out. With `everywhere`, the shared login is removed too, which signs out the
+    /// user's other devices as well.
+    public func signOut(everywhere: Bool = false) {
+        KeychainTokenStore.delete(everywhere: everywhere)
         UserDefaults.standard.removeObject(forKey: Self.methodKey)
+        if everywhere {
+            UserDefaults.standard.removeObject(forKey: Self.declinedKey)
+        } else if KeychainTokenStore.readShared() != nil {
+            UserDefaults.standard.set(true, forKey: Self.declinedKey)
+        }
         cached = nil
     }
 
