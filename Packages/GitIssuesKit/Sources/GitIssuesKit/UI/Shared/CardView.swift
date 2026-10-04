@@ -27,6 +27,8 @@ struct CardView: View, Equatable {
     var card: CardModel
     var width: CGFloat
     var highlighted = false
+    /// Picked for a change to several issues at once.
+    var selected = false
     var lifted = false
     /// Changes when avatar images finish loading, so cards repaint with them.
     var avatarVersion = 0
@@ -112,18 +114,18 @@ private struct CardPainter {
         let item = card.item
         let padding = CardView.padding
         var parts: [(kind: PickerKind, rect: CGRect)] = []
+        // Each part lights up in a shape that suits it, as in Linear: a small square behind an icon, a halo
+        // around avatars, and chips in their own outline.
+        func hovered(_ kind: PickerKind) -> Bool { view.hoveredPart == kind && !view.lifted }
         func part(_ kind: PickerKind, _ rect: CGRect) {
             parts.append((kind, rect))
-            if view.hoveredPart == kind, !view.lifted {
-                context.fill(Path(roundedRect: rect.insetBy(dx: -4, dy: -4), cornerRadius: 6), with: .color(Theme.controlActive))
-            }
         }
         defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts) } }
         let outline = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5), cornerRadius: 8, style: .continuous)
-        let fill = view.lifted ? Theme.cardLifted : (view.highlighted ? Theme.cardHover : Theme.card)
-        let border = view.lifted ? Theme.cardLiftedBorder : (view.highlighted ? Theme.cardHoverBorder : Theme.cardBorder)
+        let fill = view.lifted ? Theme.cardLifted : view.selected ? Theme.selectionFill : (view.highlighted ? Theme.cardHover : Theme.card)
+        let border = view.lifted ? Theme.cardLiftedBorder : view.selected ? Theme.selectionBorder : (view.highlighted ? Theme.cardHoverBorder : Theme.cardBorder)
         context.fill(outline, with: .color(fill))
-        context.stroke(outline, with: .color(border), lineWidth: 1)
+        context.stroke(outline, with: .color(border), lineWidth: view.selected && !view.lifted ? 1.5 : 1)
 
         // Top line: number, repository, pull-request mark, and assignees on the right.
         let topY = padding.height + 9
@@ -148,12 +150,20 @@ private struct CardPainter {
                 at: CGPoint(x: x, y: topY), anchor: .leading
             )
         }
+        var avatarRing = fill
         if item.kind != .draft {
             let count = CGFloat(max(min(item.assignees.count, 3), 1))
             let width = 18 + (count - 1) * 13
-            part(.assignees, CGRect(x: size.width - padding.width - width, y: topY - 9, width: width, height: 18))
+            let rect = CGRect(x: size.width - padding.width - width, y: topY - 9, width: width, height: 18)
+            part(.assignees, rect)
+            if hovered(.assignees) {
+                let halo = rect.insetBy(dx: -3, dy: -3)
+                context.fill(Path(roundedRect: halo, cornerRadius: halo.height / 2), with: .color(Theme.partHover))
+                avatarRing = Theme.partHover
+                if item.assignees.isEmpty { drawUnassigned(in: rect) }
+            }
         }
-        drawAvatars(item.assignees, rightEdge: size.width - padding.width, midY: topY, ring: fill)
+        drawAvatars(item.assignees, rightEdge: size.width - padding.width, midY: topY, ring: avatarRing)
 
         // Title, wrapped to at most three lines.
         let titleRect = CGRect(x: padding.width, y: padding.height + 18 + 6, width: size.width - 2 * padding.width, height: titleHeight)
@@ -163,7 +173,11 @@ private struct CardPainter {
         let bottomY = titleRect.maxY + 6 + 10
         x = padding.width
         if card.showsPriority {
-            part(.priority, CGRect(x: x, y: bottomY - 7, width: 14, height: 14))
+            let rect = CGRect(x: x, y: bottomY - 7, width: 14, height: 14)
+            part(.priority, rect)
+            if hovered(.priority) {
+                context.fill(Path(roundedRect: rect.insetBy(dx: -4, dy: -4), cornerRadius: 5), with: .color(Theme.partHover))
+            }
             drawPriority(card.priority, x: x, midY: bottomY)
             x += 14 + 6
         }
@@ -183,7 +197,7 @@ private struct CardPainter {
             part(.labels, first.rect.union(last.rect))
         }
         for (label, text, rect) in labelLayout {
-            chip(rect)
+            chip(rect, hovered: hovered(.labels))
             context.fill(Path(ellipseIn: CGRect(x: rect.minX + 7, y: bottomY - 3.5, width: 7, height: 7)), with: .color(Theme.labelColor(label.color)))
             context.draw(text, at: CGPoint(x: rect.minX + 19, y: bottomY), anchor: .leading)
             x = rect.maxX + 6
@@ -207,7 +221,7 @@ private struct CardPainter {
             if x + width <= limit {
                 let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
                 part(.subIssues, rect)
-                chip(rect)
+                chip(rect, hovered: hovered(.subIssues))
                 let origin = CGPoint(x: rect.minX + 7, y: bottomY - 5.5)
                 var glyph = Path()
                 glyph.move(to: CGPoint(x: origin.x + 2.3, y: origin.y + 1.8))
@@ -224,8 +238,16 @@ private struct CardPainter {
         }
     }
 
-    private func chip(_ rect: CGRect) {
-        context.stroke(Path(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), cornerRadius: 10), with: .color(Theme.chipBorder), lineWidth: 1)
+    private func chip(_ rect: CGRect, hovered: Bool = false) {
+        let outline = Path(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), cornerRadius: 10)
+        if hovered { context.fill(outline, with: .color(Theme.chipHover)) }
+        context.stroke(outline, with: .color(hovered ? Theme.chipHoverBorder : Theme.chipBorder), lineWidth: 1)
+    }
+
+    /// Where an avatar would be: a dashed circle, shown when pointing at an unassigned issue's avatar spot.
+    private func drawUnassigned(in rect: CGRect) {
+        let circle = CGRect(x: rect.maxX - 18, y: rect.midY - 9, width: 18, height: 18).insetBy(dx: 1.5, dy: 1.5)
+        context.stroke(Path(ellipseIn: circle), with: .color(Theme.textTertiary), style: StrokeStyle(lineWidth: 1.2, dash: [2.2, 2]))
     }
 
     private func drawPriority(_ level: PriorityLevel, x: CGFloat, midY: CGFloat) {

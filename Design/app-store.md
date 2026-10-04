@@ -7,7 +7,7 @@ Texts and answers for App Store Connect, iPhone and iPad. Screenshots come from 
 
 | Field | Value |
 |---|---|
-| Name | Git Issues (working title; App Store names are unique, so check it's free when creating the app) |
+| Name | Issues (App Store names are unique; if it is taken, "Issues for GitHub" matches the repository) |
 | Subtitle | Issues and boards for GitHub |
 | Bundle ID | `com.lukaskbl.GitIssues` |
 | SKU | `git-issues-ios` |
@@ -36,7 +36,7 @@ even offline.
 
 ## Description
 
-Git Issues is a fast, native client for GitHub Issues and GitHub Projects: calm to look at and quick to drive.
+Issues is a fast, native client for GitHub Issues and GitHub Projects: calm to look at and quick to drive.
 Everything stays in GitHub, so teammates who don't use the app see the same issues and boards on github.com.
 
 ON IPHONE
@@ -65,7 +65,7 @@ PRIVATE
 
 Try it without an account: "Explore with Sample Data" shows two sample projects.
 
-Git Issues is not affiliated with or endorsed by GitHub.
+Issues is not affiliated with or endorsed by GitHub.
 
 ## Keywords (100 characters at most; other apps' names aren't allowed here)
 
@@ -78,7 +78,7 @@ in-place editing, sub-issues and comments, offline changes, and the login shared
 
 ## Notes for App Review
 
-Git Issues is a client for GitHub Issues and GitHub Projects (Guideline 4.8 does not apply: users sign in to their
+Issues is a client for GitHub Issues and GitHub Projects (Guideline 4.8 does not apply: users sign in to their
 own GitHub account to see their own content).
 
 To review without a GitHub account, tap **Explore with Sample Data** on the first screen. It shows two sample

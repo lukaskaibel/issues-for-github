@@ -30,7 +30,7 @@ extension AppModel {
                 shared = KeychainTokenStore.readShared() != nil
             }
             status.post(shared
-                ? Notice(title: "Login shared", message: "Git Issues on your iPhone and iPad signs in with it through iCloud Keychain.")
+                ? Notice(title: "Login shared", message: "The app on your iPhone and iPad signs in with it through iCloud Keychain.")
                 : Notice(title: "The login could not be shared", message: "iCloud Keychain isn't available to this build. It needs to be signed with your team.", isWarning: true))
         }
     }

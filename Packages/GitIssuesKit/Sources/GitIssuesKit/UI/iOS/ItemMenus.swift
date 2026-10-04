@@ -41,6 +41,13 @@ struct ItemMenuContent: View {
             } label: {
                 Label("Copy Link", systemImage: "link")
             }
+            if item.branchName != nil {
+                Button {
+                    model.copyBranchName(item)
+                } label: {
+                    Label("Copy Branch Name", systemImage: "arrow.triangle.branch")
+                }
+            }
             ShareLink(item: url, subject: Text(item.title), message: Text("\(item.displayNumber) \(item.title)"), preview: SharePreview("\(item.displayNumber) \(item.title)")) {
                 Label("Share…", systemImage: "square.and.arrow.up")
             }

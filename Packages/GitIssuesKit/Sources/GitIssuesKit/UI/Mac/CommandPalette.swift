@@ -46,7 +46,7 @@ struct CommandPalette: View {
     @ViewBuilder
     private func step(_ kind: PickerKind, _ itemId: String) -> some View {
         if let item = model.allItems.first(where: { $0.id == itemId }) {
-            ContextChip(item: item)
+            ContextChip(item: item, count: model.targets(for: item).count)
             ItemPicker(kind: kind, itemId: itemId, width: 640, fieldFont: .system(size: 15)) { model.overlay = nil }
         }
     }
@@ -54,11 +54,17 @@ struct CommandPalette: View {
 
 private struct ContextChip: View {
     var item: Item
+    /// How many issues the command applies to; more than one when several are picked.
+    var count = 1
 
     var body: some View {
         HStack(spacing: 6) {
-            Text(item.displayNumber).foregroundStyle(Theme.textSecondary)
-            Text(item.title).lineLimit(1)
+            if count > 1 {
+                Text("\(count) issues")
+            } else {
+                Text(item.displayNumber).foregroundStyle(Theme.textSecondary)
+                Text(item.title).lineLimit(1)
+            }
         }
         .font(.small)
         .foregroundStyle(Theme.textBody)
@@ -89,8 +95,8 @@ private struct RootPalette: View {
     var body: some View {
         let rows = results
         VStack(spacing: 0) {
-            if let target = model.targetItem {
-                ContextChip(item: target)
+            if let target = model.actionItem {
+                ContextChip(item: target, count: model.targets(for: target).count)
             }
             TextField("Type a command or search issues…", text: $query)
                 .textFieldStyle(.plain)
@@ -209,8 +215,10 @@ private struct RootPalette: View {
 
     private var commands: [PaletteCommand] {
         var list: [PaletteCommand] = []
-        if let item = model.targetItem {
-            let section = "This issue"
+        if let item = model.actionItem {
+            let targets = model.targets(for: item)
+            let several = targets.count > 1
+            let section = several ? "\(targets.count) issues" : "This issue"
             list.append(PaletteCommand(id: "status", title: "Change status…", section: section, icon: AnyView(StatusIcon(glyph: model.glyph(of: item))), keys: ["S"]) {
                 model.overlay = .palette(.status(itemId: item.id))
             })
@@ -224,31 +232,43 @@ private struct RootPalette: View {
                     model.overlay = .palette(.assignees(itemId: item.id))
                 })
                 if let viewer = model.viewer {
-                    let mine = item.assignees.contains { $0.id == viewer.id }
+                    let mine = targets.allSatisfy { target in target.assignees.contains { $0.id == viewer.id } }
                     list.append(PaletteCommand(id: "assign-me", title: mine ? "Unassign me" : "Assign to me", section: section, icon: symbol("person.fill"), keys: ["I"]) {
-                        model.toggleAssignee(item, viewer.person)
+                        model.toggleAssignMe(targets)
                     })
                 }
                 list.append(PaletteCommand(id: "labels", title: "Add labels…", section: section, icon: symbol("tag"), keys: ["L"]) {
                     model.overlay = .palette(.labels(itemId: item.id))
                 })
             }
-            if item.kind == .issue {
+            if item.kind == .issue, !several {
                 list.append(PaletteCommand(id: "sub", title: "Add sub-issue", section: section, icon: AnyView(SubIssueGlyph().frame(width: 12, height: 12).foregroundStyle(Theme.textSecondary))) {
                     model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
                 })
             }
-            if model.canDelete(item) {
+            if model.canDelete(item), !several {
                 list.append(PaletteCommand(id: "delete", title: item.kind == .draft ? "Delete draft…" : "Delete issue…", section: section, icon: symbol("trash"), keys: ["⌘", "⌫"]) {
                     model.requestDelete(item)
                 })
             }
             if item.url != nil {
-                list.append(PaletteCommand(id: "copy", title: "Copy GitHub link", section: section, icon: symbol("link"), keys: ["⌘", "⇧", "C"]) {
-                    model.copyLink(item)
+                list.append(PaletteCommand(id: "copy", title: several ? "Copy GitHub links" : "Copy GitHub link", section: section, icon: symbol("link"), keys: ["⌘", "⇧", "C"]) {
+                    model.copyLinks(targets)
                 })
-                list.append(PaletteCommand(id: "github", title: "Open on GitHub", section: section, icon: symbol("arrow.up.right")) {
-                    model.openOnGitHub(item)
+                if !several {
+                    list.append(PaletteCommand(id: "github", title: "Open on GitHub", section: section, icon: symbol("arrow.up.right")) {
+                        model.openOnGitHub(item)
+                    })
+                }
+            }
+        }
+        if model.openItem == nil, !model.orderedItems.isEmpty {
+            list.append(PaletteCommand(id: "select-all", title: "Select all issues", section: "Selection", icon: symbol("checkmark.circle"), keys: ["⌘", "A"]) {
+                model.selectAll()
+            })
+            if !model.selectedIds.isEmpty {
+                list.append(PaletteCommand(id: "select-none", title: "Clear selection", section: "Selection", icon: symbol("xmark.circle"), keys: ["Esc"]) {
+                    model.clearSelection()
                 })
             }
         }

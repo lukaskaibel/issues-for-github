@@ -31,18 +31,20 @@ extension AppModel {
     /// The issue keyboard navigation starts from.
     var cursorId: String? { focusedItemId ?? hoveredItemId }
 
-    func moveFocus(to id: String) {
+    func moveFocus(to id: String, scroll: Bool = true) {
         hoveredItemId = nil
         focusedItemId = id
-        focusScrollToken += 1
+        if scroll { focusScrollToken += 1 }
+        followPeek(to: id)
     }
 
-    /// Issues in the order they read on screen, for stepping with J/K and the arrow buttons.
+    /// Issues in the order they read on screen, for stepping with J/K and the arrow buttons. Folded list
+    /// sections are skipped, since their issues aren't on screen.
     var orderedItems: [Item] {
         if openItem == nil, viewMode == .board, currentProjectId != nil {
             return columns.flatMap(\.items)
         }
-        return sections.flatMap(\.items)
+        return sections.filter { !isSectionCollapsed($0.id) }.flatMap(\.items)
     }
 
     func position(of item: Item) -> (index: Int, count: Int)? {
@@ -63,7 +65,8 @@ extension AppModel {
             next = delta > 0 ? items[0] : items[items.count - 1]
         }
         if openItem != nil {
-            open(next)
+            // Stepping through issues doesn't pile up history: Back still leaves for the board or list.
+            open(next, replacingHistory: true)
         } else {
             moveFocus(to: next.id)
         }

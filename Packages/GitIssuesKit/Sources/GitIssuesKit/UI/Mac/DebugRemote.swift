@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "renderpill", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection"]
+        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "renderpill", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -117,10 +117,14 @@ enum DebugRemote {
             }
             log("responder: \(description) overlay=\(String(describing: model.overlay))")
         case "keycode":
-            // keycode <code> [cmd]
+            // keycode <code> [cmd] [shift]
             let bits = argument.split(separator: " ").map(String.init)
             if let code = bits.first.flatMap({ UInt16($0) }) {
-                sendKey(characters: code == 36 ? "\r" : (code == 51 ? "\u{7F}" : ""), code: code, modifiers: bits.contains("cmd") ? .command : [])
+                var modifiers: NSEvent.ModifierFlags = []
+                if bits.contains("cmd") { modifiers.insert(.command) }
+                if bits.contains("shift") { modifiers.insert(.shift) }
+                let characters = [36: "\r", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a"][code] ?? ""
+                sendKey(characters: modifiers.contains(.shift) ? characters.uppercased() : characters, code: code, modifiers: modifiers)
             }
         case "status":
             let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
@@ -227,6 +231,17 @@ enum DebugRemote {
                     }
                 }
             }
+        case "trace":
+            Dropdown.trace = { log("dropdown: " + $0) }
+        case "nav":
+            // Where the app is and the history behind it, oldest first; * marks the current place.
+            let places = model.history.enumerated().map { index, place in
+                let name = place.itemId.flatMap { id in model.allItems.first { $0.id == id }?.displayNumber } ?? place.viewMode.rawValue
+                return (index == model.historyIndex ? "*" : "") + name
+            }
+            log("nav: open=\(model.openItem?.displayNumber ?? "-") history=\(places.joined(separator: " > "))")
+        case "leave":
+            model.leaveIssue()
         case "dump":
             let drag = model.boardDrag
             log("active=\(drag.active.map { "\($0.item.displayNumber) loc=\($0.location) lifted=\($0.lifted) settling=\($0.settling)" } ?? "nil") target=\(String(describing: drag.target))")
@@ -283,6 +298,83 @@ enum DebugRemote {
                     try? png.write(to: URL(fileURLWithPath: path + (highlighted ? ".pill-on.png" : ".pill-off.png")))
                 }
             }
+        case "pick":
+            // pick <number> [<number>…]: adds issues to the selection, or takes them out.
+            for number in argument.split(separator: " ").compactMap({ Int($0) }) {
+                if let item = model.scopedItems.first(where: { $0.number == number }) { model.toggleSelection(item) }
+            }
+        case "picks":
+            log("picks: selected=\(model.selectedItems.map { "\($0.displayNumber):\(model.priorityOption(of: $0)?.name ?? "none")" }.joined(separator: " ")) peek=\(model.peekItem?.displayNumber ?? "-") focus=\(model.focusedItemId.flatMap { id in model.scopedItems.first { $0.id == id }?.displayNumber } ?? "-")")
+        case "peek":
+            // peek <number>: moves the focus there and peeks at it; without a number, toggles the peek.
+            if let item = item(argument, model) {
+                model.moveFocus(to: item.id)
+                if model.peekItemId == nil { model.togglePeek() }
+            } else {
+                model.togglePeek()
+            }
+        case "hideproject", "showproject":
+            // Only changes what the sidebar shows on this Mac.
+            if let project = model.projects.first(where: { $0.title.localizedCaseInsensitiveContains(argument) }) {
+                model.setHidden(project, parts.first == "hideproject")
+            }
+        case "rendersidebar":
+            // rendersidebar <name>: the sidebar as it is now, written next to the command file.
+            guard let base = UserDefaults.standard.string(forKey: "debugCommandFile") else { break }
+            // Scroll views draw empty in an image renderer, so the project list is drawn on its own below.
+            let open = model.projects.filter { !$0.closed }
+            let renderer = ImageRenderer(
+                content: VStack(alignment: .leading, spacing: 2) {
+                    ForEach(open.filter { !model.hiddenProjectIds.contains($0.id) }) { ProjectRow(project: $0, hidden: false) }
+                    HiddenProjects(projects: open.filter { model.hiddenProjectIds.contains($0.id) })
+                    HiddenProjects(projects: open.filter { model.hiddenProjectIds.contains($0.id) }, expanded: true)
+                }
+                    .padding(10)
+                    .environment(model)
+                    .frame(width: Theme.sidebarWidth)
+                    .background(Theme.window)
+                    .environment(\.colorScheme, NSApp.effectiveAppearance.isDark ? .dark : .light)
+            )
+            renderer.scale = 2
+            if let image = renderer.nsImage, let tiff = image.tiffRepresentation,
+               let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+                try? png.write(to: URL(fileURLWithPath: "\(base).sidebar-\(argument).png"))
+            }
+        case "renderhover":
+            // renderhover <number> [<number>…]: each issue as a card and a list row, once per hovered part,
+            // written next to the command file, to check the hover shapes.
+            guard let base = UserDefaults.standard.string(forKey: "debugCommandFile") else { break }
+            let kinds: [PickerKind?] = [nil, .priority, .status, .labels, .subIssues, .assignees]
+            let dark = NSApp.effectiveAppearance.isDark
+            for number in argument.split(separator: " ").compactMap({ Int($0) }) {
+                guard let item = model.scopedItems.first(where: { $0.number == number }) else { continue }
+                for kind in kinds {
+                    let name = kind.map { "\($0)" } ?? "none"
+                    let renderer = ImageRenderer(
+                        content: CardView(card: model.cardModel(for: item), width: 300, hoveredPart: kind)
+                            .padding(10)
+                            .background(Theme.panel)
+                            .environment(\.colorScheme, dark ? .dark : .light)
+                    )
+                    renderer.scale = 2
+                    if let image = renderer.nsImage, let tiff = image.tiffRepresentation,
+                       let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+                        try? png.write(to: URL(fileURLWithPath: "\(base).card-\(number)-\(name).png"))
+                    }
+                    let cell = IssueRowCell(frame: NSRect(x: 0, y: 0, width: 900, height: Theme.rowHeight))
+                    cell.appearance = NSApp.effectiveAppearance
+                    cell.configure(IssueRowModel(
+                        item: item, glyph: model.glyph(of: item), priority: model.priorityLevel(of: item),
+                        showsPriority: model.project(of: item)?.priorityFieldId != nil
+                    ), highlighted: false)
+                    cell.hoveredPart = kind
+                    if let rep = cell.bitmapImageRepForCachingDisplay(in: cell.bounds) {
+                        cell.appearance?.performAsCurrentDrawingAppearance { cell.cacheDisplay(in: cell.bounds, to: rep) }
+                        try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "\(base).row-\(number)-\(name).png"))
+                    }
+                }
+            }
+            log("rendered hover states")
         case "comment":
             if let item = model.openItem { model.addComment(to: item, body: argument) }
         case "notice":
@@ -387,9 +479,18 @@ enum DebugRemote {
     }
 
     private static func click(at point: CGPoint, right: Bool = false) {
-        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
-              let content = window.contentView else { return }
-        let location = CGPoint(x: point.x, y: content.bounds.height - point.y)
+        guard let main = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
+              let content = main.contentView else { return }
+        // The point is given in the main window; the click goes to whichever window is on top there,
+        // such as an open dropdown.
+        let inMain = CGPoint(x: point.x, y: content.bounds.height - point.y)
+        let onScreen = main.convertPoint(toScreen: inMain)
+        // Front to back, panels included (`orderedWindows` leaves them out).
+        let numbers = NSWindow.windowNumbers(options: []) ?? []
+        let window = numbers.lazy.compactMap { NSApp.window(withWindowNumber: $0.intValue) }
+            .first { $0.isVisible && $0.frame.contains(onScreen) } ?? main
+        let location = window.convertPoint(fromScreen: onScreen)
+        log("click \(Int(point.x)),\(Int(point.y)) -> \(type(of: window)) at \(Int(location.x)),\(Int(location.y)); key=\(NSApp.keyWindow.map { String(describing: type(of: $0)) } ?? "nil") active=\(NSApp.isActive)")
         let types: [NSEvent.EventType] = right ? [.rightMouseDown, .rightMouseUp] : [.leftMouseDown, .leftMouseUp]
         let events = types.compactMap { type in
             NSEvent.mouseEvent(
@@ -412,7 +513,8 @@ enum DebugRemote {
     }
 
     private static func sendKey(characters: String, code: UInt16, modifiers: NSEvent.ModifierFlags = []) {
-        guard let window = NSApp.windows.first(where: { $0.isVisible }) else { return }
+        // To the key window, as a real key press would go: a dropdown if one is open.
+        guard let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }) else { return }
         if let event = NSEvent.keyEvent(
             with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: ProcessInfo.processInfo.systemUptime,
             windowNumber: window.windowNumber, context: nil, characters: characters,

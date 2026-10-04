@@ -6,10 +6,16 @@ extension AppModel {
     var canGoForward: Bool { historyIndex >= 0 && historyIndex < history.count - 1 }
 
     /// Notes the current place after the user went somewhere. Anything ahead in the history is dropped.
-    func recordNavigation() {
+    /// `replacing` swaps out the current place instead, for moving to the next issue with J or K.
+    func recordNavigation(replacing: Bool = false) {
         guard !isRestoringLocation, scope != nil else { return }
         let current = Location(scope: scope, viewMode: viewMode, itemId: openItemId)
         if historyIndex >= 0, history.indices.contains(historyIndex), history[historyIndex] == current { return }
+        if replacing, history.indices.contains(historyIndex), history[historyIndex].itemId != nil {
+            history[historyIndex] = current
+            history.removeSubrange((historyIndex + 1)...)
+            return
+        }
         if historyIndex < history.count - 1 {
             history.removeSubrange((historyIndex + 1)...)
         }

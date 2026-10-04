@@ -4,21 +4,37 @@ import SwiftUI
 
 /// A Linear-style dropdown: a floating panel without an arrow that opens right under what was clicked,
 /// takes the keyboard straight away, and closes when you pick, press Escape or click elsewhere.
-/// Only one is open at a time.
+/// A dropdown opened from inside another one stacks on top of it, such as a status picker for one row of the
+/// sub-issue list; closing it hands the keyboard back to the one underneath.
 @MainActor
 enum Dropdown {
-    private static var panel: DropdownPanel?
+    /// Open dropdowns, the first opened from a window and each further one from the one before.
+    private static var panels: [DropdownPanel] = []
 
-    static var isOpen: Bool { panel != nil }
+    static var isOpen: Bool { !panels.isEmpty }
 
-    /// Opens a dropdown under `rect`, given in `view`'s coordinates.
+    #if DEBUG
+    /// Set by the debug remote to follow what dropdowns do.
+    static var trace: ((String) -> Void)?
+    #else
+    static let trace: ((String) -> Void)? = nil
+    #endif
+
+    /// Opens a dropdown under `rect`, given in `view`'s coordinates. From a view inside an open dropdown it
+    /// opens on top of that one; from anywhere else it replaces whatever is open.
+    @discardableResult
     static func show<Content: View>(
         below rect: NSRect, in view: NSView, model: AppModel, onClose: @escaping () -> Void = {},
         @ViewBuilder content: (_ close: @escaping () -> Void) -> Content
-    ) {
-        close()
-        guard let window = view.window else { return }
-        let close: () -> Void = { Dropdown.close() }
+    ) -> DropdownPanel? {
+        guard let window = view.window else { return nil }
+        if let host = window as? DropdownPanel, let index = panels.firstIndex(where: { $0 === host }) {
+            close(from: index + 1)
+        } else {
+            close()
+        }
+        let handle = PanelHandle()
+        let close: () -> Void = { if let panel = handle.panel { Dropdown.close(panel) } }
         let root = content(close)
             .environment(model)
             .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.popover))
@@ -36,6 +52,7 @@ enum Dropdown {
         origin.x = min(max(origin.x, screen.minX + 8), screen.maxX - size.width - 8)
 
         let panel = DropdownPanel(contentRect: NSRect(origin: origin, size: size))
+        handle.panel = panel
         let opensUpward = origin.y > anchor.minY
         hosting.onFittingSizeChange = { [weak panel] fitting in
             guard let panel, fitting.height > 0 else { return }
@@ -50,22 +67,55 @@ enum Dropdown {
         panel.onClose = onClose
         window.addChildWindow(panel, ordered: .above)
         panel.makeKeyAndOrderFront(nil)
-        self.panel = panel
+        panels.append(panel)
+        trace?("show: \(panels.count) open, nested=\(window is DropdownPanel)")
+        return panel
     }
 
+    /// Closes every open dropdown.
     static func close() {
-        guard let panel else { return }
-        self.panel = nil
-        panel.parent?.removeChildWindow(panel)
-        panel.orderOut(nil)
-        panel.onClose()
-        // Back to the main window, so its shortcuts work again.
-        panel.parent?.makeKey()
+        close(from: 0)
+    }
+
+    /// Closes this dropdown and any opened from it.
+    static func close(_ panel: DropdownPanel) {
+        if let index = panels.firstIndex(where: { $0 === panel }) { close(from: index) }
+    }
+
+    private static func close(from index: Int) {
+        guard panels.indices.contains(index) else { return }
+        trace?("close from \(index) of \(panels.count)")
+        let closing = panels[index...].reversed()
+        let underneath = panels[index].parent
+        panels.removeSubrange(index...)
+        for panel in closing {
+            panel.parent?.removeChildWindow(panel)
+            panel.orderOut(nil)
+            panel.onClose()
+        }
+        // Back to what the dropdown was opened from, so its keys work again.
+        if let underneath, underneath.isVisible { underneath.makeKey() }
     }
 
     fileprivate static func panelDidResignKey(_ resigned: DropdownPanel) {
-        if resigned === panel { close() }
+        // The new key window is known only once AppKit has finished switching.
+        DispatchQueue.main.async {
+            guard let index = panels.firstIndex(where: { $0 === resigned }) else { return }
+            let key = NSApp.keyWindow
+            trace?("resigned \(index); key is \(key.map { String(describing: type(of: $0)) } ?? "nil") at \(panels.firstIndex(where: { $0 === key }).map(String.init) ?? "-")")
+            if let keyIndex = panels.firstIndex(where: { $0 === key }) {
+                // A click back in a dropdown further down closes the ones on top of it.
+                if keyIndex < index { close(from: keyIndex + 1) }
+            } else {
+                // A click anywhere else closes them all, as a menu would.
+                close()
+            }
+        }
     }
+}
+
+private final class PanelHandle {
+    weak var panel: DropdownPanel?
 }
 
 /// A hosting view that reports when its content wants a different size.
@@ -107,7 +157,7 @@ final class DropdownPanel: NSPanel {
 
     /// Escape, when nothing inside handled it.
     override func cancelOperation(_ sender: Any?) {
-        MainActor.assumeIsolated { Dropdown.close() }
+        MainActor.assumeIsolated { Dropdown.close(self) }
     }
 }
 
@@ -145,12 +195,12 @@ private struct DropdownAnchor<DropdownContent: View>: NSViewRepresentable {
         if isPresented, !view.isShowing {
             view.isShowing = true
             let binding = $isPresented
-            Dropdown.show(below: view.bounds, in: view, model: model, onClose: { [weak view] in
+            view.panel = Dropdown.show(below: view.bounds, in: view, model: model, onClose: { [weak view] in
                 view?.isShowing = false
                 binding.wrappedValue = false
             }, content: content)
-        } else if !isPresented, view.isShowing {
-            Dropdown.close()
+        } else if !isPresented, view.isShowing, let panel = view.panel {
+            Dropdown.close(panel)
         }
     }
 }
@@ -158,6 +208,7 @@ private struct DropdownAnchor<DropdownContent: View>: NSViewRepresentable {
 /// A view that is never the target of a click, for anchoring and measuring.
 final class PassthroughView: NSView {
     var isShowing = false
+    weak var panel: DropdownPanel?
     override var isFlipped: Bool { true }
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 }

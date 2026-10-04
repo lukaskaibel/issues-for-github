@@ -123,6 +123,23 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
     public var isEditableContent: Bool { kind == .issue }
     public var repoShortName: String? { repo?.split(separator: "/").last.map(String.init) }
 
+    /// The branch name GitHub suggests for the issue: its number and title, such as "14-sign-in-with-device-flow".
+    public var branchName: String? {
+        guard let number else { return nil }
+        let folded = title.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
+        var slug = ""
+        for character in folded {
+            if character.isASCII, character.isLetter || character.isNumber {
+                slug.append(character)
+            } else if !slug.isEmpty, !slug.hasSuffix("-") {
+                slug.append("-")
+            }
+        }
+        slug = String(slug.prefix(60))
+        while slug.hasSuffix("-") { slug.removeLast() }
+        return slug.isEmpty ? "\(number)" : "\(number)-\(slug)"
+    }
+
     /// "#12" for issues and pull requests, "Draft" otherwise.
     public var displayNumber: String {
         if let number { return "#\(number)" }

@@ -259,7 +259,7 @@ private struct TokenSignInSheet: View {
     @State private var errorText: String?
     @FocusState private var focused: Bool
 
-    private static let createURL = URL(string: "https://github.com/settings/tokens/new?scopes=repo,project,read:org&description=Git%20Issues")!
+    private static let createURL = URL(string: "https://github.com/settings/tokens/new?scopes=repo,project,read:org&description=Issues")!
 
     var body: some View {
         NavigationStack {

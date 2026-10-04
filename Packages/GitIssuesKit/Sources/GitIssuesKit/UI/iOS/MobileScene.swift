@@ -358,6 +358,9 @@ struct MobileCommands: Commands {
             Button("Copy GitHub Link") { if let item { model.copyLink(item) } }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
                 .disabled(item?.url == nil)
+            Button("Copy Branch Name") { if let item { model.copyBranchName(item) } }
+                .keyboardShortcut(".", modifiers: [.command, .shift])
+                .disabled(item?.branchName == nil)
             Button("Open on GitHub") { if let item { model.openOnGitHub(item) } }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
                 .disabled(item?.url == nil)

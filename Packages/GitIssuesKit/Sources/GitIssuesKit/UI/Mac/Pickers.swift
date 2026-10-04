@@ -194,4 +194,35 @@ struct PropertyButton<Label: View>: View {
         }
     }
 }
+
+/// A small part of a row, such as a status icon, that opens its picker for that issue in a dropdown.
+/// Inside another dropdown it opens on top of it, so the list underneath stays open.
+struct PartButton<Label: View>: View {
+    var kind: PickerKind
+    var itemId: String
+    @ViewBuilder var label: Label
+
+    @State private var open = false
+    @State private var hovering = false
+
+    var body: some View {
+        // Avatars get a round halo, icons a small square, as on cards and list rows.
+        let radius: CGFloat = kind == .assignees ? 12 : 5
+        Button {
+            open = true
+        } label: {
+            label
+                .padding(3)
+                .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(hovering || open ? Theme.partHover : .clear))
+                .contentShape(Rectangle())
+                .padding(-3)
+        }
+        .buttonStyle(PlainPressStyle())
+        .onHover { hovering = $0 }
+        .help(kind.help)
+        .dropdown(isPresented: $open) { close in
+            ItemPicker(kind: kind, itemId: itemId, close: close)
+        }
+    }
+}
 #endif

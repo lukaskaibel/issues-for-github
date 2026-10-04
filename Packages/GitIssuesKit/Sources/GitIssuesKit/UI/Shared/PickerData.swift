@@ -68,28 +68,42 @@ enum PickerKind: Equatable {
 
     var staysOpen: Bool { self == .assignees || self == .labels }
 
+    var help: String {
+        switch self {
+        case .status: "Change status"
+        case .priority: "Change priority"
+        case .assignees: "Assign"
+        case .labels: "Change labels"
+        case .subIssues: "Sub-issues"
+        }
+    }
+
     var width: CGFloat { self == .subIssues ? 460 : 280 }
 }
 
 extension AppModel {
     func pickerItems(_ kind: PickerKind, for item: Item) -> [PickerItem] {
+        // With several issues picked, a value is checked when all of them have it.
+        let targets = targets(for: item)
         switch kind {
         case .status:
             return statusOptions(projectId: item.projectId).enumerated().map { index, option in
                 PickerItem(
-                    id: option.id, title: option.name, selected: item.statusId == option.id,
+                    id: option.id, title: option.name,
+                    selected: targets.allSatisfy { target in statusOption(of: target)?.name == option.name },
                     icon: AnyView(StatusIcon(glyph: glyph(projectId: item.projectId, optionId: option.id))),
                     shortcut: index < 9 ? "\(index + 1)" : nil
                 )
             }
         case .priority:
             let none = PickerItem(
-                id: "", title: "No priority", selected: item.priorityId == nil,
+                id: "", title: "No priority", selected: targets.allSatisfy { $0.priorityId == nil },
                 icon: AnyView(PriorityIcon(level: .none)), shortcut: "0"
             )
             return [none] + priorityOptions(projectId: item.projectId).enumerated().map { index, option in
                 PickerItem(
-                    id: option.id, title: option.name, selected: item.priorityId == option.id,
+                    id: option.id, title: option.name,
+                    selected: targets.allSatisfy { target in priorityOption(of: target)?.name == option.name },
                     icon: AnyView(PriorityIcon(level: option.priorityLevel)),
                     shortcut: index < 9 ? "\(index + 1)" : nil
                 )
@@ -98,7 +112,7 @@ extension AppModel {
             return people(for: item).map { person in
                 PickerItem(
                     id: person.id, title: person.login, subtitle: person.name,
-                    selected: item.assignees.contains { $0.id == person.id },
+                    selected: targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } },
                     icon: AnyView(Avatar(login: person.login, url: person.avatarUrl, size: 18))
                 )
             }
@@ -106,25 +120,71 @@ extension AppModel {
             return labels(for: item).map { label in
                 PickerItem(
                     id: label.id, title: label.name,
-                    selected: item.labels.contains { $0.id == label.id },
+                    selected: targets.allSatisfy { target in target.labels.contains { $0.name == label.name } },
                     icon: AnyView(Circle().fill(Theme.labelColor(label.color)).frame(width: 9, height: 9))
                 )
             }
         case .subIssues:
-            return subIssueItems(of: item).map { sub in
+            // Status, priority and assignee change in place, as in Linear; the rest of the row opens the issue.
+            let showsPriority = project(of: item)?.priorityFieldId != nil
+            let rows = subIssueItems(of: item).map { sub in
                 PickerItem(
                     id: sub.id, title: sub.title,
-                    icon: AnyView(StatusIcon(glyph: glyph(of: sub))),
+                    icon: AnyView(rowPart(.status, sub.id) { StatusIcon(glyph: glyph(of: sub)) }),
                     prefix: sub.displayNumber,
                     trailing: AnyView(HStack(spacing: 10) {
-                        PriorityIcon(level: priorityLevel(of: sub))
-                        Group {
-                            if sub.assignees.isEmpty { Color.clear } else { AvatarStack(people: sub.assignees) }
+                        if showsPriority {
+                            rowPart(.priority, sub.id) { PriorityIcon(level: priorityLevel(of: sub)) }
                         }
-                        .frame(width: 30, height: 18, alignment: .trailing)
+                        rowPart(.assignees, sub.id) {
+                            Group {
+                                if sub.assignees.isEmpty {
+                                    Image(systemName: "person.crop.circle.dashed")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Theme.textTertiary)
+                                } else {
+                                    AvatarStack(people: sub.assignees)
+                                }
+                            }
+                            .frame(minWidth: 18, minHeight: 18, alignment: .trailing)
+                        }
                     })
                 )
             }
+            guard item.kind == .issue else { return rows }
+            let add = PickerItem(
+                id: Self.newSubIssueId, title: "New sub-issue…",
+                icon: AnyView(Image(systemName: "plus").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary))
+            )
+            return rows + [add]
+        }
+    }
+
+    static let newSubIssueId = "new-sub-issue"
+
+    /// A part of a sub-issue row: on the Mac it opens its own picker, as in Linear; elsewhere it is only shown.
+    @ViewBuilder
+    private func rowPart<Content: View>(_ kind: PickerKind, _ itemId: String, @ViewBuilder _ content: () -> Content) -> some View {
+        #if os(macOS)
+        PartButton(kind: kind, itemId: itemId, label: content)
+        #else
+        content()
+        #endif
+    }
+
+    /// What a part of a card or list row shows on hover, as Linear names each value.
+    func tooltip(_ kind: PickerKind, for item: Item) -> String {
+        switch kind {
+        case .status:
+            return "Status: \(statusOption(of: item)?.name ?? "None")"
+        case .priority:
+            return "Priority: \(priorityOption(of: item)?.name ?? "None")"
+        case .assignees:
+            return item.assignees.isEmpty ? "Unassigned" : "Assigned to " + item.assignees.map(\.login).formatted(.list(type: .and))
+        case .labels:
+            return "Labels: " + item.labels.map(\.name).joined(separator: ", ")
+        case .subIssues:
+            return "\(item.subCompleted) of \(item.subTotal) sub-issues done"
         }
     }
 
@@ -135,21 +195,28 @@ extension AppModel {
     }
 
     func pick(_ kind: PickerKind, id: String, for item: Item) {
-        // Work with the latest copy: multi-select pickers stay open across several picks.
+        // Work with the latest copies: multi-select pickers stay open across several picks. With several issues
+        // picked, the change goes to all of them.
         let current = allItems.first { $0.id == item.id } ?? item
+        let targets = targets(for: current).map { target in allItems.first { $0.id == target.id } ?? target }
         switch kind {
         case .status:
             if let option = statusOptions(projectId: current.projectId).first(where: { $0.id == id }) {
-                withAnimation(Theme.spring) { setStatus(current, to: option) }
+                setStatus(of: targets, toOptionNamed: option.name, id: option.id)
             }
         case .priority:
-            setPriority(current, to: priorityOptions(projectId: current.projectId).first { $0.id == id })
+            let option = priorityOptions(projectId: current.projectId).first { $0.id == id }
+            setPriority(of: targets, toOptionNamed: option?.name, id: option?.id)
         case .assignees:
-            if let person = people(for: current).first(where: { $0.id == id }) { toggleAssignee(current, person) }
+            if let person = people(for: current).first(where: { $0.id == id }) { toggleAssignee(targets, person) }
         case .labels:
-            if let label = labels(for: current).first(where: { $0.id == id }) { toggleLabel(current, label) }
+            if let label = labels(for: current).first(where: { $0.id == id }) { toggleLabel(targets, named: label.name) }
         case .subIssues:
-            if let sub = allItems.first(where: { $0.id == id }) { open(sub) }
+            if id == Self.newSubIssueId {
+                overlay = .newIssue(statusId: nil, parentItemId: current.id)
+            } else if let sub = allItems.first(where: { $0.id == id }) {
+                open(sub)
+            }
         }
     }
 

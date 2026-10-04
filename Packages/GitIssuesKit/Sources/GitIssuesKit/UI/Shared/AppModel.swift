@@ -130,6 +130,12 @@ public final class AppModel {
     var confirmSignOutEverywhere = false
     /// Bumped when a list section is folded in or out, so the list redraws.
     var collapseVersion = 0
+    /// A new issue that was closed before it was created, kept for the next time the dialog opens.
+    @ObservationIgnored var unsentNewIssue: NewIssueDraft?
+    /// Projects tucked away in the sidebar. They can still be found in the command palette.
+    var hiddenProjectIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenProjects") ?? []) {
+        didSet { UserDefaults.standard.set(Array(hiddenProjectIds), forKey: "hiddenProjects") }
+    }
     var overlay: Overlay? {
         didSet {
             if overlay != nil, overlay != oldValue { overlayOpenedAt = Date() }
@@ -150,6 +156,13 @@ public final class AppModel {
     var dragCancelToken = 0
     /// Bumped when the keyboard moves the focus, so lists can scroll it into view.
     var focusScrollToken = 0
+    /// Issues picked to change together (X, ⌘-click, Shift-click).
+    var selectedIds: Set<String> = []
+    /// Where a Shift-click or Shift-arrow range starts, and the range it added last.
+    @ObservationIgnored var selectionAnchorId: String?
+    @ObservationIgnored var selectionRange: Set<String> = []
+    /// The issue shown in the quick look that Space opens.
+    var peekItemId: String?
 
     /// Comments and sub-issues of the issues on screen, one model per issue, with how many views show it.
     @ObservationIgnored private var details: [String: (model: IssueDetailModel, users: Int)] = [:]
@@ -634,7 +647,9 @@ public final class AppModel {
     private func restoreScope() {
         guard scope == nil, !projects.isEmpty else { return }
         let saved = UserDefaults.standard.string(forKey: "selectedProject")
-        let project = projects.first { $0.id == saved } ?? projects.first { !$0.closed } ?? projects.first
+        let project = projects.first { $0.id == saved }
+            ?? projects.first { !$0.closed && !hiddenProjectIds.contains($0.id) }
+            ?? projects.first { !$0.closed } ?? projects.first
         if let project { select(.project(project.id)) }
     }
 
@@ -642,6 +657,8 @@ public final class AppModel {
         scope = newScope
         openItemId = nil
         focusedItemId = nil
+        clearSelection()
+        peekItemId = nil
         if case .project(let id) = newScope {
             UserDefaults.standard.set(id, forKey: "selectedProject")
             setActiveProject(id)
@@ -656,10 +673,26 @@ public final class AppModel {
         Task { await engine.setActiveProject(id) }
     }
 
-    func open(_ item: Item) {
+    /// Opens an issue. Its comments and sub-issues load when its view appears (see `detailAppeared`).
+    /// `replacingHistory` is for moving to the next issue with J or K, which doesn't add a step to go back to.
+    func open(_ item: Item, replacingHistory: Bool = false) {
+        peekItemId = nil
         focusedItemId = item.id
         openItemId = item.id
-        recordNavigation()
+        recordNavigation(replacing: replacingHistory)
+    }
+
+    /// Back from the open issue, with its back button or Escape: to the issue it was opened from, such as the
+    /// parent of a sub-issue, or else to the board or list.
+    func leaveIssue() {
+        if historyIndex > 0, history.indices.contains(historyIndex) {
+            let previous = history[historyIndex - 1]
+            if previous.scope == scope, let id = previous.itemId, id != openItemId, allItems.contains(where: { $0.id == id }) {
+                goBack()
+                return
+            }
+        }
+        closeDetail()
     }
 
     func closeDetail() {

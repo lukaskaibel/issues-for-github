@@ -56,24 +56,11 @@ struct Sidebar: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
-                    ForEach(model.projects.filter { !$0.closed }) { project in
-                        Button {
-                            model.select(.project(project.id))
-                        } label: {
-                            HStack(spacing: 8) {
-                                ProjectSwatch(title: project.title)
-                                Text(project.title).lineLimit(1)
-                                Spacer(minLength: 0)
-                            }
-                            .font(model.scope == .project(project.id) ? .uiMedium : .ui)
-                            .foregroundStyle(model.scope == .project(project.id) ? Theme.text : Theme.textSecondary)
-                            .padding(.horizontal, 6)
-                            .frame(height: 28)
-                            .hoverFill(active: model.scope == .project(project.id))
-                        }
-                        .buttonStyle(PlainPressStyle())
-                        .help("\(project.ownerLogin) · \(project.title)")
+                    let open = model.projects.filter { !$0.closed }
+                    ForEach(open.filter { !model.hiddenProjectIds.contains($0.id) }) { project in
+                        ProjectRow(project: project, hidden: false)
                     }
+                    HiddenProjects(projects: open.filter { model.hiddenProjectIds.contains($0.id) })
                 }
             }
             .scrollIndicators(.never)
@@ -82,6 +69,82 @@ struct Sidebar: View {
         }
         .padding(.horizontal, 10)
         .padding(.bottom, 8)
+    }
+}
+
+/// One project in the sidebar. Right-click to hide it, copy its link or open it on GitHub.
+struct ProjectRow: View {
+    @Environment(AppModel.self) private var model
+    var project: Project
+    var hidden: Bool
+
+    var body: some View {
+        let active = model.scope == .project(project.id)
+        Button {
+            model.select(.project(project.id))
+        } label: {
+            HStack(spacing: 8) {
+                ProjectSwatch(title: project.title)
+                    .opacity(hidden ? 0.5 : 1)
+                Text(project.title).lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .font(active ? .uiMedium : .ui)
+            .foregroundStyle(active ? Theme.text : hidden ? Theme.textTertiary : Theme.textSecondary)
+            .padding(.horizontal, 6)
+            .frame(height: 28)
+            .hoverFill(active: active)
+        }
+        .buttonStyle(PlainPressStyle())
+        .help("\(project.ownerLogin) · \(project.title)")
+        .contextMenu {
+            if hidden {
+                Button("Show in Sidebar", systemImage: "eye") { model.setHidden(project, false) }
+            } else {
+                Button("Hide from Sidebar", systemImage: "eye.slash") { model.setHidden(project, true) }
+            }
+            Divider()
+            Button("Copy Link", systemImage: "link") { model.copyLink(project.url, for: project.title) }
+            Button("Open on GitHub", systemImage: "arrow.up.right.square") {
+                if let url = URL(string: project.url) { NSWorkspace.shared.open(url) }
+            }
+        }
+        .transition(.opacity)
+    }
+}
+
+/// Hidden projects fold away under one quiet line at the end of the list.
+struct HiddenProjects: View {
+    var projects: [Project]
+    @State var expanded = false
+
+    var body: some View {
+        if !projects.isEmpty {
+            Button {
+                withAnimation(Theme.spring) { expanded.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
+                        .rotationEffect(.degrees(expanded ? 90 : 0))
+                        .frame(width: 14)
+                    Text("\(projects.count) hidden")
+                    Spacer(minLength: 0)
+                }
+                .font(.small)
+                .foregroundStyle(Theme.textTertiary)
+                .padding(.horizontal, 6)
+                .frame(height: 26)
+                .hoverFill()
+            }
+            .buttonStyle(PlainPressStyle())
+            .help(expanded ? "Fold hidden projects away" : "Show hidden projects")
+            if expanded {
+                ForEach(projects) { project in
+                    ProjectRow(project: project, hidden: true)
+                }
+            }
+        }
     }
 }
 

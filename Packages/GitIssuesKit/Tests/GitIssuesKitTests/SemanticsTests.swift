@@ -38,3 +38,30 @@ struct SemanticsTests {
         #expect(prefix > scattered)
     }
 }
+
+@Suite("Branch names copied for an issue")
+struct BranchNameTests {
+    private func item(_ number: Int?, _ title: String) -> Item {
+        Item(id: "PVTI_1", projectId: "PVT_1", kind: .issue, position: 0, number: number, title: title, body: "", state: "OPEN")
+    }
+
+    @Test(arguments: [
+        ("Sign in with GitHub device flow", "14-sign-in-with-github-device-flow"),
+        ("Fix: Zurückziehen von Antworten!", "14-fix-zuruckziehen-von-antworten"),
+        ("  --Leading and trailing--  ", "14-leading-and-trailing"),
+        ("🚀", "14"),
+    ])
+    func followsGitHub(title: String, expected: String) {
+        #expect(item(14, title).branchName == expected)
+    }
+
+    @Test func staysShort() {
+        let name = item(7, String(repeating: "word ", count: 40)).branchName ?? ""
+        #expect(name.count <= 62)
+        #expect(!name.hasSuffix("-"))
+    }
+
+    @Test func draftsHaveNone() {
+        #expect(item(nil, "A draft").branchName == nil)
+    }
+}

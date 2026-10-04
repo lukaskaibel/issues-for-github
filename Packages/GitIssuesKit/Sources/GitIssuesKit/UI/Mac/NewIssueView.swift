@@ -8,6 +8,9 @@ struct NewIssueView: View {
 
     @State private var draft = NewIssueDraft(projectId: "")
     @State private var openPicker: PickerKind?
+    /// Whether this is a draft from last time, which can be thrown away to start over.
+    @State private var restored = false
+    @State private var created = false
     @FocusState private var focus: Field?
 
     private enum Field {
@@ -32,6 +35,18 @@ struct NewIssueView: View {
                 Text("›").foregroundStyle(Theme.textTertiary)
                 Text(draft.parent == nil ? "New issue" : "New sub-issue").font(.small).foregroundStyle(Theme.textSecondary)
                 Spacer()
+                if restored {
+                    // Closing the dialog keeps what was typed, as in Linear; this starts over instead.
+                    Button("Discard draft") {
+                        model.unsentNewIssue = nil
+                        prepare()
+                        focus = .title
+                    }
+                    .buttonStyle(PlainPressStyle())
+                    .font(.small)
+                    .foregroundStyle(Theme.textSecondary)
+                    .padding(.trailing, 4)
+                }
                 IconButton(systemName: "xmark", label: "Close (Esc)") { model.overlay = nil }
             }
             .padding(.leading, 18)
@@ -148,6 +163,12 @@ struct NewIssueView: View {
         .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
         .shadow(color: Theme.shadow, radius: 40, y: 24)
         .onAppear(perform: prepare)
+        .onDisappear {
+            guard !created else { return }
+            let typed = !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || !draft.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            model.unsentNewIssue = typed ? draft : nil
+        }
         .task {
             try? await Task.sleep(for: .milliseconds(300))
             if focus == nil { focus = .title }
@@ -166,6 +187,15 @@ struct NewIssueView: View {
     private func prepare() {
         let parent = parentItemId.flatMap { id in model.allItems.first { $0.id == id } }
         let projectId = parent?.projectId ?? model.currentProjectId ?? model.projects.first { !$0.closed }?.id ?? ""
+        if let unsent = model.unsentNewIssue, unsent.projectId == projectId, unsent.parent?.id == parent?.id {
+            draft = unsent
+            if let statusId { draft.statusId = statusId }
+            restored = true
+            focus = .title
+            model.loadRepoMeta(projectId: projectId)
+            return
+        }
+        restored = false
         var new = NewIssueDraft(projectId: projectId)
         new.parent = parent
         // A sub-issue lives in its parent's repository.
@@ -190,6 +220,8 @@ struct NewIssueView: View {
     private func create() {
         guard canCreate else { return }
         if model.createIssue(draft) != nil {
+            created = true
+            model.unsentNewIssue = nil
             model.overlay = nil
         }
     }

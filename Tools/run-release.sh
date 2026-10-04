@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-app=build/DerivedData/Build/Products/Release/GitIssues.app
+app=build/DerivedData/Build/Products/Release/Issues.app
 bundle_id=$(xcodebuild -project GitIssues.xcodeproj -scheme GitIssues -configuration Release -showBuildSettings 2>/dev/null \
   | awk -F' = ' '/ PRODUCT_BUNDLE_IDENTIFIER = / { print $2; exit }')
 

@@ -100,21 +100,56 @@ extension AppModel {
         }
         if let responder = NSApp.keyWindow?.firstResponder, responder is NSTextView { return false }
         // ⌘⌫ deletes the issue in focus, as in Linear. Inside a text field it keeps deleting text.
-        if modifiers == .command, event.keyCode == 51, let item = targetItem {
+        if modifiers == .command, event.keyCode == 51, let item = actionItem, targets(for: item).count == 1 {
             requestDelete(item)
+            return true
+        }
+        let key = event.charactersIgnoringModifiers?.lowercased() ?? ""
+        // ⌘A picks every issue on screen.
+        if modifiers == .command, key == "a", openItem == nil, !orderedItems.isEmpty {
+            selectAll()
             return true
         }
         guard modifiers.isEmpty else { return false }
 
+        // Escape steps back one layer at a time: the peek, then the open issue, then the selection.
         if isEscape {
+            if peekItemId != nil {
+                togglePeek()
+                return true
+            }
             if openItem != nil {
-                closeDetail()
+                leaveIssue()
+                return true
+            }
+            if !selectedIds.isEmpty {
+                clearSelection()
                 return true
             }
             return false
         }
 
-        let key = event.charactersIgnoringModifiers?.lowercased() ?? ""
+        if openItem == nil {
+            // Space peeks at the issue under the pointer or focus, and closes the peek again.
+            if event.keyCode == 49 {
+                togglePeek()
+                return true
+            }
+            // X picks the issue, or puts it back.
+            if key == "x", let item = targetItem {
+                toggleSelection(item)
+                return true
+            }
+            // Shift with the arrows or J/K picks a run of issues while moving.
+            let shift = event.modifierFlags.contains(.shift)
+            let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key]
+            if shift, let delta {
+                if selectedIds.isEmpty, let start = targetItem { toggleSelection(start) }
+                if viewMode == .board, currentProjectId != nil { stepWithinColumn(delta) } else { step(delta) }
+                if let id = focusedItemId, let item = scopedItems.first(where: { $0.id == id }) { extendSelection(to: item) }
+                return true
+            }
+        }
 
         // Two-key "go to" sequences: G then B, L, M or P.
         if let started = pendingGoTo, Date().timeIntervalSince(started) < 1.2 {
@@ -155,7 +190,7 @@ extension AppModel {
             stepColumn(1)
             return viewMode == .board && openItem == nil
         case 36: // return
-            if openItem == nil, let item = targetItem {
+            if openItem == nil, let item = peekItem ?? targetItem {
                 open(item)
                 return true
             }
@@ -185,7 +220,8 @@ extension AppModel {
             break
         }
 
-        guard let item = targetItem else { return false }
+        // With issues picked, these act on all of them.
+        guard let item = actionItem else { return false }
         switch key {
         case "s":
             overlay = .palette(.status(itemId: item.id))
@@ -199,8 +235,8 @@ extension AppModel {
             guard item.kind != .draft else { return false }
             overlay = .palette(.labels(itemId: item.id))
         case "i":
-            guard item.kind != .draft, let viewer else { return false }
-            toggleAssignee(item, viewer.person)
+            guard item.kind != .draft, viewer != nil else { return false }
+            toggleAssignMe(targets(for: item))
         default:
             return false
         }

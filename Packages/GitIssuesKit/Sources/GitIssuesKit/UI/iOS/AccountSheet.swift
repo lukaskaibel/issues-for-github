@@ -113,8 +113,8 @@ struct AccountSheet: View {
     private var footer: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
         return model.isDemo
-            ? "Git Issues \(version)"
-            : "Git Issues \(version) · Your login is kept in iCloud Keychain and only sent to api.github.com."
+            ? "Issues \(version)"
+            : "Issues \(version) · Your login is kept in iCloud Keychain and only sent to api.github.com."
     }
 }
 

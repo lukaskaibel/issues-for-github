@@ -1,6 +1,6 @@
 # Privacy
 
-Git Issues is a client for GitHub. It has no server, no accounts of its own, no analytics and no advertising, and it
+Issues is a client for GitHub. It has no server, no accounts of its own, no analytics and no advertising, and it
 collects nothing about you.
 
 ## What the app stores, and where

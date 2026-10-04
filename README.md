@@ -1,11 +1,11 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="Design/icon-dark.png">
-    <img src="Design/icon.png" width="128" height="128" alt="Git Issues app icon">
+    <img src="Design/icon.png" width="128" height="128" alt="Issues app icon">
   </picture>
 </p>
 
-<h1 align="center">Git Issues</h1>
+<h1 align="center">Issues</h1>
 
 <p align="center">
   A fast, native app for GitHub Issues on Mac, iPhone and iPad, with the board, keyboard flow and polish of Linear.<br>
@@ -23,18 +23,18 @@
 
 ![The board, dark appearance](Design/screenshots/board-dark.png)
 
-> **New: Git Issues for iPhone and iPad.** The same app, built from the same project, with the same sync, offline
+> **New: Issues for iPhone and iPad.** The same app, built from the same project, with the same sync, offline
 > queue and actions: lists with swipes and the issue menu on iPhone, the board with drag and drop on iPad.
 > [See it below.](#iphone-and-ipad)
 
 > **Status: early.** Version 0.1.0 covers the daily work of moving, editing and creating issues on the Mac; the
 > iPhone and iPad app comes with 0.2.0. There are no downloadable builds yet; you build it from source (five minutes,
-> see below). "Git Issues" is a working title.
+> see below).
 
 ## Why
 
 GitHub Issues holds the data most teams already have. Its interface is slow to drive: every status change is a
-page load and a menu. Git Issues puts a native, keyboard-first front end on the same data. It reads and writes
+page load and a menu. This app puts a native, keyboard-first front end on the same data. It reads and writes
 GitHub Projects, issues, sub-issues, labels, assignees and comments, and stores nothing anywhere else.
 
 ## What it does
@@ -89,7 +89,7 @@ The interface uses the system's own parts.
   Nothing there is sent anywhere.
 - **In the background:** changes made just before locking the phone are still sent, and iOS refreshes the app now and
   then so it opens up to date. There are no push notifications: GitHub can't push to an app without a server of its
-  own, which Git Issues deliberately doesn't have.
+  own, which Issues deliberately doesn't have.
 
 ## How it maps to GitHub
 
@@ -131,8 +131,8 @@ When you and someone else change the same issue:
 ### Build and run
 
 ```bash
-git clone https://github.com/lukaskaibel/git-issues-mac-app.git
-cd git-issues-mac-app
+git clone https://github.com/lukaskaibel/issues-for-github.git
+cd issues-for-github
 open GitIssues.xcodeproj
 ```
 
@@ -195,22 +195,32 @@ Hover an issue or move to it with the arrow keys, then:
 | `S` `P` `A` `L` | Change status, priority, assignee, labels |
 | `I` | Assign to me, or unassign |
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
-| `Return` | Open the issue; `Esc` goes back |
+| `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
+| `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
+| `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
 | `G` then `B` / `L` / `M` / `P` | Go to board, list, My Issues, or switch project |
 | `⌘1` `⌘2` `⌘3` | Board, list, My Issues |
 | `⌘↵` | Save a description, send a comment, create the issue |
 | `⌘⇧C` / `⌘⇧O` | Copy the issue's GitHub link / open it on GitHub |
+| `⌘⇧.` | Copy a branch name for the issue, as GitHub suggests it |
 | `⌘⌫` | Delete the issue (asks first; needs admin rights in the repository) |
 | `⌘R` | Sync with GitHub now |
 | `⌘,` | Settings: light, dark or system appearance, and the app icon |
 
 Click an issue's priority, status, labels, assignees or sub-issue count to change it in place, or right-click
-it for everything at once. In the list, click a section header to fold it.
+it for everything at once. The sub-issue count lists the sub-issues, whose status, priority and assignee change
+right there too. In the list, click a section header to fold it; Option-click folds them all.
 
 On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. Drag a column by its
-header to reorder it, hover the header for its menu (rename, colour, delete), and use **Add column** at the right
-end of the board.
+header to reorder it, double-click its name to rename it, right-click it for its menu (rename, colour, delete), and
+use **Add column** at the right end of the board.
+
+To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
+Shift-click. A bar at the bottom then sets status, priority, assignee or labels for all of them, and so do the
+usual keys, dropdowns and right-click menu. `Esc` clears the pick.
+
+Right-click a project in the sidebar to hide it; hidden projects wait, folded away, at the end of the list.
 
 ## Using it on iPhone and iPad
 
@@ -284,7 +294,7 @@ Built with [GRDB](https://github.com/groue/GRDB.swift) and
 [MarkdownUI](https://github.com/gonzalezreal/swift-markdown-ui). The interaction design is inspired by
 [Linear](https://linear.app).
 
-Git Issues is an independent project and is not affiliated with, endorsed by, or sponsored by GitHub or Linear.
+Issues is an independent project and is not affiliated with, endorsed by, or sponsored by GitHub or Linear.
 
 ## License
 

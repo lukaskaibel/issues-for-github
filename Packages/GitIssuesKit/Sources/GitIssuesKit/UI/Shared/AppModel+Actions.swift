@@ -296,6 +296,19 @@ extension AppModel {
         }
     }
 
+    /// Hides a project from the sidebar or brings it back. Hiding the one on screen moves to the next.
+    func setHidden(_ project: Project, _ hidden: Bool) {
+        withAnimation(Theme.spring) {
+            if hidden { hiddenProjectIds.insert(project.id) } else { hiddenProjectIds.remove(project.id) }
+        }
+        guard hidden, scope == .project(project.id) else { return }
+        if let next = projects.first(where: { !$0.closed && !hiddenProjectIds.contains($0.id) }) {
+            select(.project(next.id))
+        } else {
+            select(.myIssues)
+        }
+    }
+
     /// Sections folded in, in the list. Kept per project on this device.
     func isSectionCollapsed(_ id: String, in scope: Scope? = nil) -> Bool {
         _ = collapseVersion
@@ -308,6 +321,14 @@ extension AppModel {
         var folded = Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
         if folded.contains(id) { folded.remove(id) } else { folded.insert(id) }
         UserDefaults.standard.set(Array(folded), forKey: key)
+        collapseVersion += 1
+    }
+
+    /// Option-click on a header, as in Finder: folds every section in or out, following the one clicked.
+    func toggleAllSections(like id: String) {
+        guard let key = collapsedKey(nil) else { return }
+        let fold = !isSectionCollapsed(id)
+        UserDefaults.standard.set(fold ? sections.map(\.id) : [], forKey: key)
         collapseVersion += 1
     }
 
@@ -331,6 +352,13 @@ extension AppModel {
     func copyLink(_ item: Item) {
         guard let url = item.url else { return }
         copyLink(url, for: "\(item.displayNumber) \(item.title)")
+    }
+
+    /// Linear's ⌘⇧. copies a branch name for the issue; this copies the one GitHub suggests.
+    func copyBranchName(_ item: Item) {
+        guard let name = item.branchName else { return }
+        Platform.copy(name)
+        status.post(Notice(title: "Branch name copied", message: name))
     }
 
     func copyLink(_ url: String, for label: String) {

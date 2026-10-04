@@ -42,7 +42,7 @@ struct IssueDetailView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            IconButton(systemName: "chevron.left", label: "Back (Esc)") { model.closeDetail() }
+            IconButton(systemName: "chevron.left", label: "Back (Esc)") { model.leaveIssue() }
             if let project = model.project(of: item) {
                 Button {
                     model.closeDetail()
@@ -53,6 +53,25 @@ struct IssueDetailView: View {
                     }
                 }
                 .buttonStyle(PlainPressStyle())
+                Text("›").foregroundStyle(Theme.textTertiary)
+            }
+            if let parentNumber = item.parentNumber {
+                // A sub-issue shows its parent on the way, as in Linear; clicking it goes up.
+                let parent = item.parentId.flatMap { model.item(contentId: $0) }
+                Button {
+                    if let parent { model.open(parent) }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("#\(parentNumber)").monospacedDigit().foregroundStyle(Theme.textTertiary)
+                        if let title = item.parentTitle {
+                            Text(title).foregroundStyle(Theme.textSecondary).lineLimit(1).truncationMode(.tail)
+                        }
+                    }
+                    .frame(maxWidth: 260, alignment: .leading)
+                }
+                .buttonStyle(PlainPressStyle())
+                .disabled(parent == nil)
+                .help(parent == nil ? "The parent issue isn't on this board" : "Open the parent issue")
                 Text("›").foregroundStyle(Theme.textTertiary)
             }
             Text(item.displayNumber).font(.uiSemibold).monospacedDigit()
@@ -71,6 +90,12 @@ struct IssueDetailView: View {
                 IconButton(systemName: "chevron.down", label: "Next issue (J)") { model.step(1) }
             }
             if item.url != nil {
+                // As in Linear's issue header: the link and the branch name, a click away.
+                IconButton(systemName: "link", label: "Copy link (⌘⇧C)") { model.copyLink(item) }
+                    .padding(.leading, 6)
+                if item.number != nil {
+                    IconButton(systemName: "arrow.triangle.branch", label: "Copy branch name (⌘⇧.)") { model.copyBranchName(item) }
+                }
                 Button {
                     model.openOnGitHub(item)
                 } label: {
@@ -263,7 +288,9 @@ private struct SubIssueRow: View {
             if showsPriority {
                 Group {
                     if let boardItem {
-                        PriorityIcon(level: model.priorityLevel(of: boardItem))
+                        PartButton(kind: .priority, itemId: boardItem.id) {
+                            PriorityIcon(level: model.priorityLevel(of: boardItem))
+                        }
                     } else {
                         // Priority is a field of the project, so a sub-issue that isn't on the board has none.
                         Color.clear
@@ -276,14 +303,22 @@ private struct SubIssueRow: View {
                 .monospacedDigit()
                 .foregroundStyle(Theme.textTertiary)
                 .frame(width: 36, alignment: .leading)
-            Button {
-                withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
-            } label: {
-                StatusIcon(glyph: glyph(boardItem))
+            if let boardItem {
+                // On the board it has a status column; pick one, as on its card.
+                PartButton(kind: .status, itemId: boardItem.id) {
+                    StatusIcon(glyph: glyph(boardItem))
+                }
+            } else {
+                // Elsewhere it is only open or closed.
+                Button {
+                    withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
+                } label: {
+                    StatusIcon(glyph: glyph(boardItem))
+                }
+                .buttonStyle(PlainPressStyle())
+                .help(sub.isClosed ? "Reopen" : "Mark as done")
+                .accessibilityLabel(sub.isClosed ? "Reopen sub-issue" : "Mark sub-issue as done")
             }
-            .buttonStyle(PlainPressStyle())
-            .help(sub.isClosed ? "Reopen" : "Mark as done")
-            .accessibilityLabel(sub.isClosed ? "Reopen sub-issue" : "Mark sub-issue as done")
 
             Text(sub.title)
                 .foregroundStyle(sub.isClosed ? Theme.textSecondary : Theme.text)
@@ -295,7 +330,18 @@ private struct SubIssueRow: View {
                     .foregroundStyle(Theme.textTertiary)
                     .help("Not on this board; opens on GitHub")
             }
-            if !sub.assignees.isEmpty {
+            if let boardItem {
+                PartButton(kind: .assignees, itemId: boardItem.id) {
+                    if boardItem.assignees.isEmpty {
+                        Image(systemName: "person.crop.circle.dashed")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Theme.textTertiary)
+                            .opacity(hovering ? 1 : 0)
+                    } else {
+                        AvatarStack(people: boardItem.assignees)
+                    }
+                }
+            } else if !sub.assignees.isEmpty {
                 AvatarStack(people: sub.assignees)
             }
         }
@@ -498,8 +544,9 @@ private struct PropertiesPanel: View {
             }
             if let parentNumber = item.parentNumber {
                 row("Parent") {
+                    let parent = item.parentId.flatMap { model.item(contentId: $0) }
                     Button {
-                        if let parentId = item.parentId, let parent = model.item(contentId: parentId) { model.open(parent) }
+                        if let parent { model.open(parent) }
                     } label: {
                         Text("#\(parentNumber) \(item.parentTitle ?? "")")
                             .lineLimit(1)
@@ -508,6 +555,8 @@ private struct PropertiesPanel: View {
                             .hoverFill()
                     }
                     .buttonStyle(PlainPressStyle())
+                    .disabled(parent == nil)
+                    .help(parent == nil ? "The parent issue isn't on this board" : "Open the parent issue")
                 }
             }
             if let created = item.createdAt {
