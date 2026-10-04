@@ -140,6 +140,13 @@ public final class AppModel {
     var dragCancelToken = 0
     /// Bumped when the keyboard moves the focus, so lists can scroll it into view.
     var focusScrollToken = 0
+    /// Issues picked to change together (X, ⌘-click, Shift-click).
+    var selectedIds: Set<String> = []
+    /// Where a Shift-click or Shift-arrow range starts, and the range it added last.
+    @ObservationIgnored var selectionAnchorId: String?
+    @ObservationIgnored var selectionRange: Set<String> = []
+    /// The issue shown in the quick look that Space opens.
+    var peekItemId: String?
 
     @ObservationIgnored private var dataObservation: AnyDatabaseCancellable?
     @ObservationIgnored private var detailObservation: AnyDatabaseCancellable?
@@ -510,6 +517,8 @@ public final class AppModel {
         scope = newScope
         openItemId = nil
         focusedItemId = nil
+        clearSelection()
+        peekItemId = nil
         observeDetail(contentId: nil)
         if case .project(let id) = newScope {
             UserDefaults.standard.set(id, forKey: "selectedProject")
@@ -521,6 +530,7 @@ public final class AppModel {
     }
 
     func open(_ item: Item, replacingHistory: Bool = false) {
+        peekItemId = nil
         focusedItemId = item.id
         openItemId = item.id
         recordNavigation(replacing: replacingHistory)

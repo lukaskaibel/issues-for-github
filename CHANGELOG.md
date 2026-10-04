@@ -8,6 +8,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Change several issues at once, as in Linear. Pick them with X, the checkbox at the start of a list row,
+  ⌘-click or Shift-click (Shift with the arrows or J/K picks a run, ⌘A picks everything on screen). A bar at the
+  bottom sets status, priority, assignee and labels for all of them; S, P, A, L, I, the command palette and the
+  right-click menu act on all of them too, with checkmarks for the values they share. Escape clears the pick.
+- Space peeks at the issue under the pointer or keyboard focus in a panel beside the board or list: title,
+  status, priority, assignees, labels and description, each changeable in place. J and K move the peek along,
+  Return opens the issue, Space or Escape puts it away. The right-click menu has Peek too.
 - Clicking an issue's priority, status, labels, assignees or sub-issue count, on a card or in the list, opens a
   dropdown right there, as in Linear: the search field has focus, number keys pick, and the current value is
   checked. The sub-issue count lists the sub-issues and opens the one you pick. The parts light up on hover.
@@ -45,6 +52,8 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- List rows start a little further in, so the checkbox has its place under the section headers' fold arrow and
+  the priority lines up with the headers' status icon. Stepping with J/K skips folded sections.
 - Parts of cards and list rows light up in a shape that suits them, as in Linear: a small square behind an icon,
   a round halo around avatars (with a dashed placeholder where an unassigned issue's avatar would be), and chips
   brighten in their own outline instead of getting a box behind them.

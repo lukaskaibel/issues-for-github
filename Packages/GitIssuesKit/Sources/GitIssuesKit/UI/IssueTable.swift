@@ -11,6 +11,10 @@ struct IssueRowModel: Equatable {
     var showsStatus = true
     /// Shown in "My Issues", where rows come from several projects.
     var projectTitle: String?
+    /// Picked for a change to several issues at once, and whether anything is picked, which shows every
+    /// row's checkbox.
+    var selected = false
+    var selecting = false
 }
 
 struct IssueSectionModel: Equatable {
@@ -74,7 +78,8 @@ struct IssueTable: NSViewRepresentable {
         scroll.autohidesScrollers = true
         scroll.automaticallyAdjustsContentInsets = false
         // No top inset: the list ends cleanly at the top edge, under the sticky header.
-        scroll.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: 40, right: 0)
+        // Room at the end for the selection bar, so the last row can scroll clear of it.
+        scroll.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: 76, right: 0)
         scroll.contentView.postsBoundsChangedNotifications = true
         NotificationCenter.default.addObserver(
             context.coordinator, selector: #selector(Coordinator.scrolled(_:)),
@@ -374,6 +379,14 @@ struct IssueTable: NSViewRepresentable {
                 return
             }
             guard let item = item(at: row) else { return }
+            // ⌘- and Shift-clicks pick issues, as does a click on the checkbox at the start of the row.
+            if model.handleSelectionClick(on: item) { return }
+            if let event = NSApp.currentEvent,
+               let cell = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell,
+               cell.checkboxRect.contains(cell.convert(event.locationInWindow, from: nil)) {
+                model.toggleSelection(item)
+                return
+            }
             if let event = NSApp.currentEvent,
                let cell = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell,
                let part = cell.part(at: cell.convert(event.locationInWindow, from: nil)) {
@@ -528,6 +541,11 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         parts.first { $0.rect.insetBy(dx: -3, dy: -4).contains(point) }
     }
 
+    /// The start of the row, where the checkbox shows: a click there picks the issue.
+    var checkboxRect: NSRect {
+        NSRect(x: IssueTable.inset, y: 0, width: 22, height: bounds.height)
+    }
+
     override var isFlipped: Bool { true }
 
     override init(frame: NSRect) {
@@ -604,9 +622,16 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         let size = bounds.size
         let midY = size.height / 2
 
-        if highlighted {
+        if row.selected {
+            NSColor(Theme.selectionFill).setFill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 7, yRadius: 7).fill()
+        } else if highlighted {
             NSColor(Theme.selected).setFill()
             NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 7, yRadius: 7).fill()
+        }
+        // The checkbox sits under the section headers' fold arrow; it shows on hover and while picking.
+        if row.selected || row.selecting || highlighted {
+            drawCheckbox(checked: row.selected, center: NSPoint(x: IssueTable.inset + 15, y: midY))
         }
         // Each part lights up in a shape that suits it, as in Linear: a small square behind an icon, a halo
         // around avatars, and chips in their own outline.
@@ -618,8 +643,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         var parts: [(kind: PickerKind, rect: NSRect)] = []
         let canEditFields = row.item.kind != .draft
 
-        // Left to right: priority, number, status.
-        var x: CGFloat = IssueTable.inset + 14
+        // Left to right: priority, number, status. The priority lines up with the headers' status icon.
+        var x: CGFloat = IssueTable.inset + 28
         if row.showsPriority {
             let rect = NSRect(x: x, y: midY - 7, width: 14, height: 14)
             parts.append((.priority, rect))
@@ -639,7 +664,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
         // Right to left: assignees, date, project, labels.
         var right = size.width - IssueTable.inset - 14
-        var avatarRing = NSColor(highlighted ? Theme.selected : Theme.panel)
+        var avatarRing = NSColor(row.selected ? Theme.selectionFill : highlighted ? Theme.selected : Theme.panel)
         if canEditFields {
             let count = CGFloat(max(min(row.item.assignees.count, 3), 1))
             let width = 18 + (count - 1) * 13
@@ -739,6 +764,28 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             return text
         }
         return ""
+    }
+
+    private func drawCheckbox(checked: Bool, center: NSPoint) {
+        let box = NSRect(x: center.x - 7, y: center.y - 7, width: 14, height: 14)
+        let shape = NSBezierPath(roundedRect: box.insetBy(dx: checked ? 0 : 0.6, dy: checked ? 0 : 0.6), xRadius: 4, yRadius: 4)
+        if checked {
+            NSColor(Theme.accentFill).setFill()
+            shape.fill()
+            let mark = NSBezierPath()
+            mark.move(to: NSPoint(x: box.minX + 3.6, y: box.midY + 0.2))
+            mark.line(to: NSPoint(x: box.minX + 6, y: box.midY + 2.6))
+            mark.line(to: NSPoint(x: box.maxX - 3.4, y: box.midY - 2.6))
+            mark.lineWidth = 1.7
+            mark.lineCapStyle = .round
+            mark.lineJoinStyle = .round
+            NSColor.white.setStroke()
+            mark.stroke()
+        } else {
+            shape.lineWidth = 1.2
+            NSColor(Theme.textTertiary).setStroke()
+            shape.stroke()
+        }
     }
 
     private func drawChip(_ rect: NSRect, hovered: Bool) {
@@ -995,13 +1042,22 @@ struct ItemMenuBuilder {
         // Keep the enabled states set here instead of AppKit's automatic ones.
         menu.autoenablesItems = false
         model.loadRepoMeta(projectId: item.projectId)
+        // On a picked issue, the menu acts on everything picked; checkmarks show values they all share.
+        let targets = model.targets(for: item)
+        let several = targets.count > 1
+        if several {
+            let title = NSMenuItem(title: "\(targets.count) issues", action: nil, keyEquivalent: "")
+            title.isEnabled = false
+            menu.addItem(title)
+        }
 
         let statuses = model.statusOptions(projectId: item.projectId)
         if !statuses.isEmpty {
             let status = NSMenu()
             for (index, option) in statuses.enumerated() {
-                let entry = ClosureMenuItem(option.name, checked: item.statusId == option.id) { [model, item] in
-                    model.setStatus(item, to: option)
+                let checked = targets.allSatisfy { model.statusOption(of: $0)?.name == option.name }
+                let entry = ClosureMenuItem(option.name, checked: checked) { [model, item] in
+                    model.pick(.status, id: option.id, for: item)
                 }
                 entry.image = MenuIcons.status(model.glyph(projectId: item.projectId, optionId: option.id))
                 number(entry, index + 1)
@@ -1013,15 +1069,16 @@ struct ItemMenuBuilder {
         let priorities = model.priorityOptions(projectId: item.projectId)
         if !priorities.isEmpty {
             let priority = NSMenu()
-            let none = ClosureMenuItem("No priority", checked: item.priorityId == nil) { [model, item] in
-                model.setPriority(item, to: nil)
+            let none = ClosureMenuItem("No priority", checked: targets.allSatisfy { $0.priorityId == nil }) { [model, item] in
+                model.pick(.priority, id: "", for: item)
             }
             none.image = MenuIcons.priority(.none)
             number(none, 0)
             priority.addItem(none)
             for (index, option) in priorities.enumerated() {
-                let entry = ClosureMenuItem(option.name, checked: item.priorityId == option.id) { [model, item] in
-                    model.setPriority(item, to: option)
+                let checked = targets.allSatisfy { model.priorityOption(of: $0)?.name == option.name }
+                let entry = ClosureMenuItem(option.name, checked: checked) { [model, item] in
+                    model.pick(.priority, id: option.id, for: item)
                 }
                 entry.image = MenuIcons.priority(option.priorityLevel)
                 number(entry, index + 1)
@@ -1034,8 +1091,9 @@ struct ItemMenuBuilder {
             let people = NSMenu()
             people.autoenablesItems = false
             for person in model.people(for: item) {
-                let entry = ClosureMenuItem(person.login, checked: item.assignees.contains { $0.id == person.id }) { [model, item] in
-                    model.toggleAssignee(item, person)
+                let checked = targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } }
+                let entry = ClosureMenuItem(person.login, checked: checked) { [model, item] in
+                    model.pick(.assignees, id: person.id, for: item)
                 }
                 entry.image = MenuIcons.avatar(person)
                 people.addItem(entry)
@@ -1045,8 +1103,9 @@ struct ItemMenuBuilder {
 
             let labels = NSMenu()
             for label in model.labels(for: item) {
-                let entry = ClosureMenuItem(label.name, checked: item.labels.contains { $0.id == label.id }) { [model, item] in
-                    model.toggleLabel(item, label)
+                let checked = targets.allSatisfy { target in target.labels.contains { $0.name == label.name } }
+                let entry = ClosureMenuItem(label.name, checked: checked) { [model, item] in
+                    model.pick(.labels, id: label.id, for: item)
                 }
                 entry.image = MenuIcons.labelDot(label.color)
                 labels.addItem(entry)
@@ -1059,9 +1118,9 @@ struct ItemMenuBuilder {
             menu.addItem(submenu("Labels", MenuIcons.symbol("tag"), labels))
 
             if let viewer = model.viewer {
-                let mine = item.assignees.contains { $0.id == viewer.id }
-                let assignMe = ClosureMenuItem(mine ? "Unassign Me" : "Assign to Me") { [model, item] in
-                    model.toggleAssignee(item, viewer.person)
+                let mine = targets.allSatisfy { target in target.assignees.contains { $0.id == viewer.id } }
+                let assignMe = ClosureMenuItem(mine ? "Unassign Me" : "Assign to Me") { [model] in
+                    model.toggleAssignMe(targets)
                 }
                 assignMe.image = MenuIcons.symbol(mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
                 hint(assignMe, "i")
@@ -1070,9 +1129,28 @@ struct ItemMenuBuilder {
         }
 
         menu.addItem(.separator())
+        if several {
+            if targets.contains(where: { $0.url != nil }) {
+                let copy = ClosureMenuItem("Copy Links") { [model] in model.copyLinks(targets) }
+                copy.image = MenuIcons.symbol("link")
+                menu.addItem(copy)
+            }
+            let clear = ClosureMenuItem("Clear Selection") { [model] in model.clearSelection() }
+            clear.image = MenuIcons.symbol("xmark.circle")
+            menu.addItem(clear)
+            showImages(in: menu)
+            return menu
+        }
         let open = ClosureMenuItem("Open") { [model, item] in model.open(item) }
         open.image = MenuIcons.symbol("arrow.up.left.and.arrow.down.right")
         menu.addItem(open)
+        let peek = ClosureMenuItem("Peek") { [model, item] in
+            model.hoveredItemId = item.id
+            if model.peekItemId != nil { model.followPeek(to: item.id) } else { model.togglePeek() }
+        }
+        peek.image = MenuIcons.symbol("eye")
+        hint(peek, " ")
+        menu.addItem(peek)
         if item.url != nil {
             let copy = ClosureMenuItem("Copy Link") { [model, item] in model.copyLink(item) }
             copy.image = MenuIcons.symbol("link")

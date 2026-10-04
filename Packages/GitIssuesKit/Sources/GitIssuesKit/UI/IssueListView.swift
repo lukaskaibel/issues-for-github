@@ -20,7 +20,9 @@ struct IssueListView: View {
                                 item: item, glyph: model.glyph(of: item), priority: model.priorityLevel(of: item),
                                 showsPriority: model.project(of: item)?.priorityFieldId != nil,
                                 showsStatus: model.project(of: item)?.statusFieldId != nil,
-                                projectTitle: showsProject ? model.project(of: item)?.title : nil
+                                projectTitle: showsProject ? model.project(of: item)?.title : nil,
+                                selected: model.isSelected(item.id),
+                                selecting: !model.selectedIds.isEmpty
                             )
                         }
                     )

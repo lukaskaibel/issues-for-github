@@ -27,6 +27,8 @@ struct CardView: View, Equatable {
     var card: CardModel
     var width: CGFloat
     var highlighted = false
+    /// Picked for a change to several issues at once.
+    var selected = false
     var lifted = false
     /// Changes when avatar images finish loading, so cards repaint with them.
     var avatarVersion = 0
@@ -106,10 +108,10 @@ private struct CardPainter {
         }
         defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts) } }
         let outline = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5), cornerRadius: 8, style: .continuous)
-        let fill = view.lifted ? Theme.cardLifted : (view.highlighted ? Theme.cardHover : Theme.card)
-        let border = view.lifted ? Theme.cardLiftedBorder : (view.highlighted ? Theme.cardHoverBorder : Theme.cardBorder)
+        let fill = view.lifted ? Theme.cardLifted : view.selected ? Theme.selectionFill : (view.highlighted ? Theme.cardHover : Theme.card)
+        let border = view.lifted ? Theme.cardLiftedBorder : view.selected ? Theme.selectionBorder : (view.highlighted ? Theme.cardHoverBorder : Theme.cardBorder)
         context.fill(outline, with: .color(fill))
-        context.stroke(outline, with: .color(border), lineWidth: 1)
+        context.stroke(outline, with: .color(border), lineWidth: view.selected && !view.lifted ? 1.5 : 1)
 
         // Top line: number, repository, pull-request mark, and assignees on the right.
         let topY = padding.height + 9

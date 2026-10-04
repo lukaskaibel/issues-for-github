@@ -53,7 +53,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["select", "dump", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "renderpill", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar"]
+        let readOnly: Set<String> = ["select", "dump", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "renderpill", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek"]
         if let command = parts.first, !readOnly.contains(command), model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
             return
@@ -115,10 +115,14 @@ enum DebugRemote {
             }
             log("responder: \(description) overlay=\(String(describing: model.overlay))")
         case "keycode":
-            // keycode <code> [cmd]
+            // keycode <code> [cmd] [shift]
             let bits = argument.split(separator: " ").map(String.init)
             if let code = bits.first.flatMap({ UInt16($0) }) {
-                sendKey(characters: [36: "\r", 51: "\u{7F}", 53: "\u{1B}"][code] ?? "", code: code, modifiers: bits.contains("cmd") ? .command : [])
+                var modifiers: NSEvent.ModifierFlags = []
+                if bits.contains("cmd") { modifiers.insert(.command) }
+                if bits.contains("shift") { modifiers.insert(.shift) }
+                let characters = [36: "\r", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a"][code] ?? ""
+                sendKey(characters: modifiers.contains(.shift) ? characters.uppercased() : characters, code: code, modifiers: modifiers)
             }
         case "status":
             let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
@@ -272,6 +276,21 @@ enum DebugRemote {
                    let path = UserDefaults.standard.string(forKey: "debugCommandFile") {
                     try? png.write(to: URL(fileURLWithPath: path + (highlighted ? ".pill-on.png" : ".pill-off.png")))
                 }
+            }
+        case "pick":
+            // pick <number> [<number>…]: adds issues to the selection, or takes them out.
+            for number in argument.split(separator: " ").compactMap({ Int($0) }) {
+                if let item = model.scopedItems.first(where: { $0.number == number }) { model.toggleSelection(item) }
+            }
+        case "picks":
+            log("picks: selected=\(model.selectedItems.map { "\($0.displayNumber):\(model.priorityOption(of: $0)?.name ?? "none")" }.joined(separator: " ")) peek=\(model.peekItem?.displayNumber ?? "-") focus=\(model.focusedItemId.flatMap { id in model.scopedItems.first { $0.id == id }?.displayNumber } ?? "-")")
+        case "peek":
+            // peek <number>: moves the focus there and peeks at it; without a number, toggles the peek.
+            if let item = item(argument, model) {
+                model.moveFocus(to: item.id)
+                if model.peekItemId == nil { model.togglePeek() }
+            } else {
+                model.togglePeek()
             }
         case "hideproject", "showproject":
             // Only changes what the sidebar shows on this Mac.

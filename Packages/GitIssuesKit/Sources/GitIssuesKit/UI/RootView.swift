@@ -101,6 +101,22 @@ struct ContentPanel: View {
                 }
             }
             .animation(Theme.overlay, value: model.isLoadingProject)
+            // Picked issues get a bar of changes at the bottom; Space peeks at an issue on the right.
+            .overlay(alignment: .bottom) {
+                // Centred in what the peek leaves free.
+                SelectionBar()
+                    .padding(.bottom, 18)
+                    .padding(.trailing, model.peekItemId == nil ? 0 : 470)
+            }
+            .overlay(alignment: .trailing) {
+                if let item = model.peekItem {
+                    PeekPanel(item: item)
+                        .padding(EdgeInsets(top: 52, leading: 0, bottom: 10, trailing: 10))
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                }
+            }
+            .animation(Theme.overlay, value: model.selectedIds.isEmpty)
+            .animation(Theme.overlay, value: model.peekItemId == nil)
             .opacity(model.openItem == nil ? 1 : 0)
             .allowsHitTesting(model.openItem == nil)
 

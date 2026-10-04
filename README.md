@@ -134,6 +134,8 @@ Hover an issue or move to it with the arrow keys, then:
 | `I` | Assign to me, or unassign |
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
 | `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
+| `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
+| `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
 | `G` then `B` / `L` / `M` / `P` | Go to board, list, My Issues, or switch project |
 | `⌘1` `⌘2` `⌘3` | Board, list, My Issues |
@@ -151,6 +153,10 @@ right there too. In the list, click a section header to fold it; Option-click fo
 On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. Drag a column by its
 header to reorder it, double-click its name to rename it, right-click it for its menu (rename, colour, delete), and
 use **Add column** at the right end of the board.
+
+To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
+Shift-click. A bar at the bottom then sets status, priority, assignee or labels for all of them, and so do the
+usual keys, dropdowns and right-click menu. `Esc` clears the pick.
 
 Right-click a project in the sidebar to hide it; hidden projects wait, folded away, at the end of the list.
 

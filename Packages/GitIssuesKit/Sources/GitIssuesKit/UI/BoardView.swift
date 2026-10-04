@@ -163,6 +163,7 @@ struct ColumnView: View {
                         BoardCell(
                             card: model.cardModel(for: item), width: width, drag: drag,
                             highlighted: !model.isDragging && (hoveredId == item.id || model.focusedItemId == item.id),
+                            selected: model.isSelected(item.id),
                             hoveredPart: hoveredId == item.id && !model.isDragging ? hoveredPart : nil,
                             avatarVersion: model.avatarVersion
                         )
@@ -186,8 +187,11 @@ struct ColumnView: View {
                     }
                 }
                 .gesture(SpatialTapGesture(coordinateSpace: .named(BoardDrag.space)).onEnded { value in
-                    // A click on a card's priority, labels, sub-issues or assignees opens that dropdown;
-                    // anywhere else on the card opens the issue.
+                    // ⌘- and Shift-clicks pick cards. Otherwise a click on a card's priority, labels, sub-issues or
+                    // assignees opens that dropdown, and anywhere else on the card opens the issue.
+                    if let item = card(at: value.location), model.handleSelectionClick(on: item) {
+                        return
+                    }
                     if let hit = drag.part(at: value.location, in: column.items) {
                         let origin = drag.boardFrameInWindow.origin
                         model.showPicker(hit.kind, for: hit.item, below: hit.rect.offsetBy(dx: origin.x, dy: origin.y))
@@ -255,6 +259,7 @@ private struct BoardCell: View {
     var width: CGFloat
     var drag: BoardDrag
     var highlighted: Bool
+    var selected: Bool
     var hoveredPart: PickerKind?
     var avatarVersion: Int
     @State private var owner = UUID()
@@ -271,7 +276,7 @@ private struct BoardCell: View {
                     )
                     .frame(height: drag.active?.size.height ?? 80)
             } else {
-                CardView(card: card, width: width, highlighted: highlighted, avatarVersion: avatarVersion, hoveredPart: hoveredPart)
+                CardView(card: card, width: width, highlighted: highlighted, selected: selected, avatarVersion: avatarVersion, hoveredPart: hoveredPart)
                     .equatable()
             }
         }
