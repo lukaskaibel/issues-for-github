@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "GitIssuesKit",
-    platforms: [.macOS("27.0")],
+    platforms: [.macOS("27.0"), .iOS("27.0")],
     products: [
         .library(name: "GitIssuesKit", targets: ["GitIssuesKit"]),
     ],

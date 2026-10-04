@@ -2,13 +2,34 @@
 // which is not checked in; copy Local.xcconfig.example to get started.
 
 // Version shown in the app and used for release tags. Follows semantic versioning.
-MARKETING_VERSION = 0.1.0
+MARKETING_VERSION = 0.2.0
 CURRENT_PROJECT_VERSION = 1
 
 PRODUCT_BUNDLE_IDENTIFIER = com.lukaskbl.GitIssues
 
-// Without a team the app is signed to run on this Mac only, which is all a local build needs.
+// Without a team the Mac app is signed to run on this Mac only, which is all a local build needs.
+// iPhone and iPad builds need a team to run on a device; the simulator works without one.
 DEVELOPMENT_TEAM =
 CODE_SIGN_IDENTITY = -
+
+// Client ID of a GitHub OAuth app with the device flow enabled, for "Sign in with GitHub".
+// Leave it empty to hide that button. Set it in Local.xcconfig so forks never use your OAuth app.
+GITHUB_CLIENT_ID =
+
+// iPhone and iPad.
+INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphone*] = YES
+INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphone*] = YES
+INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone[sdk=iphone*] = UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad[sdk=iphone*] = UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO
+ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES[sdk=iphone*] = AppIcon-Light AppIcon-Dark AppIcon-Violet
+ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS[sdk=iphone*] = YES
+
+// The login is shared between the Mac, iPhone and iPad through iCloud Keychain, which needs a keychain
+// access group. iPhone and iPad always have it. On the Mac it needs a team, so Local.xcconfig turns it on
+// (see Local.xcconfig.example); without it the Mac keeps the login to itself.
+CODE_SIGN_ENTITLEMENTS[sdk=iphone*] = Config/GitIssues-iOS.entitlements
+GI_MAC_ENTITLEMENTS =
+CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = $(GI_MAC_ENTITLEMENTS)
 
 #include? "Local.xcconfig"

@@ -8,6 +8,28 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Change several issues at once, as in Linear. Pick them with X, the checkbox at the start of a list row,
+  ⌘-click or Shift-click (Shift with the arrows or J/K picks a run, ⌘A picks everything on screen). A bar at the
+  bottom sets status, priority, assignee and labels for all of them; S, P, A, L, I, the command palette and the
+  right-click menu act on all of them too, with checkmarks for the values they share. Escape clears the pick.
+- Space peeks at the issue under the pointer or keyboard focus in a panel beside the board or list: title,
+  status, priority, assignees, labels and description, each changeable in place. J and K move the peek along,
+  Return opens the issue, Space or Escape puts it away. The right-click menu has Peek too.
+- **Issues for iPhone and iPad.** The same app, built from the same project, with sync, the offline queue,
+  conflict handling and every action shared with the Mac. On the iPhone: My Issues, Projects and Search as tabs, lists
+  grouped by status with folding sections and pinned headers, swipe actions (done, assign, delete), the issue menu on a
+  long press, the description edited in place with live Markdown styling, properties as chips, sub-issues, comments,
+  new issues and sub-issues, statuses and section order to edit, and pull to refresh. On the iPad: a sidebar with every
+  project, the board with drag and drop, the issue beside its properties, and the Mac's keyboard shortcuts.
+- The GitHub login is shared between Mac, iPhone and iPad through iCloud Keychain. A Mac signed in with the GitHub CLI
+  asks once whether to share it. "Sign Out Everywhere" signs out all devices.
+- Sample data: two sample projects to try the app without a GitHub account ("Explore with Sample Data" on iOS).
+- The iPhone and iPad send queued changes when the app goes to the background and refresh now and then in the
+  background, so they open up to date.
+- UI tests for every feature of the iPhone and iPad app (`Tools/test-ios.sh`), and `Tools/testflight.sh` to upload
+  builds to TestFlight.
+- [PRIVACY.md](PRIVACY.md): what the app stores and sends, to link from the App Store listing.
+
 - Clicking an issue's priority, status, labels, assignees or sub-issue count, on a card or in the list, opens a
   dropdown right there, as in Linear: the search field has focus, number keys pick, and the current value is
   checked. The sub-issue count lists the sub-issues and opens the one you pick. The parts light up on hover.
@@ -45,11 +67,18 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- List rows start a little further in, so the checkbox has its place under the section headers' fold arrow and
+  the priority lines up with the headers' status icon. Stepping with J/K skips folded sections.
 - Parts of cards and list rows light up in a shape that suits them, as in Linear: a small square behind an icon,
   a round halo around avatars (with a dashed placeholder where an unassigned issue's avatar would be), and chips
   brighten in their own outline instead of getting a box behind them.
 - The app is called Issues now; "Git Issues" was a working title. Data, settings and sign-in carry over, and the
   built app is `Issues.app`.
+- The project is one app for Mac, iPhone and iPad. Code shared by all of them lives in `UI/Shared`, the rest in
+  `UI/Mac` and `UI/iOS`.
+- The GitHub OAuth client ID is set in `Config/Local.xcconfig` (`GITHUB_CLIENT_ID`) rather than in `Info.plist`, so
+  forks don't use yours.
+
 - New app icon: a card lifted off a board, in the accent colour. It's an Icon Composer icon, so it follows light and
   dark mode by itself (and the tinted and clear styles). Settings offers it fixed in light or dark, and on violet;
   the earlier designs are still there. Everyone starts from the new icon once, even after picking another before.
