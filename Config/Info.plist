@@ -2,8 +2,24 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Client ID of the GitHub OAuth app used for "Sign in with GitHub" (device flow). Leave empty to hide that button. -->
+	<!-- Client ID of the GitHub OAuth app used for "Sign in with GitHub" (device flow). Set GITHUB_CLIENT_ID in
+	     Config/Local.xcconfig; when it is empty, the button is hidden. -->
 	<key>GitHubClientID</key>
-	<string></string>
+	<string>$(GITHUB_CLIENT_ID)</string>
+	<!-- iPhone and iPad: refresh in the background now and then, so the app opens up to date. -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).refresh</string>
+	</array>
+	<!-- iPhone and iPad: the launch screen is the app's background colour, so opening it doesn't flash. -->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
 </dict>
 </plist>
