@@ -1,11 +1,12 @@
 # Releases Issues to the App Store and TestFlight, for the Mac, iPhone and iPad.
 #
 # Every call to App Store Connect signs in with an App Store Connect API key (.p8), so there are no Apple ID or
-# two-factor prompts, and Xcode signs the builds itself with the same key. Copy fastlane/.env.secret.example to
+# two-factor prompts; store_signing below says how the builds are signed. Copy fastlane/.env.secret.example to
 # fastlane/.env.secret (it is gitignored) and fill it in, run `bundle install` once, and then:
 #
 #   bundle exec fastlane screenshots   # take the App Store screenshots of the iPhone, iPad and Mac apps
 #   bundle exec fastlane metadata      # upload the texts, the age rating and the screenshots of both platforms
+#   bundle exec fastlane build         # build the Mac, iPhone and iPad apps for the App Store, without uploading
 #   bundle exec fastlane beta          # build the Mac, iPhone and iPad apps and upload them to TestFlight
 #   bundle exec fastlane release       # build them, upload everything and submit both platforms for review
 #
@@ -17,6 +18,12 @@ require "fileutils"
 require "plist"
 require "shellwords"
 
+# The texts and build settings are UTF-8 ("›", "•", "⌘"), whatever the shell's locale is.
+Encoding.default_external = Encoding::UTF_8
+ENV["LANG"] = "en_US.UTF-8" if ENV["LANG"].to_s.empty?
+ENV["LC_ALL"] = "en_US.UTF-8" if ENV["LC_ALL"].to_s.empty?
+
+APP_ID = "com.lukaskbl.GitIssues"
 ROOT = File.expand_path("..", __dir__)
 PROJECT = File.join(ROOT, "GitIssues.xcodeproj")
 SCHEME = "GitIssues"
@@ -61,7 +68,7 @@ def api_key
   )
 end
 
-# Lets Xcode create the certificates and profiles it needs, signed in with the same API key.
+# Lets Xcode make the development profiles for the archive, signed in with the same API key.
 def signing_arguments
   [
     "-allowProvisioningUpdates",
@@ -69,6 +76,43 @@ def signing_arguments
     "-authenticationKeyID", secret("APP_STORE_CONNECT_API_KEY_KEY_ID"),
     "-authenticationKeyIssuerID", secret("APP_STORE_CONNECT_API_KEY_ISSUER_ID")
   ].shelljoin
+end
+
+# The archive is signed for development; the export signs it for the App Store the way match does: with the team's
+# Apple Distribution certificate in this Mac's keychain and an App Store profile that fastlane makes or fetches with the
+# API key. (The key may not use Apple's cloud-managed certificates, so Xcode can't do this part by itself.) The Mac's
+# .pkg is signed with a Mac Installer Distribution certificate, which fastlane creates the first time; macOS then asks
+# once whether xcodebuild may use its key. Returns the export options.
+def store_signing(platform, team)
+  folder = File.join(OUTPUT, "signing")
+  register_this_mac if platform == :mac
+  # get_provisioning_profile would sign the profile with whatever certificate get_certificates handled last.
+  lane_context.delete(SharedValues::CERT_CERTIFICATE_ID)
+  get_provisioning_profile(api_key: api_key, app_identifier: APP_ID, platform: platform == :mac ? "macos" : "ios",
+                           output_path: folder)
+  profile = lane_context[SharedValues::SIGH_NAME]
+  if platform == :mac
+    get_certificates(api_key: api_key, platform: "macos", type: "mac_installer_distribution", output_path: folder)
+    lane_context.delete(SharedValues::CERT_CERTIFICATE_ID)
+  end
+  options = {
+    signingStyle: "manual",
+    teamID: team,
+    signingCertificate: "Apple Distribution",
+    provisioningProfiles: { APP_ID => profile },
+    manageAppVersionAndBuildNumber: false
+  }
+  options[:installerSigningCertificate] = "Mac Installer Distribution" if platform == :mac
+  options
+end
+
+# The Mac's development profile, which the archive is signed with first, has to list this Mac. Building for "My Mac"
+# in Xcode registers it with the team; an archive for any Mac doesn't, so this does (once; it's left alone after).
+def register_this_mac
+  udid = sh("system_profiler SPHardwareDataType", log: false)[/Provisioning UDID: (\S+)/, 1]
+  return UI.important("This Mac's provisioning UDID is unknown; the archive may lack a development profile.") if udid.nil?
+
+  register_device(api_key: api_key, platform: "mac", udid: udid, name: sh("scutil --get ComputerName", log: false).strip)
 end
 
 # A build setting as Xcode resolves it, Config/Local.xcconfig included.
@@ -96,7 +140,7 @@ def build_number
 end
 
 # Archives one platform for the App Store and returns the .ipa or .pkg.
-def build(platform, token_only: false)
+def archive_for_store(platform, token_only: false)
   config = PLATFORMS.fetch(platform)
   team = build_setting(platform, "DEVELOPMENT_TEAM")
   UI.user_error!("No team set. Copy Config/Local.xcconfig.example to Config/Local.xcconfig and fill in your team ID.") if team.empty?
@@ -108,6 +152,7 @@ def build(platform, token_only: false)
 
   folder = File.join(OUTPUT, platform.to_s)
   UI.header("#{config[:name]}: Issues #{version} (#{build_number})")
+  export_options = store_signing(platform, team)
   package = build_app(
     project: PROJECT,
     scheme: SCHEME,
@@ -118,10 +163,10 @@ def build(platform, token_only: false)
     output_directory: folder,
     output_name: "Issues",
     export_method: "app-store",
-    export_options: { signingStyle: "automatic", teamID: team, manageAppVersionAndBuildNumber: false },
+    export_options: export_options,
     skip_profile_detection: true,
-    xcargs: "#{signing_arguments} CURRENT_PROJECT_VERSION=#{build_number}",
-    export_xcargs: signing_arguments
+    # gym hands these to the export as well, so the signing arguments mustn't go into export_xcargs a second time.
+    xcargs: "#{signing_arguments} CURRENT_PROJECT_VERSION=#{build_number}"
   )
   check_sandbox(File.join(folder, "Issues.xcarchive")) if platform == :mac
   package
@@ -206,7 +251,7 @@ def store_upload(platform, package: nil, submit: false, automatic_release: false
 end
 
 def release(platform, options)
-  package = build(platform, token_only: flag(options[:token_only]))
+  package = archive_for_store(platform, token_only: flag(options[:token_only]))
   store_upload(platform, package: package, submit: options[:submit].nil? || flag(options[:submit]),
                          automatic_release: flag(options[:automatic_release]))
 end
@@ -221,10 +266,16 @@ lane :metadata do
   PLATFORMS.each_key { |platform| store_upload(platform) }
 end
 
+desc "Builds the Mac, iPhone and iPad apps for the App Store, signed, without uploading them"
+desc "token_only:true builds them without GITHUB_CLIENT_ID"
+lane :build do |options|
+  PLATFORMS.each_key { |platform| archive_for_store(platform, token_only: flag(options[:token_only])) }
+end
+
 desc "Builds the Mac, iPhone and iPad apps and uploads them to TestFlight"
 desc "token_only:true builds them without GITHUB_CLIENT_ID"
 lane :beta do |options|
-  PLATFORMS.each_key { |platform| upload_beta(platform, build(platform, token_only: flag(options[:token_only]))) }
+  PLATFORMS.each_key { |platform| upload_beta(platform, archive_for_store(platform, token_only: flag(options[:token_only]))) }
 end
 
 desc "Builds the Mac, iPhone and iPad apps, uploads them with texts and screenshots and submits them for review"
@@ -240,8 +291,11 @@ platform :ios do
   desc "Uploads the texts, the age rating and the screenshots of the iPhone and iPad app"
   lane(:metadata) { store_upload(:ios) }
 
+  desc "Builds the iPhone and iPad app for the App Store, signed, without uploading it"
+  lane(:build) { |options| archive_for_store(:ios, token_only: flag(options[:token_only])) }
+
   desc "Builds the iPhone and iPad app and uploads it to TestFlight"
-  lane(:beta) { |options| upload_beta(:ios, build(:ios, token_only: flag(options[:token_only]))) }
+  lane(:beta) { |options| upload_beta(:ios, archive_for_store(:ios, token_only: flag(options[:token_only]))) }
 
   desc "Builds the iPhone and iPad app, uploads it with texts and screenshots and submits it for review"
   lane(:release) { |options| release(:ios, options) }
@@ -254,8 +308,11 @@ platform :mac do
   desc "Uploads the texts, the age rating and the screenshots of the Mac app"
   lane(:metadata) { store_upload(:mac) }
 
+  desc "Builds the Mac app for the App Store, signed, without uploading it"
+  lane(:build) { |options| archive_for_store(:mac, token_only: flag(options[:token_only])) }
+
   desc "Builds the Mac app and uploads it to TestFlight"
-  lane(:beta) { |options| upload_beta(:mac, build(:mac, token_only: flag(options[:token_only]))) }
+  lane(:beta) { |options| upload_beta(:mac, archive_for_store(:mac, token_only: flag(options[:token_only]))) }
 
   desc "Builds the Mac app, uploads it with texts and screenshots and submits it for review"
   lane(:release) { |options| release(:mac, options) }

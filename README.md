@@ -209,7 +209,9 @@ Apple Developer team, copy `Config/Local.xcconfig.example` to `Config/Local.xcco
 ### Releasing to the App Store
 
 Releases go through [fastlane](https://fastlane.tools), for the Mac, iPhone and iPad together. It signs in to App Store
-Connect with an API key and lets Xcode sign the builds with the same key, so there are no Apple ID prompts. Once:
+Connect with an API key, so there are no Apple ID prompts, and signs the builds with your team's Apple Distribution
+certificate from the keychain and App Store profiles it fetches with the key. The first Mac build also creates a Mac
+Installer Distribution certificate for the package; macOS then asks once whether it may be used (Always Allow). Once:
 
 1. Create the app in App Store Connect for iOS and macOS with the bundle identifier `com.lukaskbl.GitIssues`, and set
    the few things fastlane can't ([Design/app-store.md](Design/app-store.md) lists them).
