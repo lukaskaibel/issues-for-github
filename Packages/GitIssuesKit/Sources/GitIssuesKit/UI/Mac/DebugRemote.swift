@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "renderpill", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek"]
+        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -225,6 +225,19 @@ enum DebugRemote {
                     context.fill(CGRect(origin: .zero, size: size))
                     context.scaleBy(x: scale, y: scale)
                     layer.render(in: context)
+                    // Open dropdowns are windows of their own, each opened from the one before; draw them where they
+                    // are on screen.
+                    func drawChildren(of parent: NSWindow) {
+                        for child in parent.childWindows ?? [] where child.isVisible {
+                            guard let childLayer = (child.contentView?.superview ?? child.contentView)?.layer else { continue }
+                            context.saveGState()
+                            context.translateBy(x: child.frame.minX - window.frame.minX, y: child.frame.minY - window.frame.minY)
+                            childLayer.render(in: context)
+                            context.restoreGState()
+                            drawChildren(of: child)
+                        }
+                    }
+                    drawChildren(of: window)
                     if let image = context.makeImage() {
                         let rep = NSBitmapImageRep(cgImage: image)
                         try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: argument))
@@ -281,22 +294,62 @@ enum DebugRemote {
                 }
                 model.refresh()
             }
-        case "renderpill":
-            // Writes the sync pill in both states next to the command file, to check its padding.
-            for highlighted in [false, true] {
-                let renderer = ImageRenderer(
-                    content: SyncPill(highlighted: highlighted)
-                        .environment(model)
-                        .padding(12)
-                        .background(Theme.window)
-                        .environment(\.colorScheme, NSApp.effectiveAppearance.isDark ? .dark : .light)
-                )
-                renderer.scale = 3
-                if let image = renderer.nsImage, let tiff = image.tiffRepresentation,
-                   let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]),
-                   let path = UserDefaults.standard.string(forKey: "debugCommandFile") {
-                    try? png.write(to: URL(fileURLWithPath: path + (highlighted ? ".pill-on.png" : ".pill-off.png")))
+        case "rendersync":
+            // The account in the sidebar with each sync dot, the cards for each state that needs attention, and the
+            // account menu, written next to the command file.
+            guard let base = UserDefaults.standard.string(forKey: "debugCommandFile") else { break }
+            let dark = NSApp.effectiveAppearance.isDark
+            let styles: [SyncDotStyle] = [.synced, .queued, .sending, .offline, .attention]
+            let attentions: [SyncAttention] = [
+                .offline(pending: 3), .offline(pending: 0), .conflict(count: 1, number: "#15", itemId: "-"),
+                .conflict(count: 2, number: "#15", itemId: "-"), .failed("The network connection was lost."),
+            ]
+            let sidebar = VStack(alignment: .leading, spacing: 10) {
+                ForEach(styles, id: \.self) { style in
+                    HStack(spacing: 8) {
+                        StatusAvatar(size: 20, style: style)
+                        Text(model.viewer?.login ?? "GitHub").font(.uiSemibold)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 6)
                 }
+                ForEach(attentions, id: \.self) { SyncHintCard(attention: $0) }
+            }
+            let renderers = [
+                ("sync-sidebar", ImageRenderer(content: AnyView(sidebar
+                    .padding(10)
+                    .frame(width: Theme.sidebarWidth)
+                    .background(Theme.window)
+                    .environment(model)
+                    .environment(\.colorScheme, dark ? .dark : .light)))),
+                ("sync-menu", ImageRenderer(content: AnyView(HStack(alignment: .top, spacing: 12) {
+                    AccountDropdown(close: {})
+                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.popover))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
+                    AppearanceDropdown(close: {})
+                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.popover))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
+                }
+                    .padding(16)
+                    .background(Theme.window)
+                    .environment(model)
+                    .environment(\.colorScheme, dark ? .dark : .light)))),
+            ]
+            for (name, renderer) in renderers {
+                renderer.scale = 2
+                if let image = renderer.nsImage, let tiff = image.tiffRepresentation,
+                   let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+                    try? png.write(to: URL(fileURLWithPath: "\(base).\(name).png"))
+                }
+            }
+            log("rendered sync states")
+        case "phase":
+            // phase idle|syncing|offline|failed: shows a sync state on screen until the next round of syncing.
+            switch argument {
+            case "syncing": model.status.phase = .syncing
+            case "offline": model.status.phase = .offline
+            case "failed": model.status.phase = .failed("The network connection was lost.")
+            default: model.status.phase = .idle
             }
         case "pick":
             // pick <number> [<number>…]: adds issues to the selection, or takes them out.

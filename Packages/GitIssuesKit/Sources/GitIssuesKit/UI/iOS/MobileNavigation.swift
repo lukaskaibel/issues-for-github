@@ -21,12 +21,15 @@ enum Route: Hashable, Codable {
 enum MobileSheet: Identifiable, Equatable {
     case newIssue(NewIssueContext)
     case account
+    /// The changes waiting to be sent, from the card at the bottom of the iPad sidebar.
+    case queue
     case arrangeSections(Scope)
 
     var id: String {
         switch self {
         case .newIssue(let context): "new-\(context.projectId ?? "-")-\(context.statusId ?? "-")-\(context.parentItemId ?? "-")"
         case .account: "account"
+        case .queue: "queue"
         case .arrangeSections(let scope): "arrange-\(scope)"
         }
     }
