@@ -23,7 +23,8 @@ All notable changes to this project are recorded here. The format follows
   project, the board with drag and drop, the issue beside its properties, and the Mac's keyboard shortcuts.
 - The GitHub login is shared between Mac, iPhone and iPad through iCloud Keychain. A Mac signed in with the GitHub CLI
   asks once whether to share it. "Sign Out Everywhere" signs out all devices.
-- Sample data: two sample projects to try the app without a GitHub account ("Explore with Sample Data" on iOS).
+- Sample data: two sample projects to try the app without a GitHub account ("Explore with Sample Data" on the
+  sign-in screen, on the Mac too). The account menu and Settings leave them again.
 - The iPhone and iPad send queued changes when the app goes to the background and refresh now and then in the
   background, so they open up to date.
 - UI tests for every feature of the iPhone and iPad app (`Tools/test-ios.sh`), and `Tools/testflight.sh` to upload
@@ -32,6 +33,9 @@ All notable changes to this project are recorded here. The format follows
   makes too, runs in the App Sandbox, is signed with your team, shares the login through iCloud Keychain and leaves
   out the GitHub CLI sign-in.
 - [PRIVACY.md](PRIVACY.md): what the app stores and sends, to link from the App Store listing.
+- fastlane lanes release the Mac, iPhone and iPad apps together: screenshots, the listing's texts, TestFlight builds
+  and the submission for review, signed in with an App Store Connect API key. `Tools/mac-app-store-screenshots.sh`
+  takes the Mac App Store screenshots on the sample data.
 
 - Clicking an issue's priority, status, labels, assignees or sub-issue count, on a card or in the list, opens a
   dropdown right there, as in Linear: the search field has focus, number keys pick, and the current value is

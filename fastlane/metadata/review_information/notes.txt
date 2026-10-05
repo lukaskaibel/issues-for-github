@@ -1,0 +1,7 @@
+Issues is a client for GitHub Issues and GitHub Projects: people sign in to their own GitHub account to see and change their own projects. The app has no accounts of its own (Guideline 4.8 does not apply).
+
+To review without a GitHub account, choose "Explore with Sample Data" on the first screen, on the Mac, iPhone and iPad. It opens two sample projects stored on the device; every feature works there and nothing is sent anywhere. To leave it, open the account menu at the top left and choose "Leave Sample Data".
+
+"Sign in with GitHub" uses GitHub's device flow: the app shows a code to enter at github.com/login/device.
+
+The Mac app runs in the App Sandbox and connects only to GitHub. On iPhone and iPad, background refresh updates the issues now and then while the app is closed.

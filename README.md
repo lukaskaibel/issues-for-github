@@ -206,36 +206,41 @@ Tools/run-release.sh
 Without any setup the app is signed to run on your Mac only, which is all a local build needs. To sign with your own
 Apple Developer team, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and fill in your team ID.
 
-To put the iPhone and iPad app on TestFlight, create the app in App Store Connect with the bundle identifier
-`com.lukaskbl.GitIssues`, sign in to your Apple ID under Xcode › Settings › Accounts, and run:
+### Releasing to the App Store
+
+Releases go through [fastlane](https://fastlane.tools), for the Mac, iPhone and iPad together. It signs in to App Store
+Connect with an API key and lets Xcode sign the builds with the same key, so there are no Apple ID prompts. Once:
+
+1. Create the app in App Store Connect for iOS and macOS with the bundle identifier `com.lukaskbl.GitIssues`, and set
+   the few things fastlane can't ([Design/app-store.md](Design/app-store.md) lists them).
+2. Copy `fastlane/.env.secret.example` to `fastlane/.env.secret` and fill in the API key and the contact for App Review.
+3. Set `GITHUB_CLIENT_ID` in `Config/Local.xcconfig`, so the builds offer "Sign in with GitHub".
+4. Run `bundle install`.
+
+Then:
 
 ```bash
-Tools/testflight.sh
+bundle exec fastlane screenshots   # the App Store screenshots of the iPhone, iPad and Mac apps, on the sample data
+bundle exec fastlane beta          # build the Mac, iPhone and iPad apps and upload them to TestFlight
+bundle exec fastlane release       # build them, upload the texts and screenshots, and submit them for review
 ```
 
-The Mac app goes up the same way. Its App Store build runs in the App Sandbox, as the Mac App Store requires, and
-leaves out the GitHub CLI sign-in, which can't work there; **Product › Archive** in Xcode makes the same build.
-
-```bash
-Tools/testflight-mac.sh
-```
-
-For the App Store listing, [Design/app-store.md](Design/app-store.md) has the texts, the privacy answers and notes for
-App Review, and this takes the screenshots on a 6.9-inch iPhone and a 13-inch iPad simulator:
-
-```bash
-Tools/app-store-screenshots.sh
-```
+The texts are in `fastlane/metadata`; `bundle exec fastlane metadata` uploads them with the screenshots and nothing
+else. `bundle exec fastlane ios <lane>` or `mac <lane>` does one platform. The Mac's App Store build runs in the App
+Sandbox, as the Mac App Store requires, and leaves out the GitHub CLI sign-in, which can't work there; **Product ›
+Archive** in Xcode makes the same build. Without an API key, `Tools/testflight.sh` and `Tools/testflight-mac.sh` upload
+a build with the Apple ID under Xcode › Settings › Accounts.
 
 ### Signing in
 
-The sign-in screen offers up to three ways, depending on your setup:
+The sign-in screen offers up to three ways to sign in, depending on your setup, and sample data:
 
 | Option | When to use it |
 |---|---|
 | **Use my GitHub CLI login** | You have [`gh`](https://cli.github.com) installed and signed in. Nothing to configure. If projects don't load, run `gh auth refresh -s project,read:org`. Not in the App Store build. |
 | **Personal access token** | Create a classic token with the `repo`, `project` and `read:org` scopes. It is stored in your Mac's keychain. |
 | **Sign in with GitHub** | Shown when the build has an OAuth client ID. Register a GitHub OAuth app with the device flow enabled and set its client ID as `GITHUB_CLIENT_ID` in `Config/Local.xcconfig`. |
+| **Explore with Sample Data** | Two sample projects to try everything without a GitHub account. Nothing there is sent anywhere; leave them from the account menu. |
 
 On iPhone and iPad there is no GitHub CLI; sign in with GitHub or a token there, or let the Mac's login carry over:
 
@@ -325,6 +330,7 @@ Packages/GitIssuesKit/
 Config/                      Build settings, Info.plist and entitlements
 Design/                      The violet icon, earlier icon variants, screenshots, social preview
 Tools/                       Icons, release builds, iOS tests, App Store and README screenshots, TestFlight uploads
+fastlane/                    App Store releases: lanes, the listing's texts and the age rating
 ```
 
 Everything under `UI/Shared` and below `API`, `Model`, `Store` and `Sync` runs on all three devices, so a change there
