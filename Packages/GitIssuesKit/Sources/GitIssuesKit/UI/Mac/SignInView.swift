@@ -61,6 +61,13 @@ struct SignInView: View {
                         .padding(.top, 4)
                         .transition(.opacity.combined(with: .offset(y: -4)))
                     }
+
+                    Button("Explore with Sample Data") { model.enterDemo() }
+                        .buttonStyle(PlainPressStyle())
+                        .font(.uiMedium)
+                        .foregroundStyle(Theme.textSecondary)
+                        .padding(.top, 6)
+                        .help("Two sample projects that stay on this Mac. Nothing is sent to GitHub.")
                 }
                 .disabled(working)
             }

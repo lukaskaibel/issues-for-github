@@ -154,7 +154,9 @@ struct AccountMenu: View {
 
     var body: some View {
         Menu {
-            if let login = model.viewer?.login {
+            if model.isDemo {
+                Text("Sample data on this Mac")
+            } else if let login = model.viewer?.login {
                 Text("Signed in as \(login)")
             }
             Button("Sync Now") { model.refresh() }
@@ -164,9 +166,13 @@ struct AccountMenu: View {
             }
             Button("Settings…") { model.settingsRequest += 1 }
             Divider()
-            Button("Sign Out") { model.signOut() }
-            if model.loginIsShared {
-                Button("Sign Out Everywhere…") { model.confirmSignOutEverywhere = true }
+            if model.isDemo {
+                Button("Leave Sample Data") { model.leaveDemo() }
+            } else {
+                Button("Sign Out") { model.signOut() }
+                if model.loginIsShared {
+                    Button("Sign Out Everywhere…") { model.confirmSignOutEverywhere = true }
+                }
             }
         } label: {
             HStack(spacing: 8) {
