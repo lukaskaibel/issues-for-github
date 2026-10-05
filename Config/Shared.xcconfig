@@ -11,6 +11,8 @@ PRODUCT_BUNDLE_IDENTIFIER = com.lukaskbl.GitIssues
 // iPhone and iPad builds need a team to run on a device; the simulator works without one.
 DEVELOPMENT_TEAM =
 CODE_SIGN_IDENTITY = -
+// The App Store build (Product › Archive, Tools/testflight-mac.sh) is always signed by a team.
+CODE_SIGN_IDENTITY[config=AppStore] = Apple Development
 
 // Client ID of a GitHub OAuth app with the device flow enabled, for "Sign in with GitHub".
 // Leave it empty to hide that button. Set it in Local.xcconfig so forks never use your OAuth app.
@@ -30,6 +32,7 @@ ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS[sdk=iphone*] = YES
 // (see Local.xcconfig.example); without it the Mac keeps the login to itself.
 CODE_SIGN_ENTITLEMENTS[sdk=iphone*] = Config/GitIssues-iOS.entitlements
 GI_MAC_ENTITLEMENTS =
+GI_MAC_ENTITLEMENTS[config=AppStore] = Config/GitIssues-macOS.entitlements
 CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = $(GI_MAC_ENTITLEMENTS)
 
 #include? "Local.xcconfig"
