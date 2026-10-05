@@ -30,6 +30,9 @@ Every pull request is reviewed and merged by the maintainer; nothing lands on `m
 - **Colours and animation timings come from `UI/Theme.swift`.** Every colour needs a light and a dark value.
 - **Smoothness is a feature.** Lists and cards are drawn in one pass on purpose. If you change them, scroll a board
   with a few hundred issues before and after.
+- **Show what changed.** A change people will notice gets a line in `CHANGELOG.md` under "Unreleased", and the README
+  follows: its feature sections, the shortcut tables, "Not there yet", and the screenshots (`Tools/readme-images.sh`
+  for the Mac, `Tools/app-store-screenshots.sh` for iPhone and iPad).
 - Match the style of the code around you. Comments explain why, not what.
 
 ## Releases
