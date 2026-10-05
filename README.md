@@ -73,7 +73,7 @@ and status, priority, assignees and labels are in the sidebar. Step to the next 
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">
-  <img alt="An issue with its description, five sub-issues of which four are done, a comment, and its properties" src="Design/screenshots/issue-light.webp">
+  <img alt="An issue with its description, five sub-issues of which four are done, two comments, and its properties" src="Design/screenshots/issue-light.webp">
 </picture>
 
 ### Keyboard first
@@ -317,7 +317,7 @@ Packages/GitIssuesKit/
   Tests/                     Unit tests
 Config/                      Build settings, Info.plist and entitlements
 Design/                      The violet icon, earlier icon variants, screenshots, social preview
-Tools/                       Icons, release builds, iOS tests, App Store screenshots and TestFlight uploads
+Tools/                       Icons, release builds, iOS tests, App Store and README screenshots, TestFlight uploads
 ```
 
 Everything under `UI/Shared` and below `API`, `Model`, `Store` and `Sync` runs on all three devices, so a change there
@@ -331,6 +331,14 @@ cd Packages/GitIssuesKit && swift test
 
 ```bash
 Tools/test-ios.sh
+```
+
+The images in this README are made by a script: it runs the Mac app on the sample data, records the scenes and lays
+them out in light and dark, together with the iPhone and iPad screenshots from `Tools/app-store-screenshots.sh`. Run
+it again when a change shows in one of them (it brings the app to the front for about two minutes):
+
+```bash
+Tools/readme-images.sh
 ```
 
 `gi-cli selftest` runs every kind of write end to end against GitHub. It only touches a project titled
