@@ -16,14 +16,19 @@ without being asked. Before calling such a change done, go through this list and
 - **Screenshots:** when a change shows in a picture the README has (board, drag, issue, command palette, new issue,
   list; the iPhone and iPad screens), take them again:
   - iPhone and iPad first, if they changed: `Tools/app-store-screenshots.sh`
-  - then `Tools/readme-images.sh`, which records the Mac app on the sample data and lays out every README image and
-    `Design/social-preview.png`. It needs an unlocked screen and brings the app to the front for about two minutes.
-    If it can't run (screen locked, no permission), say so; don't commit old pictures as if they were new.
+  - then `Tools/readme-images.sh`, which records the Mac app on the sample data and lays out every README image, the
+    website's pictures and `Design/social-preview.png`. It needs an unlocked screen and brings the app to the front for
+    about two minutes. If it can't run (screen locked, no permission), say so; don't commit old pictures as if they
+    were new.
   - Look at every image before committing it.
   - A headline feature may deserve its own picture: add a scene to `Tools/readme-images.sh` and
     `Tools/readme-images/build.py`, and a section with a light and a dark `<picture>` to the README, like the others.
 - **Sample data** (`Store/DemoData.swift`): the screenshots and the App Store listing are taken on it, so a new feature
   needs something there to show it with.
+- **Website** (`Website/`, published by `.github/workflows/website.yml`): the home page's tagline, the support page's
+  answers (sign-in, what shows up, offline, removing data) and the privacy policy, which says the same as `PRIVACY.md`
+  plus what the website does. When the app is in the App Store, the "Coming soon" note on the home page becomes
+  Apple's badge linked to it (see the comment in `Website/index.html`).
 - **App Store listing** (`Design/app-store.md`): the description and "What's New" when the iPhone or iPad app changes.
 - **The repository on GitHub:** when the app's scope changes (a platform, a headline feature), update the description
   and topics with `gh repo edit lukaskaibel/issues-for-github --description "…" --add-topic …` and say that you did.

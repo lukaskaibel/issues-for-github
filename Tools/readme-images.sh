@@ -1,6 +1,6 @@
 #!/bin/bash
 # Takes the README's screenshots of the Mac app and lays them out, with the iPhone and iPad App Store screenshots,
-# as Design/screenshots/*.webp and Design/social-preview.png.
+# as Design/screenshots/*.webp and Design/social-preview.png, and makes the website's pictures (Website/images).
 #   Tools/readme-images.sh
 # The Mac app runs on the sample data, so no GitHub account is needed and nothing is sent anywhere. It comes to the
 # front for about a minute; leave keyboard and mouse alone until the script is done. Needs an unlocked screen, a Retina
@@ -124,4 +124,5 @@ fi
 
 echo "Laying out…"
 python3 Tools/readme-images/build.py "$raw"
+python3 Tools/readme-images/website.py
 echo "Done. Check the images, then commit them with the change they show."

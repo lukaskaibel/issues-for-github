@@ -23,6 +23,11 @@ collects nothing about you.
 
 "Explore with Sample Data" shows made-up projects stored on your device only. Nothing you do there is sent anywhere.
 
+## On the website
+
+The same policy is on the [website](https://lukaskaibel.github.io/issues-for-github/privacy/), together with what the
+website itself does (it is hosted by GitHub Pages and sets no cookies) and your rights under the GDPR.
+
 ## Questions
 
 Open an issue in the [repository](https://github.com/lukaskaibel/issues-for-github/issues). Security problems are
