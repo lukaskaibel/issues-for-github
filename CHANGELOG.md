@@ -28,6 +28,9 @@ All notable changes to this project are recorded here. The format follows
   background, so they open up to date.
 - UI tests for every feature of the iPhone and iPad app (`Tools/test-ios.sh`), and `Tools/testflight.sh` to upload
   builds to TestFlight.
+- `Tools/testflight-mac.sh` uploads the Mac app to App Store Connect. Its App Store build, which Product › Archive
+  makes too, runs in the App Sandbox, is signed with your team, shares the login through iCloud Keychain and leaves
+  out the GitHub CLI sign-in.
 - [PRIVACY.md](PRIVACY.md): what the app stores and sends, to link from the App Store listing.
 
 - Clicking an issue's priority, status, labels, assignees or sub-issue count, on a card or in the list, opens a
@@ -88,6 +91,8 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- When a saved sign-in no longer works, such as a GitHub CLI login without the CLI or a token missing from the
+  keychain, the sign-in screen appears instead of an endless "Looking for your projects…".
 - The issue view's back arrow and Escape return to the issue you came from, such as the parent of a sub-issue,
   instead of closing everything. Moving through issues with J and K no longer piles up history.
 - In the list, the header of the section you've scrolled into stays at the top without a line under it, and no

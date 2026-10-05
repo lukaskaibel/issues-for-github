@@ -66,7 +66,8 @@ public struct RootView: View {
         .onChange(of: model.status.idRemaps) { _, remaps in
             model.follow(remaps: remaps)
         }
-        .onChange(of: model.status.phase) { _, phase in
+        // Initial too: without a token the first sync fails before this view is on screen.
+        .onChange(of: model.status.phase, initial: true) { _, phase in
             if phase == .unauthorized { model.signedIn = false }
         }
     }
