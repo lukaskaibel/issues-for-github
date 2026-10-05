@@ -213,6 +213,13 @@ To put the iPhone and iPad app on TestFlight, create the app in App Store Connec
 Tools/testflight.sh
 ```
 
+The Mac app goes up the same way. Its App Store build runs in the App Sandbox, as the Mac App Store requires, and
+leaves out the GitHub CLI sign-in, which can't work there; **Product › Archive** in Xcode makes the same build.
+
+```bash
+Tools/testflight-mac.sh
+```
+
 For the App Store listing, [Design/app-store.md](Design/app-store.md) has the texts, the privacy answers and notes for
 App Review, and this takes the screenshots on a 6.9-inch iPhone and a 13-inch iPad simulator:
 
@@ -226,7 +233,7 @@ The sign-in screen offers up to three ways, depending on your setup:
 
 | Option | When to use it |
 |---|---|
-| **Use my GitHub CLI login** | You have [`gh`](https://cli.github.com) installed and signed in. Nothing to configure. If projects don't load, run `gh auth refresh -s project,read:org`. |
+| **Use my GitHub CLI login** | You have [`gh`](https://cli.github.com) installed and signed in. Nothing to configure. If projects don't load, run `gh auth refresh -s project,read:org`. Not in the App Store build. |
 | **Personal access token** | Create a classic token with the `repo`, `project` and `read:org` scopes. It is stored in your Mac's keychain. |
 | **Sign in with GitHub** | Shown when the build has an OAuth client ID. Register a GitHub OAuth app with the device flow enabled and set its client ID as `GITHUB_CLIENT_ID` in `Config/Local.xcconfig`. |
 

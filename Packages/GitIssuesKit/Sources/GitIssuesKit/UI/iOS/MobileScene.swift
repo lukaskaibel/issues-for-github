@@ -85,7 +85,8 @@ struct MobileRoot: View {
             model.follow(remaps: remaps)
             navigation.follow(remaps: remaps)
         }
-        .onChange(of: model.status.phase) { _, phase in
+        // Initial too: without a token the first sync fails before this view is on screen.
+        .onChange(of: model.status.phase, initial: true) { _, phase in
             if phase == .unauthorized { model.signedIn = false }
         }
         .onChange(of: model.signedIn) { _, signedIn in

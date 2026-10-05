@@ -97,7 +97,9 @@ public enum KeychainTokenStore {
 /// Reads the token of an existing GitHub CLI login. Meant for development builds.
 public enum GitHubCLI {
     public static func executableURL() -> URL? {
-        ["/opt/homebrew/bin/gh", "/usr/local/bin/gh", "/usr/bin/gh"]
+        // Inside the App Sandbox (the App Store build) `gh` inherits the sandbox and can't read its own login.
+        guard ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] == nil else { return nil }
+        return ["/opt/homebrew/bin/gh", "/usr/local/bin/gh", "/usr/bin/gh"]
             .map { URL(fileURLWithPath: $0) }
             .first { FileManager.default.isExecutableFile(atPath: $0.path) }
     }
@@ -154,7 +156,13 @@ public actor AuthStore: TokenSource {
     public init() {}
 
     public nonisolated var method: Method? {
-        UserDefaults.standard.string(forKey: Self.methodKey).flatMap(Method.init)
+        let stored = UserDefaults.standard.string(forKey: Self.methodKey).flatMap(Method.init)
+        #if os(macOS)
+        // A CLI login only counts while the CLI is usable. The App Store build can inherit this setting from a
+        // development build, because macOS moves the preferences into the sandbox container on first launch.
+        if stored == .githubCLI, !GitHubCLI.isAvailable { return nil }
+        #endif
+        return stored
     }
 
     public nonisolated var isSignedIn: Bool { method != nil }
