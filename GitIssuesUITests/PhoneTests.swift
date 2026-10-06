@@ -24,6 +24,28 @@ final class PhoneTests: AppTestCase {
         wait(element("row-#9"))
     }
 
+    func testIssuesMoveWithinTheirSection() {
+        launch()
+        openProjectTab("Git Issues")
+        // With In Review folded, all of In Progress is on screen without scrolling.
+        element("section-In Review").tap()
+        waitGone(element("row-#5"))
+        let top = element("row-#7")
+        let moving = element("row-#15")
+        wait(moving)
+        XCTAssertTrue(moving.isHittable)
+        XCTAssertGreaterThan(moving.frame.minY, top.frame.minY)
+        // Touch and hold, then drag it above #7. Moving soon after the row lifts makes it a drag; holding still
+        // until the menu is fully open keeps the menu instead.
+        let start = moving.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let end = top.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2))
+        start.press(forDuration: 0.6, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.6)
+        let moved = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in moving.frame.minY < top.frame.minY }, object: nil)
+        XCTAssertEqual(XCTWaiter().wait(for: [moved], timeout: 4), .completed, "#15 is above #7")
+        snapshot("Moved #15 to the top of In Progress")
+        XCTAssertTrue(moving.label.contains("In Progress"), moving.label)
+    }
+
     func testPullToRefreshKeepsTheList() {
         launch()
         wait(element("row-#9"))
@@ -84,21 +106,25 @@ final class PhoneTests: AppTestCase {
         wait(search)
         search.tap()
         search.typeText("mira")
-        let mira = labelled("mira", type: .button)
+        let mira = pickerRow("mira")
         wait(mira)
         snapshot("Assignee sheet")
+        // A tap picks and closes the sheet.
         mira.tap()
-        snapshot("Assignee picked while searching")
-        button("Done").tap()
+        waitGone(app.navigationBars["Assignee"])
         waitForLabel(element("chip-assignee"), containing: "mira")
 
+        // The circle picks without closing, for picking several.
         element("chip-labels").tap()
-        let bug = labelled("bug", type: .button)
+        let bug = element("check-bug")
         wait(bug)
         bug.tap()
-        snapshot("Labels sheet")
-        button("Done").tap()
+        snapshot("Labels sheet, one picked with its circle")
+        XCTAssertTrue(app.navigationBars["Labels"].exists, "The sheet stays open")
+        pickerRow("sync").tap()
+        waitGone(app.navigationBars["Labels"])
         waitForLabel(element("chip-labels"), containing: "bug")
+        waitForLabel(element("chip-labels"), containing: "sync")
     }
 
     func testDescriptionEditsInPlace() {
@@ -416,10 +442,9 @@ final class PhoneTests: AppTestCase {
         wait(search)
         search.tap()
         search.typeText("theo")
-        let theo = labelled("theo", type: .button)
+        let theo = pickerRow("theo")
         wait(theo)
         theo.tap()
-        button("Done").tap()
         waitForLabel(element("new-assignee"), containing: "theo")
         element("new-labels").tap()
         let labelSearch = app.searchFields.firstMatch
@@ -428,7 +453,6 @@ final class PhoneTests: AppTestCase {
         labelSearch.typeText("ui")
         wait(button("ui"))
         button("ui").tap()
-        button("Done").tap()
         waitForLabel(element("new-labels"), containing: "ui")
         element("new-description").tap()
         element("new-description").typeText("Cards that land outside a column go back to where they came from.")

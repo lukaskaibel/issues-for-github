@@ -11,6 +11,8 @@ struct IssueScreen: View {
     var itemId: String
 
     @State private var picker: PickerKind?
+    /// Whether the picker was opened with a key, so its search takes the typing.
+    @State private var pickerFromKeyboard = false
     @State private var editingDescription = false
 
     var body: some View {
@@ -24,6 +26,7 @@ struct IssueScreen: View {
                 .onChange(of: navigation.pickerRequest) { _, request in
                     guard let request, request.itemId == itemId else { return }
                     picker = request.kind
+                    pickerFromKeyboard = true
                     navigation.pickerRequest = nil
                 }
         } else {
@@ -84,8 +87,8 @@ struct IssueScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(regular ? .automatic : .hidden, for: .tabBar)
         .toolbar { toolbar(item) }
-        .sheet(item: $picker) { kind in
-            IssuePickerSheet(kind: kind, itemId: item.id)
+        .sheet(item: $picker, onDismiss: { pickerFromKeyboard = false }) { kind in
+            IssuePickerSheet(kind: kind, itemId: item.id, focusesSearch: pickerFromKeyboard)
         }
         .background { keyboardShortcuts(item) }
     }

@@ -310,6 +310,7 @@ struct ColumnHeader: View {
                     .textFieldStyle(.plain)
                     .font(.uiSemibold)
                     .focused($nameFocused)
+                    .focusOnAppear()
                     .onSubmit(commitRename)
                     .onKeyPress(.escape) {
                         renaming = false
@@ -463,6 +464,7 @@ struct AddColumnButton: View {
                     .textFieldStyle(.plain)
                     .font(.uiSemibold)
                     .focused($focused)
+                    .focusOnAppear()
                     .padding(.horizontal, 8)
                     .frame(height: 28)
                     .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.control))

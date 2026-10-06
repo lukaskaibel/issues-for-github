@@ -110,6 +110,15 @@ extension AppModel {
             selectAll()
             return true
         }
+        // ⌥↑ and ⌥↓ (or ⌥K and ⌥J) move the issue up or down its column, or its section of the list. The
+        // keyboard focus goes with it, so pressing again keeps moving the same issue.
+        if modifiers == .option, openItem == nil, currentProjectId != nil,
+           let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key] {
+            if let id = cursorId, let item = scopedItems.first(where: { $0.id == id }), move(item, by: delta) {
+                moveFocus(to: item.id)
+            }
+            return true
+        }
         guard modifiers.isEmpty else { return false }
 
         // Escape steps back one layer at a time: the peek, then the open issue, then the selection.

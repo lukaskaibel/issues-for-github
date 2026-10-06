@@ -207,14 +207,25 @@ struct PeekPanel: View {
                     }
                 }
             }
-            if !item.labels.isEmpty || item.subTotal > 0 {
+            if item.kind != .draft || item.subTotal > 0 {
                 HStack(spacing: 6) {
-                    ForEach(item.labels) { LabelChip(label: $0) }
+                    if item.kind != .draft {
+                        PropertyButton(kind: .labels, item: item) {
+                            HStack(spacing: 6) {
+                                if item.labels.isEmpty {
+                                    Image(systemName: "tag").foregroundStyle(Theme.textTertiary)
+                                    Text("Add label").foregroundStyle(Theme.textTertiary)
+                                } else {
+                                    ForEach(item.labels) { LabelChip(label: $0) }
+                                }
+                            }
+                            .font(.small)
+                        }
+                    }
                     if item.subTotal > 0 {
                         SubIssueChip(completed: item.subCompleted, total: item.subTotal)
                     }
                 }
-                .padding(.leading, 8)
             }
         }
         .padding(.leading, -8)

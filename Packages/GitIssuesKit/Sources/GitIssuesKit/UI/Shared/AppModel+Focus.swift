@@ -6,6 +6,8 @@ extension AppModel {
     /// The issue shortcuts and palette commands apply to.
     var targetItem: Item? {
         if let openItem { return openItem }
+        // While peeking, keys act on the issue in the peek, wherever the pointer is: it may be reading the panel.
+        if let peekItem { return peekItem }
         guard let id = hoveredItemId ?? focusedItemId else { return nil }
         return scopedItems.first { $0.id == id }
     }
@@ -28,8 +30,8 @@ extension AppModel {
         }
     }
 
-    /// The issue keyboard navigation starts from.
-    var cursorId: String? { focusedItemId ?? hoveredItemId }
+    /// The issue keyboard navigation starts from: the one in the peek, else the keyboard focus, else the pointer.
+    var cursorId: String? { peekItem?.id ?? focusedItemId ?? hoveredItemId }
 
     func moveFocus(to id: String, scroll: Bool = true) {
         hoveredItemId = nil
