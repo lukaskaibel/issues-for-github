@@ -26,7 +26,8 @@
   <a href="#iphone-and-ipad"><b>iPhone and iPad</b></a> &nbsp;·&nbsp;
   <a href="#getting-started"><b>Getting started</b></a> &nbsp;·&nbsp;
   <a href="#using-it"><b>Shortcuts</b></a> &nbsp;·&nbsp;
-  <a href="CHANGELOG.md"><b>Changelog</b></a>
+  <a href="CHANGELOG.md"><b>Changelog</b></a> &nbsp;·&nbsp;
+  <a href="https://lukaskaibel.github.io/issues-for-github/"><b>Website</b></a>
 </p>
 
 <br>
@@ -168,6 +169,12 @@ from its name, since GitHub stores only the label.
 GitHub cannot push changes to a desktop app, so the app asks for changes every 15 seconds while it is in front, and
 immediately when you return to it. Other people's changes therefore appear with a short delay.
 
+The dot on your avatar at the top of the sidebar shows how syncing is going: green when everything is on GitHub, the
+accent colour while your changes go out, an amber ring when you're offline, and amber when something needs you. Hover
+it to see when the app last synced. When you're offline, a change needs your decision or syncing fails, a card at the
+bottom of the sidebar says so and offers the next step (show the waiting changes, open the issue, try again). The rest
+of the time the bottom of the sidebar stays empty.
+
 When you and someone else change the same issue:
 
 1. **Different fields:** both changes stick. You set the priority, they move the card; nobody loses anything.
@@ -291,7 +298,9 @@ To change several issues at once, pick them with `X`, the checkbox at the start 
 Shift-click. A bar at the bottom then sets status, priority, assignee or labels for all of them, and so do the
 usual keys, dropdowns and right-click menu. `Esc` clears the pick.
 
-Right-click a project in the sidebar to hide it; hidden projects wait, folded away, at the end of the list.
+Right-click a project in the sidebar to hide it; hidden projects wait, folded away, at the end of the list. Click
+your name at the top of the sidebar for the account menu: Sync Now, changes still waiting to be sent, appearance,
+settings and signing out. It works with the arrow keys like any menu.
 
 ## Using it on iPhone and iPad
 
@@ -332,6 +341,7 @@ Packages/GitIssuesKit/
   Tests/                     Unit tests
 Config/                      Build settings, Info.plist and entitlements
 Design/                      The violet icon, earlier icon variants, screenshots, social preview
+Website/                     The website on GitHub Pages: home, privacy policy, terms, support, Impressum
 Tools/                       Icons, release builds, iOS tests, App Store and README screenshots, TestFlight uploads
 fastlane/                    App Store releases: lanes, the listing's texts and the age rating
 ```
@@ -350,11 +360,19 @@ Tools/test-ios.sh
 ```
 
 The images in this README are made by a script: it runs the Mac app on the sample data, records the scenes and lays
-them out in light and dark, together with the iPhone and iPad screenshots from `Tools/app-store-screenshots.sh`. Run
-it again when a change shows in one of them (it brings the app to the front for about two minutes):
+them out in light and dark, together with the iPhone and iPad screenshots from `Tools/app-store-screenshots.sh`, and
+makes the website's pictures from the same screenshots. Run it again when a change shows in one of them (it brings the
+app to the front for about two minutes):
 
 ```bash
 Tools/readme-images.sh
+```
+
+The [website](https://lukaskaibel.github.io/issues-for-github/) is plain HTML and CSS in `Website/`, without a build
+step; `.github/workflows/website.yml` publishes it to GitHub Pages when it changes on `main`. To look at it locally:
+
+```bash
+python3 -m http.server --directory Website
 ```
 
 `gi-cli selftest` runs every kind of write end to end against GitHub. It only touches a project titled

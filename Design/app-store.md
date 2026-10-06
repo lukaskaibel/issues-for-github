@@ -12,6 +12,10 @@ fastlane (see "Releasing to the App Store" in the README). fastlane uploads:
 
 The contact for App Review and an optional review account are in `fastlane/.env.secret`, which is not checked in.
 
+The links point to the website in `Website/` (published to GitHub Pages): privacy policy
+`https://lukaskaibel.github.io/issues-for-github/privacy/`, support `…/support/` and marketing the home page. The
+license agreement is Apple's standard EULA; the website's terms add to it.
+
 ## Once, in App Store Connect
 
 fastlane can't do these; set them when the app is created.

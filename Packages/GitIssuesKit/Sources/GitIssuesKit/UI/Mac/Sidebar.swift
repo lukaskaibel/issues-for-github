@@ -19,9 +19,14 @@ struct Sidebar: View {
             }
             .frame(height: 44)
 
-            HStack(spacing: 8) {
-                AccountMenu()
+            // The account, with the state of syncing as a dot on the avatar, then search and a new issue, as in
+            // Linear's workspace header.
+            HStack(spacing: 2) {
+                AccountMenuButton()
                 Spacer(minLength: 4)
+                SidebarIconButton(systemName: "magnifyingglass", label: "Search", help: "Search (⌘K)") {
+                    model.overlay = .palette(.root)
+                }
                 Button {
                     model.overlay = .newIssue(statusId: nil, parentItemId: nil)
                 } label: {
@@ -40,9 +45,6 @@ struct Sidebar: View {
             .frame(height: 32)
             .padding(.bottom, 8)
 
-            SidebarRow(title: "Search", systemImage: "magnifyingglass", trailing: "⌘K") {
-                model.overlay = .palette(.root)
-            }
             SidebarRow(title: "My Issues", systemImage: "scope", active: model.scope == .myIssues) {
                 model.select(.myIssues)
             }
@@ -65,10 +67,16 @@ struct Sidebar: View {
             }
             .scrollIndicators(.never)
 
-            SyncIndicator()
+            // Nothing while everything is on GitHub; a card when you're offline or something needs you.
+            if let attention = model.syncAttention {
+                SyncHintCard(attention: attention)
+                    .padding(.top, 8)
+                    .transition(.opacity.combined(with: .offset(y: 8)))
+            }
         }
         .padding(.horizontal, 10)
-        .padding(.bottom, 8)
+        .padding(.bottom, 10)
+        .animation(Theme.overlay, value: model.syncAttention)
     }
 }
 
@@ -148,55 +156,235 @@ struct HiddenProjects: View {
     }
 }
 
-/// The account at the top of the sidebar. Clicking it opens everything about the session.
-struct AccountMenu: View {
+/// The account at the top of the sidebar: the avatar with the state of syncing as a dot, and the login. Clicking it
+/// opens the account menu; the tooltip says when the app last synced.
+struct AccountMenuButton: View {
     @Environment(AppModel.self) private var model
+    @State private var open = false
 
     var body: some View {
-        Menu {
-            if model.isDemo {
-                Text("Sample data on this Mac")
-            } else if let login = model.viewer?.login {
-                Text("Signed in as \(login)")
-            }
-            Button("Sync Now") { model.refresh() }
-            Divider()
-            Picker("Appearance", selection: Bindable(model).appearance) {
-                ForEach(AppearanceSetting.allCases) { Text($0.title).tag($0) }
-            }
-            Button("Settings…") { model.settingsRequest += 1 }
-            Divider()
-            if model.isDemo {
-                Button("Leave Sample Data") { model.leaveDemo() }
-            } else {
-                Button("Sign Out") { model.signOut() }
-                if model.loginIsShared {
-                    Button("Sign Out Everywhere…") { model.confirmSignOutEverywhere = true }
+        TimelineView(.periodic(from: .now, by: 20)) { context in
+            Button {
+                open = true
+            } label: {
+                HStack(spacing: 8) {
+                    StatusAvatar(size: 20)
+                    Text(model.viewer?.login ?? "GitHub")
+                        .font(.uiSemibold)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(Theme.textTertiary)
                 }
+                .foregroundStyle(Theme.text)
+                .padding(.horizontal, 6)
+                .frame(height: 28)
+                .hoverFill(active: open)
+                .contentShape(Rectangle())
             }
-        } label: {
-            HStack(spacing: 8) {
-                if let viewer = model.viewer {
-                    Avatar(login: viewer.login, url: viewer.avatarUrl, size: 20)
-                    Text(viewer.login).font(.uiSemibold).lineLimit(1)
-                } else {
-                    Text("GitHub").font(.uiSemibold)
-                }
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(Theme.textTertiary)
+            .buttonStyle(PlainPressStyle())
+            .help(model.accountSummary(at: context.date))
+            .accessibilityLabel("Account")
+            .accessibilityValue(model.accountSummary(at: context.date))
+            .dropdown(isPresented: $open) { close in
+                AccountDropdown(close: close)
             }
-            .foregroundStyle(Theme.text)
-            .padding(.horizontal, 6)
-            .frame(height: 28)
-            .hoverFill()
-            .contentShape(Rectangle())
         }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .accessibilityLabel("Account")
+    }
+}
+
+/// A small icon button in the sidebar's header that lights up under the pointer.
+struct SidebarIconButton: View {
+    var systemName: String
+    var label: String
+    var help: String
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Theme.textBody)
+                .frame(width: 26, height: 26)
+                .hoverFill()
+        }
+        .buttonStyle(PlainPressStyle())
+        .help(help)
+        .accessibilityLabel(label)
+    }
+}
+
+/// The account menu: who is signed in and how syncing is going, then Sync Now, the queue, appearance, settings and
+/// signing out. It opens as a dropdown like the pickers; the arrow keys move, Return picks, → opens a submenu.
+struct AccountDropdown: View {
+    @Environment(AppModel.self) private var model
+    var close: () -> Void
+
+    @State private var active: Entry?
+    @State private var queueOpen = false
+    @State private var appearanceOpen = false
+
+    enum Entry: Hashable {
+        case sync, queue, appearance, settings, signOut, signOutEverywhere
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            MenuDivider()
+            row(.sync)
+            if waiting > 0 {
+                row(.queue)
+                    .dropdown(isPresented: $queueOpen, placement: .trailing) { close in
+                        QueueList(close: close)
+                    }
+            }
+            MenuDivider()
+            row(.appearance)
+                .dropdown(isPresented: $appearanceOpen, placement: .trailing) { close in
+                    AppearanceDropdown(close: close)
+                }
+            row(.settings)
+            MenuDivider()
+            row(.signOut)
+            if model.loginIsShared { row(.signOutEverywhere) }
+        }
+        .padding(.bottom, 4)
+        .frame(width: 264)
+        .font(.ui)
+        .foregroundStyle(Theme.text)
+        .background(MenuKeys(
+            onMove: { delta in
+                let list = entries
+                let index = menuStep(active.flatMap { list.firstIndex(of: $0) }, by: delta, count: list.count)
+                active = index.map { list[$0] }
+            },
+            onActivate: { if let active { perform(active) } },
+            onOpen: { if active == .queue || active == .appearance, let active { perform(active) } }
+        ))
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                AccountAvatar(size: 28)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(model.viewer?.login ?? "GitHub").font(.uiSemibold).lineLimit(1)
+                    Text(model.viewer?.name ?? (model.isDemo ? "Sample data" : "Signed in with GitHub"))
+                        .font(.small)
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(1)
+                }
+            }
+            TimelineView(.periodic(from: .now, by: 20)) { context in
+                HStack(spacing: 10) {
+                    SyncDot(style: model.syncDotStyle, size: 7)
+                        .frame(width: 16)
+                    Text(model.syncLine(at: context.date))
+                        .font(.small)
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 12)
+        .padding(.bottom, 6)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Changes not yet on GitHub, including any that need a decision.
+    private var waiting: Int {
+        model.outbox.filter { $0.state != .sent }.count
+    }
+
+    private var entries: [Entry] {
+        var list: [Entry] = [.sync]
+        if waiting > 0 { list.append(.queue) }
+        list += [.appearance, .settings, .signOut]
+        if model.loginIsShared { list.append(.signOutEverywhere) }
+        return list
+    }
+
+    @ViewBuilder
+    private func row(_ entry: Entry) -> some View {
+        let isActive = active == entry
+        let hover: (Bool) -> Void = { inside in
+            if inside { active = entry } else if active == entry { active = nil }
+        }
+        switch entry {
+        case .sync:
+            MenuRow(title: "Sync Now", systemImage: "arrow.triangle.2.circlepath", shortcut: "⌘R", active: isActive, action: { perform(entry) }, onHover: hover)
+        case .queue:
+            MenuRow(title: "Queued Changes", systemImage: "tray.full", value: "\(waiting)", submenu: true, active: isActive || queueOpen, action: { perform(entry) }, onHover: hover)
+        case .appearance:
+            MenuRow(title: "Appearance", systemImage: "circle.lefthalf.filled", value: model.appearance.title, submenu: true, active: isActive || appearanceOpen, action: { perform(entry) }, onHover: hover)
+        case .settings:
+            MenuRow(title: "Settings…", systemImage: "gearshape", shortcut: "⌘,", active: isActive, action: { perform(entry) }, onHover: hover)
+        case .signOut:
+            MenuRow(title: model.isDemo ? "Leave Sample Data" : "Sign Out", systemImage: "rectangle.portrait.and.arrow.right", active: isActive, action: { perform(entry) }, onHover: hover)
+        case .signOutEverywhere:
+            MenuRow(title: "Sign Out Everywhere…", active: isActive, action: { perform(entry) }, onHover: hover)
+        }
+    }
+
+    private func perform(_ entry: Entry) {
+        switch entry {
+        case .sync:
+            close()
+            model.refresh()
+        case .queue:
+            queueOpen = true
+        case .appearance:
+            appearanceOpen = true
+        case .settings:
+            close()
+            model.settingsRequest += 1
+        case .signOut:
+            close()
+            model.signOut()
+        case .signOutEverywhere:
+            close()
+            model.confirmSignOutEverywhere = true
+        }
+    }
+}
+
+/// System, Light or Dark, as a submenu of the account menu.
+struct AppearanceDropdown: View {
+    @Environment(AppModel.self) private var model
+    var close: () -> Void
+    @State private var active: Int?
+
+    var body: some View {
+        let options = AppearanceSetting.allCases
+        VStack(spacing: 0) {
+            ForEach(Array(options.enumerated()), id: \.element) { index, option in
+                MenuRow(
+                    title: option.title, systemImage: option.systemImage, checked: model.appearance == option,
+                    active: active == index, action: { pick(option) },
+                    onHover: { inside in
+                        if inside { active = index } else if active == index { active = nil }
+                    }
+                )
+            }
+        }
+        .padding(.vertical, 4)
+        .frame(width: 176)
+        .font(.ui)
+        .foregroundStyle(Theme.text)
+        .background(MenuKeys(
+            onMove: { active = menuStep(active, by: $0, count: options.count) },
+            onActivate: { if let active { pick(options[active]) } },
+            onBack: close
+        ))
+    }
+
+    private func pick(_ option: AppearanceSetting) {
+        model.appearance = option
+        // Done with the account menu too, as with a menu.
+        Dropdown.close()
     }
 }
 
@@ -204,7 +392,6 @@ struct SidebarRow: View {
     var title: String
     var systemImage: String
     var active = false
-    var trailing: String?
     var action: () -> Void
 
     var body: some View {
@@ -215,9 +402,6 @@ struct SidebarRow: View {
                     .frame(width: 14)
                 Text(title)
                 Spacer(minLength: 0)
-                if let trailing {
-                    Text(trailing).font(.tiny).foregroundStyle(Theme.textTertiary)
-                }
             }
             .foregroundStyle(active ? Theme.text : Theme.textSecondary)
             .padding(.horizontal, 6)
@@ -228,76 +412,66 @@ struct SidebarRow: View {
     }
 }
 
-// MARK: - Sync indicator
+// MARK: - Syncing
 
-struct SyncIndicator: View {
+/// What needs your attention about syncing, at the bottom of the sidebar: being offline, a change to decide on,
+/// or a sync that failed. Nothing shows while everything is fine; the dot on the avatar says that.
+struct SyncHintCard: View {
     @Environment(AppModel.self) private var model
-    @State private var showQueue = false
-    @State private var hovering = false
+    var attention: SyncAttention
+    @State private var queueOpen = false
 
     var body: some View {
-        Button {
-            showQueue.toggle()
-        } label: {
-            SyncPill(highlighted: hovering || showQueue)
-        }
-        .buttonStyle(PlainPressStyle())
-        .onHover { hovering = $0 }
-        // The pill's padding would push the dot right of the sidebar's other icons; pull it back in line.
-        .padding(.leading, -4)
-        .popover(isPresented: $showQueue, arrowEdge: .top) {
-            QueuePopover()
-        }
-        .help("Queued changes")
-    }
-}
-
-/// Sync state as a small pill: a dot and a line of text, with a capsule behind it on hover.
-struct SyncPill: View {
-    @Environment(AppModel.self) private var model
-    var highlighted: Bool
-
-    var body: some View {
-        HStack(spacing: 7) {
-            indicator
-            TimelineView(.periodic(from: .now, by: 20)) { _ in
-                Text(text)
-                    .font(.small)
-                    .foregroundStyle(isOffline ? Theme.text : Theme.textSecondary)
-                    .lineLimit(1)
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: attention.systemImage)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Theme.warning)
+                .frame(width: 14, height: 15)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(attention.title)
+                    .font(.smallMedium)
+                    .foregroundStyle(Theme.text)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(attention.message)
+                    .font(.tiny)
+                    .foregroundStyle(Theme.textSecondary)
+                    .lineLimit(4)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let action = attention.actionTitle {
+                    Button(action, action: perform)
+                        .buttonStyle(SecondaryButtonStyle())
+                        .padding(.top, 6)
+                        .dropdown(isPresented: $queueOpen, placement: .above) { close in
+                            QueueList(close: close)
+                        }
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.leading, 10)
-        .padding(.trailing, 12)
-        .frame(height: 26)
-        .background(Capsule().fill(highlighted ? Theme.hover : .clear))
-        .contentShape(Capsule())
-        .animation(Theme.quick, value: highlighted)
+        .padding(.leading, 9)
+        .padding(.trailing, 10)
+        .padding(.vertical, 10)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Theme.cardBorder, lineWidth: 1))
+        .accessibilityElement(children: .contain)
     }
 
-    private var isOffline: Bool { model.status.phase == .offline }
-
-    @ViewBuilder
-    private var indicator: some View {
-        switch model.status.phase {
-        case .syncing:
-            ProgressView().controlSize(.mini).frame(width: 12, height: 12)
+    private func perform() {
+        switch attention {
+        case .conflict(_, _, let itemId):
+            if let itemId { model.apply(.openItem(itemId)) }
+        case .failed:
+            model.refresh()
         case .offline:
-            Circle().stroke(Theme.warning, lineWidth: 1.5).frame(width: 7, height: 7)
-        case .failed, .unauthorized:
-            Circle().fill(Theme.warning).frame(width: 7, height: 7)
-        case .idle:
-            Circle().fill(model.pendingCount > 0 ? Theme.accent : Theme.positive).frame(width: 7, height: 7)
+            queueOpen = true
         }
-    }
-
-    private var text: String {
-        model.syncLine()
     }
 }
 
-struct QueuePopover: View {
+/// Changes saved on this Mac and waiting to be sent, with the ones that need a decision marked.
+struct QueueList: View {
     @Environment(AppModel.self) private var model
+    var close: () -> Void
 
     var body: some View {
         let waiting = model.outbox.filter { $0.state != .sent }
@@ -349,7 +523,7 @@ struct QueuePopover: View {
         .frame(width: 340)
         .font(.ui)
         .foregroundStyle(Theme.text)
-        .background(Theme.popover)
+        .background(MenuKeys(onMove: { _ in }, onActivate: {}, onBack: close))
     }
 
     private var footer: String {

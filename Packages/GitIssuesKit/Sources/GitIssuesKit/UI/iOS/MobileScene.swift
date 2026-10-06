@@ -54,6 +54,8 @@ struct MobileRoot: View {
                 NewIssueSheet(context: context)
             case .account:
                 AccountSheet()
+            case .queue:
+                NavigationStack { QueueScreen(showsDone: true) }
             case .arrangeSections(let scope):
                 ArrangeSectionsSheet(scope: scope)
             }
@@ -165,12 +167,17 @@ struct MainTabs: View {
             SidebarAccountHeader()
         }
         .tabViewSidebarBottomBar {
-            // The dot in the rows' icon column, the text on their title edge.
-            SyncStatusLine(indicatorWidth: 30, spacing: 9)
-                .padding(.leading, 31)
-                .padding(.trailing, 16)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // Nothing while everything is on GitHub (the dot on the avatar says so); a card when you're offline or
+            // something needs you.
+            VStack {
+                if let attention = model.syncAttention {
+                    SidebarSyncHint(attention: attention)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .transition(.opacity)
+                }
+            }
+            .animation(Theme.overlay, value: model.syncAttention)
         }
         .tabBarMinimizeBehavior(.onScrollDown)
         .onChange(of: wide, initial: true) { _, wide in
@@ -206,9 +213,9 @@ struct TabStack<Root: View>: View {
     }
 }
 
-/// The account at the top of the iPad sidebar, as at the top of the Mac's sidebar. It lines up with the rows below:
-/// the avatar sits in their icon column, the name on their title edge, and the compose button in the column of the
-/// section's disclosure arrow.
+/// The account at the top of the iPad sidebar, as at the top of the Mac's sidebar, with the state of syncing as a dot
+/// on the avatar. It lines up with the rows below: the avatar sits in their icon column, the name on their title edge,
+/// and the compose button in the column of the section's disclosure arrow.
 struct SidebarAccountHeader: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
@@ -219,7 +226,7 @@ struct SidebarAccountHeader: View {
                 navigation.sheet = .account
             } label: {
                 HStack(spacing: 11) {
-                    AccountAvatar(size: 26)
+                    StatusAvatar(size: 26)
                     HStack(spacing: 6) {
                         Text(model.viewer?.login ?? "GitHub")
                             .font(.headline)
@@ -238,7 +245,7 @@ struct SidebarAccountHeader: View {
             .buttonStyle(PlainPressStyle())
             .layoutPriority(1)
             .accessibilityLabel("Account and settings")
-            .accessibilityValue(model.isDemo ? "Sample data" : (model.viewer?.login ?? ""))
+            .accessibilityValue(model.accountSummary())
             Spacer(minLength: 8)
             Button {
                 navigation.sheet = .newIssue(NewIssueContext(projectId: navigation.currentProjectId, assignToMe: navigation.tab == .myIssues))
@@ -261,19 +268,52 @@ struct SidebarAccountHeader: View {
     }
 }
 
-/// The signed-in person's avatar, or a placeholder until it is known.
-struct AccountAvatar: View {
+/// What needs your attention about syncing, at the bottom of the iPad sidebar: being offline, a change to decide on,
+/// or a sync that failed. As on the Mac, nothing shows while everything is fine.
+struct SidebarSyncHint: View {
     @Environment(AppModel.self) private var model
-    var size: CGFloat
+    @Environment(MobileNavigation.self) private var navigation
+    var attention: SyncAttention
 
     var body: some View {
-        if let viewer = model.viewer {
-            Avatar(login: viewer.login, url: viewer.avatarUrl, size: size)
-        } else {
-            Image(systemName: "person.crop.circle.fill")
-                .resizable()
-                .foregroundStyle(Theme.textTertiary)
-                .frame(width: size, height: size)
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: attention.systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.warning)
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(attention.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.text)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(attention.message)
+                    .font(.footnote)
+                    .foregroundStyle(Theme.textSecondary)
+                    .lineLimit(4)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let action = attention.actionTitle {
+                    Button(action, action: perform)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .padding(.top, 6)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Theme.cardBorder, lineWidth: 1))
+        .accessibilityElement(children: .contain)
+    }
+
+    private func perform() {
+        switch attention {
+        case .conflict(_, _, let itemId):
+            if let itemId { navigation.push(.issue(itemId), on: navigation.tab) }
+        case .failed:
+            model.refresh()
+        case .offline:
+            navigation.sheet = .queue
         }
     }
 }

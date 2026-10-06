@@ -33,6 +33,9 @@ All notable changes to this project are recorded here. The format follows
   makes too, runs in the App Sandbox, is signed with your team, shares the login through iCloud Keychain and leaves
   out the GitHub CLI sign-in.
 - [PRIVACY.md](PRIVACY.md): what the app stores and sends, to link from the App Store listing.
+- A website, [lukaskaibel.github.io/issues-for-github](https://lukaskaibel.github.io/issues-for-github/), with the
+  privacy policy, terms of use, support with answers to common questions, and the Impressum. It follows the light or
+  dark appearance and is published from `Website/` whenever it changes on main.
 - fastlane lanes release the Mac, iPhone and iPad apps together: screenshots, the listing's texts, TestFlight builds
   and the submission for review, signed in with an App Store Connect API key. `Tools/mac-app-store-screenshots.sh`
   takes the Mac App Store screenshots on the sample data.
@@ -74,6 +77,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- The sidebar is calmer, as in Linear. The account, search and New Issue share the top row, and the state of
+  syncing is a dot on your avatar: green when everything is on GitHub, the accent while changes go out, amber when
+  you're offline or something needs you. "Synced just now" moved into the account menu (and the avatar's tooltip).
+  That menu opens as a dropdown like the pickers, with Sync Now, the queued changes, Appearance as a submenu,
+  Settings and Sign Out, and works with the arrow keys. A card at the bottom of the sidebar appears only when you're
+  offline, a change needs your decision or syncing failed, with a button to show the changes, open the issue or try
+  again. The iPad sidebar works the same way.
 - List rows start a little further in, so the checkbox has its place under the section headers' fold arrow and
   the priority lines up with the headers' status icon. Stepping with J/K skips folded sections.
 - Parts of cards and list rows light up in a shape that suits them, as in Linear: a small square behind an icon,
