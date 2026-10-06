@@ -168,6 +168,12 @@ from its name, since GitHub stores only the label.
 GitHub cannot push changes to a desktop app, so the app asks for changes every 15 seconds while it is in front, and
 immediately when you return to it. Other people's changes therefore appear with a short delay.
 
+The dot on your avatar at the top of the sidebar shows how syncing is going: green when everything is on GitHub, the
+accent colour while your changes go out, an amber ring when you're offline, and amber when something needs you. Hover
+it to see when the app last synced. When you're offline, a change needs your decision or syncing fails, a card at the
+bottom of the sidebar says so and offers the next step (show the waiting changes, open the issue, try again). The rest
+of the time the bottom of the sidebar stays empty.
+
 When you and someone else change the same issue:
 
 1. **Different fields:** both changes stick. You set the priority, they move the card; nobody loses anything.
@@ -283,7 +289,9 @@ To change several issues at once, pick them with `X`, the checkbox at the start 
 Shift-click. A bar at the bottom then sets status, priority, assignee or labels for all of them, and so do the
 usual keys, dropdowns and right-click menu. `Esc` clears the pick.
 
-Right-click a project in the sidebar to hide it; hidden projects wait, folded away, at the end of the list.
+Right-click a project in the sidebar to hide it; hidden projects wait, folded away, at the end of the list. Click
+your name at the top of the sidebar for the account menu: Sync Now, changes still waiting to be sent, appearance,
+settings and signing out. It works with the arrow keys like any menu.
 
 ## Using it on iPhone and iPad
 

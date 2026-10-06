@@ -145,8 +145,11 @@ private struct AppIconButton: View {
 }
 
 /// Changes saved on this device and waiting to be sent, with the one that needs a decision marked.
-private struct QueueScreen: View {
+struct QueueScreen: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    /// Shown on its own in a sheet (from the sidebar's offline card) rather than inside the account sheet.
+    var showsDone = false
 
     var body: some View {
         let waiting = model.outbox.filter { $0.state != .sent }
@@ -183,6 +186,11 @@ private struct QueueScreen: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Sync Now") { model.refresh() }
+            }
+            if showsDone {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", systemImage: "checkmark") { dismiss() }
+                }
             }
         }
     }

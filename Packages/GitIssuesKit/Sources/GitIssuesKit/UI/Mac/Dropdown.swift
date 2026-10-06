@@ -20,11 +20,13 @@ enum Dropdown {
     static let trace: ((String) -> Void)? = nil
     #endif
 
-    /// Opens a dropdown under `rect`, given in `view`'s coordinates. From a view inside an open dropdown it
-    /// opens on top of that one; from anywhere else it replaces whatever is open.
+    /// Opens a dropdown at `rect`, given in `view`'s coordinates: under it, over it, or beside it as a submenu.
+    /// From a view inside an open dropdown it opens on top of that one; from anywhere else it replaces whatever
+    /// is open.
     @discardableResult
     static func show<Content: View>(
-        below rect: NSRect, in view: NSView, model: AppModel, onClose: @escaping () -> Void = {},
+        below rect: NSRect, in view: NSView, model: AppModel, placement: DropdownPlacement = .below,
+        onClose: @escaping () -> Void = {},
         @ViewBuilder content: (_ close: @escaping () -> Void) -> Content
     ) -> DropdownPanel? {
         guard let window = view.window else { return nil }
@@ -44,11 +46,21 @@ enum Dropdown {
         let hosting = ResizingHostingView(rootView: root)
         let size = hosting.fittingSize
 
-        // Under the anchor, left edges aligned; above it when there's no room below.
         let anchor = window.convertToScreen(view.convert(rect, to: nil))
         let screen = window.screen?.visibleFrame ?? .infinite
-        var origin = NSPoint(x: anchor.minX - 4, y: anchor.minY - 4 - size.height)
-        if origin.y < screen.minY { origin.y = anchor.maxY + 4 }
+        var origin: NSPoint
+        switch placement {
+        case .below, .above:
+            // Under the anchor, left edges aligned; above it when asked or when there's no room below.
+            origin = NSPoint(x: anchor.minX - 4, y: anchor.minY - 4 - size.height)
+            if placement == .above || origin.y < screen.minY { origin.y = anchor.maxY + 4 }
+        case .trailing:
+            // Right of the row, its first row level with it (the panel has 4 pt above its rows); left of it
+            // when there's no room on the right.
+            origin = NSPoint(x: anchor.maxX + 6, y: anchor.maxY + 4 - size.height)
+            if origin.x + size.width > screen.maxX { origin.x = anchor.minX - 6 - size.width }
+            origin.y = max(origin.y, screen.minY + 8)
+        }
         origin.x = min(max(origin.x, screen.minX + 8), screen.maxX - size.width - 8)
 
         let panel = DropdownPanel(contentRect: NSRect(origin: origin, size: size))
@@ -114,6 +126,16 @@ enum Dropdown {
     }
 }
 
+/// Where a dropdown opens relative to what was clicked.
+enum DropdownPlacement {
+    /// Under it, or over it when there's no room below.
+    case below
+    /// Over it, for things at the bottom of the window.
+    case above
+    /// To its right, as a submenu of a menu row.
+    case trailing
+}
+
 private final class PanelHandle {
     weak var panel: DropdownPanel?
 }
@@ -164,22 +186,24 @@ final class DropdownPanel: NSPanel {
 // MARK: - SwiftUI
 
 extension View {
-    /// Shows a dropdown under this view while `isPresented` is true.
+    /// Shows a dropdown under this view while `isPresented` is true, or over it or beside it.
     func dropdown<Content: View>(
-        isPresented: Binding<Bool>, @ViewBuilder content: @escaping (_ close: @escaping () -> Void) -> Content
+        isPresented: Binding<Bool>, placement: DropdownPlacement = .below,
+        @ViewBuilder content: @escaping (_ close: @escaping () -> Void) -> Content
     ) -> some View {
-        modifier(DropdownModifier(isPresented: isPresented, dropdownContent: content))
+        modifier(DropdownModifier(isPresented: isPresented, placement: placement, dropdownContent: content))
     }
 }
 
 private struct DropdownModifier<DropdownContent: View>: ViewModifier {
     @Environment(AppModel.self) private var model
     @Binding var isPresented: Bool
+    var placement: DropdownPlacement
     var dropdownContent: (_ close: @escaping () -> Void) -> DropdownContent
 
     func body(content: Content) -> some View {
         content.background(
-            DropdownAnchor(isPresented: $isPresented, model: model, content: dropdownContent)
+            DropdownAnchor(isPresented: $isPresented, model: model, placement: placement, content: dropdownContent)
         )
     }
 }
@@ -187,6 +211,7 @@ private struct DropdownModifier<DropdownContent: View>: ViewModifier {
 private struct DropdownAnchor<DropdownContent: View>: NSViewRepresentable {
     @Binding var isPresented: Bool
     var model: AppModel
+    var placement: DropdownPlacement
     var content: (_ close: @escaping () -> Void) -> DropdownContent
 
     func makeNSView(context: Context) -> PassthroughView { PassthroughView() }
@@ -195,7 +220,7 @@ private struct DropdownAnchor<DropdownContent: View>: NSViewRepresentable {
         if isPresented, !view.isShowing {
             view.isShowing = true
             let binding = $isPresented
-            view.panel = Dropdown.show(below: view.bounds, in: view, model: model, onClose: { [weak view] in
+            view.panel = Dropdown.show(below: view.bounds, in: view, model: model, placement: placement, onClose: { [weak view] in
                 view?.isShowing = false
                 binding.wrappedValue = false
             }, content: content)

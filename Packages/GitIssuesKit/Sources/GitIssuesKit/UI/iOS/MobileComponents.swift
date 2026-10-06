@@ -243,16 +243,13 @@ struct PropertyChip<Icon: View>: View {
     }
 }
 
-/// The sync state as a dot and a line, for the iPad sidebar and the account sheet.
+/// The sync state as a dot and a line, for the account sheet.
 struct SyncStatusLine: View {
     @Environment(AppModel.self) private var model
-    /// The width the dot is centred in, to line it up with a column of icons.
-    var indicatorWidth: CGFloat = 8
-    var spacing: CGFloat = 8
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 20)) { context in
-            HStack(spacing: spacing) {
+            HStack(spacing: 8) {
                 Group {
                     if model.status.phase == .syncing {
                         ProgressView().controlSize(.mini)
@@ -260,7 +257,7 @@ struct SyncStatusLine: View {
                         Circle().fill(model.syncDotColor).frame(width: 8, height: 8)
                     }
                 }
-                .frame(minWidth: indicatorWidth)
+                .frame(minWidth: 8)
                 Text(model.syncLine(at: context.date))
                     .font(.footnote)
                     .foregroundStyle(model.status.phase == .offline ? Theme.text : Theme.textSecondary)
