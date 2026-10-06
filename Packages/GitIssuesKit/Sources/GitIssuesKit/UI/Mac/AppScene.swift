@@ -109,25 +109,30 @@ struct SettingsView: View {
                 }
             }
 
-            LabeledContent("iPhone and iPad") {
-                VStack(alignment: .trailing, spacing: 6) {
-                    if model.loginIsShared {
-                        Text("They sign in with this login through iCloud Keychain.")
-                            .foregroundStyle(.secondary)
-                    } else if model.signedIn, KeychainTokenStore.canShare {
-                        Button("Share Login with iPhone and iPad") { model.shareLoginWithOtherDevices() }
-                    } else {
-                        Text("Sharing the login needs a build signed with your team.")
-                            .foregroundStyle(.secondary)
+            // Sample data has no login to share.
+            if !model.isDemo {
+                LabeledContent("iPhone and iPad") {
+                    VStack(alignment: .trailing, spacing: 6) {
+                        if model.loginIsShared {
+                            Text("They sign in with this login through iCloud Keychain.")
+                                .foregroundStyle(.secondary)
+                        } else if model.signedIn, KeychainTokenStore.canShare {
+                            Button("Share Login with iPhone and iPad") { model.shareLoginWithOtherDevices() }
+                        } else {
+                            Text("Sharing the login needs a build signed with your team.")
+                                .foregroundStyle(.secondary)
+                        }
                     }
+                    .font(.callout)
                 }
-                .font(.callout)
             }
 
             LabeledContent("GitHub account") {
                 HStack {
-                    Text(model.viewer?.login ?? "Not signed in")
-                    if model.signedIn {
+                    Text(model.isDemo ? "Sample data" : model.viewer?.login ?? "Not signed in")
+                    if model.isDemo {
+                        Button("Leave Sample Data") { model.leaveDemo() }
+                    } else if model.signedIn {
                         Button("Sign Out") { model.signOut() }
                     }
                 }

@@ -1,94 +1,46 @@
 # App Store listing
 
-Texts and answers for App Store Connect, iPhone and iPad. Screenshots come from `Tools/app-store-screenshots.sh`
-(6.9-inch iPhone and 13-inch iPad, in `Design/screenshots/app-store`).
+The Mac, iPhone and iPad apps are one App Store app (`com.lukaskbl.GitIssues`, universal purchase), released with
+fastlane (see "Releasing to the App Store" in the README). fastlane uploads:
 
-## Basics
+- the texts in `fastlane/metadata`: name, subtitle, description, keywords, promotional text, URLs, categories,
+  copyright and the notes for App Review;
+- the age rating in `fastlane/rating.json`;
+- the screenshots in `Design/screenshots/app-store`: 6.9-inch iPhone and 13-inch iPad from
+  `Tools/app-store-screenshots.sh`, Mac at 2880 × 1800 from `Tools/mac-app-store-screenshots.sh`, all on the sample
+  data (`bundle exec fastlane screenshots` runs both).
 
-| Field | Value |
+The contact for App Review and an optional review account are in `fastlane/.env.secret`, which is not checked in.
+
+The links point to the website in `Website/` (published to GitHub Pages): privacy policy
+`https://lukaskaibel.github.io/issues-for-github/privacy/`, support `…/support/` and marketing the home page. The
+license agreement is Apple's standard EULA; the website's terms add to it.
+
+## Once, in App Store Connect
+
+fastlane can't do these; set them when the app is created.
+
+| Where | What |
 |---|---|
-| Name | Issues (App Store names are unique; if it is taken, "Issues for GitHub" matches the repository) |
-| Subtitle | Issues and boards for GitHub |
-| Bundle ID | `com.lukaskbl.GitIssues` |
-| SKU | `git-issues-ios` |
-| Primary category | Developer Tools |
-| Secondary category | Productivity |
-| Age rating | 4+ (no objectionable content; answer "No" to every question) |
-| Price | Free |
-| Privacy policy URL | `https://lukaskaibel.github.io/issues-for-github/privacy/` |
-| Support URL | `https://lukaskaibel.github.io/issues-for-github/support/` |
-| Marketing URL | `https://lukaskaibel.github.io/issues-for-github/` |
-| License agreement | Apple's Standard EULA; the website's [terms](../Website/terms/index.html) add to it |
-| Copyright | 2026 Lukas Kaibel |
+| Apps › New App | Platforms **iOS** and **macOS**, name **Issues – Project Board** ("Issues" alone is taken; under the icon the app is still called Issues), primary language English (U.S.), bundle ID `com.lukaskbl.GitIssues`, SKU `issues`. |
+| App Privacy | **Data Not Collected.** The app talks only to GitHub with the user's own login and has no server, analytics or ads. GitHub is the service the user signs in to, not a third party the developer shares data with. |
+| Pricing and Availability | **Free**, all countries and regions. |
+| Users and Access › Integrations | The App Store Connect API key fastlane uses (App Manager or Admin, with access to certificates, identifiers and profiles). The builds are signed with the team's Apple Distribution certificate, which has to be in the keychain of the Mac that builds them, and the Mac's package with a Mac Installer Distribution certificate, which fastlane creates there the first time. |
 
-## App Privacy ("nutrition label")
+## Why the answers are what they are
 
-Data collection: **"No, we do not collect data from this app."** The app talks only to GitHub with the user's own
-login and has no server, analytics or ads. GitHub is the service the user signs in to, not a third party the developer
-shares data with.
+- **Name and subtitle** leave out "GitHub" and "Linear": other companies' trademarks don't belong there (Guidelines
+  5.2.1 and 2.3.7). The keywords have "github", since the app is a client for it; the description says what it works
+  with and that it isn't affiliated with or endorsed by GitHub.
+- **Export compliance:** `ITSAppUsesNonExemptEncryption` is `NO` in the Info.plist; the app uses HTTPS only, through
+  Apple's frameworks.
+- **Content rights:** the app shows the user's own content from GitHub, under GitHub's terms.
+- **Age rating:** none of the content questions apply. "User-generated content" is yes: issues and comments are written
+  by people and shared with their collaborators.
+- **Sign-in for App Review:** "Explore with Sample Data" on the first screen opens everything without a GitHub
+  account, on every platform. Guideline 4.8 doesn't apply: the app is a client for GitHub and has no accounts of its own.
 
-## Export compliance
+## What's New
 
-`ITSAppUsesNonExemptEncryption` is `NO` in the Info.plist: the app only uses HTTPS through Apple's frameworks.
-
-## Promotional text (170 characters)
-
-Your GitHub Projects as a board and a list, with swipes, the issue menu on a long press, and edits that show at once,
-even offline.
-
-## Description
-
-Issues is a fast, native client for GitHub Issues and GitHub Projects: calm to look at and quick to drive.
-Everything stays in GitHub, so teammates who don't use the app see the same issues and boards on github.com.
-
-ON IPHONE
-• My Issues across all your projects, grouped by status
-• Every project as a list with sections that fold and headers that stay in place
-• Swipe right to mark an issue done, swipe left to assign it to yourself or delete it
-• Touch and hold an issue for status, priority, assignee, labels, links and more
-• Edit titles and descriptions in place, with Markdown styled as you type
-• Sub-issues, comments, labels and assignees
-• Search across every project by title or number
-
-ON IPAD
-• A sidebar with every project, and the board with drag and drop
-• Issues open beside their properties, as on the Mac
-• Keyboard shortcuts: J and K to move between issues, S P A L to change status, priority, assignee and labels,
-  ⌘N for a new issue, ⌘K to search
-
-FAST AND RELIABLE
-• Every change shows instantly and is sent to GitHub in the background
-• Works offline: changes wait and go out when you're back online
-• Careful with other people's work: when someone else changed the same text, nothing is overwritten
-
-PRIVATE
-• No account, no server, no tracking. Your login stays in your iCloud Keychain and is only sent to GitHub.
-• Signed in on the Mac app? Your iPhone and iPad sign in by themselves.
-
-Try it without an account: "Explore with Sample Data" shows two sample projects.
-
-Issues is not affiliated with or endorsed by GitHub.
-
-## Keywords (100 characters at most; other apps' names aren't allowed here)
-
-github,issues,projects,kanban,board,tasks,todo,developer,tracker,bugs,pull requests,agile,sprint
-
-## What's new (first release)
-
-The first version for iPhone and iPad: your GitHub Projects as lists and boards, with swipe actions, quick menus,
-in-place editing, sub-issues and comments, offline changes, and the login shared with the Mac.
-
-## Notes for App Review
-
-Issues is a client for GitHub Issues and GitHub Projects (Guideline 4.8 does not apply: users sign in to their
-own GitHub account to see their own content).
-
-To review without a GitHub account, tap **Explore with Sample Data** on the first screen. It shows two sample
-projects stored on the device; every feature works there, and nothing is sent anywhere. To leave it, open the account
-menu (the avatar at the top left) and tap **Leave Sample Data**.
-
-To review with GitHub, sign in with the personal access token below (a test account with a sample project):
-
-    Token: <create one for a test account and paste it here>
-
-Background refresh is used to update issues now and then while the app is closed.
+The first version has none. From the second version on, write it in `fastlane/metadata/en-US/release_notes.txt`, for
+users, from the changelog.

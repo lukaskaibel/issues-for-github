@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek"]
+        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -244,6 +244,19 @@ enum DebugRemote {
                     }
                 }
             }
+        case "window":
+            // window <width> <height>: sizes the window in points for screenshots and moves it off the screen, where
+            // the pointer can't put hover states into the picture and the window is out of the way.
+            let size = argument.split(separator: " ").compactMap { Double($0) }
+            if size.count == 2, let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }) {
+                let screens = NSScreen.screens.map(\.frame).reduce(CGRect.null) { $0.union($1) }
+                window.ignoresMouseEvents = true
+                window.setFrame(CGRect(x: screens.minX - size[0] - 400, y: screens.minY, width: size[0], height: size[1]), display: true)
+                log("window: \(window.frame)")
+            }
+        case "demo":
+            // demo off: leaves the sample data for the sign-in screen; demo on: enters it again.
+            if argument == "off" { model.leaveDemo() } else { model.enterDemo() }
         case "trace":
             Dropdown.trace = { log("dropdown: " + $0) }
         case "nav":

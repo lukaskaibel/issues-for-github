@@ -29,7 +29,10 @@ without being asked. Before calling such a change done, go through this list and
   answers (sign-in, what shows up, offline, removing data) and the privacy policy, which says the same as `PRIVACY.md`
   plus what the website does. When the app is in the App Store, the "Coming soon" note on the home page becomes
   Apple's badge linked to it (see the comment in `Website/index.html`).
-- **App Store listing** (`Design/app-store.md`): the description and "What's New" when the iPhone or iPad app changes.
+- **App Store listing** (`fastlane/metadata`, see `Design/app-store.md`): the description when what the app does
+  changes, and from the second version on the "What's New" in `release_notes.txt`. Retake the App Store screenshots
+  when a change shows in them: `Tools/app-store-screenshots.sh` (iPhone, iPad) and `Tools/mac-app-store-screenshots.sh`
+  (Mac; runs in the background, the window stays off screen).
 - **The repository on GitHub:** when the app's scope changes (a platform, a headline feature), update the description
   and topics with `gh repo edit lukaskaibel/issues-for-github --description "…" --add-topic …` and say that you did.
   When `Design/social-preview.png` changed, tell the user to upload it under Settings › General › Social preview;
