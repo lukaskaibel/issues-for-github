@@ -24,10 +24,12 @@ ENV["LANG"] = "en_US.UTF-8" if ENV["LANG"].to_s.empty?
 ENV["LC_ALL"] = "en_US.UTF-8" if ENV["LC_ALL"].to_s.empty?
 
 APP_ID = "com.lukaskbl.GitIssues"
-ROOT = File.expand_path("..", __dir__)
+# Absolute paths, taken while loading: lanes run from other folders, and __dir__ is relative in a Fastfile.
+HERE = File.expand_path(__dir__)
+ROOT = File.expand_path("..", HERE)
 PROJECT = File.join(ROOT, "GitIssues.xcodeproj")
 SCHEME = "GitIssues"
-METADATA = File.join(__dir__, "metadata")
+METADATA = File.join(HERE, "metadata")
 SCREENSHOTS = File.join(ROOT, "Design", "screenshots", "app-store")
 OUTPUT = File.join(ROOT, "build", "fastlane")
 
@@ -40,7 +42,7 @@ PLATFORMS = {
 }.freeze
 
 # fastlane/.env.secret holds the API key and the contact for App Review. Values already in the environment win.
-secrets = File.join(__dir__, ".env.secret")
+secrets = File.join(HERE, ".env.secret")
 if File.exist?(secrets)
   File.foreach(secrets) do |line|
     key, value = line.strip.split("=", 2)
@@ -231,7 +233,7 @@ def store_upload(platform, package: nil, submit: false, automatic_release: false
     metadata_path: METADATA,
     screenshots_path: stage_screenshots(platform),
     overwrite_screenshots: true,
-    app_rating_config_path: File.join(__dir__, "rating.json"),
+    app_rating_config_path: File.join(HERE, "rating.json"),
     app_review_information: review_contact(required: submit),
     skip_binary_upload: package.nil?,
     submit_for_review: submit,
