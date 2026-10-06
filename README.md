@@ -224,7 +224,8 @@ Then:
 ```bash
 bundle exec fastlane screenshots   # the App Store screenshots of the iPhone, iPad and Mac apps, on the sample data
 bundle exec fastlane beta          # build the Mac, iPhone and iPad apps and upload them to TestFlight
-bundle exec fastlane release       # build them, upload the texts and screenshots, and submit them for review
+bundle exec fastlane submit        # submit those builds for review once they're tested in TestFlight
+bundle exec fastlane release       # or all in one: build, upload texts and screenshots, and submit
 ```
 
 The texts are in `fastlane/metadata`; `bundle exec fastlane metadata` uploads them with the screenshots and nothing
