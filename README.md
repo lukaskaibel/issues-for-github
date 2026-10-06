@@ -26,7 +26,8 @@
   <a href="#iphone-and-ipad"><b>iPhone and iPad</b></a> &nbsp;·&nbsp;
   <a href="#getting-started"><b>Getting started</b></a> &nbsp;·&nbsp;
   <a href="#using-it"><b>Shortcuts</b></a> &nbsp;·&nbsp;
-  <a href="CHANGELOG.md"><b>Changelog</b></a>
+  <a href="CHANGELOG.md"><b>Changelog</b></a> &nbsp;·&nbsp;
+  <a href="https://lukaskaibel.github.io/issues-for-github/"><b>Website</b></a>
 </p>
 
 <br>
@@ -332,6 +333,7 @@ Packages/GitIssuesKit/
   Tests/                     Unit tests
 Config/                      Build settings, Info.plist and entitlements
 Design/                      The violet icon, earlier icon variants, screenshots, social preview
+Website/                     The website on GitHub Pages: home, privacy policy, terms, support, Impressum
 Tools/                       Icons, release builds, iOS tests, App Store and README screenshots, TestFlight uploads
 ```
 
@@ -349,11 +351,19 @@ Tools/test-ios.sh
 ```
 
 The images in this README are made by a script: it runs the Mac app on the sample data, records the scenes and lays
-them out in light and dark, together with the iPhone and iPad screenshots from `Tools/app-store-screenshots.sh`. Run
-it again when a change shows in one of them (it brings the app to the front for about two minutes):
+them out in light and dark, together with the iPhone and iPad screenshots from `Tools/app-store-screenshots.sh`, and
+makes the website's pictures from the same screenshots. Run it again when a change shows in one of them (it brings the
+app to the front for about two minutes):
 
 ```bash
 Tools/readme-images.sh
+```
+
+The [website](https://lukaskaibel.github.io/issues-for-github/) is plain HTML and CSS in `Website/`, without a build
+step; `.github/workflows/website.yml` publishes it to GitHub Pages when it changes on `main`. To look at it locally:
+
+```bash
+python3 -m http.server --directory Website
 ```
 
 `gi-cli selftest` runs every kind of write end to end against GitHub. It only touches a project titled

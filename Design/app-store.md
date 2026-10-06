@@ -15,8 +15,10 @@ Texts and answers for App Store Connect, iPhone and iPad. Screenshots come from 
 | Secondary category | Productivity |
 | Age rating | 4+ (no objectionable content; answer "No" to every question) |
 | Price | Free |
-| Privacy policy URL | The published [PRIVACY.md](../PRIVACY.md), e.g. `https://github.com/lukaskaibel/issues-for-github/blob/main/PRIVACY.md` |
-| Support URL | `https://github.com/lukaskaibel/issues-for-github/issues` |
+| Privacy policy URL | `https://lukaskaibel.github.io/issues-for-github/privacy/` |
+| Support URL | `https://lukaskaibel.github.io/issues-for-github/support/` |
+| Marketing URL | `https://lukaskaibel.github.io/issues-for-github/` |
+| License agreement | Apple's Standard EULA; the website's [terms](../Website/terms/index.html) add to it |
 | Copyright | 2026 Lukas Kaibel |
 
 ## App Privacy ("nutrition label")

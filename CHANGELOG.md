@@ -32,6 +32,9 @@ All notable changes to this project are recorded here. The format follows
   makes too, runs in the App Sandbox, is signed with your team, shares the login through iCloud Keychain and leaves
   out the GitHub CLI sign-in.
 - [PRIVACY.md](PRIVACY.md): what the app stores and sends, to link from the App Store listing.
+- A website, [lukaskaibel.github.io/issues-for-github](https://lukaskaibel.github.io/issues-for-github/), with the
+  privacy policy, terms of use, support with answers to common questions, and the Impressum. It follows the light or
+  dark appearance and is published from `Website/` whenever it changes on main.
 
 - Clicking an issue's priority, status, labels, assignees or sub-issue count, on a card or in the list, opens a
   dropdown right there, as in Linear: the search field has focus, number keys pick, and the current value is

@@ -1,0 +1,562 @@
+/* The website of Issues. Colours follow the app's Theme.swift and the backdrop of the README images
+   (Tools/readme-images/compose.py), in light and dark. No fonts, scripts or images from other servers. */
+
+:root {
+  color-scheme: light dark;
+  --bg: #F4F4FA;
+  --text: #16171B;
+  --text-2: #4F535B;
+  --text-3: #6B6F78;
+  --accent: #5B63D3;
+  --line: rgba(22, 24, 44, 0.10);
+  --surface: rgba(255, 255, 255, 0.55);
+  --surface-hover: rgba(255, 255, 255, 0.85);
+  --button: #16171B;
+  --button-text: #FFFFFF;
+  --button-hover: #2A2C33;
+  --tile: rgba(40, 44, 90, 0.05);
+  --device-shadow: rgba(36, 38, 80, 0.28);
+  --glow-violet: 143, 150, 242;
+  --glow-pink: 217, 139, 196;
+  --glow-cyan: 90, 176, 216;
+  --glow-violet-a: 0.42;
+  --glow-pink-a: 0.20;
+  --glow-cyan-a: 0.14;
+  --noise: 0.05;
+  --tile-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='132' height='92'%3E%3Crect x='6' y='6' width='120' height='80' rx='16' fill='black'/%3E%3C/svg%3E");
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0B0C10;
+    --text: #F0F1F5;
+    --text-2: #A9ADBA;
+    --text-3: #7D8290;
+    --accent: #8F96F2;
+    --line: rgba(255, 255, 255, 0.09);
+    --surface: rgba(255, 255, 255, 0.04);
+    --surface-hover: rgba(255, 255, 255, 0.08);
+    --button: #F0F1F5;
+    --button-text: #0B0C10;
+    --button-hover: #FFFFFF;
+    --tile: rgba(255, 255, 255, 0.045);
+    --device-shadow: rgba(0, 0, 0, 0.6);
+    --glow-violet: 101, 108, 230;
+    --glow-pink: 196, 95, 166;
+    --glow-cyan: 90, 176, 216;
+    --glow-violet-a: 0.80;
+    --glow-pink-a: 0.34;
+    --glow-cyan-a: 0.22;
+    --noise: 0.07;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* The backdrop: three soft glows as in the README images, and a fine grain so the gradients don't band.
+   Fixed layers, so long pages scroll over them (background-attachment: fixed doesn't work on iOS). */
+body::before, body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+}
+
+body::before {
+  background:
+    radial-gradient(circle max(95vw, 760px) at 50% -5%,
+      rgba(var(--glow-violet), var(--glow-violet-a)) 0%,
+      rgba(var(--glow-violet), calc(var(--glow-violet-a) * 0.56)) 25%,
+      rgba(var(--glow-violet), calc(var(--glow-violet-a) * 0.25)) 50%,
+      rgba(var(--glow-violet), calc(var(--glow-violet-a) * 0.06)) 75%,
+      rgba(var(--glow-violet), 0) 100%),
+    radial-gradient(circle max(60vw, 480px) at 100% 105%,
+      rgba(var(--glow-pink), var(--glow-pink-a)) 0%,
+      rgba(var(--glow-pink), calc(var(--glow-pink-a) * 0.56)) 25%,
+      rgba(var(--glow-pink), calc(var(--glow-pink-a) * 0.25)) 50%,
+      rgba(var(--glow-pink), 0) 100%),
+    radial-gradient(circle max(55vw, 440px) at 0% 105%,
+      rgba(var(--glow-cyan), var(--glow-cyan-a)) 0%,
+      rgba(var(--glow-cyan), calc(var(--glow-cyan-a) * 0.56)) 25%,
+      rgba(var(--glow-cyan), calc(var(--glow-cyan-a) * 0.25)) 50%,
+      rgba(var(--glow-cyan), 0) 100%);
+}
+
+body::after {
+  z-index: -1;
+  opacity: var(--noise);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1.6 -0.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+a { color: inherit; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+/* Buttons */
+
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 20px 0 18px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s ease-out, border-color 0.15s ease-out, transform 0.15s ease-out;
+}
+
+.button svg { width: 20px; height: 20px; flex: none; fill: currentColor; }
+
+.button.primary { background: var(--button); color: var(--button-text); }
+.button.primary:hover { background: var(--button-hover); }
+.button:active { transform: scale(0.98); }
+
+/* Until the app is out: says so, in the place the App Store badge will take. */
+.soon {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.soon::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(var(--glow-violet), 0.22);
+}
+
+.soon strong { color: var(--text); font-weight: 600; }
+
+.store-badge { display: block; height: 48px; width: auto; }
+
+/* Footer */
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 20px clamp(20px, 6vw, 120px) 24px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.footer nav { display: flex; flex-wrap: wrap; gap: 4px 22px; }
+.footer a { text-decoration: none; transition: color 0.15s ease-out; }
+.footer a:hover { color: var(--text); }
+.footer a[aria-current="page"] { color: var(--text); }
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* The home page: one screen, no scrolling. */
+
+.home {
+  --pad: clamp(24px, 7vw, 132px);
+  --copy: clamp(380px, 22vw + 150px, 560px);
+  --footer: 64px;
+  /* The iPad's width: what is left beside the text, unless the window is too short for it. */
+  --ipad: min(calc((100vw - var(--pad) - var(--copy) - 40px) / 1.04), calc((100vh - var(--footer)) * 1.08));
+  --ipad: min(calc((100vw - var(--pad) - var(--copy) - 40px) / 1.04), calc((100svh - var(--footer)) * 1.08));
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow: hidden;
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 48px var(--pad) 24px;
+}
+
+.copy { position: relative; z-index: 2; width: var(--copy); }
+
+.app-icon {
+  display: block;
+  width: clamp(112px, 4vw + 70px, 156px);
+  height: auto;
+  margin: 0 0 18px -10px;
+}
+
+.home h1 {
+  margin: 0;
+  font-size: clamp(56px, 6.4vw, 108px);
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.lead {
+  margin: 22px 0 0;
+  font-size: clamp(22px, 1.1vw + 14px, 34px);
+  line-height: 1.25;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-wrap: balance;
+}
+
+.lead span { display: block; color: var(--text-2); }
+
+.sub {
+  margin: 16px 0 0;
+  max-width: 400px;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--text-3);
+  text-wrap: pretty;
+}
+
+.home .actions { margin-top: 34px; }
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.facts li { display: inline-flex; align-items: center; gap: 7px; }
+.facts svg { width: 14px; height: 14px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* The devices: the iPad runs off the right edge, the iPhone stands in front of its left side. */
+
+.devices {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: calc(var(--ipad) * -0.12);
+  width: calc(var(--ipad) * 1.16);
+  height: calc(var(--ipad) * 0.762);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.devices img { display: block; width: 100%; height: auto; }
+
+.devices .ipad {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--ipad);
+  filter: drop-shadow(0 calc(var(--ipad) * 0.03) calc(var(--ipad) * 0.045) var(--device-shadow));
+}
+
+.devices .iphone {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--ipad) * -0.07);
+  width: calc(var(--ipad) * 0.27);
+  filter: drop-shadow(0 calc(var(--ipad) * 0.025) calc(var(--ipad) * 0.035) var(--device-shadow));
+}
+
+/* A board's worth of empty tiles behind the devices, like the ones on the icon, fading out towards the edges. */
+.tiles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--tile);
+  -webkit-mask: var(--tile-shape) 0 0 / 132px 92px repeat,
+    radial-gradient(ellipse 60% 70% at 72% 48%, black 0%, transparent 72%);
+  -webkit-mask-composite: source-in;
+  mask: var(--tile-shape) 0 0 / 132px 92px repeat,
+    radial-gradient(ellipse 60% 70% at 72% 48%, black 0%, transparent 72%);
+  mask-composite: intersect;
+}
+
+.home .footer { position: relative; z-index: 3; }
+
+/* Narrow windows and phones: the text on top, the devices below it, fading out above the footer. */
+@media (max-width: 900px), (max-aspect-ratio: 1/1) {
+  .home { --copy: min(560px, 100%); --phone: min(44vw, 260px); --ipad: min(104vw, 720px); }
+
+  .hero {
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(28px, 7vh, 72px) 20px 0;
+    text-align: center;
+  }
+
+  .copy { display: flex; flex-direction: column; align-items: center; }
+  .app-icon { width: 104px; height: 104px; margin: 0 0 10px; }
+  .sub { margin-left: auto; margin-right: auto; }
+  .home .actions, .facts { justify-content: center; }
+  .home .actions { margin-top: 28px; }
+
+  .devices {
+    position: relative;
+    top: auto;
+    right: auto;
+    flex: 1 0 0;
+    align-self: stretch;
+    width: auto;
+    height: auto;
+    min-height: 150px;
+    margin: clamp(28px, 5vh, 48px) -20px 0;
+    transform: none;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 80px), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 80px), transparent);
+  }
+
+  .devices .ipad { top: 0; right: auto; left: calc(50% - var(--phone) * 0.25); }
+
+  .devices .iphone {
+    top: calc(var(--phone) * 0.2);
+    bottom: auto;
+    left: calc(50% - var(--phone) * 0.78);
+    width: var(--phone);
+  }
+
+  .tiles {
+    -webkit-mask: var(--tile-shape) 0 0 / 132px 92px repeat, radial-gradient(ellipse 110% 40% at 50% 100%, black 0%, transparent 80%);
+    -webkit-mask-composite: source-in;
+    mask: var(--tile-shape) 0 0 / 132px 92px repeat, radial-gradient(ellipse 110% 40% at 50% 100%, black 0%, transparent 80%);
+    mask-composite: intersect;
+  }
+
+  .home .footer { flex-direction: column; justify-content: center; padding-top: 12px; text-align: center; }
+  .home .footer nav { order: -1; justify-content: center; }
+}
+
+@media (max-width: 900px) and (max-height: 860px), (max-aspect-ratio: 1/1) and (max-height: 860px) {
+  .sub { display: none; }
+}
+
+@media (max-width: 900px) and (max-height: 720px), (max-aspect-ratio: 1/1) and (max-height: 720px) {
+  .app-icon { width: 84px; height: 84px; }
+  .home h1 { font-size: 52px; }
+  .lead { margin-top: 14px; font-size: 21px; }
+  .home .actions { margin-top: 22px; }
+}
+
+@media (max-width: 900px) and (max-height: 640px), (max-aspect-ratio: 1/1) and (max-height: 640px) {
+  .hero { padding-top: 24px; }
+  .app-icon { width: 68px; height: 68px; margin-bottom: 6px; }
+  .home h1 { font-size: 44px; }
+  .lead { margin-top: 10px; font-size: 19px; }
+  .home .actions { margin-top: 18px; gap: 10px; }
+  .button, .soon { height: 44px; }
+  .facts { display: none; }
+  .devices { min-height: 110px; margin-top: 20px; }
+}
+
+@media (max-width: 420px) {
+  .home .actions { flex-direction: column; align-items: stretch; width: min(100%, 300px); }
+  .button, .soon { justify-content: center; }
+}
+
+/* Too short for one screen (a phone on its side): let it scroll rather than cut off the text. */
+@media (max-height: 500px) {
+  .home { overflow: visible; }
+}
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* Text pages: privacy, terms, support, legal notice. */
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 22px clamp(20px, 5vw, 48px);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.brand img { width: 34px; height: 34px; margin: -3px 0; }
+
+.top .link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: color 0.15s ease-out;
+}
+
+.top .link:hover { color: var(--text); }
+.top .link svg { width: 18px; height: 18px; fill: currentColor; }
+
+/* The footer stays at the bottom of the window on short pages. */
+body:not(.home) { display: flex; flex-direction: column; min-height: 100vh; min-height: 100svh; }
+.top, .doc, .doc + .footer { width: 100%; }
+
+.doc {
+  flex: 1 0 auto;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(28px, 7vh, 72px) 20px 56px;
+}
+
+.doc h1 {
+  margin: 0;
+  font-size: clamp(36px, 5vw, 52px);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.doc .intro {
+  margin: 18px 0 0;
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.doc .updated { margin: 14px 0 0; font-size: 13px; color: var(--text-3); }
+
+.doc h2 {
+  margin: 48px 0 0;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+  font-size: 21px;
+  line-height: 1.3;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.doc h3 { margin: 28px 0 0; font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
+
+.doc p, .doc ul, .doc address { margin: 12px 0 0; color: var(--text-2); }
+.doc address { font-style: normal; }
+.doc ul { padding-left: 20px; }
+.doc li { margin: 6px 0 0; padding-left: 4px; }
+.doc li::marker { color: var(--text-3); }
+.doc strong { color: var(--text); font-weight: 600; }
+.doc code {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  font: 0.88em/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.doc a { color: var(--accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent); text-underline-offset: 3px; }
+.doc a:hover { text-decoration-color: var(--accent); }
+
+/* Support: ways to get in touch. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 32px 0 0;
+}
+
+.doc .card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+.doc .card:hover { background: var(--surface-hover); }
+.card svg { width: 22px; height: 22px; margin-bottom: 10px; fill: none; stroke: var(--accent); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.card svg.filled { fill: var(--accent); stroke: none; }
+.card b { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.card span { font-size: 13.5px; line-height: 1.45; color: var(--text-3); overflow-wrap: anywhere; }
+
+/* Support: questions that fold open. */
+.faq { margin: 16px 0 0; border-top: 1px solid var(--line); }
+.faq details { border-bottom: 1px solid var(--line); }
+
+.faq summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 2px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  list-style: none;
+}
+
+.faq summary::-webkit-details-marker { display: none; }
+
+.faq summary::after {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-right: 1.6px solid var(--text-3);
+  border-bottom: 1.6px solid var(--text-3);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.2s ease-out;
+}
+
+.faq details[open] summary::after { transform: translateY(2px) rotate(-135deg); }
+.faq details > :not(summary) { margin: 0 2px; }
+.faq details > :last-child { padding-bottom: 18px; }
+
+.doc .footer { padding-left: 0; padding-right: 0; }
+.doc + .footer { max-width: 720px; margin: 0 auto; padding-left: 20px; padding-right: 20px; border-top: 1px solid var(--line); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
