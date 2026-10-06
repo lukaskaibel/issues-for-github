@@ -18,7 +18,7 @@ fastlane can't do these; set them when the app is created.
 
 | Where | What |
 |---|---|
-| Apps › New App | Platforms **iOS** and **macOS**, name **Issues**, primary language English (U.S.), bundle ID `com.lukaskbl.GitIssues`, SKU `issues`. If the name is taken: "Issues – Project Board". |
+| Apps › New App | Platforms **iOS** and **macOS**, name **Issues – Project Board** ("Issues" alone is taken; under the icon the app is still called Issues), primary language English (U.S.), bundle ID `com.lukaskbl.GitIssues`, SKU `issues`. |
 | App Privacy | **Data Not Collected.** The app talks only to GitHub with the user's own login and has no server, analytics or ads. GitHub is the service the user signs in to, not a third party the developer shares data with. |
 | Pricing and Availability | **Free**, all countries and regions. |
 | Users and Access › Integrations | The App Store Connect API key fastlane uses (App Manager or Admin, with access to certificates, identifiers and profiles). The builds are signed with the team's Apple Distribution certificate, which has to be in the keychain of the Mac that builds them, and the Mac's package with a Mac Installer Distribution certificate, which fastlane creates there the first time. |

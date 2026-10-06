@@ -1,1 +1,1 @@
-Issue boards, fast and native
+Fast, native issue tracking
