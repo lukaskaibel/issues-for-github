@@ -35,9 +35,9 @@ OUTPUT = File.join(ROOT, "build", "fastlane")
 
 # One app on two App Store platforms: how each is built and which screenshots belong to it.
 PLATFORMS = {
-  ios: { name: "iPhone and iPad", configuration: "Release", destination: "generic/platform=iOS", store: "ios",
+  ios: { name: "iPhone and iPad", configuration: "Release", sdk: "iphoneos", destination: "generic/platform=iOS", store: "ios",
          package: :ipa, screenshots: %w[iphone ipad], screenshot_tool: "app-store-screenshots.sh" },
-  mac: { name: "Mac", configuration: "AppStore", destination: "generic/platform=macOS", store: "osx",
+  mac: { name: "Mac", configuration: "AppStore", sdk: "macosx", destination: "generic/platform=macOS", store: "osx",
          package: :pkg, screenshots: %w[mac], screenshot_tool: "mac-app-store-screenshots.sh" }
 }.freeze
 
@@ -159,6 +159,8 @@ def archive_for_store(platform, token_only: false)
     project: PROJECT,
     scheme: SCHEME,
     configuration: config[:configuration],
+    # The target is for both platforms; the SDK tells gym which package to make (.ipa or .pkg).
+    sdk: config[:sdk],
     destination: config[:destination],
     clean: true,
     archive_path: File.join(folder, "Issues.xcarchive"),
