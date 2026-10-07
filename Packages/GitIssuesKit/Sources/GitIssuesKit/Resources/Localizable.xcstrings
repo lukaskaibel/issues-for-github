@@ -1,6 +1,150 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "activity" : {
+      "comment" : "iPhone and iPad, issue screen: heading above the issue's comments.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activity"
+          }
+        }
+      }
+    },
+    "add" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: button (a verb) in the 'New Status' alert that adds the status.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        }
+      }
+    },
+    "addDescriptionPlaceholder" : {
+      "comment" : "iPhone and iPad: placeholder in an issue's empty description, on the issue screen and in the new issue sheet; tapping it starts writing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a description…"
+          }
+        }
+      }
+    },
+    "addDueDate" : {
+      "comment" : "iPad, issue screen, properties column: placeholder in the Due date row of an issue without a due date; a tap opens the date picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add due date"
+          }
+        }
+      }
+    },
+    "addKeepChoosing" : {
+      "comment" : "iPhone and iPad, sheet that picks assignees or labels: VoiceOver label of the empty circle at the start of a row; adds the person or label and leaves the sheet open for more. %(name)@ is a GitHub user or label name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add %(name)@, keep choosing"
+          }
+        }
+      }
+    },
+    "addLabel" : {
+      "comment" : "iPad, issue screen, properties column: placeholder in the Labels row of an issue without labels; a tap opens the label picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add label"
+          }
+        }
+      }
+    },
+    "addStatus" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: button that adds a status, which is a new column of the board. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Status"
+          }
+        }
+      }
+    },
+    "addSubIssue" : {
+      "comment" : "iPhone and iPad, issue screen: item in the ⋯ menu that starts writing a new sub-issue of this issue (a GitHub sub-issue: an issue under another issue). Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Sub-issue"
+          }
+        }
+      }
+    },
+    "addSubIssueButton" : {
+      "comment" : "iPhone and iPad, issue screen: VoiceOver label of the + button beside the 'Sub-issues' heading, which starts writing a new sub-issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add sub-issue"
+          }
+        }
+      }
+    },
+    "addToNamedProject" : {
+      "comment" : "iPhone and iPad: submenu (a verb) of an issue that is on none of the user's boards, listing the columns of the GitHub project it can go on; also the heading of those columns. %(project)@ is the project's name, such as “Roadmap”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to %(project)@"
+          }
+        }
+      }
+    },
+    "addToProject" : {
+      "comment" : "iPhone and iPad: submenu (a verb) of an issue that is on none of the user's boards, listing the GitHub projects it can be put on. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to Project"
+          }
+        }
+      }
+    },
+    "addToProjectPlaceholder" : {
+      "comment" : "iPad, issue screen, properties column: placeholder in the Project row of an issue on no GitHub project (board); opens a menu of projects to put it on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to project"
+          }
+        }
+      }
+    },
     "archive" : {
       "comment" : "Inbox: button or menu item (a verb) that removes a notification from the Inbox; GitHub calls this 'Done'.",
       "extractionState" : "manual",
@@ -9,6 +153,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Archive"
+          }
+        }
+      }
+    },
+    "arrangeSections" : {
+      "comment" : "iPhone and iPad: title of the sheet where the order of a list's sections (its status groups) is changed by dragging. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrange Sections"
           }
         }
       }
@@ -37,6 +193,42 @@
         }
       }
     },
+    "assigneeNone" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the assignee button while nobody is assigned to the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assignee: none"
+          }
+        }
+      }
+    },
+    "assigneesAre" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the assignee button. %(names)@ is the list of GitHub user names, such as “octocat, hubot”; also used when only one person is assigned.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assignees: %(names)@"
+          }
+        }
+      }
+    },
+    "backToUsualOrder" : {
+      "comment" : "iPhone and iPad, Arrange Sections sheet: button that drops the user's own order of sections. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to the Usual Order"
+          }
+        }
+      }
+    },
     "board" : {
       "comment" : "View mode: issues in columns by status, like a kanban board. Picker segment, menu item and button.",
       "extractionState" : "manual",
@@ -57,6 +249,174 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "chooseADate" : {
+      "comment" : "iPhone and iPad: item in an issue's Due Date menu that opens a sheet with a calendar to pick any day. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a Date…"
+          }
+        }
+      }
+    },
+    "chooseAProject" : {
+      "comment" : "iPhone and iPad, new issue sheet: shown on the project button before a GitHub project (board) is chosen for the new issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a project"
+          }
+        }
+      }
+    },
+    "colour" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: title of the menu that picks the colour of a status's dot.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colour"
+          }
+        }
+      }
+    },
+    "colourBlue" : {
+      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blue"
+          }
+        }
+      }
+    },
+    "colourGray" : {
+      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gray"
+          }
+        }
+      }
+    },
+    "colourGreen" : {
+      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Green"
+          }
+        }
+      }
+    },
+    "colourIs" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: VoiceOver label of the coloured dot beside a status, which opens the colour menu. %(colour)@ is a colour's name, such as “Blue”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colour: %(colour)@"
+          }
+        }
+      }
+    },
+    "colourOrange" : {
+      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orange"
+          }
+        }
+      }
+    },
+    "colourPink" : {
+      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pink"
+          }
+        }
+      }
+    },
+    "colourPurple" : {
+      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purple"
+          }
+        }
+      }
+    },
+    "colourRed" : {
+      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Red"
+          }
+        }
+      }
+    },
+    "colourYellow" : {
+      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yellow"
+          }
+        }
+      }
+    },
+    "conflictDescriptionEditedOnGitHub" : {
+      "comment" : "iPhone and iPad, issue screen: warning banner after the user changed the issue's description while someone else changed it on GitHub. The user's version is in the description below the banner; GitHub's is shown in the banner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The description was also edited on GitHub. Nothing has been overwritten: your version is shown below and has not been sent."
+          }
+        }
+      }
+    },
+    "conflictTitleEditedOnGitHub" : {
+      "comment" : "iPhone and iPad, issue screen: warning banner after the user changed the issue's title while someone else changed it on GitHub. The user's version is in the title field below the banner; GitHub's is shown in the banner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The title was also edited on GitHub. Nothing has been overwritten: your version is shown below and has not been sent."
           }
         }
       }
@@ -85,6 +445,54 @@
         }
       }
     },
+    "create" : {
+      "comment" : "iPhone and iPad, new issue sheet: button (a verb) that creates the issue on GitHub and closes the sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create"
+          }
+        }
+      }
+    },
+    "createIssue" : {
+      "comment" : "iPad with a keyboard: name of the ⌘↵ command that creates the issue being written, in the list of shortcuts that appears while ⌘ is held. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Issue"
+          }
+        }
+      }
+    },
+    "created" : {
+      "comment" : "iPad, issue screen, column of properties on the right: label of the row saying when and by whom the issue was created. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created"
+          }
+        }
+      }
+    },
+    "createdDateByAuthor" : {
+      "comment" : "iPad, issue screen, properties column, 'Created' row: when and by whom the issue was created. %(date)@ is a date or a time, such as “Oct 7” or “14:30”; %(author)@ is a GitHub user name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(date)@ by %(author)@"
+          }
+        }
+      }
+    },
     "delete" : {
       "comment" : "Button or menu item that deletes an issue or a draft. Destructive.",
       "extractionState" : "manual",
@@ -97,6 +505,54 @@
         }
       }
     },
+    "deleteDraftEllipsis" : {
+      "comment" : "iPhone and iPad: destructive item at the end of a draft's menu; deletes it after asking. A draft is a GitHub project item that isn't an issue in a repository yet. The … says it asks first.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Draft…"
+          }
+        }
+      }
+    },
+    "deleteIssueEllipsis" : {
+      "comment" : "iPhone and iPad: destructive item at the end of an issue's menu; deletes the issue on GitHub after asking. The … says it asks first.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Issue…"
+          }
+        }
+      }
+    },
+    "deleteStatus" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: destructive button that deletes the status on GitHub. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Status"
+          }
+        }
+      }
+    },
+    "deleteStatusQuestion" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: question before a status is deleted. %(name)@ is the status's name, such as “In Review”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete the \"%(name)@\" status?"
+          }
+        }
+      }
+    },
     "description" : {
       "comment" : "VoiceOver label of an issue's description, the text written under its title.",
       "extractionState" : "manual",
@@ -105,6 +561,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Description"
+          }
+        }
+      }
+    },
+    "discard" : {
+      "comment" : "iPhone and iPad, new issue sheet: destructive button (a verb) in the question 'Discard this issue?' that throws the new issue away.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard"
+          }
+        }
+      }
+    },
+    "discardThisIssue" : {
+      "comment" : "iPhone and iPad, new issue sheet: question when the sheet is closed with something written in it, whether to throw the new issue away.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard this issue?"
+          }
+        }
+      }
+    },
+    "dismiss" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the × button that closes a notice at the top of the screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss"
           }
         }
       }
@@ -141,6 +633,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Due date"
+          }
+        }
+      }
+    },
+    "dueDateNone" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the due date button while the issue has no due date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due date: none"
+          }
+        }
+      }
+    },
+    "dueDateSearchExamples" : {
+      "comment" : "iPhone and iPad, due date sheet: hint under 'No date matches …'. The words in quotes are examples to type; the date field understands English words only, so keep them in English (and “12.10.” as it is).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try “tomorrow”, “fri”, “next week”, “in 3 days” or “12.10.”."
+          }
+        }
+      }
+    },
+    "dueDateSearchPrompt" : {
+      "comment" : "iPhone and iPad, due date sheet: placeholder in the search field. The examples in quotes are typed as they are; the date field understands English words only, so keep “fri” in English.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type a date, like “fri” or “12.10.”"
           }
         }
       }
@@ -297,6 +825,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Next %(weekday)@"
+          }
+        }
+      }
+    },
+    "dueOnDate" : {
+      "comment" : "iPhone and iPad, new issue sheet: VoiceOver label of the due date button. %(date)@ is the day, such as “Friday, 9 October”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due %(date)@"
           }
         }
       }
@@ -489,6 +1029,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unexpected response from GitHub. %(detail)@"
+          }
+        }
+      }
+    },
+    "firstDueDateAddsField" : {
+      "comment" : "iPhone and iPad, due date sheet: note under the calendar for a GitHub project that has no date field yet. %(field)@ is the name of the field the app creates on GitHub, always “Due date” in English.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The first due date adds a “%(field)@” field to the project on GitHub."
+          }
+        }
+      }
+    },
+    "formatBold" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that makes the selected text bold.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bold"
+          }
+        }
+      }
+    },
+    "formatChecklist" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that turns the line into a checklist item (a task with a checkbox).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checklist"
+          }
+        }
+      }
+    },
+    "formatCode" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that formats the selected text as code (program code, in a monospaced font).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code"
+          }
+        }
+      }
+    },
+    "formatItalic" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that makes the selected text italic.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Italic"
+          }
+        }
+      }
+    },
+    "formatLink" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that inserts a web link.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link"
           }
         }
       }
@@ -1045,6 +1657,102 @@
         }
       }
     },
+    "issueGoneMessage" : {
+      "comment" : "iPhone and iPad: line under 'This issue is gone', saying why. 'Its project' is the GitHub project (board) the issue was on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It was deleted or removed from its project."
+          }
+        }
+      }
+    },
+    "issueGoneTitle" : {
+      "comment" : "iPhone and iPad: title of the empty screen shown in place of an issue that no longer exists.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This issue is gone"
+          }
+        }
+      }
+    },
+    "issueTitle" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the field holding the issue's title (issue screen, new issue sheet).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title"
+          }
+        }
+      }
+    },
+    "issueTitlePlaceholder" : {
+      "comment" : "iPhone and iPad: placeholder in the empty title field of an issue, on the issue screen and in the new issue sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issue title"
+          }
+        }
+      }
+    },
+    "issuesCount" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: VoiceOver label of the number beside a status, how many issues have it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld issue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld issues"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "keepEditing" : {
+      "comment" : "iPhone and iPad, new issue sheet: button in the question 'Discard this issue?' that goes back to writing it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Editing"
+          }
+        }
+      }
+    },
+    "keepMine" : {
+      "comment" : "iPhone and iPad: button in an edit conflict banner or a notice that keeps the user's own version of a change instead of the one on GitHub or another device.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Mine"
+          }
+        }
+      }
+    },
     "labels" : {
       "comment" : "An issue's GitHub labels (tags such as 'bug'). Used as a label, picker title and menu item.",
       "extractionState" : "manual",
@@ -1057,6 +1765,78 @@
         }
       }
     },
+    "labelsAre" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the labels button. %(names)@ is the list of the issue's GitHub label names, such as “bug, design”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Labels: %(names)@"
+          }
+        }
+      }
+    },
+    "labelsCount" : {
+      "comment" : "iPhone and iPad, new issue sheet: chip showing how many GitHub labels are chosen, when there are 2 or more. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld label"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld labels"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "labelsNone" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the labels button while the issue has no GitHub labels.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Labels: none"
+          }
+        }
+      }
+    },
+    "leaveACommentPlaceholder" : {
+      "comment" : "iPhone and iPad, issue screen: placeholder in the comment field at the bottom.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave a comment…"
+          }
+        }
+      }
+    },
+    "linkTextPlaceholder" : {
+      "comment" : "iPhone and iPad, writing an issue's description: word put into the description as the text of a new link, in Markdown as [link](https://), and selected so the user types over it. Lowercase, one word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "link"
+          }
+        }
+      }
+    },
     "list" : {
       "comment" : "View mode: issues as a list grouped by status. Picker segment, menu item and button.",
       "extractionState" : "manual",
@@ -1065,6 +1845,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "List"
+          }
+        }
+      }
+    },
+    "markAsDone" : {
+      "comment" : "iPhone and iPad: item (a verb) in the long-press menu of a sub-issue that closes it as completed. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Done"
           }
         }
       }
@@ -1093,6 +1885,30 @@
         }
       }
     },
+    "markIssueNumberAsDone" : {
+      "comment" : "iPhone and iPad, issue screen: VoiceOver label of the status circle of an open sub-issue; a tap closes it as completed. %(number)lld is its issue number, shown after #.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark #%(number)lld as done"
+          }
+        }
+      }
+    },
+    "more" : {
+      "comment" : "iPhone and iPad, issue screen: VoiceOver label of the toolbar button with the ⋯ icon, which opens a menu of more actions.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        }
+      }
+    },
     "myIssues" : {
       "comment" : "Name of the place that lists every issue assigned to the signed-in user (sidebar row, iPhone tab, title).",
       "extractionState" : "manual",
@@ -1113,6 +1929,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New Issue"
+          }
+        }
+      }
+    },
+    "newIssueNotSent" : {
+      "comment" : "iPhone and iPad, issue screen, list of sub-issues: shown in place of the issue number of a sub-issue that hasn't reached GitHub yet (it gets its number there). Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New"
+          }
+        }
+      }
+    },
+    "newSinceLastRead" : {
+      "comment" : "iPhone and iPad, issue screen opened from the Inbox: small badge on a comment that is new since the user last read the issue; also read by VoiceOver. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New"
+          }
+        }
+      }
+    },
+    "newStatus" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: title of the alert that asks for the name of a status to add. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Status"
+          }
+        }
+      }
+    },
+    "newStatusMessage" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: line in the 'New Status' alert, saying where the new status goes on the board.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A new column at the end of the board."
+          }
+        }
+      }
+    },
+    "newSubIssue" : {
+      "comment" : "iPhone and iPad: title of the sheet for writing a new sub-issue (a GitHub sub-issue: an issue under another issue). Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Sub-issue"
+          }
+        }
+      }
+    },
+    "nextIssue" : {
+      "comment" : "iPad, issue screen: toolbar button with a down arrow (read by VoiceOver) and the J keyboard command; opens the next issue of the list. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next Issue"
+          }
+        }
+      }
+    },
+    "noCommentsYet" : {
+      "comment" : "iPhone and iPad, issue screen: shown under the 'Activity' heading when the issue has no comments.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No comments yet."
+          }
+        }
+      }
+    },
+    "noDateMatches" : {
+      "comment" : "iPhone and iPad, due date sheet: title shown when what was typed into the search field isn't a date the app understands. %(query)@ is what was typed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No date matches “%(query)@”"
+          }
+        }
+      }
+    },
+    "noDescription" : {
+      "comment" : "iPhone and iPad, issue screen: shown in place of an empty description that can't be edited (a pull request, or an issue on no board).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No description"
+          }
+        }
+      }
+    },
+    "noLabelsInRepository" : {
+      "comment" : "iPhone and iPad: shown in an issue's Labels menu when its GitHub repository has no labels.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No labels in this repository"
           }
         }
       }
@@ -1149,6 +2085,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No status"
+          }
+        }
+      }
+    },
+    "nothingToChooseFrom" : {
+      "comment" : "iPhone and iPad, sheet that picks a property of an issue: shown when there are no choices, such as no people or labels in the repository yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing to choose from yet."
           }
         }
       }
@@ -1357,6 +2305,30 @@
         }
       }
     },
+    "onGitHubVersion" : {
+      "comment" : "iPhone and iPad, issue screen, edit conflict banner: small heading above the text as it is now on GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On GitHub"
+          }
+        }
+      }
+    },
+    "openIssue" : {
+      "comment" : "iPhone and iPad: first item (a verb) of the long-press menu of an issue; opens it. Not the 'open' state of an issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        }
+      }
+    },
     "openOnGitHub" : {
       "comment" : "Menu item or button that opens the issue or pull request on github.com in the web browser.",
       "extractionState" : "manual",
@@ -1365,6 +2337,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open on GitHub"
+          }
+        }
+      }
+    },
+    "opensOnGitHub" : {
+      "comment" : "iPhone and iPad, issue screen: VoiceOver label of the ↗ arrow on a sub-issue that is on none of the user's boards, so a tap opens it on github.com.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens on GitHub"
+          }
+        }
+      }
+    },
+    "parentIssue" : {
+      "comment" : "iPad, issue screen, column of properties on the right: label of the row naming the issue this sub-issue belongs to (its parent issue). Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parent"
+          }
+        }
+      }
+    },
+    "peopleCount" : {
+      "comment" : "iPhone and iPad: shown in place of a name when an issue is assigned to several people (2 or more), on chips and in the properties column. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld person"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld people"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "previousIssue" : {
+      "comment" : "iPad, issue screen: toolbar button with an up arrow (read by VoiceOver) and the K keyboard command; opens the previous issue of the list. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous Issue"
           }
         }
       }
@@ -1381,6 +2413,30 @@
         }
       }
     },
+    "priorityIs" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the button showing an issue's priority (issue screen, new issue sheet). %(priority)@ is the priority's name, such as “High”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Priority: %(priority)@"
+          }
+        }
+      }
+    },
+    "priorityNone" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the priority button while the issue has no priority.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Priority: none"
+          }
+        }
+      }
+    },
     "project" : {
       "comment" : "Label for the GitHub project (board) an issue belongs to; also the title of a project's screen while it loads.",
       "extractionState" : "manual",
@@ -1389,6 +2445,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Project"
+          }
+        }
+      }
+    },
+    "projectHasNoRepository" : {
+      "comment" : "iPhone and iPad, new issue sheet: warning when the chosen GitHub project has no repository linked to it, so no issue can be created in it yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This project has no repository yet. Issues are created in a repository linked to the project; link one on GitHub first."
+          }
+        }
+      }
+    },
+    "projectIs" : {
+      "comment" : "iPhone and iPad, new issue sheet: VoiceOver label of the button that picks the GitHub project (board) for the new issue. %(project)@ is the project's name, such as “Roadmap”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Project: %(project)@"
+          }
+        }
+      }
+    },
+    "projectNone" : {
+      "comment" : "iPhone and iPad, new issue sheet: VoiceOver label of the project button while the new issue is on no GitHub project.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Project: none"
           }
         }
       }
@@ -1657,6 +2749,30 @@
         }
       }
     },
+    "removeDueDate" : {
+      "comment" : "iPhone and iPad: destructive button in the due date sheet, and item in an issue's Due Date menu, that clears the issue's due date. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Due Date"
+          }
+        }
+      }
+    },
+    "removeKeepChoosing" : {
+      "comment" : "iPhone and iPad, sheet that picks assignees or labels: VoiceOver label of the checked circle at the start of a row; takes the person or label off and leaves the sheet open. %(name)@ is a GitHub user or label name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove %(name)@, keep choosing"
+          }
+        }
+      }
+    },
     "removeTheDate" : {
       "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) button next to 'Keep Mine': takes what someone else did on GitHub, which was to remove the issue's due date.",
       "extractionState" : "manual",
@@ -1669,6 +2785,42 @@
         }
       }
     },
+    "rename" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: button (a verb) in the 'Rename Status' alert that saves the new name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        }
+      }
+    },
+    "renameStatus" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: title of the alert that asks for a status's new name. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename Status"
+          }
+        }
+      }
+    },
+    "renamesTheStatus" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: VoiceOver hint on a status's name; a tap asks for a new name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renames the status"
+          }
+        }
+      }
+    },
     "reopen" : {
       "comment" : "Button or menu item (a verb) that reopens a closed issue.",
       "extractionState" : "manual",
@@ -1677,6 +2829,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reopen"
+          }
+        }
+      }
+    },
+    "reopenIssueNumber" : {
+      "comment" : "iPhone and iPad, issue screen: VoiceOver label of the status circle of a closed sub-issue; a tap reopens it. %(number)lld is its issue number, shown after #.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reopen #%(number)lld"
           }
         }
       }
@@ -1701,6 +2865,150 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Repository"
+          }
+        }
+      }
+    },
+    "repositoryIs" : {
+      "comment" : "iPhone and iPad, new issue sheet: VoiceOver label of the repository the new issue is created in. %(repository)@ is the GitHub repository's full name, such as “octocat/hello-world”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repository: %(repository)@"
+          }
+        }
+      }
+    },
+    "repositoryNone" : {
+      "comment" : "iPhone and iPad, new issue sheet: VoiceOver label of the repository button while no repository is chosen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repository: none"
+          }
+        }
+      }
+    },
+    "searchLabels" : {
+      "comment" : "iPhone and iPad: placeholder in the search field of the sheet that picks an issue's GitHub labels.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search labels"
+          }
+        }
+      }
+    },
+    "searchPeople" : {
+      "comment" : "iPhone and iPad: placeholder in the search field of the sheet that picks who an issue is assigned to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search people"
+          }
+        }
+      }
+    },
+    "searchPriorities" : {
+      "comment" : "iPhone and iPad: placeholder in the search field of the sheet that picks an issue's priority.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search priorities"
+          }
+        }
+      }
+    },
+    "searchStatuses" : {
+      "comment" : "iPhone and iPad: placeholder in the search field of the sheet that picks an issue's status.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search statuses"
+          }
+        }
+      }
+    },
+    "searchSubIssues" : {
+      "comment" : "iPhone and iPad: placeholder in the search field of the sheet that picks an issue's sub-issues (GitHub sub-issues: issues under this one).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search sub-issues"
+          }
+        }
+      }
+    },
+    "sectionOrderFooter" : {
+      "comment" : "iPhone and iPad, Arrange Sections sheet: note under the list of sections.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This order is kept on this device only and doesn't change the project on GitHub."
+          }
+        }
+      }
+    },
+    "sendComment" : {
+      "comment" : "iPad with a keyboard: name of the ⌘↵ command that sends the comment being written, in the list of shortcuts that appears while ⌘ is held. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send Comment"
+          }
+        }
+      }
+    },
+    "sendCommentButton" : {
+      "comment" : "iPhone and iPad, issue screen: VoiceOver label of the round arrow button that sends the comment.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send comment"
+          }
+        }
+      }
+    },
+    "sendingComment" : {
+      "comment" : "iPhone and iPad, issue screen: shown in place of a comment's date while it is being sent to GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sending…"
+          }
+        }
+      }
+    },
+    "share" : {
+      "comment" : "iPhone and iPad: item (a verb) in an issue's menu that opens the system share sheet with the issue's link.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share…"
           }
         }
       }
@@ -1737,6 +3045,138 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Status"
+          }
+        }
+      }
+    },
+    "statusEditorFooter" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: note under the list of statuses. 'Status' is the name of the field on GitHub (GitHub is in English); a GitHub project is a board.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These are the project's Status field on GitHub and the columns of its board. Changes are saved on GitHub right away, so they need a connection."
+          }
+        }
+      }
+    },
+    "statusIs" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the button showing an issue's status (issue screen, new issue sheet). %(status)@ is the status's name, such as “In Progress” or “No status”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status: %(status)@"
+          }
+        }
+      }
+    },
+    "statusNamePlaceholder" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: placeholder in the alert's text field for a status's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "statusNone" : {
+      "comment" : "iPhone and iPad, new issue sheet: VoiceOver label of the status button while no status is chosen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status: none"
+          }
+        }
+      }
+    },
+    "statusRemovedFromProject" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: explanation under 'Delete the … status?' when no issue has that status.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The status is removed from the project on GitHub."
+          }
+        }
+      }
+    },
+    "statusRemovedIssuesStay" : {
+      "comment" : "iPhone and iPad, Statuses screen of a project: explanation under 'Delete the … status?' when issues have that status. %(count)lld is how many.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The status is removed from the project on GitHub. Its %(count)lld issue stays in the project without a status."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The status is removed from the project on GitHub. Its %(count)lld issues stay in the project without a status."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "statuses" : {
+      "comment" : "iPhone and iPad: title of the screen listing a project's statuses (the columns of its board), where they are added, renamed, recoloured and removed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Statuses"
+          }
+        }
+      }
+    },
+    "subIssueOf" : {
+      "comment" : "iPhone and iPad: chip on a sub-issue (issue screen, new issue sheet) naming the issue it belongs to. %(number)@ is that issue's number, such as “#12”. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-issue of %(number)@"
+          }
+        }
+      }
+    },
+    "subIssues" : {
+      "comment" : "iPhone and iPad: heading above an issue's list of sub-issues (GitHub sub-issues: issues under this one), and title of the sheet that picks them.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-issues"
+          }
+        }
+      }
+    },
+    "subIssuesProgress" : {
+      "comment" : "iPhone and iPad, issue screen, beside the 'Sub-issues' heading: how many of the sub-issues are done, such as “2 of 5”. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(done)lld of %(total)lld"
           }
         }
       }
@@ -1801,6 +3241,30 @@
         }
       }
     },
+    "typeADate" : {
+      "comment" : "iPhone and iPad: placeholder in the search field of a sheet that picks an issue's due date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type a date"
+          }
+        }
+      }
+    },
+    "unassignMe" : {
+      "comment" : "iPhone and iPad: menu item that removes the signed-in user from the issue's assignees. Title case, as in menus; the opposite of 'Assign to Me'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unassign Me"
+          }
+        }
+      }
+    },
     "unassigned" : {
       "comment" : "Shown when nobody is assigned to the issue.",
       "extractionState" : "manual",
@@ -1845,6 +3309,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unsubscribe"
+          }
+        }
+      }
+    },
+    "useGitHubsVersion" : {
+      "comment" : "iPhone and iPad, issue screen, edit conflict banner: button that drops the user's version and takes the one now on GitHub (GitHub's version).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use GitHub's"
+          }
+        }
+      }
+    },
+    "usualOrderExplanation" : {
+      "comment" : "iPhone and iPad, Arrange Sections sheet: note under 'Back to the Usual Order' describing that order of the status groups.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Work in progress first, then what's next, the backlog and what's done."
           }
         }
       }

@@ -5,8 +5,8 @@ import SwiftUI
 /// dropdowns. A tap picks and closes it. People and labels take several: the circle at the start of a row picks
 /// without closing, for the next one.
 struct PickerSheet: View {
-    var title: String
-    var prompt: String
+    var title: LocalizedStringResource
+    var prompt: LocalizedStringResource
     var multiple: Bool
     /// Opened with a key on an iPad keyboard: typing goes straight to the search, and Return picks the first match.
     var focusesSearch = false
@@ -34,7 +34,7 @@ struct PickerSheet: View {
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.borderless)
-                            .accessibilityLabel(item.selected ? "Remove \(item.title), keep choosing" : "Add \(item.title), keep choosing")
+                            .accessibilityLabel(item.selected ? .removeKeepChoosing(name: item.title) : .addKeepChoosing(name: item.title))
                             .accessibilityIdentifier("check-\(item.title)")
                         }
                         Button {
@@ -64,7 +64,7 @@ struct PickerSheet: View {
                 }
                 if visible.isEmpty {
                     if query.isEmpty {
-                        Text("Nothing to choose from yet.")
+                        Text(.nothingToChooseFrom)
                             .foregroundStyle(Theme.textSecondary)
                     } else {
                         ContentUnavailableView.search(text: query)
@@ -72,7 +72,7 @@ struct PickerSheet: View {
                     }
                 }
             }
-            .searchable(text: $query, isPresented: $searching, placement: .navigationBarDrawer(displayMode: .always), prompt: prompt)
+            .searchable(text: $query, isPresented: $searching, placement: .navigationBarDrawer(displayMode: .always), prompt: Text(prompt))
             .onSubmit(of: .search) {
                 if let first = visible.first { pick(first, keepOpen: false) }
             }
@@ -82,7 +82,7 @@ struct PickerSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", systemImage: "checkmark") { dismiss() }
+                    Button(.done, systemImage: "checkmark") { dismiss() }
                 }
             }
         }
@@ -110,25 +110,25 @@ struct PickerSheet: View {
 }
 
 extension PickerKind {
-    var sheetTitle: String {
+    var sheetTitle: LocalizedStringResource {
         switch self {
-        case .status: "Status"
-        case .priority: "Priority"
-        case .assignees: "Assignee"
-        case .labels: "Labels"
-        case .dueDate: "Due Date"
-        case .subIssues: "Sub-issues"
+        case .status: .status
+        case .priority: .priority
+        case .assignees: .assignee
+        case .labels: .labels
+        case .dueDate: .dueDateTitle
+        case .subIssues: .subIssues
         }
     }
 
-    var searchPrompt: String {
+    var searchPrompt: LocalizedStringResource {
         switch self {
-        case .status: "Search statuses"
-        case .priority: "Search priorities"
-        case .assignees: "Search people"
-        case .labels: "Search labels"
-        case .dueDate: "Type a date"
-        case .subIssues: "Search sub-issues"
+        case .status: .searchStatuses
+        case .priority: .searchPriorities
+        case .assignees: .searchPeople
+        case .labels: .searchLabels
+        case .dueDate: .typeADate
+        case .subIssues: .searchSubIssues
         }
     }
 }

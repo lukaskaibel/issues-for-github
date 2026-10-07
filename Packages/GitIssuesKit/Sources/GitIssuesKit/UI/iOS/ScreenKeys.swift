@@ -6,10 +6,10 @@ extension View {
     /// A key for the screen this view is on, with a keyboard, that goes before text input: ⌘↵ creates an issue
     /// or sends a comment even while the cursor is in a text field, which would otherwise read it as a plain
     /// Return. `keyboardShortcut` can't do that. Applies while `isActive`.
-    func screenKey(_ title: String, _ input: String, modifiers: UIKeyModifierFlags = [], isActive: Bool = true, action: @escaping () -> Void) -> some View {
+    func screenKey(_ title: LocalizedStringResource, _ input: String, modifiers: UIKeyModifierFlags = [], isActive: Bool = true, action: @escaping () -> Void) -> some View {
         background {
             if isActive {
-                ScreenKeyCommand(title: title, input: input, modifiers: modifiers, action: action)
+                ScreenKeyCommand(title: String(localized: title), input: input, modifiers: modifiers, action: action)
                     .frame(width: 0, height: 0)
                     .accessibilityHidden(true)
             }
