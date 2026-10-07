@@ -5,6 +5,7 @@ import SwiftUI
 /// sub-issue shows, and the same as the Mac's right-click menu.
 struct ItemMenuContent: View {
     @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
     @Environment(\.colorScheme) private var scheme
     var item: Item
     /// Hidden in the issue's own screen, where it is open already.
@@ -37,6 +38,10 @@ struct ItemMenuContent: View {
         if model.canHaveDueDate(item) {
             DueDateMenu(item: item)
         }
+        if model.canRelate(item) {
+            Divider()
+            RelationMenuItems(item: item)
+        }
         if let url = item.webURL {
             Divider()
             Button {
@@ -68,6 +73,57 @@ struct ItemMenuContent: View {
                 Label(item.kind == .draft ? "Delete Draft…" : "Delete Issue…", systemImage: "trash")
             }
             .disabled(!model.canDelete(item))
+        }
+    }
+}
+
+/// Parent, sub-issues and blockers. The pickers open as sheets over the whole window, since a long press can come
+/// from any row or card.
+struct RelationMenuItems: View {
+    @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
+    var item: Item
+
+    var body: some View {
+        Button {
+            navigation.sheet = .picker(itemId: item.id, kind: .parent)
+        } label: {
+            Label(item.parentId == nil ? "Set Parent Issue…" : "Change Parent Issue…", systemImage: "arrow.turn.left.up")
+        }
+        if item.parentId != nil {
+            Button {
+                model.setParent(of: [model.item(id: item.id) ?? item], to: nil)
+            } label: {
+                Label(item.parentNumber.map { "Remove from #\($0)" } ?? "Remove from Parent", systemImage: "arrow.uturn.left")
+            }
+        }
+        Menu {
+            Button {
+                navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
+            } label: {
+                Label("New Sub-issue", systemImage: "plus")
+            }
+            Button {
+                navigation.sheet = .picker(itemId: item.id, kind: .addSubIssue)
+            } label: {
+                Label("Add Existing Issue…", systemImage: "magnifyingglass")
+            }
+        } label: {
+            Label("Add Sub-issue", systemImage: "arrow.turn.down.right")
+        }
+        Menu {
+            Button {
+                navigation.sheet = .picker(itemId: item.id, kind: .blockedBy)
+            } label: {
+                Label("Blocked By…", systemImage: "flag.fill")
+            }
+            Button {
+                navigation.sheet = .picker(itemId: item.id, kind: .blocking)
+            } label: {
+                Label("Blocking…", systemImage: "flag")
+            }
+        } label: {
+            Label("Mark As", systemImage: "flag")
         }
     }
 }

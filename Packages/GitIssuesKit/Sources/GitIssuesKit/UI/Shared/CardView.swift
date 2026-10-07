@@ -192,6 +192,17 @@ private struct CardPainter {
             dueChip = (text, text.measure(in: CGSize(width: 200, height: 40)).width + 14)
         }
         let limit = size.width - padding.width - (dueChip.map { $0.width + 6 } ?? 0)
+        // Blocked by an open issue: a red flag first, so labels never push it off the card.
+        if item.blockedByCount > 0 {
+            let rect = CGRect(x: x, y: bottomY - 10, width: 26, height: 20)
+            part(.blockedBy, rect)
+            chip(rect, hovered: hovered(.blockedBy))
+            context.draw(
+                Text(Image(systemName: "flag.fill")).font(.system(size: CardView.chipSize - 2, weight: .medium)).foregroundStyle(Theme.blocked),
+                at: CGPoint(x: rect.midX, y: bottomY), anchor: .center
+            )
+            x = rect.maxX + 6
+        }
         var shown = 0
         // Labels are measured first, so the highlight can sit behind all of them.
         var labelLayout: [(label: LabelRef, text: GraphicsContext.ResolvedText, rect: CGRect)] = []

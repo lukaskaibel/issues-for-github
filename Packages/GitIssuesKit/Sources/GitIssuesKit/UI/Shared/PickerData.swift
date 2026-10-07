@@ -12,6 +12,8 @@ struct PickerItem: Identifiable {
     var prefix: String? = nil
     /// Shown at the end of the row, such as priority and assignee.
     var trailing: AnyView? = nil
+    /// Stays in the list whatever is typed, at its end, such as "New sub-issue…".
+    var alwaysShown = false
 }
 
 /// Subsequence match: every character of the query appears in order. Higher is better; nil is no match.
@@ -36,6 +38,25 @@ func fuzzyScore(_ query: String, _ text: String) -> Int? {
     return score - t.count / 8
 }
 
+/// The rows that match what was typed, best first: by title or subtitle, and issues by number too ("12" or "#12").
+func matching(_ query: String, in items: [PickerItem]) -> [PickerItem] {
+    guard !query.isEmpty else { return items }
+    let digits = query.trimmingCharacters(in: CharacterSet(charactersIn: "# "))
+    let byNumber = !digits.isEmpty && digits.allSatisfy(\.isNumber)
+    let matches = items
+        .compactMap { item -> (PickerItem, Int)? in
+            guard !item.alwaysShown else { return nil }
+            var score = max(fuzzyScore(query, item.title) ?? -1, item.subtitle.flatMap { fuzzyScore(query, $0) } ?? -1)
+            if byNumber, let prefix = item.prefix, prefix.hasPrefix("#"), prefix.dropFirst().hasPrefix(digits) {
+                score = max(score, 1000 - prefix.count)
+            }
+            return score >= 0 ? (item, score) : nil
+        }
+        .sorted { $0.1 > $1.1 }
+        .map(\.0)
+    return matches + items.filter(\.alwaysShown)
+}
+
 // MARK: - Picker contents for an issue
 
 enum PickerKind: Equatable {
@@ -45,6 +66,12 @@ enum PickerKind: Equatable {
     case labels
     case dueDate
     case subIssues
+    /// The issue to make this one a sub-issue of.
+    case parent
+    /// An issue to make a sub-issue of this one, or a new one.
+    case addSubIssue
+    case blockedBy
+    case blocking
 
     var placeholder: String {
         switch self {
@@ -54,6 +81,10 @@ enum PickerKind: Equatable {
         case .labels: "Add labels…"
         case .dueDate: "Due date… try “fri” or “12.10.”"
         case .subIssues: "Open sub-issue…"
+        case .parent: "Set parent issue…"
+        case .addSubIssue: "Add sub-issue…"
+        case .blockedBy: "Mark as blocked by…"
+        case .blocking: "Mark as blocking…"
         }
     }
 
@@ -65,7 +96,7 @@ enum PickerKind: Equatable {
         case .assignees: "A"
         case .labels: "L"
         case .dueDate: "D"
-        case .subIssues: nil
+        case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking: nil
         }
     }
 
@@ -80,10 +111,26 @@ enum PickerKind: Equatable {
         case .labels: "Change labels"
         case .dueDate: "Change due date"
         case .subIssues: "Sub-issues"
+        case .parent: "Set parent issue"
+        case .addSubIssue: "Add sub-issue"
+        case .blockedBy: "Blocked by"
+        case .blocking: "Blocking"
         }
     }
 
-    var width: CGFloat { self == .subIssues ? 460 : 280 }
+    /// Pickers that list issues to choose from, which can be many.
+    var picksIssues: Bool {
+        switch self {
+        case .parent, .addSubIssue, .blockedBy, .blocking: true
+        default: false
+        }
+    }
+
+    /// Single-choice pickers open on the current value, so Return keeps it. Where several are checked and a pick
+    /// takes one away, they open on the first that isn't.
+    var opensOnSelection: Bool { self != .blockedBy && self != .blocking }
+
+    var width: CGFloat { self == .subIssues || picksIssues ? 460 : 280 }
 }
 
 extension AppModel {
@@ -164,11 +211,76 @@ extension AppModel {
                 id: Self.newSubIssueId, title: "New sub-issue…",
                 icon: AnyView(Image(systemName: "plus").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary))
             )
-            return rows + [add]
+            guard canRelate(item) else { return rows + [add] }
+            let existing = PickerItem(
+                id: Self.existingSubIssueId, title: "Add existing issue…",
+                icon: AnyView(SubIssueGlyph().frame(width: 12, height: 12).foregroundStyle(Theme.textSecondary))
+            )
+            return rows + [add, existing]
+        case .parent:
+            // Not under itself, nor under one of its own sub-issues.
+            let below = descendants(of: Set(targets.compactMap(\.contentId)))
+            let candidates = relatableIssues(near: item).filter { !below.contains($0.contentId ?? "") }
+            let isParent = { (candidate: Item) in targets.allSatisfy { $0.parentId == candidate.contentId } }
+            var rows: [PickerItem] = []
+            if targets.contains(where: { $0.parentId != nil }) {
+                let number = targets.count == 1 ? item.parentNumber : nil
+                let title = number.map { "Remove from #\($0)" } ?? "Remove from parent"
+                rows.append(PickerItem(
+                    id: Self.removeParentId, title: title,
+                    icon: AnyView(Image(systemName: "xmark").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary))
+                ))
+            }
+            rows += (candidates.filter(isParent) + candidates.filter { !isParent($0) }).map { candidate in
+                issueRow(candidate, near: item, selected: isParent(candidate))
+            }
+            return rows
+        case .addSubIssue:
+            let excluded = ancestors(of: item).union(subIssueIds(of: item))
+            let rows = relatableIssues(near: item)
+                .filter { !excluded.contains($0.contentId ?? "") }
+                .map { issueRow($0, near: item) }
+            #if os(macOS)
+            // Typing a title and picking this carries the title into the new issue.
+            let new = PickerItem(
+                id: Self.newSubIssueId, title: "New sub-issue…",
+                icon: AnyView(Image(systemName: "plus").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)),
+                alwaysShown: true
+            )
+            return [new] + rows
+            #else
+            return rows
+            #endif
+        case .blockedBy, .blocking:
+            let ids = Set(targets.compactMap(\.contentId))
+            let linked = { (candidate: Item) -> Bool in
+                guard let other = candidate.contentId else { return false }
+                return targets.allSatisfy { target in
+                    guard let id = target.contentId else { return false }
+                    return kind == .blockedBy ? self.isBlocked(id, by: other) : self.isBlocked(other, by: id)
+                }
+            }
+            let candidates = relatableIssues(near: item).filter { !ids.contains($0.contentId ?? "") }
+            return (candidates.filter(linked) + candidates.filter { !linked($0) }).map { candidate in
+                issueRow(candidate, near: item, selected: linked(candidate))
+            }
         }
     }
 
     static let newSubIssueId = "new-sub-issue"
+    static let existingSubIssueId = "existing-sub-issue"
+    static let removeParentId = "remove-parent"
+
+    /// An issue in a picker that picks issues: status, number and title, and its repository when it is another.
+    private func issueRow(_ candidate: Item, near item: Item, selected: Bool = false) -> PickerItem {
+        let repo = candidate.repoId != item.repoId ? candidate.repoShortName : nil
+        return PickerItem(
+            id: candidate.contentId ?? candidate.id, title: candidate.title, selected: selected,
+            icon: AnyView(StatusIcon(glyph: glyph(of: candidate))),
+            prefix: candidate.displayNumber,
+            trailing: repo.map { AnyView(Text($0).font(.small).foregroundStyle(Theme.textTertiary).lineLimit(1)) }
+        )
+    }
 
     /// For an issue on none of your boards, the status picker puts it on one: the columns of each board it can
     /// go on, named after the board when there are several. One pick adds it and sets the column.
@@ -242,6 +354,19 @@ extension AppModel {
             return dueBadge(for: item)?.tooltip ?? "No due date"
         case .subIssues:
             return "\(item.subCompleted) of \(item.subTotal) sub-issues done"
+        case .parent:
+            return item.parentNumber.map { "Sub-issue of #\($0)" } ?? "No parent issue"
+        case .addSubIssue:
+            return "Add sub-issue"
+        case .blockedBy, .blocking:
+            let relation: LinkedIssue.Relation = kind == .blockedBy ? .blockedBy : .blocking
+            let open = links(of: item, relation).filter { !$0.isClosed }
+            let count = kind == .blockedBy ? item.blockedByCount : item.blockingCount
+            let what = kind == .blockedBy ? "Blocked by" : "Blocking"
+            if !open.isEmpty, open.count == count {
+                return "\(what) " + open.map(\.displayNumber).formatted(.list(type: .and))
+            }
+            return "\(what) \(count) issue\(count == 1 ? "" : "s")"
         }
     }
 
@@ -280,9 +405,27 @@ extension AppModel {
         case .subIssues:
             if id == Self.newSubIssueId {
                 overlay = .newIssue(statusId: nil, parentItemId: current.id)
+            } else if id == Self.existingSubIssueId {
+                overlay = .palette(.addSubIssue(itemId: current.id))
             } else if let sub = allItems.first(where: { $0.id == id }) {
                 open(sub)
             }
+        case .parent:
+            if id == Self.removeParentId {
+                setParent(of: targets, to: nil)
+            } else if let parent = self.item(contentId: id) {
+                setParent(of: targets, to: parent)
+            }
+        case .addSubIssue:
+            if id == Self.newSubIssueId {
+                overlay = .newIssue(statusId: nil, parentItemId: current.id)
+            } else if let child = self.item(contentId: id) {
+                setParent(of: [child], to: current)
+            }
+        case .blockedBy:
+            if let blocker = self.item(contentId: id) { toggleBlocked(targets, by: blocker) }
+        case .blocking:
+            if let blocked = self.item(contentId: id) { toggleBlocking(targets, blocks: blocked) }
         }
     }
 

@@ -80,6 +80,40 @@ enum MenuIcons {
             .withSymbolConfiguration(.init(pointSize: 13, weight: .regular))
     }
 
+    /// A symbol in a colour of its own, such as the flags for blocked and blocking issues.
+    static func symbol(_ name: String, color: Color) -> NSImage? {
+        let configuration = NSImage.SymbolConfiguration(pointSize: 12, weight: .medium)
+            .applying(NSImage.SymbolConfiguration(paletteColors: [NSColor(color)]))
+        return NSImage(systemSymbolName: name, accessibilityDescription: nil)?.withSymbolConfiguration(configuration)
+    }
+
+    static var blocked: NSImage? { symbol("flag.fill", color: Theme.blocked) }
+    static var blocking: NSImage? { symbol("flag", color: Theme.urgent) }
+
+    /// The hook and dot of a sub-issue, as on cards.
+    static var subIssue: NSImage {
+        image { _, rect in
+            let s: CGFloat = 1.1
+            let origin = NSPoint(x: rect.midX - 6 * s, y: rect.midY - 6 * s)
+            let hook = NSBezierPath()
+            hook.move(to: NSPoint(x: origin.x + 2.5 * s, y: origin.y + 2 * s))
+            hook.line(to: NSPoint(x: origin.x + 2.5 * s, y: origin.y + 6 * s))
+            hook.curve(
+                to: NSPoint(x: origin.x + 4.5 * s, y: origin.y + 8 * s),
+                controlPoint1: NSPoint(x: origin.x + 2.5 * s, y: origin.y + 7.2 * s),
+                controlPoint2: NSPoint(x: origin.x + 3.3 * s, y: origin.y + 8 * s)
+            )
+            hook.line(to: NSPoint(x: origin.x + 6.6 * s, y: origin.y + 8 * s))
+            hook.lineWidth = 1.3 * s
+            hook.lineCapStyle = .round
+            NSColor.labelColor.setStroke()
+            hook.stroke()
+            let dot = NSBezierPath(ovalIn: NSRect(x: origin.x + 6.8 * s, y: origin.y + 6.3 * s, width: 3.4 * s, height: 3.4 * s))
+            dot.lineWidth = 1.3 * s
+            dot.stroke()
+        }
+    }
+
     private static func image(_ draw: @escaping (CGContext, NSRect) -> Void) -> NSImage {
         NSImage(size: size, flipped: true) { rect in
             guard let context = NSGraphicsContext.current?.cgContext else { return false }

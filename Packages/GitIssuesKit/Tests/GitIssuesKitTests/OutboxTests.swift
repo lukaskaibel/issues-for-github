@@ -209,6 +209,148 @@ struct OutboxTests {
         #expect(entries[0].mutation.referencedIds == ["issue-99"])
     }
 
+    // MARK: Parents and blockers
+
+    private func summary(_ number: Int, state: String = "OPEN") -> IssueSummary {
+        IssueSummary(contentId: "issue-\(number)", number: number, title: "Issue \(number)", state: state)
+    }
+
+    private func setParent(_ child: Int, to parent: Int?, base: Int?) -> Mutation {
+        .setParent(.init(
+            child: summary(child), parentId: parent.map { "issue-\($0)" }, parentNumber: parent,
+            parentTitle: parent.map { "Issue \($0)" }, base: base.map { "issue-\($0)" }
+        ))
+    }
+
+    private func setBlocking(_ blocked: Int, by blocker: Int, _ isBlocked: Bool, base: Bool) -> Mutation {
+        .setBlocking(.init(blocked: summary(blocked), blocker: summary(blocker), isBlocked: isBlocked, base: base))
+    }
+
+    private func items(_ db: AppDatabase) throws -> [Int: Item] {
+        try db.reader.read { db in
+            Dictionary(uniqueKeysWithValues: try Item.fetchAll(db).compactMap { item in item.number.map { ($0, item) } })
+        }
+    }
+
+    /// #3 is a sub-issue of #1, as GitHub has it, and #1's sub-issues have been read.
+    private func makeDatabaseWithSubIssue() throws -> AppDatabase {
+        let db = try makeDatabase()
+        try db.writer.write { db in
+            try db.execute(sql: "UPDATE item SET parentId = 'issue-1', parentNumber = 1, parentTitle = 'Issue 1' WHERE id = 'item-3'")
+            try db.execute(sql: "UPDATE item SET subTotal = 1 WHERE id = 'item-1'")
+            try SubIssue(id: "issue-3", parentId: "issue-1", number: 3, title: "Issue 3", state: "OPEN", position: 0).insert(db)
+        }
+        return db
+    }
+
+    @Test func aSubIssueMovesToAnotherParentAndBothCountsFollow() throws {
+        let db = try makeDatabaseWithSubIssue()
+        try db.writer.write { try Outbox.enqueue($0, setParent(3, to: 2, base: 1)) }
+        var cards = try items(db)
+        #expect(cards[3]?.parentId == "issue-2")
+        #expect(cards[3]?.parentNumber == 2)
+        #expect(cards[1]?.subTotal == 0)
+        #expect(cards[2]?.subTotal == 1)
+        let lists = try db.reader.read { try SubIssue.fetchAll($0).map(\.parentId) }
+        #expect(lists == ["issue-2"])
+
+        // Applied again over the same data, nothing is counted twice.
+        try db.writer.write { try Outbox.rebase($0) }
+        cards = try items(db)
+        #expect(cards[1]?.subTotal == 0)
+        #expect(cards[2]?.subTotal == 1)
+    }
+
+    @Test func anIssueWithoutAParentBecomesASubIssueAndCountsAsDoneWhenClosed() throws {
+        let db = try makeDatabase()
+        try db.writer.write { db in
+            try db.execute(sql: "UPDATE item SET state = 'CLOSED' WHERE id = 'item-2'")
+            try Outbox.enqueue(db, setParent(2, to: 1, base: nil))
+            try Outbox.rebase(db)
+        }
+        let parent = try items(db)[1]
+        #expect(parent?.subTotal == 1)
+        #expect(parent?.subCompleted == 1)
+    }
+
+    @Test func changesOfParentFoldIntoOneThatKnowsGitHubsParent() throws {
+        let db = try makeDatabaseWithSubIssue()
+        try db.writer.write { db in
+            try Outbox.enqueue(db, setParent(3, to: 2, base: 1))
+            try Outbox.enqueue(db, setParent(3, to: nil, base: 2))
+        }
+        let entries = try db.reader.read { try OutboxEntry.fetchAll($0) }
+        #expect(entries.count == 1)
+        guard case .setParent(let m) = entries.first?.mutation else {
+            Issue.record("Expected a change of parent")
+            return
+        }
+        // Taken out of #1 on GitHub, where it still is.
+        #expect(m.parentId == nil)
+        #expect(m.base == "issue-1")
+        let cards = try items(db)
+        #expect(cards[3]?.parentId == nil)
+        #expect(cards[1]?.subTotal == 0)
+        #expect(cards[2]?.subTotal == 0)
+    }
+
+    @Test func aParentChangeFollowsIssuesCreatedMomentsAgo() {
+        let mutation = setParent(3, to: 2, base: nil).remapping(["issue-2": "real-2", "issue-3": "real-3"])
+        guard case .setParent(let m) = mutation else {
+            Issue.record("Expected a change of parent")
+            return
+        }
+        #expect(m.child.contentId == "real-3")
+        #expect(m.parentId == "real-2")
+        #expect(mutation.referencedIds == ["real-3", "real-2"])
+    }
+
+    @Test func blockingListsBothIssuesAndCountsOpenOnesOnce() throws {
+        let db = try makeDatabase()
+        try db.writer.write { db in
+            try Outbox.enqueue(db, setBlocking(1, by: 2, true, base: false))
+            try Outbox.rebase(db)
+        }
+        var cards = try items(db)
+        #expect(cards[1]?.blockedByCount == 1)
+        #expect(cards[2]?.blockingCount == 1)
+        let links = try db.reader.read { try LinkedIssue.order(Column("relation")).fetchAll($0) }
+        #expect(links.map(\.relation) == [.blockedBy, .blocking])
+        #expect(links.map(\.issueId) == ["issue-1", "issue-2"])
+
+        try db.writer.write { try Outbox.enqueue($0, setBlocking(1, by: 2, false, base: true)) }
+        cards = try items(db)
+        #expect(cards[1]?.blockedByCount == 0)
+        #expect(cards[2]?.blockingCount == 0)
+        #expect(try db.reader.read { try LinkedIssue.fetchCount($0) } == 0)
+    }
+
+    @Test func markingAsBlockedAndBackBeforeSendingLeavesNothingToSend() throws {
+        let db = try makeDatabase()
+        try db.writer.write { db in
+            try Outbox.enqueue(db, setBlocking(1, by: 2, true, base: false))
+            try Outbox.enqueue(db, setBlocking(1, by: 2, false, base: true))
+        }
+        let entries = try db.reader.read { try OutboxEntry.fetchAll($0) }
+        #expect(entries.count == 1)
+        guard case .setBlocking(let m) = entries.first?.mutation else {
+            Issue.record("Expected a change of blocker")
+            return
+        }
+        // Where GitHub started and where it ends are the same, so the engine sends nothing.
+        #expect(m.isBlocked == m.base)
+    }
+
+    @Test func aClosedBlockerShowsClosedInTheIssuesRelations() throws {
+        let db = try makeDatabase()
+        try db.writer.write { db in
+            try Outbox.enqueue(db, setBlocking(1, by: 2, true, base: false))
+            try Outbox.enqueue(db, .setState(.init(contentId: "issue-2", closed: true, reason: "COMPLETED")))
+        }
+        let blocker = try db.reader.read { try LinkedIssue.filter(Column("issueId") == "issue-1").fetchOne($0) }
+        #expect(blocker?.isClosed == true)
+    }
+
     @Test func keepingMineOrTakingTheirsSettlesAConflict() throws {
         let db = try makeDatabase()
         try db.writer.write { db in
