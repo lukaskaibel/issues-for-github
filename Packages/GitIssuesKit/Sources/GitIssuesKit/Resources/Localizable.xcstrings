@@ -49,6 +49,18 @@
         }
       }
     },
+    "addColumn" : {
+      "comment" : "Mac board: button after the last column that adds a new column (a new status of the GitHub project).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add column"
+          }
+        }
+      }
+    },
     "addDescriptionPlaceholder" : {
       "comment" : "iPhone and iPad: placeholder in an issue's empty description, on the issue screen and in the new issue sheet; tapping it starts writing.",
       "extractionState" : "manual",
@@ -97,6 +109,18 @@
         }
       }
     },
+    "addLabelsCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that opens the list of the repository's GitHub labels to add to the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add labels…"
+          }
+        }
+      }
+    },
     "addPriorityField" : {
       "comment" : "iPhone and iPad: item in a project's '…' menu that adds a Priority field to the GitHub project. 'Field' is a GitHub project field (a column of data).",
       "extractionState" : "manual",
@@ -117,6 +141,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add one with Urgent, High, Medium and Low to sort by importance."
+          }
+        }
+      }
+    },
+    "addPriorityFieldMac" : {
+      "comment" : "Mac: button at the top of a GitHub project that has no priority field; creates one in the project. 'Priority' is the name the field gets on GitHub, in English.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Priority field"
+          }
+        }
+      }
+    },
+    "addPriorityFieldTooltip" : {
+      "comment" : "Mac: tooltip of the 'Add Priority field' button. Priority, Urgent, High, Medium and Low are the names the field and its options get on GitHub, in English.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This project has no Priority field. Add one with Urgent, High, Medium and Low."
           }
         }
       }
@@ -157,6 +205,18 @@
         }
       }
     },
+    "addSubIssueCommand" : {
+      "comment" : "Mac, command palette (⌘K): command for writing a new issue under the issue in focus. 'Sub-issue' is the GitHub term.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add sub-issue"
+          }
+        }
+      }
+    },
     "addToNamedProject" : {
       "comment" : "iPhone and iPad: submenu (a verb) of an issue that is on none of the user's boards, listing the columns of the GitHub project it can go on; also the heading of those columns. %(project)@ is the project's name, such as “Roadmap”.",
       "extractionState" : "manual",
@@ -181,6 +241,18 @@
         }
       }
     },
+    "addToProjectCommand" : {
+      "comment" : "Mac, command palette (⌘K): command for an issue that is on no GitHub project board; opens a list of the projects' statuses to put it in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to project…"
+          }
+        }
+      }
+    },
     "addToProjectPlaceholder" : {
       "comment" : "iPad, issue screen, properties column: placeholder in the Project row of an issue on no GitHub project (board); opens a menu of projects to put it on.",
       "extractionState" : "manual",
@@ -189,6 +261,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add to project"
+          }
+        }
+      }
+    },
+    "addsDueDateFieldNote" : {
+      "comment" : "Mac: note at the bottom of the due date picker when the GitHub project has no due date field yet. “Due date” is the name the field gets on GitHub, in English; keep it in English, in quotes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adds a “Due date” field to the project on GitHub."
           }
         }
       }
@@ -253,6 +337,30 @@
         }
       }
     },
+    "appIconFootnote" : {
+      "comment" : "Mac Settings: note under the choice of app icons.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The first one follows light and dark mode. Others show in the Dock while the app is open."
+          }
+        }
+      }
+    },
+    "appIconMac" : {
+      "comment" : "Mac Settings: label of the row where the user picks one of several icons for the app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App icon"
+          }
+        }
+      }
+    },
     "appVersion" : {
       "comment" : "iPhone and iPad, account sheet: the app's name and version at the bottom. 'Issues' is the app's name; %(version)@ is its version, e.g. '1.2'.",
       "extractionState" : "manual",
@@ -289,6 +397,18 @@
         }
       }
     },
+    "appearanceCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that switches the app to another appearance. %(appearance)@ is 'System', 'Light' or 'Dark'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance: %(appearance)@"
+          }
+        }
+      }
+    },
     "archive" : {
       "comment" : "Inbox: button or menu item (a verb) that removes a notification from the Inbox; GitHub calls this 'Done'.",
       "extractionState" : "manual",
@@ -309,6 +429,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Archive All Read"
+          }
+        }
+      }
+    },
+    "archiveAllReadCommand" : {
+      "comment" : "Mac, command palette (⌘K), in the Inbox: command that archives every notification that has been read.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archive all read"
           }
         }
       }
@@ -349,6 +481,18 @@
         }
       }
     },
+    "assignToCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that opens the list of people to assign the issue to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assign to…"
+          }
+        }
+      }
+    },
     "assignToMe" : {
       "comment" : "Menu item or button that adds the signed-in user to the issue's assignees.",
       "extractionState" : "manual",
@@ -357,6 +501,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Assign to Me"
+          }
+        }
+      }
+    },
+    "assignToMeCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that adds the signed-in user to the issue's assignees. Sentence case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assign to me"
           }
         }
       }
@@ -421,6 +577,18 @@
         }
       }
     },
+    "backShortcutTooltip" : {
+      "comment" : "Mac sidebar, top: tooltip and VoiceOver label of the arrow button that goes back to the previous screen, as in a web browser. ⌘[ is its keyboard shortcut; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back (⌘[)"
+          }
+        }
+      }
+    },
     "backToUsualOrder" : {
       "comment" : "iPhone and iPad, Arrange Sections sheet: button that drops the user's own order of sections. Title case.",
       "extractionState" : "manual",
@@ -457,6 +625,30 @@
         }
       }
     },
+    "changeNeedsDecision" : {
+      "comment" : "Mac sidebar, list of queued changes: a change that clashes with an edit made on GitHub in the meantime, so the user has to choose which to keep. %(change)@ says what changed, e.g. 'Status changed to Done'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(change)@ — needs your decision"
+          }
+        }
+      }
+    },
+    "changeStatusCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that opens the list of statuses for the issue (the columns of its GitHub project board).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change status…"
+          }
+        }
+      }
+    },
     "changesSavedHereFirst" : {
       "comment" : "iPhone and iPad, queued changes screen: explanation under 'Everything is saved to GitHub'.",
       "extractionState" : "manual",
@@ -465,6 +657,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Changes you make are saved here first, then sent."
+          }
+        }
+      }
+    },
+    "changesSavedLocallyFirst" : {
+      "comment" : "Mac sidebar: note at the bottom of the list of queued changes: every change is stored on this Mac first, then sent to GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes are saved locally first, then sent"
           }
         }
       }
@@ -517,6 +721,18 @@
         }
       }
     },
+    "chooseProject" : {
+      "comment" : "Mac: title of the empty main area when no GitHub project is open.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a project"
+          }
+        }
+      }
+    },
     "classicTokenScopes" : {
       "comment" : "iPhone and iPad, token sign-in sheet: note under the token field. 'Classic token' and 'scopes' are GitHub's terms; keep repo, project, read:org and api.github.com as they are.",
       "extractionState" : "manual",
@@ -525,6 +741,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A classic token with the repo, project and read:org scopes. It is kept in iCloud Keychain and only sent to api.github.com."
+          }
+        }
+      }
+    },
+    "clearSelectionCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that unpicks all picked issues.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear selection"
           }
         }
       }
@@ -673,6 +901,78 @@
         }
       }
     },
+    "columnColour" : {
+      "comment" : "Mac board: submenu of a column's menu for picking the column's colour on GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colour"
+          }
+        }
+      }
+    },
+    "columnNamePlaceholder" : {
+      "comment" : "Mac board: placeholder in the field for renaming a column or naming a new one. A column is a status of the GitHub project.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Column name"
+          }
+        }
+      }
+    },
+    "columnOptions" : {
+      "comment" : "Mac board: VoiceOver label of the … button in a column's header that opens the column's menu.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Column options"
+          }
+        }
+      }
+    },
+    "commandPaletteEllipsis" : {
+      "comment" : "Mac menu bar, Go menu: item that opens the command palette (⌘K), a search field for commands and issues.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Command Palette…"
+          }
+        }
+      }
+    },
+    "commandPalettePlaceholder" : {
+      "comment" : "Mac, command palette (⌘K): placeholder in its empty search field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type a command or search issues…"
+          }
+        }
+      }
+    },
+    "commandsSection" : {
+      "comment" : "Mac, command palette (⌘K): heading above the commands found for what was typed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commands"
+          }
+        }
+      }
+    },
     "conflictDescriptionEditedOnGitHub" : {
       "comment" : "iPhone and iPad, issue screen: warning banner after the user changed the issue's description while someone else changed it on GitHub. The user's version is in the description below the banner; GitHub's is shown in the banner.",
       "extractionState" : "manual",
@@ -721,6 +1021,18 @@
         }
       }
     },
+    "copyCodeAndOpenGitHubMac" : {
+      "comment" : "Mac sign-in screen: button that copies the sign-in code and opens github.com in the browser.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy code and open GitHub"
+          }
+        }
+      }
+    },
     "copyGitHubLink" : {
       "comment" : "iPad with a keyboard, Issue menu (⇧⌘C): copies the web address of the issue on screen on github.com.",
       "extractionState" : "manual",
@@ -729,6 +1041,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copy GitHub Link"
+          }
+        }
+      }
+    },
+    "copyGitHubLinkCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that copies the issue's web address on github.com.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy GitHub link"
+          }
+        }
+      }
+    },
+    "copyGitHubLinksCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that copies the web addresses on github.com of all the picked issues.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy GitHub links"
           }
         }
       }
@@ -817,6 +1153,78 @@
         }
       }
     },
+    "deleteColumn" : {
+      "comment" : "Mac board: destructive button in the confirmation before deleting a column.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Column"
+          }
+        }
+      }
+    },
+    "deleteColumnEllipsis" : {
+      "comment" : "Mac board: item in a column's menu that asks whether to delete the column.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Column…"
+          }
+        }
+      }
+    },
+    "deleteColumnMessage" : {
+      "comment" : "Mac board: message of the confirmation before deleting a column that has issues. %(count)lld is how many (1, 2, …).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The column is removed from the project on GitHub. Its %(count)lld issue stays in the project without a status."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The column is removed from the project on GitHub. Its %(count)lld issues stay in the project without a status."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "deleteColumnQuestion" : {
+      "comment" : "Mac board: title of the confirmation before deleting a column. %(column)@ is the column's name, a status such as 'In Progress'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete the \"%(column)@\" column?"
+          }
+        }
+      }
+    },
+    "deleteDraftCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that asks whether to delete the draft in focus. 'Draft' is the GitHub term for an item that exists only on the project board.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete draft…"
+          }
+        }
+      }
+    },
     "deleteDraftEllipsis" : {
       "comment" : "iPhone and iPad: destructive item at the end of a draft's menu; deletes it after asking. A draft is a GitHub project item that isn't an issue in a repository yet. The … says it asks first.",
       "extractionState" : "manual",
@@ -825,6 +1233,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete Draft…"
+          }
+        }
+      }
+    },
+    "deleteEmptyColumnMessage" : {
+      "comment" : "Mac board: message of the confirmation before deleting a column that has no issues.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The column is removed from the project on GitHub."
+          }
+        }
+      }
+    },
+    "deleteIssueCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that asks whether to delete the issue in focus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete issue…"
           }
         }
       }
@@ -843,6 +1275,18 @@
     },
     "deleteIssueNumberQuestion" : {
       "comment" : "iPhone and iPad: title of the alert that asks before deleting an issue or a draft. %(number)@ is its number, such as '#14', or the word shown instead of a number for a draft.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete %(number)@?"
+          }
+        }
+      }
+    },
+    "deleteItemQuestion" : {
+      "comment" : "Mac: title of the alert before deleting an issue or a draft. %(number)@ is the issue's number, e.g. '#42', or the word for a draft.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -969,6 +1413,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Done"
+          }
+        }
+      }
+    },
+    "draftDeletionMessage" : {
+      "comment" : "Mac: message of the alert before deleting a draft ('draft' is the GitHub term for an item that exists only on the project board). %(title)@ is the draft's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The draft “%(title)@” is removed from the board."
           }
         }
       }
@@ -1501,6 +1957,30 @@
         }
       }
     },
+    "foldHiddenProjectsAway" : {
+      "comment" : "Mac sidebar: tooltip of the line that folds the hidden GitHub projects back in, while they are shown.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fold hidden projects away"
+          }
+        }
+      }
+    },
+    "foldHiddenRepositoriesAway" : {
+      "comment" : "Mac sidebar: tooltip of the line that folds the hidden GitHub repositories back in, while they are shown.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fold hidden repositories away"
+          }
+        }
+      }
+    },
     "formatBold" : {
       "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that makes the selected text bold.",
       "extractionState" : "manual",
@@ -1561,6 +2041,54 @@
         }
       }
     },
+    "forward" : {
+      "comment" : "Mac: item in the Go menu and command in the command palette (⌘K) that goes forward again after going back, as in a web browser.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forward"
+          }
+        }
+      }
+    },
+    "forwardShortcutTooltip" : {
+      "comment" : "Mac sidebar, top: tooltip and VoiceOver label of the arrow button that goes forward again after going back, as in a web browser. ⌘] is its keyboard shortcut; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forward (⌘])"
+          }
+        }
+      }
+    },
+    "gitHubAccount" : {
+      "comment" : "Mac Settings: label of the row that shows the signed-in GitHub login, with a button to sign out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub account"
+          }
+        }
+      }
+    },
+    "gitHubCLINotSignedIn" : {
+      "comment" : "Mac sign-in screen: error after 'Use my GitHub CLI login' when GitHub's command-line tool has no login. 'gh auth login' is a command; keep it as is. Terminal is the Mac app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The GitHub CLI isn't signed in. Run \"gh auth login\" in Terminal, then try again."
+          }
+        }
+      }
+    },
     "goMenu" : {
       "comment" : "iPad with a keyboard: name of the menu in the menu bar with commands that move between places (Back, Search, Board, List, My Issues, Inbox). As the Go menu in the Finder.",
       "extractionState" : "manual",
@@ -1573,6 +2101,90 @@
         }
       }
     },
+    "goToSection" : {
+      "comment" : "Mac, command palette (⌘K): heading above the commands that go somewhere (Inbox, My Issues, Board, List, another project).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go to"
+          }
+        }
+      }
+    },
+    "hiddenProjectsCount" : {
+      "comment" : "Mac sidebar: line at the end of the list of GitHub projects that folds out the projects the user hid. %(count)lld is how many projects are hidden (1, 2, …). Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld hidden"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld hidden"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "hiddenRepositoriesCount" : {
+      "comment" : "Mac sidebar: line at the end of the list of GitHub repositories that folds out the repositories the user hid. %(count)lld is how many repositories are hidden (1, 2, …). Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld hidden"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld hidden"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "hideFromSidebar" : {
+      "comment" : "Mac sidebar: right-click menu item of a project or repository; moves it into a folded group of hidden ones at the end of the list.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide from Sidebar"
+          }
+        }
+      }
+    },
+    "hideTokenField" : {
+      "comment" : "Mac sign-in screen: the same button while the field for a personal access token is shown; hides it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide token field"
+          }
+        }
+      }
+    },
     "hidesSectionIssues" : {
       "comment" : "VoiceOver hint, iPhone and iPad: what tapping the header of an open list section does.",
       "extractionState" : "manual",
@@ -1581,6 +2193,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hides the issues of this section"
+          }
+        }
+      }
+    },
+    "iPhoneAndIPad" : {
+      "comment" : "Mac Settings: label of the row about sharing the GitHub login with the app on the user's iPhone and iPad.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone and iPad"
           }
         }
       }
@@ -2041,6 +2665,18 @@
         }
       }
     },
+    "inboxShortcutTooltip" : {
+      "comment" : "Mac sidebar: tooltip of the Inbox row. 'G then I' means pressing the G key and then the I key: keep the letters, translate 'then'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inbox (G then I)"
+          }
+        }
+      }
+    },
     "inboxShowPicker" : {
       "comment" : "iPhone and iPad Inbox: name of the switch between the notifications for you and the ones you're watching (read by VoiceOver). A verb: which notifications to show.",
       "extractionState" : "manual",
@@ -2173,6 +2809,18 @@
         }
       }
     },
+    "issueDeletionMessage" : {
+      "comment" : "Mac: message of the alert before deleting an issue. %(title)@ is the issue's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%(title)@” and its comments are deleted on GitHub for everyone. This can't be undone."
+          }
+        }
+      }
+    },
     "issueGoneMessage" : {
       "comment" : "iPhone and iPad: line under 'This issue is gone', saying why. 'Its project' is the GitHub project (board) the issue was on.",
       "extractionState" : "manual",
@@ -2293,6 +2941,18 @@
         }
       }
     },
+    "issuesSection" : {
+      "comment" : "Mac, command palette (⌘K): heading above the issues found for what was typed. 'Issue' is the GitHub term.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
+          }
+        }
+      }
+    },
     "keepEditing" : {
       "comment" : "iPhone and iPad, new issue sheet: button in the question 'Discard this issue?' that goes back to writing it.",
       "extractionState" : "manual",
@@ -2313,6 +2973,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keep Mine"
+          }
+        }
+      }
+    },
+    "keepMineMac" : {
+      "comment" : "Mac: button in a notice at the bottom right of the window when someone changed the same thing on GitHub; keeps the user's own value instead of GitHub's.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep mine"
           }
         }
       }
@@ -2473,6 +3145,78 @@
         }
       }
     },
+    "loginNotSharedMessage" : {
+      "comment" : "Mac: text of the warning when the login could not be shared; 'team' is an Apple developer team (for developers building the app themselves).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Keychain isn't available to this build. It needs to be signed with your team."
+          }
+        }
+      }
+    },
+    "loginNotSharedTitle" : {
+      "comment" : "Mac: title of a warning at the bottom right when the GitHub login could not be put into iCloud Keychain.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The login could not be shared"
+          }
+        }
+      }
+    },
+    "loginSharedMessage" : {
+      "comment" : "Mac: text of the notice after the GitHub login was shared. 'It' is the login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The app on your iPhone and iPad signs in with it through iCloud Keychain."
+          }
+        }
+      }
+    },
+    "loginSharedTitle" : {
+      "comment" : "Mac: title of a notice at the bottom right after the GitHub login was put into iCloud Keychain for the iPhone and iPad.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Login shared"
+          }
+        }
+      }
+    },
+    "loginSharedWithDevices" : {
+      "comment" : "Mac Settings, row 'iPhone and iPad': shown when the login is shared already. 'They' are the iPhone and iPad.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They sign in with this login through iCloud Keychain."
+          }
+        }
+      }
+    },
+    "lookingForIssues" : {
+      "comment" : "Mac: title of a repository's empty list while its issues are fetched from GitHub for the first time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for issues…"
+          }
+        }
+      }
+    },
     "lookingForProjects" : {
       "comment" : "iPhone, Projects tab: title shown with a spinner while the GitHub projects are fetched for the first time.",
       "extractionState" : "manual",
@@ -2493,6 +3237,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mark All as Read"
+          }
+        }
+      }
+    },
+    "markAllAsReadCommand" : {
+      "comment" : "Mac, command palette (⌘K), in the Inbox: command that marks every notification as read.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark all as read"
           }
         }
       }
@@ -2521,6 +3277,18 @@
         }
       }
     },
+    "markAsReadCommand" : {
+      "comment" : "Mac, command palette (⌘K), in the Inbox: command for the notification in focus. Sentence case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as read"
+          }
+        }
+      }
+    },
     "markAsUnread" : {
       "comment" : "Inbox: menu item or button for a notification.",
       "extractionState" : "manual",
@@ -2529,6 +3297,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mark as Unread"
+          }
+        }
+      }
+    },
+    "markAsUnreadCommand" : {
+      "comment" : "Mac, command palette (⌘K), in the Inbox: command for the notification in focus. Sentence case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as unread"
           }
         }
       }
@@ -2617,6 +3397,54 @@
         }
       }
     },
+    "moreQueuedChanges" : {
+      "comment" : "Mac sidebar, list of queued changes: last line when more changes are waiting than are listed. %(count)lld is how many more (1, 2, …).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "and %(count)lld more"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "and %(count)lld more"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "moveColumnLeft" : {
+      "comment" : "Mac board: item in a column's menu that moves the column one place to the left.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Left"
+          }
+        }
+      }
+    },
+    "moveColumnRight" : {
+      "comment" : "Mac board: item in a column's menu that moves the column one place to the right.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Right"
+          }
+        }
+      }
+    },
     "moveLeft" : {
       "comment" : "iPad board: item in a column's '…' menu that moves the status (the column) one place to the left.",
       "extractionState" : "manual",
@@ -2677,6 +3505,18 @@
         }
       }
     },
+    "myIssuesEmptyMessage" : {
+      "comment" : "Mac, My Issues: message under the title of the empty list. 'On a board or not' means whether or not the issue is on a GitHub project board.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open issues assigned to you show up here, on a board or not."
+          }
+        }
+      }
+    },
     "needsYourDecision" : {
       "comment" : "iPhone and iPad, queued changes screen: under a change that clashes with a change made on GitHub meanwhile; the user has to choose which to keep.",
       "extractionState" : "manual",
@@ -2701,6 +3541,42 @@
         }
       }
     },
+    "newIssueAction" : {
+      "comment" : "Mac: VoiceOver label of the sidebar's button for writing a new issue, and a command in the command palette (⌘K) that does the same. Sentence case. 'Issue' is the GitHub term.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New issue"
+          }
+        }
+      }
+    },
+    "newIssueInColumnMenuItem" : {
+      "comment" : "Mac board: right-click menu item of a column's header. %(column)@ is the column's name, a status such as 'In Progress'. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Issue in %(column)@"
+          }
+        }
+      }
+    },
+    "newIssueInColumnTooltip" : {
+      "comment" : "Mac board: tooltip and VoiceOver label of the + button in a column's header. %(column)@ is the column's name, a status such as 'In Progress'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New issue in %(column)@"
+          }
+        }
+      }
+    },
     "newIssueInStatus" : {
       "comment" : "VoiceOver, iPhone and iPad: label of the '+' button in the header of a list section or a board column, which starts a new issue with that status. %(status)@ is the status name from GitHub, e.g. 'In Progress'.",
       "extractionState" : "manual",
@@ -2721,6 +3597,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New"
+          }
+        }
+      }
+    },
+    "newIssueShortcutTooltip" : {
+      "comment" : "Mac sidebar, top: tooltip of the button for writing a new issue. C is the key that does the same; keep it. 'Issue' is the GitHub term.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New issue (C)"
           }
         }
       }
@@ -2809,6 +3697,18 @@
         }
       }
     },
+    "nextMonth" : {
+      "comment" : "Mac, due date picker: tooltip and VoiceOver label of the arrow that shows the month after.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next month"
+          }
+        }
+      }
+    },
     "nextNotification" : {
       "comment" : "iPad with a keyboard, Inbox: name of the J key in the keyboard shortcuts overlay (hold ⌘); selects the next notification.",
       "extractionState" : "manual",
@@ -2877,6 +3777,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No labels in this repository"
+          }
+        }
+      }
+    },
+    "noMatches" : {
+      "comment" : "Mac: shown in a picker (status, priority, people, labels, dates, projects) when nothing matches what was typed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No matches"
           }
         }
       }
@@ -2977,6 +3889,30 @@
         }
       }
     },
+    "notNow" : {
+      "comment" : "Mac: button in the alert about sharing the login with the iPhone and iPad; declines for now.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Now"
+          }
+        }
+      }
+    },
+    "notSignedIn" : {
+      "comment" : "Mac Settings, row 'GitHub account': shown when no GitHub account is signed in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not signed in"
+          }
+        }
+      }
+    },
     "nothingAssignedMessage" : {
       "comment" : "iPhone and iPad, My Issues: explanation under 'Nothing assigned to you'. 'Board' is a GitHub project.",
       "extractionState" : "manual",
@@ -2997,6 +3933,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nothing assigned to you"
+          }
+        }
+      }
+    },
+    "nothingMatchesQuery" : {
+      "comment" : "Mac, command palette (⌘K): shown when no command and no issue matches what was typed. %(query)@ is the typed text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matches \"%(query)@\""
           }
         }
       }
@@ -3301,6 +4249,18 @@
         }
       }
     },
+    "openRepositoryOnGitHubTooltip" : {
+      "comment" : "Mac: tooltip of the 'Open on GitHub' button at the top of a repository's list of issues. %(repository)@ is the owner and name, e.g. 'apple/swift'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open %(repository)@ on GitHub"
+          }
+        }
+      }
+    },
     "opensGitHubWithScopes" : {
       "comment" : "iPhone and iPad, token sign-in sheet: note under 'Create a Token on GitHub'. 'Scopes' is GitHub's term for a token's permissions.",
       "extractionState" : "manual",
@@ -3445,6 +4405,18 @@
         }
       }
     },
+    "pickAndKeepOpenTooltip" : {
+      "comment" : "Mac: tooltip of the checkbox at the start of a row in the pickers that take several values (people, labels).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick and keep the list open, to pick more"
+          }
+        }
+      }
+    },
     "pickNotificationOnLeft" : {
       "comment" : "iPad Inbox: explanation under 'No notification selected'. J and K are keys on the keyboard; keep them.",
       "extractionState" : "manual",
@@ -3457,6 +4429,18 @@
         }
       }
     },
+    "pickProjectInSidebar" : {
+      "comment" : "Mac: message under 'Choose a project' in the empty main area.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a project in the sidebar."
+          }
+        }
+      }
+    },
     "previousIssue" : {
       "comment" : "iPad, issue screen: toolbar button with an up arrow (read by VoiceOver) and the K keyboard command; opens the previous issue of the list. Title case.",
       "extractionState" : "manual",
@@ -3465,6 +4449,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Previous Issue"
+          }
+        }
+      }
+    },
+    "previousMonth" : {
+      "comment" : "Mac, due date picker: tooltip and VoiceOver label of the arrow that shows the month before.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous month"
           }
         }
       }
@@ -3537,6 +4533,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Project"
+          }
+        }
+      }
+    },
+    "projectCouldNotLoad" : {
+      "comment" : "Mac: title of the main area when fetching a GitHub project failed; GitHub's error message is shown under it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This project couldn't be loaded"
+          }
+        }
+      }
+    },
+    "projectEmptyMessage" : {
+      "comment" : "Mac: message under the title of a GitHub project's empty list. C is the key for a new issue; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Press C to create the first one. Only issues that are in this GitHub Project appear here."
           }
         }
       }
@@ -3693,6 +4713,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Queued changes"
+          }
+        }
+      }
+    },
+    "queuedChangesHeader" : {
+      "comment" : "Mac sidebar: heading of the list of changes saved on this Mac that are waiting to be sent to GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Queued changes"
+          }
+        }
+      }
+    },
+    "queuedChangesMenuItem" : {
+      "comment" : "Mac sidebar, account menu: item that opens a submenu listing the changes saved on this Mac that are not on GitHub yet; their number is shown beside it. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Queued Changes"
           }
         }
       }
@@ -3973,6 +5017,18 @@
         }
       }
     },
+    "removeDueDateCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that clears the issue's due date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove due date"
+          }
+        }
+      }
+    },
     "removeKeepChoosing" : {
       "comment" : "iPhone and iPad, sheet that picks assignees or labels: VoiceOver label of the checked circle at the start of a row; takes the person or label off and leaves the sheet open. %(name)@ is a GitHub user or label name.",
       "extractionState" : "manual",
@@ -4005,6 +5061,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rename"
+          }
+        }
+      }
+    },
+    "renameColumnMenuItem" : {
+      "comment" : "Mac board: item in a column's menu that lets the user type a new name for the column.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename…"
           }
         }
       }
@@ -4093,6 +5161,18 @@
         }
       }
     },
+    "repositoryEmptyMessage" : {
+      "comment" : "Mac: message under the title of a repository's empty list. C is the key for a new issue; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Press C to create one. Issues closed in the last four weeks show up here too."
+          }
+        }
+      }
+    },
     "repositoryGoneMessage" : {
       "comment" : "iPhone and iPad: explanation under 'This repository is gone'.",
       "extractionState" : "manual",
@@ -4165,6 +5245,18 @@
         }
       }
     },
+    "sampleData" : {
+      "comment" : "Mac: shown in place of a name while the app shows its sample projects instead of a GitHub account (account menu in the sidebar; 'GitHub account' row in Settings).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sample data"
+          }
+        }
+      }
+    },
     "sampleDataNothingSent" : {
       "comment" : "iPhone and iPad, account sheet: line under the name while the app shows sample data instead of an account.",
       "extractionState" : "manual",
@@ -4173,6 +5265,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sample data, nothing is sent to GitHub"
+          }
+        }
+      }
+    },
+    "sampleDataTooltip" : {
+      "comment" : "Mac sign-in screen: tooltip of the 'Explore with Sample Data' button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two sample projects that stay on this Mac. Nothing is sent to GitHub."
           }
         }
       }
@@ -4233,6 +5337,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Issues and projects"
+          }
+        }
+      }
+    },
+    "searchShortcutTooltip" : {
+      "comment" : "Mac sidebar, top: tooltip of the magnifying-glass button that opens the command palette, to search issues and commands. ⌘K is its keyboard shortcut; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search (⌘K)"
           }
         }
       }
@@ -4321,6 +5437,78 @@
         }
       }
     },
+    "selectAllIssuesCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that picks every issue on screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select all issues"
+          }
+        }
+      }
+    },
+    "selectedIssueCount" : {
+      "comment" : "Mac, command palette (⌘K): chip at the top, and heading above the commands, when several issues are picked; the commands apply to all of them. %(count)lld is 2 or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld issue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld issues"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "selectedNotificationCount" : {
+      "comment" : "Mac, command palette (⌘K), in the Inbox: heading above the commands when several notifications are picked; the commands apply to all of them. %(count)lld is 2 or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld notification"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld notifications"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "selectionSection" : {
+      "comment" : "Mac, command palette (⌘K): heading above the commands that pick issues or clear what is picked.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selection"
+          }
+        }
+      }
+    },
     "sendComment" : {
       "comment" : "iPad with a keyboard: name of the ⌘↵ command that sends the comment being written, in the list of shortcuts that appears while ⌘ is held. Title case.",
       "extractionState" : "manual",
@@ -4357,6 +5545,66 @@
         }
       }
     },
+    "sendsWhenBackOnline" : {
+      "comment" : "Mac sidebar: note at the bottom of the list of queued changes while the Mac is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sends automatically when you are back online"
+          }
+        }
+      }
+    },
+    "setDueDateCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that opens the due date picker for the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set due date…"
+          }
+        }
+      }
+    },
+    "setPriorityCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that opens the list of priorities for the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set priority…"
+          }
+        }
+      }
+    },
+    "settingsEllipsis" : {
+      "comment" : "Mac: item in the account menu and command in the command palette (⌘K) that opens the Settings window.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings…"
+          }
+        }
+      }
+    },
+    "settingsSection" : {
+      "comment" : "Mac, command palette (⌘K): heading above the commands that change settings.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        }
+      }
+    },
     "share" : {
       "comment" : "iPhone and iPad: item (a verb) in an issue's menu that opens the system share sheet with the issue's link.",
       "extractionState" : "manual",
@@ -4365,6 +5613,114 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Share…"
+          }
+        }
+      }
+    },
+    "shareLogin" : {
+      "comment" : "Mac: button in the alert that puts the GitHub login into iCloud Keychain, so the app on the iPhone and iPad signs in by itself.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share Login"
+          }
+        }
+      }
+    },
+    "shareLoginMessage" : {
+      "comment" : "Mac: message of the alert offering to share the login with the iPhone and iPad. 'GitHub CLI' is GitHub's command-line tool.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your GitHub CLI login can be kept in iCloud Keychain, so the app on your iPhone and iPad signs in by itself. You can change this later in Settings."
+          }
+        }
+      }
+    },
+    "shareLoginQuestion" : {
+      "comment" : "Mac: title of an alert offered once after signing in with the GitHub CLI login: whether the app on the iPhone and iPad should use the same login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in on your iPhone and iPad too?"
+          }
+        }
+      }
+    },
+    "shareLoginWithDevices" : {
+      "comment" : "Mac Settings, row 'iPhone and iPad': button that puts the GitHub login into iCloud Keychain, so the app on the iPhone and iPad signs in by itself.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share Login with iPhone and iPad"
+          }
+        }
+      }
+    },
+    "sharingNeedsSignedBuild" : {
+      "comment" : "Mac Settings, row 'iPhone and iPad': shown in builds that can't use iCloud Keychain, such as one a developer built without their Apple developer team.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sharing the login needs a build signed with your team."
+          }
+        }
+      }
+    },
+    "showDockBadgeSetting" : {
+      "comment" : "Mac Settings: switch that shows the number of unread Inbox notifications as a badge on the app's icon in the Dock.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show unread Inbox notifications on the Dock icon"
+          }
+        }
+      }
+    },
+    "showHiddenProjects" : {
+      "comment" : "Mac sidebar: tooltip of the line that folds out the GitHub projects the user hid.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show hidden projects"
+          }
+        }
+      }
+    },
+    "showHiddenRepositories" : {
+      "comment" : "Mac sidebar: tooltip of the line that folds out the GitHub repositories the user hid.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show hidden repositories"
+          }
+        }
+      }
+    },
+    "showInSidebar" : {
+      "comment" : "Mac sidebar: right-click menu item of a project or repository the user hid; puts it back in the sidebar's list.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show in Sidebar"
           }
         }
       }
@@ -4413,6 +5769,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your GitHub issues, wherever you are"
+          }
+        }
+      }
+    },
+    "signInHeadlineMac" : {
+      "comment" : "Mac sign-in screen: headline. 'Keeps up' means fast and always up to date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your GitHub issues, on a board that keeps up"
+          }
+        }
+      }
+    },
+    "signInMac" : {
+      "comment" : "Mac sign-in screen: button next to the field for a personal access token; signs in with it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in"
           }
         }
       }
@@ -4477,6 +5857,18 @@
         }
       }
     },
+    "signOutEverywhereEllipsis" : {
+      "comment" : "Mac sidebar, account menu: item that asks whether to sign out on the Mac, iPhone and iPad at once. Shown when the login is shared through iCloud Keychain.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign Out Everywhere…"
+          }
+        }
+      }
+    },
     "signOutEverywhereExplanation" : {
       "comment" : "iPhone and iPad, account sheet: message of the question after tapping Sign Out.",
       "extractionState" : "manual",
@@ -4485,6 +5877,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Signing out everywhere removes your login from iCloud Keychain, so your Mac, iPhone and iPad all sign out."
+          }
+        }
+      }
+    },
+    "signOutEverywhereMessage" : {
+      "comment" : "Mac: message of the confirmation before signing out on every device.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This removes your GitHub login from iCloud Keychain, so your Mac, iPhone and iPad all sign out."
+          }
+        }
+      }
+    },
+    "signOutEverywhereQuestion" : {
+      "comment" : "Mac: title of the confirmation after choosing Sign Out Everywhere in the account menu.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign out on all your devices?"
           }
         }
       }
@@ -4585,6 +6001,30 @@
         }
       }
     },
+    "snoozeUntilLaterTodayCommand" : {
+      "comment" : "Mac, command palette (⌘K), in the Inbox: hides the notification until later today, then brings it back. %(time)@ is when, e.g. '18:00'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snooze until later today (%(time)@)"
+          }
+        }
+      }
+    },
+    "snoozeUntilNextWeekCommand" : {
+      "comment" : "Mac, command palette (⌘K), in the Inbox: hides the notification until Monday morning, then brings it back. %(time)@ is when, e.g. 'Mon 9:00'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snooze until next week (%(time)@)"
+          }
+        }
+      }
+    },
     "snoozeUntilTitle" : {
       "comment" : "iPhone and iPad Inbox: title of the sheet for choosing a date and time to snooze a notification until.",
       "extractionState" : "manual",
@@ -4593,6 +6033,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Snooze Until"
+          }
+        }
+      }
+    },
+    "snoozeUntilTomorrowCommand" : {
+      "comment" : "Mac, command palette (⌘K), in the Inbox: hides the notification until tomorrow morning, then brings it back. %(time)@ is when, e.g. 'Thu 9:00'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snooze until tomorrow (%(time)@)"
           }
         }
       }
@@ -4753,6 +6205,42 @@
         }
       }
     },
+    "switchProjectCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that opens the list of GitHub projects and repositories to switch to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch project or repository…"
+          }
+        }
+      }
+    },
+    "switchProjectEllipsis" : {
+      "comment" : "Mac menu bar, Go menu: item that opens a list for switching to another GitHub project or repository. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch Project…"
+          }
+        }
+      }
+    },
+    "switchProjectPlaceholder" : {
+      "comment" : "Mac, command palette: placeholder in the search field of the list of GitHub projects and repositories to switch to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch project or repository…"
+          }
+        }
+      }
+    },
     "switchToValue" : {
       "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) button next to 'Keep Mine': takes the value someone else set on GitHub instead of the user's. %(value)@ is a status or priority as named on the board (e.g. 'Done') or a date (e.g. 'Oct 9').",
       "extractionState" : "manual",
@@ -4777,6 +6265,18 @@
         }
       }
     },
+    "syncNowButton" : {
+      "comment" : "Mac sidebar: button at the bottom of the list of queued changes that sends them to GitHub and fetches what changed there, right away. Sentence case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync now"
+          }
+        }
+      }
+    },
     "syncSection" : {
       "comment" : "iPhone and iPad, account sheet: heading of the section about syncing with GitHub (a noun).",
       "extractionState" : "manual",
@@ -4797,6 +6297,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sync with GitHub Now"
+          }
+        }
+      }
+    },
+    "syncWithGitHubNowCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that fetches what changed on GitHub and sends the changes waiting to be sent, right away. Sentence case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync with GitHub now"
+          }
+        }
+      }
+    },
+    "syncWithGitHubNowMenuItem" : {
+      "comment" : "Mac menu bar, Go menu: item that fetches what changed on GitHub and sends the changes waiting to be sent, right away. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync with GitHub Now"
+          }
+        }
+      }
+    },
+    "thisIssueSection" : {
+      "comment" : "Mac, command palette (⌘K): heading above the commands for the issue in focus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This issue"
           }
         }
       }
@@ -4837,6 +6373,18 @@
         }
       }
     },
+    "tokenFieldPlaceholder" : {
+      "comment" : "Mac sign-in screen: placeholder of the field for a GitHub personal access token. 'repo', 'project' and 'read:org' are the names of GitHub permissions (scopes); keep them as they are.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Token with repo, project and read:org scopes"
+          }
+        }
+      }
+    },
     "tokenNotAccepted" : {
       "comment" : "iPhone and iPad, token sign-in sheet: error shown when GitHub refuses the token.",
       "extractionState" : "manual",
@@ -4845,6 +6393,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "GitHub didn't accept this token. Check that it's complete and hasn't expired."
+          }
+        }
+      }
+    },
+    "tokenStoredInKeychain" : {
+      "comment" : "Mac sign-in screen: note under the field for a personal access token.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stored in your Mac's keychain."
           }
         }
       }
@@ -4897,6 +6457,18 @@
         }
       }
     },
+    "unassignMeCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that takes the signed-in user off the issue's assignees.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unassign me"
+          }
+        }
+      }
+    },
     "unassignSwipe" : {
       "comment" : "iPhone and iPad: swipe action on an issue (a verb) that removes the signed-in user from its assignees. Short; the opposite of 'Assign'.",
       "extractionState" : "manual",
@@ -4945,6 +6517,30 @@
         }
       }
     },
+    "unreadCount" : {
+      "comment" : "Mac sidebar: VoiceOver value of the Inbox row, read after its name. %(count)lld is the number of unread notifications (1, 2, …).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld unread"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld unread"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "unsentIssueNumber" : {
       "comment" : "All screens: shown in place of an issue's number (#12) while an issue the user just wrote hasn't reached GitHub yet (cards, lists, the list of changes waiting to be sent). An adjective about the issue. Short: one word, no spaces.",
       "extractionState" : "manual",
@@ -4965,6 +6561,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unsubscribe"
+          }
+        }
+      }
+    },
+    "useGitHubCLILogin" : {
+      "comment" : "Mac sign-in screen: button that signs in with the login of GitHub's command-line tool 'gh'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use my GitHub CLI login"
           }
         }
       }
@@ -5001,6 +6609,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Use a Personal Access Token"
+          }
+        }
+      }
+    },
+    "usePersonalAccessTokenMac" : {
+      "comment" : "Mac sign-in screen: button that shows a field for a GitHub personal access token ('personal access token' is GitHub's term).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use a personal access token"
           }
         }
       }

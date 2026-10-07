@@ -25,7 +25,7 @@ public struct RootView: View {
         .animation(Theme.overlay, value: model.signedIn)
         .background(WindowReader { model.mainWindow = $0 })
         .alert(
-            model.deletionCandidate.map { "Delete \($0.displayNumber)?" } ?? "Delete?",
+            Text(model.deletionCandidate.map { .deleteItemQuestion(number: $0.displayNumber) } ?? .deleteQuestion),
             isPresented: Binding(
                 get: { model.deletionCandidate != nil },
                 set: { if !$0 { model.deletionCandidate = nil } }
@@ -33,28 +33,28 @@ public struct RootView: View {
             presenting: model.deletionCandidate
         ) { item in
             // Return confirms, as in Linear; Escape cancels.
-            Button("Delete", role: .destructive) { model.delete(item) }
+            Button(.delete, role: .destructive) { model.delete(item) }
                 .keyboardShortcut(.defaultAction)
-            Button("Cancel", role: .cancel) { model.deletionCandidate = nil }
+            Button(.cancel, role: .cancel) { model.deletionCandidate = nil }
         } message: { item in
             if item.kind == .draft {
-                Text("The draft “\(item.title)” is removed from the board.")
+                Text(.draftDeletionMessage(title: item.title))
             } else {
-                Text("“\(item.title)” and its comments are deleted on GitHub for everyone. This can't be undone.")
+                Text(.issueDeletionMessage(title: item.title))
             }
         }
-        .confirmationDialog("Sign out on all your devices?", isPresented: Bindable(model).confirmSignOutEverywhere) {
-            Button("Sign Out Everywhere", role: .destructive) { model.signOut(everywhere: true) }
-            Button("Cancel", role: .cancel) {}
+        .confirmationDialog(Text(.signOutEverywhereQuestion), isPresented: Bindable(model).confirmSignOutEverywhere) {
+            Button(.signOutEverywhere, role: .destructive) { model.signOut(everywhere: true) }
+            Button(.cancel, role: .cancel) {}
         } message: {
-            Text("This removes your GitHub login from iCloud Keychain, so your Mac, iPhone and iPad all sign out.")
+            Text(.signOutEverywhereMessage)
         }
-        .alert("Sign in on your iPhone and iPad too?", isPresented: Bindable(model).offerLoginSharing) {
-            Button("Share Login") { model.answerLoginSharing(true) }
+        .alert(Text(.shareLoginQuestion), isPresented: Bindable(model).offerLoginSharing) {
+            Button(.shareLogin) { model.answerLoginSharing(true) }
                 .keyboardShortcut(.defaultAction)
-            Button("Not Now", role: .cancel) { model.answerLoginSharing(false) }
+            Button(.notNow, role: .cancel) { model.answerLoginSharing(false) }
         } message: {
-            Text("Your GitHub CLI login can be kept in iCloud Keychain, so the app on your iPhone and iPad signs in by itself. You can change this later in Settings.")
+            Text(.shareLoginMessage)
         }
         .task(id: model.signedIn) {
             try? await Task.sleep(for: .seconds(1.5))
@@ -111,10 +111,8 @@ struct ContentPanel: View {
                     ProjectHeader()
                     if model.scope == nil {
                         EmptyState(
-                            title: model.projects.isEmpty ? "Looking for your projects…" : "Choose a project",
-                            message: model.projects.isEmpty
-                                ? "Boards come from GitHub Projects. If you have none yet, create one on GitHub and it will show up here."
-                                : "Pick a project in the sidebar."
+                            title: String(localized: model.projects.isEmpty ? .lookingForProjects : .chooseProject),
+                            message: String(localized: model.projects.isEmpty ? .noProjectsMessage : .pickProjectInSidebar)
                         )
                     } else if model.isLoadingProject {
                         ProjectLoadingState()
@@ -208,7 +206,7 @@ struct ProjectHeader: View {
                 }
             case .myIssues:
                 Image(systemName: "scope").font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textSecondary)
-                Text("My Issues").font(.uiSemibold)
+                Text(.myIssues).font(.uiSemibold)
             case .repository:
                 if let repo = model.currentRepository {
                     RepositoryIcon()
@@ -226,17 +224,17 @@ struct ProjectHeader: View {
                     Platform.open(url)
                 } label: {
                     HStack(spacing: 5) {
-                        Text("Open on GitHub")
+                        Text(.openOnGitHub)
                         Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .semibold))
                     }
                 }
                 .buttonStyle(SecondaryButtonStyle())
-                .help("Open \(repo.nameWithOwner) on GitHub")
+                .help(Text(.openRepositoryOnGitHubTooltip(repository: repo.nameWithOwner)))
             }
             if let project = model.currentProject, project.priorityFieldId == nil, project.viewerCanUpdate, project.lastSyncedAt != nil {
-                Button("Add Priority field") { model.addPriorityField(projectId: project.id) }
+                Button(.addPriorityFieldMac) { model.addPriorityField(projectId: project.id) }
                     .buttonStyle(SecondaryButtonStyle())
-                    .help("This project has no Priority field. Add one with Urgent, High, Medium and Low.")
+                    .help(Text(.addPriorityFieldTooltip))
             }
         }
         .padding(.leading, 16)
@@ -254,14 +252,14 @@ struct ViewModeSwitch: View {
 
     var body: some View {
         HStack(spacing: 2) {
-            segment("Board", .board)
-            segment("List", .list)
+            segment(.board, .board)
+            segment(.list, .list)
         }
         .padding(2)
         .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Theme.control))
     }
 
-    private func segment(_ title: String, _ value: ViewMode) -> some View {
+    private func segment(_ title: LocalizedStringResource, _ value: ViewMode) -> some View {
         Button {
             withAnimation(Theme.spring) { mode = value }
         } label: {
@@ -329,14 +327,14 @@ struct ProjectLoadingState: View {
     var body: some View {
         switch model.status.phase {
         case .offline:
-            EmptyState(title: "You're offline", message: "This project loads as soon as you're back online.")
+            EmptyState(title: String(localized: .youreOffline), message: String(localized: .projectLoadsWhenOnline))
         case .failed(let message):
-            EmptyState(title: "This project couldn't be loaded", message: message) {
-                Button("Try Again") { model.refresh() }
+            EmptyState(title: String(localized: .projectCouldNotLoad), message: message) {
+                Button(.tryAgain) { model.refresh() }
                     .buttonStyle(SecondaryButtonStyle())
             }
         default:
-            EmptyState(title: "Loading issues…", message: "Fetching this project from GitHub.", showsProgress: true)
+            EmptyState(title: String(localized: .loadingIssues), message: String(localized: .fetchingProject), showsProgress: true)
         }
     }
 }

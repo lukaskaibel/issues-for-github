@@ -10,10 +10,10 @@ struct Sidebar: View {
             // Room for the window's traffic lights, with back and forward on the right.
             HStack(spacing: 2) {
                 Spacer()
-                IconButton(systemName: "chevron.left", label: "Back (⌘[)") { model.goBack() }
+                IconButton(systemName: "chevron.left", label: String(localized: .backShortcutTooltip)) { model.goBack() }
                     .disabled(!model.canGoBack)
                     .opacity(model.canGoBack ? 1 : 0.35)
-                IconButton(systemName: "chevron.right", label: "Forward (⌘])") { model.goForward() }
+                IconButton(systemName: "chevron.right", label: String(localized: .forwardShortcutTooltip)) { model.goForward() }
                     .disabled(!model.canGoForward)
                     .opacity(model.canGoForward ? 1 : 0.35)
             }
@@ -24,7 +24,7 @@ struct Sidebar: View {
             HStack(spacing: 2) {
                 AccountMenuButton()
                 Spacer(minLength: 4)
-                SidebarIconButton(systemName: "magnifyingglass", label: "Search", help: "Search (⌘K)") {
+                SidebarIconButton(systemName: "magnifyingglass", label: .search, help: .searchShortcutTooltip) {
                     model.overlay = .palette(.root)
                 }
                 Button {
@@ -37,23 +37,23 @@ struct Sidebar: View {
                         .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.hover))
                 }
                 .buttonStyle(PlainPressStyle())
-                .help("New issue (C)")
-                .accessibilityLabel("New issue")
+                .help(Text(.newIssueShortcutTooltip))
+                .accessibilityLabel(.newIssueAction)
                 .disabled(model.currentProjectId == nil && model.currentRepositoryId == nil)
             }
             .padding(.trailing, 6)
             .frame(height: 32)
             .padding(.bottom, 8)
 
-            SidebarRow(title: "Inbox", systemImage: "tray", active: model.scope == .inbox, count: model.inboxUnreadCount) {
+            SidebarRow(title: .inbox, systemImage: "tray", active: model.scope == .inbox, count: model.inboxUnreadCount) {
                 model.select(.inbox)
             }
-            .help("Inbox (G then I)")
-            SidebarRow(title: "My Issues", systemImage: "scope", active: model.scope == .myIssues) {
+            .help(Text(.inboxShortcutTooltip))
+            SidebarRow(title: .myIssues, systemImage: "scope", active: model.scope == .myIssues) {
                 model.select(.myIssues)
             }
 
-            Text("Projects")
+            Text(.projects)
                 .font(.tinySemibold)
                 .foregroundStyle(Theme.textTertiary)
                 .padding(.horizontal, 6)
@@ -75,7 +75,7 @@ struct Sidebar: View {
                     // Like the teams in Linear: every issue of a repository, whether it is on a board or not.
                     let repos = model.boardRepositories
                     if !repos.isEmpty {
-                        Text("Repositories")
+                        Text(.repositories)
                             .font(.tinySemibold)
                             .foregroundStyle(Theme.textTertiary)
                             .padding(.horizontal, 6)
@@ -134,13 +134,13 @@ struct ProjectRow: View {
         .help("\(project.ownerLogin) · \(project.title)")
         .contextMenu {
             if hidden {
-                Button("Show in Sidebar", systemImage: "eye") { model.setHidden(project, false) }
+                Button(.showInSidebar, systemImage: "eye") { model.setHidden(project, false) }
             } else {
-                Button("Hide from Sidebar", systemImage: "eye.slash") { model.setHidden(project, true) }
+                Button(.hideFromSidebar, systemImage: "eye.slash") { model.setHidden(project, true) }
             }
             Divider()
-            Button("Copy Link", systemImage: "link") { model.copyLink(project.url, for: project.title) }
-            Button("Open on GitHub", systemImage: "arrow.up.right.square") {
+            Button(.copyLink, systemImage: "link") { model.copyLink(project.url, for: project.title) }
+            Button(.openOnGitHub, systemImage: "arrow.up.right.square") {
                 if let url = URL(string: project.url) { NSWorkspace.shared.open(url) }
             }
         }
@@ -176,14 +176,14 @@ struct RepositoryRow: View {
         .help(repo.nameWithOwner)
         .contextMenu {
             if hidden {
-                Button("Show in Sidebar", systemImage: "eye") { model.setHidden(repo, false) }
+                Button(.showInSidebar, systemImage: "eye") { model.setHidden(repo, false) }
             } else {
-                Button("Hide from Sidebar", systemImage: "eye.slash") { model.setHidden(repo, true) }
+                Button(.hideFromSidebar, systemImage: "eye.slash") { model.setHidden(repo, true) }
             }
             Divider()
             if let url = repo.url {
-                Button("Copy Link", systemImage: "link") { model.copyLink(url.absoluteString, for: repo.nameWithOwner) }
-                Button("Open on GitHub", systemImage: "arrow.up.right.square") { NSWorkspace.shared.open(url) }
+                Button(.copyLink, systemImage: "link") { model.copyLink(url.absoluteString, for: repo.nameWithOwner) }
+                Button(.openOnGitHub, systemImage: "arrow.up.right.square") { NSWorkspace.shared.open(url) }
             }
         }
         .transition(.opacity)
@@ -193,6 +193,7 @@ struct RepositoryRow: View {
 /// Hidden projects or repositories fold away under one quiet line at the end of their list.
 struct HiddenGroup<Rows: View>: View {
     var count: Int
+    /// "projects" or "repositories", which picks the texts.
     var noun: String
     @ViewBuilder var rows: Rows
     @State var expanded = false
@@ -207,7 +208,7 @@ struct HiddenGroup<Rows: View>: View {
                         .font(.system(size: 9, weight: .semibold))
                         .rotationEffect(.degrees(expanded ? 90 : 0))
                         .frame(width: 14)
-                    Text("\(count) hidden")
+                    Text(isProjects ? .hiddenProjectsCount(count: count) : .hiddenRepositoriesCount(count: count))
                     Spacer(minLength: 0)
                 }
                 .font(.small)
@@ -217,11 +218,18 @@ struct HiddenGroup<Rows: View>: View {
                 .hoverFill()
             }
             .buttonStyle(PlainPressStyle())
-            .help(expanded ? "Fold hidden \(noun) away" : "Show hidden \(noun)")
+            .help(Text(tooltip))
             if expanded {
                 rows
             }
         }
+    }
+
+    private var isProjects: Bool { noun == "projects" }
+
+    private var tooltip: LocalizedStringResource {
+        if isProjects { return expanded ? .foldHiddenProjectsAway : .showHiddenProjects }
+        return expanded ? .foldHiddenRepositoriesAway : .showHiddenRepositories
     }
 }
 
@@ -254,7 +262,7 @@ struct AccountMenuButton: View {
             }
             .buttonStyle(PlainPressStyle())
             .help(model.accountSummary(at: context.date))
-            .accessibilityLabel("Account")
+            .accessibilityLabel(.account)
             .accessibilityValue(model.accountSummary(at: context.date))
             .dropdown(isPresented: $open) { close in
                 AccountDropdown(close: close)
@@ -266,8 +274,8 @@ struct AccountMenuButton: View {
 /// A small icon button in the sidebar's header that lights up under the pointer.
 struct SidebarIconButton: View {
     var systemName: String
-    var label: String
-    var help: String
+    var label: LocalizedStringResource
+    var help: LocalizedStringResource
     var action: () -> Void
 
     var body: some View {
@@ -279,7 +287,7 @@ struct SidebarIconButton: View {
                 .hoverFill()
         }
         .buttonStyle(PlainPressStyle())
-        .help(help)
+        .help(Text(help))
         .accessibilityLabel(label)
     }
 }
@@ -340,7 +348,7 @@ struct AccountDropdown: View {
                 AccountAvatar(size: 28)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(model.viewer?.login ?? "GitHub").font(.uiSemibold).lineLimit(1)
-                    Text(model.viewer?.name ?? (model.isDemo ? "Sample data" : "Signed in with GitHub"))
+                    Text(model.viewer?.name ?? String(localized: model.isDemo ? .sampleData : .signedInWithGitHub))
                         .font(.small)
                         .foregroundStyle(Theme.textSecondary)
                         .lineLimit(1)
@@ -384,17 +392,17 @@ struct AccountDropdown: View {
         }
         switch entry {
         case .sync:
-            MenuRow(title: "Sync Now", systemImage: "arrow.triangle.2.circlepath", shortcut: "⌘R", active: isActive, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .syncNow), systemImage: "arrow.triangle.2.circlepath", shortcut: "⌘R", active: isActive, action: { perform(entry) }, onHover: hover)
         case .queue:
-            MenuRow(title: "Queued Changes", systemImage: "tray.full", value: "\(waiting)", submenu: true, active: isActive || queueOpen, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .queuedChangesMenuItem), systemImage: "tray.full", value: "\(waiting)", submenu: true, active: isActive || queueOpen, action: { perform(entry) }, onHover: hover)
         case .appearance:
-            MenuRow(title: "Appearance", systemImage: "circle.lefthalf.filled", value: model.appearance.title, submenu: true, active: isActive || appearanceOpen, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .appearance), systemImage: "circle.lefthalf.filled", value: model.appearance.title, submenu: true, active: isActive || appearanceOpen, action: { perform(entry) }, onHover: hover)
         case .settings:
-            MenuRow(title: "Settings…", systemImage: "gearshape", shortcut: "⌘,", active: isActive, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .settingsEllipsis), systemImage: "gearshape", shortcut: "⌘,", active: isActive, action: { perform(entry) }, onHover: hover)
         case .signOut:
-            MenuRow(title: model.isDemo ? "Leave Sample Data" : "Sign Out", systemImage: "rectangle.portrait.and.arrow.right", active: isActive, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: model.isDemo ? .leaveSampleData : .signOut), systemImage: "rectangle.portrait.and.arrow.right", active: isActive, action: { perform(entry) }, onHover: hover)
         case .signOutEverywhere:
-            MenuRow(title: "Sign Out Everywhere…", active: isActive, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .signOutEverywhereEllipsis), active: isActive, action: { perform(entry) }, onHover: hover)
         }
     }
 
@@ -458,7 +466,7 @@ struct AppearanceDropdown: View {
 }
 
 struct SidebarRow: View {
-    var title: String
+    var title: LocalizedStringResource
     var systemImage: String
     var active = false
     /// Shown on the right when there is something: the Inbox's unread entries.
@@ -488,7 +496,7 @@ struct SidebarRow: View {
             .animation(Theme.quick, value: count)
         }
         .buttonStyle(PlainPressStyle())
-        .accessibilityValue(count > 0 ? "\(count) unread" : "")
+        .accessibilityValue(count > 0 ? String(localized: .unreadCount(count: count)) : "")
     }
 }
 
@@ -556,7 +564,7 @@ struct QueueList: View {
     var body: some View {
         let waiting = model.outbox.filter { $0.state != .sent }
         VStack(alignment: .leading, spacing: 0) {
-            Text(waiting.isEmpty ? "Everything is saved to GitHub" : "Queued changes")
+            Text(waiting.isEmpty ? .everythingSavedToGitHub : .queuedChangesHeader)
                 .font(.tinySemibold)
                 .foregroundStyle(Theme.textSecondary)
                 .padding(.horizontal, 14)
@@ -570,7 +578,7 @@ struct QueueList: View {
                         .font(.small)
                         .foregroundStyle(Theme.textSecondary)
                         .frame(width: 36, alignment: .leading)
-                    Text(entry.state == .conflict ? "\(summary.text) — needs your decision" : summary.text)
+                    Text(entry.state == .conflict ? String(localized: .changeNeedsDecision(change: summary.text)) : summary.text)
                         .lineLimit(1)
                     Spacer(minLength: 12)
                     Text(entry.createdAt, style: .relative)
@@ -581,7 +589,7 @@ struct QueueList: View {
                 .frame(height: 30)
             }
             if waiting.count > 12 {
-                Text("and \(waiting.count - 12) more")
+                Text(.moreQueuedChanges(count: waiting.count - 12))
                     .font(.small)
                     .foregroundStyle(Theme.textSecondary)
                     .padding(.horizontal, 14)
@@ -594,7 +602,7 @@ struct QueueList: View {
                     .font(.small)
                     .foregroundStyle(Theme.textSecondary)
                 Spacer()
-                Button("Sync now") { model.refresh() }
+                Button(.syncNowButton) { model.refresh() }
                     .buttonStyle(SecondaryButtonStyle())
             }
             .padding(.horizontal, 14)
@@ -608,9 +616,9 @@ struct QueueList: View {
 
     private var footer: String {
         switch model.status.phase {
-        case .offline: "Sends automatically when you are back online"
+        case .offline: String(localized: .sendsWhenBackOnline)
         case .failed(let message): message
-        default: "Changes are saved locally first, then sent"
+        default: String(localized: .changesSavedLocallyFirst)
         }
     }
 }
@@ -654,7 +662,7 @@ struct ToastView: View {
                 }
                 if let label = notice.action?.adoptLabel {
                     HStack(spacing: 8) {
-                        Button("Keep mine") { model.status.dismiss(notice.id) }
+                        Button(.keepMineMac) { model.status.dismiss(notice.id) }
                             .buttonStyle(SecondaryButtonStyle())
                         Button(label) {
                             if let action = notice.action { model.apply(action) }
@@ -665,7 +673,7 @@ struct ToastView: View {
                 }
             }
             Spacer(minLength: 0)
-            IconButton(systemName: "xmark", label: "Dismiss", size: 20) {
+            IconButton(systemName: "xmark", label: String(localized: .dismiss), size: 20) {
                 model.status.dismiss(notice.id)
             }
         }

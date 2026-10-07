@@ -45,15 +45,15 @@ struct IssueListView: View {
     }
 
     private var emptyTitle: String {
-        if model.scope == .myIssues { return "Nothing assigned to you" }
-        if model.currentRepositoryId != nil { return model.isLoadingRepository ? "Looking for issues…" : "No open issues" }
-        return "No issues yet"
+        if model.scope == .myIssues { return String(localized: .nothingAssignedTitle) }
+        if model.currentRepositoryId != nil { return String(localized: model.isLoadingRepository ? .lookingForIssues : .noOpenIssues) }
+        return String(localized: .noIssuesYet)
     }
 
     private var emptyMessage: String {
-        if model.scope == .myIssues { return "Open issues assigned to you show up here, on a board or not." }
-        if model.currentRepositoryId != nil { return "Press C to create one. Issues closed in the last four weeks show up here too." }
-        return "Press C to create the first one. Only issues that are in this GitHub Project appear here."
+        if model.scope == .myIssues { return String(localized: .myIssuesEmptyMessage) }
+        if model.currentRepositoryId != nil { return String(localized: .repositoryEmptyMessage) }
+        return String(localized: .projectEmptyMessage)
     }
 }
 #endif
