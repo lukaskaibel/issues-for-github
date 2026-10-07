@@ -64,6 +64,10 @@ enum DebugRemote {
         case "select":
             if argument == "mine" {
                 model.select(.myIssues)
+            } else if argument.hasPrefix("repo "), let repo = model.boardRepositories.first(where: {
+                $0.nameWithOwner.localizedCaseInsensitiveContains(argument.dropFirst(5))
+            }) {
+                model.select(.repository(repo.id))
             } else if let project = model.projects.first(where: { $0.title.localizedCaseInsensitiveContains(argument) }) {
                 model.select(.project(project.id))
             }
@@ -391,9 +395,13 @@ enum DebugRemote {
             let open = model.projects.filter { !$0.closed }
             let renderer = ImageRenderer(
                 content: VStack(alignment: .leading, spacing: 2) {
+                    let hidden = open.filter { model.hiddenProjectIds.contains($0.id) }
                     ForEach(open.filter { !model.hiddenProjectIds.contains($0.id) }) { ProjectRow(project: $0, hidden: false) }
-                    HiddenProjects(projects: open.filter { model.hiddenProjectIds.contains($0.id) })
-                    HiddenProjects(projects: open.filter { model.hiddenProjectIds.contains($0.id) }, expanded: true)
+                    HiddenGroup(count: hidden.count, noun: "projects") { EmptyView() }
+                    HiddenGroup(count: hidden.count, noun: "projects", rows: {
+                        ForEach(hidden) { ProjectRow(project: $0, hidden: true) }
+                    }, expanded: true)
+                    ForEach(model.boardRepositories.filter { !model.hiddenRepositoryIds.contains($0.id) }) { RepositoryRow(repo: $0, hidden: false) }
                 }
                     .padding(10)
                     .environment(model)

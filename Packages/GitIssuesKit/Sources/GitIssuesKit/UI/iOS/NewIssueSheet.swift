@@ -9,7 +9,8 @@ struct NewIssueSheet: View {
     @Environment(\.colorScheme) private var scheme
     var context: NewIssueContext
 
-    @State private var draft = NewIssueDraft(projectId: "")
+    @State private var draft = NewIssueDraft(projectId: nil)
+    @State private var prepared = false
     @State private var picker: PickerKind?
     @State private var confirmDiscard = false
     @State private var created = 0
@@ -46,7 +47,7 @@ struct NewIssueSheet: View {
                         .focused($focus, equals: .body)
                         .accessibilityLabel("Description")
                         .accessibilityIdentifier("new-description")
-                    if repos.isEmpty, !draft.projectId.isEmpty {
+                    if repos.isEmpty, draft.projectId != nil {
                         Label("This project has no repository yet. Issues are created in a repository linked to the project; link one on GitHub first.", systemImage: "exclamationmark.triangle")
                             .font(.footnote)
                             .foregroundStyle(Theme.warning)
@@ -96,7 +97,7 @@ struct NewIssueSheet: View {
         HStack(spacing: 8) {
             if draft.parent == nil {
                 Menu {
-                    ForEach(model.openProjects) { project in
+                    ForEach(projectChoices) { project in
                         Button {
                             selectProject(project.id)
                         } label: {
@@ -107,11 +108,26 @@ struct NewIssueSheet: View {
                             }
                         }
                     }
+                    if context.repoId != nil {
+                        // Started in a repository, the issue can also stay on no board, like in Linear.
+                        Divider()
+                        Button {
+                            selectProject(nil)
+                        } label: {
+                            if draft.projectId == nil {
+                                Label("No project", systemImage: "checkmark")
+                            } else {
+                                Text("No project")
+                            }
+                        }
+                    }
                 } label: {
                     contextChip {
                         if let project {
                             ProjectSwatch(title: project.title, size: 11)
                             Text(project.title)
+                        } else if context.repoId != nil {
+                            Text("No project")
                         } else {
                             Text("Choose a project")
                         }
@@ -125,7 +141,13 @@ struct NewIssueSheet: View {
                     Text("Sub-issue of \(parent.displayNumber)")
                 }
             }
-            if repos.count > 1, draft.parent == nil {
+            if context.repoId != nil || (draft.projectId == nil && draft.parent != nil), let repo = repos.first {
+                contextChip {
+                    RepositoryIcon(size: 10)
+                    Text(repo.shortName)
+                }
+                .accessibilityLabel("Repository: \(repo.nameWithOwner)")
+            } else if repos.count > 1, draft.parent == nil {
                 Menu {
                     ForEach(repos) { repo in
                         Button {
@@ -258,7 +280,12 @@ struct NewIssueSheet: View {
     private var project: Project? { model.projects.first { $0.id == draft.projectId } }
     private var statuses: [FieldOption] { model.statusOptions(projectId: draft.projectId) }
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
-    private var repos: [RepoRef] { model.repos(projectId: draft.projectId) }
+    private var repos: [RepoRef] { model.repos(forNewIssueIn: draft.projectId, repoId: draft.repoId) }
+
+    /// The boards a new issue can go on: a repository's, when it was started in one, or else every open board.
+    private var projectChoices: [Project] {
+        context.repoId.map { model.boards(ofRepository: $0) } ?? model.openProjects
+    }
 
     private var hasContent: Bool {
         !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -270,37 +297,49 @@ struct NewIssueSheet: View {
     }
 
     private func prepare() {
-        guard draft.projectId.isEmpty else { return }
+        guard !prepared else { return }
+        prepared = true
         let parent = context.parentItemId.flatMap { model.item(id: $0) }
-        let projectId = parent?.projectId ?? context.projectId ?? model.openProjects.first?.id ?? ""
+        let projectId: String?
+        if let parent {
+            // A sub-issue goes where its parent is, on its board or on none.
+            projectId = parent.projectId
+        } else if let repoId = context.repoId {
+            projectId = model.boards(ofRepository: repoId).first?.id
+        } else {
+            projectId = context.projectId ?? model.openProjects.first?.id
+        }
         var new = NewIssueDraft(projectId: projectId)
         new.parent = parent
-        // A sub-issue lives in its parent's repository.
-        new.repoId = parent?.repoId ?? model.defaultRepoId(projectId: projectId)
+        // A sub-issue lives in its parent's repository; one started in a repository lives there.
+        new.repoId = parent?.repoId ?? context.repoId ?? projectId.flatMap { model.defaultRepoId(projectId: $0) }
         new.statusId = context.statusId ?? defaultStatus(projectId: projectId)
         if context.assignToMe, let viewer = model.viewer { new.assignees = [viewer.person] }
         draft = new
         model.loadRepoMeta(projectId: projectId)
+        if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
         focus = .title
     }
 
-    private func defaultStatus(projectId: String) -> String? {
+    private func defaultStatus(projectId: String?) -> String? {
         let options = model.statusOptions(projectId: projectId)
         return options.first { $0.statusCategory == .unstarted }?.id
             ?? options.first { $0.statusCategory == .backlog }?.id
             ?? options.first?.id
     }
 
-    private func selectProject(_ id: String) {
+    private func selectProject(_ id: String?) {
         guard id != draft.projectId else { return }
         draft.projectId = id
-        draft.repoId = model.defaultRepoId(projectId: id)
         draft.statusId = defaultStatus(projectId: id)
         draft.priorityId = nil
+        model.loadRepoMeta(projectId: id)
+        // In a repository, every choice keeps it, and with it the people and labels picked.
+        guard context.repoId == nil, let id else { return }
+        draft.repoId = model.defaultRepoId(projectId: id)
         // People and labels belong to a repository, so choices made for another one no longer apply.
         draft.assignees = []
         draft.labels = []
-        model.loadRepoMeta(projectId: id)
     }
 
     private func selectRepo(_ id: String) {
