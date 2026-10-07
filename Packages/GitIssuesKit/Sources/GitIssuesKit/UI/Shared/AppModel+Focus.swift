@@ -8,6 +8,8 @@ extension AppModel {
         if let openItem { return openItem }
         // While peeking, keys act on the issue in the peek, wherever the pointer is: it may be reading the panel.
         if let peekItem { return peekItem }
+        // In the Inbox, the issue of the selected entry.
+        if scope == .inbox { return inboxSelected.flatMap { inboxItem(for: $0) } }
         guard let id = hoveredItemId ?? focusedItemId else { return nil }
         return scopedItems.first { $0.id == id }
     }

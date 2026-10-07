@@ -47,8 +47,10 @@ public struct GitIssuesScene: Scene {
                     withAnimation(Theme.spring) { model.viewMode = .list }
                 }
                 .keyboardShortcut("2", modifiers: .command)
+                .disabled(model.scope == .inbox)
                 Button("My Issues") { model.select(.myIssues) }
                     .keyboardShortcut("3", modifiers: .command)
+                Button("Inbox") { model.select(.inbox) }
                 Button("Switch Project…") { model.overlay = .palette(.projects) }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
                 Divider()
@@ -97,6 +99,8 @@ struct SettingsView: View {
                 ForEach(AppearanceSetting.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
+
+            Toggle("Show unread Inbox notifications on the Dock icon", isOn: $model.showsDockBadge)
 
             LabeledContent("App icon") {
                 VStack(alignment: .trailing, spacing: 8) {

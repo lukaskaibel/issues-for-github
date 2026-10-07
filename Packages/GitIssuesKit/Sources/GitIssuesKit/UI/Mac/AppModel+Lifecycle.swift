@@ -10,7 +10,8 @@ extension AppModel {
                 guard let engine = self?.engine else { return }
                 Task {
                     await engine.setPollInterval(15)
-                    await engine.kick()
+                    // Back in front: what's new in the Inbox right away (usually GitHub's free "nothing new").
+                    await engine.refreshInbox()
                 }
             }
         })

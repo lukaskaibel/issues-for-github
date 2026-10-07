@@ -16,10 +16,12 @@ class AppTestCase: XCTestCase {
         super.tearDown()
     }
 
+    /// Starts in My Issues unless the test asks for another tab with `-mobile.tab`; a fresh install opens the Inbox.
     @discardableResult
     func launch(_ arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo.active", "YES", "-uiTestReset", "YES"] + arguments
+        let tab = arguments.contains("-mobile.tab") ? [] : ["-mobile.tab", "myIssues"]
+        app.launchArguments = ["-demo.active", "YES", "-uiTestReset", "YES"] + tab + arguments
         app.launch()
         self.app = app
         return app

@@ -59,7 +59,7 @@ struct CommandPalette: View {
 
     @ViewBuilder
     private func step(_ kind: PickerKind, _ itemId: String) -> some View {
-        if let item = model.allItems.first(where: { $0.id == itemId }) {
+        if let item = model.item(id: itemId) {
             ContextChip(item: item, count: model.targets(for: item).count)
             ItemPicker(kind: kind, itemId: itemId, width: 640, fieldFont: .system(size: 15)) { model.overlay = nil }
         }
@@ -205,7 +205,7 @@ private struct RootPalette: View {
             .compactMap { command in fuzzyScore(query, command.title).map { (command, $0) } }
             .sorted { $0.1 > $1.1 }
             .map(\.0)
-        let pool = model.scope == .myIssues ? model.allItems : model.scopedItems
+        let pool = model.scope == .myIssues || model.scope == .inbox ? model.allItems : model.scopedItems
         let digits = query.trimmingCharacters(in: CharacterSet(charactersIn: "# "))
         let issues = pool
             .compactMap { item -> (Item, Int)? in
@@ -255,7 +255,7 @@ private struct RootPalette: View {
                     model.overlay = .palette(.labels(itemId: item.id))
                 })
             }
-            if item.kind == .issue, !several {
+            if item.kind == .issue, !several, !item.isDetached {
                 list.append(PaletteCommand(id: "sub", title: "Add sub-issue", section: section, icon: AnyView(SubIssueGlyph().frame(width: 12, height: 12).foregroundStyle(Theme.textSecondary))) {
                     model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
                 })
@@ -286,7 +286,41 @@ private struct RootPalette: View {
                 })
             }
         }
+        if model.scope == .inbox {
+            let entries = model.inboxPicked.isEmpty
+                ? model.inboxSelected.map { [$0] } ?? []
+                : model.visibleInbox.filter { model.inboxPicked.contains($0.id) }
+            let section = entries.count > 1 ? "\(entries.count) notifications" : "Inbox"
+            if let first = entries.first {
+                let unread = model.isUnread(first)
+                list.append(PaletteCommand(id: "inbox-read", title: unread ? "Mark as read" : "Mark as unread", section: section, icon: symbol(unread ? "circle" : "circle.inset.filled"), keys: ["U"]) {
+                    model.toggleRead(entries)
+                })
+                list.append(PaletteCommand(id: "inbox-archive", title: "Archive", section: section, icon: symbol("archivebox"), keys: ["E"]) {
+                    model.archive(entries)
+                })
+                for choice in SnoozeChoice.allCases {
+                    list.append(PaletteCommand(id: "inbox-snooze-\(choice)", title: "Snooze until \(choice.title.lowercased()) (\(choice.hint()))", section: section, icon: symbol("clock")) {
+                        model.snooze(entries, until: choice.date())
+                    })
+                }
+                list.append(PaletteCommand(id: "inbox-unsubscribe", title: "Unsubscribe", section: section, icon: symbol("bell.slash"), keys: ["⇧", "S"]) {
+                    model.unsubscribe(entries)
+                })
+            }
+            list.append(PaletteCommand(id: "inbox-read-all", title: "Mark all as read", section: "Inbox", icon: symbol("circle"), keys: ["⌥", "U"]) {
+                model.markAllRead()
+            })
+            list.append(PaletteCommand(id: "inbox-archive-read", title: "Archive all read", section: "Inbox", icon: symbol("archivebox"), keys: ["⇧", "⌫"]) {
+                model.archiveAllRead()
+            })
+        }
         let go = "Go to"
+        if model.scope != .inbox {
+            list.append(PaletteCommand(id: "inbox", title: "Inbox", section: go, icon: symbol("tray"), keys: ["G", "I"]) {
+                model.select(.inbox)
+            })
+        }
         if model.currentProjectId != nil || model.currentRepositoryId != nil {
             list.append(PaletteCommand(id: "new", title: "New issue", section: go, icon: symbol("plus"), keys: ["C"]) {
                 model.overlay = .newIssue(statusId: nil, parentItemId: nil)

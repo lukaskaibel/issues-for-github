@@ -1,5 +1,11 @@
 Issues is a fast, native app for GitHub Issues and GitHub Projects, on the Mac, iPhone and iPad. It is calm to look at and quick to use, and everything stays in GitHub: teammates who don't use the app see the same issues and boards on github.com.
 
+THE INBOX
+• What changed for you, from GitHub's notifications: who assigned you, mentioned you, commented, asked for your review or closed an issue you follow
+• Open one and the issue is right there, with what's new on top and the new comment marked
+• Read, archive and snooze with a key or a swipe; read and archived are the same on github.com
+• Snoozed and unread ones stay in step on all your devices through iCloud
+
 ON THE MAC
 • Every project as a board or a list, plus My Issues with everything assigned to you
 • Every issue of your repositories, also those on no board, which one click puts on one
@@ -11,6 +17,7 @@ ON THE MAC
 • Back and forward work as in a browser
 
 ON IPHONE
+• The Inbox as the first tab, with the number of unread notifications
 • My Issues with everything assigned to you, grouped by status
 • Every project and repository as a list, with sections that fold
 • Swipe right to mark an issue done, swipe left to assign it to yourself or delete it
@@ -20,6 +27,7 @@ ON IPHONE
 
 ON IPAD
 • A sidebar with all your projects and repositories, and the board with drag and drop
+• The Inbox with the issue beside it, as in Mail
 • Issues open beside their properties, as on the Mac
 • With a keyboard: J and K to move, S, P, A and L to change an issue, ⌘N for a new one
 

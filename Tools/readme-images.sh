@@ -27,7 +27,7 @@ mkdir -p "$raw"
 swiftc -O Tools/readme-images/capture.swift -o "$work/capture" 2>/dev/null
 
 # The debug app shares its settings with the real one. Note what the scenes change and put it back afterwards.
-keys=(appearance viewMode selectedProject "NSWindow Frame main")
+keys=(appearance viewMode selectedProject inbox.selected inbox.bucket "NSWindow Frame main")
 saved=()
 for key in "${keys[@]}"; do saved+=("$(defaults read "$bundle_id" "$key" 2>/dev/null || echo "<unset>")"); done
 previous=$(lsappinfo info -only bundlepath "$(lsappinfo front)" | sed -nE 's/.*"(.+)".*/\1/p')
@@ -111,6 +111,9 @@ for theme in dark light; do
   say "select Git Issues" "mode board" "overlay new"; sleep 1
   say "key Haptic feedback when a card lands"; sleep 1; shot "new-$theme"
   say "overlay none"
+  # The Inbox with Kai's assignment open beside the list.
+  say "select inbox"; sleep 1.2; say "entry 25"; sleep 1.5; shot "inbox-$theme"
+  say "select Git Issues"
 
   kill "$pid"
   pid=""

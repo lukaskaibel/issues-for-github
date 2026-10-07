@@ -5,3 +5,5 @@ To review without a GitHub account, choose "Explore with Sample Data" on the fir
 "Sign in with GitHub" uses GitHub's device flow: the app shows a code to enter at github.com/login/device.
 
 The Mac app runs in the App Sandbox and connects only to GitHub. On iPhone and iPad, background refresh updates the issues now and then while the app is closed.
+
+The Inbox shows the user's GitHub notifications; the sample data has its own. Snoozed and unread Inbox entries are kept in iCloud's key-value store of the user's own Apple account, so the user's devices agree; nothing goes to the developer.

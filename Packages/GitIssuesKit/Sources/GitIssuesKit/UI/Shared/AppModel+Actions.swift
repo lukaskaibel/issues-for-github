@@ -50,9 +50,11 @@ extension AppModel {
         perform(statusMutations(item, option))
     }
 
-    /// Puts issues that are on none of your boards onto one, in the chosen column.
+    /// Puts issues that are on none of your boards onto one, in the chosen column. A pull request the Inbox
+    /// showed can go on one too.
     func addToProject(_ items: [Item], project: Project, status option: FieldOption?) {
-        let mutations = items.filter { !$0.isOnBoard && $0.kind == .issue }.flatMap { item -> [Mutation] in
+        let (items, inserted) = keptForAdding(items.filter { !$0.isOnBoard && $0.kind != .draft })
+        let mutations = items.flatMap { item -> [Mutation] in
             guard let contentId = item.contentId else { return [] }
             let add = Mutation.addToProject(.init(
                 itemId: item.id, contentId: contentId, projectId: project.id,
@@ -60,7 +62,7 @@ extension AppModel {
             ))
             return [add] + stateMutations(item, for: option)
         }
-        withAnimation(Theme.spring) { perform(mutations) }
+        withAnimation(Theme.spring) { perform(mutations, inserting: inserted) }
     }
 
     /// Whether an issue counts as finished: in a done or cancelled column, or closed on GitHub.
@@ -299,7 +301,7 @@ extension AppModel {
         case .project(let id): "listOrder.\(id)"
         case .myIssues: "listOrder.mine"
         case .repository(let id): "listOrder.repository.\(id)"
-        case nil: nil
+        case .inbox, nil: nil
         }
     }
 
@@ -348,7 +350,7 @@ extension AppModel {
         case .project(let id): "collapsed.\(id)"
         case .myIssues: "collapsed.mine"
         case .repository(let id): "collapsed.repository.\(id)"
-        case nil: nil
+        case .inbox, nil: nil
         }
     }
 

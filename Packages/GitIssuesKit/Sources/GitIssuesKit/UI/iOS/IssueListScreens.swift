@@ -518,7 +518,7 @@ struct IssueList: View {
         switch scope {
         case .myIssues: true
         case .repository(let id): model.boards(ofRepository: id).count > 1
-        case .project: false
+        case .project, .inbox: false
         }
     }
 
@@ -532,6 +532,8 @@ struct IssueList: View {
     @ViewBuilder
     private var emptyState: some View {
         switch scope {
+        case .inbox:
+            EmptyView()
         case .myIssues:
             MobileEmptyState(
                 title: "Nothing assigned to you",

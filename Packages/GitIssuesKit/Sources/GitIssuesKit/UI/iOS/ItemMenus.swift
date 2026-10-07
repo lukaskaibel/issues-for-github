@@ -57,7 +57,7 @@ struct ItemMenuContent: View {
                 Label("Open on GitHub", systemImage: "arrow.up.right.square")
             }
         }
-        if item.kind == .issue || item.kind == .draft {
+        if item.kind == .issue || item.kind == .draft, !item.isDetached {
             Divider()
             Button(role: .destructive) {
                 model.requestDelete(item)
@@ -90,7 +90,7 @@ struct StatusMenu: View {
                     MenuImages.status(model.glyph(of: item), scheme)
                 }
             }
-            .disabled(boards.isEmpty || item.kind != .issue)
+            .disabled(boards.isEmpty)
         }
     }
 
