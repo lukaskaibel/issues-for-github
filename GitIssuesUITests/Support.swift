@@ -21,7 +21,9 @@ class AppTestCase: XCTestCase {
     func launch(_ arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         let tab = arguments.contains("-mobile.tab") ? [] : ["-mobile.tab", "myIssues"]
-        app.launchArguments = ["-demo.active", "YES", "-uiTestReset", "YES"] + tab + arguments
+        // In English whatever the simulator's language, since the tests find buttons by their labels.
+        app.launchArguments = ["-demo.active", "YES", "-uiTestReset", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+            + tab + arguments
         app.launch()
         self.app = app
         return app

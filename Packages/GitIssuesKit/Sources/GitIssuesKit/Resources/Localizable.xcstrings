@@ -1,0 +1,486 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "archive" : {
+      "comment" : "Inbox: button or menu item (a verb) that removes a notification from the Inbox; GitHub calls this 'Done'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archive"
+          }
+        }
+      }
+    },
+    "assignToMe" : {
+      "comment" : "Menu item or button that adds the signed-in user to the issue's assignees.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assign to Me"
+          }
+        }
+      }
+    },
+    "assignee" : {
+      "comment" : "The person or people an issue is assigned to. Used as a label, picker title and menu item, even when there are several.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assignee"
+          }
+        }
+      }
+    },
+    "board" : {
+      "comment" : "View mode: issues in columns by status, like a kanban board. Picker segment, menu item and button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board"
+          }
+        }
+      }
+    },
+    "cancel" : {
+      "comment" : "Button that closes a dialog or sheet without making changes (Mac, iPhone, iPad).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "copyBranchName" : {
+      "comment" : "Menu item that copies a git branch name made from the issue's number and title, for starting work on it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Branch Name"
+          }
+        }
+      }
+    },
+    "copyLink" : {
+      "comment" : "Menu item that copies the issue's GitHub web address.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Link"
+          }
+        }
+      }
+    },
+    "delete" : {
+      "comment" : "Button or menu item that deletes an issue or a draft. Destructive.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        }
+      }
+    },
+    "description" : {
+      "comment" : "VoiceOver label of an issue's description, the text written under its title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Description"
+          }
+        }
+      }
+    },
+    "done" : {
+      "comment" : "Button that closes a sheet or ends editing, keeping the changes (iPhone, iPad). Not the 'done' status of an issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        }
+      }
+    },
+    "dueDate" : {
+      "comment" : "The day an issue is due (a date field of the GitHub project). Used as a label and as a placeholder before a date is set.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due date"
+          }
+        }
+      }
+    },
+    "dueDateTitle" : {
+      "comment" : "Title case form of 'Due date': menu item, button and sheet title for setting an issue's due date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due Date"
+          }
+        }
+      }
+    },
+    "inbox" : {
+      "comment" : "Name of the place that lists GitHub notifications (sidebar row, iPhone tab, title). Like the inbox in Apple Mail.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inbox"
+          }
+        }
+      }
+    },
+    "labels" : {
+      "comment" : "An issue's GitHub labels (tags such as 'bug'). Used as a label, picker title and menu item.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Labels"
+          }
+        }
+      }
+    },
+    "list" : {
+      "comment" : "View mode: issues as a list grouped by status. Picker segment, menu item and button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "List"
+          }
+        }
+      }
+    },
+    "markAsRead" : {
+      "comment" : "Inbox: menu item or button for a notification.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Read"
+          }
+        }
+      }
+    },
+    "markAsUnread" : {
+      "comment" : "Inbox: menu item or button for a notification.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Unread"
+          }
+        }
+      }
+    },
+    "myIssues" : {
+      "comment" : "Name of the place that lists every issue assigned to the signed-in user (sidebar row, iPhone tab, title).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My Issues"
+          }
+        }
+      }
+    },
+    "newIssue" : {
+      "comment" : "Menu item, button or sheet title for writing a new issue. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Issue"
+          }
+        }
+      }
+    },
+    "noPriority" : {
+      "comment" : "Shown when an issue has no priority; also the choice in the priority picker that clears it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No priority"
+          }
+        }
+      }
+    },
+    "noProject" : {
+      "comment" : "Shown instead of a status, and as a group title, for issues that are on no project board.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No project"
+          }
+        }
+      }
+    },
+    "noStatus" : {
+      "comment" : "Shown instead of a status when an issue on a board has none yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No status"
+          }
+        }
+      }
+    },
+    "openOnGitHub" : {
+      "comment" : "Menu item or button that opens the issue or pull request on github.com in the web browser.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open on GitHub"
+          }
+        }
+      }
+    },
+    "priority" : {
+      "comment" : "An issue's priority (a field of the GitHub project, such as Urgent or Low). Used as a label, picker title and menu item.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Priority"
+          }
+        }
+      }
+    },
+    "project" : {
+      "comment" : "Label for the GitHub project (board) an issue belongs to; also the title of a project's screen while it loads.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Project"
+          }
+        }
+      }
+    },
+    "projects" : {
+      "comment" : "Heading above the list of GitHub projects (sidebar section, iPhone tab, group of search results).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Projects"
+          }
+        }
+      }
+    },
+    "reopen" : {
+      "comment" : "Button or menu item (a verb) that reopens a closed issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reopen"
+          }
+        }
+      }
+    },
+    "repositories" : {
+      "comment" : "Heading above the list of GitHub repositories (sidebar section, group of search results).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repositories"
+          }
+        }
+      }
+    },
+    "repository" : {
+      "comment" : "Label for the GitHub repository an issue belongs to; also a placeholder before one is chosen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repository"
+          }
+        }
+      }
+    },
+    "signOut" : {
+      "comment" : "Button or menu item that signs out of GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign Out"
+          }
+        }
+      }
+    },
+    "snooze" : {
+      "comment" : "Inbox: button or menu (a verb) that hides a notification until a time picked next, then brings it back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snooze"
+          }
+        }
+      }
+    },
+    "status" : {
+      "comment" : "An issue's status: the column it is in on the project board. Used as a label, picker title and menu item.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
+          }
+        }
+      }
+    },
+    "syncNow" : {
+      "comment" : "Button or menu item that fetches changes from GitHub and sends the changes waiting to be sent, right away.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync Now"
+          }
+        }
+      }
+    },
+    "today" : {
+      "comment" : "A day: in due dates, date suggestions and the Inbox's snooze choices.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        }
+      }
+    },
+    "tomorrow" : {
+      "comment" : "A day: in due dates, date suggestions and the Inbox's snooze choices.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tomorrow"
+          }
+        }
+      }
+    },
+    "tryAgain" : {
+      "comment" : "Button after something failed, such as signing in or loading.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        }
+      }
+    },
+    "unassigned" : {
+      "comment" : "Shown when nobody is assigned to the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unassigned"
+          }
+        }
+      }
+    },
+    "undo" : {
+      "comment" : "Button in a short notice at the bottom of the window that takes back the action just done.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo"
+          }
+        }
+      }
+    },
+    "unsubscribe" : {
+      "comment" : "Inbox: button or menu item (a verb) that stops GitHub's notifications about this issue or pull request.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsubscribe"
+          }
+        }
+      }
+    },
+    "yesterday" : {
+      "comment" : "A day: in due dates and in the Inbox's dates.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yesterday"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

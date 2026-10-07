@@ -17,6 +17,21 @@
 		<key>UIColorName</key>
 		<string>LaunchBackground</string>
 	</dict>
+	<!-- The languages the app is translated into. The texts live in GitIssuesKit, so the app itself has no .lproj
+	     folders; this list is what makes the system offer these languages, translate its own menus and show
+	     the per-app language setting. Keep it in step with Localizable.xcstrings. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>de</string>
+		<string>es</string>
+		<string>fr</string>
+		<string>ja</string>
+		<string>ko</string>
+		<string>pt-BR</string>
+		<string>ru</string>
+		<string>zh-Hans</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
