@@ -57,7 +57,7 @@ Only English uses Title Case; every other language writes menus and buttons as i
 | description | Beschreibung | description | descripción | descrição | описание | 説明 | 描述 | 설명 |
 | closed / reopen | geschlossen / wieder öffnen | fermé / rouvrir | cerrada / reabrir | fechada / reabrir | закрыта / открыть снова | クローズ / 再オープン | 已关闭 / 重新打开 | 닫힘 / 다시 열기 |
 | closed as not planned | als „nicht geplant“ geschlossen | fermé comme non prévu | cerrada como no planificada | fechada como não planejada | закрыта как незапланированная | 対応予定なしでクローズ | 以“不计划”关闭 | 계획 없음으로 닫힘 |
-| blocked by / blocking | blockiert durch / blockierend | bloqué par / bloque | bloqueada por / bloquea | bloqueada por / bloqueia | заблокирована / блокирует | ブロック元 / ブロック先 | 被阻塞 / 正在阻塞 | 차단됨 / 차단 중 |
+| blocked by / blocking | blockiert durch / blockierend | bloqué par / bloquant | bloqueada por / bloquea | bloqueada por / bloqueia | заблокирована / блокирует | ブロック元 / ブロック先 | 被阻塞 / 正在阻塞 | 차단됨 / 차단 중 |
 | Inbox | Eingang | Réception | Entrada | Entrada | Входящие | 受信トレイ | 收件箱 | 수신함 |
 | notification | Mitteilung | notification | notificación | notificação | уведомление | 通知 | 通知 | 알림 |
 | archive | archivieren | archiver | archivar | arquivar | архивировать | アーカイブ | 归档 | 보관 |

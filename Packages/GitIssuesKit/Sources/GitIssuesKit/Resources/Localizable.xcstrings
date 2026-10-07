@@ -5912,7 +5912,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bloque"
+            "value" : "Bloquant"
           }
         },
         "ja" : {
@@ -6032,7 +6032,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bloque : aucun"
+            "value" : "Bloquant : aucun"
           }
         },
         "ja" : {
@@ -6152,7 +6152,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bloque"
+            "value" : "Bloquant"
           }
         },
         "ja" : {
@@ -6212,7 +6212,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bloque : %@"
+            "value" : "Bloquant : %@"
           }
         },
         "ja" : {
@@ -12938,7 +12938,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fin de semaine"
+            "value" : "Fin de la semaine"
           }
         },
         "ja" : {
@@ -12950,7 +12950,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이번 주말"
+            "value" : "이번 주 안"
           }
         },
         "pt-BR" : {
@@ -13664,7 +13664,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ prochain"
+            "value" : "%@ de la semaine prochaine"
           }
         },
         "ja" : {
@@ -15764,7 +15764,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ a changé son statut"
+            "value" : "%@ l’a déplacé vers un autre statut"
           }
         },
         "ja" : {
@@ -15824,7 +15824,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ a changé son statut dans %2$@"
+            "value" : "%1$@ l’a déplacé vers un autre statut dans %2$@"
           }
         },
         "ja" : {
@@ -17732,7 +17732,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The GitHub CLI isn't signed in. Run \"gh auth login\" in Terminal, then try again."
+            "value" : "The GitHub CLI isn't signed in. Run “gh auth login” in Terminal, then try again."
           }
         },
         "es" : {
@@ -20708,7 +20708,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ a changé son statut"
+            "value" : "%@ l’a déplacé vers un autre statut"
           }
         },
         "ja" : {
@@ -20768,7 +20768,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ a changé son statut dans %2$@"
+            "value" : "%1$@ l’a déplacé vers un autre statut dans %2$@"
           }
         },
         "ja" : {
@@ -34526,7 +34526,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "목록을 닫지 않고 선택해 여러 개 고르기"
+            "value" : "목록을 닫지 않고 여러 개 선택"
           }
         },
         "pt-BR" : {
@@ -45284,7 +45284,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Plus tard aujourd’hui"
+            "value" : "Plus tard dans la journée"
           }
         },
         "ja" : {
@@ -45464,7 +45464,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mettre en attente jusqu’à plus tard aujourd’hui (%@)"
+            "value" : "Mettre en attente jusqu’à plus tard dans la journée (%@)"
           }
         },
         "ja" : {
