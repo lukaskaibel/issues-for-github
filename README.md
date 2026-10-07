@@ -65,7 +65,8 @@ GitHub in the background.
 </picture>
 
 Every property is one click away: click a card's priority, status, labels, assignees or sub-issue count and a
-dropdown opens right there. Type to filter, press a number to pick. Right-click a card for everything at once.
+dropdown opens right there. Type to filter, press a number to pick; the pick closes it. For several assignees or
+labels, tick their checkboxes or Shift-click them, and it stays open. Right-click a card for everything at once.
 
 ### Issues that read well
 
@@ -115,7 +116,8 @@ hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `L` 
 ### A list, in light or dark
 
 The list groups issues by status. Each header stays pinned while you scroll through its section and folds it with
-a click. The app follows the system appearance, or stays light or dark if you prefer.
+a click. Drag an issue up or down to give it a new place, or into another section to change its status, as on the
+board. The app follows the system appearance, or stays light or dark if you prefer.
 
 <img alt="The list grouped by status, half in the dark appearance and half in the light one" src="Design/screenshots/list-appearance.webp">
 
@@ -150,14 +152,15 @@ The interface uses the system's own parts.
 - **iPhone:** a list per project, per repository and My Issues, grouped by status, with sections that fold and
   headers that stay pinned. Tabs for the Inbox (with its count), My Issues, Projects (with the repositories below the
   projects) and Search. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and
-  hold for the same menu as the Mac's right-click. In the Inbox, swipe right to read and left to snooze or archive. In
-  an issue, the title and description are edited in place (Markdown is styled as you type; tables, checklists, code and
-  Mermaid diagrams are drawn until you tap them), the properties are chips under the title, and the comment field stays
-  at the bottom as in Messages.
+  hold for the same menu as the Mac's right-click, and drag after holding to give an issue a new place in its section.
+  In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
+  place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams are drawn until you tap them),
+  the properties are chips under the title, and the comment field stays at the bottom as in Messages.
 - **iPad:** the tabs become a sidebar with every project and repository as an entry, as on the Mac. Projects open as a board or a
   list; cards are moved with drag and drop (touch and hold, then drag). An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
-  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S.
+  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
+  their picker ready to type in; Return picks the first match.
 - **Sample data:** "Explore with Sample Data" on the sign-in screen shows two sample projects without a GitHub account.
   Nothing there is sent anywhere.
 - **In the background:** changes made just before locking the phone are still sent, and iOS refreshes the app now and
@@ -318,6 +321,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `S` `P` `A` `L` | Change status, priority, assignee, labels; `S` puts an issue on no board onto one |
 | `I` | Assign to me, or unassign |
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
+| `⌥↑` `⌥↓` or `⌥K` `⌥J` | Move the issue up or down its column or list section |
 | `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
 | `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
@@ -348,13 +352,16 @@ In the Inbox:
 everything at once.
 
 Click an issue's priority, status, labels, assignees or sub-issue count to change it in place, or right-click
-it for everything at once. The sub-issue count lists the sub-issues, whose status, priority and assignee change
+it for everything at once. A pick closes the dropdown; for several assignees or labels, tick the checkbox at the start
+of each row, or hold Shift while you click or press Return. The sub-issue count lists the sub-issues, whose status, priority and assignee change
 right there too. In the list, click a section header to fold it; Option-click folds them all.
 
 A description with a table, a checklist, code or a Mermaid diagram is drawn as on GitHub. Click a checkbox to tick it;
 click anywhere else to edit the Markdown, and `Esc` or `⌘↵` draws it again.
 
-On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. Drag a column by its
+On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. In the list, drag a
+row up or down within its section, or into another section to change its status; My Issues mixes projects, so its
+rows stay where their boards put them. Drag a column by its
 header to reorder it, double-click its name to rename it, right-click it for its menu (rename, colour, delete), and
 use **Add column** at the right end of the board.
 
@@ -374,6 +381,8 @@ appearance, settings and signing out. It works with the arrow keys like any menu
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
 | Touch and hold an issue | Status, priority, assignee and labels as submenus (Add to Project for an issue on no board); copy link, share, open on GitHub, delete |
+| Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
+| Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several |
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place; the bar above the keyboard adds bold, italics, code, lists and links |
 | Tap a drawn description (table, checklist, code, diagram) | Show its Markdown; tap again to edit. Tap a checkbox to tick it |

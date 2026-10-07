@@ -236,7 +236,7 @@ struct PropertyChipRow: View {
                     }
                 }
             }
-            if !item.labels.isEmpty || item.subTotal > 0 {
+            if item.kind != .draft || item.subTotal > 0 {
                 HStack(spacing: 6) {
                     if !item.labels.isEmpty {
                         PropertyButton(kind: .labels, item: item) {
@@ -250,7 +250,6 @@ struct PropertyChipRow: View {
                         SubIssueChip(completed: item.subCompleted, total: item.subTotal)
                     }
                 }
-                .padding(.leading, 8)
             }
         }
         .padding(.leading, -8)

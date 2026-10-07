@@ -191,10 +191,11 @@ final class PadTests: AppTestCase {
         button("In Review").tap()
         waitForLabel(element("property-status"), containing: "In Review")
 
+        // From the keyboard, the picker's search takes the typing and Return picks the first match.
         app.typeKey("l", modifierFlags: [])
         wait(app.navigationBars["Labels"])
-        button("bug").tap()
-        button("Done").tap()
+        app.typeText("bug\n")
+        waitGone(app.navigationBars["Labels"])
         waitForLabel(element("property-labels"), containing: "bug")
 
         // Letters typed into the title are text, not shortcuts.

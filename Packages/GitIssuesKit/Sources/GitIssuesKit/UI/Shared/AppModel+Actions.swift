@@ -119,6 +119,18 @@ extension AppModel {
         perform(mutations)
     }
 
+    /// Moves an issue one place up or down within its column, which is also its section of the list.
+    /// Returns false at either end of the column, or where the project can't be changed.
+    @discardableResult
+    func move(_ item: Item, by delta: Int) -> Bool {
+        guard let projectId = item.projectId, project(of: item)?.viewerCanUpdate == true,
+              let column = columns(projectId: projectId).first(where: { $0.items.contains { $0.id == item.id } }),
+              let index = column.items.firstIndex(where: { $0.id == item.id }),
+              column.items.indices.contains(index + delta) else { return false }
+        drop(item, in: column, at: index + delta)
+        return true
+    }
+
     // MARK: Content
 
     func rename(_ item: Item, to title: String) {
@@ -227,7 +239,14 @@ extension AppModel {
 
     func delete(_ item: Item) {
         deletionCandidate = nil
+        let wasCurrent = openItemId == item.id || cursorId == item.id
         if openItemId == item.id { closeDetail() }
+        // The keyboard carries on from the issue after it (or before it, at the end), so deleting doesn't send
+        // you back to the top.
+        let order = wasCurrent ? orderedItems : []
+        let next = order.firstIndex { $0.id == item.id }.flatMap { index in
+            order.indices.contains(index + 1) ? order[index + 1] : index > 0 ? order[index - 1] : nil
+        }
         if focusedItemId == item.id { focusedItemId = nil }
         if hoveredItemId == item.id { hoveredItemId = nil }
         history.removeAll { $0.itemId == item.id }
@@ -238,6 +257,7 @@ extension AppModel {
                 isDraft: item.kind == .draft, label: "\(item.displayNumber) \(item.title)"
             ))])
         }
+        if let next { moveFocus(to: next.id) }
     }
 
     // MARK: Columns

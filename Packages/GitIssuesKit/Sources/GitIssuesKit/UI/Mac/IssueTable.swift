@@ -37,6 +37,8 @@ struct IssueTable: NSViewRepresentable {
 
     @Environment(AppModel.self) private var model
     var sections: [IssueSectionModel]
+    /// Whether issues can be dragged to a new place: in a project you can edit, not in My Issues.
+    var canMoveRows = false
     var focusedId: String?
     var focusScrollToken: Int
     var avatarVersion: Int
@@ -66,8 +68,8 @@ struct IssueTable: NSViewRepresentable {
         table.action = #selector(Coordinator.clicked(_:))
         table.coordinator = context.coordinator
         context.coordinator.table = table
-        // Section headers can be dragged to reorder the sections; rows open a gap where it would land.
-        table.registerForDraggedTypes([Coordinator.sectionType])
+        // Issues and section headers can be dragged to a new place; rows open a gap where it would land.
+        table.registerForDraggedTypes([Coordinator.itemType, Coordinator.sectionType])
         table.setDraggingSourceOperationMask(.move, forLocal: true)
         table.draggingDestinationFeedbackStyle = .gap
 
@@ -98,6 +100,7 @@ struct IssueTable: NSViewRepresentable {
     }
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
+        context.coordinator.canMoveRows = canMoveRows
         context.coordinator.apply(
             sections: sections, focusedId: focusedId, focusScrollToken: focusScrollToken, avatarVersion: avatarVersion
         )
@@ -130,6 +133,9 @@ struct IssueTable: NSViewRepresentable {
         private var hoveredId: String?
         private var focusScrollToken = 0
         private var avatarVersion = 0
+        var canMoveRows = false
+        /// The issue being dragged, whose row stays behind faded until it lands.
+        private var draggedId: String?
 
         init(model: AppModel) {
             self.model = model
@@ -155,9 +161,15 @@ struct IssueTable: NSViewRepresentable {
                     configureView(at: row, in: table)
                 }
             } else {
-                let difference = newIds.difference(from: oldIds)
+                let difference = newIds.difference(from: oldIds).inferringMoves()
                 if old.isEmpty || difference.count > 300 {
                     table.reloadData()
+                } else if let move = Self.singleMove(difference) {
+                    // One issue changed place, by a drag or a new status: it slides there.
+                    table.beginUpdates()
+                    table.moveRow(at: move.from, to: move.to)
+                    table.endUpdates()
+                    for row in visibleRows(in: table) { configureView(at: row, in: table) }
                 } else {
                     // Rows slide to their new place when an issue changes status or order.
                     table.beginUpdates()
@@ -198,6 +210,15 @@ struct IssueTable: NSViewRepresentable {
             }
         }
 
+        /// The one row that moved, when that is all that changed.
+        private static func singleMove(_ difference: CollectionDifference<String>) -> (from: Int, to: Int)? {
+            guard difference.count == 2,
+                  case .remove(let from, _, let removedTo?) = difference.removals.first,
+                  case .insert(let to, _, let insertedFrom?) = difference.insertions.first,
+                  removedTo == to, insertedFrom == from else { return nil }
+            return (from, to)
+        }
+
         private func visibleRows(in table: NSTableView) -> Range<Int> {
             let range = table.rows(in: table.visibleRect)
             let lower = max(0, range.location)
@@ -218,6 +239,7 @@ struct IssueTable: NSViewRepresentable {
                 let cell = view as? IssueRowCell
                 cell?.model = model
                 cell?.configure(row, highlighted: row.item.id == hoveredId || row.item.id == focusedId)
+                cell?.alphaValue = row.item.id == draggedId ? 0.35 : 1
             }
         }
 
@@ -279,15 +301,48 @@ struct IssueTable: NSViewRepresentable {
             }
         }
 
-        // MARK: Reordering sections
+        // MARK: Reordering issues and sections
 
+        static let itemType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.item")
         static let sectionType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.section")
 
         func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? {
-            guard entries.indices.contains(row), case .header(let section) = entries[row] else { return nil }
+            guard entries.indices.contains(row) else { return nil }
             let item = NSPasteboardItem()
-            item.setString(section.id, forType: Self.sectionType)
+            switch entries[row] {
+            case .header(let section):
+                item.setString(section.id, forType: Self.sectionType)
+            case .row(let issue):
+                guard canMoveRows else { return nil }
+                item.setString(issue.item.id, forType: Self.itemType)
+            }
             return item
+        }
+
+        func tableView(
+            _ tableView: NSTableView, draggingSession session: NSDraggingSession, willBeginAt screenPoint: NSPoint,
+            forRowIndexes rowIndexes: IndexSet
+        ) {
+            guard let row = rowIndexes.first, let item = item(at: row) else { return }
+            // The issue lifts off as a card, and its row stays behind faded until it lands.
+            if let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell,
+               let image = cell.dragImage() {
+                let frame = tableView.rect(ofRow: row)
+                session.enumerateDraggingItems(options: [], for: tableView, classes: [NSPasteboardItem.self], searchOptions: [:]) { dragged, _, _ in
+                    dragged.setDraggingFrame(frame, contents: image)
+                }
+            }
+            draggedId = item.id
+            configureView(at: row, in: tableView)
+        }
+
+        func tableView(
+            _ tableView: NSTableView, draggingSession session: NSDraggingSession, endedAt screenPoint: NSPoint,
+            operation: NSDragOperation
+        ) {
+            let id = draggedId
+            draggedId = nil
+            refreshHighlight(for: [id])
         }
 
         /// Rows where a section may be dropped: in front of each header, or after the last row.
@@ -295,12 +350,36 @@ struct IssueTable: NSViewRepresentable {
             entries.indices.filter { if case .header = entries[$0] { return true } else { return false } } + [entries.count]
         }
 
+        /// Where an issue dropped above `row` lands: the section it joins, and its place among that section's
+        /// other issues. Above a header is the end of the section before it.
+        private func landing(above row: Int, moving id: String) -> (sectionId: String, index: Int)? {
+            guard row > 0 else { return nil }
+            guard let header = entries[..<min(row, entries.count)].lastIndex(where: {
+                if case .header = $0 { return true } else { return false }
+            }), case .header(let section) = entries[header] else { return nil }
+            return (section.id, entries[(header + 1)..<row].filter { $0.id != id }.count)
+        }
+
+        /// Within its section the issue changes place; in another one it takes that status, as on the board.
+        func dropItem(_ id: String, above row: Int) -> Bool {
+            guard let item = model.item(id: id), let projectId = item.projectId, let landing = landing(above: row, moving: id),
+                  let column = model.columns(projectId: projectId).first(where: { $0.id == landing.sectionId })
+            else { return false }
+            model.drop(item, in: column, at: landing.index)
+            return true
+        }
+
         func tableView(
             _ tableView: NSTableView, validateDrop info: NSDraggingInfo, proposedRow row: Int,
             proposedDropOperation dropOperation: NSTableView.DropOperation
         ) -> NSDragOperation {
-            guard info.draggingSource as? NSTableView === tableView,
-                  let nearest = sectionBoundaries.min(by: { abs($0 - row) < abs($1 - row) }) else { return [] }
+            guard info.draggingSource as? NSTableView === tableView else { return [] }
+            if info.draggingPasteboard.string(forType: Self.itemType) != nil {
+                // Anywhere below the first header; in the middle of a row means just above it.
+                tableView.setDropRow(max(row, 1), dropOperation: .above)
+                return .move
+            }
+            guard let nearest = sectionBoundaries.min(by: { abs($0 - row) < abs($1 - row) }) else { return [] }
             tableView.setDropRow(nearest, dropOperation: .above)
             return .move
         }
@@ -308,6 +387,7 @@ struct IssueTable: NSViewRepresentable {
         func tableView(
             _ tableView: NSTableView, acceptDrop info: NSDraggingInfo, row: Int, dropOperation: NSTableView.DropOperation
         ) -> Bool {
+            if let id = info.draggingPasteboard.string(forType: Self.itemType) { return dropItem(id, above: row) }
             guard let id = info.draggingPasteboard.string(forType: Self.sectionType) else { return false }
             var target: String?
             if entries.indices.contains(row), case .header(let section) = entries[row] { target = section.id }
@@ -617,6 +697,35 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
+
+    /// The row as a card lifted off the list, to drag around.
+    func dragImage() -> NSImage? {
+        guard let content = bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
+        // Without the hover fill and checkbox, which belong to the pointer, not to the issue.
+        let wasHighlighted = highlighted, wasHovered = hoveredPart
+        highlighted = false
+        hoveredPart = nil
+        cacheDisplay(in: bounds, to: content)
+        highlighted = wasHighlighted
+        hoveredPart = wasHovered
+        needsDisplay = true
+        let appearance = effectiveAppearance
+        return NSImage(size: bounds.size, flipped: false) { rect in
+            appearance.performAsCurrentDrawingAppearance {
+                let card = NSBezierPath(
+                    roundedRect: rect.insetBy(dx: IssueTable.inset, dy: 1).insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7
+                )
+                NSColor(Theme.cardLifted).setFill()
+                card.fill()
+                NSColor(Theme.cardLiftedBorder).setStroke()
+                card.lineWidth = 1
+                card.stroke()
+            }
+            // On top of the card; a plain `draw(in:)` would copy the transparent pixels over it.
+            content.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+            return true
+        }
+    }
 
     override func draw(_ dirtyRect: NSRect) {
         guard let row, let context = NSGraphicsContext.current?.cgContext else { return }

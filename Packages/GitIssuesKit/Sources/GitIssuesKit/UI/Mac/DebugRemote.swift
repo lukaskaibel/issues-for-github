@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "entry", "inboxdump"]
+        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -102,6 +102,9 @@ enum DebugRemote {
             sendKeys(argument)
         case "requestdelete":
             if let item = item(argument, model) { model.requestDelete(item) }
+        case "confirmdelete":
+            // What the confirmation's Delete button does.
+            if let item = model.deletionCandidate { model.delete(item) }
         case "focusdesc":
             // Puts the caret at the end of the open issue's description.
             if let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
@@ -139,6 +142,7 @@ enum DebugRemote {
                 var modifiers: NSEvent.ModifierFlags = []
                 if bits.contains("cmd") { modifiers.insert(.command) }
                 if bits.contains("shift") { modifiers.insert(.shift) }
+                if bits.contains("opt") { modifiers.insert(.option) }
                 let characters = [36: "\r", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a"][code] ?? ""
                 sendKey(characters: modifiers.contains(.shift) ? characters.uppercased() : characters, code: code, modifiers: modifiers)
             }
@@ -211,6 +215,26 @@ enum DebugRemote {
                 }
                 let summary: String = find(root)?.coordinator?.listSummary ?? "no table"
                 log("list: " + summary)
+            }
+        case "listdrop", "dragimage":
+            // listdrop <number> <row>: drops the issue in the list above that row, as a drag would.
+            // dragimage <number> <path>: the card an issue's row lifts off as, as a PNG.
+            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            guard bits.count == 2, let item = item(bits[0], model),
+                  let root = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 })?.contentView else { break }
+            func find(_ view: NSView) -> HoverTableView? {
+                if let table = view as? HoverTableView { return table }
+                for subview in view.subviews { if let found = find(subview) { return found } }
+                return nil
+            }
+            guard let table = find(root), let coordinator = table.coordinator else { break }
+            if parts.first == "listdrop", let row = Int(bits[1]) {
+                log("listdrop: \(coordinator.dropItem(item.id, above: row))")
+            } else if let row = (0..<table.numberOfRows).first(where: { coordinator.item(at: $0)?.id == item.id }),
+                      let cell = table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell,
+                      let image = cell.dragImage(), let tiff = image.tiffRepresentation,
+                      let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+                try? png.write(to: URL(fileURLWithPath: bits[1]))
             }
         case "scrolllist":
             // scrolllist <y>: scrolls the tallest scroll view to y points from the top.

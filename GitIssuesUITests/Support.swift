@@ -43,6 +43,12 @@ class AppTestCase: XCTestCase {
         app.buttons[label].firstMatch
     }
 
+    /// A row of a picker sheet, by the name it starts with. Its circle, which picks without closing the sheet,
+    /// is `element("check-<name>")`.
+    func pickerRow(_ name: String) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch
+    }
+
     func wait(_ element: XCUIElement, _ timeout: TimeInterval = 6, file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertTrue(element.waitForExistence(timeout: timeout), "Missing: \(element)", file: file, line: line)
     }

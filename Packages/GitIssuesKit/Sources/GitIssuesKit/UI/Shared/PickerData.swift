@@ -66,7 +66,8 @@ enum PickerKind: Equatable {
         }
     }
 
-    var staysOpen: Bool { self == .assignees || self == .labels }
+    /// People and labels take several values; the rest one.
+    var multiple: Bool { self == .assignees || self == .labels }
 
     var help: String {
         switch self {

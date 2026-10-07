@@ -2,13 +2,15 @@
 import SwiftUI
 
 /// A searchable list driven entirely from the keyboard: type to filter, arrows to move, Return to pick.
+/// A pick closes it, so one change is one click or one key.
 struct PickerList: View {
     var placeholder: String
     var items: [PickerItem]
     /// The key that opens this picker from the board, shown at the end of the search field.
     var hint: String? = nil
-    /// Multi-select pickers stay open after a pick.
-    var staysOpen = false
+    /// People and labels: several can be picked. A click or Return still picks one and closes; the checkbox at
+    /// the start of a row, Shift with a click or Shift-Return pick it and keep the list open for the next.
+    var multiple = false
     var width: CGFloat = 260
     var maxRows = 9
     var fieldFont: Font = .ui
@@ -50,6 +52,13 @@ struct PickerList: View {
                     pick(item)
                     return .handled
                 }
+                .onKeyPress(.return, phases: .down) { press in
+                    // Shift-Return picks and stays open, ready for the next name; plain Return is the submit below.
+                    guard multiple, press.modifiers.contains(.shift), visible.indices.contains(index) else { return .ignored }
+                    pick(visible[index], keepOpen: true)
+                    query = ""
+                    return .handled
+                }
                 .onSubmit {
                     if visible.indices.contains(index) { pick(visible[index]) }
                 }
@@ -59,9 +68,11 @@ struct PickerList: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(Array(visible.enumerated()), id: \.element.id) { position, item in
-                            PickerRow(item: item, active: position == index)
+                            PickerRow(item: item, active: position == index, onCheck: multiple ? { pick(item, keepOpen: true) } : nil)
                                 .id(item.id)
-                                .onTapGesture { pick(item) }
+                                .onTapGesture {
+                                    pick(item, keepOpen: multiple && !NSEvent.modifierFlags.isDisjoint(with: [.shift, .command]))
+                                }
                                 .onHover { if $0 { index = position } }
                         }
                         if visible.isEmpty {
@@ -87,7 +98,7 @@ struct PickerList: View {
         .onAppear {
             focused = true
             // Single-choice pickers start on the current value, so Return keeps it.
-            if !staysOpen, let current = items.firstIndex(where: \.selected) { index = current }
+            if !multiple, let current = items.firstIndex(where: \.selected) { index = current }
         }
         .onChange(of: query) { index = 0 }
     }
@@ -103,18 +114,30 @@ struct PickerList: View {
             .map(\.0)
     }
 
-    private func pick(_ item: PickerItem) {
+    private func pick(_ item: PickerItem, keepOpen: Bool = false) {
         onPick(item.id)
-        if !staysOpen { onClose() }
+        if !keepOpen { onClose() }
     }
 }
 
 struct PickerRow: View {
     var item: PickerItem
     var active: Bool
+    /// In pickers that take several values: picks the row without closing, from a checkbox at its start.
+    var onCheck: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 10) {
+            if let onCheck {
+                // Ticked when picked; on the row under the pointer or keyboard an empty box offers it.
+                PickerCheckbox(checked: item.selected)
+                    .opacity(item.selected || active ? 1 : 0)
+                    .frame(width: 22, height: 32)
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: onCheck)
+                    .help("Pick and keep the list open, to pick more")
+                    .padding(.horizontal, -4)
+            }
             item.icon.frame(width: 18, height: 18)
             if let prefix = item.prefix {
                 Text(prefix).font(.small).monospacedDigit().foregroundStyle(Theme.textTertiary).lineLimit(1)
@@ -125,7 +148,7 @@ struct PickerRow: View {
             }
             Spacer(minLength: 8)
             if let trailing = item.trailing { trailing }
-            if item.selected {
+            if item.selected, onCheck == nil {
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Theme.textBody)
@@ -145,6 +168,25 @@ struct PickerRow: View {
     }
 }
 
+/// The box at the start of a row in a picker that takes several values, drawn like the list's checkboxes.
+private struct PickerCheckbox: View {
+    var checked: Bool
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 4, style: .continuous)
+            .fill(checked ? Theme.accentFill : .clear)
+            .strokeBorder(checked ? .clear : Theme.textTertiary, lineWidth: 1.2)
+            .frame(width: 14, height: 14)
+            .overlay {
+                if checked {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 8.5, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+    }
+}
+
 /// A picker for one property of one issue, as shown in dropdowns and the command palette.
 struct ItemPicker: View {
     @Environment(AppModel.self) private var model
@@ -160,7 +202,7 @@ struct ItemPicker: View {
                 placeholder: model.pickerPlaceholder(kind, for: item),
                 items: model.pickerItems(kind, for: item),
                 hint: kind.hint,
-                staysOpen: kind.staysOpen,
+                multiple: kind.multiple,
                 width: width ?? kind.width,
                 maxRows: 10,
                 fieldFont: fieldFont,

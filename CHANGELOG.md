@@ -34,6 +34,11 @@ All notable changes to this project are recorded here. The format follows
   class, ER and XY diagrams drawn natively. A click on the text shows the Markdown to edit, and leaving it draws it
   again. Plain descriptions are still edited right where you click. Comments and the peek show tables, checklists
   and diagrams too, and the peek's checkboxes tick as well.
+- Issues can be put in a new order in the list, as on the board: drag a row up or down within its section, or into
+  another section to change its status. The row lifts off as a card and the list makes room where it would land.
+  ⌥↑ and ⌥↓ (or ⌥K and ⌥J) move the issue under the pointer or keyboard focus one place up or down its column or
+  section, on the board and in the list. On iPhone and iPad, touch and hold an issue in a project's list, then drag
+  it. My Issues mixes projects, so its rows stay where their boards put them.
 - Change several issues at once, as in Linear. Pick them with X, the checkbox at the start of a list row,
   ⌘-click or Shift-click (Shift with the arrows or J/K picks a run, ⌘A picks everything on screen). A bar at the
   bottom sets status, priority, assignee and labels for all of them; S, P, A, L, I, the command palette and the
@@ -106,6 +111,15 @@ All notable changes to this project are recorded here. The format follows
 - G then B goes to the board of the project used last from the Inbox, My Issues or a repository, and G then L from
   the Inbox to that project's list; before, they did nothing there.
 - A single line break in a comment or a drawn description stays a line break, as on GitHub.
+- Fewer clicks: picking a value closes the dropdown, for assignees and labels too, so one change is one click. To
+  pick several people or labels, tick the checkbox at the start of their rows, or hold Shift while you click or press
+  Return; the dropdown then stays open. On iPhone and iPad a tap in the assignee and label sheets picks and closes
+  the sheet as well, and the circle at the start of a row picks several.
+- A new issue takes the keyboard focus once it's created, so Return opens it and S, A or L change it. After
+  deleting an issue the focus moves on to the next one instead of back to the top.
+- While peeking, S, P, A, L, I, J and K act on the issue in the peek, also with the pointer over the panel. Its
+  labels can be changed there, as its status, priority and assignees already could.
+- On an iPad with a keyboard, S, P, A and L open their picker with the search field ready: type and press Return.
 - The sidebar is calmer, as in Linear. The account, search and New Issue share the top row, and the state of
   syncing is a dot on your avatar: green when everything is on GitHub, the accent while changes go out, amber when
   you're offline or something needs you. "Synced just now" moved into the account menu (and the avatar's tooltip).
@@ -137,6 +151,8 @@ All notable changes to this project are recorded here. The format follows
 - Turning an iPad from portrait to landscape could quit the app when the sidebar appeared.
 - HTML comments such as the hints issue templates leave (`<!-- … -->`) no longer show in comments and the peek;
   GitHub hides them too.
+- Renaming a column, adding one and the token field on the sign-in screen take the keyboard focus straight away,
+  so you can type without clicking into them first.
 - When a saved sign-in no longer works, such as a GitHub CLI login without the CLI or a token missing from the
   keychain, the sign-in screen appears instead of an endless "Looking for your projects…".
 - The issue view's back arrow and Escape return to the issue you came from, such as the parent of a sub-issue,
