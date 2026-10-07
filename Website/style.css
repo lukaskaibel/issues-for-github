@@ -183,6 +183,47 @@ a { color: inherit; }
 .footer a { text-decoration: none; transition: color 0.15s ease-out; }
 .footer a:hover { color: var(--text); }
 .footer a[aria-current="page"] { color: var(--text); }
+.footer-end { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 22px; }
+
+/* The language picker: a globe and the language's name, opening a list above it. */
+.language { position: relative; }
+.language summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  cursor: pointer;
+  transition: color 0.15s ease-out;
+}
+.language summary::-webkit-details-marker { display: none; }
+.language summary:hover, .language[open] summary { color: var(--text); }
+.language summary svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.3; }
+.language ul {
+  position: absolute;
+  right: -10px;
+  bottom: calc(100% + 10px);
+  z-index: 10;
+  min-width: 190px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(20, 22, 40, 0.16);
+}
+.language li a {
+  display: block;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.language li a:hover { background: var(--surface-hover); color: var(--text); }
+.language li a[aria-current="true"] { color: var(--text); font-weight: 600; }
+@media (prefers-color-scheme: dark) {
+  .language ul { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
+}
 
 /* ------------------------------------------------------------------------------------------------------------ */
 /* The home page: one screen, no scrolling. */

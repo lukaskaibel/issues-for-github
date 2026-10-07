@@ -11,6 +11,32 @@
   <link rel="icon" href="../images/favicon-dark.png" media="(prefers-color-scheme: dark)">
   <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
   <link rel="stylesheet" href="../style.css">
+  <!-- languages -->
+  <link rel="alternate" hreflang="en" href="https://lukaskaibel.github.io/issues-for-github/terms/">
+  <link rel="alternate" hreflang="de" href="https://lukaskaibel.github.io/issues-for-github/de/terms/">
+  <link rel="alternate" hreflang="es" href="https://lukaskaibel.github.io/issues-for-github/es/terms/">
+  <link rel="alternate" hreflang="fr" href="https://lukaskaibel.github.io/issues-for-github/fr/terms/">
+  <link rel="alternate" hreflang="pt-BR" href="https://lukaskaibel.github.io/issues-for-github/pt-br/terms/">
+  <link rel="alternate" hreflang="ru" href="https://lukaskaibel.github.io/issues-for-github/ru/terms/">
+  <link rel="alternate" hreflang="ja" href="https://lukaskaibel.github.io/issues-for-github/ja/terms/">
+  <link rel="alternate" hreflang="ko" href="https://lukaskaibel.github.io/issues-for-github/ko/terms/">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lukaskaibel.github.io/issues-for-github/zh-hans/terms/">
+  <link rel="alternate" hreflang="x-default" href="https://lukaskaibel.github.io/issues-for-github/terms/">
+  <script>
+    // A first visit opens the page in the browser's language if the site has it; a language picked below sticks.
+    (function () {
+      var sites = { de: "de", es: "es", fr: "fr", pt: "pt-br", ru: "ru", ja: "ja", ko: "ko", zh: "zh-hans" };
+      try { if (localStorage.getItem("language")) return; } catch (error) { return; }
+      var wanted = navigator.languages || [navigator.language || ""];
+      for (var i = 0; i < wanted.length; i++) {
+        var tag = String(wanted[i]).toLowerCase(), code = tag.split("-")[0];
+        if (code === "en") return;
+        if (code === "zh" && /-(hant|tw|hk|mo)\b/.test(tag)) continue;
+        if (sites[code]) { location.replace("../" + sites[code] + "/terms/"); return; }
+      }
+    })();
+  </script>
+  <!-- /languages -->
 </head>
 <body>
   <header class="top">
@@ -69,12 +95,37 @@
 
   <footer class="footer">
     <span>© 2026 Lukas Kaibel · Not affiliated with GitHub</span>
-    <nav aria-label="Legal and support">
-      <a href="../support/">Support</a>
-      <a href="../privacy/">Privacy</a>
-      <a href="../terms/" aria-current="page">Terms</a>
-      <a href="../impressum/">Impressum</a>
-    </nav>
+    <div class="footer-end">
+      <nav aria-label="Legal and support">
+        <a href="../support/">Support</a>
+        <a href="../privacy/">Privacy</a>
+        <a href="../terms/" aria-current="page">Terms</a>
+        <a href="../impressum/">Impressum</a>
+      </nav>
+      <!-- languages -->
+      <details class="language">
+        <summary aria-label="Language: English"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.8 1.7 2.7 3.8 2.7 6.25S9.8 12.55 8 14.25C6.2 12.55 5.3 10.45 5.3 8S6.2 3.45 8 1.75Z"/></svg>English</summary>
+        <ul>
+          <li><a href="../terms/" hreflang="en" lang="en" data-language="en" aria-current="true">English</a></li>
+          <li><a href="../de/terms/" hreflang="de" lang="de" data-language="de">Deutsch</a></li>
+          <li><a href="../es/terms/" hreflang="es" lang="es" data-language="es">Español</a></li>
+          <li><a href="../fr/terms/" hreflang="fr" lang="fr" data-language="fr">Français</a></li>
+          <li><a href="../pt-br/terms/" hreflang="pt-BR" lang="pt-BR" data-language="pt-BR">Português (Brasil)</a></li>
+          <li><a href="../ru/terms/" hreflang="ru" lang="ru" data-language="ru">Русский</a></li>
+          <li><a href="../ja/terms/" hreflang="ja" lang="ja" data-language="ja">日本語</a></li>
+          <li><a href="../ko/terms/" hreflang="ko" lang="ko" data-language="ko">한국어</a></li>
+          <li><a href="../zh-hans/terms/" hreflang="zh-Hans" lang="zh-Hans" data-language="zh-Hans">简体中文</a></li>
+        </ul>
+      </details>
+      <script>
+        document.querySelectorAll("[data-language]").forEach(function (link) {
+          link.addEventListener("click", function () {
+            try { localStorage.setItem("language", link.dataset.language); } catch (error) {}
+          });
+        });
+      </script>
+      <!-- /languages -->
+    </div>
   </footer>
 </body>
 </html>
