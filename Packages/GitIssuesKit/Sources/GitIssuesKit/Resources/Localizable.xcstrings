@@ -4055,7 +4055,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "已归档 %lld 个通知"
+                  "value" : "已归档 %lld 条通知"
                 }
               }
             }
@@ -5879,7 +5879,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "阻塞 %lld 个议题"
+                  "value" : "正在阻塞 %lld 个议题"
                 }
               }
             }
@@ -5942,7 +5942,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "阻塞"
+            "value" : "正在阻塞"
           }
         }
       }
@@ -6002,7 +6002,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "阻塞…"
+            "value" : "正在阻塞…"
           }
         }
       }
@@ -6062,7 +6062,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "阻塞：无"
+            "value" : "正在阻塞：无"
           }
         }
       }
@@ -6122,7 +6122,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "阻塞 %@"
+            "value" : "正在阻塞 %@"
           }
         }
       }
@@ -6182,7 +6182,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "阻塞"
+            "value" : "正在阻塞"
           }
         }
       }
@@ -6242,7 +6242,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "阻塞：%@"
+            "value" : "正在阻塞：%@"
           }
         }
       }
@@ -7964,7 +7964,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "一个具有 repo、project 和 read:org 作用域的经典（classic）令牌。它保存在 iCloud 钥匙串中，仅会发送至 api.github.com。"
+            "value" : "需要具有 repo、project 和 read:org 作用域的经典（classic）令牌。它保存在 iCloud 钥匙串中，仅会发送至 api.github.com。"
           }
         }
       }
@@ -11648,7 +11648,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "要删除 %@ 吗？"
+            "value" : "要删除“%@”吗？"
           }
         }
       }
@@ -12728,7 +12728,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "试试“明天”“周五”“下周”“3天后”或“10月12日”。"
+            "value" : "试试“明天”“周五”“下周”“3 天后”或“10月12日”。"
           }
         }
       }
@@ -12968,7 +12968,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "本周末"
+            "value" : "本周内"
           }
         }
       }
@@ -22340,7 +22340,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 小时"
+            "value" : "%lld 小时前"
           }
         }
       }
@@ -22400,7 +22400,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 分钟"
+            "value" : "%lld 分钟前"
           }
         }
       }
@@ -25766,7 +25766,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "标记为阻塞…"
+            "value" : "标记为正在阻塞…"
           }
         }
       }
@@ -25826,7 +25826,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "标记为阻塞…"
+            "value" : "标记为正在阻塞…"
           }
         }
       }
@@ -27047,7 +27047,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "GitHub 上还有 %lld 个通知"
+                  "value" : "GitHub 上还有 %lld 条通知"
                 }
               }
             }
@@ -31733,7 +31733,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "已选择 %lld 个通知"
+                  "value" : "已选择 %lld 条通知"
                 }
               }
             }
@@ -34604,7 +34604,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在左侧选择一个通知，或用 J 和 K 键逐个浏览。"
+            "value" : "在左侧选择一条通知，或用 J 和 K 键逐个浏览。"
           }
         }
       }
@@ -42251,7 +42251,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld 个通知"
+                  "value" : "%lld 条通知"
                 }
               }
             }
@@ -43274,7 +43274,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的 GitHub CLI 登录信息可以保存在 iCloud 钥匙串中，这样你 iPhone 和 iPad 上的 App 就能自动登录。你稍后可以在“设置”中更改。"
+            "value" : "你的 GitHub CLI 登录信息可以保存在 iCloud 钥匙串中，这样你的 iPhone 和 iPad 上的 App 就能自动登录。你稍后可以在“设置”中更改。"
           }
         }
       }
@@ -46073,7 +46073,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "已将 %lld 个通知设为稍后提醒"
+                  "value" : "已将 %lld 条通知设为稍后提醒"
                 }
               }
             }
@@ -50063,7 +50063,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld 个未读"
+                  "value" : "%lld 条未读"
                 }
               }
             }

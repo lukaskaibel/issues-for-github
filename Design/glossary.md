@@ -27,7 +27,7 @@ the words for the things that come up again and again, so that every screen call
 | Portuguese (Brazil) | você | As Apple. |
 | Russian | вы (lower case) | As Apple. Quotes «…». |
 | Japanese | です・ます in sentences | Buttons and menu items as nouns or short verbs (「アーカイブ」「既読にする」). Full-width punctuation 「」、。. No spaces around Latin words ("Issueを作成"). |
-| Chinese (Simplified) | 你 | Full-width punctuation. A space between Chinese and Latin letters or digits ("3 个议题", "在 GitHub 上打开"), as Apple does. |
+| Chinese (Simplified) | 你 | Full-width punctuation. A space between Chinese and Latin letters or digits ("3 个议题", "在 GitHub 上打开"), as Apple does. 条 counts notifications ("3 条通知"), 个 issues and projects. |
 | Korean | 합니다 in sentences | Buttons as nouns (「보관」「취소」). |
 
 Only English uses Title Case; every other language writes menus and buttons as it writes them in its own Apple apps.
@@ -57,7 +57,7 @@ Only English uses Title Case; every other language writes menus and buttons as i
 | description | Beschreibung | description | descripción | descrição | описание | 説明 | 描述 | 설명 |
 | closed / reopen | geschlossen / wieder öffnen | fermé / rouvrir | cerrada / reabrir | fechada / reabrir | закрыта / открыть снова | クローズ / 再オープン | 已关闭 / 重新打开 | 닫힘 / 다시 열기 |
 | closed as not planned | als „nicht geplant“ geschlossen | fermé comme non prévu | cerrada como no planificada | fechada como não planejada | закрыта как незапланированная | 対応予定なしでクローズ | 以“不计划”关闭 | 계획 없음으로 닫힘 |
-| blocked by / blocking | blockiert durch / blockierend | bloqué par / bloque | bloqueada por / bloquea | bloqueada por / bloqueia | заблокирована / блокирует | ブロック元 / ブロック先 | 被阻塞 / 阻塞 | 차단됨 / 차단 중 |
+| blocked by / blocking | blockiert durch / blockierend | bloqué par / bloque | bloqueada por / bloquea | bloqueada por / bloqueia | заблокирована / блокирует | ブロック元 / ブロック先 | 被阻塞 / 正在阻塞 | 차단됨 / 차단 중 |
 | Inbox | Eingang | Réception | Entrada | Entrada | Входящие | 受信トレイ | 收件箱 | 수신함 |
 | notification | Mitteilung | notification | notificación | notificação | уведомление | 通知 | 通知 | 알림 |
 | archive | archivieren | archiver | archivar | arquivar | архивировать | アーカイブ | 归档 | 보관 |
