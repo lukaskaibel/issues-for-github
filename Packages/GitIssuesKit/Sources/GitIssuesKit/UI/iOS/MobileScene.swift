@@ -63,23 +63,23 @@ struct MobileRoot: View {
             }
         }
         .alert(
-            model.deletionCandidate.map { "Delete \($0.displayNumber)?" } ?? "Delete?",
+            model.deletionCandidate.map { Text(.deleteIssueNumberQuestion(number: $0.displayNumber)) } ?? Text(.deleteQuestion),
             isPresented: Binding(
                 get: { model.deletionCandidate != nil },
                 set: { if !$0 { model.deletionCandidate = nil } }
             ),
             presenting: model.deletionCandidate
         ) { item in
-            Button("Delete", role: .destructive) {
+            Button(.delete, role: .destructive) {
                 model.delete(item)
                 navigation.forget(issue: item.id)
             }
-            Button("Cancel", role: .cancel) { model.deletionCandidate = nil }
+            Button(.cancel, role: .cancel) { model.deletionCandidate = nil }
         } message: { item in
             if item.kind == .draft {
-                Text("The draft “\(item.title)” is removed from the board.")
+                Text(.draftRemovedFromBoard(title: item.title))
             } else {
-                Text("“\(item.title)” and its comments are deleted on GitHub for everyone. This can't be undone.")
+                Text(.issueDeletedForEveryone(title: item.title))
             }
         }
         .overlay(alignment: .top) {
@@ -132,7 +132,7 @@ struct MainTabs: View {
     var body: some View {
         @Bindable var navigation = navigation
         TabView(selection: $navigation.tab) {
-            Tab("Inbox", systemImage: "tray", value: MobileTab.inbox) {
+            Tab(.inbox, systemImage: "tray", value: MobileTab.inbox) {
                 if wide {
                     InboxSplit()
                 } else {
@@ -141,13 +141,13 @@ struct MainTabs: View {
             }
             .badge(model.inboxUnreadCount)
             .customizationID("inbox")
-            Tab("My Issues", systemImage: "scope", value: MobileTab.myIssues) {
+            Tab(.myIssues, systemImage: "scope", value: MobileTab.myIssues) {
                 TabStack(tab: .myIssues) { MyIssuesScreen() }
             }
             .customizationID("myIssues")
             if wide {
                 // On a wide iPad every project is an entry of its own, as in the Mac's sidebar.
-                TabSection("Projects") {
+                TabSection(.projects) {
                     ForEach(model.openProjects) { project in
                         Tab(value: MobileTab.project(project.id)) {
                             TabStack(tab: .project(project.id)) { ProjectScreen(projectId: project.id) }
@@ -164,7 +164,7 @@ struct MainTabs: View {
                 .customizationID("projectSection")
                 if !model.boardRepositories.isEmpty {
                     // Like the teams in Linear: every issue of a repository, whether it is on a board or not.
-                    TabSection("Repositories") {
+                    TabSection(.repositories) {
                         ForEach(model.boardRepositories) { repo in
                             Tab(value: MobileTab.repository(repo.id)) {
                                 TabStack(tab: .repository(repo.id)) { RepositoryScreen(repoId: repo.id) }
@@ -177,7 +177,7 @@ struct MainTabs: View {
                     .customizationID("repositorySection")
                 }
             } else {
-                Tab("Projects", systemImage: "square.stack", value: MobileTab.projects) {
+                Tab(.projects, systemImage: "square.stack", value: MobileTab.projects) {
                     TabStack(tab: .projects) { ProjectsScreen() }
                 }
                 .customizationID("projects")
@@ -307,7 +307,7 @@ struct SidebarAccountHeader: View {
             }
             .buttonStyle(PlainPressStyle())
             .layoutPriority(1)
-            .accessibilityLabel("Account and settings")
+            .accessibilityLabel(.accountAndSettings)
             .accessibilityValue(model.accountSummary())
             Spacer(minLength: 8)
             Button {
@@ -322,7 +322,7 @@ struct SidebarAccountHeader: View {
                     .hoverEffect(.highlight)
             }
             .buttonStyle(PlainPressStyle())
-            .accessibilityLabel("New issue")
+            .accessibilityLabel(.newIssueVoiceOverLabel)
             .disabled(model.openProjects.isEmpty)
         }
         // The sidebar's rows put their icons 1 pt in and their accessories 15 pt past the content edge.
@@ -437,57 +437,57 @@ struct MobileCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            Button("New Issue") {
+            Button(.newIssue) {
                 if let navigation { navigation.sheet = .newIssue(navigation.newIssueContext) }
             }
             .keyboardShortcut("n", modifiers: .command)
             .disabled(navigation == nil || !model.signedIn || model.openProjects.isEmpty)
         }
-        CommandMenu("Go") {
+        CommandMenu(Text(.goMenu)) {
             let unavailable = navigation == nil || !model.signedIn
             // The board is on wide windows only, and switches the project on screen.
             let noBoard = unavailable || navigation?.regular != true || navigation?.currentProjectId == nil
-            Button("Back") { navigation?.pop() }
+            Button(.back) { navigation?.pop() }
                 .keyboardShortcut("[", modifiers: .command)
                 .disabled(unavailable)
             Divider()
-            Button("Search") {
+            Button(.search) {
                 navigation?.tab = .search
                 navigation?.searchFocusRequest += 1
             }
             .keyboardShortcut("k", modifiers: .command)
             .disabled(unavailable)
             Divider()
-            Button("Board") { withAnimation(Theme.spring) { model.viewMode = .board } }
+            Button(.board) { withAnimation(Theme.spring) { model.viewMode = .board } }
                 .keyboardShortcut("1", modifiers: .command)
                 .disabled(noBoard)
-            Button("List") { withAnimation(Theme.spring) { model.viewMode = .list } }
+            Button(.list) { withAnimation(Theme.spring) { model.viewMode = .list } }
                 .keyboardShortcut("2", modifiers: .command)
                 .disabled(noBoard)
-            Button("My Issues") { navigation?.tab = .myIssues }
+            Button(.myIssues) { navigation?.tab = .myIssues }
                 .keyboardShortcut("3", modifiers: .command)
                 .disabled(unavailable)
-            Button("Inbox") { navigation?.tab = .inbox }
+            Button(.inbox) { navigation?.tab = .inbox }
                 .disabled(unavailable)
             Divider()
-            Button("Sync with GitHub Now") { model.refresh() }
+            Button(.syncWithGitHubNow) { model.refresh() }
                 .keyboardShortcut("r", modifiers: .command)
                 .disabled(unavailable)
         }
-        CommandMenu("Issue") {
+        CommandMenu(Text(.issueMenu)) {
             // The issue in front in the focused window.
             let item = navigation?.currentIssueId.flatMap { model.item(id: $0) }
-            Button("Copy GitHub Link") { if let item { model.copyLink(item) } }
+            Button(.copyGitHubLink) { if let item { model.copyLink(item) } }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
                 .disabled(item?.url == nil)
-            Button("Copy Branch Name") { if let item { model.copyBranchName(item) } }
+            Button(.copyBranchName) { if let item { model.copyBranchName(item) } }
                 .keyboardShortcut(".", modifiers: [.command, .shift])
                 .disabled(item?.branchName == nil)
-            Button("Open on GitHub") { if let item { model.openOnGitHub(item) } }
+            Button(.openOnGitHub) { if let item { model.openOnGitHub(item) } }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
                 .disabled(item?.url == nil)
             Divider()
-            Button("Delete Issue…") { if let item { model.requestDelete(item) } }
+            Button(.deleteIssueEllipsis) { if let item { model.requestDelete(item) } }
                 .keyboardShortcut(.delete, modifiers: .command)
                 .disabled(item.map { !model.canDelete($0) } ?? true)
         }

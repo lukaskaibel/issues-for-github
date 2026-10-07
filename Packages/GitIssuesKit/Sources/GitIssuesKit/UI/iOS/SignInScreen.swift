@@ -25,11 +25,11 @@ struct SignInScreen: View {
                         .shadow(color: Theme.shadow, radius: 18, y: 10)
                         .accessibilityHidden(true)
                     VStack(spacing: 10) {
-                        Text("Your GitHub issues, wherever you are")
+                        Text(.signInHeadline)
                             .font(.title.weight(.bold))
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
-                        Text("Everything stays in GitHub Projects. Teammates who don't use this app see the same board on github.com.")
+                        Text(.signInSubheadline)
                             .font(.callout)
                             .foregroundStyle(Theme.textSecondary)
                             .multilineTextAlignment(.center)
@@ -75,7 +75,7 @@ struct SignInScreen: View {
                 Button {
                     startDeviceFlow()
                 } label: {
-                    Text("Sign in with GitHub")
+                    Text(.signInWithGitHub)
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 52)
                 }
@@ -86,7 +86,7 @@ struct SignInScreen: View {
                 Button {
                     if model.auth.adoptSharedLogin(force: true) { model.completeSignIn() }
                 } label: {
-                    Label("Use the Login from Your Mac", systemImage: "key.icloud")
+                    Label(.useLoginFromMac, systemImage: "key.icloud")
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 52)
                 }
@@ -95,17 +95,17 @@ struct SignInScreen: View {
             Button {
                 showToken = true
             } label: {
-                Label("Use a Personal Access Token", systemImage: "key")
+                Label(.usePersonalAccessToken, systemImage: "key")
                     .font(.headline)
                     .frame(maxWidth: .infinity, minHeight: 52)
             }
             .buttonStyle(DeviceFlow.configuredClientID == nil ? AnyPrimitiveButtonStyle(.glassProminent) : AnyPrimitiveButtonStyle(.glass))
-            Button("Explore with Sample Data") {
+            Button(.exploreWithSampleData) {
                 model.enterDemo()
             }
             .font(.subheadline.weight(.medium))
             .padding(.top, 4)
-            Text("Signed in on your Mac? With iCloud Keychain on, this \(UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone") signs in by itself.")
+            Text(UIDevice.current.userInterfaceIdiom == .pad ? LocalizedStringResource.signsInByItselfIPad : .signsInByItselfIPhone)
                 .font(.footnote)
                 .foregroundStyle(Theme.textTertiary)
                 .multilineTextAlignment(.center)
@@ -116,29 +116,29 @@ struct SignInScreen: View {
 
     private func codeCard(_ code: DeviceFlow.Code) -> some View {
         VStack(spacing: 14) {
-            Text("Enter this code on GitHub")
+            Text(.enterCodeOnGitHub)
                 .font(.subheadline)
                 .foregroundStyle(Theme.textSecondary)
             Text(code.userCode)
                 .font(.system(size: 32, weight: .semibold, design: .monospaced))
                 .tracking(3)
                 .textSelection(.enabled)
-                .accessibilityLabel("Code \(code.userCode.map(String.init).joined(separator: " "))")
+                .accessibilityLabel(.deviceCodeSpoken(code: code.userCode.map(String.init).joined(separator: " ")))
             Button {
                 flow.openGitHub()
             } label: {
-                Text("Copy Code and Open GitHub")
+                Text(.copyCodeAndOpenGitHub)
                     .font(.headline)
                     .frame(maxWidth: .infinity, minHeight: 50)
             }
             .buttonStyle(.glassProminent)
             HStack(spacing: 8) {
                 ProgressView()
-                Text("Waiting for you to approve…")
+                Text(.waitingForApproval)
                     .font(.footnote)
                     .foregroundStyle(Theme.textSecondary)
             }
-            Button("Cancel") { flow.cancel() }
+            Button(.cancel) { flow.cancel() }
                 .font(.subheadline)
         }
         .padding(22)
@@ -277,16 +277,16 @@ private struct TokenSignInSheet: View {
                     }
                     .buttonBorderShape(.capsule)
                 } header: {
-                    Text("Personal access token")
+                    Text(.personalAccessToken)
                 } footer: {
-                    Text("A classic token with the repo, project and read:org scopes. It is kept in iCloud Keychain and only sent to api.github.com.")
+                    Text(.classicTokenScopes)
                 }
                 Section {
                     Link(destination: Self.createURL) {
-                        Label("Create a Token on GitHub", systemImage: "arrow.up.right.square")
+                        Label(.createTokenOnGitHub, systemImage: "arrow.up.right.square")
                     }
                 } footer: {
-                    Text("Opens GitHub with the right scopes already selected.")
+                    Text(.opensGitHubWithScopes)
                 }
                 if let errorText {
                     Section {
@@ -295,17 +295,17 @@ private struct TokenSignInSheet: View {
                     }
                 }
             }
-            .navigationTitle("Sign In with a Token")
+            .navigationTitle(.signInWithToken)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", systemImage: "xmark") { dismiss() }
+                    Button(.cancel, systemImage: "xmark") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if checking {
                         ProgressView()
                     } else {
-                        Button("Sign In", action: signIn)
+                        Button(.signIn, action: signIn)
                             .disabled(token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                 }
@@ -328,7 +328,7 @@ private struct TokenSignInSheet: View {
                 dismiss()
                 model.completeSignIn()
             } catch APIError.unauthorized {
-                errorText = "GitHub didn't accept this token. Check that it's complete and hasn't expired."
+                errorText = String(localized: .tokenNotAccepted)
             } catch {
                 errorText = error.localizedDescription
             }

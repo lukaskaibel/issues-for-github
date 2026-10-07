@@ -17,7 +17,7 @@ struct AccountSheet: View {
                         AccountAvatar(size: 68)
                         Text(model.viewer?.login ?? "GitHub")
                             .font(.title3.weight(.semibold))
-                        Text(model.isDemo ? "Sample data, nothing is sent to GitHub" : (model.viewer?.name ?? "Signed in with GitHub"))
+                        Text(model.isDemo ? String(localized: .sampleDataNothingSent) : (model.viewer?.name ?? String(localized: .signedInWithGitHub)))
                             .font(.subheadline)
                             .foregroundStyle(Theme.textSecondary)
                             .multilineTextAlignment(.center)
@@ -32,22 +32,22 @@ struct AccountSheet: View {
                     HStack {
                         SyncStatusLine()
                         Spacer()
-                        Button("Sync Now") { model.refresh() }
+                        Button(.syncNow) { model.refresh() }
                             .disabled(model.status.phase == .syncing)
                     }
                     NavigationLink {
                         QueueScreen()
                     } label: {
-                        LabeledContent("Queued changes", value: model.pendingCount == 0 ? "None" : "\(model.pendingCount)")
+                        LabeledContent(.queuedChanges, value: model.pendingCount == 0 ? String(localized: .noQueuedChanges) : "\(model.pendingCount)")
                     }
                 } header: {
-                    Text("Sync")
+                    Text(.syncSection)
                 } footer: {
-                    Text("Changes are saved on this \(UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone") first and sent to GitHub in the background. Offline changes go out when you're back online.")
+                    Text(UIDevice.current.userInterfaceIdiom == .pad ? LocalizedStringResource.changesSavedOnIPad : .changesSavedOnIPhone)
                 }
 
-                Section("Appearance") {
-                    Picker("Appearance", selection: $model.appearance) {
+                Section(.appearance) {
+                    Picker(.appearance, selection: $model.appearance) {
                         ForEach(AppearanceSetting.allCases) { Text($0.title).tag($0) }
                     }
                     .pickerStyle(.segmented)
@@ -57,7 +57,7 @@ struct AccountSheet: View {
                 ReminderSettingsSection()
 
                 if UIApplication.shared.supportsAlternateIcons {
-                    Section("App Icon") {
+                    Section(.appIcon) {
                         HStack(spacing: 0) {
                             ForEach(AppIconChoice.mobile) { choice in
                                 AppIconButton(choice: choice, selected: model.appIcon == choice) {
@@ -72,12 +72,12 @@ struct AccountSheet: View {
 
                 Section {
                     if model.isDemo {
-                        Button("Leave Sample Data") {
+                        Button(.leaveSampleData) {
                             dismiss()
                             model.leaveDemo()
                         }
                     } else {
-                        Button("Sign Out", role: .destructive) { confirmSignOut = true }
+                        Button(.signOut, role: .destructive) { confirmSignOut = true }
                             .frame(maxWidth: .infinity)
                     }
                 } footer: {
@@ -89,25 +89,25 @@ struct AccountSheet: View {
             }
             .scrollContentBackground(.hidden)
             .background(Theme.window)
-            .navigationTitle("Account")
+            .navigationTitle(.account)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", systemImage: "checkmark") { dismiss() }
+                    Button(.done, systemImage: "checkmark") { dismiss() }
                 }
             }
-            .confirmationDialog("Sign out of GitHub?", isPresented: $confirmSignOut, titleVisibility: .visible) {
-                Button("Sign Out on This \(UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone")", role: .destructive) {
+            .confirmationDialog(.signOutOfGitHubQuestion, isPresented: $confirmSignOut, titleVisibility: .visible) {
+                Button(UIDevice.current.userInterfaceIdiom == .pad ? LocalizedStringResource.signOutOnThisIPad : .signOutOnThisIPhone, role: .destructive) {
                     dismiss()
                     model.signOut()
                 }
-                Button("Sign Out Everywhere", role: .destructive) {
+                Button(.signOutEverywhere, role: .destructive) {
                     dismiss()
                     model.signOut(everywhere: true)
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(.cancel, role: .cancel) {}
             } message: {
-                Text("Signing out everywhere removes your login from iCloud Keychain, so your Mac, iPhone and iPad all sign out.")
+                Text(.signOutEverywhereExplanation)
             }
         }
     }
@@ -115,8 +115,8 @@ struct AccountSheet: View {
     private var footer: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
         return model.isDemo
-            ? "Issues \(version)"
-            : "Issues \(version) · Your login is kept in iCloud Keychain and only sent to api.github.com."
+            ? String(localized: .appVersion(version: version))
+            : String(localized: .appVersionLoginNote(version: version))
     }
 }
 
@@ -157,7 +157,7 @@ struct QueueScreen: View {
         let waiting = model.outbox.filter { $0.state != .sent }
         List {
             if waiting.isEmpty {
-                ContentUnavailableView("Everything is saved to GitHub", systemImage: "checkmark.circle", description: Text("Changes you make are saved here first, then sent."))
+                ContentUnavailableView(.everythingSavedToGitHub, systemImage: "checkmark.circle", description: Text(.changesSavedHereFirst))
                     .listRowBackground(Color.clear)
             }
             ForEach(waiting) { entry in
@@ -171,7 +171,7 @@ struct QueueScreen: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(summary.text)
                         if entry.state == .conflict {
-                            Text("Needs your decision").font(.footnote).foregroundStyle(Theme.warning)
+                            Text(.needsYourDecision).font(.footnote).foregroundStyle(Theme.warning)
                         } else if let error = entry.lastError {
                             Text(error).font(.footnote).foregroundStyle(Theme.textSecondary).lineLimit(2)
                         }
@@ -183,15 +183,15 @@ struct QueueScreen: View {
                 }
             }
         }
-        .navigationTitle("Queued Changes")
+        .navigationTitle(.queuedChangesTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Sync Now") { model.refresh() }
+                Button(.syncNow) { model.refresh() }
             }
             if showsDone {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", systemImage: "checkmark") { dismiss() }
+                    Button(.done, systemImage: "checkmark") { dismiss() }
                 }
             }
         }
