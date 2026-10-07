@@ -6,7 +6,7 @@ struct NewIssueView: View {
     var statusId: String?
     var parentItemId: String?
 
-    @State private var draft = NewIssueDraft(projectId: "")
+    @State private var draft = NewIssueDraft(projectId: nil)
     @State private var openPicker: PickerKind?
     /// Whether this is a draft from last time, which can be thrown away to start over.
     @State private var restored = false
@@ -21,16 +21,23 @@ struct NewIssueView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                if let project = model.projects.first(where: { $0.id == draft.projectId }) {
-                    HStack(spacing: 6) {
-                        ProjectSwatch(title: project.title, size: 10)
-                        Text(project.title)
+                if choosesProject {
+                    // In a repository, the issue can go on any of its boards or on none, like Linear's project chip.
+                    Menu {
+                        ForEach(boards) { project in
+                            Button(project.title) { selectProject(project.id) }
+                        }
+                        Divider()
+                        Button("No project") { selectProject(nil) }
+                    } label: {
+                        projectChip
                     }
-                    .font(.small)
-                    .foregroundStyle(Theme.textBody)
-                    .padding(.horizontal, 8)
-                    .frame(height: 22)
-                    .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Theme.controlActive))
+                    .menuStyle(.button)
+                    .buttonStyle(PlainPressStyle())
+                    .fixedSize()
+                    .help("The board the issue goes on")
+                } else {
+                    projectChip
                 }
                 Text("›").foregroundStyle(Theme.textTertiary)
                 Text(draft.parent == nil ? "New issue" : "New sub-issue").font(.small).foregroundStyle(Theme.textSecondary)
@@ -84,9 +91,11 @@ struct NewIssueView: View {
             .padding(.bottom, 8)
 
             HStack(spacing: 6) {
-                chip(.status) {
-                    StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: draft.statusId))
-                    Text(statuses.first { $0.id == draft.statusId }?.name ?? "No status")
+                if draft.projectId != nil {
+                    chip(.status) {
+                        StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: draft.statusId))
+                        Text(statuses.first { $0.id == draft.statusId }?.name ?? "No status")
+                    }
                 }
                 if !priorities.isEmpty {
                     chip(.priority) {
@@ -113,9 +122,12 @@ struct NewIssueView: View {
                         Text(draft.labels.count == 1 ? draft.labels[0].name : "\(draft.labels.count) labels")
                     }
                 }
-                chip(.dueDate) {
-                    DueDateIcon(size: 11)
-                    Text(draft.dueDate.flatMap(CalendarDay.init)?.mediumLabel() ?? "Due date")
+                // The date is a field of the board, so an issue going on none has no date.
+                if draft.projectId != nil {
+                    chip(.dueDate) {
+                        DueDateIcon(size: 11)
+                        Text(draft.dueDate.flatMap(CalendarDay.init)?.mediumLabel() ?? "Due date")
+                    }
                 }
                 if let parent = draft.parent {
                     HStack(spacing: 6) {
@@ -148,7 +160,7 @@ struct NewIssueView: View {
                 .menuStyle(.borderlessButton)
                 .tint(Theme.textBody)
                 .fixedSize()
-                .disabled(draft.parent != nil || repos.count < 2)
+                .disabled(draft.parent != nil || repos.count < 2 || choosesProject)
                 Spacer()
                 Text("⌘↵").font(.tiny).foregroundStyle(Theme.textSecondary)
                 Button("Create issue", action: create)
@@ -182,7 +194,52 @@ struct NewIssueView: View {
 
     private var statuses: [FieldOption] { model.statusOptions(projectId: draft.projectId) }
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
-    private var repos: [RepoRef] { model.repos(projectId: draft.projectId) }
+    private var repos: [RepoRef] { model.repos(forNewIssueIn: draft.projectId, repoId: draft.repoId) }
+
+    /// A new issue started in a repository chooses its board; elsewhere the board is the one on screen.
+    private var choosesProject: Bool {
+        model.currentRepositoryId != nil && draft.parent == nil
+    }
+
+    private var boards: [Project] {
+        model.currentRepositoryId.map { model.boards(ofRepository: $0) } ?? []
+    }
+
+    @ViewBuilder
+    private var projectChip: some View {
+        HStack(spacing: 6) {
+            if let project = model.projects.first(where: { $0.id == draft.projectId }) {
+                ProjectSwatch(title: project.title, size: 10)
+                Text(project.title)
+            } else {
+                RepositoryIcon(size: 10)
+                Text(repos.first?.shortName ?? "No project")
+            }
+            if choosesProject {
+                Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.textTertiary)
+            }
+        }
+        .font(.small)
+        .foregroundStyle(Theme.textBody)
+        .padding(.horizontal, 8)
+        .frame(height: 22)
+        .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Theme.controlActive))
+    }
+
+    private func selectProject(_ id: String?) {
+        guard id != draft.projectId else { return }
+        draft.projectId = id
+        draft.statusId = defaultStatus(projectId: id)
+        draft.priorityId = nil
+        if let id { model.loadRepoMeta(projectId: id) }
+    }
+
+    private func defaultStatus(projectId: String?) -> String? {
+        let options = model.statusOptions(projectId: projectId)
+        return options.first { $0.statusCategory == .unstarted }?.id
+            ?? options.first { $0.statusCategory == .backlog }?.id
+            ?? options.first?.id
+    }
 
     private var canCreate: Bool {
         !draft.title.trimmingCharacters(in: .whitespaces).isEmpty && draft.repoId != nil
@@ -190,28 +247,36 @@ struct NewIssueView: View {
 
     private func prepare() {
         let parent = parentItemId.flatMap { id in model.allItems.first { $0.id == id } }
-        let projectId = parent?.projectId ?? model.currentProjectId ?? model.projects.first { !$0.closed }?.id ?? ""
-        if let unsent = model.unsentNewIssue, unsent.projectId == projectId, unsent.parent?.id == parent?.id {
+        let repoScope = model.currentRepositoryId
+        let projectId: String?
+        if let parent {
+            // A sub-issue goes where its parent is, on its board or on none.
+            projectId = parent.projectId
+        } else if let repoScope {
+            projectId = model.boards(ofRepository: repoScope).first?.id
+        } else {
+            projectId = model.currentProjectId ?? model.projects.first { !$0.closed }?.id
+        }
+        // A sub-issue lives in its parent's repository; one started in a repository lives there.
+        let repoId = parent?.repoId ?? repoScope ?? projectId.flatMap { model.defaultRepoId(projectId: $0) }
+        if let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id,
+           repoScope != nil ? unsent.repoId == repoScope : unsent.projectId == projectId {
             draft = unsent
             if let statusId { draft.statusId = statusId }
             restored = true
             focus = .title
-            model.loadRepoMeta(projectId: projectId)
+            model.loadRepoMeta(projectId: draft.projectId)
             return
         }
         restored = false
         var new = NewIssueDraft(projectId: projectId)
         new.parent = parent
-        // A sub-issue lives in its parent's repository.
-        new.repoId = parent?.repoId ?? model.defaultRepoId(projectId: projectId)
-        let options = model.statusOptions(projectId: projectId)
-        new.statusId = statusId
-            ?? options.first { $0.statusCategory == .unstarted }?.id
-            ?? options.first { $0.statusCategory == .backlog }?.id
-            ?? options.first?.id
+        new.repoId = repoId
+        new.statusId = statusId ?? defaultStatus(projectId: projectId)
         draft = new
         focus = .title
         model.loadRepoMeta(projectId: projectId)
+        if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
     }
 
     private func selectRepo(_ id: String) {

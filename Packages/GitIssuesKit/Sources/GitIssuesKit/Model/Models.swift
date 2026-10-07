@@ -80,12 +80,14 @@ public struct FieldOption: Codable, FetchableRecord, PersistableRecord, Identifi
     public var position: Int
 }
 
-/// A card: one item of a project together with the issue, pull request or draft behind it.
+/// A card: one item of a project together with the issue, pull request or draft behind it. An issue that is on
+/// none of your boards is an item too, without a project, so lists, actions and the issue view treat it alike.
 public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, Hashable, Sendable {
     public static let databaseTableName = "item"
 
     public var id: String
-    public var projectId: String
+    /// Nil for an issue that is on none of your boards.
+    public var projectId: String?
     public var kind: ItemKind
     public var position: Double
     /// `ProjectV2Item.updatedAt` as last hydrated. Compared as a string during sweeps.
@@ -123,7 +125,18 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
     public var viewerCanDelete: Bool = false
 
     public var isLocalOnly: Bool { id.hasPrefix(LocalID.prefix) }
+    public var isOnBoard: Bool { projectId != nil }
     public var isClosed: Bool { state != "OPEN" }
+
+    /// The id of an issue that is on none of your boards. Project items have ids of their own on GitHub; this
+    /// one is made from the issue's, with a prefix so it never collides with the issue id itself.
+    public static func idWithoutProject(_ contentId: String) -> String { withoutProjectPrefix + contentId }
+    public static let withoutProjectPrefix = "issue:"
+
+    /// Issues on no board have no order on GitHub; the most recently updated comes first, ahead of board cards.
+    public static func positionWithoutProject(updatedAt: Date?) -> Double {
+        -(updatedAt ?? Date()).timeIntervalSince1970
+    }
     public var isEditableContent: Bool { kind == .issue }
     public var repoShortName: String? { repo?.split(separator: "/").last.map(String.init) }
 
@@ -192,6 +205,7 @@ public struct RepoRef: Codable, FetchableRecord, PersistableRecord, Identifiable
     public var metaLoadedAt: Date?
 
     public var shortName: String { nameWithOwner.split(separator: "/").last.map(String.init) ?? nameWithOwner }
+    public var url: URL? { URL(string: "https://github.com/\(nameWithOwner)") }
 }
 
 public struct Viewer: Codable, Hashable, Sendable {

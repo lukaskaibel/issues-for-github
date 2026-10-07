@@ -87,13 +87,18 @@ extension AppModel {
     }
 
     /// Sets the day each issue is due, or clears it. The project's "Due date" field is added on GitHub if it
-    /// has none yet.
+    /// has none yet. An issue on no board has nowhere to keep a date, so it is left alone.
     func setDueDate(of items: [Item], to day: CalendarDay?) {
         let value = day?.string
-        perform(items.filter { $0.dueDate != value }.map { item in
-            .setDate(.init(itemId: item.id, projectId: item.projectId, date: value, base: item.dueDate))
+        perform(items.filter { $0.dueDate != value }.compactMap { item in
+            item.projectId.map { .setDate(.init(itemId: item.id, projectId: $0, date: value, base: item.dueDate)) }
         })
         if day != nil { notifier.requestPermissionIfNeeded() }
+    }
+
+    /// Whether an issue can have a due date: the date is a field of its board, so it needs one.
+    func canHaveDueDate(_ item: Item) -> Bool {
+        item.isOnBoard
     }
 
     /// Whether the board has no date field yet, so the first date adds one on GitHub.

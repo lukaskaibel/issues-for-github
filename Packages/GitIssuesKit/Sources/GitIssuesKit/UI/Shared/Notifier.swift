@@ -179,7 +179,7 @@ final class Notifier {
         var result: [(date: Date, request: UNNotificationRequest)] = []
         let closedProjects = Set(model.projects.filter(\.closed).map(\.id))
         for item in model.allItems {
-            guard let day = item.due, !closedProjects.contains(item.projectId),
+            guard let day = item.due, let projectId = item.projectId, !closedProjects.contains(projectId),
                   item.assignees.contains(where: { $0.id == viewer.id }), !model.isDone(item) else { continue }
             let project = model.project(of: item)?.title
             let key = item.contentId ?? item.id
@@ -197,8 +197,8 @@ final class Notifier {
                 content.body = "\(item.displayNumber) \(item.title)"
                 content.sound = .default
                 content.categoryIdentifier = Self.dueCategory
-                content.threadIdentifier = item.projectId
-                content.userInfo = [Key.itemId: item.id, Key.contentId: item.contentId ?? "", Key.projectId: item.projectId]
+                content.threadIdentifier = projectId
+                content.userInfo = [Key.itemId: item.id, Key.contentId: item.contentId ?? "", Key.projectId: projectId]
                 // Without a time zone the time is local wherever the device is: 9:00 stays 9:00 when travelling.
                 let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
                 let request = UNNotificationRequest(identifier: "\(kind):\(key):\(day.string)", content: content, trigger: trigger)

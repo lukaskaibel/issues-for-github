@@ -16,6 +16,12 @@ All notable changes to this project are recorded here. The format follows
   it has passed. On the day an issue assigned to you is due, your Mac, iPhone and iPad remind you with a notification,
   and once more the next morning if it is still open. Its buttons start the issue, mark it done or move it to
   tomorrow. The time is set in Settings (9:00 at first); GitHub's dates have no time of day, so issues don't either.
+- **Every issue, on a board or not.** Issues that are on none of your GitHub Projects no longer stay invisible. My
+  Issues shows every open issue assigned to you, wherever it is, and the sidebar has a Repositories section with the
+  repositories your boards use, like the teams in Linear (on the iPhone, in the Projects tab). A repository lists all
+  its issues, grouped by status like My Issues; those on no board lead under **No project**. Click their circle with
+  the plus, press S or use the right-click menu, and pick a column: the issue goes onto the board, in that column.
+  A new issue started in a repository can go on one of its boards or on none.
 - Change several issues at once, as in Linear. Pick them with X, the checkbox at the start of a list row,
   ⌘-click or Shift-click (Shift with the arrows or J/K picks a run, ⌘A picks everything on screen). A bar at the
   bottom sets status, priority, assignee and labels for all of them; S, P, A, L, I, the command palette and the

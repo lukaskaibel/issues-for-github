@@ -8,6 +8,16 @@ enum StatusPainter {
         let ring = Path(ellipseIn: rect)
         let s = frame.width / 14
         func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: frame.minX + x * s, y: frame.minY + y * s) }
+        if glyph.addsToProject {
+            context.stroke(ring, with: .color(glyph.color), lineWidth: 1.5)
+            var plus = Path()
+            plus.move(to: point(7, 4.6))
+            plus.addLine(to: point(7, 9.4))
+            plus.move(to: point(4.6, 7))
+            plus.addLine(to: point(9.4, 7))
+            context.stroke(plus, with: .color(glyph.color), style: StrokeStyle(lineWidth: 1.4 * s, lineCap: .round))
+            return
+        }
         switch glyph.category {
         case .backlog:
             context.stroke(ring, with: .color(glyph.color), style: StrokeStyle(lineWidth: 1.5, dash: [2, 2.3]))

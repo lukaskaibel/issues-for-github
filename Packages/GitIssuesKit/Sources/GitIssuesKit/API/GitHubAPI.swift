@@ -63,6 +63,25 @@ public struct CreatedIssue: Sendable {
     public var url: String
 }
 
+/// An issue read from its repository or a search, with the boards it is on.
+public struct RemoteIssue: Sendable {
+    /// The issue as an item without a project.
+    public var item: Item
+    public var projectIds: [String]
+}
+
+/// An issue as a light read lists it: where it lives and when it last changed. Which boards it is on costs GitHub
+/// a lot to say for every issue, so that is asked only of the issues read in full.
+public struct IssueRef: Sendable, Hashable {
+    public var contentId: String
+    public var repoId: String?
+    public var updatedAt: String
+    public var isClosed: Bool
+    public var closedAt: Date?
+
+    public var itemId: String { Item.idWithoutProject(contentId) }
+}
+
 /// Everything the app asks of GitHub. One method per round trip.
 public final class GitHubAPI: Sendable {
     public let client: GraphQLClient
@@ -223,6 +242,90 @@ public final class GitHubAPI: Sendable {
             result += response.nodes.compactMap { $0 }.compactMap {
                 $0.item(projectId: projectId, statusFieldId: statusFieldId, priorityFieldId: priorityFieldId, dueFieldId: dueFieldId)
             }
+        }
+        return result
+    }
+
+    /// What a repository's issues are and where they are, without their text: enough to tell which are on none of
+    /// your boards and which changed. `since` limits them to those updated since then.
+    public func repositoryIssueRefs(repoId: String, states: [String]?, since: Date?) async throws -> [IssueRef] {
+        struct Response: Decodable {
+            struct Node: Decodable {
+                struct Issues: Decodable {
+                    var pageInfo: PageInfo
+                    var nodes: [IssueRefDTO?]
+                }
+                var issues: Issues?
+            }
+            var node: Node?
+        }
+        let query = """
+        query($id: ID!, $after: String, $states: [IssueState!], $since: DateTime) {
+          node(id: $id) { ... on Repository {
+            issues(first: 100, after: $after, states: $states, filterBy: {since: $since}, orderBy: {field: UPDATED_AT, direction: DESC}) {
+              pageInfo { hasNextPage endCursor }
+              nodes { ...IssueRefFields }
+            }
+          } }
+        }
+        \(GQL.issueRefFields)
+        """
+        var result: [IssueRef] = []
+        var cursor: String?
+        repeat {
+            var variables: [String: Any?] = ["id": repoId, "after": cursor, "states": states]
+            variables["since"] = since.map { ISO8601DateFormatter().string(from: $0) }
+            let response: Response = try await client.run(query, variables: variables, allowPartial: true)
+            guard let issues = response.node?.issues else { break }
+            result += issues.nodes.compactMap { $0?.ref }
+            cursor = issues.pageInfo.hasNextPage ? issues.pageInfo.endCursor : nil
+        } while cursor != nil
+        return result
+    }
+
+    /// Open issues assigned to you, in any repository you can see, without their text.
+    public func assignedIssueRefs() async throws -> [IssueRef] {
+        struct Response: Decodable {
+            struct Search: Decodable {
+                var pageInfo: PageInfo
+                var nodes: [IssueRefDTO?]
+            }
+            var search: Search
+        }
+        let query = """
+        query($after: String) {
+          search(type: ISSUE, query: "is:issue is:open assignee:@me archived:false", first: 100, after: $after) {
+            pageInfo { hasNextPage endCursor }
+            nodes { ...IssueRefFields }
+          }
+        }
+        \(GQL.issueRefFields)
+        """
+        var result: [IssueRef] = []
+        var cursor: String?
+        repeat {
+            let response: Response = try await client.run(query, variables: ["after": cursor], allowPartial: true)
+            result += response.search.nodes.compactMap { $0?.ref }
+            cursor = response.search.pageInfo.hasNextPage ? response.search.pageInfo.endCursor : nil
+        } while cursor != nil && result.count < 1000
+        return result
+    }
+
+    /// Full data of the given issues, as items without a project.
+    public func issues(ids: [String]) async throws -> [RemoteIssue] {
+        struct Response: Decodable {
+            var nodes: [IssueNodeDTO?]
+        }
+        let query = """
+        query($ids: [ID!]!) {
+          nodes(ids: $ids) { ... on Issue { ...IssueFields } }
+        }
+        \(GQL.issueFields)
+        """
+        var result: [RemoteIssue] = []
+        for chunk in ids.chunked(into: 40) {
+            let response: Response = try await client.run(query, variables: ["ids": chunk], allowPartial: true)
+            result += response.nodes.compactMap { $0?.remote }
         }
         return result
     }
@@ -595,6 +698,27 @@ extension GitHubAPI {
 // MARK: - Wire types
 
 enum GQL {
+    /// An issue on its own, with the boards it is on, for issues read from a repository or a search.
+    static let issueFields = """
+    fragment IssueFields on Issue {
+      __typename id number title body state stateReason url createdAt updatedAt closedAt
+      author { login } repository { id nameWithOwner }
+      assignees(first: 10) { nodes { id login name avatarUrl } }
+      labels(first: 20) { nodes { id name color } }
+      parent { id number title }
+      viewerCanDelete
+      subIssuesSummary { total completed }
+      comments { totalCount }
+      projectItems(first: 20) { nodes { project { id } } }
+    }
+    """
+
+    static let issueRefFields = """
+    fragment IssueRefFields on Issue {
+      id updatedAt state closedAt repository { id }
+    }
+    """
+
     static let itemFields = """
     fragment ItemFields on ProjectV2Item {
       id updatedAt type
@@ -745,18 +869,32 @@ struct ItemDTO: Decodable {
             guard let fieldId else { return nil }
             return fieldValues?.items.first { $0.field?.id == fieldId }?.optionId
         }
+        let dueDate = dueFieldId.flatMap { fieldId in
+            fieldValues?.items.first { $0.field?.id == fieldId }?.date.flatMap(CalendarDay.init)?.string
+        }
+        return content.item(
+            id: id, projectId: projectId, kind: kind, position: 0, remoteUpdatedAt: updatedAt,
+            statusId: option(for: statusFieldId), priorityId: option(for: priorityFieldId), dueDate: dueDate
+        )
+    }
+}
+
+extension ItemDTO.Content {
+    func item(
+        id: String, projectId: String?, kind: ItemKind, position: Double, remoteUpdatedAt: String?,
+        statusId: String?, priorityId: String?, dueDate: String? = nil
+    ) -> Item {
+        let content = self
         return Item(
             id: id,
             projectId: projectId,
             kind: kind,
-            position: 0,
-            remoteUpdatedAt: updatedAt,
+            position: position,
+            remoteUpdatedAt: remoteUpdatedAt,
             dirty: false,
-            statusId: option(for: statusFieldId),
-            priorityId: option(for: priorityFieldId),
-            dueDate: dueFieldId.flatMap { fieldId in
-                fieldValues?.items.first { $0.field?.id == fieldId }?.date.flatMap(CalendarDay.init)?.string
-            },
+            statusId: statusId,
+            priorityId: priorityId,
+            dueDate: dueDate,
             contentId: content.id,
             number: content.number,
             title: content.title ?? "",
@@ -780,6 +918,53 @@ struct ItemDTO: Decodable {
             labels: (content.labels?.items ?? []).map(\.label),
             viewerCanDelete: content.viewerCanDelete ?? false
         )
+    }
+}
+
+struct IssueRefDTO: Decodable {
+    struct RepoRefDTO: Decodable { var id: String }
+    var id: String?
+    var updatedAt: String?
+    var state: String?
+    var closedAt: Date?
+    var repository: RepoRefDTO?
+
+    var ref: IssueRef? {
+        guard let id, let updatedAt else { return nil }
+        return IssueRef(contentId: id, repoId: repository?.id, updatedAt: updatedAt, isClosed: state != "OPEN", closedAt: closedAt)
+    }
+}
+
+/// An issue read on its own: the same fields as a card's content, plus the boards it is on.
+struct IssueNodeDTO: Decodable {
+    struct ProjectItem: Decodable {
+        struct ProjectRef: Decodable { var id: String }
+        var project: ProjectRef?
+    }
+    private enum Keys: String, CodingKey { case projectItems, updatedAt }
+
+    var content: ItemDTO.Content
+    var projectIds: [String]
+    /// As GitHub wrote it, to compare with a light read's.
+    var updatedAt: String?
+
+    init(from decoder: Decoder) throws {
+        content = try ItemDTO.Content(from: decoder)
+        let container = try decoder.container(keyedBy: Keys.self)
+        let items = try container.decodeIfPresent(Nodes<ProjectItem>.self, forKey: .projectItems)
+        projectIds = (items?.items ?? []).compactMap(\.project?.id)
+        updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
+    }
+
+    var remote: RemoteIssue? {
+        guard content.__typename == "Issue", let contentId = content.id else { return nil }
+        let item = content.item(
+            id: Item.idWithoutProject(contentId), projectId: nil, kind: .issue,
+            position: Item.positionWithoutProject(updatedAt: content.updatedAt),
+            remoteUpdatedAt: updatedAt,
+            statusId: nil, priorityId: nil
+        )
+        return RemoteIssue(item: item, projectIds: projectIds)
     }
 }
 

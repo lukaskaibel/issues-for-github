@@ -73,6 +73,12 @@ struct IssueRow: View {
                     ProjectSwatch(title: project.title, size: 10)
                     Text(project.title)
                 }
+            } else if showsProject, !item.isOnBoard, let repo = item.repoShortName {
+                // On no board: where the issue lives instead.
+                HStack(spacing: 4) {
+                    RepositoryIcon(size: 9)
+                    Text(repo)
+                }
             }
             if item.subTotal > 0 {
                 MobileChip {
@@ -97,12 +103,13 @@ struct IssueRow: View {
     }
 
     private var accessibilityText: String {
-        var parts = [item.displayNumber, item.title, model.statusOption(of: item)?.name ?? "No status"]
+        let status = item.isOnBoard ? model.statusOption(of: item)?.name ?? "No status" : item.isClosed ? "Closed" : "No project"
+        var parts = [item.displayNumber, item.title, status]
         if let priority = model.priorityOption(of: item)?.name { parts.append("\(priority) priority") }
         if !item.labels.isEmpty { parts.append("labels " + item.labels.map(\.name).joined(separator: ", ")) }
         if !item.assignees.isEmpty { parts.append("assigned to " + item.assignees.map(\.login).joined(separator: ", ")) }
         if let due = model.dueBadge(for: item) { parts.append(due.tooltip) }
-        if showsProject, let project = model.project(of: item) { parts.append(project.title) }
+        if showsProject, let place = model.project(of: item)?.title ?? item.repoShortName { parts.append(place) }
         return parts.joined(separator: ", ")
     }
 }

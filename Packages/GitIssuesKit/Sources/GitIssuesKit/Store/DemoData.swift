@@ -120,6 +120,12 @@ public enum DemoData {
         IssueSpec(number: 35, title: "Dark mode for the docs", status: "Done", priority: "Medium", labels: ["design"], assignees: [kai], hoursAgo: 60),
     ]
 
+    /// Issues filed straight in the app's repository, on no board yet: they show under "No project".
+    private static let appIssuesWithoutProject: [IssueSpec] = [
+        IssueSpec(number: 27, title: "App quits when a project has no Status field", status: "", priority: nil, labels: ["bug"], assignees: [viewer.person], body: "Reported on 0.1.0: open a project without a Status field and the app quits right away.", hoursAgo: 4),
+        IssueSpec(number: 26, title: "Support GitHub Enterprise Server", status: "", priority: nil, labels: ["feature"], body: "Sign in to a company's own GitHub, with its own address.", hoursAgo: 50),
+    ]
+
     private static let comments: [Int: [(Person, String, Double)]] = [
         9: [
             (mira, "The settle feels good now. Could the tilt follow pointer velocity instead of using a fixed angle?", 0.8),
@@ -197,6 +203,19 @@ public enum DemoData {
                     ).insert(db)
                 }
             }
+        }
+        for issue in appIssuesWithoutProject {
+            let date = now.addingTimeInterval(-issue.hoursAgo * 3600)
+            try Item(
+                id: Item.idWithoutProject(contentId(issue.number)), projectId: nil, kind: .issue,
+                position: Item.positionWithoutProject(updatedAt: date),
+                contentId: contentId(issue.number), number: issue.number, title: issue.title, body: issue.body,
+                state: "OPEN", url: "https://github.com/\(app.repo)/issues/\(issue.number)", repoId: app.repoId, repo: app.repo,
+                authorLogin: "sam", createdAt: date, updatedAt: date,
+                assignees: issue.assignees,
+                labels: app.labels.filter { issue.labels.contains($0.name) },
+                viewerCanDelete: true
+            ).insert(db)
         }
     }
 

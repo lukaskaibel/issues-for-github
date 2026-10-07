@@ -24,16 +24,28 @@ struct CommandPalette: View {
                 step(.dueDate, id)
             case .projects:
                 PickerList(
-                    placeholder: "Switch project…",
+                    placeholder: "Switch project or repository…",
                     items: model.projects.filter { !$0.closed }.map { project in
                         PickerItem(
                             id: project.id, title: project.title, subtitle: project.ownerLogin,
                             selected: model.scope == .project(project.id),
                             icon: AnyView(ProjectSwatch(title: project.title))
                         )
+                    } + model.boardRepositories.map { repo in
+                        PickerItem(
+                            id: Self.repositoryPrefix + repo.id, title: repo.shortName, subtitle: repo.nameWithOwner,
+                            selected: model.scope == .repository(repo.id),
+                            icon: AnyView(RepositoryIcon().foregroundStyle(Theme.textSecondary))
+                        )
                     },
                     width: 640, maxRows: 10, fieldFont: .system(size: 15),
-                    onPick: { model.select(.project($0)) },
+                    onPick: { id in
+                        if id.hasPrefix(Self.repositoryPrefix) {
+                            model.select(.repository(String(id.dropFirst(Self.repositoryPrefix.count))))
+                        } else {
+                            model.select(.project(id))
+                        }
+                    },
                     onClose: { model.overlay = nil }
                 )
             }
@@ -44,6 +56,8 @@ struct CommandPalette: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .shadow(color: Theme.shadow, radius: 40, y: 24)
     }
+
+    private static let repositoryPrefix = "repository:"
 
     @ViewBuilder
     private func step(_ kind: PickerKind, _ itemId: String) -> some View {
@@ -221,7 +235,7 @@ private struct RootPalette: View {
             let targets = model.targets(for: item)
             let several = targets.count > 1
             let section = several ? "\(targets.count) issues" : "This issue"
-            list.append(PaletteCommand(id: "status", title: "Change status…", section: section, icon: AnyView(StatusIcon(glyph: model.glyph(of: item))), keys: ["S"]) {
+            list.append(PaletteCommand(id: "status", title: item.isOnBoard ? "Change status…" : "Add to project…", section: section, icon: AnyView(StatusIcon(glyph: model.glyph(of: item))), keys: ["S"]) {
                 model.overlay = .palette(.status(itemId: item.id))
             })
             if model.project(of: item)?.priorityFieldId != nil {
@@ -243,9 +257,11 @@ private struct RootPalette: View {
                     model.overlay = .palette(.labels(itemId: item.id))
                 })
             }
-            list.append(PaletteCommand(id: "due", title: "Set due date…", section: section, icon: symbol("calendar"), keys: ["D"]) {
-                model.overlay = .palette(.dueDate(itemId: item.id))
-            })
+            if targets.contains(where: model.canHaveDueDate) {
+                list.append(PaletteCommand(id: "due", title: "Set due date…", section: section, icon: symbol("calendar"), keys: ["D"]) {
+                    model.overlay = .palette(.dueDate(itemId: item.id))
+                })
+            }
             if targets.contains(where: { $0.dueDate != nil }) {
                 list.append(PaletteCommand(id: "due-remove", title: "Remove due date", section: section, icon: symbol("calendar.badge.minus")) {
                     model.setDueDate(of: targets, to: nil)
@@ -283,10 +299,12 @@ private struct RootPalette: View {
             }
         }
         let go = "Go to"
-        if model.currentProjectId != nil {
+        if model.currentProjectId != nil || model.currentRepositoryId != nil {
             list.append(PaletteCommand(id: "new", title: "New issue", section: go, icon: symbol("plus"), keys: ["C"]) {
                 model.overlay = .newIssue(statusId: nil, parentItemId: nil)
             })
+        }
+        if model.currentProjectId != nil {
             list.append(PaletteCommand(id: "board", title: "Board", section: go, icon: symbol("rectangle.split.3x1"), keys: ["G", "B"]) {
                 model.closeDetail()
                 model.viewMode = .board
@@ -299,7 +317,7 @@ private struct RootPalette: View {
         list.append(PaletteCommand(id: "mine", title: "My Issues", section: go, icon: symbol("scope"), keys: ["G", "M"]) {
             model.select(.myIssues)
         })
-        list.append(PaletteCommand(id: "projects", title: "Switch project…", section: go, icon: symbol("square.stack"), keys: ["G", "P"]) {
+        list.append(PaletteCommand(id: "projects", title: "Switch project or repository…", section: go, icon: symbol("square.stack"), keys: ["G", "P"]) {
             model.overlay = .palette(.projects)
         })
         if model.canGoBack {

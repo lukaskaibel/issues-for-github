@@ -2,7 +2,8 @@ import GRDB
 import SwiftUI
 
 struct NewIssueDraft: Equatable {
-    var projectId: String
+    /// The board the issue goes on; nil creates it in the repository only.
+    var projectId: String?
     var repoId: String?
     var title = ""
     var body = ""
@@ -19,15 +20,21 @@ extension AppModel {
     // MARK: Status, priority, order
 
     private func statusMutations(_ item: Item, _ option: FieldOption?) -> [Mutation] {
-        guard let fieldId = project(of: item)?.statusFieldId else { return [] }
+        guard let projectId = item.projectId, let fieldId = project(of: item)?.statusFieldId else { return [] }
         var result: [Mutation] = []
         if item.statusId != option?.id {
             result.append(.setField(.init(
-                itemId: item.id, projectId: item.projectId, fieldId: fieldId, kind: .status,
+                itemId: item.id, projectId: projectId, fieldId: fieldId, kind: .status,
                 optionId: option?.id, base: item.statusId
             )))
         }
-        // Keep GitHub's open/closed state in line with the column, so the issue reads right on github.com too.
+        result += stateMutations(item, for: option)
+        return result
+    }
+
+    /// Keeps GitHub's open/closed state in line with the column, so the issue reads right on github.com too.
+    private func stateMutations(_ item: Item, for option: FieldOption?) -> [Mutation] {
+        var result: [Mutation] = []
         if item.kind == .issue, let contentId = item.contentId, let option {
             if let reason = option.statusCategory.closeReason {
                 if !item.isClosed || item.stateReason != reason {
@@ -42,6 +49,19 @@ extension AppModel {
 
     func setStatus(_ item: Item, to option: FieldOption?) {
         perform(statusMutations(item, option))
+    }
+
+    /// Puts issues that are on none of your boards onto one, in the chosen column.
+    func addToProject(_ items: [Item], project: Project, status option: FieldOption?) {
+        let mutations = items.filter { !$0.isOnBoard && $0.kind == .issue }.flatMap { item -> [Mutation] in
+            guard let contentId = item.contentId else { return [] }
+            let add = Mutation.addToProject(.init(
+                itemId: item.id, contentId: contentId, projectId: project.id,
+                statusFieldId: option == nil ? nil : project.statusFieldId, statusId: option?.id
+            ))
+            return [add] + stateMutations(item, for: option)
+        }
+        withAnimation(Theme.spring) { perform(mutations) }
     }
 
     /// Whether an issue counts as finished: in a done or cancelled column, or closed on GitHub.
@@ -69,15 +89,16 @@ extension AppModel {
     }
 
     func setPriority(_ item: Item, to option: FieldOption?) {
-        guard let fieldId = project(of: item)?.priorityFieldId, item.priorityId != option?.id else { return }
+        guard let projectId = item.projectId, let fieldId = project(of: item)?.priorityFieldId, item.priorityId != option?.id else { return }
         perform([.setField(.init(
-            itemId: item.id, projectId: item.projectId, fieldId: fieldId, kind: .priority,
+            itemId: item.id, projectId: projectId, fieldId: fieldId, kind: .priority,
             optionId: option?.id, base: item.priorityId
         ))])
     }
 
     /// Drops a card into a column at `index`, counted among the column's other cards.
     func drop(_ item: Item, in column: BoardColumn, at index: Int) {
+        guard let projectId = item.projectId else { return }
         var mutations = statusMutations(item, column.option)
         let others = column.items.filter { $0.id != item.id }
         let target = min(max(index, 0), others.count)
@@ -92,7 +113,7 @@ extension AppModel {
                 let first = all.firstIndex { $0.id == others[0].id } ?? 0
                 afterId = first > 0 ? all[first - 1].id : nil
             }
-            mutations.append(.move(.init(itemId: item.id, projectId: item.projectId, afterItemId: afterId)))
+            mutations.append(.move(.init(itemId: item.id, projectId: projectId, afterItemId: afterId)))
         }
         perform(mutations)
     }
@@ -146,23 +167,36 @@ extension AppModel {
     @discardableResult
     func createIssue(_ draft: NewIssueDraft) -> String? {
         let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty,
-              let project = projects.first(where: { $0.id == draft.projectId }),
-              let repo = repos(projectId: draft.projectId).first(where: { $0.id == draft.repoId }) else { return nil }
+        let project = draft.projectId.flatMap { id in projects.first { $0.id == id } }
+        guard !title.isEmpty, draft.projectId == nil || project != nil,
+              let repo = repos(forNewIssueIn: draft.projectId, repoId: draft.repoId).first(where: { $0.id == draft.repoId }) else { return nil }
         let itemId = LocalID.make()
-        UserDefaults.standard.set(repo.id, forKey: "lastRepo.\(project.id)")
+        if let project { UserDefaults.standard.set(repo.id, forKey: "lastRepo.\(project.id)") }
         perform([.createIssue(.init(
-            itemId: itemId, contentId: LocalID.make(), projectId: project.id, repoId: repo.id, repo: repo.nameWithOwner,
+            itemId: itemId, contentId: LocalID.make(), projectId: project?.id, repoId: repo.id, repo: repo.nameWithOwner,
             title: title, body: draft.body,
-            statusFieldId: project.statusFieldId, statusId: draft.statusId,
-            priorityFieldId: project.priorityFieldId, priorityId: draft.priorityId,
-            dueDate: draft.dueDate,
+            statusFieldId: project?.statusFieldId, statusId: project == nil ? nil : draft.statusId,
+            priorityFieldId: project?.priorityFieldId, priorityId: project == nil ? nil : draft.priorityId,
+            dueDate: project == nil ? nil : draft.dueDate,
             assignees: draft.assignees, labels: draft.labels,
             parentContentId: draft.parent?.contentId, parentNumber: draft.parent?.number, parentTitle: draft.parent?.title,
             author: viewer?.login, createdAt: Date()
         ))])
         if draft.dueDate != nil { notifier.requestPermissionIfNeeded() }
         return itemId
+    }
+
+    /// Repositories a new issue can be created in: the board's, or, for one on no board, the one it was started in.
+    func repos(forNewIssueIn projectId: String?, repoId: String?) -> [RepoRef] {
+        if projectId != nil { return repos(projectId: projectId) }
+        return repoId.flatMap(anyRepository(id:)).map { [$0] } ?? []
+    }
+
+    /// A repository by id, also one none of your boards use, known only from an issue of it.
+    func anyRepository(id: String) -> RepoRef? {
+        if let known = repository(id: id) { return known }
+        guard let name = allItems.first(where: { $0.repoId == id })?.repo else { return nil }
+        return RepoRef(id: id, nameWithOwner: name, projectId: "")
     }
 
     func defaultRepoId(projectId: String) -> String? {
@@ -247,6 +281,7 @@ extension AppModel {
         switch scope ?? self.scope {
         case .project(let id): "listOrder.\(id)"
         case .myIssues: "listOrder.mine"
+        case .repository(let id): "listOrder.repository.\(id)"
         case nil: nil
         }
     }
@@ -295,8 +330,17 @@ extension AppModel {
         switch scope ?? self.scope {
         case .project(let id): "collapsed.\(id)"
         case .myIssues: "collapsed.mine"
+        case .repository(let id): "collapsed.repository.\(id)"
         case nil: nil
         }
+    }
+
+    /// Hides a repository from the sidebar or brings it back. Hiding the one on screen goes to My Issues.
+    func setHidden(_ repo: RepoRef, _ hidden: Bool) {
+        withAnimation(Theme.spring) {
+            if hidden { hiddenRepositoryIds.insert(repo.id) } else { hiddenRepositoryIds.remove(repo.id) }
+        }
+        if hidden, scope == .repository(repo.id) { select(.myIssues) }
     }
 
     /// Hides a project from the sidebar or brings it back. Hiding the one on screen moves to the next.

@@ -54,6 +54,18 @@ struct IssueDetailView: View {
                 }
                 .buttonStyle(PlainPressStyle())
                 Text("›").foregroundStyle(Theme.textTertiary)
+            } else if let repo = item.repoShortName {
+                // On no board, the issue's place is its repository.
+                Button {
+                    model.closeDetail()
+                } label: {
+                    HStack(spacing: 7) {
+                        RepositoryIcon().foregroundStyle(Theme.textTertiary)
+                        Text(repo).foregroundStyle(Theme.textSecondary)
+                    }
+                }
+                .buttonStyle(PlainPressStyle())
+                Text("›").foregroundStyle(Theme.textTertiary)
             }
             if let parentNumber = item.parentNumber {
                 // A sub-issue shows its parent on the way, as in Linear; clicking it goes up.
@@ -485,8 +497,9 @@ private struct PropertiesPanel: View {
                 PropertyButton(kind: .status, item: item) {
                     HStack(spacing: 8) {
                         StatusIcon(glyph: model.glyph(of: item))
-                        Text(model.statusOption(of: item)?.name ?? "No status")
-                            .foregroundStyle(item.statusId == nil ? Theme.textTertiary : Theme.text)
+                        // An issue on no board has no status; clicking here puts it on one.
+                        Text(model.statusText(of: item))
+                            .foregroundStyle(model.statusIsPlaceholder(item) ? Theme.textTertiary : Theme.text)
                     }
                 }
             }
@@ -525,17 +538,19 @@ private struct PropertiesPanel: View {
                     }
                 }
             }
-            row("Due date") {
-                PropertyButton(kind: .dueDate, item: item) {
-                    if let due = model.dueBadge(for: item) {
-                        HStack(spacing: 7) {
-                            DueDateIcon(tone: due.tone, size: 12)
-                            Text(due.day.mediumLabel())
-                                .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.text)
+            if model.canHaveDueDate(item) {
+                row("Due date") {
+                    PropertyButton(kind: .dueDate, item: item) {
+                        if let due = model.dueBadge(for: item) {
+                            HStack(spacing: 7) {
+                                DueDateIcon(tone: due.tone, size: 12)
+                                Text(due.day.mediumLabel())
+                                    .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.text)
+                            }
+                            .help(due.tooltip)
+                        } else {
+                            Text("Add due date").foregroundStyle(Theme.textTertiary)
                         }
-                        .help(due.tooltip)
-                    } else {
-                        Text("Add due date").foregroundStyle(Theme.textTertiary)
                     }
                 }
             }
@@ -549,6 +564,12 @@ private struct PropertiesPanel: View {
                         Text(project.title).lineLimit(1)
                     }
                     .padding(.horizontal, 8)
+                }
+            } else if !item.isOnBoard, !model.boards(toAdd: item).isEmpty {
+                row("Project") {
+                    PropertyButton(kind: .status, item: item) {
+                        Text("Add to project").foregroundStyle(Theme.textTertiary)
+                    }
                 }
             }
             if let repo = item.repo {
@@ -586,7 +607,7 @@ private struct PropertiesPanel: View {
         .padding(.top, 20)
         .padding(.leading, 16)
         .padding(.trailing, 12)
-        .onAppear { model.loadRepoMeta(projectId: item.projectId) }
+        .onAppear { model.loadRepoMeta(for: item) }
     }
 
     private func row<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {

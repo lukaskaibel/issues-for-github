@@ -8,8 +8,18 @@ struct StatusGlyph: Equatable {
     /// 0...1, how much of the circle is filled for in-progress statuses.
     var progress: Double
     var color: Color
+    /// An open issue on none of your boards: a ring with a plus, since clicking it puts the issue on one.
+    var addsToProject = false
 
     static let none = StatusGlyph(category: .backlog, progress: 0, color: Theme.textTertiary)
+    static let noProject = StatusGlyph(category: .unstarted, progress: 0, color: Theme.accent, addsToProject: true)
+
+    /// An issue on none of your boards has no status, only open or closed.
+    static func withoutProject(_ item: Item) -> StatusGlyph {
+        guard item.isClosed else { return .noProject }
+        if item.stateReason == "NOT_PLANNED" { return StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary) }
+        return StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
+    }
 
     /// Glyphs for all statuses of one project. Later "started" columns fill the circle further.
     static func map(for options: [FieldOption]) -> [String: StatusGlyph] {
@@ -267,6 +277,19 @@ struct ProjectSwatch: View {
     private var color: Color {
         let hash = title.unicodeScalars.reduce(0) { ($0 &* 31 &+ Int($1.value)) & 0xFFFF }
         return Theme.avatarPalette[hash % Theme.avatarPalette.count]
+    }
+}
+
+/// A repository, in the sidebar and headers. Projects have a coloured square; repositories a quiet book, as on
+/// GitHub.
+struct RepositoryIcon: View {
+    var size: CGFloat = 12
+
+    var body: some View {
+        Image(systemName: "book.closed")
+            .font(.system(size: size, weight: .medium))
+            .frame(width: size + 2, height: size + 2)
+            .accessibilityHidden(true)
     }
 }
 

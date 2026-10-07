@@ -48,8 +48,10 @@ struct SelectionBar: View {
                         Image(systemName: "tag").font(.system(size: 12))
                     }
                 }
-                BarAction(kind: .dueDate, item: first, title: "Due date", key: "D") {
-                    Image(systemName: "calendar").font(.system(size: 12))
+                if items.contains(where: model.canHaveDueDate) {
+                    BarAction(kind: .dueDate, item: first, title: "Due date", key: "D") {
+                        Image(systemName: "calendar").font(.system(size: 12))
+                    }
                 }
                 Button {
                     model.copyLinks(items)
