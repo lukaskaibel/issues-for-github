@@ -94,10 +94,10 @@ final class ScreenshotTests: AppTestCase {
         app.typeKey("[", modifierFlags: .command)
         wait(element("card-#8"))
 
-        element("card-#8").press(forDuration: 1.2)
-        wait(button("Status"))
+        openCardMenu(element("card-#8"))
         shot("3-menu")
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.95)).tap()
+        closedCardMenu()
 
         app.segmentedControls.buttons["List"].tap()
         wait(element("row-#9"))
