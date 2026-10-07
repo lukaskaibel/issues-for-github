@@ -34,7 +34,8 @@ def crop_card(img, box, theme):
     return rounded(img.crop(box), 24, THEMES[theme]["border"])
 
 
-# Points in the 1280 x 820 window at 2x where the palette and the new-issue dialog sit, with some context around.
+# Points in the 1280 x 820 window at 2x where the palette and the new-issue dialog sit, with some context around. The
+# due date picker opens in the palette and fits the same box.
 PALETTE_BOX = (560, 224, 2000, 1350)
 NEW_ISSUE_BOX = (480, 204, 2080, 944)
 
@@ -95,6 +96,7 @@ for theme in ["dark", "light"]:
     webp(place(window(f"inbox-{theme}"), theme, (130, 110), 1800), f"inbox-{theme}")
     webp(place(window(f"repository-{theme}"), theme, (130, 110), 1800), f"repository-{theme}")
     webp(place(crop_card(window(f"palette-{theme}"), PALETTE_BOX, theme), theme, (110, 90), 1600, rim=False), f"palette-{theme}")
+    webp(place(crop_card(window(f"due-{theme}"), PALETTE_BOX, theme), theme, (110, 90), 1600, rim=False), f"due-date-{theme}")
     webp(place(crop_card(window(f"new-{theme}"), NEW_ISSUE_BOX, theme), theme, (110, 90), 1600, rim=False), f"new-issue-{theme}")
 
 # The list, light and dark in one picture, split on a slant.

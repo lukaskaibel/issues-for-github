@@ -43,6 +43,7 @@ enum PickerKind: Equatable {
     case priority
     case assignees
     case labels
+    case dueDate
     case subIssues
 
     var placeholder: String {
@@ -51,6 +52,7 @@ enum PickerKind: Equatable {
         case .priority: "Change priority to…"
         case .assignees: "Assign to…"
         case .labels: "Add labels…"
+        case .dueDate: "Due date… try “fri” or “12.10.”"
         case .subIssues: "Open sub-issue…"
         }
     }
@@ -62,6 +64,7 @@ enum PickerKind: Equatable {
         case .priority: "P"
         case .assignees: "A"
         case .labels: "L"
+        case .dueDate: "D"
         case .subIssues: nil
         }
     }
@@ -75,6 +78,7 @@ enum PickerKind: Equatable {
         case .priority: "Change priority"
         case .assignees: "Assign"
         case .labels: "Change labels"
+        case .dueDate: "Change due date"
         case .subIssues: "Sub-issues"
         }
     }
@@ -126,6 +130,8 @@ extension AppModel {
                     icon: AnyView(Circle().fill(Theme.labelColor(label.color)).frame(width: 9, height: 9))
                 )
             }
+        case .dueDate:
+            return dueDateItems(for: item)
         case .subIssues:
             // Status, priority and assignee change in place, as in Linear; the rest of the row opens the issue.
             let showsPriority = project(of: item)?.priorityFieldId != nil
@@ -232,6 +238,8 @@ extension AppModel {
             return item.assignees.isEmpty ? "Unassigned" : "Assigned to " + item.assignees.map(\.login).formatted(.list(type: .and))
         case .labels:
             return "Labels: " + item.labels.map(\.name).joined(separator: ", ")
+        case .dueDate:
+            return dueBadge(for: item)?.tooltip ?? "No due date"
         case .subIssues:
             return "\(item.subCompleted) of \(item.subTotal) sub-issues done"
         }
@@ -267,6 +275,8 @@ extension AppModel {
             if let person = people(for: current).first(where: { $0.id == id }) { toggleAssignee(targets, person) }
         case .labels:
             if let label = labels(for: current).first(where: { $0.id == id }) { toggleLabel(targets, named: label.name) }
+        case .dueDate:
+            setDueDate(of: targets, to: CalendarDay(id))
         case .subIssues:
             if id == Self.newSubIssueId {
                 overlay = .newIssue(statusId: nil, parentItemId: current.id)

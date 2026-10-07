@@ -267,6 +267,19 @@ struct NewIssueSheet: View {
                 .buttonStyle(PlainPressStyle())
                 .accessibilityLabel(draft.labels.isEmpty ? "Labels: none" : "Labels: \(draft.labels.map(\.name).joined(separator: ", "))")
                 .accessibilityIdentifier("new-labels")
+                if draft.projectId != nil {
+                    Button {
+                        picker = .dueDate
+                    } label: {
+                        let day = draft.dueDate.flatMap(CalendarDay.init)
+                        PropertyChip(text: day?.mediumLabel() ?? "Due date", placeholder: day == nil) {
+                            DueDateIcon(size: 13)
+                        }
+                    }
+                    .buttonStyle(PlainPressStyle())
+                    .accessibilityLabel(draft.dueDate.flatMap(CalendarDay.init).map { "Due \($0.longLabel)" } ?? "Due date: none")
+                    .accessibilityIdentifier("new-due")
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -364,13 +377,20 @@ private struct DraftPickerSheet: View {
     @Binding var draft: NewIssueDraft
 
     var body: some View {
-        PickerSheet(
-            title: kind.sheetTitle,
-            prompt: kind.searchPrompt,
-            multiple: true,
-            items: items,
-            onPick: pick
-        )
+        if kind == .dueDate {
+            DueDateSheet(
+                current: [draft.dueDate],
+                addsField: model.projects.first { $0.id == draft.projectId }?.dueFieldId == nil
+            ) { draft.dueDate = $0?.string }
+        } else {
+            PickerSheet(
+                title: kind.sheetTitle,
+                prompt: kind.searchPrompt,
+                multiple: true,
+                items: items,
+                onPick: pick
+            )
+        }
     }
 
     private func items() -> [PickerItem] {

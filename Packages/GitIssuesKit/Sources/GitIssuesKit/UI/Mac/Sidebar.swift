@@ -652,7 +652,7 @@ struct ToastView: View {
                         .foregroundStyle(Theme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if case .applyField(_, let label) = notice.action {
+                if let label = notice.action?.adoptLabel {
                     HStack(spacing: 8) {
                         Button("Keep mine") { model.status.dismiss(notice.id) }
                             .buttonStyle(SecondaryButtonStyle())

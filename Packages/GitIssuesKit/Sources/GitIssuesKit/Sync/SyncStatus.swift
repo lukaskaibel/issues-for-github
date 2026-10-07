@@ -6,7 +6,17 @@ public struct Notice: Identifiable, Sendable, Equatable {
     public enum Action: Sendable, Equatable {
         /// Offer to adopt the value GitHub had, e.g. "Switch to In Progress".
         case applyField(Mutation.SetField, label: String)
+        /// Offer to adopt the due date GitHub had.
+        case applyDate(Mutation.SetDate, label: String)
         case openItem(String)
+
+        /// The button that takes GitHub's value, for the actions that offer one.
+        public var adoptLabel: String? {
+            switch self {
+            case .applyField(_, let label), .applyDate(_, let label): label
+            case .openItem: nil
+            }
+        }
     }
 
     public var id = UUID()

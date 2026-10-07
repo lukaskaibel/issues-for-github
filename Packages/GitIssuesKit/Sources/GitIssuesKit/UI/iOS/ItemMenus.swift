@@ -34,6 +34,9 @@ struct ItemMenuContent: View {
                 }
             }
         }
+        if model.canHaveDueDate(item) {
+            DueDateMenu(item: item)
+        }
         if let url = item.webURL {
             Divider()
             Button {
@@ -320,6 +323,11 @@ struct IssuePreview: View {
                 if let person = item.assignees.first {
                     PropertyChip(text: item.assignees.count == 1 ? person.login : "\(item.assignees.count) people") {
                         AvatarStack(people: item.assignees, size: 18)
+                    }
+                }
+                if let due = model.dueBadge(for: item) {
+                    PropertyChip(text: due.label, tint: due.tone == .overdue || due.tone == .today ? due.tone.color : nil) {
+                        DueDateIcon(tone: due.tone, size: 12)
                     }
                 }
             }

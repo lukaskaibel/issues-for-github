@@ -20,6 +20,8 @@ struct CommandPalette: View {
                 step(.assignees, id)
             case .labels(let id):
                 step(.labels, id)
+            case .dueDate(let id):
+                step(.dueDate, id)
             case .projects:
                 PickerList(
                     placeholder: "Switch project or repository…",
@@ -253,6 +255,16 @@ private struct RootPalette: View {
                 }
                 list.append(PaletteCommand(id: "labels", title: "Add labels…", section: section, icon: symbol("tag"), keys: ["L"]) {
                     model.overlay = .palette(.labels(itemId: item.id))
+                })
+            }
+            if targets.contains(where: model.canHaveDueDate) {
+                list.append(PaletteCommand(id: "due", title: "Set due date…", section: section, icon: symbol("calendar"), keys: ["D"]) {
+                    model.overlay = .palette(.dueDate(itemId: item.id))
+                })
+            }
+            if targets.contains(where: { $0.dueDate != nil }) {
+                list.append(PaletteCommand(id: "due-remove", title: "Remove due date", section: section, icon: symbol("calendar.badge.minus")) {
+                    model.setDueDate(of: targets, to: nil)
                 })
             }
             if item.kind == .issue, !several, !item.isDetached {

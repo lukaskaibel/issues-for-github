@@ -9,6 +9,7 @@ struct NewIssueDraft: Equatable {
     var body = ""
     var statusId: String?
     var priorityId: String?
+    var dueDate: String?
     var assignees: [Person] = []
     var labels: [LabelRef] = []
     var parent: Item?
@@ -190,10 +191,12 @@ extension AppModel {
             title: title, body: draft.body,
             statusFieldId: project?.statusFieldId, statusId: project == nil ? nil : draft.statusId,
             priorityFieldId: project?.priorityFieldId, priorityId: project == nil ? nil : draft.priorityId,
+            dueDate: project == nil ? nil : draft.dueDate,
             assignees: draft.assignees, labels: draft.labels,
             parentContentId: draft.parent?.contentId, parentNumber: draft.parent?.number, parentTitle: draft.parent?.title,
             author: viewer?.login, createdAt: Date()
         ))])
+        if draft.dueDate != nil { notifier.requestPermissionIfNeeded() }
         return itemId
     }
 
@@ -436,6 +439,8 @@ extension AppModel {
         switch action {
         case .applyField(let mutation, _):
             perform([.setField(mutation)])
+        case .applyDate(let mutation, _):
+            perform([.setDate(mutation)])
         case .openItem(let id):
             if let item = allItems.first(where: { $0.id == id }) { open(item) }
         }

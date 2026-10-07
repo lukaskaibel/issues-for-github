@@ -563,6 +563,22 @@ private struct PropertiesPanel: View {
                     }
                 }
             }
+            if model.canHaveDueDate(item) {
+                row("Due date") {
+                    PropertyButton(kind: .dueDate, item: item) {
+                        if let due = model.dueBadge(for: item) {
+                            HStack(spacing: 7) {
+                                DueDateIcon(tone: due.tone, size: 12)
+                                Text(due.day.mediumLabel())
+                                    .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.text)
+                            }
+                            .help(due.tooltip)
+                        } else {
+                            Text("Add due date").foregroundStyle(Theme.textTertiary)
+                        }
+                    }
+                }
+            }
 
             Rectangle().fill(Theme.panelBorder).frame(height: 1).padding(.vertical, 10)
 

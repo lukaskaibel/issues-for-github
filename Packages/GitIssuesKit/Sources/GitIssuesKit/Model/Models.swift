@@ -60,6 +60,8 @@ public struct Project: Codable, FetchableRecord, PersistableRecord, Identifiable
     public var itemsTotal: Int?
     public var statusFieldId: String?
     public var priorityFieldId: String?
+    /// The Date field that holds when an issue is due ("Due date"); nil until the project has one.
+    public var dueFieldId: String?
     public var lastSyncedAt: Date?
 }
 
@@ -95,6 +97,8 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
 
     public var statusId: String?
     public var priorityId: String?
+    /// The day it is due, as GitHub writes it ("2026-10-09"). See `due`.
+    public var dueDate: String?
 
     public var contentId: String?
     public var number: Int?

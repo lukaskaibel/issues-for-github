@@ -8,6 +8,14 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Due dates, with reminders.** Give an issue the day it is due: press `D`, click its date, or use the command
+  palette, the right-click menu or the selection bar for several issues at once; on iPhone and iPad, tap the date chip
+  or touch and hold the issue. Pick today, tomorrow, Friday, next week or in two weeks, click a day in the month, or
+  type it in a few words ("fri", "next week", "in 3 days", "12.10."). The date is the project's "Due date" field on
+  GitHub, which the app adds the first time; cards, list rows and the issue show it, orange on the day and red once
+  it has passed. On the day an issue assigned to you is due, your Mac, iPhone and iPad remind you with a notification,
+  and once more the next morning if it is still open. Its buttons start the issue, mark it done or move it to
+  tomorrow. The time is set in Settings (9:00 at first); GitHub's dates have no time of day, so issues don't either.
 - **An Inbox for what changed**, as in Linear: who assigned you, mentioned you or your team, commented, asked for
   your review, closed, reopened or merged an issue or pull request you follow, with who did it and the comment
   itself. It is GitHub's own notifications, so what you read or archive is read or done on github.com and your other

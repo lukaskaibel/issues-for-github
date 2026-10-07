@@ -12,6 +12,7 @@ struct IssueRowModel: Equatable {
     var showsStatus = true
     /// Shown in "My Issues", where rows come from several projects.
     var projectTitle: String?
+    var due: DueBadge?
     /// Picked for a change to several issues at once, and whether anything is picked, which shows every
     /// row's checkbox.
     var selected = false
@@ -604,6 +605,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     private var date = NSAttributedString()
     private var project: NSAttributedString?
     private var subCount: NSAttributedString?
+    private var dueText: NSAttributedString?
+    private var dueIcon: NSImage?
     private var labels: [(text: NSAttributedString, size: NSSize, color: NSColor)] = []
     // Measured once when the row is configured; measuring text on every draw is what makes drawing slow.
     private var numberSize = NSSize.zero
@@ -611,6 +614,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     private var dateSize = NSSize.zero
     private var projectSize = NSSize.zero
     private var subCountSize = NSSize.zero
+    private var dueSize = NSSize.zero
     /// Where the clickable parts were drawn last, in this cell's coordinates.
     private(set) var parts: [(kind: PickerKind, rect: NSRect)] = []
     /// The part under the pointer, which gets a soft highlight like a button.
@@ -674,6 +678,19 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                     .foregroundColor: NSColor(Theme.textSecondary),
                 ])
                 : nil
+            if let due = row.due {
+                let color = NSColor(due.tone.color)
+                dueText = NSAttributedString(string: due.label, attributes: [
+                    .font: NSFont.systemFont(ofSize: 11),
+                    .foregroundColor: color,
+                ])
+                dueIcon = NSImage(systemSymbolName: "calendar", accessibilityDescription: nil)?
+                    .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 10, weight: .medium)
+                        .applying(NSImage.SymbolConfiguration(paletteColors: [color])))
+            } else {
+                dueText = nil
+                dueIcon = nil
+            }
             labels = item.labels.prefix(3).map { label in
                 let text = NSAttributedString(string: label.name, attributes: [
                     .font: NSFont.systemFont(ofSize: 11),
@@ -686,7 +703,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             dateSize = date.size()
             projectSize = project?.size() ?? .zero
             subCountSize = subCount?.size() ?? .zero
-            setAccessibilityLabel("\(item.displayNumber) \(item.title)")
+            dueSize = dueText?.size() ?? .zero
+            setAccessibilityLabel("\(item.displayNumber) \(item.title)" + (row.due.map { ", \($0.tooltip)" } ?? ""))
             needsDisplay = true
         }
         if highlighted != self.highlighted {
@@ -801,6 +819,19 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         date.draw(at: NSPoint(x: right - dateSize.width, y: midY - dateSize.height / 2))
         dateRect = NSRect(x: right - dateSize.width, y: midY - 9, width: dateSize.width, height: 18)
         right -= 52 + 10
+        if let dueText {
+            let icon = dueIcon?.size ?? .zero
+            let width = 7 + icon.width + 4 + dueSize.width + 7
+            let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
+            parts.append((.dueDate, rect))
+            drawChip(rect, hovered: hoveredPart == .dueDate)
+            dueIcon?.draw(
+                in: NSRect(x: rect.minX + 7, y: midY - icon.height / 2, width: icon.width, height: icon.height),
+                from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
+            )
+            dueText.draw(at: NSPoint(x: rect.minX + 7 + icon.width + 4, y: midY - dueSize.height / 2))
+            right = rect.minX - 10
+        }
         if let project {
             let width = min(projectSize.width, 160)
             project.draw(with: NSRect(x: right - width, y: midY - projectSize.height / 2, width: width, height: projectSize.height), options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
@@ -1231,6 +1262,35 @@ struct ItemMenuBuilder {
         return menu
     }
 
+    /// The quick choices, the full dropdown for any other day, and removing the date.
+    private func dueDateMenu(_ targets: [Item]) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let today = CalendarDay.today()
+        let current = Set(targets.map(\.dueDate))
+        for pick in DueDateParser.quickPicks(today: today) {
+            let entry = ClosureMenuItem(pick.title ?? pick.day.mediumLabel(today: today), checked: current == [pick.day.string]) { [model] in
+                model.setDueDate(of: targets, to: pick.day)
+            }
+            entry.image = MenuIcons.symbol(pick.day == today ? "sun.max" : pick.day.days(from: today) == 1 ? "sunrise" : "calendar")
+            entry.toolTip = pick.day.longLabel
+            menu.addItem(entry)
+        }
+        menu.addItem(.separator())
+        let other = ClosureMenuItem("Choose a Date…") { [model, item] in
+            model.overlay = .palette(.dueDate(itemId: item.id))
+        }
+        other.image = MenuIcons.symbol("calendar.badge.plus")
+        hint(other, "d")
+        menu.addItem(other)
+        if current.contains(where: { $0 != nil }) {
+            let remove = ClosureMenuItem("Remove Due Date") { [model] in model.setDueDate(of: targets, to: nil) }
+            remove.image = MenuIcons.symbol("calendar.badge.minus")
+            menu.addItem(remove)
+        }
+        return menu
+    }
+
     /// Status, priority, assignee, labels and Assign to Me, as submenus: the part of the menu the Inbox shows too.
     func propertyItems(targets: [Item]) -> [NSMenuItem] {
         var entries: [NSMenuItem] = []
@@ -1337,6 +1397,9 @@ struct ItemMenuBuilder {
                 hint(assignMe, "i")
                 entries.append(assignMe)
             }
+        }
+        if targets.contains(where: model.canHaveDueDate) {
+            entries.append(submenu("Due Date", MenuIcons.symbol("calendar"), dueDateMenu(targets)))
         }
         return entries
     }

@@ -61,6 +61,13 @@ struct IssueRow: View {
             if item.kind == .pullRequest {
                 Image(systemName: "arrow.triangle.pull")
             }
+            // Before the project and labels, so the fade at the end never hides it.
+            if let due = model.dueBadge(for: item) {
+                MobileChip(tint: due.tone.color) {
+                    Image(systemName: "calendar")
+                    Text(due.label)
+                }
+            }
             if showsProject, let project = model.project(of: item) {
                 HStack(spacing: 5) {
                     ProjectSwatch(title: project.title, size: 10)
@@ -101,6 +108,7 @@ struct IssueRow: View {
         if let priority = model.priorityOption(of: item)?.name { parts.append("\(priority) priority") }
         if !item.labels.isEmpty { parts.append("labels " + item.labels.map(\.name).joined(separator: ", ")) }
         if !item.assignees.isEmpty { parts.append("assigned to " + item.assignees.map(\.login).joined(separator: ", ")) }
+        if let due = model.dueBadge(for: item) { parts.append(due.tooltip) }
         if showsProject, let place = model.project(of: item)?.title ?? item.repoShortName { parts.append(place) }
         return parts.joined(separator: ", ")
     }
@@ -118,12 +126,13 @@ struct RowButtonStyle: ButtonStyle {
 
 /// A small outlined capsule, for labels and sub-issue progress in rows.
 struct MobileChip<Content: View>: View {
+    var tint = Theme.textSecondary
     @ViewBuilder var content: Content
 
     var body: some View {
         HStack(spacing: 5) { content }
             .font(.tiny)
-            .foregroundStyle(Theme.textSecondary)
+            .foregroundStyle(tint)
             .padding(.horizontal, 7)
             .padding(.vertical, 2)
             .frame(minHeight: 20)
@@ -232,13 +241,15 @@ extension MobileEmptyState where Accessory == EmptyView {
 struct PropertyChip<Icon: View>: View {
     var text: String
     var placeholder = false
+    /// A colour for the text in place of the usual one, such as red for a date that has passed.
+    var tint: Color? = nil
     @ViewBuilder var icon: Icon
 
     var body: some View {
         HStack(spacing: 7) {
             icon
             Text(text)
-                .foregroundStyle(placeholder ? Theme.textTertiary : Theme.text)
+                .foregroundStyle(placeholder ? Theme.textTertiary : tint ?? Theme.text)
                 .lineLimit(1)
         }
         .font(.subheadline.weight(.medium))

@@ -119,6 +119,9 @@ struct IssueScreen: View {
                 Button("Labels") { navigation.requestPicker(.labels) }.keyboardShortcut("l", modifiers: [])
                 Button("Assign to Me") { assignCurrentToMe() }.keyboardShortcut("i", modifiers: [])
             }
+            if model.canHaveDueDate(item) {
+                Button("Due Date") { navigation.requestPicker(.dueDate) }.keyboardShortcut("d", modifiers: [])
+            }
         }
         .opacity(0)
         .allowsHitTesting(false)
@@ -414,6 +417,24 @@ private struct PropertyChips: View {
                 .accessibilityLabel(item.labels.isEmpty ? "Labels: none" : "Labels: \(item.labels.map(\.name).joined(separator: ", "))")
                 .accessibilityIdentifier("chip-labels")
             }
+            if model.canHaveDueDate(item) {
+                Button {
+                    picker = .dueDate
+                } label: {
+                    if let due = model.dueBadge(for: item) {
+                        PropertyChip(text: due.day.mediumLabel(), tint: due.tone == .overdue || due.tone == .today ? due.tone.color : nil) {
+                            DueDateIcon(tone: due.tone, size: 13)
+                        }
+                    } else {
+                        PropertyChip(text: "Due date", placeholder: true) {
+                            DueDateIcon(size: 13)
+                        }
+                    }
+                }
+                .buttonStyle(PlainPressStyle())
+                .accessibilityLabel(model.dueBadge(for: item)?.tooltip ?? "Due date: none")
+                .accessibilityIdentifier("chip-due")
+            }
             if let parentNumber = item.parentNumber {
                 Button {
                     if let parentId = item.parentId, let parent = model.item(contentId: parentId) {
@@ -505,6 +526,24 @@ private struct PropertiesColumn: View {
                         .buttonStyle(PlainPressStyle())
                         .accessibilityLabel(item.labels.isEmpty ? "Labels: none" : "Labels: \(item.labels.map(\.name).joined(separator: ", "))")
                         .accessibilityIdentifier("property-labels")
+                    }
+                }
+                if model.canHaveDueDate(item) {
+                    row("Due date") {
+                        Button { picker = .dueDate } label: {
+                            value {
+                                if let due = model.dueBadge(for: item) {
+                                    DueDateIcon(tone: due.tone, size: 13)
+                                    Text(due.day.mediumLabel())
+                                        .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.text)
+                                } else {
+                                    Text("Add due date").foregroundStyle(Theme.textTertiary)
+                                }
+                            }
+                        }
+                        .buttonStyle(PlainPressStyle())
+                        .accessibilityLabel(model.dueBadge(for: item)?.tooltip ?? "Due date: none")
+                        .accessibilityIdentifier("property-due")
                     }
                 }
                 Rectangle().fill(Theme.panelBorder).frame(height: 1).padding(.vertical, 12)

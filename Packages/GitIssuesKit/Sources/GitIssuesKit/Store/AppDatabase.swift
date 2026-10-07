@@ -203,6 +203,19 @@ public final class AppDatabase: Sendable {
                 t.column("activitySince", .datetime)
             }
         }
+        // Named rather than numbered, so it can't clash with other branches; it stays after any migration that
+        // rebuilds the item table.
+        migrator.registerMigration("dueDates") { db in
+            try db.alter(table: "project") { t in
+                t.add(column: "dueFieldId", .text)
+            }
+            try db.alter(table: "item") { t in
+                t.add(column: "dueDate", .text)
+            }
+            // Fetch every card again once, so due dates are filled in.
+            try db.execute(sql: "UPDATE item SET remoteUpdatedAt = NULL")
+            try db.execute(sql: "UPDATE project SET remoteUpdatedAt = NULL")
+        }
         return migrator
     }
 }

@@ -24,6 +24,7 @@ struct IssueListView: View {
                                 showsPriority: model.project(of: item)?.priorityFieldId != nil,
                                 showsStatus: !item.isOnBoard || model.project(of: item)?.statusFieldId != nil,
                                 projectTitle: showsProject ? model.project(of: item)?.title ?? (model.scope == .myIssues ? item.repoShortName : nil) : nil,
+                                due: model.dueBadge(for: item),
                                 selected: model.isSelected(item.id),
                                 selecting: !model.selectedIds.isEmpty
                             )

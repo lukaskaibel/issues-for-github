@@ -4,7 +4,7 @@ import SwiftUI
 
 /// The app's single window and its menu commands. The app target only has to show this scene.
 public struct GitIssuesScene: Scene {
-    @State private var model = AppModel()
+    @State private var model = AppModel.shared
 
     public init() {}
 
@@ -112,6 +112,8 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+
+            ReminderSettingsSection()
 
             // Sample data has no login to share.
             if !model.isDemo {

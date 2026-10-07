@@ -300,7 +300,11 @@ public actor SyncEngine {
         }
         guard let local else { return }
 
+        // A due field that appeared, was swapped or went away changes the dates of cards GitHub doesn't count as
+        // changed, so every card is read again.
+        let dueFieldChanged = local.dueFieldId != meta.dueField?.id
         let changed = forceSweep.contains(projectId)
+            || dueFieldChanged
             || local.lastSyncedAt == nil
             || local.remoteUpdatedAt != meta.updatedAt
             || local.itemsTotal != meta.itemsTotal
@@ -311,13 +315,13 @@ public actor SyncEngine {
         if changed {
             sweep = try await api.sweep(projectId: projectId)
             let wanted = sweep.filter { entry in
-                if dirtyIds.contains(entry.id) { return true }
+                if dirtyIds.contains(entry.id) || dueFieldChanged { return true }
                 if unhydratable[entry.id] == entry.updatedAt { return false }
                 return known[entry.id] != entry.updatedAt
             }.map(\.id)
             hydrated = try await api.hydrate(
                 itemIds: wanted, projectId: projectId,
-                statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id
+                statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id, dueFieldId: meta.dueField?.id
             )
             let got = Set(hydrated.map(\.id))
             for entry in sweep where wanted.contains(entry.id) && !got.contains(entry.id) {
@@ -336,7 +340,7 @@ public actor SyncEngine {
                 if !parents.isEmpty {
                     hydrated += try await api.hydrate(
                         itemIds: parents, projectId: projectId,
-                        statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id
+                        statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id, dueFieldId: meta.dueField?.id
                     )
                 }
             }
@@ -351,6 +355,7 @@ public actor SyncEngine {
             project.viewerCanUpdate = meta.viewerCanUpdate
             project.statusFieldId = meta.statusField?.id
             project.priorityFieldId = meta.priorityField?.id
+            project.dueFieldId = meta.dueField?.id
             try Self.writeOptions(db, projectId: projectId, meta: meta)
 
             var repos = meta.repos
@@ -478,6 +483,25 @@ public actor SyncEngine {
                 ))
                 m.base = theirs
                 entry.mutation = .setField(m)
+                try entry.update(db)
+
+            case .setDate(var m):
+                guard let remote = byItemId[m.itemId] else { continue }
+                let theirs = remote.dueDate
+                guard theirs != m.base, theirs != m.date else { continue }
+                func name(_ date: String?) -> String {
+                    date.flatMap(CalendarDay.init).map { $0.date().formatted(.dateTime.day().month(.abbreviated)) } ?? "none"
+                }
+                var undo = m
+                undo.date = theirs
+                undo.base = m.date
+                notices.append(Notice(
+                    title: "\(remote.displayNumber) was also changed on GitHub",
+                    message: "Its due date was set to \(name(theirs)) there. Your change to \(name(m.date)) was applied last.",
+                    action: .applyDate(undo, label: theirs == nil ? "Remove the date" : "Switch to \(name(theirs))")
+                ))
+                m.base = theirs
+                entry.mutation = .setDate(m)
                 try entry.update(db)
 
             case .setTitle(var m):
@@ -792,6 +816,11 @@ public actor SyncEngine {
         case .setField(let m):
             try await api.setFieldValue(projectId: m.projectId, itemId: m.itemId, fieldId: m.fieldId, optionId: m.optionId)
 
+        case .setDate(let m):
+            // Clearing a date on a board without a date field leaves nothing to clear.
+            guard let fieldId = try await dueFieldId(projectId: m.projectId, create: m.date != nil) else { break }
+            try await api.setDateValue(projectId: m.projectId, itemId: m.itemId, fieldId: fieldId, date: m.date)
+
         case .move(let m):
             try await api.moveItem(projectId: m.projectId, itemId: m.itemId, afterId: m.afterItemId)
 
@@ -849,6 +878,9 @@ public actor SyncEngine {
             if let fieldId = m.priorityFieldId, let optionId = m.priorityId {
                 try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: optionId)
             }
+            if let date = m.dueDate, let fieldId = try await dueFieldId(projectId: projectId, create: true) {
+                try await api.setDateValue(projectId: projectId, itemId: itemId, fieldId: fieldId, date: date)
+            }
             return .sent([m.itemId: itemId, m.contentId: contentId])
 
         case .addToProject(let m):
@@ -880,6 +912,30 @@ public actor SyncEngine {
 
         }
         return .sent([:])
+    }
+
+    /// The project's due field: the one known locally, else one GitHub has that wasn't seen yet, else (with
+    /// `create`) a new "Due date" field. Looking on GitHub first means two devices never both add one.
+    private func dueFieldId(projectId: String, create: Bool) async throws -> String? {
+        let known = try await db.reader.read { db in
+            try String.fetchOne(db, sql: "SELECT dueFieldId FROM project WHERE id = ?", arguments: [projectId])
+        }
+        if let known { return known }
+        let found = try await api.projectMeta(id: projectId).dueField?.id
+        var id = found
+        if id == nil, create {
+            id = try await api.createDateField(projectId: projectId, name: "Due date").id
+        }
+        guard let id else { return nil }
+        try await db.writer.write { db in
+            try db.execute(sql: "UPDATE project SET dueFieldId = ? WHERE id = ?", arguments: [id, projectId])
+            // A field someone else added may already hold dates: read every card again.
+            if found != nil {
+                try db.execute(sql: "UPDATE item SET remoteUpdatedAt = NULL WHERE projectId = ?", arguments: [projectId])
+            }
+        }
+        if found != nil { forceSweep.insert(projectId) }
+        return id
     }
 
     /// A notification that is gone already needs nothing more.
@@ -1081,6 +1137,7 @@ public actor SyncEngine {
                     let number = try await db.reader.read { db in
                         (try Int.fetchOne(db, sql: "SELECT MAX(number) FROM item") ?? 0) + 1
                     }
+                    if m.dueDate != nil, let projectId = m.projectId { try await addDemoDueField(projectId: projectId) }
                     let contentId = "demo-issue-\(number)"
                     m.createdContentId = contentId
                     m.createdNumber = number
@@ -1092,6 +1149,8 @@ public actor SyncEngine {
                     remaps = [m.itemId: "demo-item-\(UUID().uuidString.lowercased())"]
                 case .addComment(let m):
                     remaps = [m.commentId: "demo-comment-\(UUID().uuidString.lowercased())"]
+                case .setDate(let m) where m.date != nil:
+                    try await addDemoDueField(projectId: m.projectId)
                 default:
                     break
                 }
@@ -1111,6 +1170,16 @@ public actor SyncEngine {
             await finish(.idle, syncedAt: Date())
         } catch {
             await finish(.failed(error.localizedDescription))
+        }
+    }
+
+    /// The sample data's stand-in for adding "Due date" to a project on GitHub.
+    private func addDemoDueField(projectId: String) async throws {
+        try await db.writer.write { db in
+            try db.execute(
+                sql: "UPDATE project SET dueFieldId = ? WHERE id = ? AND dueFieldId IS NULL",
+                arguments: ["demo-due-\(projectId)", projectId]
+            )
         }
     }
 

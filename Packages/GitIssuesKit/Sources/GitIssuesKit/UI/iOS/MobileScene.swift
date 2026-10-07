@@ -4,7 +4,7 @@ import UIKit
 
 /// The app's scene on iPhone and iPad. The app target only has to show this scene.
 public struct GitIssuesScene: Scene {
-    @State private var model = AppModel()
+    @State private var model = AppModel.shared
 
     public init() {}
 
@@ -58,6 +58,8 @@ struct MobileRoot: View {
                 NavigationStack { QueueScreen(showsDone: true) }
             case .arrangeSections(let scope):
                 ArrangeSectionsSheet(scope: scope)
+            case .dueDate(let itemId):
+                IssueDueDateSheet(itemId: itemId)
             }
         }
         .alert(
@@ -186,6 +188,11 @@ struct MainTabs: View {
             .customizationID("search")
         }
         .tabViewStyle(.sidebarAdaptable)
+        .onChange(of: model.revealItemId, initial: true) { _, id in
+            guard let id else { return }
+            model.revealItemId = nil
+            reveal(id)
+        }
         // The sidebar's header and bottom bar are hosted on their own when the sidebar first appears, which can be
         // when an iPad turns from portrait to landscape; they get the model and navigation handed on explicitly, or
         // they'd find none.
@@ -215,6 +222,21 @@ struct MainTabs: View {
             if wide, navigation.tab == .projects {
                 navigation.tab = model.openProjects.first.map { .project($0.id) } ?? .myIssues
             }
+        }
+    }
+
+    /// Opens an issue a notification was about: in My Issues, where issues assigned to you are, else in its
+    /// project, on top of whatever was showing.
+    private func reveal(_ itemId: String) {
+        guard let item = model.item(id: itemId) else { return }
+        navigation.sheet = nil
+        let mine = model.items(in: .myIssues).contains { $0.id == item.id }
+        if mine {
+            navigation.tab = .myIssues
+            navigation.myIssuesPath = [.issue(item.id)]
+        } else {
+            if let projectId = item.projectId { navigation.showProject(projectId, regular: wide) }
+            navigation.push(.issue(item.id), on: navigation.tab)
         }
     }
 }

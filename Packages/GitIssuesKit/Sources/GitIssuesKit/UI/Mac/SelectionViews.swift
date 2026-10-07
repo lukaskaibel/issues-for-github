@@ -48,6 +48,11 @@ struct SelectionBar: View {
                         Image(systemName: "tag").font(.system(size: 12))
                     }
                 }
+                if items.contains(where: model.canHaveDueDate) {
+                    BarAction(kind: .dueDate, item: first, title: "Due date", key: "D") {
+                        Image(systemName: "calendar").font(.system(size: 12))
+                    }
+                }
                 Button {
                     model.copyLinks(items)
                 } label: {
@@ -233,6 +238,18 @@ struct PropertyChipRow: View {
                             }
                             .font(.small)
                         }
+                    }
+                }
+                // Only when there is one, to keep the row short; D adds one.
+                if let due = model.dueBadge(for: item) {
+                    PropertyButton(kind: .dueDate, item: item) {
+                        HStack(spacing: 6) {
+                            DueDateIcon(tone: due.tone, size: 11)
+                            Text(due.day.mediumLabel())
+                                .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.textBody)
+                        }
+                        .font(.small)
+                        .help(due.tooltip)
                     }
                 }
             }
