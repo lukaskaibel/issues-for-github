@@ -86,7 +86,7 @@ launch() {
 }
 
 for theme in dark light; do
-  echo "Scenes in $theme…"
+  echo "Scenes in ${theme}…"
   launch "$theme"
   forward
   # Switching views lays the board out afresh, so the debug remote knows where every card is.
