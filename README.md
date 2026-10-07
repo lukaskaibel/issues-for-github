@@ -208,6 +208,9 @@ The interface uses the system's own parts.
   like a browser: ⌘[ and ⌘], the side buttons of a mouse, or a two-finger swipe.
 - **Due dates and reminders.** The day an issue is due, typed in a few words or picked in a month, and a notification
   on that day for issues assigned to you, from each of your devices.
+- **In nine languages.** English, German, French, Spanish, Portuguese (Brazil), Russian, Japanese, Korean and Chinese
+  (Simplified), following your device's language. Column and priority names are understood in each of them (an
+  "Erledigt" column closes issues as "Done" does), and so are due dates typed in them ("morgen", "来週の金曜").
 - **Native.** Swift and SwiftUI, with AppKit where it matters for smoothness. Apple silicon only.
 - **On iPhone and iPad too.** One app for all three: the same sync, offline queue and actions, with an interface
   built from the system's own parts (see above).
@@ -408,6 +411,9 @@ Right-click a project or repository in the sidebar to hide it; hidden ones wait,
 list. Click your name at the top of the sidebar for the account menu: Sync Now, changes still waiting to be sent,
 appearance, settings and signing out. It works with the arrow keys like any menu.
 
+The app follows the language of your Mac. To use another of its languages for Issues alone, add it under System
+Settings › General › Language & Region › Applications; on iPhone and iPad it is Settings › Apps › Issues › Language.
+
 ## Using it on iPhone and iPad
 
 | Gesture | Action |
@@ -446,7 +452,8 @@ GitIssuesUITests/            UI tests of the iPhone and iPad app, on the sample 
 Packages/GitIssuesKit/
   Sources/GitIssuesKit/
     API/                     GitHub GraphQL client and sign-in
-    Model/                   Records, and what column and priority names mean
+    Model/                   Records, what column and priority names mean, and dates typed in words
+    Resources/               The String Catalog: every text the app shows, in nine languages
     Store/                   The local SQLite database (GRDB), and the sample data
     Sync/                    Sync engine, queued changes, three-way text merge
     UI/Shared/               The model and every action, design tokens, glyphs, Markdown, the board's cards
@@ -455,14 +462,24 @@ Packages/GitIssuesKit/
   Sources/gi-cli/            Command-line tool for exercising sync without the UI
   Tests/                     Unit tests
 Config/                      Build settings, Info.plist and entitlements
-Design/                      The violet icon, earlier icon variants, screenshots, social preview
-Website/                     The website on GitHub Pages: home, privacy policy, terms, support, Impressum
-Tools/                       Icons, release builds, iOS tests, App Store and README screenshots, TestFlight uploads
+Design/                      The violet icon, earlier icon variants, screenshots, social preview, the glossary
+Website/                     The website on GitHub Pages: home, privacy policy, terms, support (each also in
+                             de/, es/, fr/, ja/, ko/, pt-br/, ru/, zh-hans/), Impressum
+Tools/                       Icons, release builds, iOS tests, App Store and README screenshots, TestFlight uploads,
+                             the String Catalog and the website's languages
 fastlane/                    App Store releases: lanes, the listing's texts and the age rating
 ```
 
 Everything under `UI/Shared` and below `API`, `Model`, `Store` and `Sync` runs on all three devices, so a change there
 applies everywhere. `UI/Mac` and `UI/iOS` are compiled for their platform only.
+
+Every text the app shows is in `Packages/GitIssuesKit/Sources/GitIssuesKit/Resources/Localizable.xcstrings`, in
+English with its translations and a comment saying where it appears. The code uses the symbols Xcode generates from
+it, such as `Text(.newIssue)` or `String(localized: .syncedMinutesAgo(minutes: 3))`, because SwiftUI would look a
+plain `Text("New Issue")` up in the app's bundle rather than the package's and never translate it. Add a text in
+Xcode's catalog editor or with `Tools/strings.py add`, and translate it into every language, with the words in
+[Design/glossary.md](Design/glossary.md). `swift test` fails when a text misses a language, when a translation's
+placeholders don't match the English, or when English is written straight into a view.
 
 Run the unit tests, and the iPhone and iPad UI tests (they create their simulators on first use):
 
@@ -484,7 +501,9 @@ Tools/readme-images.sh
 ```
 
 The [website](https://lukaskaibel.github.io/issues-for-github/) is plain HTML and CSS in `Website/`, without a build
-step; `.github/workflows/website.yml` publishes it to GitHub Pages when it changes on `main`. To look at it locally:
+step; `.github/workflows/website.yml` publishes it to GitHub Pages when it changes on `main`. Every page but the
+Impressum is there once per language (`Website/de/support/` …); `Tools/website-languages.py sync` writes the language
+picker and the links between the languages into all of them. To look at it locally:
 
 ```bash
 python3 -m http.server --directory Website

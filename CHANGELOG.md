@@ -8,6 +8,14 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Nine languages.** The app speaks German, French, Spanish, Portuguese (Brazil), Russian, Japanese, Korean and
+  Chinese (Simplified) as well as English, on the Mac, iPhone and iPad. It follows the device's language; to use
+  another one for Issues alone, pick it under Settings › Apps › Issues on iPhone and iPad, or System Settings ›
+  General › Language & Region › Applications on the Mac. Columns and priorities named in these languages are
+  understood too: an "Erledigt" or "完了" column closes issues as "Done" does, "In Arbeit" counts as started and
+  "Hoch" as high. The due date field reads dates typed in the app's language ("morgen", "nächsten Fr", "in 3 Tagen",
+  "明日", "来週の金曜", "через 3 дня") besides English. What comes from GitHub, such as titles, columns and labels,
+  stays as your team wrote it. The website and the App Store listing are in the same languages.
 - **Due issues in the Inbox.** On the day an issue assigned to you is due, it joins the Inbox at the time of the
   reminder ("Due today"), and the morning after, if it is still open, once more ("Overdue since yesterday"), with a
   calendar instead of an avatar. Opened, it offers the reminder's buttons: Start, Mark as Done and Move to Tomorrow.

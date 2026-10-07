@@ -41,7 +41,22 @@ fastlane can't do these; set them when the app is created.
 - **Sign-in for App Review:** "Explore with Sample Data" on the first screen opens everything without a GitHub
   account, on every platform. Guideline 4.8 doesn't apply: the app is a client for GitHub and has no accounts of its own.
 
+## Languages
+
+The listing is in English (U.S., the primary language) and in German (`de-DE`), French (`fr-FR`), Spanish (`es-ES`
+and `es-MX`, the same text, so Spain and Latin America both get it), Portuguese (`pt-BR`), Russian (`ru`),
+Japanese (`ja`), Korean (`ko`) and Chinese (`zh-Hans`), the languages the app speaks.
+
+- **Name:** "Issues – Project Board" in every language. App names are unique across the App Store, and a translated
+  descriptor could be taken; the subtitle and keywords carry each language's words instead.
+- **Subtitle, description, promotional text and keywords** are translated, in the words of `Design/glossary.md`.
+  Keywords are each language's own search words (up to 100 characters), not a translation of the English list, and
+  keep "github".
+- **URLs** point at the website in that language (`…/de/`, `…/de/support/`, `…/de/privacy/`).
+- **Screenshots** are only uploaded for English; the App Store shows them for every language that has none of its
+  own. The pictures stay English on purpose.
+
 ## What's New
 
 The first version has none. From the second version on, write it in `fastlane/metadata/en-US/release_notes.txt`, for
-users, from the changelog.
+users, from the changelog, and translate it into `release_notes.txt` in every other language's folder.

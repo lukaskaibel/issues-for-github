@@ -23,6 +23,11 @@ without being asked. Before calling such a change done, go through this list and
   - Look at every image before committing it.
   - A headline feature may deserve its own picture: add a scene to `Tools/readme-images.sh` and
     `Tools/readme-images/build.py`, and a section with a light and a dark `<picture>` to the README, like the others.
+- **Translations:** every text a change adds or rewords goes into the String Catalog with a comment for translators
+  and is translated into all eight other languages on the same branch, in the words of `Design/glossary.md`
+  (`Tools/strings.py add`, `export`, `validate`, `import`; `swift test` must pass). Changed website pages are changed
+  in every `Website/<language>/` folder too (`Tools/website-languages.py`), and App Store texts in every
+  `fastlane/metadata/<locale>/` folder, "What's New" included. Pictures stay English.
 - **Sample data** (`Store/DemoData.swift`): the screenshots and the App Store listing are taken on it, so a new feature
   needs something there to show it with.
 - **Website** (`Website/`, published by `.github/workflows/website.yml`): the home page's tagline, the support page's
