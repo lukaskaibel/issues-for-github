@@ -156,48 +156,23 @@ public final class AppDatabase: Sendable {
             try db.execute(sql: "UPDATE project SET remoteUpdatedAt = NULL")
         }
         migrator.registerMigration("v3") { db in
-            // Issues on none of your boards are items without a project. SQLite can't loosen a column, so the
-            // table is built again with the same columns and copied over.
-            try db.create(table: "newItem") { t in
-                t.primaryKey("id", .text)
-                t.column("projectId", .text)
-                    .references("project", onDelete: .cascade)
-                t.column("kind", .text).notNull()
-                t.column("position", .double).notNull()
-                t.column("remoteUpdatedAt", .text)
-                t.column("dirty", .boolean).notNull().defaults(to: false)
-                t.column("statusId", .text)
-                t.column("priorityId", .text)
-                t.column("contentId", .text)
-                t.column("number", .integer)
-                t.column("title", .text).notNull()
-                t.column("body", .text).notNull()
-                t.column("state", .text).notNull()
-                t.column("stateReason", .text)
-                t.column("url", .text)
-                t.column("repoId", .text)
-                t.column("repo", .text)
-                t.column("authorLogin", .text)
-                t.column("createdAt", .datetime)
-                t.column("updatedAt", .datetime)
-                t.column("closedAt", .datetime)
-                t.column("parentId", .text)
-                t.column("parentNumber", .integer)
-                t.column("parentTitle", .text)
-                t.column("subTotal", .integer).notNull().defaults(to: 0)
-                t.column("subCompleted", .integer).notNull().defaults(to: 0)
-                t.column("commentCount", .integer).notNull().defaults(to: 0)
-                t.column("assignees", .text).notNull()
-                t.column("labels", .text).notNull()
-                t.column("viewerCanDelete", .boolean).notNull().defaults(to: false)
+            // Issues on none of your boards are items without a project. SQLite can't loosen a column, so the table
+            // is built again from its own definition, with every column other migrations added, and copied over.
+            let definition = try String.fetchOne(db, sql: "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'item'") ?? ""
+            let loosened = definition
+                .replacingOccurrences(of: #"CREATE TABLE "item""#, with: #"CREATE TABLE "newItem""#)
+                .replacingOccurrences(of: #""projectId" TEXT NOT NULL"#, with: #""projectId" TEXT"#)
+            guard loosened.hasPrefix(#"CREATE TABLE "newItem""#) else {
+                throw DatabaseError(message: "The item table has an unexpected definition: \(definition)")
             }
-            let columns = try db.columns(in: "item").map(\.name).joined(separator: ", ")
+            let indexes = try String.fetchAll(db, sql: "SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = 'item' AND sql IS NOT NULL")
+            let columns = try db.columns(in: "item").map(\.name.quotedDatabaseIdentifier).joined(separator: ", ")
+            try db.execute(sql: loosened)
             try db.execute(sql: "INSERT INTO newItem (\(columns)) SELECT \(columns) FROM item")
             try db.drop(table: "item")
             try db.rename(table: "newItem", to: "item")
-            for column in ["projectId", "contentId", "repoId"] {
-                try db.create(index: "item_on_\(column)", on: "item", columns: [column])
-            }
+            for index in indexes { try db.execute(sql: index) }
+            try db.create(index: "item_on_repoId", on: "item", columns: ["repoId"], options: .ifNotExists)
         }
         // Named rather than numbered, so it can't clash with other branches; it stays after any migration that
         // rebuilds the item table.
