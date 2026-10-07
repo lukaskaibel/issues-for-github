@@ -121,6 +121,18 @@
         }
       }
     },
+    "draftNumber" : {
+      "comment" : "All screens: shown in place of an issue's number (#12) for a draft, a GitHub project draft issue, which has no number. On cards, in lists, in the issue view and at the start of messages such as 'Draft couldn't be deleted'. Short: one word, no spaces.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draft"
+          }
+        }
+      }
+    },
     "dueDate" : {
       "comment" : "The day an issue is due (a date field of the GitHub project). Used as a label and as a placeholder before a date is set.",
       "extractionState" : "manual",
@@ -289,6 +301,198 @@
         }
       }
     },
+    "errorAccessDenied" : {
+      "comment" : "Sign-in screen (Mac, iPhone, iPad), signing in by entering a short code on github.com: error message. The user declined on github.com to give the app access.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Access was denied on GitHub."
+          }
+        }
+      }
+    },
+    "errorCantReachGitHub" : {
+      "comment" : "Error message shown when syncing or signing in fails (sync status, sign-in screen, warning notices, list of changes waiting to be sent). The network or GitHub can't be reached. %(detail)@ is the system's reason, a sentence such as 'The Internet connection appears to be offline.'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't reach GitHub. %(detail)@"
+          }
+        }
+      }
+    },
+    "errorCodeExpired" : {
+      "comment" : "Sign-in screen (Mac, iPhone, iPad), signing in by entering a short code on github.com: error message. The code shown to the user was not entered on github.com in time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The code expired. Start again."
+          }
+        }
+      }
+    },
+    "errorEmptyResponse" : {
+      "comment" : "Error message shown when syncing or signing in fails (sync status, sign-in screen, warning notices, list of changes waiting to be sent). Follows 'Unexpected response from GitHub.' as the reason: GitHub answered with nothing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty response."
+          }
+        }
+      }
+    },
+    "errorGitHubReturnedError" : {
+      "comment" : "Error message shown when syncing or signing in fails (sync status, sign-in screen, warning notices, list of changes waiting to be sent). %(code)lld is the HTTP status code, e.g. 502.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub returned an error (%(code)lld)."
+          }
+        }
+      }
+    },
+    "errorIssueNeverCreated" : {
+      "comment" : "Error message (in a warning notice or the list of changes waiting to be sent): a change can't be sent because the new issue it belongs to never reached GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The issue this change belongs to was never created on GitHub."
+          }
+        }
+      }
+    },
+    "errorIssueNotFound" : {
+      "comment" : "Error message shown when syncing or signing in fails (sync status, sign-in screen, warning notices, list of changes waiting to be sent). The issue was deleted or transferred on GitHub, or the user can no longer see it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issue not found."
+          }
+        }
+      }
+    },
+    "errorNoCodeReturned" : {
+      "comment" : "Sign-in screen (Mac, iPhone, iPad), signing in by entering a short code on github.com: error message. GitHub didn't send the code the user is meant to enter.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub did not return a code."
+          }
+        }
+      }
+    },
+    "errorNoOAuthClientID" : {
+      "comment" : "Sign-in screen (Mac, iPhone, iPad), signing in by entering a short code on github.com: error message. Only in builds made without the app's GitHub registration (development builds).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This build has no GitHub OAuth client ID."
+          }
+        }
+      }
+    },
+    "errorNoResponse" : {
+      "comment" : "Error message shown when syncing or signing in fails (sync status, sign-in screen, warning notices, list of changes waiting to be sent). Follows 'Can't reach GitHub.' as the reason: GitHub's server didn't answer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No response."
+          }
+        }
+      }
+    },
+    "errorNotSignedIn" : {
+      "comment" : "Error message shown when syncing or signing in fails (sync status, sign-in screen, warning notices, list of changes waiting to be sent).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not signed in to GitHub."
+          }
+        }
+      }
+    },
+    "errorProjectNotFound" : {
+      "comment" : "Error message shown when syncing or signing in fails (sync status, sign-in screen, warning notices, list of changes waiting to be sent). The GitHub project (board) was deleted, or the user can no longer see it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Project not found."
+          }
+        }
+      }
+    },
+    "errorRateLimited" : {
+      "comment" : "Error message shown when syncing or signing in fails (sync status, sign-in screen, warning notices, list of changes waiting to be sent). GitHub allows only so many requests per hour; the app waits and then carries on by itself.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub's rate limit was reached. Syncing resumes shortly."
+          }
+        }
+      }
+    },
+    "errorSignInFailed" : {
+      "comment" : "Sign-in screen (Mac, iPhone, iPad), signing in by entering a short code on github.com: error message. Anything else went wrong while waiting for the user to enter the code on github.com.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign-in failed."
+          }
+        }
+      }
+    },
+    "errorSignInRejected" : {
+      "comment" : "Error message shown when syncing or signing in fails (sync status, sign-in screen, warning notices, list of changes waiting to be sent). GitHub no longer accepts the saved login (it was revoked or expired).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub rejected the sign-in. Please sign in again."
+          }
+        }
+      }
+    },
+    "errorUnexpectedResponse" : {
+      "comment" : "Error message shown when syncing or signing in fails (sync status, sign-in screen, warning notices, list of changes waiting to be sent). GitHub's answer couldn't be read. %(detail)@ is a technical reason, often in English, e.g. 'Empty response.'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unexpected response from GitHub. %(detail)@"
+          }
+        }
+      }
+    },
     "inbox" : {
       "comment" : "Name of the place that lists GitHub notifications (sidebar row, iPhone tab, title). Like the inbox in Apple Mail.",
       "extractionState" : "manual",
@@ -297,6 +501,546 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inbox"
+          }
+        }
+      }
+    },
+    "inboxApprovedIt" : {
+      "comment" : "Inbox row, line under the title: a reviewer approved the pull request. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ approved it"
+          }
+        }
+      }
+    },
+    "inboxAssignedPerson" : {
+      "comment" : "Inbox row, line under the issue's title. %(who)@ is the person who assigned the issue, %(person)@ the GitHub login of the person it was assigned to, e.g. 'Kai Andersen assigned mira'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ assigned %(person)@"
+          }
+        }
+      }
+    },
+    "inboxAssignedSomeone" : {
+      "comment" : "Inbox row, line under the issue's title, when GitHub doesn't say to whom the issue was assigned. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ assigned someone"
+          }
+        }
+      }
+    },
+    "inboxAssignedYou" : {
+      "comment" : "Inbox row (Mac, iPhone, iPad), line under the issue's title: what happened on the issue. %(who)@ is a person's name or GitHub login, e.g. 'Kai Andersen'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ assigned you"
+          }
+        }
+      }
+    },
+    "inboxClosed" : {
+      "comment" : "Inbox row, line under the title, before the details have been read from GitHub: the issue or pull request was closed. Past participle about it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closed"
+          }
+        }
+      }
+    },
+    "inboxClosedAsCompleted" : {
+      "comment" : "Inbox row, line under the title: the issue was closed with GitHub's reason 'completed'. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ closed it as completed"
+          }
+        }
+      }
+    },
+    "inboxClosedAsDuplicate" : {
+      "comment" : "Inbox row, line under the title: the issue was closed as a duplicate of another one. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ closed it as a duplicate"
+          }
+        }
+      }
+    },
+    "inboxClosedAsNotPlanned" : {
+      "comment" : "Inbox row, line under the title: the issue was closed with GitHub's reason 'not planned'. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ closed it as not planned"
+          }
+        }
+      }
+    },
+    "inboxClosedPullRequest" : {
+      "comment" : "Inbox row, line under the title: a pull request was closed without being merged. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ closed it"
+          }
+        }
+      }
+    },
+    "inboxCommentQuote" : {
+      "comment" : "Inbox row, line under the issue's title: who wrote the new comment; the comment's text follows after the colon, in the same line. %(who)@ is a person's name or GitHub login. Adjust the colon to your language's punctuation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@:"
+          }
+        }
+      }
+    },
+    "inboxForYou" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): name of the half of the Inbox with notifications that involve the user (assigned, mentioned, asked for a review, their own issues). Segment of a picker. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For you"
+          }
+        }
+      }
+    },
+    "inboxMentionedTeamQuote" : {
+      "comment" : "Inbox row, line under the issue's title: someone mentioned the user's GitHub team in a comment; the comment's text follows after the colon. %(who)@ is a person's name, %(team)@ the team as written on GitHub, e.g. '@acme/design'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ mentioned %(team)@:"
+          }
+        }
+      }
+    },
+    "inboxMentionedYou" : {
+      "comment" : "Inbox row, line under the issue's title: someone mentioned the user (@login). %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ mentioned you"
+          }
+        }
+      }
+    },
+    "inboxMentionedYouQuote" : {
+      "comment" : "Inbox row, line under the issue's title: someone mentioned the user in a comment; the comment's text follows after the colon, in the same line. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ mentioned you:"
+          }
+        }
+      }
+    },
+    "inboxMerged" : {
+      "comment" : "Inbox row, line under the title, before the details have been read from GitHub: the pull request was merged (GitHub term). Past participle about it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merged"
+          }
+        }
+      }
+    },
+    "inboxMergedIt" : {
+      "comment" : "Inbox row, line under the title: the pull request was merged (GitHub term). %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ merged it"
+          }
+        }
+      }
+    },
+    "inboxMovedTo" : {
+      "comment" : "Inbox row, line under the title: someone changed the issue's status on a project board. %(who)@ is a person's name, %(status)@ the new status as named on GitHub, e.g. 'In Progress'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ moved it to %(status)@"
+          }
+        }
+      }
+    },
+    "inboxMovedToAnotherStatus" : {
+      "comment" : "Inbox row, line under the title: someone changed the issue's status on a project board, and GitHub doesn't say to which. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ moved it to another status"
+          }
+        }
+      }
+    },
+    "inboxMovedToAnotherStatusInProject" : {
+      "comment" : "Inbox row, line under the title: someone changed the issue's status on a project board, and GitHub doesn't say to which. %(who)@ is a person's name, %(project)@ the GitHub project's name, e.g. 'Roadmap'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ moved it to another status in %(project)@"
+          }
+        }
+      }
+    },
+    "inboxMovedToInProject" : {
+      "comment" : "Inbox row, line under the title: someone changed the issue's status on a project board. %(who)@ is a person's name, %(status)@ the new status, e.g. 'In Progress', %(project)@ the GitHub project's name, e.g. 'Roadmap'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ moved it to %(status)@ in %(project)@"
+          }
+        }
+      }
+    },
+    "inboxNewActivity" : {
+      "comment" : "Inbox row, line under the title, when there's nothing more specific to say: something new happened on the issue or pull request.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New activity"
+          }
+        }
+      }
+    },
+    "inboxNoLongerAvailable" : {
+      "comment" : "Inbox row, line under the title: the issue was deleted or transferred, or the user lost access to it, so GitHub no longer shows it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No longer available"
+          }
+        }
+      }
+    },
+    "inboxNumberIssue" : {
+      "comment" : "Inbox: shown in place of the number (#12) of an issue whose number isn't known. GitHub term. Very short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issue"
+          }
+        }
+      }
+    },
+    "inboxNumberPullRequest" : {
+      "comment" : "Inbox: shown in place of the number (#12) of a pull request whose number isn't known. Abbreviation of the GitHub term 'pull request'. Very short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PR"
+          }
+        }
+      }
+    },
+    "inboxOpenedIt" : {
+      "comment" : "Inbox row, line under the title: someone opened (created) the issue or pull request. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ opened it"
+          }
+        }
+      }
+    },
+    "inboxOpenedItInRepository" : {
+      "comment" : "Inbox row, line under the title: someone opened (created) the issue or pull request in a repository the user watches. %(who)@ is a person's name, %(repository)@ the repository as owner/name, e.g. 'acme/website'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ opened it in %(repository)@"
+          }
+        }
+      }
+    },
+    "inboxOthersCommented" : {
+      "comment" : "Inbox row, line under the issue's title: several people commented. %(who)@ is the latest commenter's name, %(count)lld how many other people commented (1 or more).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(who)@ and %(count)lld other commented"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(who)@ and %(count)lld others commented"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "inboxReopened" : {
+      "comment" : "Inbox row, line under the title, before the details have been read from GitHub: the issue or pull request was opened again. Past participle about it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reopened"
+          }
+        }
+      }
+    },
+    "inboxReopenedIt" : {
+      "comment" : "Inbox row, line under the title: the closed issue or pull request was opened again. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ reopened it"
+          }
+        }
+      }
+    },
+    "inboxRequestedChanges" : {
+      "comment" : "Inbox row, line under the title: a reviewer asked for changes to the pull request; the review's text may follow in the same line. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ requested changes"
+          }
+        }
+      }
+    },
+    "inboxRequestedReviewFrom" : {
+      "comment" : "Inbox row, line under the title: someone asked another person to review a pull request. %(who)@ is a person's name, %(person)@ a GitHub login or team, e.g. 'mira'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ requested a review from %(person)@"
+          }
+        }
+      }
+    },
+    "inboxRequestedReviewFromSomeone" : {
+      "comment" : "Inbox row, line under the title: someone asked for a review of a pull request, and GitHub doesn't say from whom. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ requested a review from someone"
+          }
+        }
+      }
+    },
+    "inboxRequestedYourReview" : {
+      "comment" : "Inbox row, line under the title: someone asked the user to review a pull request. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ requested your review"
+          }
+        }
+      }
+    },
+    "inboxReviewedIt" : {
+      "comment" : "Inbox row, line under the title: someone reviewed the pull request (a review without text). %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ reviewed it"
+          }
+        }
+      }
+    },
+    "inboxReviewedItQuote" : {
+      "comment" : "Inbox row, line under the title: someone reviewed the pull request; the review's text follows after the colon, in the same line. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ reviewed it:"
+          }
+        }
+      }
+    },
+    "inboxSomeone" : {
+      "comment" : "Inbox: stands for the person who did something when GitHub doesn't say who. Inserted as %(who)@ at the start of the Inbox lines, e.g. 'Someone mentioned you'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Someone"
+          }
+        }
+      }
+    },
+    "inboxUnassignedPerson" : {
+      "comment" : "Inbox row, line under the issue's title. %(who)@ removed %(person)@ (a GitHub login, e.g. 'mira') from the issue's assignees.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ unassigned %(person)@"
+          }
+        }
+      }
+    },
+    "inboxUnassignedSomeone" : {
+      "comment" : "Inbox row, line under the issue's title, when GitHub doesn't say who was removed from the issue's assignees. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ unassigned someone"
+          }
+        }
+      }
+    },
+    "inboxUnassignedYou" : {
+      "comment" : "Inbox row, line under the issue's title: the user was removed from the issue's assignees. %(who)@ is a person's name or GitHub login.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(who)@ unassigned you"
+          }
+        }
+      }
+    },
+    "inboxWatching" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): name of the half of the Inbox with notifications from repositories the user watches on GitHub. Segment of a picker. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watching"
+          }
+        }
+      }
+    },
+    "inboxYouWereAssigned" : {
+      "comment" : "Inbox row, line under the title, before the details have been read from GitHub: GitHub notified the user because they were assigned to the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You were assigned"
+          }
+        }
+      }
+    },
+    "inboxYouWereMentioned" : {
+      "comment" : "Inbox row, line under the title, before the details have been read from GitHub: GitHub notified the user because someone mentioned them (@login).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You were mentioned"
+          }
+        }
+      }
+    },
+    "inboxYourReviewWasRequested" : {
+      "comment" : "Inbox row, line under the title, before the details have been read from GitHub: someone asked the user to review a pull request.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your review was requested"
+          }
+        }
+      }
+    },
+    "inboxYourTeamWasMentioned" : {
+      "comment" : "Inbox row, line under the title, before the details have been read from GitHub: someone mentioned a GitHub team the user is in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your team was mentioned"
           }
         }
       }
@@ -409,6 +1153,210 @@
         }
       }
     },
+    "noticeAlsoChangedOnGitHub" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) title, after the user changed an issue while someone else changed the same thing on GitHub. %(number)@ is the issue's number, e.g. '#12'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(number)@ was also changed on GitHub"
+          }
+        }
+      }
+    },
+    "noticeChangeDiscarded" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message: the change GitHub refused was dropped. %(change)@ is the change as listed in the changes waiting to be sent, e.g. 'Status changed to Done'. Use your language's quotation marks.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%(change)@\" was discarded."
+          }
+        }
+      }
+    },
+    "noticeChangeDiscardedWithError" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message: the change GitHub refused was dropped. %(change)@ is the change as listed in the changes waiting to be sent, e.g. 'Status changed to Done'; %(error)@ is the reason, a sentence such as 'Issue not found.'. Use your language's quotation marks.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%(change)@\" was discarded. %(error)@"
+          }
+        }
+      }
+    },
+    "noticeChangeNotSaved" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) title: GitHub refused one of the user's changes. %(number)@ is the issue's number, e.g. '#12', or 'New' for an issue not yet on GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A change to %(number)@ could not be saved"
+          }
+        }
+      }
+    },
+    "noticeCouldNotDelete" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) title: GitHub refused to delete an issue or draft. %(issue)@ is its number and title, e.g. '#12 Fix the sign-in button'. The reason follows in the message.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(issue)@ couldn't be deleted"
+          }
+        }
+      }
+    },
+    "noticeDueDateSetThere" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message, first sentence: what someone else set the issue's due date to on GitHub. %(date)@ is day and short month, e.g. 'Oct 9'. Followed by 'Your change to … was applied last.'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its due date was set to %(date)@ there."
+          }
+        }
+      }
+    },
+    "noticeDueDateSetToNoneThere" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message, first sentence: someone else removed the issue's due date on GitHub. Followed by 'Your change to … was applied last.'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its due date was set to none there."
+          }
+        }
+      }
+    },
+    "noticeNoLongerExistsOnGitHub" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) title: a change couldn't be sent because the issue was deleted or transferred on GitHub. %(number)@ is the issue's number, e.g. '#12'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(number)@ no longer exists on GitHub"
+          }
+        }
+      }
+    },
+    "noticeNoLongerInProject" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) title: an issue was removed from the GitHub project board (or deleted) while the user had changes to it waiting. %(number)@ is the issue's number, e.g. '#12'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(number)@ is no longer in this project"
+          }
+        }
+      }
+    },
+    "noticePrioritySetThere" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message, first sentence: what someone else set the issue's priority to on GitHub. %(priority)@ is a priority as named on the board, e.g. 'High'. Followed by 'Your change to … was applied last.'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its priority was set to %(priority)@ there."
+          }
+        }
+      }
+    },
+    "noticePrioritySetToNoneThere" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message, first sentence: someone else removed the issue's priority on GitHub. Followed by 'Your change to … was applied last.'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its priority was set to none there."
+          }
+        }
+      }
+    },
+    "noticeQueuedChangesDiscarded" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message under '#12 is no longer in this project'. %(count)lld is how many of the user's changes waiting to be sent were dropped.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "It was removed or deleted on GitHub. Your %(count)lld queued change to it was discarded."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "It was removed or deleted on GitHub. Your %(count)lld queued changes to it were discarded."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "noticeStatusSetThere" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message, first sentence: what someone else set the issue's status to on GitHub. %(status)@ is a status as named on the board, e.g. 'Done'. Followed by 'Your change to … was applied last.'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its status was set to %(status)@ there."
+          }
+        }
+      }
+    },
+    "noticeStatusSetToNoneThere" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message, first sentence: someone else removed the issue's status on GitHub. Followed by 'Your change to … was applied last.'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its status was set to none there."
+          }
+        }
+      }
+    },
+    "noticeYourChangeAppliedLast" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message, second sentence, after 'Its status (priority, due date) was set to … there.': the user's own value won. %(value)@ is a status or priority as named on the board (e.g. 'In Progress') or a date (e.g. 'Oct 9').",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your change to %(value)@ was applied last."
+          }
+        }
+      }
+    },
+    "noticeYourChangeToNoneAppliedLast" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message, second sentence, after 'Its status (priority, due date) was set to … there.': the user had removed the value (status, priority or due date), and that won.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your change to none was applied last."
+          }
+        }
+      }
+    },
     "openOnGitHub" : {
       "comment" : "Menu item or button that opens the issue or pull request on github.com in the web browser.",
       "extractionState" : "manual",
@@ -453,6 +1401,270 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Projects"
+          }
+        }
+      }
+    },
+    "queuedAddedToAProject" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The issue was put on a GitHub project board whose name isn't known.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added to a project"
+          }
+        }
+      }
+    },
+    "queuedAddedToProject" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The issue was put on a GitHub project board. %(project)@ is the project's name, e.g. 'Roadmap'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added to %(project)@"
+          }
+        }
+      }
+    },
+    "queuedArchivedInInbox" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. An Inbox notification was archived (GitHub calls this 'Done').",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archived in the Inbox"
+          }
+        }
+      }
+    },
+    "queuedAssigneesChanged" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. People were added to or removed from the issue's assignees.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assignees changed"
+          }
+        }
+      }
+    },
+    "queuedClosed" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The user closed the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closed"
+          }
+        }
+      }
+    },
+    "queuedCommentAdded" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The user wrote a comment on the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comment added"
+          }
+        }
+      }
+    },
+    "queuedDeleted" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The user deleted the issue or draft.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleted"
+          }
+        }
+      }
+    },
+    "queuedDescriptionEdited" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The issue's description (the text under its title) was changed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Description edited"
+          }
+        }
+      }
+    },
+    "queuedDueDateRemoved" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The issue's due date was removed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due date removed"
+          }
+        }
+      }
+    },
+    "queuedDueDateSet" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. %(date)@ is the new due date, day and short month, e.g. 'Oct 9'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due date set to %(date)@"
+          }
+        }
+      }
+    },
+    "queuedIssueCreated" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The user wrote a new issue. %(title)@ is its title, e.g. 'Fix the sign-in button'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issue created: %(title)@"
+          }
+        }
+      }
+    },
+    "queuedLabelsChanged" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. GitHub labels were added to or removed from the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Labels changed"
+          }
+        }
+      }
+    },
+    "queuedMarkedAsRead" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. An Inbox notification was marked as read.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked as read"
+          }
+        }
+      }
+    },
+    "queuedMoved" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The issue was moved to another place in the board's order.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moved"
+          }
+        }
+      }
+    },
+    "queuedPriorityChanged" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. %(priority)@ is the new priority as named on the project board, e.g. 'High'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Priority changed to %(priority)@"
+          }
+        }
+      }
+    },
+    "queuedPriorityCleared" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The issue's priority was removed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Priority cleared"
+          }
+        }
+      }
+    },
+    "queuedReopened" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The user reopened the closed issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reopened"
+          }
+        }
+      }
+    },
+    "queuedStatusChanged" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. %(status)@ is the new status as named on the project board, e.g. 'In Progress'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status changed to %(status)@"
+          }
+        }
+      }
+    },
+    "queuedStatusCleared" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The issue's status was removed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status cleared"
+          }
+        }
+      }
+    },
+    "queuedTitleEdited" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The issue's title was changed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title edited"
+          }
+        }
+      }
+    },
+    "queuedUnsubscribed" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The user stopped GitHub's notifications about the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsubscribed"
+          }
+        }
+      }
+    },
+    "removeTheDate" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) button next to 'Keep Mine': takes what someone else did on GitHub, which was to remove the issue's due date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove the date"
           }
         }
       }
@@ -529,6 +1741,18 @@
         }
       }
     },
+    "switchToValue" : {
+      "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) button next to 'Keep Mine': takes the value someone else set on GitHub instead of the user's. %(value)@ is a status or priority as named on the board (e.g. 'Done') or a date (e.g. 'Oct 9').",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch to %(value)@"
+          }
+        }
+      }
+    },
     "syncNow" : {
       "comment" : "Button or menu item that fetches changes from GitHub and sends the changes waiting to be sent, right away.",
       "extractionState" : "manual",
@@ -597,6 +1821,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Undo"
+          }
+        }
+      }
+    },
+    "unsentIssueNumber" : {
+      "comment" : "All screens: shown in place of an issue's number (#12) while an issue the user just wrote hasn't reached GitHub yet (cards, lists, the list of changes waiting to be sent). An adjective about the issue. Short: one word, no spaces.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New"
           }
         }
       }
