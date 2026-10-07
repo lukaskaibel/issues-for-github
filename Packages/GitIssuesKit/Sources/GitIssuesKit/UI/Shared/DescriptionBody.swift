@@ -26,9 +26,9 @@ struct DescriptionBody<Editor: View>: View {
                 .pointerStyle(isEditable ? .horizontalText : nil)
                 #endif
                 .accessibilityElement(children: .contain)
-                .accessibilityLabel("Description")
+                .accessibilityLabel(.description)
                 .accessibilityIdentifier("issue-description")
-                .accessibilityAction(named: "Edit") {
+                .accessibilityAction(named: Text(.editDescriptionAction)) {
                     if isEditable { showsEditor = true }
                 }
         } else {

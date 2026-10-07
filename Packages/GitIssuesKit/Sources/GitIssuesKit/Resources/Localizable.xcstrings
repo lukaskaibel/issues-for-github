@@ -121,6 +121,18 @@
         }
       }
     },
+    "addLabelsPlaceholder" : {
+      "comment" : "Mac: placeholder in the search field of the label picker (from a card, a list row, an issue or the new issue dialog). 'Label' is a GitHub term (tags such as 'bug').",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add labels…"
+          }
+        }
+      }
+    },
     "addPriorityField" : {
       "comment" : "iPhone and iPad: item in a project's '…' menu that adds a Priority field to the GitHub project. 'Field' is a GitHub project field (a column of data).",
       "extractionState" : "manual",
@@ -229,6 +241,18 @@
         }
       }
     },
+    "addToNamedProjectPlaceholder" : {
+      "comment" : "Mac: placeholder in the status picker of an issue on no board: picking a column puts the issue on this GitHub project. %(project)@ is the project's name, e.g. 'Website'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to %(project)@…"
+          }
+        }
+      }
+    },
     "addToProject" : {
       "comment" : "iPhone and iPad: submenu (a verb) of an issue that is on none of the user's boards, listing the GitHub projects it can be put on. Title case, as in menus.",
       "extractionState" : "manual",
@@ -253,8 +277,32 @@
         }
       }
     },
+    "addToProjectPickerPlaceholder" : {
+      "comment" : "Mac: placeholder in the status picker of an issue on no board, when it can go on several GitHub projects: picking a column puts it on that project.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to project…"
+          }
+        }
+      }
+    },
     "addToProjectPlaceholder" : {
       "comment" : "iPad, issue screen, properties column: placeholder in the Project row of an issue on no GitHub project (board); opens a menu of projects to put it on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to project"
+          }
+        }
+      }
+    },
+    "addToProjectTooltip" : {
+      "comment" : "Mac: tooltip of the status icon (a ring with a plus) of an open issue on no project board; clicking it puts the issue on one.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -301,6 +349,18 @@
         }
       }
     },
+    "allowNotifications" : {
+      "comment" : "Settings, Reminders section: button that asks the system for permission to show notifications.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Notifications"
+          }
+        }
+      }
+    },
     "andMoreBelow" : {
       "comment" : "iPhone and iPad, issue opened from the Inbox: after the last of the news shown at the top; %(count)lld more events are further down the issue.",
       "extractionState" : "manual",
@@ -337,6 +397,150 @@
         }
       }
     },
+    "appIconAutomatic" : {
+      "comment" : "iPhone and iPad account sheet: app icon choice that turns light or dark with the system. Short, under a small picture of the icon.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic"
+          }
+        }
+      }
+    },
+    "appIconBoard" : {
+      "comment" : "Mac Settings: name of an app icon that shows a kanban board, on a light plate. A noun, the picture's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board"
+          }
+        }
+      }
+    },
+    "appIconBoardDark" : {
+      "comment" : "Mac Settings: name of an app icon that shows a kanban board, on a dark plate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board, dark"
+          }
+        }
+      }
+    },
+    "appIconBoardOnColour" : {
+      "comment" : "Mac Settings: name of an app icon that shows a kanban board on a coloured plate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board on colour"
+          }
+        }
+      }
+    },
+    "appIconBoardOnColourDark" : {
+      "comment" : "Mac Settings: name of an app icon that shows a kanban board on a coloured plate, dark version.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board on colour, dark"
+          }
+        }
+      }
+    },
+    "appIconCardAuto" : {
+      "comment" : "Mac Settings: name of an app icon (a card drawn on a plate) that turns light or dark with the system's appearance.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Card, light or dark with the system"
+          }
+        }
+      }
+    },
+    "appIconCardDark" : {
+      "comment" : "Mac Settings: name of an app icon, a card on a dark plate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Card, dark"
+          }
+        }
+      }
+    },
+    "appIconCardLight" : {
+      "comment" : "Mac Settings: name of an app icon, a card on a light plate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Card, light"
+          }
+        }
+      }
+    },
+    "appIconCardViolet" : {
+      "comment" : "Mac Settings: name of an app icon, a card on a violet plate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Card on violet"
+          }
+        }
+      }
+    },
+    "appIconChecklist" : {
+      "comment" : "Mac Settings: name of an app icon that shows a checklist, on a light plate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checklist"
+          }
+        }
+      }
+    },
+    "appIconChecklistDark" : {
+      "comment" : "Mac Settings: name of an app icon that shows a checklist, on a dark plate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checklist, dark"
+          }
+        }
+      }
+    },
+    "appIconDark" : {
+      "comment" : "iPhone and iPad account sheet: app icon choice, the icon on a dark plate. Short, under a small picture of the icon.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark"
+          }
+        }
+      }
+    },
     "appIconFootnote" : {
       "comment" : "Mac Settings: note under the choice of app icons.",
       "extractionState" : "manual",
@@ -349,6 +553,18 @@
         }
       }
     },
+    "appIconLight" : {
+      "comment" : "iPhone and iPad account sheet: app icon choice, the icon on a light plate. Short, under a small picture of the icon.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        }
+      }
+    },
     "appIconMac" : {
       "comment" : "Mac Settings: label of the row where the user picks one of several icons for the app.",
       "extractionState" : "manual",
@@ -357,6 +573,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App icon"
+          }
+        }
+      }
+    },
+    "appIconThreeBars" : {
+      "comment" : "Mac Settings: name of an app icon that shows three bars, on a light plate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Three bars"
+          }
+        }
+      }
+    },
+    "appIconThreeBarsDark" : {
+      "comment" : "Mac Settings: name of an app icon that shows three bars, on a dark plate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Three bars, dark"
+          }
+        }
+      }
+    },
+    "appIconViolet" : {
+      "comment" : "iPhone and iPad account sheet: app icon choice, the icon on a violet plate. Short, under a small picture of the icon.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Violet"
           }
         }
       }
@@ -409,6 +661,42 @@
         }
       }
     },
+    "appearanceDark" : {
+      "comment" : "Settings (Mac, iPhone, iPad): appearance choice, dark mode. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark"
+          }
+        }
+      }
+    },
+    "appearanceLight" : {
+      "comment" : "Settings (Mac, iPhone, iPad): appearance choice, light mode. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        }
+      }
+    },
+    "appearanceSystem" : {
+      "comment" : "Settings (Mac, iPhone, iPad): appearance choice that follows the system's light or dark mode. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System"
+          }
+        }
+      }
+    },
     "archive" : {
       "comment" : "Inbox: button or menu item (a verb) that removes a notification from the Inbox; GitHub calls this 'Done'.",
       "extractionState" : "manual",
@@ -445,6 +733,42 @@
         }
       }
     },
+    "archivedNotification" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): short notice with an Undo button after one notification was archived (verb, past tense). %(number)@ is the issue's number, e.g. '#14'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archived %(number)@"
+          }
+        }
+      }
+    },
+    "archivedNotifications" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): short notice with an Undo button after several GitHub notifications were archived (verb, past tense). %(count)lld is 2 or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Archived %(count)lld notification"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Archived %(count)lld notifications"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "arrangeSections" : {
       "comment" : "iPhone and iPad: title of the sheet where the order of a list's sections (its status groups) is changed by dragging. Title case.",
       "extractionState" : "manual",
@@ -465,6 +789,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arrange Sections…"
+          }
+        }
+      }
+    },
+    "assign" : {
+      "comment" : "Mac: tooltip of the avatars in a row of an issue's sub-issue list, a button that opens the picker of people to assign (a verb).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assign"
           }
         }
       }
@@ -513,6 +849,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Assign to me"
+          }
+        }
+      }
+    },
+    "assignToPlaceholder" : {
+      "comment" : "Mac: placeholder in the search field of the picker of people to assign the issue to (from a card, a list row, an issue or the new issue dialog).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assign to…"
+          }
+        }
+      }
+    },
+    "assignedTo" : {
+      "comment" : "Mac: tooltip of the avatars on a card or row. %(names)@ is a list of GitHub user names, already joined, e.g. 'kai and mona'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assigned to %(names)@"
           }
         }
       }
@@ -613,6 +973,18 @@
         }
       }
     },
+    "branchNameCopied" : {
+      "comment" : "Short notice (Mac, iPhone, iPad) after the git branch name for an issue was copied; the branch name is shown below it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Branch name copied"
+          }
+        }
+      }
+    },
     "cancel" : {
       "comment" : "Button that closes a dialog or sheet without making changes (Mac, iPhone, iPad).",
       "extractionState" : "manual",
@@ -621,6 +993,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "changeCouldNotBeSaved" : {
+      "comment" : "Title of a warning notice (Mac, iPhone, iPad) when a change the user just made to an issue could not be stored on the device. The system's error message is shown below it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That change could not be saved"
+          }
+        }
+      }
+    },
+    "changeDueDate" : {
+      "comment" : "Mac: tooltip of a button showing an issue's due date, which opens the due date picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change due date"
+          }
+        }
+      }
+    },
+    "changeLabels" : {
+      "comment" : "Mac: tooltip of a button showing an issue's labels, which opens the label picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change labels"
           }
         }
       }
@@ -637,6 +1045,42 @@
         }
       }
     },
+    "changePriority" : {
+      "comment" : "Mac: tooltip of the priority icon in a row of an issue's sub-issue list, a button that opens the priority picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change priority"
+          }
+        }
+      }
+    },
+    "changePriorityPlaceholder" : {
+      "comment" : "Mac: placeholder in the search field of the priority picker that opens from a card, a list row or an issue (and in the new issue dialog).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change priority to…"
+          }
+        }
+      }
+    },
+    "changeStatus" : {
+      "comment" : "Mac: tooltip of the status icon in a row of an issue's sub-issue list, a button that opens the status picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change status"
+          }
+        }
+      }
+    },
     "changeStatusCommand" : {
       "comment" : "Mac, command palette (⌘K): command that opens the list of statuses for the issue (the columns of its GitHub project board).",
       "extractionState" : "manual",
@@ -645,6 +1089,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Change status…"
+          }
+        }
+      }
+    },
+    "changeStatusPlaceholder" : {
+      "comment" : "Mac: placeholder in the search field of the status picker that opens from a card, a list row or an issue (and in the new issue dialog). Status: the column of the issue on its project board.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change status…"
+          }
+        }
+      }
+    },
+    "changeWithoutSummary" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac sidebar, iPhone account sheet): a change (noun) the app can't describe in more detail.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change"
+          }
+        }
+      }
+    },
+    "changesQueued" : {
+      "comment" : "Sync status line (sidebar, account sheet): changes the user made wait to be sent to GitHub. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld change queued"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld changes queued"
+                }
+              }
+            }
           }
         }
       }
@@ -693,6 +1185,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Changes are saved on this iPhone first and sent to GitHub in the background. Offline changes go out when you're back online."
+          }
+        }
+      }
+    },
+    "changingColumnsNeedsConnection" : {
+      "comment" : "Message of the notice 'Columns could not be saved'. %(error)@ is the system's error message, e.g. 'The Internet connection appears to be offline.'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changing columns needs a connection to GitHub. %(error)@"
+          }
+        }
+      }
+    },
+    "checkboxChecked" : {
+      "comment" : "VoiceOver: state of a checkbox in a checklist in an issue's description or comment (ticked).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checked"
+          }
+        }
+      }
+    },
+    "checkboxUnchecked" : {
+      "comment" : "VoiceOver: state of a checkbox in a checklist in an issue's description or comment (not ticked).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unchecked"
           }
         }
       }
@@ -765,6 +1293,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Closed"
+          }
+        }
+      }
+    },
+    "closedOnNoBoard" : {
+      "comment" : "Mac: tooltip of the status icon of a closed issue that is on none of the user's project boards.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closed, on no board"
           }
         }
       }
@@ -937,6 +1477,18 @@
         }
       }
     },
+    "columnsCouldNotBeSaved" : {
+      "comment" : "Title of a warning notice (Mac, iPhone, iPad) when GitHub refused new status columns for a project board. The columns are put back as they were.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Columns could not be saved"
+          }
+        }
+      }
+    },
     "commandPaletteEllipsis" : {
       "comment" : "Mac menu bar, Go menu: item that opens the command palette (⌘K), a search field for commands and issues.",
       "extractionState" : "manual",
@@ -985,6 +1537,18 @@
         }
       }
     },
+    "conflictEditedOnGitHub" : {
+      "comment" : "Message on the card '1 change needs your decision'. %(number)@ is the issue's number, e.g. '#15'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(number)@ was edited on GitHub too."
+          }
+        }
+      }
+    },
     "conflictTitleEditedOnGitHub" : {
       "comment" : "iPhone and iPad, issue screen: warning banner after the user changed the issue's title while someone else changed it on GitHub. The user's version is in the title field below the banner; GitHub's is shown in the banner.",
       "extractionState" : "manual",
@@ -993,6 +1557,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The title was also edited on GitHub. Nothing has been overwritten: your version is shown below and has not been sent."
+          }
+        }
+      }
+    },
+    "conflictsEditedOnGitHub" : {
+      "comment" : "Message on the card 'N changes need your decision', about the issues the changes were made to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They were edited on GitHub too."
+          }
+        }
+      }
+    },
+    "conflictsNeedDecision" : {
+      "comment" : "Title of the warning card at the bottom of the sidebar (Mac, iPad, iPhone): changes the user made conflict with edits made on GitHub at the same time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld change needs your decision"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld changes need your decision"
+                }
+              }
+            }
           }
         }
       }
@@ -1369,6 +1969,18 @@
         }
       }
     },
+    "diagram" : {
+      "comment" : "VoiceOver label of a diagram drawn from a Mermaid code block in an issue's description or comment.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagram"
+          }
+        }
+      }
+    },
     "discard" : {
       "comment" : "iPhone and iPad, new issue sheet: destructive button (a verb) in the question 'Discard this issue?' that throws the new issue away.",
       "extractionState" : "manual",
@@ -1473,6 +2085,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Due date: none"
+          }
+        }
+      }
+    },
+    "dueDatePlaceholder" : {
+      "comment" : "Mac: placeholder in the field of the due date picker, where a date can be typed. The date field understands English words only for now, so keep “fri” (Friday typed in part); “12.10.” is 12 October typed as day.month. Use your language's quotation marks.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due date… try “fri” or “12.10.”"
           }
         }
       }
@@ -1657,6 +2281,18 @@
         }
       }
     },
+    "dueOn" : {
+      "comment" : "Tooltip and VoiceOver text of an issue's due date that is still ahead (cards, rows, issue details). %(date)@ is a long date, e.g. 'Friday, 9 October 2026'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due %(date)@"
+          }
+        }
+      }
+    },
     "dueOnDate" : {
       "comment" : "iPhone and iPad, new issue sheet: VoiceOver label of the due date button. %(date)@ is the day, such as “Friday, 9 October”.",
       "extractionState" : "manual",
@@ -1665,6 +2301,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Due %(date)@"
+          }
+        }
+      }
+    },
+    "dueToday" : {
+      "comment" : "An issue is due today: tooltip and VoiceOver text of its due date (cards, rows, issue details), and title of the reminder notification on the day.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due today"
+          }
+        }
+      }
+    },
+    "dueTodayInProject" : {
+      "comment" : "Title of the reminder notification on the day an issue is due. %(project)@ is the name of the GitHub project the issue is on. The issue's number and title are the notification's text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due today · %(project)@"
+          }
+        }
+      }
+    },
+    "editDescriptionAction" : {
+      "comment" : "VoiceOver action (a verb) on an issue's description that starts editing it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit"
           }
         }
       }
@@ -1881,6 +2553,318 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unexpected response from GitHub. %(detail)@"
+          }
+        }
+      }
+    },
+    "eventApproved" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai approved it' (the pull request, in a review).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "approved it"
+          }
+        }
+      }
+    },
+    "eventAssignedPerson" : {
+      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai assigned mona' (to the issue). %(login)@ is a GitHub user name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "assigned %(login)@"
+          }
+        }
+      }
+    },
+    "eventAssignedSomeone" : {
+      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai assigned someone' (to the issue), when GitHub doesn't say whom.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "assigned someone"
+          }
+        }
+      }
+    },
+    "eventAssignedYou" : {
+      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai assigned you' (to the issue).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "assigned you"
+          }
+        }
+      }
+    },
+    "eventClosedCompleted" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai closed it as completed' (the issue; GitHub's wording).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "closed it as completed"
+          }
+        }
+      }
+    },
+    "eventClosedDuplicate" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai closed it as a duplicate' (the issue).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "closed it as a duplicate"
+          }
+        }
+      }
+    },
+    "eventClosedNotPlanned" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai closed it as not planned' (the issue; GitHub's wording).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "closed it as not planned"
+          }
+        }
+      }
+    },
+    "eventClosedPullRequest" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai closed it' (a pull request, without merging it).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "closed it"
+          }
+        }
+      }
+    },
+    "eventCommented" : {
+      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai commented'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "commented"
+          }
+        }
+      }
+    },
+    "eventMentionedYou" : {
+      "comment" : "Inbox, what happened on an issue: follows the name of the person who did it, in bold, e.g. 'Kai mentioned you'. Lowercase, as the middle of a sentence.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mentioned you"
+          }
+        }
+      }
+    },
+    "eventMerged" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai merged it' (the pull request).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "merged it"
+          }
+        }
+      }
+    },
+    "eventMovedToAnotherStatus" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai moved it to another status', when GitHub doesn't say which or on what board.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "moved it to another status"
+          }
+        }
+      }
+    },
+    "eventMovedToAnotherStatusInProject" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai moved it to another status in Website', when GitHub doesn't say which. %(project)@ is the GitHub project's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "moved it to another status in %(project)@"
+          }
+        }
+      }
+    },
+    "eventMovedToStatus" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai moved it to In Progress'. %(status)@ is a status column of a project board, as named on GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "moved it to %(status)@"
+          }
+        }
+      }
+    },
+    "eventMovedToStatusInProject" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai moved it to In Progress in Website'. %(status)@ is a status column of a project board, %(project)@ the GitHub project's name, both as named on GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "moved it to %(status)@ in %(project)@"
+          }
+        }
+      }
+    },
+    "eventOpenedIssue" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai opened the issue' (created it). 'Issue' is a GitHub term.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "opened the issue"
+          }
+        }
+      }
+    },
+    "eventOpenedPullRequest" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai opened this pull request'. 'Pull request' is a GitHub term.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "opened this pull request"
+          }
+        }
+      }
+    },
+    "eventReopened" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai reopened it' (the issue or pull request).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reopened it"
+          }
+        }
+      }
+    },
+    "eventRequestedChanges" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai requested changes' (to the pull request, in a review).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "requested changes"
+          }
+        }
+      }
+    },
+    "eventRequestedReviewFrom" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai requested a review from mona' (of a pull request). %(login)@ is a GitHub user or team name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "requested a review from %(login)@"
+          }
+        }
+      }
+    },
+    "eventRequestedReviewFromSomeone" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai requested a review from someone' (of a pull request), when GitHub doesn't say whom.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "requested a review from someone"
+          }
+        }
+      }
+    },
+    "eventRequestedYourReview" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai requested your review' (of a pull request).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "requested your review"
+          }
+        }
+      }
+    },
+    "eventReviewed" : {
+      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai reviewed it' (the pull request).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reviewed it"
+          }
+        }
+      }
+    },
+    "eventUnassignedPerson" : {
+      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai unassigned mona' (took them off the issue). %(login)@ is a GitHub user name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "unassigned %(login)@"
+          }
+        }
+      }
+    },
+    "eventUnassignedSomeone" : {
+      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai unassigned someone', when GitHub doesn't say whom.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "unassigned someone"
+          }
+        }
+      }
+    },
+    "eventUnassignedYou" : {
+      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai unassigned you' (took you off the issue).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "unassigned you"
           }
         }
       }
@@ -2365,6 +3349,174 @@
         }
       }
     },
+    "inboxKindActivity" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about, when GitHub doesn't say more than that something happened. Read before the issue's number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activity"
+          }
+        }
+      }
+    },
+    "inboxKindApproved" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. A pull request was approved in a review. Read before its number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approved"
+          }
+        }
+      }
+    },
+    "inboxKindAssigned" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. Someone assigned the issue (to you). Read first, before the issue's number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assigned"
+          }
+        }
+      }
+    },
+    "inboxKindChangesRequested" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. A review asked for changes to a pull request. Read before its number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes requested"
+          }
+        }
+      }
+    },
+    "inboxKindClosed" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. The issue was closed as not planned. Read before its number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closed"
+          }
+        }
+      }
+    },
+    "inboxKindComment" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. A new comment (a noun). Read before the issue's number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comment"
+          }
+        }
+      }
+    },
+    "inboxKindCompleted" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. The issue was closed as completed. Read before its number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completed"
+          }
+        }
+      }
+    },
+    "inboxKindMention" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. Someone mentioned you (a noun). Read before the issue's number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mention"
+          }
+        }
+      }
+    },
+    "inboxKindMerged" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. The pull request was merged. Read before its number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merged"
+          }
+        }
+      }
+    },
+    "inboxKindNewIssue" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. Someone opened a new issue. Read before its number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New issue"
+          }
+        }
+      }
+    },
+    "inboxKindReopened" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. The issue was reopened. Read before its number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reopened"
+          }
+        }
+      }
+    },
+    "inboxKindReviewRequested" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. Someone asked for a review of a pull request. Read before its number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review requested"
+          }
+        }
+      }
+    },
+    "inboxKindStatusChanged" : {
+      "comment" : "Inbox, VoiceOver: what a notification is about. The issue moved to another status column on a project board. Read before its number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status changed"
+          }
+        }
+      }
+    },
+    "inboxLatestActivity" : {
+      "comment" : "Inbox, issue beside the list (Mac, iPhone, iPad): heading above the list of what happened lately on the issue, when nothing is new to the user.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latest activity"
+          }
+        }
+      }
+    },
     "inboxMentionedTeamQuote" : {
       "comment" : "Inbox row, line under the issue's title: someone mentioned the user's GitHub team in a comment; the comment's text follows after the colon. %(who)@ is a person's name, %(team)@ the team as written on GitHub, e.g. '@acme/design'.",
       "extractionState" : "manual",
@@ -2473,6 +3625,18 @@
         }
       }
     },
+    "inboxNew" : {
+      "comment" : "Inbox, issue beside the list: heading above the list of what happened on the issue since the user last read it (an adjective: new activity).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New"
+          }
+        }
+      }
+    },
     "inboxNewActivity" : {
       "comment" : "Inbox row, line under the title, when there's nothing more specific to say: something new happened on the issue or pull request.",
       "extractionState" : "manual",
@@ -2481,6 +3645,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New activity"
+          }
+        }
+      }
+    },
+    "inboxNewSinceDate" : {
+      "comment" : "Inbox, issue beside the list: heading above what happened since the user last read the issue, on an earlier day. %(date)@ is a short date, e.g. '3 Oct'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New since %(date)@"
+          }
+        }
+      }
+    },
+    "inboxNewSinceTime" : {
+      "comment" : "Inbox, issue beside the list: heading above what happened since the user last read the issue, earlier today. %(time)@ is a time of day, e.g. '14:05' or '2:05 PM'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New since %(time)@"
+          }
+        }
+      }
+    },
+    "inboxNewSinceYesterday" : {
+      "comment" : "Inbox, issue beside the list: heading above what happened since the user last read the issue, yesterday.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New since yesterday"
           }
         }
       }
@@ -2697,6 +3897,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Someone"
+          }
+        }
+      }
+    },
+    "inboxTimeHours" : {
+      "comment" : "Inbox time column: how long ago, in hours, e.g. '3h'. Very short (an abbreviation of hours); %(hours)lld is 1–23.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(hours)lldh"
+          }
+        }
+      }
+    },
+    "inboxTimeMinutes" : {
+      "comment" : "Inbox time column: how long ago, in minutes, e.g. '12m'. Very short (an abbreviation of minutes); %(minutes)lld is 1–59.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(minutes)lldm"
+          }
+        }
+      }
+    },
+    "inboxTimeNow" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): time column of a notification less than a minute old. Very short, lowercase as in Linear.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "now"
           }
         }
       }
@@ -3061,6 +4297,18 @@
         }
       }
     },
+    "labelsTooltip" : {
+      "comment" : "Mac: tooltip of the labels on a card or row. %(names)@ is the list of the issue's GitHub labels, already joined, e.g. 'bug, design'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Labels: %(names)@"
+          }
+        }
+      }
+    },
     "leaveACommentPlaceholder" : {
       "comment" : "iPhone and iPad, issue screen: placeholder in the comment field at the bottom.",
       "extractionState" : "manual",
@@ -3085,6 +4333,18 @@
         }
       }
     },
+    "linkCopied" : {
+      "comment" : "Short notice (Mac, iPhone, iPad) after the GitHub web address of one issue was copied; the issue's number and title are shown below it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link copied"
+          }
+        }
+      }
+    },
     "linkTextPlaceholder" : {
       "comment" : "iPhone and iPad, writing an issue's description: word put into the description as the text of a new link, in Markdown as [link](https://), and selected so the user types over it. Lowercase, one word.",
       "extractionState" : "manual",
@@ -3093,6 +4353,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "link"
+          }
+        }
+      }
+    },
+    "linksCopied" : {
+      "comment" : "Short notice (Mac, iPad) after the GitHub web addresses of several picked issues were copied. %(count)lld is 2 or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld link copied"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld links copied"
+                }
+              }
+            }
           }
         }
       }
@@ -3685,6 +4969,18 @@
         }
       }
     },
+    "newSubIssueChoice" : {
+      "comment" : "Last row of the picker that lists an issue's sub-issues: opens the dialog to write a new sub-issue. 'Sub-issue' is a GitHub term.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New sub-issue…"
+          }
+        }
+      }
+    },
     "nextIssue" : {
       "comment" : "iPad, issue screen: toolbar button with a down arrow (read by VoiceOver) and the J keyboard command; opens the next issue of the list. Title case.",
       "extractionState" : "manual",
@@ -3753,6 +5049,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No description"
+          }
+        }
+      }
+    },
+    "noDueDate" : {
+      "comment" : "Mac: tooltip of the due date spot on a card or row when the issue has none.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No due date"
           }
         }
       }
@@ -3909,6 +5217,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Not signed in"
+          }
+        }
+      }
+    },
+    "notSyncedYet" : {
+      "comment" : "Sync status line (sidebar, account sheet) before the first sync with GitHub has finished. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not synced yet"
           }
         }
       }
@@ -4177,6 +5497,18 @@
         }
       }
     },
+    "notificationsAreOff" : {
+      "comment" : "Settings, Reminders section: shown when the system doesn't allow the app (named 'Issues') to show notifications.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications for Issues are off"
+          }
+        }
+      }
+    },
     "notificationsLoadWhenOnline" : {
       "comment" : "iPhone and iPad Inbox: explanation under 'You're offline' before any notification has been loaded.",
       "extractionState" : "manual",
@@ -4185,6 +5517,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your notifications load as soon as you're back online."
+          }
+        }
+      }
+    },
+    "offline" : {
+      "comment" : "No internet connection: sync status line (sidebar, account sheet) and title of the card at the bottom of the sidebar (Mac, iPad, iPhone). Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline"
+          }
+        }
+      }
+    },
+    "offlineChangesSavedOnIPad" : {
+      "comment" : "Message on the 'Offline' card at the bottom of the iPad sidebar, when nothing waits to be sent yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes are saved on this iPad and sent when you’re back online."
+          }
+        }
+      }
+    },
+    "offlineChangesSavedOnIPhone" : {
+      "comment" : "Message on the 'Offline' card on the iPhone, when nothing waits to be sent yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes are saved on this iPhone and sent when you’re back online."
+          }
+        }
+      }
+    },
+    "offlineChangesSavedOnMac" : {
+      "comment" : "Message on the 'Offline' card at the bottom of the Mac sidebar, when nothing waits to be sent yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes are saved on this Mac and sent when you’re back online."
+          }
+        }
+      }
+    },
+    "offlineChangesWaiting" : {
+      "comment" : "Message on the 'Offline' card at the bottom of the sidebar (Mac, iPad, iPhone): changes the user made, waiting on this device to be sent to GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld change waits here and goes out when you’re back online."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld changes wait here and go out when you’re back online."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "offlineQueued" : {
+      "comment" : "Sync status line (sidebar, account sheet): no internet connection, and this many changes wait to be sent. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Offline · %(count)lld queued"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Offline · %(count)lld queued"
+                }
+              }
+            }
           }
         }
       }
@@ -4237,6 +5665,18 @@
         }
       }
     },
+    "openNotificationSettings" : {
+      "comment" : "Settings, Reminders section: button that opens the system's notification settings for the app, when notifications are turned off there.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        }
+      }
+    },
     "openOnGitHub" : {
       "comment" : "Menu item or button that opens the issue or pull request on github.com in the web browser.",
       "extractionState" : "manual",
@@ -4257,6 +5697,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open %(repository)@ on GitHub"
+          }
+        }
+      }
+    },
+    "openSubIssuePlaceholder" : {
+      "comment" : "Mac: placeholder in the search field of the picker that lists an issue's sub-issues: typing finds a sub-issue to open. 'Sub-issue' is a GitHub term.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open sub-issue…"
           }
         }
       }
@@ -4317,6 +5769,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Releases, CI runs and discussions stay on GitHub."
+          }
+        }
+      }
+    },
+    "overdueSince" : {
+      "comment" : "Tooltip and VoiceOver text of an issue's due date that has passed (cards, rows, issue details). %(date)@ is a long date, e.g. 'Friday, 9 October 2026'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overdue since %(date)@"
+          }
+        }
+      }
+    },
+    "overdueSinceYesterday" : {
+      "comment" : "Title of the reminder notification the morning after an issue was due, if it is still open (when the issue is on no named project).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overdue since yesterday"
+          }
+        }
+      }
+    },
+    "overdueSinceYesterdayInProject" : {
+      "comment" : "Title of the reminder notification the morning after an issue was due, if it is still open. %(project)@ is the name of the GitHub project the issue is on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overdue since yesterday · %(project)@"
           }
         }
       }
@@ -4489,6 +5977,30 @@
         }
       }
     },
+    "priorityCouldNotBeAdded" : {
+      "comment" : "Title of a warning notice (Mac, iPhone, iPad) when the Priority field could not be added to a GitHub project. The system's error message is shown below it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Priority could not be added"
+          }
+        }
+      }
+    },
+    "priorityHigh" : {
+      "comment" : "VoiceOver label of the priority icon (three bars filled) on cards and rows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High priority"
+          }
+        }
+      }
+    },
     "priorityIs" : {
       "comment" : "iPhone and iPad: VoiceOver label of the button showing an issue's priority (issue screen, new issue sheet). %(priority)@ is the priority's name, such as “High”.",
       "extractionState" : "manual",
@@ -4513,6 +6025,30 @@
         }
       }
     },
+    "priorityLow" : {
+      "comment" : "VoiceOver label of the priority icon (three bars, one filled) on cards and rows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low priority"
+          }
+        }
+      }
+    },
+    "priorityMedium" : {
+      "comment" : "VoiceOver label of the priority icon (three bars, two filled) on cards and rows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium priority"
+          }
+        }
+      }
+    },
     "priorityNone" : {
       "comment" : "iPhone and iPad: VoiceOver label of the priority button while the issue has no priority.",
       "extractionState" : "manual",
@@ -4521,6 +6057,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Priority: none"
+          }
+        }
+      }
+    },
+    "priorityNoneTooltip" : {
+      "comment" : "Mac: tooltip of the priority icon on a card or row when the issue has no priority.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Priority: None"
+          }
+        }
+      }
+    },
+    "priorityTooltip" : {
+      "comment" : "Mac: tooltip of the priority icon on a card or row. %(name)@ is the priority, as named on GitHub, e.g. 'High'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Priority: %(name)@"
+          }
+        }
+      }
+    },
+    "priorityUrgent" : {
+      "comment" : "VoiceOver label of the priority icon for the highest priority (an exclamation mark) on cards and rows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Urgent"
           }
         }
       }
@@ -5005,6 +6577,126 @@
         }
       }
     },
+    "remindAgainNextMorning" : {
+      "comment" : "Settings, Reminders section: switch for a second reminder the morning after the due date, if the issue is still open.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Again the next morning if still open"
+          }
+        }
+      }
+    },
+    "remindWhenAssignedIssuesDue" : {
+      "comment" : "Settings, Reminders section (Mac, iPhone, iPad): switch for notifications on the day an issue assigned to the user is due.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remind me when issues assigned to me are due"
+          }
+        }
+      }
+    },
+    "reminderActionMarkAsDone" : {
+      "comment" : "Button of the reminder notification for a due issue (Mac, iPhone, iPad): moves the issue to the done column. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Done"
+          }
+        }
+      }
+    },
+    "reminderActionMoveToTomorrow" : {
+      "comment" : "Button of the reminder notification for a due issue (Mac, iPhone, iPad): changes the due date to tomorrow. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to Tomorrow"
+          }
+        }
+      }
+    },
+    "reminderActionStart" : {
+      "comment" : "Button of the reminder notification for a due issue (Mac, iPhone, iPad): moves the issue to the first 'in progress' column (a verb: start working on it). Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start"
+          }
+        }
+      }
+    },
+    "reminderTimeOnDueDate" : {
+      "comment" : "Settings, Reminders section: label of the time picker for when the reminder comes on the day an issue is due.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time on the due date"
+          }
+        }
+      }
+    },
+    "reminders" : {
+      "comment" : "Settings (Mac, iPhone, iPad): heading of the section about notifications for due issues.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminders"
+          }
+        }
+      }
+    },
+    "remindersFooterIPad" : {
+      "comment" : "iPad settings, under the Reminders section: the reminders are scheduled by the device itself, no server is involved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The iPad reminds you itself, from the due dates on GitHub. Nothing is sent anywhere for it."
+          }
+        }
+      }
+    },
+    "remindersFooterIPhone" : {
+      "comment" : "iPhone settings, under the Reminders section: the reminders are scheduled by the device itself, no server is involved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The iPhone reminds you itself, from the due dates on GitHub. Nothing is sent anywhere for it."
+          }
+        }
+      }
+    },
+    "remindersFooterMac" : {
+      "comment" : "Mac Settings, under the Reminders section: the reminders are scheduled by the device itself, no server is involved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Mac reminds you itself, from the due dates on GitHub. Nothing is sent anywhere for it."
+          }
+        }
+      }
+    },
     "removeDueDate" : {
       "comment" : "iPhone and iPad: destructive button in the due date sheet, and item in an issue's Due Date menu, that clears the issue's due date. Title case.",
       "extractionState" : "manual",
@@ -5019,6 +6711,18 @@
     },
     "removeDueDateCommand" : {
       "comment" : "Mac, command palette (⌘K): command that clears the issue's due date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove due date"
+          }
+        }
+      }
+    },
+    "removeDueDateRow" : {
+      "comment" : "Due date picker (Mac, iPhone, iPad): last row, which clears the issue's due date.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5245,6 +6949,18 @@
         }
       }
     },
+    "reviewConflict" : {
+      "comment" : "Button (a verb) on the card 'N changes need your decision': opens the issue whose change conflicts with an edit on GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review"
+          }
+        }
+      }
+    },
     "sampleData" : {
       "comment" : "Mac: shown in place of a name while the app shows its sample projects instead of a GitHub account (account menu in the sidebar; 'GitHub account' row in Settings).",
       "extractionState" : "manual",
@@ -5257,6 +6973,18 @@
         }
       }
     },
+    "sampleDataCouldNotLoad" : {
+      "comment" : "Title of a warning notice (Mac, iPhone, iPad) when the built-in sample data, for trying the app without a GitHub account, fails to open. The system's error message is shown below it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The sample data could not be loaded"
+          }
+        }
+      }
+    },
     "sampleDataNothingSent" : {
       "comment" : "iPhone and iPad, account sheet: line under the name while the app shows sample data instead of an account.",
       "extractionState" : "manual",
@@ -5265,6 +6993,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sample data, nothing is sent to GitHub"
+          }
+        }
+      }
+    },
+    "sampleDataStatus" : {
+      "comment" : "Sync status line (sidebar, account sheet) while the app shows its built-in sample project instead of a GitHub account. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sample data"
           }
         }
       }
@@ -5677,6 +7417,18 @@
         }
       }
     },
+    "showChanges" : {
+      "comment" : "Button on the 'Offline' card: shows the list of changes waiting to be sent to GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Changes"
+          }
+        }
+      }
+    },
     "showDockBadgeSetting" : {
       "comment" : "Mac Settings: switch that shows the number of unread Inbox notifications as a badge on the app's icon in the Dock.",
       "extractionState" : "manual",
@@ -5953,6 +7705,18 @@
         }
       }
     },
+    "signedOut" : {
+      "comment" : "Sync status line (sidebar, account sheet) when GitHub no longer accepts the login. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signed out"
+          }
+        }
+      }
+    },
     "signsInByItselfIPad" : {
       "comment" : "iPad, sign-in screen: note at the bottom.",
       "extractionState" : "manual",
@@ -5985,6 +7749,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Snooze"
+          }
+        }
+      }
+    },
+    "snoozeLaterToday" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): choice in the Snooze menu that brings the notification back in a few hours. The time is shown beside it. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Later Today"
+          }
+        }
+      }
+    },
+    "snoozeNextWeek" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): choice in the Snooze menu that brings the notification back next Monday morning. The day and time are shown beside it. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next Week"
           }
         }
       }
@@ -6049,6 +7837,66 @@
         }
       }
     },
+    "snoozedBackAtTime" : {
+      "comment" : "Inbox: message under 'Snoozed …' when the notification comes back later today. %(time)@ is a time of day, e.g. '18:00' or '6:00 PM'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back at %(time)@, or sooner if something happens."
+          }
+        }
+      }
+    },
+    "snoozedBackOnDay" : {
+      "comment" : "Inbox: message under 'Snoozed …' when the notification comes back on a later day. %(day)@ is a weekday with a time, e.g. 'Monday 09:00'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back on %(day)@, or sooner if something happens."
+          }
+        }
+      }
+    },
+    "snoozedNotification" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): title of a short notice after one notification was snoozed (hidden until a later time; verb, past tense). %(number)@ is the issue's number, e.g. '#14'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snoozed %(number)@"
+          }
+        }
+      }
+    },
+    "snoozedNotifications" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): title of a short notice after several notifications were snoozed (hidden until a later time; verb, past tense). %(count)lld is 2 or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Snoozed %(count)lld notification"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Snoozed %(count)lld notifications"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "someone" : {
       "comment" : "iPhone and iPad, issue opened from the Inbox: stands for a person GitHub doesn't name, at the start of a line such as 'Someone commented'.",
       "extractionState" : "manual",
@@ -6057,6 +7905,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Someone"
+          }
+        }
+      }
+    },
+    "stateClosed" : {
+      "comment" : "Shown instead of a status (chip, issue properties) for an issue on no project board that was closed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closed"
+          }
+        }
+      }
+    },
+    "stateMerged" : {
+      "comment" : "Shown instead of a status (chip, issue properties) for a pull request on no project board that was merged.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merged"
           }
         }
       }
@@ -6081,6 +7953,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "These are the project's Status field on GitHub and the columns of its board. Changes are saved on GitHub right away, so they need a connection."
+          }
+        }
+      }
+    },
+    "statusGroupBacklog" : {
+      "comment" : "My Issues and a repository's issue list (Mac, iPhone, iPad): heading of the group of issues in a backlog status (not planned for now). Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backlog"
+          }
+        }
+      }
+    },
+    "statusGroupCanceled" : {
+      "comment" : "My Issues and a repository's issue list (Mac, iPhone, iPad): heading of the group of issues closed as not planned. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canceled"
+          }
+        }
+      }
+    },
+    "statusGroupDone" : {
+      "comment" : "My Issues and a repository's issue list (Mac, iPhone, iPad): heading of the group of finished (closed as completed) issues. A status, not the button that closes a sheet. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        }
+      }
+    },
+    "statusGroupInProgress" : {
+      "comment" : "My Issues and a repository's issue list (Mac, iPhone, iPad): heading of the group of issues whose status on their board means work has started. Issues from several boards are grouped by what their status means. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In progress"
+          }
+        }
+      }
+    },
+    "statusGroupTodo" : {
+      "comment" : "My Issues and a repository's issue list (Mac, iPhone, iPad): heading of the group of issues whose status means not started yet (GitHub's default column is called 'Todo'). Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo"
           }
         }
       }
@@ -6121,6 +8053,18 @@
         }
       }
     },
+    "statusNoneTooltip" : {
+      "comment" : "Mac: tooltip of the status icon on a card or row when the issue has no status yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status: None"
+          }
+        }
+      }
+    },
     "statusRemovedFromProject" : {
       "comment" : "iPhone and iPad, Statuses screen of a project: explanation under 'Delete the … status?' when no issue has that status.",
       "extractionState" : "manual",
@@ -6157,6 +8101,18 @@
         }
       }
     },
+    "statusTooltip" : {
+      "comment" : "Mac: tooltip of the status icon on a card or row. %(name)@ is the status column, as named on GitHub, e.g. 'In Progress'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status: %(name)@"
+          }
+        }
+      }
+    },
     "statuses" : {
       "comment" : "iPhone and iPad: title of the screen listing a project's statuses (the columns of its board), where they are added, renamed, recoloured and removed.",
       "extractionState" : "manual",
@@ -6189,6 +8145,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sub-issues"
+          }
+        }
+      }
+    },
+    "subIssuesDone" : {
+      "comment" : "Tooltip and VoiceOver label of the sub-issue progress chip (shown as '2/5') on cards and rows. %(done)@ is a number already formatted, e.g. '2'; %(total)lld is how many sub-issues there are; the plural follows it. 'Sub-issue' is a GitHub term.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(done)@ of %(total)lld sub-issue done"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(done)@ of %(total)lld sub-issues done"
+                }
+              }
+            }
           }
         }
       }
@@ -6277,6 +8257,18 @@
         }
       }
     },
+    "syncProblem" : {
+      "comment" : "Syncing with GitHub failed: sync status line (sidebar, account sheet) and title of the warning card at the bottom of the sidebar. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync problem"
+          }
+        }
+      }
+    },
     "syncSection" : {
       "comment" : "iPhone and iPad, account sheet: heading of the section about syncing with GitHub (a noun).",
       "extractionState" : "manual",
@@ -6321,6 +8313,90 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sync with GitHub Now"
+          }
+        }
+      }
+    },
+    "syncedAtTime" : {
+      "comment" : "Sync status line (sidebar, account sheet) when the last sync was an hour or more ago. %(time)@ is a time of day, e.g. '14:05' or '2:05 PM'. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synced %(time)@"
+          }
+        }
+      }
+    },
+    "syncedJustNow" : {
+      "comment" : "Sync status line at the bottom of the sidebar (Mac, iPad) and in the account sheet (iPhone): everything was fetched from GitHub less than a minute ago. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synced just now"
+          }
+        }
+      }
+    },
+    "syncedMinutesAgo" : {
+      "comment" : "Sync status line (sidebar, account sheet). %(minutes)lld is 1–60. Short: 'min' is an abbreviation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Synced %(minutes)lld min ago"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Synced %(minutes)lld min ago"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "syncing" : {
+      "comment" : "Sync status line (sidebar, account sheet) while the app fetches from GitHub. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing…"
+          }
+        }
+      }
+    },
+    "syncingChanges" : {
+      "comment" : "Sync status line (sidebar, account sheet) while changes are being sent to GitHub. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Syncing %(count)lld change…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Syncing %(count)lld changes…"
+                }
+              }
+            }
           }
         }
       }
@@ -6433,6 +8509,18 @@
         }
       }
     },
+    "turnOnNotificationsHint" : {
+      "comment" : "Settings, Reminders section: second line under 'Notifications for Issues are off', beside the 'Open Settings' button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn them on to get reminders."
+          }
+        }
+      }
+    },
     "typeADate" : {
       "comment" : "iPhone and iPad: placeholder in the search field of a sheet that picks an issue's due date.",
       "extractionState" : "manual",
@@ -6541,6 +8629,18 @@
         }
       }
     },
+    "unreadEntry" : {
+      "comment" : "Inbox, VoiceOver: said first for a notification that hasn't been read yet (an adjective).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unread"
+          }
+        }
+      }
+    },
     "unsentIssueNumber" : {
       "comment" : "All screens: shown in place of an issue's number (#12) while an issue the user just wrote hasn't reached GitHub yet (cards, lists, the list of changes waiting to be sent). An adjective about the issue. Short: one word, no spaces.",
       "extractionState" : "manual",
@@ -6561,6 +8661,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unsubscribe"
+          }
+        }
+      }
+    },
+    "unsubscribedFromIssue" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): short notice with an Undo button after the user stopped GitHub's notifications about one issue. %(number)@ is the issue's number, e.g. '#9'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unsubscribed from %(number)@"
+          }
+        }
+      }
+    },
+    "unsubscribedFromIssues" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): short notice with an Undo button after the user stopped GitHub's notifications about several issues. %(count)lld is 2 or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Unsubscribed from %(count)lld issue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Unsubscribed from %(count)lld issues"
+                }
+              }
+            }
           }
         }
       }

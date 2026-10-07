@@ -26,9 +26,9 @@ enum SyncAttention: Hashable {
 
     var title: String {
         switch self {
-        case .conflict(let count, _, _): count == 1 ? "1 change needs your decision" : "\(count) changes need your decision"
-        case .failed: "Sync problem"
-        case .offline: "Offline"
+        case .conflict(let count, _, _): String(localized: .conflictsNeedDecision(count: count))
+        case .failed: String(localized: .syncProblem)
+        case .offline: String(localized: .offline)
         }
     }
 
@@ -36,23 +36,25 @@ enum SyncAttention: Hashable {
     var message: String {
         switch self {
         case .conflict(let count, let number, _):
-            return count == 1 ? "\(number) was edited on GitHub too." : "They were edited on GitHub too."
+            return count == 1 ? String(localized: .conflictEditedOnGitHub(number: number)) : String(localized: .conflictsEditedOnGitHub)
         case .failed(let message):
             return message
         case .offline(let pending):
-            if pending == 0 { return "Changes are saved on this \(Platform.deviceName) and sent when you’re back online." }
-            return pending == 1
-                ? "1 change waits here and goes out when you’re back online."
-                : "\(pending) changes wait here and go out when you’re back online."
+            if pending > 0 { return String(localized: .offlineChangesWaiting(count: pending)) }
+            return switch Platform.device {
+            case .mac: String(localized: .offlineChangesSavedOnMac)
+            case .iPad: String(localized: .offlineChangesSavedOnIPad)
+            case .iPhone: String(localized: .offlineChangesSavedOnIPhone)
+            }
         }
     }
 
     /// The button on the card, if there is something to do.
     var actionTitle: String? {
         switch self {
-        case .conflict(_, _, let itemId): itemId == nil ? nil : "Review"
-        case .failed: "Try Again"
-        case .offline(let pending): pending > 0 ? "Show Changes" : nil
+        case .conflict(_, _, let itemId): itemId == nil ? nil : String(localized: .reviewConflict)
+        case .failed: String(localized: .tryAgain)
+        case .offline(let pending): pending > 0 ? String(localized: .showChanges) : nil
         }
     }
 
@@ -123,13 +125,20 @@ extension AppModel {
 }
 
 extension Platform {
-    /// "Mac", "iPad" or "iPhone", for text that talks about this device.
+    enum Device {
+        case mac
+        case iPad
+        case iPhone
+    }
+
+    /// This device, for text that talks about it. Each device has its own sentence, since the words around its
+    /// name change with it in some languages.
     @MainActor
-    static var deviceName: String {
+    static var device: Device {
         #if os(macOS)
-        "Mac"
+        .mac
         #else
-        UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+        UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .iPhone
         #endif
     }
 }

@@ -288,8 +288,8 @@ extension AppModel {
                 try await engine.updateOptions(projectId: projectId, fieldId: fieldId, kind: .status, options: newOptions)
             } catch {
                 status.post(Notice(
-                    title: "Columns could not be saved",
-                    message: "Changing columns needs a connection to GitHub. \(error.localizedDescription)",
+                    title: String(localized: .columnsCouldNotBeSaved),
+                    message: String(localized: .changingColumnsNeedsConnection(error: error.localizedDescription)),
                     isWarning: true
                 ))
                 await engine.forceRefresh()
@@ -407,7 +407,7 @@ extension AppModel {
             do {
                 try await engine.createPriorityField(projectId: projectId)
             } catch {
-                status.post(Notice(title: "Priority could not be added", message: error.localizedDescription, isWarning: true))
+                status.post(Notice(title: String(localized: .priorityCouldNotBeAdded), message: error.localizedDescription, isWarning: true))
             }
         }
     }
@@ -427,12 +427,12 @@ extension AppModel {
     func copyBranchName(_ item: Item) {
         guard let name = item.branchName else { return }
         Platform.copy(name)
-        status.post(Notice(title: "Branch name copied", message: name))
+        status.post(Notice(title: String(localized: .branchNameCopied), message: name))
     }
 
     func copyLink(_ url: String, for label: String) {
         Platform.copy(url)
-        status.post(Notice(title: "Link copied", message: label))
+        status.post(Notice(title: String(localized: .linkCopied), message: label))
     }
 
     func apply(_ action: Notice.Action) {

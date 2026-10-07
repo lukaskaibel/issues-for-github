@@ -27,9 +27,9 @@ struct DueBadge: Equatable {
     /// "Due Friday, 9 October", "Overdue since 3 October".
     var tooltip: String {
         switch tone {
-        case .overdue: "Overdue since \(day.longLabel)"
-        case .today: "Due today"
-        case .upcoming, .settled: "Due \(day.longLabel)"
+        case .overdue: String(localized: .overdueSince(date: day.longLabel))
+        case .today: String(localized: .dueToday)
+        case .upcoming, .settled: String(localized: .dueOn(date: day.longLabel))
         }
     }
 }
@@ -40,9 +40,9 @@ extension CalendarDay {
     func shortLabel(today: CalendarDay = .today()) -> String {
         let distance = days(from: today)
         switch distance {
-        case 0: return "Today"
-        case 1: return "Tomorrow"
-        case -1: return "Yesterday"
+        case 0: return String(localized: .today)
+        case 1: return String(localized: .tomorrow)
+        case -1: return String(localized: .yesterday)
         case 2...6: return date().formatted(.dateTime.weekday(.abbreviated))
         default:
             return year == today.year
@@ -54,9 +54,9 @@ extension CalendarDay {
     /// For the issue's properties: "Today", "Tomorrow", else "Fri, 9 Oct".
     func mediumLabel(today: CalendarDay = .today()) -> String {
         switch days(from: today) {
-        case 0: "Today"
-        case 1: "Tomorrow"
-        case -1: "Yesterday"
+        case 0: String(localized: .today)
+        case 1: String(localized: .tomorrow)
+        case -1: String(localized: .yesterday)
         default:
             year == today.year
                 ? date().formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
@@ -120,7 +120,7 @@ extension AppModel {
         }
         if current.contains(where: { $0 != nil }) {
             rows.append(PickerItem(
-                id: "", title: "Remove due date",
+                id: "", title: String(localized: .removeDueDateRow),
                 icon: AnyView(Image(systemName: "xmark").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary))
             ))
         }

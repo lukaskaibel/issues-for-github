@@ -87,13 +87,13 @@ struct PriorityIcon: View {
         RoundedRectangle(cornerRadius: 1).fill(on ? Theme.textBody : Theme.barOff).frame(width: 3, height: height)
     }
 
-    private var label: String {
+    private var label: LocalizedStringResource {
         switch level {
-        case .none: "No priority"
-        case .low: "Low priority"
-        case .medium: "Medium priority"
-        case .high: "High priority"
-        case .urgent: "Urgent"
+        case .none: .noPriority
+        case .low: .priorityLow
+        case .medium: .priorityMedium
+        case .high: .priorityHigh
+        case .urgent: .priorityUrgent
         }
     }
 }
@@ -220,7 +220,7 @@ struct SubIssueChip: View {
             SubIssueGlyph().frame(width: 11, height: 11)
             Text("\(completed)/\(total)").monospacedDigit()
         }
-        .accessibilityLabel("\(completed) of \(total) sub-issues done")
+        .accessibilityLabel(.subIssuesDone(done: completed.formatted(), total: total))
     }
 }
 

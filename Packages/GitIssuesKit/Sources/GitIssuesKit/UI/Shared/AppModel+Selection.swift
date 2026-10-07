@@ -123,7 +123,8 @@ extension AppModel {
         let links = items.compactMap(\.url)
         guard !links.isEmpty else { return }
         Platform.copy(links.joined(separator: "\n"))
-        status.post(Notice(title: links.count == 1 ? "Link copied" : "\(links.count) links copied", message: ""))
+        let title = links.count == 1 ? String(localized: .linkCopied) : String(localized: .linksCopied(count: links.count))
+        status.post(Notice(title: title, message: ""))
     }
 
     // MARK: Peek

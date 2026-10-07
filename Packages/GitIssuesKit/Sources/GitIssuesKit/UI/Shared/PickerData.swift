@@ -48,12 +48,12 @@ enum PickerKind: Equatable {
 
     var placeholder: String {
         switch self {
-        case .status: "Change status…"
-        case .priority: "Change priority to…"
-        case .assignees: "Assign to…"
-        case .labels: "Add labels…"
-        case .dueDate: "Due date… try “fri” or “12.10.”"
-        case .subIssues: "Open sub-issue…"
+        case .status: String(localized: .changeStatusPlaceholder)
+        case .priority: String(localized: .changePriorityPlaceholder)
+        case .assignees: String(localized: .assignToPlaceholder)
+        case .labels: String(localized: .addLabelsPlaceholder)
+        case .dueDate: String(localized: .dueDatePlaceholder)
+        case .subIssues: String(localized: .openSubIssuePlaceholder)
         }
     }
 
@@ -74,12 +74,12 @@ enum PickerKind: Equatable {
 
     var help: String {
         switch self {
-        case .status: "Change status"
-        case .priority: "Change priority"
-        case .assignees: "Assign"
-        case .labels: "Change labels"
-        case .dueDate: "Change due date"
-        case .subIssues: "Sub-issues"
+        case .status: String(localized: .changeStatus)
+        case .priority: String(localized: .changePriority)
+        case .assignees: String(localized: .assign)
+        case .labels: String(localized: .changeLabels)
+        case .dueDate: String(localized: .changeDueDate)
+        case .subIssues: String(localized: .subIssues)
         }
     }
 
@@ -103,7 +103,7 @@ extension AppModel {
             }
         case .priority:
             let none = PickerItem(
-                id: "", title: "No priority", selected: targets.allSatisfy { $0.priorityId == nil },
+                id: "", title: String(localized: .noPriority), selected: targets.allSatisfy { $0.priorityId == nil },
                 icon: AnyView(PriorityIcon(level: .none)), shortcut: "0"
             )
             return [none] + priorityOptions(projectId: item.projectId).enumerated().map { index, option in
@@ -161,7 +161,7 @@ extension AppModel {
             }
             guard item.kind == .issue else { return rows }
             let add = PickerItem(
-                id: Self.newSubIssueId, title: "New sub-issue…",
+                id: Self.newSubIssueId, title: String(localized: .newSubIssueChoice),
                 icon: AnyView(Image(systemName: "plus").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary))
             )
             return rows + [add]
@@ -199,10 +199,10 @@ extension AppModel {
     /// The status as a chip or property shows it. An issue on none of your boards has none, only open or closed.
     func statusText(of item: Item) -> String {
         guard item.isOnBoard else {
-            if item.state == "MERGED" { return "Merged" }
-            return item.isClosed ? "Closed" : "No project"
+            if item.state == "MERGED" { return String(localized: .stateMerged) }
+            return item.isClosed ? String(localized: .stateClosed) : String(localized: .noProject)
         }
-        return statusOption(of: item)?.name ?? "No status"
+        return statusOption(of: item)?.name ?? String(localized: .noStatus)
     }
 
     func statusIsPlaceholder(_ item: Item) -> Bool {
@@ -213,7 +213,9 @@ extension AppModel {
     func pickerPlaceholder(_ kind: PickerKind, for item: Item) -> String {
         guard kind == .status, !item.isOnBoard else { return kind.placeholder }
         let boards = boards(toAdd: item)
-        return boards.count == 1 ? "Add to \(boards[0].title)…" : "Add to project…"
+        return boards.count == 1
+            ? String(localized: .addToNamedProjectPlaceholder(project: boards[0].title))
+            : String(localized: .addToProjectPickerPlaceholder)
     }
 
     /// A part of a sub-issue row: on the Mac it opens its own picker, as in Linear; elsewhere it is only shown.
@@ -228,21 +230,30 @@ extension AppModel {
 
     /// What a part of a card or list row shows on hover, as Linear names each value.
     func tooltip(_ kind: PickerKind, for item: Item) -> String {
+        let text: LocalizedStringResource
         switch kind {
         case .status:
-            guard item.isOnBoard else { return item.isClosed ? "Closed, on no board" : "Add to project" }
-            return "Status: \(statusOption(of: item)?.name ?? "None")"
+            if !item.isOnBoard {
+                text = item.isClosed ? .closedOnNoBoard : .addToProjectTooltip
+            } else if let name = statusOption(of: item)?.name {
+                text = .statusTooltip(name: name)
+            } else {
+                text = .statusNoneTooltip
+            }
         case .priority:
-            return "Priority: \(priorityOption(of: item)?.name ?? "None")"
+            text = priorityOption(of: item).map { .priorityTooltip(name: $0.name) } ?? .priorityNoneTooltip
         case .assignees:
-            return item.assignees.isEmpty ? "Unassigned" : "Assigned to " + item.assignees.map(\.login).formatted(.list(type: .and))
+            text = item.assignees.isEmpty ? .unassigned : .assignedTo(names: item.assignees.map(\.login).formatted(.list(type: .and)))
         case .labels:
-            return "Labels: " + item.labels.map(\.name).joined(separator: ", ")
+            // Narrow: "bug, design" in English, without "and", as the chips read.
+            text = .labelsTooltip(names: item.labels.map(\.name).formatted(.list(type: .and, width: .narrow)))
         case .dueDate:
-            return dueBadge(for: item)?.tooltip ?? "No due date"
+            guard let badge = dueBadge(for: item) else { return String(localized: .noDueDate) }
+            return badge.tooltip
         case .subIssues:
-            return "\(item.subCompleted) of \(item.subTotal) sub-issues done"
+            text = .subIssuesDone(done: item.subCompleted.formatted(), total: item.subTotal)
         }
+        return String(localized: text)
     }
 
     /// Sub-issues of an issue that are on the same board, in board order.
