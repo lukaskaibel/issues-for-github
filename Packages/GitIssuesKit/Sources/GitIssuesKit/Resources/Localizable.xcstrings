@@ -3080,7 +3080,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tres barras, oscuro"
+            "value" : "Tres barras, oscuras"
           }
         },
         "fr" : {
@@ -31418,7 +31418,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu cambio a %@ se aplicó después."
+            "value" : "Tu cambio (%@) se aplicó después."
           }
         },
         "fr" : {
@@ -47924,7 +47924,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cambiar a %@"
+            "value" : "Usar %@"
           }
         },
         "fr" : {
