@@ -388,7 +388,7 @@ struct DateWords {
     static let all: [DateWords] = [
         DateWords(
             language: "de", today: ["heute"], tomorrow: ["morgen"], dayAfterTomorrow: ["übermorgen"],
-            nextWeek: ["nächste woche"], endOfWeek: ["ende der woche", "wochenende"], endOfMonth: ["ende des monats", "monatsende"],
+            nextWeek: ["nächste woche"], endOfWeek: ["ende der woche"], endOfMonth: ["ende des monats", "monatsende"],
             nextMonth: ["nächsten monat", "nächster monat"], nextWeekday: ["nächsten %@", "nächster %@", "kommenden %@"],
             countLeads: ["in "], days: ["tagen", "tage", "tag", "t"], weeks: ["wochen", "woche", "w"],
             months: ["monaten", "monate", "monat", "m"]
@@ -428,19 +428,19 @@ struct DateWords {
         ),
         DateWords(
             language: "ja", today: ["今日", "きょう"], tomorrow: ["明日", "あした", "あす"], dayAfterTomorrow: ["明後日", "あさって"],
-            nextWeek: ["来週"], endOfWeek: ["今週末", "週末"], endOfMonth: ["月末", "今月末"], nextMonth: ["来月"],
+            nextWeek: ["来週"], endOfWeek: ["今週中", "週の終わり"], endOfMonth: ["月末", "今月末"], nextMonth: ["来月"],
             nextWeekday: ["来週の%@", "来週%@"],
             days: ["日後", "日"], weeks: ["週間後", "週後", "週間", "週"], months: ["か月後", "ヶ月後", "カ月後", "ヵ月後", "か月", "ヶ月", "カ月", "ヵ月"]
         ),
         DateWords(
             language: "zh", today: ["今天"], tomorrow: ["明天"], dayAfterTomorrow: ["后天"],
-            nextWeek: ["下周", "下星期", "下个星期"], endOfWeek: ["周末", "本周末", "这周末"], endOfMonth: ["月底", "本月底"],
+            nextWeek: ["下周", "下星期", "下个星期"], endOfWeek: ["本周内", "这周内"], endOfMonth: ["月底", "本月底"],
             nextMonth: ["下个月", "下月"], nextWeekday: ["下%@", "下个%@"],
             days: ["天后", "天", "日后"], weeks: ["周后", "周", "个星期后", "星期后"], months: ["个月后", "个月", "月后"]
         ),
         DateWords(
             language: "ko", today: ["오늘"], tomorrow: ["내일"], dayAfterTomorrow: ["모레"],
-            nextWeek: ["다음 주", "다음주"], endOfWeek: ["이번 주말", "주말"], endOfMonth: ["월말", "이번 달 말"],
+            nextWeek: ["다음 주", "다음주"], endOfWeek: ["이번 주 안", "이번 주 중"], endOfMonth: ["월말", "이번 달 말"],
             nextMonth: ["다음 달", "다음달"], nextWeekday: ["다음 주 %@", "다음주 %@"],
             days: ["일 후", "일 뒤", "일후", "일뒤", "일"], weeks: ["주 후", "주 뒤", "주후", "주"],
             months: ["개월 후", "개월 뒤", "개월", "달 후", "달"]
