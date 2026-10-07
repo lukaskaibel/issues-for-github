@@ -74,11 +74,14 @@ enum DebugRemote {
                 model.select(.project(project.id))
             }
         case "entry":
-            // entry <number>: selects the Inbox entry about that issue, as a click does; "entry none" clears it.
-            let entry = model.visibleInbox.first { "\($0.number ?? -1)" == argument || $0.displayNumber(withRepo: true) == argument }
+            // entry <number>: selects the Inbox entry about that issue, as a click does; "entry due <number>" the entry
+            // for the issue being due; "entry none" clears it.
+            let due = argument.hasPrefix("due ")
+            let number = due ? String(argument.dropFirst(4)) : argument
+            let entry = model.visibleInbox.first { $0.isDue == due && ("\($0.number ?? -1)" == number || $0.displayNumber(withRepo: true) == number) }
             model.selectInboxEntry(entry)
         case "inboxdump":
-            for entry in model.inboxEntries {
+            for entry in model.inboxEntries + model.dueInboxEntries {
                 let summary = model.inboxSummary(entry)
                 log("inbox \(entry.displayNumber(withRepo: true)) \(entry.bucket.rawValue) unread=\(model.isUnread(entry)) archived=\(entry.isArchived) \(summary.sign.rawValue): \(summary.lead) \(summary.excerpt ?? "")")
             }

@@ -102,7 +102,9 @@ The Inbox shows what happened that concerns you, as Linear's does: who assigned 
 for your review or closed an issue you follow. It is GitHub's own notifications, so what you read or archive here is
 read or done on github.com and on your other devices too. Pick one and its issue opens beside the list, with what's
 new on top and the new comment marked; change it right there, and press S to put one that's on none of your boards
-onto one. J and K move on, U marks read or unread, E archives and H snoozes until later.
+onto one. J and K move on, U marks read or unread, E archives and H snoozes until later. Issues of yours that are due
+join the list on the day, and the morning after if they're still open, with the reminder's buttons: Start, Mark as
+Done and Move to Tomorrow.
 
 <!-- The picture comes with the next run of Tools/readme-images.sh, which makes inbox-light.webp and inbox-dark.webp;
      take this comment away then.
@@ -227,7 +229,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | No project | An issue that is in none of your projects; adding it to one is GitHub's *Add to project* |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
 | Blocked by and blocking | GitHub's issue dependencies |
-| Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there |
+| Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there. Due issues are the app's own entries, read and archived in iCloud |
 
 Boards show the issues in their project; a repository shows all its open issues and those closed in the last four
 weeks, on a board or not. My Issues shows the open issues assigned to you anywhere on GitHub. The Inbox also shows

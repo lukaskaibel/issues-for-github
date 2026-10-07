@@ -8,6 +8,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Due issues in the Inbox.** On the day an issue assigned to you is due, it joins the Inbox at the time of the
+  reminder ("Due today"), and the morning after, if it is still open, once more ("Overdue since yesterday"), with a
+  calendar instead of an avatar. Opened, it offers the reminder's buttons: Start, Mark as Done and Move to Tomorrow.
+  Read, archive and snooze work as for notifications, kept in iCloud with your other Inbox records, since GitHub
+  doesn't know these entries; they count towards the unread number. Turning reminders off in Settings takes them
+  away too.
 - **Sub-issues and blockers, as in Linear.** The plus beside an issue's sub-issues now finds issues that exist already,
   by title or number, and makes them sub-issues; what you type can also start a new one with that title. Right-click
   any issue for **Set Parent Issue…** to put it under another one, move it to another parent or take it out of its

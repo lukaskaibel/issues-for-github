@@ -27,10 +27,37 @@ struct InboxSnoozeRequest: Equatable {
 extension AppModel {
     // MARK: What shows
 
-    /// Entries in a half of the Inbox, newest first: not archived, not snoozed.
+    /// Entries in a half of the Inbox, newest first: not archived, not snoozed. Issues of yours that are due join
+    /// GitHub's notifications in For you.
     func inbox(_ bucket: InboxBucket) -> [InboxEntry] {
         let now = inboxClock
-        return inboxEntries.filter { $0.bucket == bucket && isShown($0, now: now) }
+        let shown = inboxEntries.filter { $0.bucket == bucket && isShown($0, now: now) }
+        let due = bucket == .forYou ? dueInboxEntries.filter { isShown($0, now: now) } : []
+        guard !due.isEmpty else { return shown }
+        return (shown + due).sorted { $0.updatedAt != $1.updatedAt ? $0.updatedAt > $1.updatedAt : $0.id < $1.id }
+    }
+
+    /// Issues of yours as Inbox entries: from the reminder on the day they are due, and from the reminder the morning
+    /// after while they are still open. They come and go with the reminders' settings, and are read, archived and
+    /// snoozed on this side only; GitHub doesn't know them.
+    var dueInboxEntries: [InboxEntry] {
+        guard notifier.enabled else { return [] }
+        let now = inboxClock
+        var result: [InboxEntry] = []
+        for (item, day) in remindableDueItems() {
+            var entry: InboxEntry
+            if notifier.remindsWhenOverdue, let overdueAt = notifier.moment(on: day.adding(days: 1)), now >= overdueAt {
+                entry = InboxEntry(due: item, day: day, overdue: true, at: overdueAt)
+            } else if let dueAt = notifier.moment(on: day), now >= dueAt {
+                entry = InboxEntry(due: item, day: day, overdue: false, at: dueAt)
+            } else {
+                continue
+            }
+            guard !personal.isArchived(entry.id) else { continue }
+            entry.unread = !personal.isRead(entry.id)
+            result.append(entry)
+        }
+        return result
     }
 
     /// The half on screen. Watching is offered only while it has something.
@@ -71,11 +98,11 @@ extension AppModel {
     }
 
     var inboxSelected: InboxEntry? {
-        inboxSelectedId.flatMap { id in inboxEntries.first { $0.id == id } }
+        inboxSelectedId.flatMap(inboxEntry(id:))
     }
 
     func inboxEntry(id: String) -> InboxEntry? {
-        inboxEntries.first { $0.id == id }
+        inboxEntries.first { $0.id == id } ?? (id.contains(":") ? dueInboxEntries.first { $0.id == id } : nil)
     }
 
     /// What the Inbox shows of an entry: the row's line, with names as the people have set them.
@@ -229,7 +256,11 @@ extension AppModel {
         for entry in entries {
             personal.setMarkedUnread(entry.id, nil)
             if let snooze = personal.snooze(entry.id), inboxClock >= snooze.until { personal.setSnooze(entry.id, nil) }
-            if entry.unread {
+            if entry.isDue {
+                // Read here and on the user's other devices; the reminder in Notification Center has done its job.
+                personal.setRead(entry.id, true)
+                if let item = inboxItem(for: entry) { notifier.clearDelivered(for: item) }
+            } else if entry.unread {
                 mutations.append(.markThreadRead(.init(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label)))
             }
         }
@@ -259,7 +290,7 @@ extension AppModel {
         guard !entries.isEmpty else { return }
         let message = entries.count == 1 ? "Archived \(entries[0].displayNumber(withRepo: false))" : "Archived \(entries.count) notifications"
         change(entries, message: message) { entry in
-            [.archiveThread(.init(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label))]
+            entry.isDue ? [] : [.archiveThread(.init(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label))]
         }
     }
 
@@ -270,6 +301,8 @@ extension AppModel {
 
     /// ⇧S: no more notifications about it until someone mentions you or you comment, and out of the Inbox.
     func unsubscribe(_ entries: [InboxEntry]) {
+        // A due issue is no GitHub notification, so there is nothing to unsubscribe from.
+        let entries = entries.filter { !$0.isDue }
         guard !entries.isEmpty else { return }
         let message = entries.count == 1 ? "Unsubscribed from \(entries[0].displayNumber(withRepo: false))" : "Unsubscribed from \(entries.count) issues"
         change(entries, message: message) { entry in
@@ -287,6 +320,11 @@ extension AppModel {
             records[entry.id] = personal.records[entry.id]
             unread[entry.id] = entry.unread
             personal.clear(entry.id)
+            // GitHub keeps archived notifications; the app keeps archived due issues itself.
+            if entry.isDue {
+                personal.setArchived(entry.id, true)
+                if let item = inboxItem(for: entry) { notifier.clearDelivered(for: item) }
+            }
         }
         let lastId = outbox.last?.id ?? 0
         withAnimation(Theme.spring) { perform(entries.flatMap(mutations)) }

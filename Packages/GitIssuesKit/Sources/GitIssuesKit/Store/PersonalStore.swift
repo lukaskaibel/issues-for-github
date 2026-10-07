@@ -1,7 +1,8 @@
 import Foundation
 import Observation
 
-/// What the Inbox keeps that GitHub has no place for: entries snoozed until later, and entries marked unread again.
+/// What the Inbox keeps that GitHub has no place for: entries snoozed until later, entries marked unread again, and
+/// whether the entries the app makes itself (issues that are due) were read or archived.
 /// It lives in iCloud's key-value store, so the user's Mac, iPhone and iPad agree, and is mirrored on the device for
 /// builds without iCloud (development builds without a team). The sample data keeps it in memory only.
 @MainActor
@@ -20,9 +21,18 @@ public final class PersonalStore {
         var snooze: Snooze?
         /// Marked unread: the thread's last activity at the time.
         var unreadFor: Date?
+        /// Read, for an entry GitHub doesn't know: when.
+        var read: Date?
+        /// Archived, for an entry GitHub doesn't know: when.
+        var archived: Date?
         var modified: Date
 
-        var isEmpty: Bool { snooze == nil && unreadFor == nil }
+        var isEmpty: Bool { snooze == nil && unreadFor == nil && read == nil && archived == nil }
+
+        /// Equal apart from when it changed.
+        func sameContent(as other: Record) -> Bool {
+            snooze == other.snooze && unreadFor == other.unreadFor && read == other.read && archived == other.archived
+        }
     }
 
     private(set) var records: [String: Record] = [:]
@@ -69,6 +79,16 @@ public final class PersonalStore {
         records[threadId]?.unreadFor
     }
 
+    /// Whether an entry the app makes itself has been read.
+    public func isRead(_ entryId: String) -> Bool {
+        records[entryId]?.read != nil
+    }
+
+    /// Whether an entry the app makes itself has been archived.
+    public func isArchived(_ entryId: String) -> Bool {
+        records[entryId]?.archived != nil
+    }
+
     /// The earliest moment a snoozed entry comes back, to look again then.
     public var nextWake: Date? {
         records.values.compactMap { $0.snooze?.until }.filter { $0 > Date() }.min()
@@ -82,6 +102,14 @@ public final class PersonalStore {
 
     public func setMarkedUnread(_ threadId: String, _ updatedAt: Date?) {
         update(threadId) { $0.unreadFor = updatedAt }
+    }
+
+    public func setRead(_ entryId: String, _ read: Bool) {
+        update(entryId) { $0.read = read ? $0.read ?? Date() : nil }
+    }
+
+    public func setArchived(_ entryId: String, _ archived: Bool) {
+        update(entryId) { $0.archived = archived ? $0.archived ?? Date() : nil }
     }
 
     /// Forgets everything about the entry: opened, archived or read again.
@@ -102,7 +130,7 @@ public final class PersonalStore {
         var record = records[threadId] ?? Record(modified: Date())
         let before = record
         change(&record)
-        guard record.snooze != before.snooze || record.unreadFor != before.unreadFor else { return }
+        guard !record.sameContent(as: before) else { return }
         record.modified = Date()
         records[threadId] = record
         save(threadId, record)

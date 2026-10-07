@@ -173,14 +173,11 @@ final class Notifier {
     }
 
     private func requests(for model: AppModel) -> [UNNotificationRequest] {
-        guard let viewer = model.viewer else { return [] }
         let now = Date()
         let calendar = CalendarDay.calendar
         var result: [(date: Date, request: UNNotificationRequest)] = []
-        let closedProjects = Set(model.projects.filter(\.closed).map(\.id))
-        for item in model.allItems {
-            guard let day = item.due, let projectId = item.projectId, !closedProjects.contains(projectId),
-                  item.assignees.contains(where: { $0.id == viewer.id }), !model.isDone(item) else { continue }
+        for (item, day) in model.remindableDueItems() {
+            guard let projectId = item.projectId else { continue }
             let project = model.project(of: item)?.title
             let key = item.contentId ?? item.id
             var occasions = [("due", day, "Due today")]
@@ -188,9 +185,7 @@ final class Notifier {
                 occasions.append(("overdue", day.adding(days: 1, calendar: calendar), "Overdue since yesterday"))
             }
             for (kind, fireDay, title) in occasions {
-                var parts = fireDay.components
-                parts.hour = minutes / 60
-                parts.minute = minutes % 60
+                let parts = components(on: fireDay)
                 guard let date = calendar.date(from: parts), date > now else { continue }
                 let content = UNMutableNotificationContent()
                 content.title = project.map { "\(title) · \($0)" } ?? title
@@ -213,6 +208,19 @@ final class Notifier {
         if status == .ephemeral { return true }
         #endif
         return status == .authorized || status == .provisional
+    }
+
+    /// The reminder's time on a day, as calendar components without a time zone.
+    func components(on day: CalendarDay) -> DateComponents {
+        var parts = day.components
+        parts.hour = minutes / 60
+        parts.minute = minutes % 60
+        return parts
+    }
+
+    /// When the reminder on a day comes.
+    func moment(on day: CalendarDay, calendar: Calendar = CalendarDay.calendar) -> Date? {
+        calendar.date(from: components(on: day))
     }
 
     private static func fingerprint(_ request: UNNotificationRequest) -> String {
@@ -272,13 +280,11 @@ final class Notifier {
         guard let item else { return }
         switch action {
         case Action.start:
-            if let started = model.statusOptions(projectId: item.projectId).first(where: { $0.statusCategory == .started }) {
-                model.setStatus(item, to: started)
-            }
+            model.startWork(on: item)
         case Action.done:
-            if !model.isDone(item) { model.toggleDone(item) }
+            model.markDone(item)
         case Action.tomorrow:
-            model.setDueDate(of: [item], to: CalendarDay.today().adding(days: 1))
+            model.moveToTomorrow(item)
         case UNNotificationDefaultActionIdentifier:
             model.reveal(item)
             return

@@ -488,7 +488,9 @@ private struct InboxIssue: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    if !entry.activity.isEmpty {
+                    if entry.isDue {
+                        DueEntryBanner(entry: entry, item: item)
+                    } else if !entry.activity.isEmpty {
                         InboxNews(entry: entry) { commentId in
                             withAnimation(Theme.spring) { proxy.scrollTo(commentId, anchor: .top) }
                         }
@@ -743,11 +745,14 @@ struct InboxMenuBuilder {
         archive.image = MenuIcons.symbol("archivebox")
         hint(archive, "e")
         menu.addItem(archive)
-        let unsubscribe = ClosureMenuItem("Unsubscribe") { [model] in model.unsubscribe(targets) }
-        unsubscribe.image = MenuIcons.symbol("bell.slash")
-        unsubscribe.keyEquivalent = "S"
-        unsubscribe.keyEquivalentModifierMask = [.shift]
-        menu.addItem(unsubscribe)
+        // A due issue is the app's own reminder, not a GitHub notification to unsubscribe from.
+        if targets.contains(where: { !$0.isDue }) {
+            let unsubscribe = ClosureMenuItem("Unsubscribe") { [model] in model.unsubscribe(targets) }
+            unsubscribe.image = MenuIcons.symbol("bell.slash")
+            unsubscribe.keyEquivalent = "S"
+            unsubscribe.keyEquivalentModifierMask = [.shift]
+            menu.addItem(unsubscribe)
+        }
 
         let builder = targets.count == 1 && !entry.missing ? model.inboxItem(for: entry).map { ItemMenuBuilder(model: model, item: $0) } : nil
         if let builder {
