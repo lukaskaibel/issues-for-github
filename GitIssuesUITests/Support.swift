@@ -91,6 +91,29 @@ class AppTestCase: XCTestCase {
         return bar.exists && bar.frame.height > 0 && element.frame.maxY > bar.frame.minY - 8
     }
 
+    /// Opens a board card's menu with a long press, and stops waiting for animations until `closedCardMenu()`.
+    /// A card can be dragged as well, so while its menu is open UIKit holds the drag's lift animator, paused, for
+    /// the preview to be dragged out of the menu onto a column. Nothing moves or draws, but XCTest counts the paused
+    /// animator as running and would wait a minute before every step.
+    func openCardMenu(_ card: XCUIElement) {
+        waitsForAnimations(false)
+        card.press(forDuration: 1.2)
+        wait(button("Status"))
+        // What XCTest no longer waits for: the menu springing open.
+        Thread.sleep(forTimeInterval: 0.8)
+    }
+
+    func closedCardMenu() {
+        waitsForAnimations(true)
+    }
+
+    /// XCTest has no public switch for its wait on animations before each step; `XCUIApplication` keeps one under
+    /// this name. Should it go away, the tests still pass, only slowly.
+    private func waitsForAnimations(_ waits: Bool) {
+        guard app.responds(to: NSSelectorFromString("setIdleAnimationWaitEnabled:")) else { return }
+        app.setValue(waits, forKey: "idleAnimationWaitEnabled")
+    }
+
     /// Back one screen.
     func goBack() {
         let bar = app.navigationBars.firstMatch
