@@ -145,6 +145,150 @@
         }
       }
     },
+    "dueEndOfMonth" : {
+      "comment" : "Due date picker: a suggested date, the last day of this month (shown when the user types 'end of month').",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End of month"
+          }
+        }
+      }
+    },
+    "dueEndOfWeek" : {
+      "comment" : "Due date picker: a suggested date, this week's Friday (shown when the user types 'end of week').",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End of week"
+          }
+        }
+      }
+    },
+    "dueInDays" : {
+      "comment" : "Due date picker: a suggested date, a number of days from today (the user typed e.g. 'in 3 days').",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "In %(count)lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "In %(count)lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "dueInMonths" : {
+      "comment" : "Due date picker: a suggested date, a number of months from today (the user typed e.g. 'in 1 month').",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "In %(count)lld month"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "In %(count)lld months"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "dueInTwoWeeks" : {
+      "comment" : "Due date picker: a suggested date, 14 days from today. Shown in a list of choices next to the date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In two weeks"
+          }
+        }
+      }
+    },
+    "dueInWeeks" : {
+      "comment" : "Due date picker: a suggested date, a number of weeks from today (the user typed e.g. '2w').",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "In %(count)lld week"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "In %(count)lld weeks"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "dueNextMonth" : {
+      "comment" : "Due date picker: a suggested date, the same day next month (shown when the user types 'next month').",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next month"
+          }
+        }
+      }
+    },
+    "dueNextWeek" : {
+      "comment" : "Due date picker: a suggested date, the Monday of next week. Shown in a list of choices next to the date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next week"
+          }
+        }
+      }
+    },
+    "dueNextWeekday" : {
+      "comment" : "Due date picker: a suggested date, a weekday of next week. %(weekday)@ is a weekday name as in a list (Friday). Choose a wording that fits every weekday whatever its grammatical gender, e.g. 'Friday of next week'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next %(weekday)@"
+          }
+        }
+      }
+    },
     "inbox" : {
       "comment" : "Name of the place that lists GitHub notifications (sidebar row, iPhone tab, title). Like the inbox in Apple Mail.",
       "extractionState" : "manual",
