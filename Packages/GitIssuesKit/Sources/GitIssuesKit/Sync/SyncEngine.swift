@@ -344,6 +344,20 @@ public actor SyncEngine {
                     )
                 }
             }
+            // Likewise an issue's open blockers: when an issue that blocks others changed, perhaps closed, the
+            // issues marked as blocked are read again.
+            if hydrated.contains(where: { $0.blockingCount > 0 }) {
+                let read = Set(hydrated.map(\.id))
+                let blocked = try await db.reader.read { db in
+                    try String.fetchAll(db, sql: "SELECT id FROM item WHERE projectId = ? AND blockedByCount > 0", arguments: [projectId])
+                }.filter { !read.contains($0) }
+                if !blocked.isEmpty {
+                    hydrated += try await api.hydrate(
+                        itemIds: blocked, projectId: projectId,
+                        statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id, dueFieldId: meta.dueField?.id
+                    )
+                }
+            }
         }
 
         let sweepSnapshot = sweep
@@ -890,6 +904,19 @@ public actor SyncEngine {
             }
             return .sent([m.itemId: itemId])
 
+        case .setParent(let m):
+            // Changes that ended where they started need nothing from GitHub.
+            guard m.parentId != m.base else { break }
+            if let parentId = m.parentId {
+                try await api.addSubIssue(parentId: parentId, childId: m.child.contentId)
+            } else if let base = m.base {
+                try await api.removeSubIssue(parentId: base, childId: m.child.contentId)
+            }
+
+        case .setBlocking(let m):
+            guard m.isBlocked != m.base else { break }
+            try await api.setBlockedBy(issueId: m.blocked.contentId, blockerId: m.blocker.contentId, blocked: m.isBlocked)
+
         case .deleteItem(let m):
             do {
                 if m.isDraft, let projectId = m.projectId {
@@ -982,6 +1009,8 @@ public actor SyncEngine {
             try db.execute(sql: "UPDATE comment SET issueId = ? WHERE issueId = ?", arguments: [new, old])
             try db.execute(sql: "UPDATE subIssue SET id = ? WHERE id = ?", arguments: [new, old])
             try db.execute(sql: "UPDATE subIssue SET parentId = ? WHERE parentId = ?", arguments: [new, old])
+            try db.execute(sql: "UPDATE linkedIssue SET id = ? WHERE id = ?", arguments: [new, old])
+            try db.execute(sql: "UPDATE linkedIssue SET issueId = ? WHERE issueId = ?", arguments: [new, old])
         }
         for var entry in try Outbox.active(db) {
             let remapped = entry.mutation.remapping(remaps)
@@ -1003,6 +1032,21 @@ public actor SyncEngine {
         }
         if case .addComment(let m) = entry.mutation {
             try Comment.deleteOne(db, key: m.commentId)
+        }
+        // A refused change of parent or blocker is undone here too, so the lists show what GitHub has.
+        if case .setParent(var m) = entry.mutation {
+            m.parentId = m.base
+            m.parentNumber = nil
+            m.parentTitle = nil
+            if let base = m.base, let parent = try Item.filter(Column("contentId") == base).fetchOne(db) {
+                m.parentNumber = parent.number
+                m.parentTitle = parent.title
+            }
+            try m.apply(db)
+        }
+        if case .setBlocking(var m) = entry.mutation {
+            m.isBlocked = m.base
+            try m.apply(db)
         }
         if case .deleteItem(let m) = entry.mutation {
             return Notice(title: "\(m.label) couldn't be deleted", message: error.localizedDescription, isWarning: true)
@@ -1034,8 +1078,19 @@ public actor SyncEngine {
             )
             for sub in detail.subIssues { try sub.save(db) }
             try db.execute(
-                sql: "UPDATE item SET commentCount = ?, subTotal = ?, subCompleted = ? WHERE contentId = ?",
-                arguments: [detail.comments.count, detail.subIssues.count, detail.subIssues.filter(\.isClosed).count, contentId]
+                sql: "DELETE FROM linkedIssue WHERE issueId = ? AND id NOT LIKE ?",
+                arguments: [contentId, LocalID.prefix + "%"]
+            )
+            for link in detail.links { try link.save(db) }
+            func open(_ relation: LinkedIssue.Relation) -> Int {
+                detail.links.filter { $0.relation == relation && !$0.isClosed }.count
+            }
+            try db.execute(
+                sql: "UPDATE item SET commentCount = ?, subTotal = ?, subCompleted = ?, blockedByCount = ?, blockingCount = ? WHERE contentId = ?",
+                arguments: [
+                    detail.comments.count, detail.subIssues.count, detail.subIssues.filter(\.isClosed).count,
+                    open(.blockedBy), open(.blocking), contentId,
+                ]
             )
             try Outbox.rebase(db)
         }
@@ -1157,11 +1212,13 @@ public actor SyncEngine {
                 let confirmed = remaps
                 try await db.writer.write { db in
                     try Self.markSent(db, entryId: entryId, remaps: confirmed)
-                    // GitHub keeps a parent's sub-issue progress up to date by itself.
+                    // GitHub keeps a parent's sub-issue progress and an issue's open blockers up to date by itself.
                     try db.execute(sql: """
                         UPDATE item SET
                           subTotal = (SELECT COUNT(*) FROM subIssue s WHERE s.parentId = item.contentId),
-                          subCompleted = (SELECT COUNT(*) FROM subIssue s WHERE s.parentId = item.contentId AND s.state != 'OPEN')
+                          subCompleted = (SELECT COUNT(*) FROM subIssue s WHERE s.parentId = item.contentId AND s.state != 'OPEN'),
+                          blockedByCount = (SELECT COUNT(*) FROM linkedIssue l WHERE l.issueId = item.contentId AND l.relation = 'blockedBy' AND l.state = 'OPEN'),
+                          blockingCount = (SELECT COUNT(*) FROM linkedIssue l WHERE l.issueId = item.contentId AND l.relation = 'blocking' AND l.state = 'OPEN')
                         WHERE contentId IS NOT NULL
                         """)
                 }

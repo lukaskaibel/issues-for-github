@@ -32,6 +32,8 @@ enum MobileSheet: Identifiable, Equatable {
     case arrangeSections(Scope)
     /// The due date of an issue, from a menu that has no screen of its own to show it.
     case dueDate(String)
+    /// A picker for an issue, from a long press on its row or card: its parent, sub-issues or blockers.
+    case picker(itemId: String, kind: PickerKind)
 
     var id: String {
         switch self {
@@ -40,6 +42,7 @@ enum MobileSheet: Identifiable, Equatable {
         case .queue: "queue"
         case .arrangeSections(let scope): "arrange-\(scope)"
         case .dueDate(let id): "due-\(id)"
+        case .picker(let itemId, let kind): "picker-\(kind)-\(itemId)"
         }
     }
 }

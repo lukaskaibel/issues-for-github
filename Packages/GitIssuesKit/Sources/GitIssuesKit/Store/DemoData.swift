@@ -77,6 +77,8 @@ public enum DemoData {
         var hoursAgo: Double = 30
         /// Due this many days from today; negative is overdue.
         var due: Int?
+        /// Issues of the same project this one waits for.
+        var blockedBy: [Int] = []
     }
 
     private static let appIssues: [IssueSpec] = [
@@ -103,9 +105,9 @@ public enum DemoData {
             ```
             """, hoursAgo: 5),
         IssueSpec(number: 6, title: "Delta sync for project items", status: "In Review", priority: "High", labels: ["sync"], assignees: [theo], body: "Only fetch items whose `updatedAt` changed since the last sweep.", hoursAgo: 8, due: 2),
-        IssueSpec(number: 24, title: "Animate the column count when a card lands", status: "In Review", priority: nil, hoursAgo: 9),
+        IssueSpec(number: 24, title: "Animate the column count when a card lands", status: "Todo", priority: nil, hoursAgo: 9, blockedBy: [9]),
         IssueSpec(number: 7, title: "Sub-issue tree in issue detail", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [mira], hoursAgo: 4),
-        IssueSpec(number: 8, title: "Offline change queue that replays on reconnect", status: "In Progress", priority: "High", labels: ["sync"], assignees: [viewer.person], body: "Every change is written locally first and queued. When the connection returns, the queue is sent in order.", hoursAgo: 2, due: 9),
+        IssueSpec(number: 8, title: "Offline change queue that replays on reconnect", status: "In Progress", priority: "High", labels: ["sync"], assignees: [viewer.person], body: "Every change is written locally first and queued. When the connection returns, the queue is sent in order.", hoursAgo: 2, due: 9, blockedBy: [6]),
         IssueSpec(number: 9, title: "Drag cards between columns with spring physics", status: "In Progress", priority: "Urgent", labels: ["ui"], assignees: [viewer.person], body: """
             A card should lift under the pointer, tilt slightly while it moves, and settle into place with a spring. Neighbouring cards make room as the drag passes over them.
 
@@ -122,7 +124,7 @@ public enum DemoData {
         IssueSpec(number: 17, title: "Command palette with fuzzy search", status: "Todo", priority: "High", labels: ["ui"], assignees: [viewer.person], hoursAgo: 20, due: 1),
         IssueSpec(number: 14, title: "Sign in with GitHub device flow", status: "Todo", priority: "Medium", labels: ["auth"], assignees: [viewer.person, kai], hoursAgo: 22, due: 3),
         IssueSpec(number: 25, title: "Crash when a label name contains an emoji", status: "Todo", priority: "Urgent", labels: ["bug"], assignees: [kai, viewer.person], body: "Steps to reproduce:\n\n1. Add a label named `🔥 hot`\n2. Open the labels picker\n3. The app quits", hoursAgo: 12, due: -2),
-        IssueSpec(number: 18, title: "Notarized builds and automatic updates", status: "Backlog", priority: "Low", labels: ["release"], hoursAgo: 70, due: 24),
+        IssueSpec(number: 18, title: "Notarized builds and automatic updates", status: "Backlog", priority: "Low", labels: ["release"], hoursAgo: 70, due: 24, blockedBy: [25]),
         IssueSpec(number: 19, title: "Show linked pull requests and CI state", status: "Backlog", priority: "Low", labels: ["feature"], hoursAgo: 80),
         IssueSpec(number: 20, title: "Milestones as roadmap projects", status: "Backlog", priority: "Low", labels: ["feature"], hoursAgo: 90),
         IssueSpec(number: 21, title: "Inbox from GitHub notifications", status: "Done", priority: "High", labels: ["feature"], assignees: [viewer.person], hoursAgo: 30),
@@ -195,6 +197,8 @@ public enum DemoData {
                 let date = now.addingTimeInterval(-issue.hoursAgo * 3600)
                 let parent = issue.parent.flatMap { number in issues.first { $0.number == number } }
                 let children = issues.filter { $0.parent == issue.number }
+                let blockers = issue.blockedBy.compactMap { number in issues.first { $0.number == number } }
+                let blocked = issues.filter { $0.blockedBy.contains(issue.number) }
                 try Item(
                     id: "demo-item-\(issue.number)", projectId: spec.id, kind: .issue, position: Double(index + 1) * 1024,
                     statusId: optionId(spec, issue.status), priorityId: spec.hasPriority ? issue.priority.map { optionId(spec, $0) } : nil,
@@ -209,8 +213,20 @@ public enum DemoData {
                     commentCount: comments[issue.number]?.count ?? 0,
                     assignees: issue.assignees,
                     labels: spec.labels.filter { issue.labels.contains($0.name) },
-                    viewerCanDelete: true
+                    viewerCanDelete: true,
+                    blockedByCount: blockers.filter { $0.status != "Done" }.count,
+                    blockingCount: blocked.filter { $0.status != "Done" }.count
                 ).insert(db)
+                for (relation, others) in [(LinkedIssue.Relation.blockedBy, blockers), (.blocking, blocked)] {
+                    for (position, other) in others.enumerated() {
+                        try LinkedIssue(
+                            id: contentId(other.number), issueId: contentId(issue.number), relation: relation, number: other.number,
+                            title: other.title, state: other.status == "Done" ? "CLOSED" : "OPEN",
+                            stateReason: other.status == "Done" ? "COMPLETED" : nil, repo: spec.repo,
+                            url: "https://github.com/\(spec.repo)/issues/\(other.number)", position: position
+                        ).insert(db)
+                    }
+                }
                 for (position, child) in children.enumerated() {
                     try SubIssue(
                         id: contentId(child.number), parentId: contentId(issue.number), number: child.number, title: child.title,

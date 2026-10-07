@@ -80,6 +80,9 @@ struct IssueRow: View {
                     Text(repo)
                 }
             }
+            if item.blockedByCount > 0 {
+                MobileChip { BlockedIcon(size: 9) }
+            }
             if item.subTotal > 0 {
                 MobileChip {
                     SubIssueGlyph().frame(width: 11, height: 11)
@@ -106,6 +109,7 @@ struct IssueRow: View {
         let status = item.isOnBoard ? model.statusOption(of: item)?.name ?? "No status" : item.isClosed ? "Closed" : "No project"
         var parts = [item.displayNumber, item.title, status]
         if let priority = model.priorityOption(of: item)?.name { parts.append("\(priority) priority") }
+        if item.blockedByCount > 0 { parts.append("blocked") }
         if !item.labels.isEmpty { parts.append("labels " + item.labels.map(\.name).joined(separator: ", ")) }
         if !item.assignees.isEmpty { parts.append("assigned to " + item.assignees.map(\.login).joined(separator: ", ")) }
         if let due = model.dueBadge(for: item) { parts.append(due.tooltip) }
