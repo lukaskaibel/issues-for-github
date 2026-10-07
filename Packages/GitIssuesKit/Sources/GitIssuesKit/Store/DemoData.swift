@@ -76,7 +76,27 @@ public enum DemoData {
 
     private static let appIssues: [IssueSpec] = [
         IssueSpec(number: 5, title: "Keyboard navigation across board and list", status: "In Review", priority: "Medium", labels: ["ui"], assignees: [viewer.person], body: "J and K move through issues, Return opens one and Escape goes back. Arrow keys switch columns on the board.", hoursAgo: 3),
-        IssueSpec(number: 16, title: "Markdown editor for descriptions and comments", status: "In Review", priority: "Low", labels: ["ui"], assignees: [viewer.person, mira], body: "Style Markdown while typing: headings, **bold**, _italics_, `code` and lists.", hoursAgo: 5),
+        IssueSpec(number: 16, title: "Markdown editor for descriptions and comments", status: "In Review", priority: "Low", labels: ["ui"], assignees: [viewer.person, mira], body: """
+            Style Markdown while typing: headings, **bold**, _italics_, `code` and lists. A description with a table, a checklist, code or a diagram is drawn the way GitHub draws it, and a click brings up the text.
+
+            - [x] Headings, bold, italics and code
+            - [x] Lists and quotes
+            - [x] Tables and Mermaid diagrams
+            - [ ] Images pasted from the clipboard
+
+            | Element | While typing | Drawn |
+            |---|---|---|
+            | Table | Rows of pipes | A grid |
+            | Checklist | `- [ ]` | Boxes that tick |
+            | Diagram | Mermaid code | A picture |
+
+            ```mermaid
+            flowchart LR
+                Drawn -->|click| Editor
+                Editor -->|Escape| Drawn
+                Drawn -->|tick a box| Saved[Saved to GitHub]
+            ```
+            """, hoursAgo: 5),
         IssueSpec(number: 6, title: "Delta sync for project items", status: "In Review", priority: "High", labels: ["sync"], assignees: [theo], body: "Only fetch items whose `updatedAt` changed since the last sweep.", hoursAgo: 8),
         IssueSpec(number: 24, title: "Animate the column count when a card lands", status: "In Review", priority: nil, hoursAgo: 9),
         IssueSpec(number: 7, title: "Sub-issue tree in issue detail", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [mira], hoursAgo: 4),

@@ -12,6 +12,10 @@ struct MarkdownEditor: NSViewRepresentable {
     var placeholder: String
     var isEditable: Bool
     var onSave: (String) -> Void
+    /// Whether the text is being typed in.
+    var editing: Binding<Bool> = .constant(false)
+    /// Takes the keyboard focus as soon as it is shown, with the caret at the end.
+    var takesFocus = false
 
     /// How long typing has to pause before the text is saved.
     static let saveDelay: TimeInterval = 1.2
@@ -46,6 +50,10 @@ struct MarkdownEditor: NSViewRepresentable {
         view.isEditable = isEditable
         view.isSelectable = true
         view.onEndEditing = { [weak coordinator = context.coordinator] in coordinator?.saveNow() }
+        view.onFocusChange = { [weak coordinator = context.coordinator] focused in
+            coordinator?.parent.editing.wrappedValue = focused
+        }
+        view.takesFocusWhenShown = takesFocus
         MarkdownStyler.style(view.textStorage)
         return view
     }
@@ -129,6 +137,8 @@ struct MarkdownEditor: NSViewRepresentable {
 final class MarkdownTextView: NSTextView {
     var placeholder = ""
     var onEndEditing: () -> Void = {}
+    var onFocusChange: (Bool) -> Void = { _ in }
+    var takesFocusWhenShown = false
 
     var isFirstResponder: Bool { window?.firstResponder === self }
 
@@ -170,18 +180,33 @@ final class MarkdownTextView: NSTextView {
         NSAttributedString(string: placeholder, attributes: attributes).draw(at: textContainerOrigin)
     }
 
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard takesFocusWhenShown, let window else { return }
+        takesFocusWhenShown = false
+        // Once SwiftUI has finished putting the view in place.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, window.makeFirstResponder(self) else { return }
+            setSelectedRange(NSRange(location: (string as NSString).length, length: 0))
+        }
+    }
+
     override func becomeFirstResponder() -> Bool {
         let became = super.becomeFirstResponder()
         if became {
             isContinuousSpellCheckingEnabled = true
             needsDisplay = true
+            onFocusChange(true)
         }
         return became
     }
 
     override func resignFirstResponder() -> Bool {
         let resigned = super.resignFirstResponder()
-        if resigned { isContinuousSpellCheckingEnabled = false }
+        if resigned {
+            isContinuousSpellCheckingEnabled = false
+            onFocusChange(false)
+        }
         return resigned
     }
 
