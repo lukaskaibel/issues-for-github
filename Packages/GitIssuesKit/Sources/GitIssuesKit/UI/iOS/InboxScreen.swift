@@ -21,18 +21,18 @@ struct InboxScreen: View {
         Group {
             if model.inboxMeta.access == .denied {
                 MobileEmptyState(
-                    title: "Your token can't read notifications",
-                    message: "GitHub doesn't let fine-grained tokens read them. Sign in with GitHub, or use a classic token with the repo scope. Everything else keeps working.",
+                    title: String(localized: .tokenCantReadNotifications),
+                    message: String(localized: .tokenCantReadNotificationsMessage),
                     systemImage: "key"
                 ) {
-                    Button("Sign In Again") { model.signOut() }
+                    Button(.signInAgain) { model.signOut() }
                         .buttonStyle(.bordered)
                 }
             } else if model.inboxMeta.access == .unknown, model.inboxEntries.isEmpty {
                 if model.status.phase == .offline {
-                    MobileEmptyState(title: "You're offline", message: "Your notifications load as soon as you're back online.", systemImage: "wifi.slash")
+                    MobileEmptyState(title: String(localized: .youreOffline), message: String(localized: .notificationsLoadWhenOnline), systemImage: "wifi.slash")
                 } else {
-                    MobileEmptyState(title: "Loading your notifications…", message: "Fetching them from GitHub.", showsProgress: true)
+                    MobileEmptyState(title: String(localized: .loadingNotifications), message: String(localized: .fetchingNotifications), showsProgress: true)
                 }
             } else {
                 list(entries)
@@ -40,7 +40,7 @@ struct InboxScreen: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.panel)
-        .navigationTitle("Inbox")
+        .navigationTitle(.inbox)
         .navigationSubtitle(SyncSubtitle.text(model))
         .toolbar { toolbar }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -51,11 +51,11 @@ struct InboxScreen: View {
             }
         }
         .animation(Theme.overlay, value: model.inboxUndo)
-        .confirmationDialog("Snooze until", isPresented: Binding(get: { snoozing != nil }, set: { if !$0 { snoozing = nil } }), presenting: snoozing) { target in
+        .confirmationDialog(.snoozeUntil, isPresented: Binding(get: { snoozing != nil }, set: { if !$0 { snoozing = nil } }), presenting: snoozing) { target in
             ForEach(SnoozeChoice.allCases) { choice in
                 Button("\(choice.title), \(choice.hint())") { model.snooze(target.entries, until: choice.date()) }
             }
-            Button("Pick a Date…") { pickingDate = target }
+            Button(.pickADate) { pickingDate = target }
         }
         .sheet(item: $pickingDate) { target in
             SnoozeDateSheet(entries: target.entries)
@@ -69,7 +69,7 @@ struct InboxScreen: View {
     private func list(_ entries: [InboxEntry]) -> some View {
         List {
             if !model.inbox(.watching).isEmpty {
-                Picker("Show", selection: bucket) {
+                Picker(.inboxShowPicker, selection: bucket) {
                     ForEach(InboxBucket.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
@@ -80,8 +80,8 @@ struct InboxScreen: View {
             }
             if entries.isEmpty {
                 MobileEmptyState(
-                    title: "You're all caught up",
-                    message: "When someone assigns you, mentions you or comments on an issue you follow, it shows up here.",
+                    title: String(localized: .allCaughtUp),
+                    message: String(localized: .allCaughtUpMessage),
                     systemImage: "tray"
                 )
                 .frame(maxWidth: .infinity)
@@ -96,7 +96,7 @@ struct InboxScreen: View {
                 Button {
                     if let url = URL(string: "https://github.com/notifications") { Platform.open(url) }
                 } label: {
-                    Label("\(model.inboxMeta.otherCount) more on GitHub", systemImage: "arrow.up.right")
+                    Label(.moreOnGitHub(count: model.inboxMeta.otherCount), systemImage: "arrow.up.right")
                         .labelStyle(TrailingIconLabel())
                         .font(.footnote)
                         .foregroundStyle(Theme.textTertiary)
@@ -104,7 +104,7 @@ struct InboxScreen: View {
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 10, leading: 58, bottom: 10, trailing: 16))
-                .accessibilityHint("Releases, CI runs and discussions stay on GitHub.")
+                .accessibilityHint(.otherNotificationsStayOnGitHub)
             }
         }
         .listStyle(.plain)
@@ -132,7 +132,7 @@ struct InboxScreen: View {
             Button {
                 withAnimation(Theme.spring) { model.toggleRead([entry]) }
             } label: {
-                Label(unread ? "Read" : "Unread", systemImage: unread ? "circle" : "circle.inset.filled")
+                Label(unread ? LocalizedStringResource.markRead : .markUnread, systemImage: unread ? "circle" : "circle.inset.filled")
             }
             .tint(.blue)
         }
@@ -141,13 +141,13 @@ struct InboxScreen: View {
                 archived += 1
                 model.archive([entry])
             } label: {
-                Label("Archive", systemImage: "archivebox")
+                Label(.archive, systemImage: "archivebox")
             }
             .tint(Theme.accentFill)
             Button {
                 snoozing = SnoozeTarget(entries: [entry])
             } label: {
-                Label("Snooze", systemImage: "clock")
+                Label(.snooze, systemImage: "clock")
             }
             .tint(Color(white: 0.45))
         }
@@ -183,23 +183,23 @@ struct InboxScreen: View {
                 Button {
                     withAnimation(Theme.spring) { model.markAllRead() }
                 } label: {
-                    Label("Mark All as Read", systemImage: "circle")
+                    Label(.markAllAsRead, systemImage: "circle")
                 }
                 .disabled(!model.visibleInbox.contains(where: model.isUnread))
                 Button {
                     model.archiveAllRead()
                 } label: {
-                    Label("Archive All Read", systemImage: "archivebox")
+                    Label(.archiveAllRead, systemImage: "archivebox")
                 }
                 .disabled(!model.visibleInbox.contains { !model.isUnread($0) })
                 Divider()
                 Button {
                     if let url = URL(string: "https://github.com/notifications") { Platform.open(url) }
                 } label: {
-                    Label("Open GitHub Notifications", systemImage: "arrow.up.right.square")
+                    Label(.openGitHubNotifications, systemImage: "arrow.up.right.square")
                 }
             } label: {
-                Label("Inbox Actions", systemImage: "ellipsis")
+                Label(.inboxActions, systemImage: "ellipsis")
             }
             .accessibilityIdentifier("inbox-actions")
         }
@@ -208,15 +208,15 @@ struct InboxScreen: View {
     /// With a keyboard on the iPad, the Mac's keys: J and K move, U reads, E archives, H snoozes, ⇧S unsubscribes.
     private var keyboardShortcuts: some View {
         ZStack {
-            Button("Next") { model.stepInbox(1) }.keyboardShortcut("j", modifiers: [])
-            Button("Previous") { model.stepInbox(-1) }.keyboardShortcut("k", modifiers: [])
-            Button("Read or Unread") { if let entry = model.inboxSelected { model.toggleRead([entry]) } }.keyboardShortcut("u", modifiers: [])
-            Button("Mark All as Read") { model.markAllRead() }.keyboardShortcut("u", modifiers: .option)
-            Button("Archive") { if let entry = model.inboxSelected { model.archive([entry]) } }.keyboardShortcut("e", modifiers: [])
-            Button("Archive All Read") { model.archiveAllRead() }.keyboardShortcut(.delete, modifiers: .shift)
-            Button("Snooze") { if let entry = model.inboxSelected { snoozing = SnoozeTarget(entries: [entry]) } }.keyboardShortcut("h", modifiers: [])
-            Button("Unsubscribe") { if let entry = model.inboxSelected { model.unsubscribe([entry]) } }.keyboardShortcut("s", modifiers: .shift)
-            Button("Undo") { model.undoInbox() }.keyboardShortcut("z", modifiers: .command).disabled(model.inboxUndo == nil)
+            Button(.nextNotification) { model.stepInbox(1) }.keyboardShortcut("j", modifiers: [])
+            Button(.previousNotification) { model.stepInbox(-1) }.keyboardShortcut("k", modifiers: [])
+            Button(.readOrUnread) { if let entry = model.inboxSelected { model.toggleRead([entry]) } }.keyboardShortcut("u", modifiers: [])
+            Button(.markAllAsRead) { model.markAllRead() }.keyboardShortcut("u", modifiers: .option)
+            Button(.archive) { if let entry = model.inboxSelected { model.archive([entry]) } }.keyboardShortcut("e", modifiers: [])
+            Button(.archiveAllRead) { model.archiveAllRead() }.keyboardShortcut(.delete, modifiers: .shift)
+            Button(.snooze) { if let entry = model.inboxSelected { snoozing = SnoozeTarget(entries: [entry]) } }.keyboardShortcut("h", modifiers: [])
+            Button(.unsubscribe) { if let entry = model.inboxSelected { model.unsubscribe([entry]) } }.keyboardShortcut("s", modifiers: .shift)
+            Button(.undo) { model.undoInbox() }.keyboardShortcut("z", modifiers: .command).disabled(model.inboxUndo == nil)
         }
         .opacity(0)
         .allowsHitTesting(false)
@@ -300,25 +300,25 @@ struct InboxMenuContent: View {
         Button {
             withAnimation(Theme.spring) { model.toggleRead([entry]) }
         } label: {
-            Label(unread ? "Mark as Read" : "Mark as Unread", systemImage: unread ? "circle" : "circle.inset.filled")
+            Label(unread ? LocalizedStringResource.markAsRead : .markAsUnread, systemImage: unread ? "circle" : "circle.inset.filled")
         }
         Menu {
             ForEach(SnoozeChoice.allCases) { choice in
                 Button("\(choice.title), \(choice.hint())") { model.snooze([entry], until: choice.date()) }
             }
-            Button("Pick a Date…", action: onSnoozeDate)
+            Button(.pickADate, action: onSnoozeDate)
         } label: {
-            Label("Snooze", systemImage: "clock")
+            Label(.snooze, systemImage: "clock")
         }
         Button {
             model.archive([entry])
         } label: {
-            Label("Archive", systemImage: "archivebox")
+            Label(.archive, systemImage: "archivebox")
         }
         Button {
             model.unsubscribe([entry])
         } label: {
-            Label("Unsubscribe", systemImage: "bell.slash")
+            Label(.unsubscribe, systemImage: "bell.slash")
         }
         if !entry.missing, let item = model.inboxItem(for: entry) {
             Divider()
@@ -334,12 +334,12 @@ struct InboxMenuContent: View {
             Button {
                 model.copyLink(url.absoluteString, for: entry.label)
             } label: {
-                Label("Copy Link", systemImage: "link")
+                Label(.copyLink, systemImage: "link")
             }
             Button {
                 Platform.open(url)
             } label: {
-                Label("Open on GitHub", systemImage: "arrow.up.right.square")
+                Label(.openOnGitHub, systemImage: "arrow.up.right.square")
             }
         }
     }
@@ -354,17 +354,17 @@ private struct SnoozeDateSheet: View {
 
     var body: some View {
         NavigationStack {
-            DatePicker("Snooze until", selection: $date, in: Date()..., displayedComponents: [.date, .hourAndMinute])
+            DatePicker(.snoozeUntil, selection: $date, in: Date()..., displayedComponents: [.date, .hourAndMinute])
                 .datePickerStyle(.graphical)
                 .padding(.horizontal)
-                .navigationTitle("Snooze Until")
+                .navigationTitle(.snoozeUntilTitle)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel", role: .cancel) { dismiss() }
+                        Button(.cancel, role: .cancel) { dismiss() }
                     }
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Snooze") {
+                        Button(.snooze) {
                             model.snooze(entries, until: date)
                             dismiss()
                         }
@@ -389,7 +389,7 @@ private struct MobileInboxUndo: View {
                 Image(systemName: undo.message.hasPrefix("Unsubscribed") ? "bell.slash" : "archivebox")
                     .foregroundStyle(Theme.accent)
                 Text(undo.message).foregroundStyle(Theme.text).lineLimit(1)
-                Text("Undo").fontWeight(.semibold).foregroundStyle(Theme.accent)
+                Text(.undo).fontWeight(.semibold).foregroundStyle(Theme.accent)
             }
             .font(.subheadline)
             .padding(.horizontal, 18)
@@ -398,7 +398,7 @@ private struct MobileInboxUndo: View {
         }
         .buttonStyle(.plain)
         .glassEffect(.regular.interactive(), in: .capsule)
-        .accessibilityLabel("\(undo.message). Undo")
+        .accessibilityLabel(.undoNoticeSpoken(message: undo.message))
         .accessibilityIdentifier("inbox-undo")
     }
 }
@@ -432,7 +432,7 @@ struct MobileInboxNews: View {
                         Avatar(login: actor.login, url: actor.avatarUrl, size: 18)
                             .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
                     }
-                    Text("\(Text(event.actor.map(InboxEntry.name) ?? "Someone").fontWeight(.semibold)) \(model.inboxEventLine(event, entry: entry))")
+                    Text("\(Text(event.actor.map(InboxEntry.name) ?? String(localized: .someone)).fontWeight(.semibold)) \(model.inboxEventLine(event, entry: entry))")
                         .foregroundStyle(Theme.text)
                     Spacer(minLength: 8)
                     Text(inboxTime(event.at, now: model.inboxClock))
@@ -443,7 +443,7 @@ struct MobileInboxNews: View {
                 .font(.subheadline)
             }
             if entry.activity.count > events.count {
-                Text("and \(entry.activity.count - events.count) more below")
+                Text(.andMoreBelow(count: entry.activity.count - events.count))
                     .font(.footnote)
                     .foregroundStyle(Theme.textSecondary)
             }
@@ -494,14 +494,14 @@ struct InboxSplit: View {
         if let entry = model.inboxSelected {
             if entry.missing {
                 MobileEmptyState(
-                    title: "This issue isn't available any more",
-                    message: "It was deleted or moved, or you no longer have access. GitHub's notification is still here.",
+                    title: String(localized: .issueNotAvailable),
+                    message: String(localized: .issueNotAvailableMessage),
                     systemImage: "lock"
                 ) {
                     HStack {
-                        Button("Open on GitHub") { if let url = entry.webURL { Platform.open(url) } }
+                        Button(.openOnGitHub) { if let url = entry.webURL { Platform.open(url) } }
                             .buttonStyle(.bordered)
-                        Button("Archive") { model.archive([entry]) }
+                        Button(.archive) { model.archive([entry]) }
                             .buttonStyle(.bordered)
                     }
                 }
@@ -509,12 +509,14 @@ struct InboxSplit: View {
                 IssueScreen(itemId: card.id, inboxEntryId: entry.id)
                     .id(entry.id)
             } else {
-                MobileEmptyState(title: "Loading the issue…", message: "Reading it from GitHub.", showsProgress: true)
+                MobileEmptyState(title: String(localized: .loadingTheIssue), message: String(localized: .readingItFromGitHub), showsProgress: true)
             }
         } else {
             MobileEmptyState(
-                title: model.visibleInbox.isEmpty ? "Nothing to read" : "No notification selected",
-                message: model.visibleInbox.isEmpty ? "New notifications show up on the left." : "Pick one on the left, or move through them with J and K.",
+                title: model.visibleInbox.isEmpty ? String(localized: .nothingToRead) : String(localized: .noNotificationSelected),
+                message: model.visibleInbox.isEmpty
+                    ? String(localized: .newNotificationsShowOnLeft)
+                    : String(localized: .pickNotificationOnLeft),
                 systemImage: "tray"
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)

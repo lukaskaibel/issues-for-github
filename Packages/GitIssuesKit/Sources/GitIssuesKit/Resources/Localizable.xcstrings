@@ -1,6 +1,30 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "account" : {
+      "comment" : "iPhone and iPad: title of the account and settings sheet. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account"
+          }
+        }
+      }
+    },
+    "accountAndSettings" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the button with the user's avatar (top bar on iPhone, top of the iPad sidebar) that opens the account and settings sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account and settings"
+          }
+        }
+      }
+    },
     "activity" : {
       "comment" : "iPhone and iPad, issue screen: heading above the issue's comments.",
       "extractionState" : "manual",
@@ -69,6 +93,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add label"
+          }
+        }
+      }
+    },
+    "addPriorityField" : {
+      "comment" : "iPhone and iPad: item in a project's '…' menu that adds a Priority field to the GitHub project. 'Field' is a GitHub project field (a column of data).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Priority Field"
+          }
+        }
+      }
+    },
+    "addPriorityFieldHint" : {
+      "comment" : "iPhone and iPad: text of the banner under 'No Priority field'. Urgent, High, Medium and Low are the names the options get on GitHub, in English; keep them in English.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add one with Urgent, High, Medium and Low to sort by importance."
           }
         }
       }
@@ -145,6 +193,102 @@
         }
       }
     },
+    "allCaughtUp" : {
+      "comment" : "iPhone and iPad Inbox: title when there is no notification.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're all caught up"
+          }
+        }
+      }
+    },
+    "allCaughtUpMessage" : {
+      "comment" : "iPhone and iPad Inbox: explanation under 'You're all caught up'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When someone assigns you, mentions you or comments on an issue you follow, it shows up here."
+          }
+        }
+      }
+    },
+    "andMoreBelow" : {
+      "comment" : "iPhone and iPad, issue opened from the Inbox: after the last of the news shown at the top; %(count)lld more events are further down the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "and %(count)lld more below"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "and %(count)lld more below"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "appIcon" : {
+      "comment" : "iPhone and iPad, account sheet: heading of the section for choosing the app's icon on the Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Icon"
+          }
+        }
+      }
+    },
+    "appVersion" : {
+      "comment" : "iPhone and iPad, account sheet: the app's name and version at the bottom. 'Issues' is the app's name; %(version)@ is its version, e.g. '1.2'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues %(version)@"
+          }
+        }
+      }
+    },
+    "appVersionLoginNote" : {
+      "comment" : "iPhone and iPad, account sheet: the app's name and version at the bottom, with a note on privacy. 'Issues' is the app's name; %(version)@ is its version, e.g. '1.2'. Keep api.github.com as it is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues %(version)@ · Your login is kept in iCloud Keychain and only sent to api.github.com."
+          }
+        }
+      }
+    },
+    "appearance" : {
+      "comment" : "iPhone and iPad, account sheet: heading of the section for choosing light, dark or the system's appearance.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance"
+          }
+        }
+      }
+    },
     "archive" : {
       "comment" : "Inbox: button or menu item (a verb) that removes a notification from the Inbox; GitHub calls this 'Done'.",
       "extractionState" : "manual",
@@ -153,6 +297,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Archive"
+          }
+        }
+      }
+    },
+    "archiveAllRead" : {
+      "comment" : "iPhone and iPad Inbox: item in the '…' menu, and a keyboard shortcut on iPad (⇧⌫), that archives every notification already read.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archive All Read"
           }
         }
       }
@@ -169,6 +325,18 @@
         }
       }
     },
+    "assignMe" : {
+      "comment" : "iPhone and iPad: swipe action on an issue (a verb) that assigns it to the signed-in user. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assign"
+          }
+        }
+      }
+    },
     "assignToMe" : {
       "comment" : "Menu item or button that adds the signed-in user to the issue's assignees.",
       "extractionState" : "manual",
@@ -177,6 +345,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Assign to Me"
+          }
+        }
+      }
+    },
+    "assignedToSpoken" : {
+      "comment" : "VoiceOver, iPhone and iPad: part of what is read for an issue in a list. %(names)@ is the list of GitHub logins it is assigned to, e.g. 'octocat, hubot'. Lowercase: it follows a comma.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "assigned to %(names)@"
           }
         }
       }
@@ -217,6 +397,18 @@
         }
       }
     },
+    "back" : {
+      "comment" : "iPad with a keyboard, Go menu: goes back to the previous screen (⌘[).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
+          }
+        }
+      }
+    },
     "backToUsualOrder" : {
       "comment" : "iPhone and iPad, Arrange Sections sheet: button that drops the user's own order of sections. Title case.",
       "extractionState" : "manual",
@@ -253,6 +445,42 @@
         }
       }
     },
+    "changesSavedHereFirst" : {
+      "comment" : "iPhone and iPad, queued changes screen: explanation under 'Everything is saved to GitHub'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes you make are saved here first, then sent."
+          }
+        }
+      }
+    },
+    "changesSavedOnIPad" : {
+      "comment" : "iPad, account sheet: note under the Sync section.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes are saved on this iPad first and sent to GitHub in the background. Offline changes go out when you're back online."
+          }
+        }
+      }
+    },
+    "changesSavedOnIPhone" : {
+      "comment" : "iPhone, account sheet: note under the Sync section.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes are saved on this iPhone first and sent to GitHub in the background. Offline changes go out when you're back online."
+          }
+        }
+      }
+    },
     "chooseADate" : {
       "comment" : "iPhone and iPad: item in an issue's Due Date menu that opens a sheet with a calendar to pick any day. Title case.",
       "extractionState" : "manual",
@@ -273,6 +501,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose a project"
+          }
+        }
+      }
+    },
+    "classicTokenScopes" : {
+      "comment" : "iPhone and iPad, token sign-in sheet: note under the token field. 'Classic token' and 'scopes' are GitHub's terms; keep repo, project, read:org and api.github.com as they are.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A classic token with the repo, project and read:org scopes. It is kept in iCloud Keychain and only sent to api.github.com."
+          }
+        }
+      }
+    },
+    "closedIssueState" : {
+      "comment" : "VoiceOver, iPhone and iPad: an issue's state when it is closed and on no project board. An adjective about one issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closed"
+          }
+        }
+      }
+    },
+    "closedProjects" : {
+      "comment" : "iPhone, Projects tab: heading above the GitHub projects that were closed (an adjective, about several projects).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closed"
           }
         }
       }
@@ -433,6 +697,30 @@
         }
       }
     },
+    "copyCodeAndOpenGitHub" : {
+      "comment" : "iPhone and iPad, sign-in screen: button that copies the code and opens GitHub's page for entering it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Code and Open GitHub"
+          }
+        }
+      }
+    },
+    "copyGitHubLink" : {
+      "comment" : "iPad with a keyboard, Issue menu (⇧⌘C): copies the web address of the issue on screen on github.com.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy GitHub Link"
+          }
+        }
+      }
+    },
     "copyLink" : {
       "comment" : "Menu item that copies the issue's GitHub web address.",
       "extractionState" : "manual",
@@ -465,6 +753,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Create Issue"
+          }
+        }
+      }
+    },
+    "createTokenOnGitHub" : {
+      "comment" : "iPhone and iPad, token sign-in sheet: link that opens GitHub's page for making a new token.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a Token on GitHub"
           }
         }
       }
@@ -529,6 +829,30 @@
         }
       }
     },
+    "deleteIssueNumberQuestion" : {
+      "comment" : "iPhone and iPad: title of the alert that asks before deleting an issue or a draft. %(number)@ is its number, such as '#14', or the word shown instead of a number for a draft.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete %(number)@?"
+          }
+        }
+      }
+    },
+    "deleteQuestion" : {
+      "comment" : "iPhone and iPad: title of the alert that asks before deleting an issue, when there is no number to show.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete?"
+          }
+        }
+      }
+    },
     "deleteStatus" : {
       "comment" : "iPhone and iPad, Statuses screen of a project: destructive button that deletes the status on GitHub. Title case.",
       "extractionState" : "manual",
@@ -537,6 +861,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete Status"
+          }
+        }
+      }
+    },
+    "deleteStatusEllipsis" : {
+      "comment" : "iPad board: item in a column's '…' menu that deletes the status, after asking.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Status…"
           }
         }
       }
@@ -561,6 +897,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Description"
+          }
+        }
+      }
+    },
+    "deviceCodeSpoken" : {
+      "comment" : "VoiceOver, iPhone and iPad sign-in screen: the code to type into GitHub's page. %(code)@ is the code read letter by letter, e.g. 'W D J B - M J H T'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code %(code)@"
           }
         }
       }
@@ -621,6 +969,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Draft"
+          }
+        }
+      }
+    },
+    "draftRemovedFromBoard" : {
+      "comment" : "iPhone and iPad: message of the alert that asks before deleting a draft (a GitHub project draft: an issue that exists only on the board). %(title)@ is the draft's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The draft “%(title)@” is removed from the board."
           }
         }
       }
@@ -841,6 +1201,30 @@
         }
       }
     },
+    "editStatuses" : {
+      "comment" : "iPhone and iPad: item in a project's '…' menu that opens the screen for adding, renaming and ordering the statuses (the board's columns).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Statuses…"
+          }
+        }
+      }
+    },
+    "enterCodeOnGitHub" : {
+      "comment" : "iPhone and iPad, sign-in screen: above the code (e.g. 'WDJB-MJHT') to type into GitHub's page.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter this code on GitHub"
+          }
+        }
+      }
+    },
     "errorAccessDenied" : {
       "comment" : "Sign-in screen (Mac, iPhone, iPad), signing in by entering a short code on github.com: error message. The user declined on github.com to give the app access.",
       "extractionState" : "manual",
@@ -1033,6 +1417,66 @@
         }
       }
     },
+    "everythingSavedToGitHub" : {
+      "comment" : "iPhone and iPad, queued changes screen: title when no change is waiting to be sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Everything is saved to GitHub"
+          }
+        }
+      }
+    },
+    "exploreWithSampleData" : {
+      "comment" : "iPhone and iPad, sign-in screen: button that opens the app on made-up sample data, without an account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore with Sample Data"
+          }
+        }
+      }
+    },
+    "fetchingNotifications" : {
+      "comment" : "iPhone and iPad Inbox: line under 'Loading your notifications…'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fetching them from GitHub."
+          }
+        }
+      }
+    },
+    "fetchingProject" : {
+      "comment" : "iPhone and iPad: line under 'Loading issues…' on a project's screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fetching this project from GitHub."
+          }
+        }
+      }
+    },
+    "fetchingRepository" : {
+      "comment" : "iPhone and iPad: line under 'Loading issues…' on a repository's screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fetching this repository from GitHub."
+          }
+        }
+      }
+    },
     "firstDueDateAddsField" : {
       "comment" : "iPhone and iPad, due date sheet: note under the calendar for a GitHub project that has no date field yet. %(field)@ is the name of the field the app creates on GitHub, always “Due date” in English.",
       "extractionState" : "manual",
@@ -1105,6 +1549,30 @@
         }
       }
     },
+    "goMenu" : {
+      "comment" : "iPad with a keyboard: name of the menu in the menu bar with commands that move between places (Back, Search, Board, List, My Issues, Inbox). As the Go menu in the Finder.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go"
+          }
+        }
+      }
+    },
+    "hidesSectionIssues" : {
+      "comment" : "VoiceOver hint, iPhone and iPad: what tapping the header of an open list section does.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hides the issues of this section"
+          }
+        }
+      }
+    },
     "inbox" : {
       "comment" : "Name of the place that lists GitHub notifications (sidebar row, iPhone tab, title). Like the inbox in Apple Mail.",
       "extractionState" : "manual",
@@ -1113,6 +1581,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inbox"
+          }
+        }
+      }
+    },
+    "inboxActions" : {
+      "comment" : "iPhone and iPad Inbox: VoiceOver label of the '…' button in the top bar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inbox Actions"
           }
         }
       }
@@ -1549,6 +2029,18 @@
         }
       }
     },
+    "inboxShowPicker" : {
+      "comment" : "iPhone and iPad Inbox: name of the switch between the notifications for you and the ones you're watching (read by VoiceOver). A verb: which notifications to show.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show"
+          }
+        }
+      }
+    },
     "inboxSomeone" : {
       "comment" : "Inbox: stands for the person who did something when GitHub doesn't say who. Inserted as %(who)@ at the start of the Inbox lines, e.g. 'Someone mentioned you'.",
       "extractionState" : "manual",
@@ -1657,6 +2149,18 @@
         }
       }
     },
+    "issueDeletedForEveryone" : {
+      "comment" : "iPhone and iPad: message of the alert that asks before deleting an issue. %(title)@ is the issue's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%(title)@” and its comments are deleted on GitHub for everyone. This can't be undone."
+          }
+        }
+      }
+    },
     "issueGoneMessage" : {
       "comment" : "iPhone and iPad: line under 'This issue is gone', saying why. 'Its project' is the GitHub project (board) the issue was on.",
       "extractionState" : "manual",
@@ -1681,6 +2185,42 @@
         }
       }
     },
+    "issueMenu" : {
+      "comment" : "iPad with a keyboard: name of the menu in the menu bar with commands for the issue on screen ('issue' as on GitHub).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issue"
+          }
+        }
+      }
+    },
+    "issueNotAvailable" : {
+      "comment" : "iPad Inbox: title beside a notification whose issue GitHub can't show any more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This issue isn't available any more"
+          }
+        }
+      }
+    },
+    "issueNotAvailableMessage" : {
+      "comment" : "iPad Inbox: explanation under 'This issue isn't available any more'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It was deleted or moved, or you no longer have access. GitHub's notification is still here."
+          }
+        }
+      }
+    },
     "issueTitle" : {
       "comment" : "iPhone and iPad: VoiceOver label of the field holding the issue's title (issue screen, new issue sheet).",
       "extractionState" : "manual",
@@ -1701,6 +2241,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Issue title"
+          }
+        }
+      }
+    },
+    "issues" : {
+      "comment" : "iPhone and iPad, search tab: heading above the issues found ('issues' as on GitHub).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
           }
         }
       }
@@ -1813,6 +2365,18 @@
         }
       }
     },
+    "labelsSpoken" : {
+      "comment" : "VoiceOver, iPhone and iPad: part of what is read for an issue in a list, after its title and status. %(labels)@ is the list of its GitHub labels, e.g. 'bug, design'. Lowercase: it follows a comma.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "labels %(labels)@"
+          }
+        }
+      }
+    },
     "leaveACommentPlaceholder" : {
       "comment" : "iPhone and iPad, issue screen: placeholder in the comment field at the bottom.",
       "extractionState" : "manual",
@@ -1821,6 +2385,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Leave a comment…"
+          }
+        }
+      }
+    },
+    "leaveSampleData" : {
+      "comment" : "iPhone and iPad, account sheet: button that stops showing the sample data and goes back to signing in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave Sample Data"
           }
         }
       }
@@ -1845,6 +2421,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "List"
+          }
+        }
+      }
+    },
+    "loadingIssues" : {
+      "comment" : "iPhone and iPad: title shown with a spinner while a project's or repository's issues are fetched for the first time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading issues…"
+          }
+        }
+      }
+    },
+    "loadingNotifications" : {
+      "comment" : "iPhone and iPad Inbox: title shown with a spinner while GitHub's notifications are fetched for the first time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading your notifications…"
+          }
+        }
+      }
+    },
+    "loadingTheIssue" : {
+      "comment" : "iPad Inbox: title shown with a spinner beside a notification while its issue is fetched.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading the issue…"
+          }
+        }
+      }
+    },
+    "lookingForProjects" : {
+      "comment" : "iPhone, Projects tab: title shown with a spinner while the GitHub projects are fetched for the first time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for your projects…"
+          }
+        }
+      }
+    },
+    "markAllAsRead" : {
+      "comment" : "iPhone and iPad Inbox: item in the '…' menu, and a keyboard shortcut on iPad (⌥U), that marks every notification as read.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark All as Read"
           }
         }
       }
@@ -1885,6 +2521,18 @@
         }
       }
     },
+    "markDone" : {
+      "comment" : "iPhone and iPad: swipe action on an issue that moves it to the board's done status, which closes it. Not the button that closes a sheet. Short: fits a swipe button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        }
+      }
+    },
     "markIssueNumberAsDone" : {
       "comment" : "iPhone and iPad, issue screen: VoiceOver label of the status circle of an open sub-issue; a tap closes it as completed. %(number)lld is its issue number, shown after #.",
       "extractionState" : "manual",
@@ -1893,6 +2541,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mark #%(number)lld as done"
+          }
+        }
+      }
+    },
+    "markRead" : {
+      "comment" : "iPhone and iPad Inbox: swipe action (a verb) that marks a notification as read. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read"
+          }
+        }
+      }
+    },
+    "markUnread" : {
+      "comment" : "iPhone and iPad Inbox: swipe action that marks a notification as unread again. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unread"
           }
         }
       }
@@ -1909,6 +2581,78 @@
         }
       }
     },
+    "moreOnGitHub" : {
+      "comment" : "iPhone and iPad Inbox: link at the end of the list to the notifications the app doesn't show (releases, CI runs, discussions). %(count)lld is how many.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld more on GitHub"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld more on GitHub"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "moveLeft" : {
+      "comment" : "iPad board: item in a column's '…' menu that moves the status (the column) one place to the left.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Left"
+          }
+        }
+      }
+    },
+    "moveRight" : {
+      "comment" : "iPad board: item in a column's '…' menu that moves the status (the column) one place to the right.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Right"
+          }
+        }
+      }
+    },
+    "moveToNextStatus" : {
+      "comment" : "VoiceOver action on a card of the iPad board: moves the issue to the column on the right.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to Next Status"
+          }
+        }
+      }
+    },
+    "moveToPreviousStatus" : {
+      "comment" : "VoiceOver action on a card of the iPad board: moves the issue to the column on the left.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to Previous Status"
+          }
+        }
+      }
+    },
     "myIssues" : {
       "comment" : "Name of the place that lists every issue assigned to the signed-in user (sidebar row, iPhone tab, title).",
       "extractionState" : "manual",
@@ -1917,6 +2661,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "My Issues"
+          }
+        }
+      }
+    },
+    "needsYourDecision" : {
+      "comment" : "iPhone and iPad, queued changes screen: under a change that clashes with a change made on GitHub meanwhile; the user has to choose which to keep.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs your decision"
           }
         }
       }
@@ -1933,6 +2689,18 @@
         }
       }
     },
+    "newIssueInStatus" : {
+      "comment" : "VoiceOver, iPhone and iPad: label of the '+' button in the header of a list section or a board column, which starts a new issue with that status. %(status)@ is the status name from GitHub, e.g. 'In Progress'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New issue in %(status)@"
+          }
+        }
+      }
+    },
     "newIssueNotSent" : {
       "comment" : "iPhone and iPad, issue screen, list of sub-issues: shown in place of the issue number of a sub-issue that hasn't reached GitHub yet (it gets its number there). Short.",
       "extractionState" : "manual",
@@ -1941,6 +2709,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New"
+          }
+        }
+      }
+    },
+    "newIssueVoiceOverLabel" : {
+      "comment" : "iPad sidebar: VoiceOver label of the compose button (a pencil icon) beside the account, which starts writing a new issue. Sentence case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New issue"
+          }
+        }
+      }
+    },
+    "newNotificationsShowOnLeft" : {
+      "comment" : "iPad Inbox: explanation under 'Nothing to read'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New notifications show up on the left."
           }
         }
       }
@@ -2005,6 +2797,18 @@
         }
       }
     },
+    "nextNotification" : {
+      "comment" : "iPad with a keyboard, Inbox: name of the J key in the keyboard shortcuts overlay (hold ⌘); selects the next notification.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        }
+      }
+    },
     "noCommentsYet" : {
       "comment" : "iPhone and iPad, issue screen: shown under the 'Activity' heading when the issue has no comments.",
       "extractionState" : "manual",
@@ -2041,6 +2845,18 @@
         }
       }
     },
+    "noIssuesYet" : {
+      "comment" : "iPhone and iPad: title of a project's empty list.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No issues yet"
+          }
+        }
+      }
+    },
     "noLabelsInRepository" : {
       "comment" : "iPhone and iPad: shown in an issue's Labels menu when its GitHub repository has no labels.",
       "extractionState" : "manual",
@@ -2049,6 +2865,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No labels in this repository"
+          }
+        }
+      }
+    },
+    "noNotificationSelected" : {
+      "comment" : "iPad Inbox: title of the empty area beside the list when no notification is selected.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No notification selected"
+          }
+        }
+      }
+    },
+    "noOpenIssues" : {
+      "comment" : "iPhone and iPad: title of a repository's empty list.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No open issues"
           }
         }
       }
@@ -2065,6 +2905,18 @@
         }
       }
     },
+    "noPriorityField" : {
+      "comment" : "iPhone and iPad: title of a banner at the top of a project's list when the GitHub project has no Priority field (a GitHub project field).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Priority field"
+          }
+        }
+      }
+    },
     "noProject" : {
       "comment" : "Shown instead of a status, and as a group title, for issues that are on no project board.",
       "extractionState" : "manual",
@@ -2073,6 +2925,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No project"
+          }
+        }
+      }
+    },
+    "noProjectsMessage" : {
+      "comment" : "iPhone, Projects tab: explanation under the title while there are no projects yet. 'GitHub Projects' is GitHub's feature for boards.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Boards come from GitHub Projects. If you have none yet, create one on GitHub and it will show up here."
+          }
+        }
+      }
+    },
+    "noQueuedChanges" : {
+      "comment" : "iPhone and iPad, account sheet: shown beside 'Queued changes' when nothing is waiting to be sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
           }
         }
       }
@@ -2089,6 +2965,30 @@
         }
       }
     },
+    "nothingAssignedMessage" : {
+      "comment" : "iPhone and iPad, My Issues: explanation under 'Nothing assigned to you'. 'Board' is a GitHub project.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open issues assigned to you show up here, on a board or not."
+          }
+        }
+      }
+    },
+    "nothingAssignedTitle" : {
+      "comment" : "iPhone and iPad, My Issues: title of the empty list.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing assigned to you"
+          }
+        }
+      }
+    },
     "nothingToChooseFrom" : {
       "comment" : "iPhone and iPad, sheet that picks a property of an issue: shown when there are no choices, such as no people or labels in the repository yet.",
       "extractionState" : "manual",
@@ -2097,6 +2997,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nothing to choose from yet."
+          }
+        }
+      }
+    },
+    "nothingToRead" : {
+      "comment" : "iPad Inbox: title of the empty area beside the list when there is no notification.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing to read"
           }
         }
       }
@@ -2305,6 +3217,18 @@
         }
       }
     },
+    "notificationsLoadWhenOnline" : {
+      "comment" : "iPhone and iPad Inbox: explanation under 'You're offline' before any notification has been loaded.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your notifications load as soon as you're back online."
+          }
+        }
+      }
+    },
     "onGitHubVersion" : {
       "comment" : "iPhone and iPad, issue screen, edit conflict banner: small heading above the text as it is now on GitHub.",
       "extractionState" : "manual",
@@ -2313,6 +3237,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "On GitHub"
+          }
+        }
+      }
+    },
+    "onlyProjectIssuesAppear" : {
+      "comment" : "iPhone and iPad: explanation under 'No issues yet' on a project's screen. 'GitHub Project' is a board on GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only issues that are in this GitHub Project appear here."
+          }
+        }
+      }
+    },
+    "openGitHubNotifications" : {
+      "comment" : "iPhone and iPad Inbox: item in the '…' menu that opens the notifications page on github.com.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open GitHub Notifications"
           }
         }
       }
@@ -2341,6 +3289,18 @@
         }
       }
     },
+    "opensGitHubWithScopes" : {
+      "comment" : "iPhone and iPad, token sign-in sheet: note under 'Create a Token on GitHub'. 'Scopes' is GitHub's term for a token's permissions.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens GitHub with the right scopes already selected."
+          }
+        }
+      }
+    },
     "opensOnGitHub" : {
       "comment" : "iPhone and iPad, issue screen: VoiceOver label of the ↗ arrow on a sub-issue that is on none of the user's boards, so a tap opens it on github.com.",
       "extractionState" : "manual",
@@ -2349,6 +3309,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Opens on GitHub"
+          }
+        }
+      }
+    },
+    "options" : {
+      "comment" : "iPhone and iPad: VoiceOver label and title of the '…' button in the top bar that opens a menu of actions for the screen. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Options"
+          }
+        }
+      }
+    },
+    "optionsForStatus" : {
+      "comment" : "VoiceOver, iPad board: label of the '…' button in a column's header. %(status)@ is the status name from GitHub, e.g. 'In Progress'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Options for %(status)@"
+          }
+        }
+      }
+    },
+    "otherNotificationsStayOnGitHub" : {
+      "comment" : "VoiceOver hint of the 'more on GitHub' link at the end of the Inbox. 'CI runs' are GitHub Actions runs.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Releases, CI runs and discussions stay on GitHub."
+          }
+        }
+      }
+    },
+    "ownerOpenIssueCount" : {
+      "comment" : "iPhone, Projects tab: line under a project's or repository's name. %(owner)@ is the GitHub account that owns it, e.g. 'octocat'; %(count)lld is the number of its issues that are open (not done). Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(owner)@ · %(count)lld open"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(owner)@ · %(count)lld open"
+                }
+              }
+            }
           }
         }
       }
@@ -2389,6 +3409,42 @@
         }
       }
     },
+    "personalAccessToken" : {
+      "comment" : "iPhone and iPad, token sign-in sheet: heading above the field for the token ('personal access token' is GitHub's term).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personal access token"
+          }
+        }
+      }
+    },
+    "pickADate" : {
+      "comment" : "iPhone and iPad Inbox: last choice in the snooze list, which opens a calendar to choose a date and time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a Date…"
+          }
+        }
+      }
+    },
+    "pickNotificationOnLeft" : {
+      "comment" : "iPad Inbox: explanation under 'No notification selected'. J and K are keys on the keyboard; keep them.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick one on the left, or move through them with J and K."
+          }
+        }
+      }
+    },
     "previousIssue" : {
       "comment" : "iPad, issue screen: toolbar button with an up arrow (read by VoiceOver) and the K keyboard command; opens the previous issue of the list. Title case.",
       "extractionState" : "manual",
@@ -2397,6 +3453,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Previous Issue"
+          }
+        }
+      }
+    },
+    "previousNotification" : {
+      "comment" : "iPad with a keyboard, Inbox: name of the K key in the keyboard shortcuts overlay (hold ⌘); selects the previous notification.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous"
           }
         }
       }
@@ -2425,6 +3493,18 @@
         }
       }
     },
+    "priorityLevelSpoken" : {
+      "comment" : "VoiceOver, iPhone and iPad: part of what is read for an issue in a list. %(priority)@ is the name of a priority option from GitHub, such as 'Urgent' or 'High'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(priority)@ priority"
+          }
+        }
+      }
+    },
     "priorityNone" : {
       "comment" : "iPhone and iPad: VoiceOver label of the priority button while the issue has no priority.",
       "extractionState" : "manual",
@@ -2449,6 +3529,30 @@
         }
       }
     },
+    "projectGoneMessage" : {
+      "comment" : "iPhone and iPad: explanation under 'This project is gone'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It was closed, deleted, or you no longer have access to it on GitHub."
+          }
+        }
+      }
+    },
+    "projectGoneTitle" : {
+      "comment" : "iPhone and iPad: title of the empty screen of a GitHub project that can't be found any more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This project is gone"
+          }
+        }
+      }
+    },
     "projectHasNoRepository" : {
       "comment" : "iPhone and iPad, new issue sheet: warning when the chosen GitHub project has no repository linked to it, so no issue can be created in it yet.",
       "extractionState" : "manual",
@@ -2469,6 +3573,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Project: %(project)@"
+          }
+        }
+      }
+    },
+    "projectLoadFailed" : {
+      "comment" : "iPhone and iPad: title of a project's screen when fetching it from GitHub failed; GitHub's error shows under it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This project couldn't be loaded"
+          }
+        }
+      }
+    },
+    "projectLoadsWhenOnline" : {
+      "comment" : "iPhone and iPad: explanation under 'You're offline' on a project that hasn't been loaded yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This project loads as soon as you're back online."
           }
         }
       }
@@ -2541,6 +3669,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Assignees changed"
+          }
+        }
+      }
+    },
+    "queuedChanges" : {
+      "comment" : "iPhone and iPad, account sheet: row that opens the list of changes saved on the device and waiting to be sent to GitHub; the number shows beside it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Queued changes"
+          }
+        }
+      }
+    },
+    "queuedChangesTitle" : {
+      "comment" : "iPhone and iPad: title of the screen listing the changes saved on the device and waiting to be sent to GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Queued Changes"
           }
         }
       }
@@ -2749,6 +3901,54 @@
         }
       }
     },
+    "readOrUnread" : {
+      "comment" : "iPad with a keyboard, Inbox: name of the U key in the keyboard shortcuts overlay (hold ⌘); marks the selected notification read, or unread again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read or Unread"
+          }
+        }
+      }
+    },
+    "readingItFromGitHub" : {
+      "comment" : "iPad Inbox: line under 'Loading the issue…'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading it from GitHub."
+          }
+        }
+      }
+    },
+    "recentIssues" : {
+      "comment" : "iPhone and iPad, search tab: heading above the issues opened last, shown before anything is typed. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent"
+          }
+        }
+      }
+    },
+    "recentlyClosedShowToo" : {
+      "comment" : "iPhone and iPad: explanation under 'No open issues' on a repository's screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues closed in the last four weeks show up here too."
+          }
+        }
+      }
+    },
     "removeDueDate" : {
       "comment" : "iPhone and iPad: destructive button in the due date sheet, and item in an issue's Due Date menu, that clears the issue's due date. Title case.",
       "extractionState" : "manual",
@@ -2793,6 +3993,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rename"
+          }
+        }
+      }
+    },
+    "renameEllipsis" : {
+      "comment" : "iPad board: item in a column's '…' menu (a verb) that renames the status; an alert for the new name follows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename…"
           }
         }
       }
@@ -2869,6 +4081,30 @@
         }
       }
     },
+    "repositoryGoneMessage" : {
+      "comment" : "iPhone and iPad: explanation under 'This repository is gone'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None of your open boards use it any more."
+          }
+        }
+      }
+    },
+    "repositoryGoneTitle" : {
+      "comment" : "iPhone and iPad: title of the empty screen of a repository that no open board uses any more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This repository is gone"
+          }
+        }
+      }
+    },
     "repositoryIs" : {
       "comment" : "iPhone and iPad, new issue sheet: VoiceOver label of the repository the new issue is created in. %(repository)@ is the GitHub repository's full name, such as “octocat/hello-world”.",
       "extractionState" : "manual",
@@ -2889,6 +4125,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Repository: none"
+          }
+        }
+      }
+    },
+    "resultCount" : {
+      "comment" : "iPhone and iPad, search tab: beside the 'Issues' heading, how many issues were found.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld result"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld results"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sampleDataNothingSent" : {
+      "comment" : "iPhone and iPad, account sheet: line under the name while the app shows sample data instead of an account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sample data, nothing is sent to GitHub"
+          }
+        }
+      }
+    },
+    "search" : {
+      "comment" : "iPhone and iPad: title of the search tab, and the iPad Go menu item (⌘K) that opens it with the cursor in the search field. The name of a place.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search"
           }
         }
       }
@@ -2929,6 +4213,18 @@
         }
       }
     },
+    "searchPrompt" : {
+      "comment" : "iPhone and iPad, search tab: placeholder in the empty search field; says what can be searched for.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues and projects"
+          }
+        }
+      }
+    },
     "searchStatuses" : {
       "comment" : "iPhone and iPad: placeholder in the search field of the sheet that picks an issue's status.",
       "extractionState" : "manual",
@@ -2949,6 +4245,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Search sub-issues"
+          }
+        }
+      }
+    },
+    "sectionFolded" : {
+      "comment" : "VoiceOver, iPhone and iPad: state of a list section whose issues are hidden (collapsed).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folded"
+          }
+        }
+      }
+    },
+    "sectionIssueCount" : {
+      "comment" : "VoiceOver, iPhone and iPad: the header of a section of a list. %(title)@ is the section's name (a status such as 'In Progress'), %(count)lld the number of issues in it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(title)@, %(count)lld issue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(title)@, %(count)lld issues"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sectionOpen" : {
+      "comment" : "VoiceOver, iPhone and iPad: state of a list section whose issues show (expanded). Not the state of an issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
           }
         }
       }
@@ -3013,6 +4357,90 @@
         }
       }
     },
+    "showsSectionIssues" : {
+      "comment" : "VoiceOver hint, iPhone and iPad: what tapping the header of a folded list section does.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows the issues of this section"
+          }
+        }
+      }
+    },
+    "signIn" : {
+      "comment" : "iPhone and iPad, token sign-in sheet: button that checks the token with GitHub and signs in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign In"
+          }
+        }
+      }
+    },
+    "signInAgain" : {
+      "comment" : "iPhone and iPad Inbox: button that signs out so the user can sign in another way.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign In Again"
+          }
+        }
+      }
+    },
+    "signInHeadline" : {
+      "comment" : "iPhone and iPad, sign-in screen: the big headline under the app icon.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your GitHub issues, wherever you are"
+          }
+        }
+      }
+    },
+    "signInSubheadline" : {
+      "comment" : "iPhone and iPad, sign-in screen: text under the headline. 'GitHub Projects' is GitHub's feature for boards.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Everything stays in GitHub Projects. Teammates who don't use this app see the same board on github.com."
+          }
+        }
+      }
+    },
+    "signInWithGitHub" : {
+      "comment" : "iPhone and iPad, sign-in screen: main button that signs in through github.com.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in with GitHub"
+          }
+        }
+      }
+    },
+    "signInWithToken" : {
+      "comment" : "iPhone and iPad: title of the sheet for signing in with a personal access token.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign In with a Token"
+          }
+        }
+      }
+    },
     "signOut" : {
       "comment" : "Button or menu item that signs out of GitHub.",
       "extractionState" : "manual",
@@ -3025,6 +4453,102 @@
         }
       }
     },
+    "signOutEverywhere" : {
+      "comment" : "iPhone and iPad, account sheet: button that signs out of GitHub on all of the user's devices.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign Out Everywhere"
+          }
+        }
+      }
+    },
+    "signOutEverywhereExplanation" : {
+      "comment" : "iPhone and iPad, account sheet: message of the question after tapping Sign Out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signing out everywhere removes your login from iCloud Keychain, so your Mac, iPhone and iPad all sign out."
+          }
+        }
+      }
+    },
+    "signOutOfGitHubQuestion" : {
+      "comment" : "iPhone and iPad, account sheet: title of the question after tapping Sign Out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign out of GitHub?"
+          }
+        }
+      }
+    },
+    "signOutOnThisIPad" : {
+      "comment" : "iPad, account sheet: button that signs out of GitHub on this iPad only.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign Out on This iPad"
+          }
+        }
+      }
+    },
+    "signOutOnThisIPhone" : {
+      "comment" : "iPhone, account sheet: button that signs out of GitHub on this iPhone only.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign Out on This iPhone"
+          }
+        }
+      }
+    },
+    "signedInWithGitHub" : {
+      "comment" : "iPhone and iPad, account sheet: line under the login when the GitHub account has no name set.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signed in with GitHub"
+          }
+        }
+      }
+    },
+    "signsInByItselfIPad" : {
+      "comment" : "iPad, sign-in screen: note at the bottom.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signed in on your Mac? With iCloud Keychain on, this iPad signs in by itself."
+          }
+        }
+      }
+    },
+    "signsInByItselfIPhone" : {
+      "comment" : "iPhone, sign-in screen: note at the bottom.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signed in on your Mac? With iCloud Keychain on, this iPhone signs in by itself."
+          }
+        }
+      }
+    },
     "snooze" : {
       "comment" : "Inbox: button or menu (a verb) that hides a notification until a time picked next, then brings it back.",
       "extractionState" : "manual",
@@ -3033,6 +4557,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Snooze"
+          }
+        }
+      }
+    },
+    "snoozeUntil" : {
+      "comment" : "iPhone and iPad Inbox: title of the list of times to snooze a notification until (Later Today, Tomorrow…), and name of the date picker for choosing one.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snooze until"
+          }
+        }
+      }
+    },
+    "snoozeUntilTitle" : {
+      "comment" : "iPhone and iPad Inbox: title of the sheet for choosing a date and time to snooze a notification until.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snooze Until"
+          }
+        }
+      }
+    },
+    "someone" : {
+      "comment" : "iPhone and iPad, issue opened from the Inbox: stands for a person GitHub doesn't name, at the start of a line such as 'Someone commented'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Someone"
           }
         }
       }
@@ -3205,6 +4765,30 @@
         }
       }
     },
+    "syncSection" : {
+      "comment" : "iPhone and iPad, account sheet: heading of the section about syncing with GitHub (a noun).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync"
+          }
+        }
+      }
+    },
+    "syncWithGitHubNow" : {
+      "comment" : "iPad with a keyboard, Go menu (⌘R): fetches changes from GitHub and sends the waiting changes, right away.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync with GitHub Now"
+          }
+        }
+      }
+    },
     "today" : {
       "comment" : "A day: in due dates, date suggestions and the Inbox's snooze choices.",
       "extractionState" : "manual",
@@ -3213,6 +4797,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Today"
+          }
+        }
+      }
+    },
+    "tokenCantReadNotifications" : {
+      "comment" : "iPhone and iPad Inbox: title when the user signed in with a token that GitHub doesn't let read notifications.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your token can't read notifications"
+          }
+        }
+      }
+    },
+    "tokenCantReadNotificationsMessage" : {
+      "comment" : "iPhone and iPad Inbox: explanation under 'Your token can't read notifications'. 'Fine-grained token', 'classic token' and 'scope' are GitHub's terms; keep 'repo' as it is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub doesn't let fine-grained tokens read them. Sign in with GitHub, or use a classic token with the repo scope. Everything else keeps working."
+          }
+        }
+      }
+    },
+    "tokenNotAccepted" : {
+      "comment" : "iPhone and iPad, token sign-in sheet: error shown when GitHub refuses the token.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub didn't accept this token. Check that it's complete and hasn't expired."
           }
         }
       }
@@ -3289,6 +4909,18 @@
         }
       }
     },
+    "undoNoticeSpoken" : {
+      "comment" : "VoiceOver, iPhone and iPad Inbox: the notice at the bottom after archiving or unsubscribing, which takes it back when tapped. %(message)@ is what was done, e.g. 'Archived #14'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(message)@. Undo"
+          }
+        }
+      }
+    },
     "unsentIssueNumber" : {
       "comment" : "All screens: shown in place of an issue's number (#12) while an issue the user just wrote hasn't reached GitHub yet (cards, lists, the list of changes waiting to be sent). An adjective about the issue. Short: one word, no spaces.",
       "extractionState" : "manual",
@@ -3325,6 +4957,30 @@
         }
       }
     },
+    "useLoginFromMac" : {
+      "comment" : "iPhone and iPad, sign-in screen: button that signs in with the GitHub login the Mac app shared through iCloud Keychain.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the Login from Your Mac"
+          }
+        }
+      }
+    },
+    "usePersonalAccessToken" : {
+      "comment" : "iPhone and iPad, sign-in screen: button that signs in with a token made on GitHub ('personal access token' is GitHub's term).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use a Personal Access Token"
+          }
+        }
+      }
+    },
     "usualOrderExplanation" : {
       "comment" : "iPhone and iPad, Arrange Sections sheet: note under 'Back to the Usual Order' describing that order of the status groups.",
       "extractionState" : "manual",
@@ -3337,6 +4993,30 @@
         }
       }
     },
+    "viewModePicker" : {
+      "comment" : "iPad, project screen: name of the switch between Board and List (read by VoiceOver; title of the choice in the '…' menu). A noun: how the issues are shown.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View"
+          }
+        }
+      }
+    },
+    "waitingForApproval" : {
+      "comment" : "iPhone and iPad, sign-in screen: shown with a spinner until the user approves the app on github.com.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for you to approve…"
+          }
+        }
+      }
+    },
     "yesterday" : {
       "comment" : "A day: in due dates and in the Inbox's dates.",
       "extractionState" : "manual",
@@ -3345,6 +5025,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yesterday"
+          }
+        }
+      }
+    },
+    "youreOffline" : {
+      "comment" : "iPhone and iPad: title of an empty screen (Projects, a project, the Inbox) while there is no connection and nothing has been loaded yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline"
           }
         }
       }

@@ -35,7 +35,7 @@ struct MobileBoard: View {
                             newStatus = ""
                             addingStatus = true
                         } label: {
-                            Label("Add Status", systemImage: "plus")
+                            Label(.addStatus, systemImage: "plus")
                                 .font(.subheadline.weight(.medium))
                                 .foregroundStyle(Theme.textSecondary)
                                 .padding(.horizontal, 12)
@@ -55,17 +55,17 @@ struct MobileBoard: View {
         }
         .background(Theme.panel)
         .sensoryFeedback(.impact(weight: .medium), trigger: dropped)
-        .alert("New Status", isPresented: $addingStatus) {
-            TextField("Name", text: $newStatus)
-            Button("Cancel", role: .cancel) {}
-            Button("Add") {
+        .alert(.newStatus, isPresented: $addingStatus) {
+            TextField(.statusNamePlaceholder, text: $newStatus)
+            Button(.cancel, role: .cancel) {}
+            Button(.add) {
                 let name = newStatus.trimmingCharacters(in: .whitespaces)
                 guard !name.isEmpty else { return }
                 let options = model.statusOptions(projectId: projectId).map(\.remote) + [RemoteOption(id: nil, name: name, color: "GRAY")]
                 withAnimation(Theme.spring) { model.saveColumns(projectId: projectId, options) }
             }
         } message: {
-            Text("A new column at the end of the board.")
+            Text(.newStatusMessage)
         }
     }
 
@@ -190,8 +190,8 @@ private struct MobileColumn: View {
             IssuePreview(item: item)
                 .environment(model)
         }
-        .accessibilityAction(named: "Move to Next Status") { step(item, by: 1) }
-        .accessibilityAction(named: "Move to Previous Status") { step(item, by: -1) }
+        .accessibilityAction(named: Text(.moveToNextStatus)) { step(item, by: 1) }
+        .accessibilityAction(named: Text(.moveToPreviousStatus)) { step(item, by: -1) }
     }
 
     /// What a card is outside the app: its link on GitHub, or its number and title.
@@ -309,16 +309,16 @@ private struct MobileColumnHeader: View {
                         name = option.name
                         renaming = true
                     } label: {
-                        Label("Rename…", systemImage: "pencil")
+                        Label(.renameEllipsis, systemImage: "pencil")
                     }
                     Menu {
-                        Picker("Colour", selection: Binding(
+                        Picker(.colour, selection: Binding(
                             get: { option.color },
                             set: { color in edit { $0.color = color } }
                         )) {
                             ForEach(Defaults.optionColors, id: \.self) { color in
                                 Label {
-                                    Text(color.capitalized)
+                                    Text(Self.colourName(color))
                                 } icon: {
                                     MenuImages.label(StatusEditor.hex(color), scheme)
                                 }
@@ -327,26 +327,26 @@ private struct MobileColumnHeader: View {
                         }
                         .pickerStyle(.inline)
                     } label: {
-                        Label("Colour", systemImage: "paintpalette")
+                        Label(.colour, systemImage: "paintpalette")
                     }
                     Divider()
                     Button {
                         move(-1)
                     } label: {
-                        Label("Move Left", systemImage: "arrow.left")
+                        Label(.moveLeft, systemImage: "arrow.left")
                     }
                     .disabled(position == 0)
                     Button {
                         move(1)
                     } label: {
-                        Label("Move Right", systemImage: "arrow.right")
+                        Label(.moveRight, systemImage: "arrow.right")
                     }
                     .disabled(position >= statuses.count - 1)
                     Divider()
                     Button(role: .destructive) {
                         confirmDelete = true
                     } label: {
-                        Label("Delete Status…", systemImage: "trash")
+                        Label(.deleteStatusEllipsis, systemImage: "trash")
                     }
                     .disabled(statuses.count <= 1)
                 } label: {
@@ -356,7 +356,7 @@ private struct MobileColumnHeader: View {
                         .frame(width: 32, height: 32)
                         .contentShape(Rectangle())
                 }
-                .accessibilityLabel("Options for \(column.title)")
+                .accessibilityLabel(.optionsForStatus(status: column.title))
             }
             Button {
                 navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: column.option?.id))
@@ -369,28 +369,44 @@ private struct MobileColumnHeader: View {
             }
             .buttonStyle(.plain)
             .hoverEffect(.highlight)
-            .accessibilityLabel("New issue in \(column.title)")
+            .accessibilityLabel(.newIssueInStatus(status: column.title))
         }
         .padding(.horizontal, 4)
         .frame(minHeight: 36)
-        .alert("Rename Status", isPresented: $renaming) {
-            TextField("Name", text: $name)
-            Button("Cancel", role: .cancel) {}
-            Button("Rename") {
+        .alert(.renameStatus, isPresented: $renaming) {
+            TextField(.statusNamePlaceholder, text: $name)
+            Button(.cancel, role: .cancel) {}
+            Button(.rename) {
                 let trimmed = name.trimmingCharacters(in: .whitespaces)
                 if !trimmed.isEmpty, trimmed != column.title { edit { $0.name = trimmed } }
             }
         }
-        .confirmationDialog("Delete the \"\(column.title)\" status?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete Status", role: .destructive) { delete() }
+        .confirmationDialog(Text(.deleteStatusQuestion(status: column.title)), isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button(.deleteStatus, role: .destructive) { delete() }
         } message: {
             Text(column.items.isEmpty
-                 ? "The status is removed from the project on GitHub."
-                 : "The status is removed from the project on GitHub. Its \(column.items.count) issue\(column.items.count == 1 ? "" : "s") stay in the project without a status.")
+                 ? LocalizedStringResource.statusRemovedFromProject
+                 : .statusRemovedIssuesStay(count: column.items.count))
         }
     }
 
     private var canEdit: Bool { model.projects.first { $0.id == projectId }?.viewerCanUpdate == true }
+
+    /// A colour GitHub offers for a status, by its name there ("GRAY", "BLUE" …).
+    private static func colourName(_ color: String) -> String {
+        switch color {
+        case "GRAY": String(localized: .colourGray)
+        case "BLUE": String(localized: .colourBlue)
+        case "GREEN": String(localized: .colourGreen)
+        case "YELLOW": String(localized: .colourYellow)
+        case "ORANGE": String(localized: .colourOrange)
+        case "RED": String(localized: .colourRed)
+        case "PINK": String(localized: .colourPink)
+        case "PURPLE": String(localized: .colourPurple)
+        default: color.capitalized
+        }
+    }
+
     private var statuses: [FieldOption] { model.statusOptions(projectId: projectId) }
     private var position: Int { statuses.firstIndex { $0.id == column.id } ?? 0 }
 
