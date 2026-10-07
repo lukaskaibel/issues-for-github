@@ -325,7 +325,19 @@
         }
       }
     },
-    "assignMe" : {
+    "arrangeSectionsMenu" : {
+      "comment" : "iPhone and iPad: item in the '…' menu of My Issues, a project or a repository; opens a sheet for ordering and hiding the list's sections (one per status).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrange Sections…"
+          }
+        }
+      }
+    },
+    "assignSwipe" : {
       "comment" : "iPhone and iPad: swipe action on an issue (a verb) that assigns it to the signed-in user. Short.",
       "extractionState" : "manual",
       "localizations" : {
@@ -878,7 +890,7 @@
       }
     },
     "deleteStatusQuestion" : {
-      "comment" : "iPhone and iPad, Statuses screen of a project: question before a status is deleted. %(name)@ is the status's name, such as “In Review”.",
+      "comment" : "iPhone and iPad: title of the question before deleting a status (a column of the board), on the board and in the project's settings. %(name)@ is the status's name, e.g. 'In Progress'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1010,7 +1022,7 @@
       }
     },
     "dueDateSearchExamples" : {
-      "comment" : "iPhone and iPad, due date sheet: hint under 'No date matches …'. The words in quotes are examples to type; the date field understands English words only, so keep them in English (and “12.10.” as it is).",
+      "comment" : "iPhone and iPad, due date sheet: hint under 'No date matches …', listing what can be typed. The examples are things the date field understands; it reads English and the app's language, so use this language's own words for them (see the words for dates in Model/CalendarDay.swift, e.g. German 'morgen', 'fr', 'nächste Woche', 'in 3 Tagen', '12.10.'). Keep the date '12.10.' or write it as people in this language type a date.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1022,7 +1034,7 @@
       }
     },
     "dueDateSearchPrompt" : {
-      "comment" : "iPhone and iPad, due date sheet: placeholder in the search field. The examples in quotes are typed as they are; the date field understands English words only, so keep “fri” in English.",
+      "comment" : "iPhone and iPad, due date sheet: placeholder in the search field. The examples are things the date field understands; it reads English and the app's language, so use this language's own words for them (see the words for dates in Model/CalendarDay.swift, e.g. German 'morgen', 'fr', 'nächste Woche', 'in 3 Tagen', '12.10.'). Keep the date '12.10.' or write it as people in this language type a date.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4881,6 +4893,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unassign Me"
+          }
+        }
+      }
+    },
+    "unassignSwipe" : {
+      "comment" : "iPhone and iPad: swipe action on an issue (a verb) that removes the signed-in user from its assignees. Short; the opposite of 'Assign'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unassign"
           }
         }
       }

@@ -21,7 +21,7 @@ struct MyIssuesScreen: View {
                         Button {
                             navigation.sheet = .arrangeSections(.myIssues)
                         } label: {
-                            Label(.arrangeSections, systemImage: "arrow.up.arrow.down")
+                            Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
                         }
                         Divider()
                         Button {
@@ -183,7 +183,7 @@ struct RepositoryScreen: View {
                     Button {
                         navigation.sheet = .arrangeSections(.repository(repoId))
                     } label: {
-                        Label(.arrangeSections, systemImage: "arrow.up.arrow.down")
+                        Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
                     }
                     Divider()
                     Button {
@@ -354,7 +354,7 @@ private struct ProjectOptionsMenu: View {
             Button {
                 navigation.sheet = .arrangeSections(.project(project.id))
             } label: {
-                Label(.arrangeSections, systemImage: "arrow.up.arrow.down")
+                Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
             }
             if project.viewerCanUpdate, project.statusFieldId != nil {
                 Button {
@@ -486,7 +486,7 @@ struct IssueList: View {
                 Button {
                     model.toggleAssignee(item, viewer.person)
                 } label: {
-                    Label(mine ? LocalizedStringResource.unassignMe : .assignMe, systemImage: mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
+                    Label(mine ? LocalizedStringResource.unassignSwipe : .assignSwipe, systemImage: mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
                 }
                 .tint(Color(white: 0.45))
             }

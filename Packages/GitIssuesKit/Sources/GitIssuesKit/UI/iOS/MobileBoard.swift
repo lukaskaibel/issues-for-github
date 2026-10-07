@@ -381,7 +381,7 @@ private struct MobileColumnHeader: View {
                 if !trimmed.isEmpty, trimmed != column.title { edit { $0.name = trimmed } }
             }
         }
-        .confirmationDialog(Text(.deleteStatusQuestion(status: column.title)), isPresented: $confirmDelete, titleVisibility: .visible) {
+        .confirmationDialog(Text(.deleteStatusQuestion(name: column.title)), isPresented: $confirmDelete, titleVisibility: .visible) {
             Button(.deleteStatus, role: .destructive) { delete() }
         } message: {
             Text(column.items.isEmpty
