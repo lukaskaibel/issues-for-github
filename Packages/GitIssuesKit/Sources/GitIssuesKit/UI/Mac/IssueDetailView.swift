@@ -220,7 +220,7 @@ struct ConflictBanner: View {
                 .fixedSize(horizontal: false, vertical: true)
             if let theirs {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(.conflictGitHubVersion).font(.tinySemibold).foregroundStyle(Theme.warning)
+                    Text(.onGitHubVersion).font(.tinySemibold).foregroundStyle(Theme.warning)
                     Text(theirs)
                         .font(.small)
                         .foregroundStyle(Theme.textBody)
@@ -232,7 +232,7 @@ struct ConflictBanner: View {
                 .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.warning.opacity(0.08)))
             }
             HStack(spacing: 8) {
-                Button(.keepMineConflictMac) { model.resolveConflict(entry, keepMine: true) }
+                Button(.keepMineMac) { model.resolveConflict(entry, keepMine: true) }
                     .buttonStyle(PrimaryButtonStyle())
                 Button(.useGitHubVersion) { model.resolveConflict(entry, keepMine: false) }
                     .buttonStyle(SecondaryButtonStyle())
@@ -271,7 +271,7 @@ struct SubIssuesSection: View {
                 Text(.subIssues).font(.uiSemibold)
                 if !subs.isEmpty {
                     let done = subs.filter(\.isClosed).count
-                    Text(.subIssuesDoneOfTotal(done: done, total: subs.count))
+                    Text(.subIssuesProgress(done: done, total: subs.count))
                         .font(.small)
                         .foregroundStyle(Theme.textTertiary)
                         .monospacedDigit()
@@ -327,7 +327,7 @@ private struct SubIssueRow: View {
                 }
                 .frame(width: 14, height: 12)
             }
-            (sub.number > 0 ? Text("#\(sub.number)") : Text(.newIssueNotOnGitHubYet))
+            (sub.number > 0 ? Text("#\(sub.number)") : Text(.unsentIssueNumber))
                 .font(.small)
                 .monospacedDigit()
                 .foregroundStyle(Theme.textTertiary)
@@ -444,7 +444,7 @@ struct ActivitySection: View {
                     HStack(spacing: 8) {
                         Avatar(login: comment.authorLogin ?? "ghost", url: comment.authorAvatarUrl, size: 18)
                         Text(comment.authorLogin ?? "ghost").font(.system(size: 12, weight: .semibold))
-                        (comment.isLocalOnly ? Text(.commentSending) : Text(relativeDate(comment.createdAt)))
+                        (comment.isLocalOnly ? Text(.sendingComment) : Text(relativeDate(comment.createdAt)))
                             .font(.small)
                             .foregroundStyle(Theme.textTertiary)
                         if new {
@@ -620,7 +620,7 @@ private struct PropertiesPanel: View {
                 }
             }
             if let created = item.createdAt {
-                row(.createdRowLabel) {
+                row(.created) {
                     (item.authorLogin.map { Text(.createdDateByAuthor(date: relativeDate(created), author: $0)) } ?? Text(relativeDate(created)))
                         .foregroundStyle(Theme.textBody)
                         .lineLimit(1)

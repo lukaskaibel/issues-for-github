@@ -537,7 +537,7 @@ struct IssueList: View {
         case .myIssues:
             MobileEmptyState(
                 title: String(localized: .nothingAssignedTitle),
-                message: String(localized: .nothingAssignedMessage),
+                message: String(localized: .myIssuesEmptyMessage),
                 systemImage: "scope"
             )
         case .repository(let repoId):

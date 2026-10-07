@@ -54,7 +54,7 @@ public struct GitIssuesScene: Scene {
                 Button(.switchProjectEllipsis) { model.overlay = .palette(.projects) }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
                 Divider()
-                Button(.syncWithGitHubNowMenuItem) { model.refresh() }
+                Button(.syncWithGitHubNow) { model.refresh() }
                     .keyboardShortcut("r", modifiers: .command)
             }
             CommandMenu(.issueMenu) {
@@ -75,7 +75,7 @@ public struct GitIssuesScene: Scene {
                 .disabled(model.targetItem?.url == nil)
                 Divider()
                 // ⌘⌫ is handled by the key monitor, so it keeps deleting text inside text fields.
-                Button(.deleteIssueEllipsis) {
+                Button(.deleteIssue) {
                     if let item = model.targetItem { model.requestDelete(item) }
                 }
                 .disabled(model.targetItem.map { !model.canDelete($0) } ?? true)

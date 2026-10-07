@@ -21,8 +21,8 @@ struct InboxScreen: View {
         Group {
             if model.inboxMeta.access == .denied {
                 MobileEmptyState(
-                    title: String(localized: .tokenCantReadNotifications),
-                    message: String(localized: .tokenCantReadNotificationsMessage),
+                    title: String(localized: .inboxTokenCantReadTitle),
+                    message: String(localized: .inboxTokenCantReadMessage),
                     systemImage: "key"
                 ) {
                     Button(.signInAgain) { model.signOut() }
@@ -30,7 +30,7 @@ struct InboxScreen: View {
                 }
             } else if model.inboxMeta.access == .unknown, model.inboxEntries.isEmpty {
                 if model.status.phase == .offline {
-                    MobileEmptyState(title: String(localized: .youreOffline), message: String(localized: .notificationsLoadWhenOnline), systemImage: "wifi.slash")
+                    MobileEmptyState(title: String(localized: .youreOffline), message: String(localized: .inboxOfflineMessage), systemImage: "wifi.slash")
                 } else {
                     MobileEmptyState(title: String(localized: .loadingNotifications), message: String(localized: .fetchingNotifications), showsProgress: true)
                 }
@@ -444,7 +444,7 @@ struct MobileInboxNews: View {
                 .font(.subheadline)
             }
             if entry.activity.count > events.count {
-                Text(.andMoreBelow(count: entry.activity.count - events.count))
+                Text(.moreEventsBelow(count: entry.activity.count - events.count))
                     .font(.footnote)
                     .foregroundStyle(Theme.textSecondary)
             }
@@ -517,7 +517,7 @@ struct InboxSplit: View {
                 title: model.visibleInbox.isEmpty ? String(localized: .nothingToRead) : String(localized: .noNotificationSelected),
                 message: model.visibleInbox.isEmpty
                     ? String(localized: .newNotificationsShowOnLeft)
-                    : String(localized: .pickNotificationOnLeft),
+                    : String(localized: .pickNotificationHint),
                 systemImage: "tray"
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)

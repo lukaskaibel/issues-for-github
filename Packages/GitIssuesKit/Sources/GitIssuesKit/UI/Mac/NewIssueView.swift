@@ -132,7 +132,7 @@ struct NewIssueView: View {
                 if let parent = draft.parent {
                     HStack(spacing: 6) {
                         SubIssueGlyph().frame(width: 12, height: 12)
-                        Text(.subIssueOfNumber(number: parent.displayNumber))
+                        Text(.subIssueOf(number: parent.displayNumber))
                     }
                     .font(.small)
                     .foregroundStyle(Theme.textBody)

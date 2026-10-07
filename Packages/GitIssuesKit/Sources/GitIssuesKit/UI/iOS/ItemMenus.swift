@@ -65,7 +65,7 @@ struct ItemMenuContent: View {
             Button(role: .destructive) {
                 model.requestDelete(item)
             } label: {
-                Label(item.kind == .draft ? .deleteDraftEllipsis : .deleteIssueEllipsis, systemImage: "trash")
+                Label(item.kind == .draft ? .deleteDraft : .deleteIssue, systemImage: "trash")
             }
             .disabled(!model.canDelete(item))
         }

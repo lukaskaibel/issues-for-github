@@ -829,7 +829,7 @@ private struct MobileSubIssueRow: View {
                 }
             } label: {
                 HStack(spacing: 10) {
-                    Text(sub.number > 0 ? "#\(sub.number)" : String(localized: .newIssueNotSent))
+                    Text(sub.number > 0 ? "#\(sub.number)" : String(localized: .unsentIssueNumber))
                         .font(.footnote)
                         .monospacedDigit()
                         .foregroundStyle(Theme.textTertiary)
@@ -922,7 +922,7 @@ private struct MobileActivity: View {
                             .foregroundStyle(Theme.textTertiary)
                         if new {
                             Spacer(minLength: 8)
-                            Text(.newSinceLastRead).font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
+                            Text(.newCommentBadge).font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
                         }
                     }
                     MarkdownText(text: comment.body)
@@ -932,7 +932,7 @@ private struct MobileActivity: View {
                 .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.groupHeader))
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(new ? Theme.selectionBorder : Theme.panelBorder, lineWidth: 1))
                 .accessibilityElement(children: .combine)
-                .accessibilityHint(new ? String(localized: .newSinceLastRead) : "")
+                .accessibilityHint(new ? String(localized: .newCommentBadge) : "")
                 .transition(.opacity.combined(with: .offset(y: 6)))
             }
         }
@@ -951,7 +951,7 @@ private struct CommentComposer: View {
     var body: some View {
         let empty = draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         HStack(alignment: .bottom, spacing: 10) {
-            TextField(.leaveACommentPlaceholder, text: $draft, axis: .vertical)
+            TextField(.leaveCommentPlaceholder, text: $draft, axis: .vertical)
                 .lineLimit(1...6)
                 .focused($focused)
                 // ⌘↵ sends, as on the Mac; Return alone starts a new line.

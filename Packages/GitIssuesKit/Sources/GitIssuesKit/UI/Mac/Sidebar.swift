@@ -394,7 +394,7 @@ struct AccountDropdown: View {
         case .sync:
             MenuRow(title: String(localized: .syncNow), systemImage: "arrow.triangle.2.circlepath", shortcut: "⌘R", active: isActive, action: { perform(entry) }, onHover: hover)
         case .queue:
-            MenuRow(title: String(localized: .queuedChangesMenuItem), systemImage: "tray.full", value: "\(waiting)", submenu: true, active: isActive || queueOpen, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .queuedChangesTitle), systemImage: "tray.full", value: "\(waiting)", submenu: true, active: isActive || queueOpen, action: { perform(entry) }, onHover: hover)
         case .appearance:
             MenuRow(title: String(localized: .appearance), systemImage: "circle.lefthalf.filled", value: model.appearance.title, submenu: true, active: isActive || appearanceOpen, action: { perform(entry) }, onHover: hover)
         case .settings:
@@ -564,7 +564,7 @@ struct QueueList: View {
     var body: some View {
         let waiting = model.outbox.filter { $0.state != .sent }
         VStack(alignment: .leading, spacing: 0) {
-            Text(waiting.isEmpty ? .everythingSavedToGitHub : .queuedChangesHeader)
+            Text(waiting.isEmpty ? .everythingSavedToGitHub : .queuedChanges)
                 .font(.tinySemibold)
                 .foregroundStyle(Theme.textSecondary)
                 .padding(.horizontal, 14)

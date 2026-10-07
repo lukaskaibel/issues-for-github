@@ -244,7 +244,7 @@ private struct RootPalette: View {
             .map { item, _ in
                 let title = "\(item.displayNumber)  \(item.title)"
                 return PaletteCommand(
-                    id: "issue-\(item.id)", title: title, section: String(localized: .issuesSection),
+                    id: "issue-\(item.id)", title: title, section: String(localized: .issues),
                     icon: AnyView(StatusIcon(glyph: model.glyph(of: item)))
                 ) { model.open(item) }
             }

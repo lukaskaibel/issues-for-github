@@ -246,7 +246,7 @@ extension AppModel {
             text = item.assignees.isEmpty ? .unassigned : .assignedTo(names: item.assignees.map(\.login).formatted(.list(type: .and)))
         case .labels:
             // Narrow: "bug, design" in English, without "and", as the chips read.
-            text = .labelsTooltip(names: item.labels.map(\.name).formatted(.list(type: .and, width: .narrow)))
+            text = .labelsAre(names: item.labels.map(\.name).formatted(.list(type: .and, width: .narrow)))
         case .dueDate:
             guard let badge = dueBadge(for: item) else { return String(localized: .noDueDate) }
             return badge.tooltip

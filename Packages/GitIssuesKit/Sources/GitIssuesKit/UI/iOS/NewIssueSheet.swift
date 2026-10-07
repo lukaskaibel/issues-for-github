@@ -259,7 +259,7 @@ struct NewIssueSheet: View {
                             Image(systemName: "tag").foregroundStyle(Theme.textTertiary)
                         }
                     } else {
-                        PropertyChip(text: draft.labels.count == 1 ? draft.labels[0].name : String(localized: .labelsCount(count: draft.labels.count))) {
+                        PropertyChip(text: draft.labels.count == 1 ? draft.labels[0].name : String(localized: .labelCount(count: draft.labels.count))) {
                             Circle().fill(Theme.labelColor(draft.labels[0].color)).frame(width: 8, height: 8)
                         }
                     }
@@ -277,7 +277,7 @@ struct NewIssueSheet: View {
                         }
                     }
                     .buttonStyle(PlainPressStyle())
-                    .accessibilityLabel(draft.dueDate.flatMap(CalendarDay.init).map { .dueOnDate(date: $0.longLabel) } ?? .dueDateNone)
+                    .accessibilityLabel(draft.dueDate.flatMap(CalendarDay.init).map { .dueOn(date: $0.longLabel) } ?? .dueDateNone)
                     .accessibilityIdentifier("new-due")
                 }
             }

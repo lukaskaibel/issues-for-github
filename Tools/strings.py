@@ -12,6 +12,7 @@ Every text is a manually added string whose key is also its Swift symbol: the ke
     Tools/strings.py remove KEY                removes a key
     Tools/strings.py export LANG [--missing]   JSON of key -> English, comment and current translation
     Tools/strings.py import LANG FILE          merges translations from JSON: {key: "text" | {"one": …, "other": …}}
+    Tools/strings.py validate LANG FILE        checks such a file against the catalog without changing anything
     Tools/strings.py check                     the checks LocalizationTests runs, without building
 
 English may name its placeholders, which become argument labels: "Synced %(minutes)lld min ago". Translations
@@ -262,6 +263,9 @@ def main(args):
             if missing and current:
                 continue
             item = {"comment": entry.get("comment", ""), "en": simplify(entry["localizations"]["en"])}
+            arguments = argument_names(entry["localizations"]["en"])
+            if arguments:
+                item["placeholders"] = arguments
             if current:
                 item[language] = simplify(current)
             out[key] = item
@@ -277,6 +281,21 @@ def main(args):
             strings[key].setdefault("localizations", {})[language] = expand(value)
         save(catalog)
         print(f"{len(translations)} texts in {language}")
+    elif command == "validate":
+        language, path = rest
+        with open(path, encoding="utf-8") as f:
+            translations = json.load(f)
+        unknown = [k for k in translations if k not in strings]
+        for key, value in translations.items():
+            if key in strings:
+                strings[key].setdefault("localizations", {})[language] = expand(value)
+        missing = [k for k, e in strings.items() if language not in e.get("localizations", {})]
+        problems = [p for p in check(catalog) if f"({language})" in p and "not translated" not in p]
+        problems += [f"{k}: not in the catalog" for k in unknown] + [f"{k}: missing" for k in missing]
+        for problem in problems:
+            print(problem)
+        print(f"{len(translations)} texts, {len(missing)} missing, {len(problems)} problems")
+        return 1 if problems else 0
     elif command == "check":
         problems = check(catalog) + [f"{k}: not used in the sources" for k in unused(catalog)]
         for problem in problems:
@@ -287,6 +306,22 @@ def main(args):
         print(__doc__)
         return 1
     return 0
+
+
+def argument_names(localization):
+    """How a translation refers to each placeholder: {"%1$@": "name (text)", "%2$lld": "count (number)"}."""
+    names, found = {}, {}
+    for _, unit in units(localization):
+        for match in SPECIFIER.finditer(unit.get("value", "")):
+            if not match.group("conv"):
+                continue
+            label = match.group("name") or match.group("pos") or str(len(names) + 1)
+            if label not in names:
+                names[label] = len(names) + 1
+                what = "text" if match.group("conv") == "@" else "number"
+                spec = "%" + str(names[label]) + "$" + (match.group("len") or "") + match.group("conv")
+                found[spec] = f"{label} ({what})" if match.group("name") else what
+    return found
 
 
 def simplify(localization):

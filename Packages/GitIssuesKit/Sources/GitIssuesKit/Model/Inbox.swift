@@ -197,7 +197,7 @@ extension InboxEntry {
         let me = viewer?.lowercased()
         func isMe(_ login: String?) -> Bool { me != nil && login?.lowercased() == me }
         guard let event = headline(viewer: viewer) else { return fallbackSummary }
-        let who = event.actor.map(Self.name) ?? String(localized: .inboxSomeone)
+        let who = event.actor.map(Self.name) ?? String(localized: .someone)
         func summary(_ lead: LocalizedStringResource, excerpt: String? = nil, sign: InboxSummary.Sign) -> InboxSummary {
             InboxSummary(actor: event.actor, lead: String(localized: lead), excerpt: excerpt, sign: sign)
         }

@@ -63,7 +63,7 @@ struct MobileRoot: View {
             }
         }
         .alert(
-            model.deletionCandidate.map { Text(.deleteIssueNumberQuestion(number: $0.displayNumber)) } ?? Text(.deleteQuestion),
+            model.deletionCandidate.map { Text(.deleteItemQuestion(number: $0.displayNumber)) } ?? Text(.deleteQuestion),
             isPresented: Binding(
                 get: { model.deletionCandidate != nil },
                 set: { if !$0 { model.deletionCandidate = nil } }
@@ -77,9 +77,9 @@ struct MobileRoot: View {
             Button(.cancel, role: .cancel) { model.deletionCandidate = nil }
         } message: { item in
             if item.kind == .draft {
-                Text(.draftRemovedFromBoard(title: item.title))
+                Text(.draftDeletionMessage(title: item.title))
             } else {
-                Text(.issueDeletedForEveryone(title: item.title))
+                Text(.issueDeletionMessage(title: item.title))
             }
         }
         .overlay(alignment: .top) {
@@ -322,7 +322,7 @@ struct SidebarAccountHeader: View {
                     .hoverEffect(.highlight)
             }
             .buttonStyle(PlainPressStyle())
-            .accessibilityLabel(.newIssueVoiceOverLabel)
+            .accessibilityLabel(.newIssueAction)
             .disabled(model.openProjects.isEmpty)
         }
         // The sidebar's rows put their icons 1 pt in and their accessories 15 pt past the content edge.
@@ -487,7 +487,7 @@ struct MobileCommands: Commands {
                 .keyboardShortcut("o", modifiers: [.command, .shift])
                 .disabled(item?.url == nil)
             Divider()
-            Button(.deleteIssueEllipsis) { if let item { model.requestDelete(item) } }
+            Button(.deleteIssue) { if let item { model.requestDelete(item) } }
                 .keyboardShortcut(.delete, modifiers: .command)
                 .disabled(item.map { !model.canDelete($0) } ?? true)
         }

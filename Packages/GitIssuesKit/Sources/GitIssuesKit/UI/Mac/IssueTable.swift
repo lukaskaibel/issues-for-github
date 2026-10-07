@@ -1010,7 +1010,7 @@ final class IssueHeaderCell: NSView {
         wantsLayer = true
         layerContentsRedrawPolicy = .onSetNeedsDisplay
         addButton.isBordered = false
-        addButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: String(localized: .newIssueButtonLabel))?
+        addButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: String(localized: .newIssueAction))?
             .withSymbolConfiguration(.init(pointSize: 11, weight: .medium))
         addButton.imagePosition = .imageOnly
         addButton.target = self
@@ -1202,7 +1202,7 @@ struct ItemMenuBuilder {
         let targets = model.targets(for: item)
         let several = targets.count > 1
         if several {
-            let title = NSMenuItem(title: String(localized: .menuIssueCount(count: targets.count)), action: nil, keyEquivalent: "")
+            let title = NSMenuItem(title: String(localized: .selectedIssueCount(count: targets.count)), action: nil, keyEquivalent: "")
             title.isEnabled = false
             menu.addItem(title)
         }
@@ -1321,7 +1321,7 @@ struct ItemMenuBuilder {
                     }
                     if boards.count > 1 { add.addItem(submenu(project.title, nil, target)) }
                 }
-                let title = String(localized: boards.count == 1 ? .addToNamedProject(project: boards[0].title) : .addToProjectMenu)
+                let title = String(localized: boards.count == 1 ? .addToNamedProject(project: boards[0].title) : .addToProject)
                 entries.append(submenu(title, MenuIcons.status(.noProject), add))
             }
         }

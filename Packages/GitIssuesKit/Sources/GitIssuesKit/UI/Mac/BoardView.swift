@@ -426,8 +426,8 @@ struct ColumnHeader: View {
 
 extension ColumnHeader {
     @ViewBuilder var columnMenu: some View {
-        Button(.renameColumnMenuItem) { startRename() }
-        Menu(.columnColour) {
+        Button(.renameEllipsis) { startRename() }
+        Menu(.colour) {
             ForEach(Defaults.optionColors, id: \.self) { color in
                 Button {
                     edit { $0.color = color }
@@ -441,8 +441,8 @@ extension ColumnHeader {
             }
         }
         Divider()
-        Button(.moveColumnLeft) { move(-1) }.disabled(position == 0)
-        Button(.moveColumnRight) { move(1) }.disabled(position == statuses.count - 1)
+        Button(.moveLeft) { move(-1) }.disabled(position == 0)
+        Button(.moveRight) { move(1) }.disabled(position == statuses.count - 1)
         Divider()
         Button(.deleteColumnEllipsis, role: .destructive) { confirmDelete = true }
             .disabled(statuses.count <= 1)

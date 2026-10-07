@@ -254,7 +254,7 @@
       }
     },
     "addToProject" : {
-      "comment" : "iPhone and iPad: submenu (a verb) of an issue that is on none of the user's boards, listing the GitHub projects it can be put on. Title case, as in menus.",
+      "comment" : "iPhone and iPad: submenu (a verb) of an issue that is on none of the user's boards, listing the GitHub projects it can be put on. Title case, as in menus. Also: Mac, right-click menu of an issue that is on no project board: submenu listing the user's GitHub projects (boards) to put it on. Title case, as in menus.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -273,18 +273,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add to project…"
-          }
-        }
-      }
-    },
-    "addToProjectMenu" : {
-      "comment" : "Mac, right-click menu of an issue that is on no project board: submenu listing the user's GitHub projects (boards) to put it on. Title case, as in menus.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add to Project"
           }
         }
       }
@@ -338,7 +326,7 @@
       }
     },
     "allCaughtUp" : {
-      "comment" : "iPhone and iPad Inbox: title when there is no notification.",
+      "comment" : "iPhone and iPad Inbox: title when there is no notification. Also: Mac, Inbox: title shown when there are no notifications.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -350,7 +338,7 @@
       }
     },
     "allCaughtUpMessage" : {
-      "comment" : "iPhone and iPad Inbox: explanation under 'You're all caught up'.",
+      "comment" : "iPhone and iPad Inbox: explanation under 'You're all caught up'. Also: Mac, Inbox: under 'You're all caught up', saying what the Inbox shows.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -369,30 +357,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Allow Notifications"
-          }
-        }
-      }
-    },
-    "andMoreBelow" : {
-      "comment" : "iPhone and iPad, issue opened from the Inbox: after the last of the news shown at the top; %(count)lld more events are further down the issue.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "and %(count)lld more below"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "and %(count)lld more below"
-                }
-              }
-            }
           }
         }
       }
@@ -1381,18 +1345,6 @@
         }
       }
     },
-    "closedIssueState" : {
-      "comment" : "VoiceOver, iPhone and iPad: an issue's state when it is closed and on no project board. An adjective about one issue.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Closed"
-          }
-        }
-      }
-    },
     "closedOnNoBoard" : {
       "comment" : "Mac: tooltip of the status icon of a closed issue that is on none of the user's project boards.",
       "extractionState" : "manual",
@@ -1418,7 +1370,7 @@
       }
     },
     "colour" : {
-      "comment" : "iPhone and iPad, Statuses screen of a project: title of the menu that picks the colour of a status's dot.",
+      "comment" : "iPhone and iPad, Statuses screen of a project: title of the menu that picks the colour of a status's dot. Also: Mac board: submenu of a column's menu for picking the column's colour on GitHub.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1537,18 +1489,6 @@
         }
       }
     },
-    "columnColour" : {
-      "comment" : "Mac board: submenu of a column's menu for picking the column's colour on GitHub.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Colour"
-          }
-        }
-      }
-    },
     "columnNamePlaceholder" : {
       "comment" : "Mac board: placeholder in the field for renaming a column or naming a new one. A column is a status of the GitHub project.",
       "extractionState" : "manual",
@@ -1621,18 +1561,6 @@
         }
       }
     },
-    "commentSending" : {
-      "comment" : "Mac, issue view: shown instead of the time on a comment the user just wrote that is still being sent to GitHub.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sending…"
-          }
-        }
-      }
-    },
     "conflictDescriptionEditedOnGitHub" : {
       "comment" : "iPhone and iPad, issue screen: warning banner after the user changed the issue's description while someone else changed it on GitHub. The user's version is in the description below the banner; GitHub's is shown in the banner.",
       "extractionState" : "manual",
@@ -1653,18 +1581,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%(number)@ was edited on GitHub too."
-          }
-        }
-      }
-    },
-    "conflictGitHubVersion" : {
-      "comment" : "Mac, issue view, conflict warning banner: small heading above the text as it is now on GitHub (the other version of the title or description).",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "On GitHub"
           }
         }
       }
@@ -1898,7 +1814,7 @@
       }
     },
     "created" : {
-      "comment" : "iPad, issue screen, column of properties on the right: label of the row saying when and by whom the issue was created. Short.",
+      "comment" : "iPad, issue screen, column of properties on the right: label of the row saying when and by whom the issue was created. Short. Also: Mac, issue view, properties panel: label of the row showing when the issue was created and by whom. Short: about 10 characters.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1929,18 +1845,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Created %(date)@"
-          }
-        }
-      }
-    },
-    "createdRowLabel" : {
-      "comment" : "Mac, issue view, properties panel: label of the row showing when the issue was created and by whom. Short: about 10 characters.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Created"
           }
         }
       }
@@ -2018,7 +1922,7 @@
       }
     },
     "deleteDraft" : {
-      "comment" : "Mac: right-click menu item that deletes a draft (a GitHub project item that is only a note, not an issue yet), after asking. Destructive. Title case, as in menus.",
+      "comment" : "Mac: right-click menu item that deletes a draft (a GitHub project item that is only a note, not an issue yet), after asking. Destructive. Title case, as in menus. Also: iPhone and iPad: destructive item at the end of a draft's menu; deletes it after asking. A draft is a GitHub project item that isn't an issue in a repository yet. The … says it asks first.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2041,18 +1945,6 @@
         }
       }
     },
-    "deleteDraftEllipsis" : {
-      "comment" : "iPhone and iPad: destructive item at the end of a draft's menu; deletes it after asking. A draft is a GitHub project item that isn't an issue in a repository yet. The … says it asks first.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Delete Draft…"
-          }
-        }
-      }
-    },
     "deleteEmptyColumnMessage" : {
       "comment" : "Mac board: message of the confirmation before deleting a column that has no issues.",
       "extractionState" : "manual",
@@ -2066,7 +1958,7 @@
       }
     },
     "deleteIssue" : {
-      "comment" : "Mac: right-click menu item that deletes the issue on GitHub, after asking. Destructive. Title case, as in menus.",
+      "comment" : "Mac: right-click menu item that deletes the issue on GitHub, after asking. Destructive. Title case, as in menus. Also: iPhone and iPad: destructive item at the end of an issue's menu; deletes the issue on GitHub after asking. The … says it asks first.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2089,32 +1981,8 @@
         }
       }
     },
-    "deleteIssueEllipsis" : {
-      "comment" : "iPhone and iPad: destructive item at the end of an issue's menu; deletes the issue on GitHub after asking. The … says it asks first.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Delete Issue…"
-          }
-        }
-      }
-    },
-    "deleteIssueNumberQuestion" : {
-      "comment" : "iPhone and iPad: title of the alert that asks before deleting an issue or a draft. %(number)@ is its number, such as '#14', or the word shown instead of a number for a draft.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Delete %(number)@?"
-          }
-        }
-      }
-    },
     "deleteItemQuestion" : {
-      "comment" : "Mac: title of the alert before deleting an issue or a draft. %(number)@ is the issue's number, e.g. '#42', or the word for a draft.",
+      "comment" : "Mac: title of the alert before deleting an issue or a draft. %(number)@ is the issue's number, e.g. '#42', or the word for a draft. Also: iPhone and iPad: title of the alert that asks before deleting an issue or a draft. %(number)@ is its number, such as '#14', or the word shown instead of a number for a draft.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2270,7 +2138,7 @@
       }
     },
     "draftDeletionMessage" : {
-      "comment" : "Mac: message of the alert before deleting a draft ('draft' is the GitHub term for an item that exists only on the project board). %(title)@ is the draft's title.",
+      "comment" : "Mac: message of the alert before deleting a draft ('draft' is the GitHub term for an item that exists only on the project board). %(title)@ is the draft's title. Also: iPhone and iPad: message of the alert that asks before deleting a draft (a GitHub project draft: an issue that exists only on the board). %(title)@ is the draft's title.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2289,18 +2157,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Draft"
-          }
-        }
-      }
-    },
-    "draftRemovedFromBoard" : {
-      "comment" : "iPhone and iPad: message of the alert that asks before deleting a draft (a GitHub project draft: an issue that exists only on the board). %(title)@ is the draft's title.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The draft “%(title)@” is removed from the board."
           }
         }
       }
@@ -2522,19 +2378,7 @@
       }
     },
     "dueOn" : {
-      "comment" : "Tooltip and VoiceOver text of an issue's due date that is still ahead (cards, rows, issue details). %(date)@ is a long date, e.g. 'Friday, 9 October 2026'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Due %(date)@"
-          }
-        }
-      }
-    },
-    "dueOnDate" : {
-      "comment" : "iPhone and iPad, new issue sheet: VoiceOver label of the due date button. %(date)@ is the day, such as “Friday, 9 October”.",
+      "comment" : "Tooltip and VoiceOver text of an issue's due date that is still ahead (cards, rows, issue details). %(date)@ is a long date, e.g. 'Friday, 9 October 2026'. Also: iPhone and iPad, new issue sheet: VoiceOver label of the due date button. %(date)@ is the day, such as “Friday, 9 October”.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -3146,7 +2990,7 @@
       }
     },
     "fetchingNotifications" : {
-      "comment" : "iPhone and iPad Inbox: line under 'Loading your notifications…'.",
+      "comment" : "iPhone and iPad Inbox: line under 'Loading your notifications…'. Also: Mac, Inbox: under 'Loading your notifications…'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -3553,30 +3397,6 @@
         }
       }
     },
-    "inboxCaughtUpMessage" : {
-      "comment" : "Mac, Inbox: under 'You're all caught up', saying what the Inbox shows.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "When someone assigns you, mentions you or comments on an issue you follow, it shows up here."
-          }
-        }
-      }
-    },
-    "inboxCaughtUpTitle" : {
-      "comment" : "Mac, Inbox: title shown when there are no notifications.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You're all caught up"
-          }
-        }
-      }
-    },
     "inboxClosed" : {
       "comment" : "Inbox row, line under the title, before the details have been read from GitHub: the issue or pull request was closed. Past participle about it.",
       "extractionState" : "manual",
@@ -3657,54 +3477,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "For you"
-          }
-        }
-      }
-    },
-    "inboxIssueLoadingMessage" : {
-      "comment" : "Mac, Inbox: under 'Loading the issue…'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reading it from GitHub."
-          }
-        }
-      }
-    },
-    "inboxIssueLoadingTitle" : {
-      "comment" : "Mac, Inbox: title on the right while the issue a notification is about loads, with a spinner.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loading the issue…"
-          }
-        }
-      }
-    },
-    "inboxIssueUnavailableMessage" : {
-      "comment" : "Mac, Inbox: under 'This issue isn't available any more'; buttons under it open the notification on GitHub or archive it.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "It was deleted or moved, or you no longer have access. GitHub's notification is still here."
-          }
-        }
-      }
-    },
-    "inboxIssueUnavailableTitle" : {
-      "comment" : "Mac, Inbox: title on the right when the issue or pull request a notification is about can't be loaded from GitHub.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This issue isn't available any more"
           }
         }
       }
@@ -3873,30 +3645,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Latest activity"
-          }
-        }
-      }
-    },
-    "inboxLoadingMessage" : {
-      "comment" : "Mac, Inbox: under 'Loading your notifications…'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fetching them from GitHub."
-          }
-        }
-      }
-    },
-    "inboxLoadingTitle" : {
-      "comment" : "Mac, Inbox: title shown while the GitHub notifications load for the first time, with a spinner.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loading your notifications…"
           }
         }
       }
@@ -4106,25 +3854,13 @@
       }
     },
     "inboxOfflineMessage" : {
-      "comment" : "Mac, Inbox: under 'You're offline'.",
+      "comment" : "Mac, Inbox: under 'You're offline'. Also: iPhone and iPad Inbox: explanation under 'You're offline' before any notification has been loaded.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your notifications load as soon as you're back online."
-          }
-        }
-      }
-    },
-    "inboxOfflineTitle" : {
-      "comment" : "Mac, Inbox: title shown instead of the notifications when they haven't been loaded yet and there is no internet connection.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You're offline"
           }
         }
       }
@@ -4297,18 +4033,6 @@
         }
       }
     },
-    "inboxSomeone" : {
-      "comment" : "Inbox: stands for the person who did something when GitHub doesn't say who. Inserted as the name in the Inbox's sentences, e.g. 'Someone mentioned you'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Someone"
-          }
-        }
-      }
-    },
     "inboxTimeHours" : {
       "comment" : "Inbox time column: how long ago, in hours, e.g. '3h'. Very short (an abbreviation of hours); %(hours)lld is 1–23.",
       "extractionState" : "manual",
@@ -4346,7 +4070,7 @@
       }
     },
     "inboxTokenCantReadMessage" : {
-      "comment" : "Mac, Inbox: explanation under 'Your token can't read notifications'. 'Fine-grained' and 'classic' are GitHub's names for its two kinds of personal access token (use GitHub's terms in your language if it has them); 'repo' is the name of a GitHub permission (scope) and stays as it is.",
+      "comment" : "Mac, Inbox: explanation under 'Your token can't read notifications'. 'Fine-grained' and 'classic' are GitHub's names for its two kinds of personal access token (use GitHub's terms in your language if it has them); 'repo' is the name of a GitHub permission (scope) and stays as it is. Also: iPhone and iPad Inbox: explanation under 'Your token can't read notifications'. 'Fine-grained token', 'classic token' and 'scope' are GitHub's terms; keep 'repo' as it is.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4358,7 +4082,7 @@
       }
     },
     "inboxTokenCantReadTitle" : {
-      "comment" : "Mac, Inbox: title of the message shown instead of the notifications when the user signed in with a GitHub personal access token that isn't allowed to read notifications.",
+      "comment" : "Mac, Inbox: title of the message shown instead of the notifications when the user signed in with a GitHub personal access token that isn't allowed to read notifications. Also: iPhone and iPad Inbox: title when the user signed in with a token that GitHub doesn't let read notifications.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4465,20 +4189,8 @@
         }
       }
     },
-    "issueDeletedForEveryone" : {
-      "comment" : "iPhone and iPad: message of the alert that asks before deleting an issue. %(title)@ is the issue's title.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "“%(title)@” and its comments are deleted on GitHub for everyone. This can't be undone."
-          }
-        }
-      }
-    },
     "issueDeletionMessage" : {
-      "comment" : "Mac: message of the alert before deleting an issue. %(title)@ is the issue's title.",
+      "comment" : "Mac: message of the alert before deleting an issue. %(title)@ is the issue's title. Also: iPhone and iPad: message of the alert that asks before deleting an issue. %(title)@ is the issue's title.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4526,7 +4238,7 @@
       }
     },
     "issueNotAvailable" : {
-      "comment" : "iPad Inbox: title beside a notification whose issue GitHub can't show any more.",
+      "comment" : "iPad Inbox: title beside a notification whose issue GitHub can't show any more. Also: Mac, Inbox: title on the right when the issue or pull request a notification is about can't be loaded from GitHub.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4538,7 +4250,7 @@
       }
     },
     "issueNotAvailableMessage" : {
-      "comment" : "iPad Inbox: explanation under 'This issue isn't available any more'.",
+      "comment" : "iPad Inbox: explanation under 'This issue isn't available any more'. Also: Mac, Inbox: under 'This issue isn't available any more'; buttons under it open the notification on GitHub or archive it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4586,7 +4298,7 @@
       }
     },
     "issues" : {
-      "comment" : "iPhone and iPad, search tab: heading above the issues found ('issues' as on GitHub).",
+      "comment" : "iPhone and iPad, search tab: heading above the issues found ('issues' as on GitHub). Also: Mac, command palette (⌘K): heading above the issues found for what was typed. 'Issue' is the GitHub term.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4621,18 +4333,6 @@
         }
       }
     },
-    "issuesSection" : {
-      "comment" : "Mac, command palette (⌘K): heading above the issues found for what was typed. 'Issue' is the GitHub term.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Issues"
-          }
-        }
-      }
-    },
     "keepEditing" : {
       "comment" : "iPhone and iPad, new issue sheet: button in the question 'Discard this issue?' that goes back to writing it.",
       "extractionState" : "manual",
@@ -4657,20 +4357,8 @@
         }
       }
     },
-    "keepMineConflictMac" : {
-      "comment" : "Mac, issue view, conflict warning banner: button that sends the user's own version of the title or description to GitHub, replacing the version there.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keep mine"
-          }
-        }
-      }
-    },
     "keepMineMac" : {
-      "comment" : "Mac: button in a notice at the bottom right of the window when someone changed the same thing on GitHub; keeps the user's own value instead of GitHub's.",
+      "comment" : "Mac: button in a notice at the bottom right of the window when someone changed the same thing on GitHub; keeps the user's own value instead of GitHub's. Also: Mac, issue view, conflict warning banner: button that sends the user's own version of the title or description to GitHub, replacing the version there.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4682,7 +4370,7 @@
       }
     },
     "labelCount" : {
-      "comment" : "Mac, New Issue window: chip showing the picked labels when there are several, e.g. '3 labels' (with one, the label's name is shown instead). GitHub labels: tags such as 'bug'.",
+      "comment" : "Mac, New Issue window: chip showing the picked labels when there are several, e.g. '3 labels' (with one, the label's name is shown instead). GitHub labels: tags such as 'bug'. Also: iPhone and iPad, new issue sheet: chip showing how many GitHub labels are chosen, when there are 2 or more. Short.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4718,37 +4406,13 @@
       }
     },
     "labelsAre" : {
-      "comment" : "iPhone and iPad: VoiceOver label of the labels button. %(names)@ is the list of the issue's GitHub label names, such as “bug, design”.",
+      "comment" : "iPhone and iPad: VoiceOver label of the labels button. %(names)@ is the list of the issue's GitHub label names, such as “bug, design”. Also: Mac: tooltip of the labels on a card or row. %(names)@ is the list of the issue's GitHub labels, already joined, e.g. 'bug, design'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Labels: %(names)@"
-          }
-        }
-      }
-    },
-    "labelsCount" : {
-      "comment" : "iPhone and iPad, new issue sheet: chip showing how many GitHub labels are chosen, when there are 2 or more. Short.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%(count)lld label"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%(count)lld labels"
-                }
-              }
-            }
           }
         }
       }
@@ -4777,32 +4441,8 @@
         }
       }
     },
-    "labelsTooltip" : {
-      "comment" : "Mac: tooltip of the labels on a card or row. %(names)@ is the list of the issue's GitHub labels, already joined, e.g. 'bug, design'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Labels: %(names)@"
-          }
-        }
-      }
-    },
-    "leaveACommentPlaceholder" : {
-      "comment" : "iPhone and iPad, issue screen: placeholder in the comment field at the bottom.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Leave a comment…"
-          }
-        }
-      }
-    },
     "leaveCommentPlaceholder" : {
-      "comment" : "Mac, issue view and Inbox: placeholder in the empty box for writing a comment on the issue.",
+      "comment" : "Mac, issue view and Inbox: placeholder in the empty box for writing a comment on the issue. Also: iPhone and iPad, issue screen: placeholder in the comment field at the bottom.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4898,7 +4538,7 @@
       }
     },
     "loadingNotifications" : {
-      "comment" : "iPhone and iPad Inbox: title shown with a spinner while GitHub's notifications are fetched for the first time.",
+      "comment" : "iPhone and iPad Inbox: title shown with a spinner while GitHub's notifications are fetched for the first time. Also: Mac, Inbox: title shown while the GitHub notifications load for the first time, with a spinner.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4910,7 +4550,7 @@
       }
     },
     "loadingTheIssue" : {
-      "comment" : "iPad Inbox: title shown with a spinner beside a notification while its issue is fetched.",
+      "comment" : "iPad Inbox: title shown with a spinner beside a notification while its issue is fetched. Also: Mac, Inbox: title on the right while the issue a notification is about loads, with a spinner.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5185,30 +4825,6 @@
         }
       }
     },
-    "menuIssueCount" : {
-      "comment" : "Mac: greyed-out first line of the right-click menu when several issues are selected; the menu acts on all of them. Example: '3 issues'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%(count)lld issue"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%(count)lld issues"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "more" : {
       "comment" : "iPhone and iPad, issue screen: VoiceOver label of the toolbar button with the ⋯ icon, which opens a menu of more actions.",
       "extractionState" : "manual",
@@ -5222,7 +4838,7 @@
       }
     },
     "moreEventsBelow" : {
-      "comment" : "Mac, Inbox: under the list of the latest things that happened on an issue (at most 5): how many more there are; they are further down, in the issue's activity. Example: 'and 3 more below'.",
+      "comment" : "Mac, Inbox: under the list of the latest things that happened on an issue (at most 5): how many more there are; they are further down, in the issue's activity. Example: 'and 3 more below'. Also: iPhone and iPad, issue opened from the Inbox: after the last of the news shown at the top; %(count)lld more events are further down the issue.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5238,30 +4854,6 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "and %(count)lld more below"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "moreNotificationsOnGitHub" : {
-      "comment" : "Mac, Inbox: last row of the list: how many notifications GitHub has that aren't about issues or pull requests (releases, CI runs…); a click opens them on github.com. Example: '4 more on GitHub'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%(count)lld more on GitHub"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%(count)lld more on GitHub"
                 }
               }
             }
@@ -5270,7 +4862,7 @@
       }
     },
     "moreOnGitHub" : {
-      "comment" : "iPhone and iPad Inbox: link at the end of the list to the notifications the app doesn't show (releases, CI runs, discussions). %(count)lld is how many.",
+      "comment" : "iPhone and iPad Inbox: link at the end of the list to the notifications the app doesn't show (releases, CI runs, discussions). %(count)lld is how many. Also: Mac, Inbox: last row of the list: how many notifications GitHub has that aren't about issues or pull requests (releases, CI runs…); a click opens them on github.com. Example: '4 more on GitHub'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5317,32 +4909,8 @@
         }
       }
     },
-    "moveColumnLeft" : {
-      "comment" : "Mac board: item in a column's menu that moves the column one place to the left.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Move Left"
-          }
-        }
-      }
-    },
-    "moveColumnRight" : {
-      "comment" : "Mac board: item in a column's menu that moves the column one place to the right.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Move Right"
-          }
-        }
-      }
-    },
     "moveLeft" : {
-      "comment" : "iPad board: item in a column's '…' menu that moves the status (the column) one place to the left.",
+      "comment" : "iPad board: item in a column's '…' menu that moves the status (the column) one place to the left. Also: Mac board: item in a column's menu that moves the column one place to the left.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5354,7 +4922,7 @@
       }
     },
     "moveRight" : {
-      "comment" : "iPad board: item in a column's '…' menu that moves the status (the column) one place to the right.",
+      "comment" : "iPad board: item in a column's '…' menu that moves the status (the column) one place to the right. Also: Mac board: item in a column's menu that moves the column one place to the right.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5402,7 +4970,7 @@
       }
     },
     "myIssuesEmptyMessage" : {
-      "comment" : "Mac, My Issues: message under the title of the empty list. 'On a board or not' means whether or not the issue is on a GitHub project board.",
+      "comment" : "Mac, My Issues: message under the title of the empty list. 'On a board or not' means whether or not the issue is on a GitHub project board. Also: iPhone and iPad, My Issues: explanation under 'Nothing assigned to you'. 'Board' is a GitHub project.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5426,7 +4994,7 @@
       }
     },
     "newCommentBadge" : {
-      "comment" : "Mac, Inbox: small badge on a comment that was added since the user last read the issue. Very short.",
+      "comment" : "Mac, Inbox: small badge on a comment that was added since the user last read the issue. Very short. Also: iPhone and iPad, issue screen opened from the Inbox: small badge on a comment that is new since the user last read the issue; also read by VoiceOver. Short.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5450,7 +5018,7 @@
       }
     },
     "newIssueAction" : {
-      "comment" : "Mac: VoiceOver label of the sidebar's button for writing a new issue, and a command in the command palette (⌘K) that does the same. Sentence case. 'Issue' is the GitHub term.",
+      "comment" : "Mac: VoiceOver label of the sidebar's button for writing a new issue, and a command in the command palette (⌘K) that does the same. Sentence case. 'Issue' is the GitHub term. Also: Mac, issue list: VoiceOver label of the + button on a group header that starts a new issue in that group. Also: iPad sidebar: VoiceOver label of the compose button (a pencil icon) beside the account, which starts writing a new issue. Sentence case.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5469,18 +5037,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The board the issue goes on"
-          }
-        }
-      }
-    },
-    "newIssueButtonLabel" : {
-      "comment" : "Mac, issue list: VoiceOver label of the + button on a group header that starts a new issue in that group.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New issue"
           }
         }
       }
@@ -5557,30 +5113,6 @@
         }
       }
     },
-    "newIssueNotOnGitHubYet" : {
-      "comment" : "Mac, issue view, list of sub-issues: shown in place of the number (such as '#12') of a sub-issue that was just created and hasn't reached GitHub yet. Very short: about 5 characters.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New"
-          }
-        }
-      }
-    },
-    "newIssueNotSent" : {
-      "comment" : "iPhone and iPad, issue screen, list of sub-issues: shown in place of the issue number of a sub-issue that hasn't reached GitHub yet (it gets its number there). Short.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New"
-          }
-        }
-      }
-    },
     "newIssueShortcutTooltip" : {
       "comment" : "Mac sidebar, top: tooltip of the button for writing a new issue. C is the key that does the same; keep it. 'Issue' is the GitHub term.",
       "extractionState" : "manual",
@@ -5593,18 +5125,6 @@
         }
       }
     },
-    "newIssueVoiceOverLabel" : {
-      "comment" : "iPad sidebar: VoiceOver label of the compose button (a pencil icon) beside the account, which starts writing a new issue. Sentence case.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New issue"
-          }
-        }
-      }
-    },
     "newNotificationsShowOnLeft" : {
       "comment" : "iPad Inbox: explanation under 'Nothing to read'.",
       "extractionState" : "manual",
@@ -5613,18 +5133,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New notifications show up on the left."
-          }
-        }
-      }
-    },
-    "newSinceLastRead" : {
-      "comment" : "iPhone and iPad, issue screen opened from the Inbox: small badge on a comment that is new since the user last read the issue; also read by VoiceOver. Short.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New"
           }
         }
       }
@@ -5965,18 +5473,6 @@
         }
       }
     },
-    "nothingAssignedMessage" : {
-      "comment" : "iPhone and iPad, My Issues: explanation under 'Nothing assigned to you'. 'Board' is a GitHub project.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open issues assigned to you show up here, on a board or not."
-          }
-        }
-      }
-    },
     "nothingAssignedTitle" : {
       "comment" : "iPhone and iPad, My Issues: title of the empty list.",
       "extractionState" : "manual",
@@ -6229,30 +5725,6 @@
         }
       }
     },
-    "notificationCountMenu" : {
-      "comment" : "Mac, Inbox: greyed-out first line of the right-click menu when several notifications are selected; the menu acts on all of them. Example: '3 notifications'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%(count)lld notification"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%(count)lld notifications"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "notificationsAreOff" : {
       "comment" : "Settings, Reminders section: shown when the system doesn't allow the app (named 'Issues') to show notifications.",
       "extractionState" : "manual",
@@ -6261,18 +5733,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Notifications for Issues are off"
-          }
-        }
-      }
-    },
-    "notificationsLoadWhenOnline" : {
-      "comment" : "iPhone and iPad Inbox: explanation under 'You're offline' before any notification has been loaded.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your notifications load as soon as you're back online."
           }
         }
       }
@@ -6398,7 +5858,7 @@
       }
     },
     "onGitHubVersion" : {
-      "comment" : "iPhone and iPad, issue screen, edit conflict banner: small heading above the text as it is now on GitHub.",
+      "comment" : "iPhone and iPad, issue screen, edit conflict banner: small heading above the text as it is now on GitHub. Also: Mac, issue view, conflict warning banner: small heading above the text as it is now on GitHub (the other version of the title or description).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -6721,18 +6181,6 @@
         }
       }
     },
-    "peekUpdated" : {
-      "comment" : "Mac, quick look (Peek): bottom right, when the issue last changed. %(date)@ is a time today such as '14:05', or a date such as 'Oct 3' or 'Oct 2025'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Updated %(date)@"
-          }
-        }
-      }
-    },
     "peopleCount" : {
       "comment" : "iPhone and iPad: shown in place of a name when an issue is assigned to several people (2 or more), on chips and in the properties column. Short.",
       "extractionState" : "manual",
@@ -6794,19 +6242,7 @@
       }
     },
     "pickNotificationHint" : {
-      "comment" : "Mac, Inbox: under 'No notification selected'. J and K are keys; keep them.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pick one on the left, or move through them with J and K."
-          }
-        }
-      }
-    },
-    "pickNotificationOnLeft" : {
-      "comment" : "iPad Inbox: explanation under 'No notification selected'. J and K are keys on the keyboard; keep them.",
+      "comment" : "Mac, Inbox: under 'No notification selected'. J and K are keys; keep them. Also: iPad Inbox: explanation under 'No notification selected'. J and K are keys on the keyboard; keep them.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7033,18 +6469,6 @@
         }
       }
     },
-    "projectCouldNotLoad" : {
-      "comment" : "Mac: title of the main area when fetching a GitHub project failed; GitHub's error message is shown under it.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This project couldn't be loaded"
-          }
-        }
-      }
-    },
     "projectEmptyMessage" : {
       "comment" : "Mac: message under the title of a GitHub project's empty list. C is the key for a new issue; keep it.",
       "extractionState" : "manual",
@@ -7106,7 +6530,7 @@
       }
     },
     "projectLoadFailed" : {
-      "comment" : "iPhone and iPad: title of a project's screen when fetching it from GitHub failed; GitHub's error shows under it.",
+      "comment" : "iPhone and iPad: title of a project's screen when fetching it from GitHub failed; GitHub's error shows under it. Also: Mac: title of the main area when fetching a GitHub project failed; GitHub's error message is shown under it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7202,43 +6626,19 @@
       }
     },
     "queuedChanges" : {
-      "comment" : "iPhone and iPad, account sheet: row that opens the list of changes saved on the device and waiting to be sent to GitHub; the number shows beside it.",
+      "comment" : "iPhone and iPad, account sheet: row that opens the list of changes saved on the device and waiting to be sent to GitHub; the number shows beside it. Also: Mac sidebar: heading of the list of changes saved on this Mac that are waiting to be sent to GitHub.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Queued changes"
-          }
-        }
-      }
-    },
-    "queuedChangesHeader" : {
-      "comment" : "Mac sidebar: heading of the list of changes saved on this Mac that are waiting to be sent to GitHub.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Queued changes"
-          }
-        }
-      }
-    },
-    "queuedChangesMenuItem" : {
-      "comment" : "Mac sidebar, account menu: item that opens a submenu listing the changes saved on this Mac that are not on GitHub yet; their number is shown beside it. Title case, as in menus.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Queued Changes"
           }
         }
       }
     },
     "queuedChangesTitle" : {
-      "comment" : "iPhone and iPad: title of the screen listing the changes saved on the device and waiting to be sent to GitHub.",
+      "comment" : "iPhone and iPad: title of the screen listing the changes saved on the device and waiting to be sent to GitHub. Also: Mac sidebar, account menu: item that opens a submenu listing the changes saved on this Mac that are not on GitHub yet; their number is shown beside it. Title case, as in menus.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7466,7 +6866,7 @@
       }
     },
     "readingItFromGitHub" : {
-      "comment" : "iPad Inbox: line under 'Loading the issue…'.",
+      "comment" : "iPad Inbox: line under 'Loading the issue…'. Also: Mac, Inbox: under 'Loading the issue…'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7693,20 +7093,8 @@
         }
       }
     },
-    "renameColumnMenuItem" : {
-      "comment" : "Mac board: item in a column's menu that lets the user type a new name for the column.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rename…"
-          }
-        }
-      }
-    },
     "renameEllipsis" : {
-      "comment" : "iPad board: item in a column's '…' menu (a verb) that renames the status; an alert for the new name follows.",
+      "comment" : "iPad board: item in a column's '…' menu (a verb) that renames the status; an alert for the new name follows. Also: Mac board: item in a column's menu that lets the user type a new name for the column.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -8150,7 +7538,7 @@
       }
     },
     "selectedIssueCount" : {
-      "comment" : "Mac, command palette (⌘K): chip at the top, and heading above the commands, when several issues are picked; the commands apply to all of them. %(count)lld is 2 or more.",
+      "comment" : "Mac, command palette (⌘K): chip at the top, and heading above the commands, when several issues are picked; the commands apply to all of them. %(count)lld is 2 or more. Also: Mac: greyed-out first line of the right-click menu when several issues are selected; the menu acts on all of them. Example: '3 issues'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -8174,7 +7562,7 @@
       }
     },
     "selectedNotificationCount" : {
-      "comment" : "Mac, command palette (⌘K), in the Inbox: heading above the commands when several notifications are picked; the commands apply to all of them. %(count)lld is 2 or more.",
+      "comment" : "Mac, command palette (⌘K), in the Inbox: heading above the commands when several notifications are picked; the commands apply to all of them. %(count)lld is 2 or more. Also: Mac, Inbox: greyed-out first line of the right-click menu when several notifications are selected; the menu acts on all of them. Example: '3 notifications'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -8234,7 +7622,7 @@
       }
     },
     "sendingComment" : {
-      "comment" : "iPhone and iPad, issue screen: shown in place of a comment's date while it is being sent to GitHub.",
+      "comment" : "iPhone and iPad, issue screen: shown in place of a comment's date while it is being sent to GitHub. Also: Mac, issue view: shown instead of the time on a comment the user just wrote that is still being sent to GitHub.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -8894,7 +8282,7 @@
       }
     },
     "someone" : {
-      "comment" : "iPhone and iPad, issue opened from the Inbox: stands for a person GitHub doesn't name, inserted as the name in a sentence such as 'Someone commented'.",
+      "comment" : "iPhone and iPad, issue opened from the Inbox: stands for a person GitHub doesn't name, inserted as the name in a sentence such as 'Someone commented'. Also: Inbox: stands for the person who did something when GitHub doesn't say who. Inserted as the name in the Inbox's sentences, e.g. 'Someone mentioned you'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -8918,7 +8306,7 @@
       }
     },
     "stateClosed" : {
-      "comment" : "Shown instead of a status (chip, issue properties) for an issue on no project board that was closed.",
+      "comment" : "Shown instead of a status (chip, issue properties) for an issue on no project board that was closed. Also: VoiceOver, iPhone and iPad: an issue's state when it is closed and on no project board. An adjective about one issue.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -9134,19 +8522,7 @@
       }
     },
     "subIssueOf" : {
-      "comment" : "iPhone and iPad: chip on a sub-issue (issue screen, new issue sheet) naming the issue it belongs to. %(number)@ is that issue's number, such as “#12”. Short.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sub-issue of %(number)@"
-          }
-        }
-      }
-    },
-    "subIssueOfNumber" : {
-      "comment" : "Mac, New Issue window: chip showing which issue the new sub-issue will belong to (GitHub sub-issues). %(number)@ is the parent issue's number, such as '#12'.",
+      "comment" : "iPhone and iPad: chip on a sub-issue (issue screen, new issue sheet) naming the issue it belongs to. %(number)@ is that issue's number, such as “#12”. Short. Also: Mac, New Issue window: chip showing which issue the new sub-issue will belong to (GitHub sub-issues). %(number)@ is the parent issue's number, such as '#12'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -9205,20 +8581,8 @@
         }
       }
     },
-    "subIssuesDoneOfTotal" : {
-      "comment" : "Mac, issue view, beside the 'Sub-issues' heading: how many sub-issues are closed out of all of them, e.g. '2 of 5', next to a progress bar. Short.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%(done)lld of %(total)lld"
-          }
-        }
-      }
-    },
     "subIssuesProgress" : {
-      "comment" : "iPhone and iPad, issue screen, beside the 'Sub-issues' heading: how many of the sub-issues are done, such as “2 of 5”. Short.",
+      "comment" : "iPhone and iPad, issue screen, beside the 'Sub-issues' heading: how many of the sub-issues are done, such as “2 of 5”. Short. Also: Mac, issue view, beside the 'Sub-issues' heading: how many sub-issues are closed out of all of them, e.g. '2 of 5', next to a progress bar. Short.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -9326,7 +8690,7 @@
       }
     },
     "syncWithGitHubNow" : {
-      "comment" : "iPad with a keyboard, Go menu (⌘R): fetches changes from GitHub and sends the waiting changes, right away.",
+      "comment" : "iPad with a keyboard, Go menu (⌘R): fetches changes from GitHub and sends the waiting changes, right away. Also: Mac menu bar, Go menu: item that fetches what changed on GitHub and sends the changes waiting to be sent, right away. Title case, as in menus.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -9345,18 +8709,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sync with GitHub now"
-          }
-        }
-      }
-    },
-    "syncWithGitHubNowMenuItem" : {
-      "comment" : "Mac menu bar, Go menu: item that fetches what changed on GitHub and sends the changes waiting to be sent, right away. Title case, as in menus.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sync with GitHub Now"
           }
         }
       }
@@ -9477,30 +8829,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Today"
-          }
-        }
-      }
-    },
-    "tokenCantReadNotifications" : {
-      "comment" : "iPhone and iPad Inbox: title when the user signed in with a token that GitHub doesn't let read notifications.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your token can't read notifications"
-          }
-        }
-      }
-    },
-    "tokenCantReadNotificationsMessage" : {
-      "comment" : "iPhone and iPad Inbox: explanation under 'Your token can't read notifications'. 'Fine-grained token', 'classic token' and 'scope' are GitHub's terms; keep 'repo' as it is.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHub doesn't let fine-grained tokens read them. Sign in with GitHub, or use a classic token with the repo scope. Everything else keeps working."
           }
         }
       }
@@ -9722,7 +9050,7 @@
       }
     },
     "unsentIssueNumber" : {
-      "comment" : "All screens: shown in place of an issue's number (#12) while an issue the user just wrote hasn't reached GitHub yet (cards, lists, the list of changes waiting to be sent). An adjective about the issue. Short: one word, no spaces.",
+      "comment" : "All screens: shown in place of an issue's number (#12) while an issue the user just wrote hasn't reached GitHub yet (cards, lists, the list of changes waiting to be sent). An adjective about the issue. Short: one word, no spaces. Also: Mac, issue view, list of sub-issues: shown in place of the number (such as '#12') of a sub-issue that was just created and hasn't reached GitHub yet. Very short: about 5 characters. Also: iPhone and iPad, issue screen, list of sub-issues: shown in place of the issue number of a sub-issue that hasn't reached GitHub yet (it gets its number there). Short.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -9782,7 +9110,7 @@
       }
     },
     "updatedOnDateTooltip" : {
-      "comment" : "Mac, issue list: first line of the tooltip of the date on a row: when the issue last changed. %(date)@ is a date and time such as 'October 3, 2026 at 14:05'.",
+      "comment" : "Mac, issue list: first line of the tooltip of the date on a row: when the issue last changed. %(date)@ is a date and time such as 'October 3, 2026 at 14:05'. Also: Mac, quick look (Peek): bottom right, when the issue last changed. %(date)@ is a time today such as '14:05', or a date such as 'Oct 3' or 'Oct 2025'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -9914,7 +9242,7 @@
       }
     },
     "youreOffline" : {
-      "comment" : "iPhone and iPad: title of an empty screen (Projects, a project, the Inbox) while there is no connection and nothing has been loaded yet.",
+      "comment" : "iPhone and iPad: title of an empty screen (Projects, a project, the Inbox) while there is no connection and nothing has been loaded yet. Also: Mac, Inbox: title shown instead of the notifications when they haven't been loaded yet and there is no internet connection.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

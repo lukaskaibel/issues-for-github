@@ -162,7 +162,7 @@ struct PeekPanel: View {
                 hint("↵", .peekHintOpen)
                 Spacer()
                 if let updated = item.updatedAt {
-                    Text(.peekUpdated(date: relativeDate(updated))).font(.tiny).foregroundStyle(Theme.textTertiary)
+                    Text(.updatedOnDateTooltip(date: relativeDate(updated))).font(.tiny).foregroundStyle(Theme.textTertiary)
                 }
             }
             .padding(.horizontal, 16)

@@ -329,7 +329,7 @@ struct ProjectLoadingState: View {
         case .offline:
             EmptyState(title: String(localized: .youreOffline), message: String(localized: .projectLoadsWhenOnline))
         case .failed(let message):
-            EmptyState(title: String(localized: .projectCouldNotLoad), message: message) {
+            EmptyState(title: String(localized: .projectLoadFailed), message: message) {
                 Button(.tryAgain) { model.refresh() }
                     .buttonStyle(SecondaryButtonStyle())
             }

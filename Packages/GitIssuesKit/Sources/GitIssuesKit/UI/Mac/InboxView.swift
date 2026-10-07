@@ -50,10 +50,10 @@ private struct InboxList: View {
             }
         } else if model.inboxMeta.access == .unknown, model.inboxEntries.isEmpty {
             if model.status.phase == .offline {
-                EmptyState(title: String(localized: .inboxOfflineTitle), message: String(localized: .inboxOfflineMessage))
+                EmptyState(title: String(localized: .youreOffline), message: String(localized: .inboxOfflineMessage))
             } else {
                 EmptyState(
-                    title: String(localized: .inboxLoadingTitle), message: String(localized: .inboxLoadingMessage), showsProgress: true
+                    title: String(localized: .loadingNotifications), message: String(localized: .fetchingNotifications), showsProgress: true
                 )
             }
         } else if entries.isEmpty {
@@ -322,7 +322,7 @@ private struct OtherNotifications: View {
             if let url = URL(string: "https://github.com/notifications") { NSWorkspace.shared.open(url) }
         } label: {
             HStack(spacing: 5) {
-                Text(.moreNotificationsOnGitHub(count: count))
+                Text(.moreOnGitHub(count: count))
                 Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .semibold))
             }
             .font(.small)
@@ -343,8 +343,8 @@ private struct InboxCaughtUp: View {
                 .font(.system(size: 28, weight: .light))
                 .foregroundStyle(Theme.textTertiary)
                 .padding(.bottom, 6)
-            Text(.inboxCaughtUpTitle).font(.uiSemibold)
-            Text(.inboxCaughtUpMessage)
+            Text(.allCaughtUp).font(.uiSemibold)
+            Text(.allCaughtUpMessage)
                 .font(.small)
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
@@ -419,8 +419,8 @@ private struct InboxEntryPane: View {
             header(item)
             if entry.missing {
                 EmptyState(
-                    title: String(localized: .inboxIssueUnavailableTitle),
-                    message: String(localized: .inboxIssueUnavailableMessage)
+                    title: String(localized: .issueNotAvailable),
+                    message: String(localized: .issueNotAvailableMessage)
                 ) {
                     HStack(spacing: 8) {
                         Button(.openOnGitHub) { openOnGitHub() }
@@ -434,7 +434,7 @@ private struct InboxEntryPane: View {
                     .id(item.id)
             } else {
                 EmptyState(
-                    title: String(localized: .inboxIssueLoadingTitle), message: String(localized: .inboxIssueLoadingMessage),
+                    title: String(localized: .loadingTheIssue), message: String(localized: .readingItFromGitHub),
                     showsProgress: true
                 )
             }
@@ -537,7 +537,7 @@ private struct InboxNews: View {
                 .font(.tinySemibold)
                 .foregroundStyle(entry.activityIsNew ? Theme.accent : Theme.textSecondary)
             ForEach(Array(events.enumerated()), id: \.offset) { _, event in
-                let name = event.actor.map(InboxEntry.name) ?? String(localized: .inboxSomeone)
+                let name = event.actor.map(InboxEntry.name) ?? String(localized: .someone)
                 let row = HStack(spacing: 8) {
                     if let actor = event.actor {
                         Avatar(login: actor.login, url: actor.avatarUrl, size: 16)
@@ -722,7 +722,7 @@ struct InboxMenuBuilder {
         menu.autoenablesItems = false
         let targets = model.inboxTargets(for: entry)
         if targets.count > 1 {
-            let title = NSMenuItem(title: String(localized: .notificationCountMenu(count: targets.count)), action: nil, keyEquivalent: "")
+            let title = NSMenuItem(title: String(localized: .selectedNotificationCount(count: targets.count)), action: nil, keyEquivalent: "")
             title.isEnabled = false
             menu.addItem(title)
         }
