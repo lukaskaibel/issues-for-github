@@ -19,17 +19,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = os.path.join(ROOT, "Website")
 URL = "https://lukaskaibel.github.io/issues-for-github/"
 PAGES = ["", "support/", "privacy/", "terms/"]
-# Folder, the html lang attribute, the language's own name, and its word for "Language".
+# Folder, the html lang attribute, the language's own name, and how it names the picker for VoiceOver.
 LANGUAGES = [
-    ("", "en", "English", "Language"),
-    ("de/", "de", "Deutsch", "Sprache"),
-    ("es/", "es", "Español", "Idioma"),
-    ("fr/", "fr", "Français", "Langue"),
-    ("pt-br/", "pt-BR", "Português (Brasil)", "Idioma"),
-    ("ru/", "ru", "Русский", "Язык"),
-    ("ja/", "ja", "日本語", "言語"),
-    ("ko/", "ko", "한국어", "언어"),
-    ("zh-hans/", "zh-Hans", "简体中文", "语言"),
+    ("", "en", "English", "Language: English"),
+    ("de/", "de", "Deutsch", "Sprache: Deutsch"),
+    ("es/", "es", "Español", "Idioma: Español"),
+    ("fr/", "fr", "Français", "Langue\u00a0: Français"),
+    ("pt-br/", "pt-BR", "Português (Brasil)", "Idioma: Português (Brasil)"),
+    ("ru/", "ru", "Русский", "Язык: Русский"),
+    ("ja/", "ja", "日本語", "言語：日本語"),
+    ("ko/", "ko", "한국어", "언어: 한국어"),
+    ("zh-hans/", "zh-Hans", "简体中文", "语言：简体中文"),
 ]
 GLOBE = ('<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/>'
          '<path d="M1.75 8h12.5M8 1.75c1.8 1.7 2.7 3.8 2.7 6.25S9.8 12.55 8 14.25C6.2 12.55 5.3 10.45 5.3 8S6.2 3.45 8 1.75Z"/></svg>')
@@ -84,7 +84,7 @@ def footer_block(folder, page):
     return "\n      ".join([
         "<!-- languages -->",
         '<details class="language">',
-        f'  <summary aria-label="{current[3]}: {current[2]}">{GLOBE}{current[2]}</summary>',
+        f'  <summary aria-label="{current[3]}">{GLOBE}{current[2]}</summary>',
         "  <ul>",
         *("    " + item for item in items),
         "  </ul>",

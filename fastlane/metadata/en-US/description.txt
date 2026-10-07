@@ -48,6 +48,8 @@ PRIVATE
 • No account, no server, no tracking. Your login stays in your keychain and is only ever sent to GitHub.
 • Signed in on one of your devices? The others sign in by themselves through iCloud Keychain.
 
+In English, German, French, Spanish, Portuguese, Russian, Japanese, Korean and Chinese, following your device's language.
+
 Try it without an account: "Explore with Sample Data" opens two sample projects.
 
 Issues is open source: github.com/lukaskaibel/issues-for-github

@@ -1,0 +1,1 @@
+github,kanban,ticket,tâches,todo,projets,tableau,développeur,suivi,bugs,agile,sprint,roadmap,productivité

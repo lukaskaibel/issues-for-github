@@ -211,18 +211,25 @@ struct DueEntryBanner: View {
                     .font(.uiSemibold)
                     .foregroundStyle(summary.sign.color)
             }
-            HStack(spacing: 8) {
-                if canStart {
-                    button(.reminderActionStart, "play.circle") { model.startWork(on: item) }
-                }
-                button(.reminderActionMarkAsDone, "checkmark.circle") { model.markDone(item) }
-                button(.reminderActionMoveToTomorrow, "calendar") { model.moveToTomorrow(item) }
+            // In a row, or one under another where the row doesn't fit (a phone, a longer language).
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { buttons(canStart: canStart) }
+                VStack(alignment: .leading, spacing: 8) { buttons(canStart: canStart) }
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.groupHeader))
+    }
+
+    @ViewBuilder
+    private func buttons(canStart: Bool) -> some View {
+        if canStart {
+            button(.reminderActionStart, "play.circle") { model.startWork(on: item) }
+        }
+        button(.reminderActionMarkAsDone, "checkmark.circle") { model.markDone(item) }
+        button(.reminderActionMoveToTomorrow, "calendar") { model.moveToTomorrow(item) }
     }
 
     @ViewBuilder

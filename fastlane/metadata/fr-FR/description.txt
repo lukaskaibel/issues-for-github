@@ -1,0 +1,56 @@
+Issues est une app rapide et native pour GitHub Issues et GitHub Projects, sur Mac, iPhone et iPad. Elle est sobre à regarder et rapide à utiliser, et tout reste dans GitHub : les membres de l’équipe qui n’utilisent pas l’app voient les mêmes tickets et les mêmes tableaux sur github.com.
+
+RÉCEPTION
+• Ce qui a changé pour vous, d’après les notifications de GitHub : qui vous a assigné un ticket, vous a mentionné, a commenté, a demandé votre revue ou a fermé un ticket que vous suivez
+• Ouvrez une notification et le ticket est là, avec les nouveautés en haut et le nouveau commentaire signalé
+• Vos tickets arrivés à échéance s’affichent le jour même, avec Commencer, Marquer comme terminé et Reporter à demain
+• Lisez, archivez et mettez en attente d’une touche ou d’un balayage ; ce qui est lu ou archivé l’est aussi sur github.com
+• Les notifications mises en attente et non lues restent les mêmes sur tous vos appareils grâce à iCloud
+
+SUR MAC
+• Chaque projet en tableau ou en liste, plus Mes tickets avec tout ce qui vous est assigné
+• Tous les tickets de vos dépôts, y compris ceux qui ne sont sur aucun tableau, qu’un clic place sur l’un d’eux
+• Faites glisser les tickets vers un nouvel emplacement, sur le tableau ou dans la liste, et organisez les colonnes : ajoutez-les, renommez-les, changez leur couleur et leur ordre
+• Le clavier d’abord : J et K passent d’un ticket à l’autre, S, P, A et L changent le statut, la priorité, le responsable et les étiquettes, D définit l’échéance, et ⌘K ouvre une palette de commandes pour tout le reste
+• Sélectionnez plusieurs tickets et modifiez-les d’un coup
+• Jetez un coup d’œil à un ticket avec Espace, ou ouvrez-le à côté de ses propriétés, sous-tickets et commentaires
+• Sous-tickets et blocages : placez n’importe quel ticket sous un autre, ajoutez des tickets existants comme sous-tickets et indiquez ce qui bloque quoi
+• Des descriptions affichées comme sur GitHub, avec tableaux, listes de tâches à cocher et diagrammes Mermaid
+• Précédent et Suivant fonctionnent comme dans un navigateur
+
+SUR IPHONE
+• Réception en premier onglet, avec le nombre de notifications non lues
+• Mes tickets avec tout ce qui vous est assigné, regroupé par statut
+• Chaque projet et chaque dépôt en liste, avec des sections repliables
+• Balayez vers la droite pour marquer un ticket comme terminé, vers la gauche pour vous l’assigner ou le supprimer
+• Maintenez le doigt sur un ticket pour changer son statut, sa priorité, son responsable, ses étiquettes, son parent ou ses blocages, ou pour le faire glisser vers un nouvel emplacement
+• Recherchez dans tous les projets par titre ou par numéro
+• Tableaux, listes de tâches et diagrammes Mermaid dans les descriptions, affichés comme sur GitHub
+
+SUR IPAD
+• Une barre latérale avec tous vos projets et dépôts, et le tableau avec le glisser-déposer
+• Réception avec le ticket à côté, comme dans Mail
+• Les tickets s’ouvrent à côté de leurs propriétés, comme sur Mac
+• Avec un clavier : J et K pour naviguer, S, P, A et L pour modifier un ticket, ⌘N pour en créer un
+
+DES ÉCHÉANCES AVEC RAPPELS
+• Donnez à un ticket son échéance : demain, vendredi, la semaine prochaine, un jour du calendrier, ou en tapant « dans 3 jours »
+• Les cartes et les listes l’affichent, en orange le jour même et en rouge une fois passée
+• Le jour venu, votre Mac, votre iPhone et votre iPad vous le rappellent, avec des boutons pour commencer le ticket, le marquer comme terminé ou le reporter à demain
+• L’échéance est le champ Due date du projet sur GitHub : votre équipe la voit donc aussi
+
+RAPIDE ET FIABLE
+• Chaque modification s’affiche aussitôt et part vers GitHub en arrière-plan
+• Fonctionne hors ligne : les modifications attendent et sont envoyées dès que vous êtes de nouveau en ligne
+• Respectueuse du travail des autres : si quelqu’un d’autre a modifié le même texte, rien n’est écrasé
+
+CONFIDENTIALITÉ
+• Aucun compte, aucun serveur, aucun pistage. Vos identifiants restent dans votre trousseau et ne sont jamais envoyés qu’à GitHub.
+• Connecté sur l’un de vos appareils ? Les autres se connectent d’eux-mêmes grâce au trousseau iCloud.
+
+En anglais, allemand, français, espagnol, portugais, russe, japonais, coréen et chinois, selon la langue de votre appareil.
+
+Essayez-la sans compte : « Explorer avec des données d’exemple » ouvre deux projets d’exemple.
+
+Issues est open source : github.com/lukaskaibel/issues-for-github
+Issues n’est ni affilié à GitHub ni approuvé par GitHub.

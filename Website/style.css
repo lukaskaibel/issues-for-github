@@ -56,6 +56,9 @@
 
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
+/* Korean breaks lines between words, as it is written with spaces. */
+:lang(ko) { word-break: keep-all; overflow-wrap: anywhere; }
+
 body {
   margin: 0;
   background: var(--bg);
