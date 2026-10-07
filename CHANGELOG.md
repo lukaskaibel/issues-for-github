@@ -8,6 +8,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Due issues in the Inbox.** On the day an issue assigned to you is due, it joins the Inbox at the time of the
+  reminder ("Due today"), and the morning after, if it is still open, once more ("Overdue since yesterday"), with a
+  calendar instead of an avatar. Opened, it offers the reminder's buttons: Start, Mark as Done and Move to Tomorrow.
+  Read, archive and snooze work as for notifications, kept in iCloud with your other Inbox records, since GitHub
+  doesn't know these entries; they count towards the unread number. Turning reminders off in Settings takes them
+  away too.
 - **Due dates, with reminders.** Give an issue the day it is due: press `D`, click its date, or use the command
   palette, the right-click menu or the selection bar for several issues at once; on iPhone and iPad, tap the date chip
   or touch and hold the issue. Pick today, tomorrow, Friday, next week or in two weeks, click a day in the month, or

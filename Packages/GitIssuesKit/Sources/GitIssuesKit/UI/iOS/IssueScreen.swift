@@ -56,7 +56,10 @@ struct IssueScreen: View {
                         PropertyChips(item: item, picker: $picker)
                             .padding(.top, 14)
                     }
-                    if let entry = inboxEntry, !entry.activity.isEmpty {
+                    if let entry = inboxEntry, entry.isDue {
+                        DueEntryBanner(entry: entry, item: item)
+                            .padding(.top, 18)
+                    } else if let entry = inboxEntry, !entry.activity.isEmpty {
                         MobileInboxNews(entry: entry)
                             .padding(.top, 18)
                     }
