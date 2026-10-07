@@ -226,7 +226,10 @@ extension AppModel {
     }
 
     func people(projectId: String, repoId: String?) -> [Person] {
-        var result = repos.first { $0.projectId == projectId && $0.id == repoId }?.assignableUsers ?? []
+        // An issue seen only in the Inbox has no board; its repository's people were read for it.
+        var result = projectId.isEmpty
+            ? repoId.flatMap { detachedRepoMeta[$0]?.people } ?? []
+            : repos.first { $0.projectId == projectId && $0.id == repoId }?.assignableUsers ?? []
         if result.isEmpty {
             var seen = Set<String>()
             result = allItems.filter { $0.projectId == projectId }.flatMap(\.assignees).filter { seen.insert($0.id).inserted }
@@ -244,7 +247,9 @@ extension AppModel {
     }
 
     func labels(projectId: String, repoId: String?) -> [LabelRef] {
-        let result = repos.first { $0.projectId == projectId && $0.id == repoId }?.labels ?? []
+        let result = projectId.isEmpty
+            ? repoId.flatMap { detachedRepoMeta[$0]?.labels } ?? []
+            : repos.first { $0.projectId == projectId && $0.id == repoId }?.labels ?? []
         if !result.isEmpty { return result }
         var seen = Set<String>()
         return allItems

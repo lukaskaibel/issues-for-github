@@ -4,8 +4,8 @@ import GRDB
 /// Keeps the local database and GitHub in step: pulls what changed, sends queued changes, and reconciles
 /// the two when both sides moved. Pulls and pushes never overlap, so a stale read cannot undo a fresh write.
 public actor SyncEngine {
-    private let db: AppDatabase
-    private let api: GitHubAPI
+    let db: AppDatabase
+    let api: GitHubAPI
     public nonisolated let status: SyncStatus
 
     private var activeProjectId: String?
@@ -19,6 +19,8 @@ public actor SyncEngine {
     /// Items GitHub lists but will not show us (no access); remembered so they are not re-requested forever.
     private var unhydratable: [String: String] = [:]
     private var wasOffline = true
+    /// When GitHub's notifications are asked for next, at the pace GitHub asks for (X-Poll-Interval).
+    var nextInboxPull = Date.distantPast
 
     private var loop: Task<Void, Never>?
     private var sleeper: Task<Void, Never>?
@@ -119,10 +121,11 @@ public actor SyncEngine {
         kick()
     }
 
-    /// Sends everything that is queued, without waiting for the next cycle.
+    /// Sends everything that is queued, without waiting for the next cycle. Leaving the app ends the chance to undo,
+    /// so archived Inbox entries go out too.
     public func pushPending() async throws {
         guard !isDemo else { return }
-        try await push()
+        try await push(holdingUndoable: false)
     }
 
     /// Re-reads a project from GitHub even if nothing appears to have changed.
@@ -170,6 +173,7 @@ public actor SyncEngine {
                lastDetailPull.map({ Date().timeIntervalSince($0) >= pollInterval - 1 }) ?? true {
                 try await loadIssueDetail(contentId: watchedIssueId)
             }
+            if Date() >= nextInboxPull { try await pullInboxInRound() }
             try await pullOneBackgroundProject()
 
             wasOffline = false
@@ -509,16 +513,20 @@ public actor SyncEngine {
         case deferred
     }
 
-    private func push() async throws {
+    /// How long archiving an Inbox entry can be undone before it is sent.
+    public static let undoWindow: TimeInterval = 5
+
+    private func push(holdingUndoable: Bool = true) async throws {
         var skipped = Set<Int64>()
         while true {
             let skip = skipped
+            let heldSince = holdingUndoable ? Date().addingTimeInterval(-Self.undoWindow) : .distantFuture
             let next = try await db.reader.read { db in
                 try OutboxEntry
                     .filter(Column("state") == OutboxState.pending.rawValue)
                     .order(Column("id"))
                     .fetchAll(db)
-                    .first { !skip.contains($0.id ?? -1) }
+                    .first { !skip.contains($0.id ?? -1) && !($0.mutation.isUndoable && $0.createdAt > heldSince) }
             }
             guard let entry = next, let entryId = entry.id else { return }
             do {
@@ -627,8 +635,33 @@ public actor SyncEngine {
             } catch let error as APIError where error.isNotFound {
                 // Already gone, which is what was asked for.
             }
+
+        case .markThreadRead(let m):
+            try await ignoringGone { try await self.api.markThreadRead(m.threadId) }
+
+        case .archiveThread(let m):
+            try await ignoringGone { try await self.api.markThreadDone(m.threadId) }
+
+        case .unsubscribeThread(let m):
+            try await ignoringGone { try await self.api.unsubscribeThread(m.threadId) }
+
+        case .addToProject(let m):
+            let itemId = try await api.addToProject(projectId: m.projectId, contentId: m.contentId)
+            // Read the card from GitHub soon, with everything the board knows about it.
+            forceSweep.insert(m.projectId)
+            lastPull[m.projectId] = nil
+            return .sent([m.itemId: itemId])
         }
         return .sent([:])
+    }
+
+    /// A notification that is gone already needs nothing more.
+    private func ignoringGone(_ call: () async throws -> Void) async throws {
+        do {
+            try await call()
+        } catch let error as APIError where error.isNotFound {
+            return
+        }
     }
 
     /// Saves a changed mutation (merged text, creation progress) back to its outbox row and re-applies it locally.
@@ -722,6 +755,12 @@ public actor SyncEngine {
         if contentId == watchedIssueId { lastDetailPull = Date() }
     }
 
+    /// Labels and assignable people of a repository that is on no board, for an issue seen only in the Inbox.
+    public func repoMeta(repoId: String) async throws -> (labels: [LabelRef], users: [Person]) {
+        if isDemo { return DemoData.repoMeta(repoId: repoId) }
+        return try await api.repoMeta(repoId: repoId)
+    }
+
     /// Labels and assignable people of a repository, for the pickers. Cached for ten minutes.
     public func loadRepoMeta(projectId: String, repoId: String, force: Bool = false) async throws {
         guard !isDemo else { return }
@@ -787,8 +826,10 @@ public actor SyncEngine {
     private func demoCycle() async {
         do {
             try await db.writer.write { try Outbox.purgeSent($0) }
+            let heldSince = Date().addingTimeInterval(-Self.undoWindow)
             let pending = try await db.reader.read { db in
                 try OutboxEntry.filter(Column("state") == OutboxState.pending.rawValue).order(Column("id")).fetchAll(db)
+                    .filter { !($0.mutation.isUndoable && $0.createdAt > heldSince) }
             }
             guard !pending.isEmpty else {
                 await finish(.idle, syncedAt: Date())
@@ -813,6 +854,8 @@ public actor SyncEngine {
                     remaps = [m.itemId: "demo-item-\(number)", m.contentId: contentId]
                 case .addComment(let m):
                     remaps = [m.commentId: "demo-comment-\(UUID().uuidString.lowercased())"]
+                case .addToProject(let m):
+                    remaps = [m.itemId: "demo-item-\(UUID().uuidString.lowercased())"]
                 default:
                     break
                 }

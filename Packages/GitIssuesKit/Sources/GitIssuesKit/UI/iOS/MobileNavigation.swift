@@ -1,9 +1,10 @@
 #if os(iOS)
 import SwiftUI
 
-/// The tabs of the app. On the iPhone: My Issues, Projects and Search in the tab bar. On the iPad the same
+/// The tabs of the app. On the iPhone: Inbox, My Issues, Projects and Search in the tab bar. On the iPad the same
 /// tabs form a sidebar, where every project is an entry of its own, as on the Mac.
 enum MobileTab: Hashable {
+    case inbox
     case myIssues
     case projects
     case project(String)
@@ -15,6 +16,8 @@ enum Route: Hashable, Codable {
     case project(String)
     case issue(String)
     case statuses(String)
+    /// An issue opened from the Inbox: what's new on it shows at the top.
+    case inboxIssue(entry: String, item: String)
 }
 
 /// Sheets the whole window can show, whichever tab asked for them.
@@ -51,6 +54,9 @@ final class MobileNavigation {
     var tab: MobileTab {
         didSet { if tab != oldValue { Self.saveTab(tab) } }
     }
+    var inboxPath: [Route] = []
+    /// On a wide iPad the Inbox shows the selected entry's issue beside the list; this is that issue.
+    var inboxRootItemId: String?
     var myIssuesPath: [Route] = []
     var projectsPath: [Route] = []
     var projectPaths: [String: [Route]] = [:]
@@ -77,9 +83,11 @@ final class MobileNavigation {
     init() {
         let saved = UserDefaults.standard.string(forKey: Self.tabKey)
         tab = switch saved {
+        case "myIssues": .myIssues
         case "projects": .projects
         case "search": .search
-        default: .myIssues
+        // The Inbox comes first, as in Linear.
+        default: .inbox
         }
         // The iPhone opens the Projects tab on the project used last.
         if let project = UserDefaults.standard.string(forKey: Self.projectKey) {
@@ -89,6 +97,7 @@ final class MobileNavigation {
 
     private static func saveTab(_ tab: MobileTab) {
         let value: String = switch tab {
+        case .inbox: "inbox"
         case .myIssues: "myIssues"
         case .projects, .project: "projects"
         case .search: "search"
@@ -99,6 +108,7 @@ final class MobileNavigation {
 
     func path(for tab: MobileTab) -> [Route] {
         switch tab {
+        case .inbox: inboxPath
         case .myIssues: myIssuesPath
         case .projects: projectsPath
         case .project(let id): projectPaths[id] ?? []
@@ -108,6 +118,7 @@ final class MobileNavigation {
 
     func setPath(_ path: [Route], for tab: MobileTab) {
         switch tab {
+        case .inbox: inboxPath = path
         case .myIssues: myIssuesPath = path
         case .projects: projectsPath = path
         case .project(let id): projectPaths[id] = path
@@ -122,8 +133,12 @@ final class MobileNavigation {
 
     /// The issue open in the selected tab, if its screen is the one in front.
     var currentIssueId: String? {
-        if case .issue(let id)? = path(for: tab).last { return id }
-        return nil
+        switch path(for: tab).last {
+        case .issue(let id)?: return id
+        case .inboxIssue(_, let id)?: return id
+        case nil where tab == .inbox && regular: return inboxRootItemId
+        default: return nil
+        }
     }
 
     func requestPicker(_ kind: PickerKind) {
@@ -169,7 +184,14 @@ final class MobileNavigation {
 
     /// Takes the screens of an issue you deleted off every stack, so you're back where you came from.
     func forget(issue id: String) {
-        func strip(_ path: [Route]) -> [Route] { path.filter { $0 != .issue(id) } }
+        func strip(_ path: [Route]) -> [Route] {
+            path.filter { route in
+                if case .inboxIssue(_, let item) = route { return item != id }
+                return route != .issue(id)
+            }
+        }
+        inboxPath = strip(inboxPath)
+        if inboxRootItemId == id { inboxRootItemId = nil }
         myIssuesPath = strip(myIssuesPath)
         projectsPath = strip(projectsPath)
         searchPath = strip(searchPath)
@@ -181,9 +203,12 @@ final class MobileNavigation {
         func remap(_ path: [Route]) -> [Route] {
             path.map { route in
                 if case .issue(let id) = route, let new = remaps[id] { return .issue(new) }
+                if case .inboxIssue(let entry, let id) = route, let new = remaps[id] { return .inboxIssue(entry: entry, item: new) }
                 return route
             }
         }
+        inboxPath = remap(inboxPath)
+        if let id = inboxRootItemId, let new = remaps[id] { inboxRootItemId = new }
         myIssuesPath = remap(myIssuesPath)
         projectsPath = remap(projectsPath)
         searchPath = remap(searchPath)

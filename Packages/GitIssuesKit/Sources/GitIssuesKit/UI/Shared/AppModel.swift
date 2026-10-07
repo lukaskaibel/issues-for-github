@@ -47,6 +47,7 @@ enum ViewMode: String {
 enum Scope: Hashable, Codable {
     case project(String)
     case myIssues
+    case inbox
 }
 
 /// Everything the views read, kept in step with the database, plus navigation state.
@@ -70,6 +71,11 @@ public final class AppModel {
     private(set) var options: [FieldOption] = []
     private(set) var repos: [RepoRef] = []
     private(set) var outbox: [OutboxEntry] = []
+    /// GitHub's notifications about issues and pull requests, newest first, archived ones included.
+    private(set) var inboxEntries: [InboxEntry] = []
+    private(set) var inboxMeta = InboxMeta()
+    /// Snoozes and "marked unread", which GitHub has no place for; shared through iCloud.
+    private(set) var personal: PersonalStore
 
     // Derived from the above for the current scope.
     private(set) var columns: [BoardColumn] = []
@@ -164,6 +170,32 @@ public final class AppModel {
     /// The issue shown in the quick look that Space opens.
     var peekItemId: String?
 
+    // The Inbox.
+    /// For you or Watching, as last chosen on this device.
+    var inboxBucket: InboxBucket {
+        didSet { UserDefaults.standard.set(inboxBucket.rawValue, forKey: "inbox.bucket") }
+    }
+    /// The entry whose issue is shown beside the list.
+    var inboxSelectedId: String?
+    /// Entries picked to act on together (⌘-click, Shift-click).
+    var inboxPicked: Set<String> = []
+    @ObservationIgnored var inboxPickAnchor: String?
+    /// The last archive or unsubscribe, which can be undone for a few seconds.
+    var inboxUndo: InboxUndo?
+    /// Bumped when a snoozed entry is due back, so the Inbox shows it.
+    var inboxClock = Date()
+    @ObservationIgnored var inboxWake: Task<Void, Never>?
+    /// Labels and assignable people of repositories that aren't on any board, for issues seen only in the Inbox.
+    var detachedRepoMeta: [String: (labels: [LabelRef], people: [Person])] = [:]
+    /// Bumped to open the snooze menu of what is selected in the Inbox (H, or "Pick a Date…" in the right-click menu).
+    var inboxSnoozeRequest = InboxSnoozeRequest()
+    #if os(macOS)
+    /// The number of unread Inbox entries on the app's icon in the Dock.
+    var showsDockBadge = UserDefaults.standard.object(forKey: "inbox.dockBadge") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(showsDockBadge, forKey: "inbox.dockBadge") }
+    }
+    #endif
+
     /// Comments and sub-issues of the issues on screen, one model per issue, with how many views show it.
     @ObservationIgnored private var details: [String: (model: IssueDetailModel, users: Int)] = [:]
 
@@ -189,6 +221,7 @@ public final class AppModel {
             fatalError("Could not open the local database: \(error)")
         }
         db = database
+        personal = PersonalStore(persistent: !demo)
         auth = AuthStore()
         // Logins saved by earlier versions move to iCloud Keychain, and a login shared by another device is used.
         if auth.method == .keychain { KeychainTokenStore.migrateToShared() }
@@ -199,6 +232,7 @@ public final class AppModel {
         isDemo = demo
         signedIn = demo || auth.isSignedIn
         viewMode = ViewMode(rawValue: UserDefaults.standard.string(forKey: "viewMode") ?? "") ?? .board
+        inboxBucket = InboxBucket(rawValue: UserDefaults.standard.string(forKey: "inbox.bucket") ?? "") ?? .forYou
         appearance = AppearanceSetting(rawValue: UserDefaults.standard.string(forKey: "appearance") ?? "") ?? .system
         #if os(macOS)
         appIcon = AppIconChoice(rawValue: UserDefaults.standard.string(forKey: AppIconChoice.defaultsKey) ?? "") ?? .standard
@@ -211,6 +245,7 @@ public final class AppModel {
         #endif
         startObserving()
         restoreScope()
+        scheduleInboxWake()
         #if os(macOS)
         installKeyMonitor()
         installNavigationMonitors()
@@ -275,6 +310,10 @@ public final class AppModel {
         scope = nil
         openItemId = nil
         focusedItemId = nil
+        inboxSelectedId = nil
+        inboxPicked = []
+        inboxUndo = nil
+        detachedRepoMeta = [:]
         history = []
         historyIndex = -1
         overlay = nil
@@ -320,6 +359,7 @@ public final class AppModel {
         db = database
         engine = SyncEngine(db: database, api: Self.api(auth), status: status, demo: demo)
         isDemo = demo
+        personal = PersonalStore(persistent: !demo)
         resetNavigation()
         viewer = nil
         projects = []
@@ -327,6 +367,8 @@ public final class AppModel {
         options = []
         repos = []
         outbox = []
+        inboxEntries = []
+        inboxMeta = InboxMeta()
         status.phase = .idle
         status.notices = []
         status.lastSyncedAt = nil
@@ -343,6 +385,8 @@ public final class AppModel {
         var options: [FieldOption]
         var repos: [RepoRef]
         var outbox: [OutboxEntry]
+        var inbox: [InboxEntry]
+        var inboxMeta: InboxMeta
     }
 
     private nonisolated static func fetchSnapshot(_ db: Database) throws -> Snapshot {
@@ -354,7 +398,9 @@ public final class AppModel {
             items: try Item.order(Column("position")).fetchAll(db),
             options: try FieldOption.order(Column("position")).fetchAll(db),
             repos: try RepoRef.order(Column("nameWithOwner")).fetchAll(db),
-            outbox: try OutboxEntry.order(Column("id")).fetchAll(db)
+            outbox: try OutboxEntry.order(Column("id")).fetchAll(db),
+            inbox: try InboxEntry.order(Column("updatedAt").desc).fetchAll(db),
+            inboxMeta: try InboxMeta.read(db)
         )
     }
 
@@ -392,6 +438,8 @@ public final class AppModel {
         if repos != snapshot.repos { repos = snapshot.repos }
         if allItems != snapshot.items { allItems = snapshot.items }
         outbox = snapshot.outbox
+        if inboxEntries != snapshot.inbox { inboxEntries = snapshot.inbox }
+        if inboxMeta != snapshot.inboxMeta { inboxMeta = snapshot.inboxMeta }
         if scope == nil { restoreScope() }
         rebuild()
     }
@@ -412,7 +460,8 @@ public final class AppModel {
         _ = detail(for: contentId)
         details[contentId]?.users += 1
         let projectId = item.projectId
-        let repoId = item.repoId
+        // An issue on no board reads its repository's labels and people for itself (see loadDetachedRepoMeta).
+        let repoId = item.isDetached ? nil : item.repoId
         let fetchable = item.kind != .draft && !item.isLocalOnly
         let engine = self.engine
         Task {
@@ -470,6 +519,8 @@ public final class AppModel {
         case .myIssues:
             guard let login = viewer?.login else { return [] }
             return allItems.filter { item in item.assignees.contains { $0.login == login } }
+        case .inbox:
+            return []
         }
     }
 
@@ -526,8 +577,9 @@ public final class AppModel {
         allItems.first { $0.contentId == contentId }
     }
 
+    /// A card, or an issue seen only in the Inbox.
     func item(id: String) -> Item? {
-        allItems.first { $0.id == id }
+        allItems.first { $0.id == id } ?? detachedItem(id: id)
     }
 
     var pendingCount: Int {
@@ -606,6 +658,9 @@ public final class AppModel {
                 }
                 result.append(ListSection(id: title, title: title, glyph: glyph, option: nil, items: matching))
             }
+
+        case .inbox:
+            break
         }
         // Sections the user put into their own order keep it.
         let custom = customListOrder(for: scope)
@@ -646,10 +701,22 @@ public final class AppModel {
 
     private func restoreScope() {
         guard scope == nil, !projects.isEmpty else { return }
+        // The Inbox opens again where it was left, as a project does.
+        if UserDefaults.standard.bool(forKey: "inbox.selected") {
+            select(.inbox)
+            return
+        }
         let saved = UserDefaults.standard.string(forKey: "selectedProject")
         let project = projects.first { $0.id == saved }
             ?? projects.first { !$0.closed && !hiddenProjectIds.contains($0.id) }
             ?? projects.first { !$0.closed } ?? projects.first
+        if let project { select(.project(project.id)) }
+    }
+
+    /// The project used last, or the first one: where G then B goes from the Inbox or My Issues.
+    func selectLastProject() {
+        let saved = UserDefaults.standard.string(forKey: "selectedProject")
+        let project = openProjects.first { $0.id == saved } ?? openProjects.first { !hiddenProjectIds.contains($0.id) }
         if let project { select(.project(project.id)) }
     }
 
@@ -663,6 +730,8 @@ public final class AppModel {
             UserDefaults.standard.set(id, forKey: "selectedProject")
             setActiveProject(id)
         }
+        UserDefaults.standard.set(newScope == .inbox, forKey: "inbox.selected")
+        if newScope == .inbox { inboxAppeared() }
         rebuild()
         recordNavigation()
     }

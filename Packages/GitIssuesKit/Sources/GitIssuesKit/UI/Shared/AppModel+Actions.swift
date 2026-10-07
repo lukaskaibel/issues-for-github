@@ -244,7 +244,7 @@ extension AppModel {
         switch scope ?? self.scope {
         case .project(let id): "listOrder.\(id)"
         case .myIssues: "listOrder.mine"
-        case nil: nil
+        case .inbox, nil: nil
         }
     }
 
@@ -292,7 +292,7 @@ extension AppModel {
         switch scope ?? self.scope {
         case .project(let id): "collapsed.\(id)"
         case .myIssues: "collapsed.mine"
-        case nil: nil
+        case .inbox, nil: nil
         }
     }
 

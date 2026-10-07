@@ -8,6 +8,19 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **An Inbox for what changed**, as in Linear: who assigned you, mentioned you or your team, commented, asked for
+  your review, closed, reopened or merged an issue or pull request you follow, with who did it and the comment
+  itself. It is GitHub's own notifications, so what you read or archive is read or done on github.com and your other
+  devices too. On the Mac it is the first row of the sidebar, with the number of unread entries (also on the Dock
+  icon, which Settings can turn off); the issue opens beside the list with what's new on top and the new comments
+  marked, and changes in place. J and K move, U reads or unreads, E or ⌫ archives (⌘Z or the message undoes it),
+  H snoozes until later today, tomorrow, next week or a date, ⇧S unsubscribes, ⌥U reads everything and ⇧⌫ archives
+  everything read; ⌘-click and Shift-click pick several. For you and Watching keep repositories you only watch
+  apart. On the iPhone the Inbox is the first tab, with the count on it: swipe right to read, left to snooze or
+  archive, touch and hold for everything. On the iPad the issue sits beside the list, as in Mail. Issues on none of
+  your boards open too, to read, comment, assign and label, and Add to Project puts them on one. Snoozes and entries
+  marked unread are kept in iCloud, so your devices agree. Releases, CI runs and discussions stay on GitHub; the end
+  of the list says how many there are. `gi-cli inbox` lists the notifications as the Inbox reads them.
 - Change several issues at once, as in Linear. Pick them with X, the checkbox at the start of a list row,
   ⌘-click or Shift-click (Shift with the arrows or J/K picks a run, ⌘A picks everything on screen). A bar at the
   bottom sets status, priority, assignee and labels for all of them; S, P, A, L, I, the command palette and the
@@ -77,6 +90,8 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- G then B and G then L go to the board or list of the project used last when you are in the Inbox or My Issues;
+  before, they did nothing there.
 - The sidebar is calmer, as in Linear. The account, search and New Issue share the top row, and the state of
   syncing is a dot on your avatar: green when everything is on GitHub, the accent while changes go out, amber when
   you're offline or something needs you. "Synced just now" moved into the account menu (and the avatar's tooltip).
@@ -105,6 +120,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Turning an iPad from portrait to landscape could quit the app when the sidebar appeared.
 - When a saved sign-in no longer works, such as a GitHub CLI login without the CLI or a token missing from the
   keychain, the sign-in screen appears instead of an endless "Looking for your projects…".
 - The issue view's back arrow and Escape return to the issue you came from, such as the parent of a sub-issue,

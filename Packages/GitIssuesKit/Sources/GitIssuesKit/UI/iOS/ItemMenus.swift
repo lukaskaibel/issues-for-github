@@ -18,7 +18,10 @@ struct ItemMenuContent: View {
             }
             Divider()
         }
-        StatusMenu(item: item)
+        // An issue seen only in the Inbox has no board, so no status or priority.
+        if !item.isDetached {
+            StatusMenu(item: item)
+        }
         if model.project(of: item)?.priorityFieldId != nil {
             PriorityMenu(item: item)
         }
@@ -57,7 +60,7 @@ struct ItemMenuContent: View {
                 Label("Open on GitHub", systemImage: "arrow.up.right.square")
             }
         }
-        if item.kind == .issue || item.kind == .draft {
+        if item.kind == .issue || item.kind == .draft, !item.isDetached {
             Divider()
             Button(role: .destructive) {
                 model.requestDelete(item)

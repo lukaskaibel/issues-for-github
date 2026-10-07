@@ -15,6 +15,10 @@ public enum Mutation: Codable, Sendable, Equatable {
     case addComment(AddComment)
     case createIssue(CreateIssue)
     case deleteItem(DeleteItem)
+    case markThreadRead(ThreadChange)
+    case archiveThread(ThreadChange)
+    case unsubscribeThread(ThreadChange)
+    case addToProject(AddToProject)
 
     public struct SetField: Codable, Sendable, Equatable {
         public var itemId: String
@@ -79,6 +83,24 @@ public enum Mutation: Codable, Sendable, Equatable {
         public var label: String
     }
 
+    /// Something done to an Inbox entry, which is a GitHub notification thread.
+    public struct ThreadChange: Codable, Sendable, Equatable {
+        public var threadId: String
+        /// The thread's last activity at the time; activity after it is new and isn't affected.
+        public var updatedAt: Date
+        /// "#12 Title", for the list of queued changes.
+        public var label: String
+    }
+
+    /// Puts an issue seen in the Inbox on a board, as a new card without a status.
+    public struct AddToProject: Codable, Sendable, Equatable {
+        /// The new card's id until GitHub assigns one.
+        public var itemId: String
+        public var contentId: String
+        public var projectId: String
+        public var label: String
+    }
+
     public struct CreateIssue: Codable, Sendable, Equatable {
         public var itemId: String
         public var contentId: String
@@ -117,6 +139,9 @@ extension Mutation {
         case .setBody(let m): "body:\(m.contentId)"
         case .setState(let m): "state:\(m.contentId)"
         case .deleteItem(let m): "delete:\(m.itemId)"
+        case .markThreadRead(let m): "read:\(m.threadId)"
+        case .archiveThread(let m): "archive:\(m.threadId)"
+        case .unsubscribeThread(let m): "unsubscribe:\(m.threadId)"
         default: nil
         }
     }
@@ -134,6 +159,8 @@ extension Mutation {
         case .createIssue(let m): m.parentContentId.map { [$0] } ?? []
         // An issue is deleted by its own id; only a draft needs the project item.
         case .deleteItem(let m): m.isDraft ? [m.itemId] : (m.contentId.map { [$0] } ?? [m.itemId])
+        case .markThreadRead, .archiveThread, .unsubscribeThread: []
+        case .addToProject(let m): [m.contentId]
         }
     }
 
@@ -145,6 +172,7 @@ extension Mutation {
         case .setTitle(let m), .setBody(let m): m.itemId
         case .createIssue(let m): m.itemId
         case .deleteItem(let m): m.itemId
+        case .addToProject(let m): m.itemId
         default: nil
         }
     }
@@ -158,7 +186,25 @@ extension Mutation {
         case .addComment(let m): m.contentId
         case .createIssue(let m): m.contentId
         case .deleteItem(let m): m.contentId
+        case .addToProject(let m): m.contentId
         default: nil
+        }
+    }
+
+    /// The Inbox entry this mutation is about.
+    var threadId: String? {
+        switch self {
+        case .markThreadRead(let m), .archiveThread(let m), .unsubscribeThread(let m): m.threadId
+        default: nil
+        }
+    }
+
+    /// Archiving and unsubscribing wait a few seconds before they are sent, so they can be undone: GitHub can't
+    /// bring a notification back once it is done.
+    var isUndoable: Bool {
+        switch self {
+        case .archiveThread, .unsubscribeThread: true
+        default: false
         }
     }
 
@@ -205,6 +251,12 @@ extension Mutation {
             m.itemId = r(m.itemId)
             m.contentId = r(m.contentId)
             return .deleteItem(m)
+        case .markThreadRead, .archiveThread, .unsubscribeThread:
+            return self
+        case .addToProject(var m):
+            m.itemId = r(m.itemId)
+            m.contentId = r(m.contentId)
+            return .addToProject(m)
         }
     }
 }
@@ -259,27 +311,42 @@ extension Mutation {
             )
 
         case .editAssignees(let m):
-            for var item in try Item.filter(Column("contentId") == m.contentId).fetchAll(db) {
+            func edit(_ assignees: [Person]) -> [Person] {
                 let removed = Set(m.remove.map(\.id))
-                var people = item.assignees.filter { !removed.contains($0.id) }
+                var people = assignees.filter { !removed.contains($0.id) }
                 for person in m.add where !people.contains(where: { $0.id == person.id }) {
                     people.append(person)
                 }
-                item.assignees = people
+                return people
+            }
+            for var item in try Item.filter(Column("contentId") == m.contentId).fetchAll(db) {
+                item.assignees = edit(item.assignees)
                 item.dirty = true
                 try item.update(db)
             }
+            // An issue seen only in the Inbox keeps its assignees there.
+            for var entry in try InboxEntry.filter(Column("contentId") == m.contentId).fetchAll(db) {
+                entry.assignees = edit(entry.assignees)
+                try entry.update(db)
+            }
 
         case .editLabels(let m):
-            for var item in try Item.filter(Column("contentId") == m.contentId).fetchAll(db) {
+            func edit(_ current: [LabelRef]) -> [LabelRef] {
                 let removed = Set(m.remove.map(\.id))
-                var labels = item.labels.filter { !removed.contains($0.id) }
+                var labels = current.filter { !removed.contains($0.id) }
                 for label in m.add where !labels.contains(where: { $0.id == label.id }) {
                     labels.append(label)
                 }
-                item.labels = labels.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                return labels.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            }
+            for var item in try Item.filter(Column("contentId") == m.contentId).fetchAll(db) {
+                item.labels = edit(item.labels)
                 item.dirty = true
                 try item.update(db)
+            }
+            for var entry in try InboxEntry.filter(Column("contentId") == m.contentId).fetchAll(db) {
+                entry.labels = edit(entry.labels)
+                try entry.update(db)
             }
 
         case .addComment(let m):
@@ -295,6 +362,38 @@ extension Mutation {
                 try db.execute(sql: "DELETE FROM item WHERE contentId = ? AND projectId = ?", arguments: [contentId, m.projectId])
                 try db.execute(sql: "DELETE FROM subIssue WHERE id = ?", arguments: [contentId])
                 try db.execute(sql: "DELETE FROM comment WHERE issueId = ?", arguments: [contentId])
+            }
+
+        case .markThreadRead(let m):
+            try db.execute(
+                sql: "UPDATE inboxEntry SET unread = 0 WHERE id = ? AND updatedAt <= ?",
+                arguments: [m.threadId, m.updatedAt]
+            )
+
+        case .archiveThread(let m):
+            try db.execute(
+                sql: "UPDATE inboxEntry SET archivedFor = ?, unread = 0 WHERE id = ? AND updatedAt <= ?",
+                arguments: [m.updatedAt, m.threadId, m.updatedAt]
+            )
+
+        case .unsubscribeThread:
+            // Nothing to show: the entry is archived alongside, and the subscription itself lives on GitHub.
+            break
+
+        case .addToProject(let m):
+            guard try !Item.exists(db, key: m.itemId),
+                  try Item.filter(Column("projectId") == m.projectId && Column("contentId") == m.contentId).isEmpty(db),
+                  let entry = try InboxEntry.filter(Column("contentId") == m.contentId).fetchOne(db),
+                  var card = Item(detached: entry) else { return }
+            let last = try Double.fetchOne(db, sql: "SELECT MAX(position) FROM item WHERE projectId = ?", arguments: [m.projectId])
+            card.id = m.itemId
+            card.projectId = m.projectId
+            card.position = (last ?? 0) + 1024
+            card.dirty = true
+            card.commentCount = try Comment.filter(Column("issueId") == m.contentId).fetchCount(db)
+            try card.insert(db)
+            if let repoId = card.repoId, let repo = card.repo, try !RepoRef.exists(db, key: ["projectId": m.projectId, "id": repoId]) {
+                try RepoRef(id: repoId, nameWithOwner: repo, projectId: m.projectId).insert(db)
             }
 
         case .createIssue(let m):
@@ -366,6 +465,12 @@ extension Mutation {
         case .addComment(let m): return (try number(contentId: m.contentId), "Comment added")
         case .createIssue(let m): return ("New", "Issue created: \(m.title)")
         case .deleteItem(let m): return (m.label.components(separatedBy: " ").first ?? "", "Deleted")
+        case .markThreadRead(let m): return (m.label.components(separatedBy: " ").first ?? "", "Marked as read")
+        case .archiveThread(let m): return (m.label.components(separatedBy: " ").first ?? "", "Archived in the Inbox")
+        case .unsubscribeThread(let m): return (m.label.components(separatedBy: " ").first ?? "", "Unsubscribed")
+        case .addToProject(let m):
+            let title = try String.fetchOne(db, sql: "SELECT title FROM project WHERE id = ?", arguments: [m.projectId])
+            return (m.label.components(separatedBy: " ").first ?? "", "Added to \(title ?? "a project")")
         }
     }
 }

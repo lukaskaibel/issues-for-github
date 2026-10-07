@@ -9,6 +9,8 @@ struct IssueScreen: View {
     @Environment(\.wideLayout) private var wide
     @Environment(\.dismiss) private var dismiss
     var itemId: String
+    /// Opened from the Inbox: what's new on it shows under the title, and the new comments are marked.
+    var inboxEntryId: String? = nil
 
     @State private var picker: PickerKind?
     @State private var editingDescription = false
@@ -19,6 +21,11 @@ struct IssueScreen: View {
                 .onAppear {
                     model.detailAppeared(item)
                     RecentIssues.record(item.id)
+                    if let entry = inboxEntry {
+                        model.selectInboxEntry(entry)
+                    } else {
+                        model.loadDetachedRepoMeta(item)
+                    }
                 }
                 .onDisappear { model.detailDisappeared(item) }
                 .onChange(of: navigation.pickerRequest) { _, request in
@@ -50,14 +57,22 @@ struct IssueScreen: View {
                         PropertyChips(item: item, picker: $picker)
                             .padding(.top, 14)
                     }
+                    if let entry = inboxEntry, !entry.activity.isEmpty {
+                        MobileInboxNews(entry: entry)
+                            .padding(.top, 18)
+                    }
+                    if item.isDetached, let entry = inboxEntry ?? model.inboxEntries.first(where: { $0.contentId == item.contentId }) {
+                        MobileDetachedBanner(entry: entry)
+                            .padding(.top, 14)
+                    }
                     DescriptionEditor(item: item, editing: $editingDescription)
                         .padding(.top, 18)
-                    if item.kind == .issue {
+                    if item.kind == .issue, !item.isDetached {
                         MobileSubIssues(item: item)
                             .padding(.top, 28)
                     }
                     if item.kind != .draft {
-                        MobileActivity(item: item)
+                        MobileActivity(item: item, highlighted: inboxEntry?.newCommentIds ?? [])
                             .padding(.top, 28)
                     }
                 }
@@ -95,9 +110,14 @@ struct IssueScreen: View {
     /// a screen that is just being replaced, so each acts on the issue on screen when it is pressed.
     private func keyboardShortcuts(_ item: Item) -> some View {
         ZStack {
-            Button("Next Issue") { stepFromCurrent(1) }.keyboardShortcut("j", modifiers: [])
-            Button("Previous Issue") { stepFromCurrent(-1) }.keyboardShortcut("k", modifiers: [])
-            Button("Status") { navigation.requestPicker(.status) }.keyboardShortcut("s", modifiers: [])
+            // Beside the Inbox's list on an iPad, the list takes J and K.
+            if !besideInboxList {
+                Button("Next Issue") { stepFromCurrent(1) }.keyboardShortcut("j", modifiers: [])
+                Button("Previous Issue") { stepFromCurrent(-1) }.keyboardShortcut("k", modifiers: [])
+            }
+            if !item.isDetached {
+                Button("Status") { navigation.requestPicker(.status) }.keyboardShortcut("s", modifiers: [])
+            }
             if model.project(of: item)?.priorityFieldId != nil {
                 Button("Priority") { navigation.requestPicker(.priority) }.keyboardShortcut("p", modifiers: [])
             }
@@ -114,6 +134,15 @@ struct IssueScreen: View {
         .accessibilityHidden(true)
     }
 
+    private var inboxEntry: InboxEntry? {
+        inboxEntryId.flatMap { model.inboxEntry(id: $0) }
+    }
+
+    /// The issue of the selected entry beside the Inbox's list, on a wide iPad.
+    private var besideInboxList: Bool {
+        inboxEntryId != nil && wide && navigation.tab == .inbox && navigation.path(for: .inbox).isEmpty
+    }
+
     @ToolbarContentBuilder
     private func toolbar(_ item: Item) -> some ToolbarContent {
         ToolbarItem(placement: .principal) {
@@ -125,7 +154,8 @@ struct IssueScreen: View {
             }
             .accessibilityElement(children: .combine)
         }
-        if wide, let position = position(of: item) {
+        // From the Inbox, J and K step through the notifications instead of the project's issues.
+        if wide, inboxEntryId == nil, let position = position(of: item) {
             ToolbarItemGroup(placement: .primaryAction) {
                 Text("\(position.index + 1) / \(position.items.count)")
                     .font(.footnote)
@@ -146,11 +176,21 @@ struct IssueScreen: View {
             }
         }
         ToolbarItemGroup(placement: .primaryAction) {
+            if let entry = inboxEntry, !entry.isArchived {
+                // Done with it: out of the Inbox, and back to the list.
+                Button {
+                    model.archive([entry])
+                    navigation.pop()
+                } label: {
+                    Label("Archive", systemImage: "archivebox")
+                }
+                .accessibilityIdentifier("issue-archive")
+            }
             if let url = item.webURL {
                 ShareLink(item: url, subject: Text(item.title), message: Text("\(item.displayNumber) \(item.title)"), preview: SharePreview("\(item.displayNumber) \(item.title)"))
             }
             Menu {
-                if item.kind == .issue {
+                if item.kind == .issue, !item.isDetached {
                     Button {
                         navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
                     } label: {
@@ -178,7 +218,23 @@ struct IssueScreen: View {
     }
 
     private func stepFromCurrent(_ delta: Int) {
-        if let current = currentItem { step(delta, from: current) }
+        if inboxEntryId != nil {
+            stepInbox(delta)
+        } else if let current = currentItem {
+            step(delta, from: current)
+        }
+    }
+
+    /// J and K on an issue opened from the Inbox: on to the next notification's issue.
+    private func stepInbox(_ delta: Int) {
+        let entries = model.visibleInbox
+        guard let index = entries.firstIndex(where: { $0.id == inboxEntryId }) else { return }
+        let target = index + delta
+        guard entries.indices.contains(target), let card = model.inboxItem(for: entries[target]) else { return }
+        var path = navigation.path(for: navigation.tab)
+        guard !path.isEmpty else { return }
+        path[path.count - 1] = .inboxIssue(entry: entries[target].id, item: card.id)
+        navigation.setPath(path, for: navigation.tab)
     }
 
     private func assignCurrentToMe() {
@@ -210,11 +266,24 @@ private struct IssueTitleField: View {
     @FocusState private var focused: Bool
 
     var body: some View {
+        if item.isEditableContent {
+            field
+        } else {
+            // Read-only (a pull request, or an issue on no board): plain text, not a dimmed field.
+            Text(item.title)
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(Theme.text)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("issue-title")
+        }
+    }
+
+    private var field: some View {
         TextField("Issue title", text: $title, axis: .vertical)
             .font(.title2.weight(.semibold))
             .foregroundStyle(Theme.text)
             .focused($focused)
-            .disabled(!item.isEditableContent)
             .submitLabel(.done)
             .accessibilityIdentifier("issue-title")
             .onAppear { title = item.title }
@@ -290,15 +359,24 @@ private struct PropertyChips: View {
 
     private var chips: some View {
         FlowLayout(spacing: 8) {
-            Menu {
-                StatusMenuItems(item: item)
-            } label: {
-                PropertyChip(text: model.statusOption(of: item)?.name ?? "No status", placeholder: item.statusId == nil) {
-                    StatusIcon(glyph: model.glyph(of: item), size: 16)
+            if item.isDetached {
+                // Without a board there's no status column, only GitHub's open or closed.
+                let state = item.gitHubState
+                PropertyChip(text: state.title) {
+                    Image(systemName: state.systemImage).foregroundStyle(state.color)
                 }
+                .accessibilityLabel("State: \(state.title)")
+            } else {
+                Menu {
+                    StatusMenuItems(item: item)
+                } label: {
+                    PropertyChip(text: model.statusOption(of: item)?.name ?? "No status", placeholder: item.statusId == nil) {
+                        StatusIcon(glyph: model.glyph(of: item), size: 16)
+                    }
+                }
+                .accessibilityLabel("Status: \(model.statusOption(of: item)?.name ?? "No status")")
+                .accessibilityIdentifier("chip-status")
             }
-            .accessibilityLabel("Status: \(model.statusOption(of: item)?.name ?? "No status")")
-            .accessibilityIdentifier("chip-status")
             if model.project(of: item)?.priorityFieldId != nil {
                 Menu {
                     PriorityMenuItems(item: item)
@@ -374,18 +452,28 @@ private struct PropertiesColumn: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
-                row("Status") {
-                    Menu {
-                        StatusMenuItems(item: item)
-                    } label: {
+                if item.isDetached {
+                    row("State") {
+                        let state = item.gitHubState
                         value {
-                            StatusIcon(glyph: model.glyph(of: item), size: 15)
-                            Text(model.statusOption(of: item)?.name ?? "No status")
-                                .foregroundStyle(item.statusId == nil ? Theme.textTertiary : Theme.text)
+                            Image(systemName: state.systemImage).foregroundStyle(state.color)
+                            Text(state.title).foregroundStyle(Theme.text)
                         }
                     }
-                    .accessibilityLabel("Status: \(model.statusOption(of: item)?.name ?? "No status")")
-                    .accessibilityIdentifier("property-status")
+                } else {
+                    row("Status") {
+                        Menu {
+                            StatusMenuItems(item: item)
+                        } label: {
+                            value {
+                                StatusIcon(glyph: model.glyph(of: item), size: 15)
+                                Text(model.statusOption(of: item)?.name ?? "No status")
+                                    .foregroundStyle(item.statusId == nil ? Theme.textTertiary : Theme.text)
+                            }
+                        }
+                        .accessibilityLabel("Status: \(model.statusOption(of: item)?.name ?? "No status")")
+                        .accessibilityIdentifier("property-status")
+                    }
                 }
                 if model.project(of: item)?.priorityFieldId != nil {
                     row("Priority") {
@@ -775,6 +863,8 @@ private struct MobileSubIssueRow: View {
 private struct MobileActivity: View {
     @Environment(AppModel.self) private var model
     var item: Item
+    /// Comments that are new since you last read the issue, from the Inbox; they are marked.
+    var highlighted: Set<String> = []
 
     var body: some View {
         let comments = item.contentId.map { model.detail(for: $0).comments } ?? []
@@ -786,6 +876,7 @@ private struct MobileActivity: View {
                     .foregroundStyle(Theme.textTertiary)
             }
             ForEach(comments) { comment in
+                let new = highlighted.contains(comment.id)
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         Avatar(login: comment.authorLogin ?? "ghost", url: comment.authorAvatarUrl, size: 20)
@@ -793,13 +884,19 @@ private struct MobileActivity: View {
                         Text(comment.isLocalOnly ? "Sending…" : relativeDate(comment.createdAt))
                             .font(.footnote)
                             .foregroundStyle(Theme.textTertiary)
+                        if new {
+                            Spacer(minLength: 8)
+                            Text("New").font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
+                        }
                     }
                     MarkdownText(text: comment.body)
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.groupHeader))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(new ? Theme.selectionBorder : Theme.panelBorder, lineWidth: 1))
+                .accessibilityElement(children: .combine)
+                .accessibilityHint(new ? "New" : "")
                 .transition(.opacity.combined(with: .offset(y: 6)))
             }
         }

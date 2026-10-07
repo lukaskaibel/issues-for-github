@@ -138,7 +138,7 @@ struct PeekPanel: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .onTapGesture { model.open(item) }
 
-                    properties
+                    PropertyChipRow(item: item)
 
                     if item.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Text("No description").foregroundStyle(Theme.textTertiary)
@@ -172,16 +172,52 @@ struct PeekPanel: View {
         .shadow(color: Theme.shadow, radius: 30, y: 12)
     }
 
-    /// Status, priority, assignees, labels and sub-issues, each changeable in place.
-    private var properties: some View {
+    private func hint(_ keys: String, _ action: String) -> some View {
+        HStack(spacing: 5) {
+            Keycap(keys)
+            Text(action).font(.tiny).foregroundStyle(Theme.textTertiary)
+        }
+    }
+}
+/// Open, closed or merged, as GitHub says, for an issue that has no status column.
+struct StateChip: View {
+    var item: Item
+
+    var body: some View {
+        let (title, symbol, color) = item.gitHubState
+        HStack(spacing: 5) {
+            Image(systemName: symbol).font(.system(size: 11, weight: .semibold))
+            Text(title)
+        }
+        .font(.smallMedium)
+        .foregroundStyle(color)
+        .padding(.horizontal, 8)
+        .frame(height: 22)
+        .background(Capsule().fill(color.opacity(0.12)))
+        .padding(.leading, 8)
+    }
+}
+
+/// Status, priority, assignees, labels and sub-issues as a row of chips, each changeable in place: in the peek, and
+/// beside the Inbox where the issue view is narrow. An issue on no board has only assignees and labels.
+struct PropertyChipRow: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                PropertyButton(kind: .status, item: item) {
-                    HStack(spacing: 6) {
-                        StatusIcon(glyph: model.glyph(of: item))
-                        Text(model.statusOption(of: item)?.name ?? "No status")
+                if item.isDetached {
+                    // Without a board there's no status column, only GitHub's open or closed.
+                    StateChip(item: item)
+                } else {
+                    PropertyButton(kind: .status, item: item) {
+                        HStack(spacing: 6) {
+                            StatusIcon(glyph: model.glyph(of: item))
+                            Text(model.statusOption(of: item)?.name ?? "No status")
+                        }
+                        .font(.small)
                     }
-                    .font(.small)
                 }
                 if model.project(of: item)?.priorityFieldId != nil {
                     PropertyButton(kind: .priority, item: item) {
@@ -205,11 +241,27 @@ struct PeekPanel: View {
                         }
                         .font(.small)
                     }
+                    if item.labels.isEmpty {
+                        PropertyButton(kind: .labels, item: item) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "tag").foregroundStyle(Theme.textTertiary)
+                                Text("Labels").foregroundStyle(Theme.textTertiary)
+                            }
+                            .font(.small)
+                        }
+                    }
                 }
             }
             if !item.labels.isEmpty || item.subTotal > 0 {
                 HStack(spacing: 6) {
-                    ForEach(item.labels) { LabelChip(label: $0) }
+                    if !item.labels.isEmpty {
+                        PropertyButton(kind: .labels, item: item) {
+                            HStack(spacing: 6) {
+                                ForEach(item.labels) { LabelChip(label: $0) }
+                            }
+                        }
+                        .padding(.leading, -8)
+                    }
                     if item.subTotal > 0 {
                         SubIssueChip(completed: item.subCompleted, total: item.subTotal)
                     }
@@ -219,13 +271,6 @@ struct PeekPanel: View {
         }
         .padding(.leading, -8)
         .foregroundStyle(Theme.textBody)
-    }
-
-    private func hint(_ keys: String, _ action: String) -> some View {
-        HStack(spacing: 5) {
-            Keycap(keys)
-            Text(action).font(.tiny).foregroundStyle(Theme.textTertiary)
-        }
     }
 }
 #endif

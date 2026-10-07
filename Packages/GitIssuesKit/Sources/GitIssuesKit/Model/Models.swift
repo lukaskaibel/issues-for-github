@@ -120,7 +120,9 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
 
     public var isLocalOnly: Bool { id.hasPrefix(LocalID.prefix) }
     public var isClosed: Bool { state != "OPEN" }
-    public var isEditableContent: Bool { kind == .issue }
+    /// Title and description can be edited here: issues on a board. Pull requests and issues seen only in the
+    /// Inbox are read-only.
+    public var isEditableContent: Bool { kind == .issue && !projectId.isEmpty }
     public var repoShortName: String? { repo?.split(separator: "/").last.map(String.init) }
 
     /// The branch name GitHub suggests for the issue: its number and title, such as "14-sign-in-with-device-flow".

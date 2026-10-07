@@ -12,7 +12,8 @@ extension AppModel {
                 guard let engine = self?.engine else { return }
                 Task {
                     await engine.setPollInterval(15)
-                    await engine.kick()
+                    // Back in front: what's new in the Inbox right away (usually GitHub's free "nothing new").
+                    await engine.refreshInbox()
                 }
             }
         })
@@ -39,6 +40,8 @@ extension AppModel {
             task = .invalid
         }
         Task {
+            // Leaving the app ends the moment to undo, so archived Inbox entries go out now too.
+            try? await engine.pushPending()
             await engine.syncNow()
             if task != .invalid { UIApplication.shared.endBackgroundTask(task) }
         }

@@ -63,6 +63,10 @@ public struct RootView: View {
         .onChange(of: model.settingsRequest) {
             openSettings()
         }
+        // The Inbox's unread number on the Dock icon, as Mail shows it.
+        .onChange(of: model.dockBadge, initial: true) { _, badge in
+            NSApp.dockTile.badgeLabel = badge
+        }
         .onChange(of: model.status.idRemaps) { _, remaps in
             model.follow(remaps: remaps)
         }
@@ -100,23 +104,28 @@ struct ContentPanel: View {
         ZStack {
             // The board stays mounted underneath an open issue so it is exactly as you left it on return.
             VStack(spacing: 0) {
-                ProjectHeader()
-                if model.scope == nil {
-                    EmptyState(
-                        title: model.projects.isEmpty ? "Looking for your projects…" : "Choose a project",
-                        message: model.projects.isEmpty
-                            ? "Boards come from GitHub Projects. If you have none yet, create one on GitHub and it will show up here."
-                            : "Pick a project in the sidebar."
-                    )
-                } else if model.isLoadingProject {
-                    ProjectLoadingState()
-                        .transition(.opacity)
-                } else if model.viewMode == .board, model.currentProjectId != nil {
-                    BoardView()
+                if model.scope == .inbox {
+                    InboxView()
                         .transition(.opacity)
                 } else {
-                    IssueListView()
-                        .transition(.opacity)
+                    ProjectHeader()
+                    if model.scope == nil {
+                        EmptyState(
+                            title: model.projects.isEmpty ? "Looking for your projects…" : "Choose a project",
+                            message: model.projects.isEmpty
+                                ? "Boards come from GitHub Projects. If you have none yet, create one on GitHub and it will show up here."
+                                : "Pick a project in the sidebar."
+                        )
+                    } else if model.isLoadingProject {
+                        ProjectLoadingState()
+                            .transition(.opacity)
+                    } else if model.viewMode == .board, model.currentProjectId != nil {
+                        BoardView()
+                            .transition(.opacity)
+                    } else {
+                        IssueListView()
+                            .transition(.opacity)
+                    }
                 }
             }
             .animation(Theme.overlay, value: model.isLoadingProject)
@@ -200,7 +209,7 @@ struct ProjectHeader: View {
             case .myIssues:
                 Image(systemName: "scope").font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textSecondary)
                 Text("My Issues").font(.uiSemibold)
-            case nil:
+            case .inbox, nil:
                 EmptyView()
             }
             Spacer()

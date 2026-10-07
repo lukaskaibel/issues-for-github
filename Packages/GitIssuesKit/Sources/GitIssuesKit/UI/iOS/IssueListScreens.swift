@@ -399,6 +399,8 @@ struct IssueList: View {
     @ViewBuilder
     private var emptyState: some View {
         switch scope {
+        case .inbox:
+            EmptyView()
         case .myIssues:
             MobileEmptyState(
                 title: "Nothing assigned to you",

@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo"]
+        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "entry", "inboxdump"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -64,9 +64,21 @@ enum DebugRemote {
         case "select":
             if argument == "mine" {
                 model.select(.myIssues)
+            } else if argument == "inbox" {
+                model.select(.inbox)
             } else if let project = model.projects.first(where: { $0.title.localizedCaseInsensitiveContains(argument) }) {
                 model.select(.project(project.id))
             }
+        case "entry":
+            // entry <number>: selects the Inbox entry about that issue, as a click does; "entry none" clears it.
+            let entry = model.visibleInbox.first { "\($0.number ?? -1)" == argument || $0.displayNumber(withRepo: true) == argument }
+            model.selectInboxEntry(entry)
+        case "inboxdump":
+            for entry in model.inboxEntries {
+                let summary = model.inboxSummary(entry)
+                log("inbox \(entry.displayNumber(withRepo: true)) \(entry.bucket.rawValue) unread=\(model.isUnread(entry)) archived=\(entry.isArchived) \(summary.sign.rawValue): \(summary.lead) \(summary.excerpt ?? "")")
+            }
+            log("inbox unread=\(model.inboxUnreadCount) selected=\(model.inboxSelected?.displayNumber(withRepo: true) ?? "-") picked=\(model.inboxPicked.count) undo=\(model.inboxUndo?.message ?? "-") pending=\(model.pendingCount)")
         case "mode":
             model.closeDetail()
             withAnimation(Theme.spring) { model.viewMode = argument == "list" ? .list : .board }
