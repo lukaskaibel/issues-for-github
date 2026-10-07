@@ -306,7 +306,7 @@ struct ColumnHeader: View {
         HStack(spacing: 8) {
             StatusIcon(glyph: column.glyph)
             if renaming {
-                TextField("Column name", text: $name)
+                TextField(.columnNamePlaceholder, text: $name)
                     .textFieldStyle(.plain)
                     .font(.uiSemibold)
                     .focused($nameFocused)
@@ -340,10 +340,10 @@ struct ColumnHeader: View {
                 .menuIndicator(.hidden)
                 .fixedSize()
                 .opacity(hovering ? 1 : 0)
-                .accessibilityLabel("Column options")
+                .accessibilityLabel(.columnOptions)
             }
 
-            IconButton(systemName: "plus", label: "New issue in \(column.title)", size: 22) {
+            IconButton(systemName: "plus", label: String(localized: .newIssueInColumnTooltip(column: column.title)), size: 22) {
                 model.overlay = .newIssue(statusId: column.option?.id, parentItemId: nil)
             }
             .opacity(hovering ? 1 : 0.55)
@@ -359,20 +359,18 @@ struct ColumnHeader: View {
                 columnMenu
                 Divider()
             }
-            Button("New Issue in \(column.title)") {
+            Button(.newIssueInColumnMenuItem(column: column.title)) {
                 model.overlay = .newIssue(statusId: column.option?.id, parentItemId: nil)
             }
         }
         .confirmationDialog(
-            "Delete the \"\(column.title)\" column?",
+            Text(.deleteColumnQuestion(column: column.title)),
             isPresented: $confirmDelete
         ) {
-            Button("Delete Column", role: .destructive) { delete() }
-            Button("Cancel", role: .cancel) {}
+            Button(.deleteColumn, role: .destructive) { delete() }
+            Button(.cancel, role: .cancel) {}
         } message: {
-            Text(column.items.isEmpty
-                 ? "The column is removed from the project on GitHub."
-                 : "The column is removed from the project on GitHub. Its \(column.items.count) issue\(column.items.count == 1 ? "" : "s") stay in the project without a status.")
+            Text(column.items.isEmpty ? .deleteEmptyColumnMessage : .deleteColumnMessage(count: column.items.count))
         }
     }
 
@@ -428,26 +426,41 @@ struct ColumnHeader: View {
 
 extension ColumnHeader {
     @ViewBuilder var columnMenu: some View {
-        Button("Rename…") { startRename() }
-        Menu("Colour") {
+        Button(.renameColumnMenuItem) { startRename() }
+        Menu(.columnColour) {
             ForEach(Defaults.optionColors, id: \.self) { color in
                 Button {
                     edit { $0.color = color }
                 } label: {
                     if column.option?.color == color {
-                        Label(color.capitalized, systemImage: "checkmark")
+                        Label(Self.colourName(color), systemImage: "checkmark")
                     } else {
-                        Text(color.capitalized)
+                        Text(Self.colourName(color))
                     }
                 }
             }
         }
         Divider()
-        Button("Move Left") { move(-1) }.disabled(position == 0)
-        Button("Move Right") { move(1) }.disabled(position == statuses.count - 1)
+        Button(.moveColumnLeft) { move(-1) }.disabled(position == 0)
+        Button(.moveColumnRight) { move(1) }.disabled(position == statuses.count - 1)
         Divider()
-        Button("Delete Column…", role: .destructive) { confirmDelete = true }
+        Button(.deleteColumnEllipsis, role: .destructive) { confirmDelete = true }
             .disabled(statuses.count <= 1)
+    }
+
+    /// GitHub's name for a colour ("GRAY") as the menu shows it.
+    static func colourName(_ color: String) -> String {
+        switch color {
+        case "GRAY": String(localized: .colourGray)
+        case "BLUE": String(localized: .colourBlue)
+        case "GREEN": String(localized: .colourGreen)
+        case "YELLOW": String(localized: .colourYellow)
+        case "ORANGE": String(localized: .colourOrange)
+        case "RED": String(localized: .colourRed)
+        case "PINK": String(localized: .colourPink)
+        case "PURPLE": String(localized: .colourPurple)
+        default: color.capitalized
+        }
     }
 }
 
@@ -460,7 +473,7 @@ struct AddColumnButton: View {
     var body: some View {
         Group {
             if adding {
-                TextField("Column name", text: $name)
+                TextField(.columnNamePlaceholder, text: $name)
                     .textFieldStyle(.plain)
                     .font(.uiSemibold)
                     .focused($focused)
@@ -484,7 +497,7 @@ struct AddColumnButton: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "plus").font(.system(size: 11, weight: .medium))
-                        Text("Add column")
+                        Text(.addColumn)
                     }
                     .foregroundStyle(Theme.textTertiary)
                     .padding(.horizontal, 8)

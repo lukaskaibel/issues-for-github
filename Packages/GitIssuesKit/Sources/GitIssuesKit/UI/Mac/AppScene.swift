@@ -17,65 +17,65 @@ public struct GitIssuesScene: Scene {
         .defaultSize(width: 1280, height: 820)
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("New Issue") {
+                Button(.newIssue) {
                     model.overlay = .newIssue(statusId: nil, parentItemId: nil)
                 }
                 .keyboardShortcut("n", modifiers: .command)
                 .disabled(!model.signedIn || model.projects.isEmpty)
             }
-            CommandMenu("Go") {
-                Button("Back") { model.goBack() }
+            CommandMenu(.goMenu) {
+                Button(.back) { model.goBack() }
                     .keyboardShortcut("[", modifiers: .command)
                     .disabled(!model.canGoBack)
-                Button("Forward") { model.goForward() }
+                Button(.forward) { model.goForward() }
                     .keyboardShortcut("]", modifiers: .command)
                     .disabled(!model.canGoForward)
                 Divider()
-                Button("Command Palette…") {
+                Button(.commandPaletteEllipsis) {
                     model.overlay = model.overlay == .palette(.root) ? nil : .palette(.root)
                 }
                 .keyboardShortcut("k", modifiers: .command)
                 Divider()
-                Button("Board") {
+                Button(.board) {
                     model.closeDetail()
                     withAnimation(Theme.spring) { model.viewMode = .board }
                 }
                 .keyboardShortcut("1", modifiers: .command)
                 .disabled(model.currentProjectId == nil)
-                Button("List") {
+                Button(.list) {
                     model.closeDetail()
                     withAnimation(Theme.spring) { model.viewMode = .list }
                 }
                 .keyboardShortcut("2", modifiers: .command)
                 .disabled(model.scope == .inbox)
-                Button("My Issues") { model.select(.myIssues) }
+                Button(.myIssues) { model.select(.myIssues) }
                     .keyboardShortcut("3", modifiers: .command)
-                Button("Inbox") { model.select(.inbox) }
-                Button("Switch Project…") { model.overlay = .palette(.projects) }
+                Button(.inbox) { model.select(.inbox) }
+                Button(.switchProjectEllipsis) { model.overlay = .palette(.projects) }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
                 Divider()
-                Button("Sync with GitHub Now") { model.refresh() }
+                Button(.syncWithGitHubNowMenuItem) { model.refresh() }
                     .keyboardShortcut("r", modifiers: .command)
             }
-            CommandMenu("Issue") {
-                Button("Copy GitHub Link") {
+            CommandMenu(.issueMenu) {
+                Button(.copyGitHubLink) {
                     if let item = model.targetItem { model.copyLink(item) }
                 }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
                 .disabled(model.targetItem?.url == nil)
-                Button("Copy Branch Name") {
+                Button(.copyBranchName) {
                     if let item = model.targetItem { model.copyBranchName(item) }
                 }
                 .keyboardShortcut(".", modifiers: [.command, .shift])
                 .disabled(model.targetItem?.number == nil)
-                Button("Open on GitHub") {
+                Button(.openOnGitHub) {
                     if let item = model.targetItem { model.openOnGitHub(item) }
                 }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
                 .disabled(model.targetItem?.url == nil)
                 Divider()
                 // ⌘⌫ is handled by the key monitor, so it keeps deleting text inside text fields.
-                Button("Delete Issue…") {
+                Button(.deleteIssueEllipsis) {
                     if let item = model.targetItem { model.requestDelete(item) }
                 }
                 .disabled(model.targetItem.map { !model.canDelete($0) } ?? true)
@@ -95,19 +95,19 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var model = model
         Form {
-            Picker("Appearance", selection: $model.appearance) {
+            Picker(.appearance, selection: $model.appearance) {
                 ForEach(AppearanceSetting.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
 
-            Toggle("Show unread Inbox notifications on the Dock icon", isOn: $model.showsDockBadge)
+            Toggle(.showDockBadgeSetting, isOn: $model.showsDockBadge)
 
-            LabeledContent("App icon") {
+            LabeledContent(.appIcon) {
                 VStack(alignment: .trailing, spacing: 8) {
                     iconRow(AppIconChoice.cards)
                     iconRow(AppIconChoice.light)
                     iconRow(AppIconChoice.dark)
-                    Text("The first one follows light and dark mode. Others show in the Dock while the app is open.")
+                    Text(.appIconFootnote)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -117,15 +117,15 @@ struct SettingsView: View {
 
             // Sample data has no login to share.
             if !model.isDemo {
-                LabeledContent("iPhone and iPad") {
+                LabeledContent(.iPhoneAndIPad) {
                     VStack(alignment: .trailing, spacing: 6) {
                         if model.loginIsShared {
-                            Text("They sign in with this login through iCloud Keychain.")
+                            Text(.loginSharedWithDevices)
                                 .foregroundStyle(.secondary)
                         } else if model.signedIn, KeychainTokenStore.canShare {
-                            Button("Share Login with iPhone and iPad") { model.shareLoginWithOtherDevices() }
+                            Button(.shareLoginWithDevices) { model.shareLoginWithOtherDevices() }
                         } else {
-                            Text("Sharing the login needs a build signed with your team.")
+                            Text(.sharingNeedsSignedBuild)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -133,13 +133,13 @@ struct SettingsView: View {
                 }
             }
 
-            LabeledContent("GitHub account") {
+            LabeledContent(.gitHubAccount) {
                 HStack {
-                    Text(model.isDemo ? "Sample data" : model.viewer?.login ?? "Not signed in")
+                    Text(model.isDemo ? String(localized: .sampleData) : model.viewer?.login ?? String(localized: .notSignedIn))
                     if model.isDemo {
-                        Button("Leave Sample Data") { model.leaveDemo() }
+                        Button(.leaveSampleData) { model.leaveDemo() }
                     } else if model.signedIn {
-                        Button("Sign Out") { model.signOut() }
+                        Button(.signOut) { model.signOut() }
                     }
                 }
             }

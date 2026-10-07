@@ -14,9 +14,9 @@ struct SignInView: View {
     var body: some View {
         VStack(spacing: 22) {
             VStack(spacing: 8) {
-                Text("Your GitHub issues, on a board that keeps up")
+                Text(.signInHeadline)
                     .font(.system(size: 22, weight: .semibold))
-                Text("Everything stays in GitHub Projects. Teammates who don't use this app see the same board on github.com.")
+                Text(.signInSubheadline)
                     .font(.system(size: 14))
                     .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
@@ -28,14 +28,14 @@ struct SignInView: View {
             } else {
                 VStack(spacing: 10) {
                     if DeviceFlow.configuredClientID != nil {
-                        Button("Sign in with GitHub") { startDeviceFlow() }
+                        Button(.signInWithGitHub) { startDeviceFlow() }
                             .buttonStyle(PrimaryButtonStyle())
                     }
                     if GitHubCLI.isAvailable {
-                        Button("Use my GitHub CLI login") { useCLI() }
+                        Button(.useGitHubCLILogin) { useCLI() }
                             .buttonStyle(SecondaryButtonStyle())
                     }
-                    Button(showTokenField ? "Hide token field" : "Use a personal access token") {
+                    Button(showTokenField ? .hideTokenField : .usePersonalAccessToken) {
                         showTokenField.toggle()
                     }
                     .buttonStyle(SecondaryButtonStyle())
@@ -43,7 +43,7 @@ struct SignInView: View {
                     if showTokenField {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack(spacing: 8) {
-                                SecureField("Token with repo, project and read:org scopes", text: $token)
+                                SecureField(.tokenFieldPlaceholder, text: $token)
                                     .textFieldStyle(.plain)
                                     .focusOnAppear()
                                     .padding(.horizontal, 10)
@@ -51,11 +51,11 @@ struct SignInView: View {
                                     .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.control))
                                     .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Theme.chipBorder, lineWidth: 1))
                                     .onSubmit(useToken)
-                                Button("Sign in", action: useToken)
+                                Button(.signIn, action: useToken)
                                     .buttonStyle(PrimaryButtonStyle())
                                     .disabled(token.trimmingCharacters(in: .whitespaces).isEmpty)
                             }
-                            Text("Stored in your Mac's keychain.")
+                            Text(.tokenStoredInKeychain)
                                 .font(.small)
                                 .foregroundStyle(Theme.textTertiary)
                         }
@@ -63,12 +63,12 @@ struct SignInView: View {
                         .transition(.opacity.combined(with: .offset(y: -4)))
                     }
 
-                    Button("Explore with Sample Data") { model.enterDemo() }
+                    Button(.exploreWithSampleData) { model.enterDemo() }
                         .buttonStyle(PlainPressStyle())
                         .font(.uiMedium)
                         .foregroundStyle(Theme.textSecondary)
                         .padding(.top, 6)
-                        .help("Two sample projects that stay on this Mac. Nothing is sent to GitHub.")
+                        .help(Text(.sampleDataTooltip))
                 }
                 .disabled(working)
             }
@@ -89,25 +89,25 @@ struct SignInView: View {
 
     private func codeCard(_ code: DeviceFlow.Code) -> some View {
         VStack(spacing: 12) {
-            Text("Enter this code on GitHub")
+            Text(.enterCodeOnGitHub)
                 .foregroundStyle(Theme.textSecondary)
             Text(code.userCode)
                 .font(.system(size: 28, weight: .semibold, design: .monospaced))
                 .tracking(2)
                 .textSelection(.enabled)
             HStack(spacing: 8) {
-                Button("Copy code and open GitHub") {
+                Button(.copyCodeAndOpenGitHub) {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(code.userCode, forType: .string)
                     NSWorkspace.shared.open(code.verificationURL)
                 }
                 .buttonStyle(PrimaryButtonStyle())
-                Button("Cancel") { deviceCode = nil }
+                Button(.cancel) { deviceCode = nil }
                     .buttonStyle(SecondaryButtonStyle())
             }
             HStack(spacing: 6) {
                 ProgressView().controlSize(.small)
-                Text("Waiting for you to approve…").font(.small).foregroundStyle(Theme.textSecondary)
+                Text(.waitingForApproval).font(.small).foregroundStyle(Theme.textSecondary)
             }
         }
         .padding(24)
@@ -146,7 +146,7 @@ struct SignInView: View {
                 try await model.auth.signInWithGitHubCLI()
                 model.completeSignIn()
             } catch {
-                errorText = "The GitHub CLI isn't signed in. Run \"gh auth login\" in Terminal, then try again."
+                errorText = String(localized: .gitHubCLINotSignedIn)
             }
         }
     }
