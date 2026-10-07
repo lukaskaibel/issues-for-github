@@ -56,8 +56,10 @@
 
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
-/* Korean breaks lines between words, as it is written with spaces. */
+/* Korean breaks lines between words, as it is written with spaces. Japanese and Chinese headlines break at their
+   commas rather than inside a word ("速く" stays whole). */
 :lang(ko) { word-break: keep-all; overflow-wrap: anywhere; }
+:lang(ja) :is(h1, .lead, .sub), :lang(zh) :is(h1, .lead, .sub) { word-break: keep-all; overflow-wrap: anywhere; }
 
 body {
   margin: 0;

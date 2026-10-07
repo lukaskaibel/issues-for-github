@@ -21,8 +21,11 @@ class AppTestCase: XCTestCase {
     func launch(_ arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         let tab = arguments.contains("-mobile.tab") ? [] : ["-mobile.tab", "myIssues"]
-        // In English whatever the simulator's language, since the tests find buttons by their labels.
-        app.launchArguments = ["-demo.active", "YES", "-uiTestReset", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        // In English whatever the simulator's language, since the tests find buttons by their labels. GI_LANGUAGE
+        // (TEST_RUNNER_GI_LANGUAGE for xcodebuild) runs them in another, to look at a translation.
+        let language = ProcessInfo.processInfo.environment["GI_LANGUAGE"] ?? "en"
+        let locale = ProcessInfo.processInfo.environment["GI_LOCALE"] ?? (language == "en" ? "en_US" : language)
+        app.launchArguments = ["-demo.active", "YES", "-uiTestReset", "YES", "-AppleLanguages", "(\(language))", "-AppleLocale", locale]
             + tab + arguments
         app.launch()
         self.app = app
