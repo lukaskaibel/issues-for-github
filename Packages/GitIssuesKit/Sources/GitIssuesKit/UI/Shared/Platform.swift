@@ -62,6 +62,17 @@ extension PlatformColor {
         UIColor { traits in provider(traits.userInterfaceStyle == .dark) }
         #endif
     }
+
+    /// The colour as it is in the light or the dark appearance, for drawing outside a view.
+    func resolved(dark: Bool) -> CGColor {
+        #if os(macOS)
+        var color = cgColor
+        NSAppearance(named: dark ? .darkAqua : .aqua)?.performAsCurrentDrawingAppearance { color = cgColor }
+        return color
+        #else
+        resolvedColor(with: UITraitCollection(userInterfaceStyle: dark ? .dark : .light)).cgColor
+        #endif
+    }
 }
 
 extension Color {

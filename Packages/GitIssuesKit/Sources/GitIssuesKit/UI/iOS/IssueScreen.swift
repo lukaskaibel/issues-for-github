@@ -258,13 +258,16 @@ private struct DescriptionEditor: View {
     @Binding var editing: Bool
 
     var body: some View {
-        MarkdownTextEditor(
-            text: item.body,
-            placeholder: item.isEditableContent ? "Add a description…" : "No description",
-            isEditable: item.isEditableContent,
-            onSave: save,
-            editing: $editing
-        )
+        // A tap on a drawn description shows the text, and a second tap puts the caret where it lands.
+        DescriptionBody(text: item.body, isEditable: item.isEditableContent, onSave: save, editing: $editing) { _ in
+            MarkdownTextEditor(
+                text: item.body,
+                placeholder: item.isEditableContent ? "Add a description…" : "No description",
+                isEditable: item.isEditableContent,
+                onSave: save,
+                editing: $editing
+            )
+        }
         .id(item.id)
     }
 

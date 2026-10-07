@@ -7,6 +7,7 @@ ON THE MAC
 • Keyboard first: J and K move between issues, S, P, A and L change status, priority, assignee and labels, D sets the due date, and ⌘K opens a command palette for everything else
 • Select several issues and change them at once
 • Peek at an issue with Space, or open it beside its properties, sub-issues and comments
+• Descriptions drawn as on GitHub, with tables, checklists that tick and Mermaid diagrams
 • Back and forward work as in a browser
 
 ON IPHONE
@@ -15,6 +16,7 @@ ON IPHONE
 • Swipe right to mark an issue done, swipe left to assign it to yourself or delete it
 • Touch and hold an issue to change its status, priority, assignee or labels
 • Search every project by title or number
+• Tables, checklists and Mermaid diagrams in descriptions, drawn as on GitHub
 
 ON IPAD
 • A sidebar with all your projects and repositories, and the board with drag and drop
