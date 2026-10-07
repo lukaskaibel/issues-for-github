@@ -19,7 +19,7 @@ struct PickerSheet: View {
 
     var body: some View {
         NavigationStack {
-            let visible = filtered(items())
+            let visible = matching(query, in: items())
             List {
                 ForEach(visible) { item in
                     HStack(spacing: 12) {
@@ -44,12 +44,18 @@ struct PickerSheet: View {
                                 item.icon
                                     .frame(width: 24, height: 24)
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(item.title).foregroundStyle(Theme.text)
+                                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                        if let prefix = item.prefix {
+                                            Text(prefix).font(.footnote).monospacedDigit().foregroundStyle(Theme.textTertiary)
+                                        }
+                                        Text(item.title).foregroundStyle(Theme.text).lineLimit(2)
+                                    }
                                     if let subtitle = item.subtitle {
                                         Text(subtitle).font(.footnote).foregroundStyle(Theme.textSecondary)
                                     }
                                 }
                                 Spacer(minLength: 8)
+                                if let trailing = item.trailing { trailing }
                                 if item.selected, !multiple {
                                     Image(systemName: "checkmark")
                                         .font(.body.weight(.semibold))
@@ -96,17 +102,6 @@ struct PickerSheet: View {
         onPick(item.id)
         if !keepOpen { dismiss() }
     }
-
-    private func filtered(_ items: [PickerItem]) -> [PickerItem] {
-        guard !query.isEmpty else { return items }
-        return items
-            .compactMap { item -> (PickerItem, Int)? in
-                let score = max(fuzzyScore(query, item.title) ?? -1, item.subtitle.flatMap { fuzzyScore(query, $0) } ?? -1)
-                return score >= 0 ? (item, score) : nil
-            }
-            .sorted { $0.1 > $1.1 }
-            .map(\.0)
-    }
 }
 
 extension PickerKind {
@@ -118,6 +113,10 @@ extension PickerKind {
         case .labels: "Labels"
         case .dueDate: "Due Date"
         case .subIssues: "Sub-issues"
+        case .parent: "Parent Issue"
+        case .addSubIssue: "Add Sub-issue"
+        case .blockedBy: "Blocked By"
+        case .blocking: "Blocking"
         }
     }
 
@@ -129,6 +128,7 @@ extension PickerKind {
         case .labels: "Search labels"
         case .dueDate: "Type a date"
         case .subIssues: "Search sub-issues"
+        case .parent, .addSubIssue, .blockedBy, .blocking: "Search by title or number"
         }
     }
 }
@@ -164,7 +164,10 @@ struct IssuePickerSheet: View {
             }
         )
         .task {
-            if let item = model.item(id: itemId) { model.loadRepoMeta(for: item) }
+            if let item = model.item(id: itemId) {
+                model.loadRepoMeta(for: item)
+                if kind.picksIssues { model.loadRelations(for: item) }
+            }
         }
     }
 }

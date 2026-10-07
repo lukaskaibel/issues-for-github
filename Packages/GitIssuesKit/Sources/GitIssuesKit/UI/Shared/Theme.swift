@@ -46,6 +46,8 @@ enum Theme {
     static let urgent = Color(light: 0xE07B2A, dark: 0xF2994A)
     /// A due date that has passed.
     static let overdue = Color(light: 0xD64545, dark: 0xEB6A6A)
+    /// An issue that waits for another one, as Linear marks it.
+    static let blocked = Color(light: 0xD9473B, dark: 0xEB5B50)
     static let barOff = Color(light: 0xD5D7DC, dark: 0x3A3E46)
     /// The active half of a segmented control.
     static let segmentActive = Color(light: 0xFFFFFF, dark: 0x2A2D33)

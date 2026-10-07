@@ -21,6 +21,15 @@ struct StatusGlyph: Equatable {
         return StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
     }
 
+    /// An issue known only as open or closed: a sub-issue or a related issue that isn't on one of your boards.
+    static func openOrClosed(_ state: String, reason: String?) -> StatusGlyph {
+        if state == "OPEN" { return StatusGlyph(category: .unstarted, progress: 0, color: Theme.textBody) }
+        if reason == "NOT_PLANNED" || reason == "DUPLICATE" {
+            return StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary)
+        }
+        return StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
+    }
+
     /// Glyphs for all statuses of one project. Later "started" columns fill the circle further.
     static func map(for options: [FieldOption]) -> [String: StatusGlyph] {
         var result: [String: StatusGlyph] = [:]
@@ -221,6 +230,31 @@ struct SubIssueChip: View {
             Text("\(completed)/\(total)").monospacedDigit()
         }
         .accessibilityLabel("\(completed) of \(total) sub-issues done")
+    }
+}
+
+/// Blocked by another issue: a red flag. An issue that blocks others gets an orange outline.
+struct BlockedIcon: View {
+    var size: CGFloat = 11
+
+    var body: some View {
+        Image(systemName: "flag.fill")
+            .font(.system(size: size, weight: .medium))
+            .foregroundStyle(Theme.blocked)
+            .frame(width: size + 3, height: size + 3)
+            .accessibilityHidden(true)
+    }
+}
+
+struct BlockingIcon: View {
+    var size: CGFloat = 11
+
+    var body: some View {
+        Image(systemName: "flag")
+            .font(.system(size: size, weight: .medium))
+            .foregroundStyle(Theme.urgent)
+            .frame(width: size + 3, height: size + 3)
+            .accessibilityHidden(true)
     }
 }
 

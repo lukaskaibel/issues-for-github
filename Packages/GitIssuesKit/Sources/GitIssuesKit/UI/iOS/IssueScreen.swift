@@ -65,6 +65,7 @@ struct IssueScreen: View {
                     if item.kind == .issue, !item.isDetached {
                         MobileSubIssues(item: item)
                             .padding(.top, 28)
+                        MobileRelations(item: item)
                     }
                     if item.kind != .draft {
                         MobileActivity(item: item, highlighted: inboxEntry?.newCommentIds ?? [])
@@ -186,14 +187,6 @@ struct IssueScreen: View {
                 ShareLink(item: url, subject: Text(item.title), message: Text("\(item.displayNumber) \(item.title)"), preview: SharePreview("\(item.displayNumber) \(item.title)"))
             }
             Menu {
-                if item.kind == .issue, !item.isDetached {
-                    Button {
-                        navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
-                    } label: {
-                        Label("Add Sub-issue", systemImage: "arrow.turn.down.right")
-                    }
-                    Divider()
-                }
                 ItemMenuContent(item: item, showsOpen: false)
             } label: {
                 Label("More", systemImage: "ellipsis")
@@ -447,6 +440,15 @@ private struct PropertyChips: View {
                 }
                 .buttonStyle(PlainPressStyle())
             }
+            if item.blockedByCount > 0, model.canRelate(item) {
+                Button {
+                    picker = .blockedBy
+                } label: {
+                    PropertyChip(text: "Blocked") { BlockedIcon(size: 11) }
+                }
+                .buttonStyle(PlainPressStyle())
+                .accessibilityLabel(model.tooltip(.blockedBy, for: item))
+            }
         }
     }
 }
@@ -572,7 +574,25 @@ private struct PropertiesColumn: View {
                         Text(repo).foregroundStyle(Theme.textBody).lineLimit(1).truncationMode(.middle).padding(.horizontal, 8)
                     }
                 }
-                if let parentNumber = item.parentNumber {
+                if model.canRelate(item) {
+                    row("Parent") {
+                        Button { picker = .parent } label: {
+                            value {
+                                if let parentNumber = item.parentNumber {
+                                    Text("#\(parentNumber)").monospacedDigit().foregroundStyle(Theme.textTertiary)
+                                    Text(item.parentTitle ?? "").lineLimit(1).foregroundStyle(Theme.text)
+                                } else {
+                                    Text("Set parent").foregroundStyle(Theme.textTertiary)
+                                }
+                            }
+                        }
+                        .buttonStyle(PlainPressStyle())
+                        .accessibilityLabel(item.parentNumber.map { "Parent: #\($0) \(item.parentTitle ?? "")" } ?? "Parent: none")
+                        .accessibilityIdentifier("property-parent")
+                    }
+                    relationRow(.blockedBy)
+                    relationRow(.blocking)
+                } else if let parentNumber = item.parentNumber {
                     row("Parent") {
                         Button {
                             if let parentId = item.parentId, let parent = model.item(contentId: parentId) { openRoute(.issue(parent.id)) }
@@ -621,6 +641,35 @@ private struct PropertiesColumn: View {
             .frame(minHeight: 34)
             .contentShape(Rectangle())
             .hoverEffect(.highlight)
+    }
+
+    /// Blocked by or blocking: the issues' numbers, listed in full beside the description.
+    private func relationRow(_ relation: LinkedIssue.Relation) -> some View {
+        let links = model.links(of: item, relation)
+        let count = relation == .blockedBy ? item.blockedByCount : item.blockingCount
+        let title = relation == .blockedBy ? "Blocked by" : "Blocking"
+        let numbers = links.isEmpty ? "\(count) issue\(count == 1 ? "" : "s")" : links.map(\.displayNumber).formatted(.list(type: .and))
+        let label = switch (relation, links.isEmpty && count == 0) {
+        case (.blockedBy, true): "Blocked by: none"
+        case (.blockedBy, false): "Blocked by: \(numbers)"
+        case (.blocking, true): "Blocking: none"
+        case (.blocking, false): "Blocking: \(numbers)"
+        }
+        return row(title) {
+            Button { picker = relation == .blockedBy ? .blockedBy : .blocking } label: {
+                value {
+                    if links.isEmpty, count == 0 {
+                        Text("Add issue").foregroundStyle(Theme.textTertiary)
+                    } else {
+                        if relation == .blockedBy { BlockedIcon() } else { BlockingIcon() }
+                        Text(numbers).monospacedDigit().lineLimit(1).foregroundStyle(Theme.text)
+                    }
+                }
+            }
+            .buttonStyle(PlainPressStyle())
+            .accessibilityLabel(label)
+            .accessibilityIdentifier(relation == .blockedBy ? "property-blocked-by" : "property-blocking")
+        }
     }
 }
 
@@ -770,17 +819,27 @@ private struct MobileSubIssues: View {
                         .frame(width: 64)
                 }
                 Spacer()
-                Button {
-                    navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
+                // A new sub-issue, or an issue that exists already.
+                Menu {
+                    Button {
+                        navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
+                    } label: {
+                        Label("New Sub-issue", systemImage: "plus")
+                    }
+                    Button {
+                        navigation.sheet = .picker(itemId: item.id, kind: .addSubIssue)
+                    } label: {
+                        Label("Add Existing Issue…", systemImage: "magnifyingglass")
+                    }
                 } label: {
                     Image(systemName: "plus")
                         .font(.body.weight(.medium))
                         .frame(width: 36, height: 36)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(PlainPressStyle())
                 .foregroundStyle(Theme.textSecondary)
                 .accessibilityLabel("Add sub-issue")
+                .accessibilityIdentifier("sub-add")
             }
             if !subs.isEmpty {
                 VStack(spacing: 0) {
@@ -865,6 +924,11 @@ private struct MobileSubIssueRow: View {
                 } label: {
                     Label(sub.isClosed ? "Reopen" : "Mark as Done", systemImage: sub.isClosed ? "arrow.uturn.backward" : "checkmark.circle")
                 }
+                Button {
+                    model.removeFromParent(sub)
+                } label: {
+                    Label("Remove from Parent", systemImage: "arrow.uturn.left")
+                }
                 if let url = sub.url {
                     Divider()
                     Button {
@@ -891,6 +955,117 @@ private struct MobileSubIssueRow: View {
             return StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary)
         }
         return StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
+    }
+}
+
+// MARK: - Relations
+
+/// What blocks the issue and what it blocks, each under its own heading, once there is any.
+private struct MobileRelations: View {
+    @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
+    var item: Item
+
+    var body: some View {
+        ForEach(LinkedIssue.Relation.allCases, id: \.self) { relation in
+            let links = model.links(of: item, relation)
+            if !links.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        if relation == .blockedBy { BlockedIcon(size: 13) } else { BlockingIcon(size: 13) }
+                        Text(relation == .blockedBy ? "Blocked by" : "Blocking").font(.headline)
+                        Text("\(links.count)").font(.footnote).foregroundStyle(Theme.textTertiary).monospacedDigit()
+                        Spacer()
+                        Button {
+                            navigation.sheet = .picker(itemId: item.id, kind: relation == .blockedBy ? .blockedBy : .blocking)
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.body.weight(.medium))
+                                .frame(width: 36, height: 36)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainPressStyle())
+                        .foregroundStyle(Theme.textSecondary)
+                        .accessibilityLabel(relation == .blockedBy ? "Mark as blocked by" : "Mark as blocking")
+                    }
+                    VStack(spacing: 0) {
+                        ForEach(Array(links.enumerated()), id: \.element.key) { index, link in
+                            MobileLinkedIssueRow(item: item, link: link)
+                            if index < links.count - 1 {
+                                Rectangle().fill(Theme.panelBorder).frame(height: 1)
+                            }
+                        }
+                    }
+                    .background(Theme.panel)
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .animation(Theme.spring, value: links.map(\.key))
+                }
+                .padding(.top, 28)
+            }
+        }
+    }
+}
+
+private struct MobileLinkedIssueRow: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.openRoute) private var openRoute
+    var item: Item
+    var link: LinkedIssue
+
+    var body: some View {
+        let boardItem = model.item(contentId: link.id)
+        Button {
+            if let boardItem {
+                openRoute(.issue(boardItem.id))
+            } else if let url = link.url.flatMap(URL.init(string:)) {
+                Platform.open(url)
+            }
+        } label: {
+            HStack(spacing: 10) {
+                StatusIcon(glyph: boardItem.map { model.glyph(of: $0) } ?? .openOrClosed(link.state, reason: link.stateReason), size: 17)
+                    .frame(width: 24)
+                Text(link.displayNumber)
+                    .font(.footnote)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.textTertiary)
+                Text(link.title)
+                    .font(.subheadline)
+                    .foregroundStyle(link.isClosed ? Theme.textSecondary : Theme.text)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                if boardItem == nil, link.url != nil {
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Theme.textTertiary)
+                        .accessibilityLabel("Opens on GitHub")
+                }
+            }
+            .padding(.leading, 8)
+            .padding(.trailing, 12)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainPressStyle())
+        .accessibilityIdentifier("link-\(link.displayNumber)")
+        .contextMenu {
+            Button(role: .destructive) {
+                model.removeLink(link, of: item)
+            } label: {
+                Label("Remove Relation", systemImage: "xmark")
+            }
+            if let boardItem {
+                Divider()
+                ItemMenuContent(item: boardItem) { openRoute(.issue(boardItem.id)) }
+            } else if let url = link.url {
+                Divider()
+                Button {
+                    model.copyLink(url, for: "\(link.displayNumber) \(link.title)")
+                } label: {
+                    Label("Copy Link", systemImage: "link")
+                }
+            }
+        }
     }
 }
 

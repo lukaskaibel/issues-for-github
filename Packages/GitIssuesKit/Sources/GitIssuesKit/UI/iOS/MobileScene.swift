@@ -60,6 +60,8 @@ struct MobileRoot: View {
                 ArrangeSectionsSheet(scope: scope)
             case .dueDate(let itemId):
                 IssueDueDateSheet(itemId: itemId)
+            case .picker(let itemId, let kind):
+                IssuePickerSheet(kind: kind, itemId: itemId)
             }
         }
         .alert(

@@ -87,12 +87,13 @@ so your team sees it there; GitHub's dates have no time of day, and the reminder
 
 Descriptions are Markdown, edited in place: click and type. One with a table, a checklist, code or a Mermaid diagram
 is drawn the way GitHub draws it, with checkboxes that tick; a click on the text brings up the Markdown. Sub-issues come
-with a progress bar, comments sit below, and status, priority, assignees and labels are in the sidebar. Step to the
-next issue with the arrows at the top.
+with a progress bar, and the plus beside them adds a new one or an issue that exists already. What blocks the issue and
+what it blocks are listed below; a blocked issue carries a red flag on its card. Comments sit below, and status,
+priority, assignees, labels, parent and blockers are in the sidebar. Step to the next issue with the arrows at the top.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">
-  <img alt="An issue with its description, five sub-issues of which four are done, two comments, and its properties" src="Design/screenshots/issue-light.webp">
+  <img alt="An issue with its description, five sub-issues of which four are done, the issue it blocks, two comments, and its properties" src="Design/screenshots/issue-light.webp">
 </picture>
 
 ### An inbox for what changed
@@ -187,6 +188,8 @@ The interface uses the system's own parts.
 
 - **Board and list** for every GitHub Project you can see, plus **My Issues**: everything assigned to you.
 - **Every issue of your repositories**, also those on none of your boards, which one click puts on one.
+- **Sub-issues and blockers.** Put any issue under another one, add issues that exist already as sub-issues, and mark
+  which issues block which, with a red flag on blocked cards.
 - **An Inbox** with GitHub's notifications about issues and pull requests: who did what, the issue beside it, and
   read, archive, snooze and unsubscribe in one key. Read and archived are the same on github.com.
 - **Instant.** Every change is written to a local database first and shows in the same frame. GitHub is updated in
@@ -223,6 +226,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Repositories in the sidebar | The repositories linked to your projects, and those their issues come from |
 | No project | An issue that is in none of your projects; adding it to one is GitHub's *Add to project* |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
+| Blocked by and blocking | GitHub's issue dependencies |
 | Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there |
 
 Boards show the issues in their project; a repository shows all its open issues and those closed in the last four
@@ -341,6 +345,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `S` `P` `A` `L` | Change status, priority, assignee, labels; `S` puts an issue on no board onto one |
 | `I` | Assign to me, or unassign |
 | `D` | Set the due date: type "fri", "next week", "in 3 days" or "12.10.", or pick a day |
+| `M` then `P` / `B` / `X` | Set the parent issue, mark as blocked by another issue, mark as blocking one |
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
 | `⌥↑` `⌥↓` or `⌥K` `⌥J` | Move the issue up or down its column or list section |
 | `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
@@ -373,9 +378,16 @@ In the Inbox:
 everything at once.
 
 Click an issue's priority, status, labels, assignees, due date or sub-issue count to change it in place, or
-right-click it for everything at once. A pick closes the dropdown; for several assignees or labels, tick the checkbox at the start
-of each row, or hold Shift while you click or press Return. The sub-issue count lists the sub-issues, whose status, priority and assignee change
-right there too. In the list, click a section header to fold it; Option-click folds them all.
+right-click it for everything at once. A pick closes the dropdown; for several assignees or labels, tick the checkbox
+at the start of each row, or hold Shift while you click or press Return. The sub-issue count lists the sub-issues,
+whose status, priority and assignee change right there too, and the red flag of a blocked issue lists what blocks it.
+In the list, click a section header to fold it; Option-click folds them all.
+
+In an issue, the plus beside the sub-issues adds one: type to find an issue by title or number, or pick
+**New sub-issue…** to create one with what you typed. Right-click an issue for **Set Parent Issue…**, **Add
+Sub-issue** and **Mark As** (blocked by, blocking). These pickers find issues the same way; picking a checked one takes
+it away again. The issue's sidebar has Parent, Blocked by and Blocking rows that open the same pickers, and the ✕ that
+shows when you point at a blocker in the issue takes it away.
 
 A description with a table, a checklist, code or a Mermaid diagram is drawn as on GitHub. Click a checkbox to tick it;
 click anywhere else to edit the Markdown, and `Esc` or `⌘↵` draws it again.
@@ -401,11 +413,12 @@ appearance, settings and signing out. It works with the arrow keys like any menu
 | Tap a section header | Fold it in or out |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
-| Touch and hold an issue | Status, priority, assignee, labels and due date as submenus (Add to Project for an issue on no board); copy link, share, open on GitHub, delete |
+| Touch and hold an issue | Status, priority, assignee, labels and due date as submenus (Add to Project for an issue on no board); parent issue, sub-issues and blockers; copy link, share, open on GitHub, delete |
 | Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
 | Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several |
 | Tap the date chip of an issue | Pick a due date: quick choices, a calendar, or typed in the search field |
 | Touch and hold a reminder | Start the issue, mark it done or move it to tomorrow, without opening the app |
+| Tap the plus beside an issue's sub-issues | A new sub-issue, or an issue that exists already |
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place; the bar above the keyboard adds bold, italics, code, lists and links |
 | Tap a drawn description (table, checklist, code, diagram) | Show its Markdown; tap again to edit. Tap a checkbox to tick it |
