@@ -1,20 +1,20 @@
-Issues es una app rápida y nativa para GitHub Issues y GitHub Projects, en Mac, iPhone y iPad. Es tranquila a la vista y rápida de usar, y todo se queda en GitHub: los compañeros que no usan la app ven las mismas incidencias y tableros en github.com.
+Issues es una app rápida y nativa para GitHub Issues y GitHub Projects, en Mac, iPhone y iPad. Tiene un aspecto sereno y es ágil de usar, y todo se queda en GitHub: los compañeros que no usan la app ven las mismas incidencias y tableros en github.com.
 
 ENTRADA
 • Lo que cambió para ti, según las notificaciones de GitHub: quién te asignó, te mencionó, comentó, solicitó tu revisión o cerró una incidencia que sigues
 • Abre una y ahí está la incidencia, con lo nuevo arriba y el comentario nuevo marcado
 • Tus incidencias que vencen aparecen ese día, con Empezar, Marcar como completada y Pasar a mañana
-• Lee, archiva y pospón con una tecla o deslizando; lo leído y lo archivado coincide con github.com
-• Las pospuestas y las no leídas coinciden en todos tus dispositivos gracias a iCloud
+• Lee, archiva y pospón con una tecla o deslizando; lo leído y lo archivado coinciden con github.com
+• Las pospuestas y las no leídas se sincronizan en todos tus dispositivos con iCloud
 
 EN EL MAC
 • Cada proyecto como tablero o lista, y Mis incidencias con todo lo que tienes asignado
 • Todas las incidencias de tus repositorios, incluso las que no están en ningún tablero: un clic las pone en uno
 • Arrastra incidencias a otro lugar, en el tablero o en la lista, y adapta las columnas: añádelas, renómbralas, cambia su color y su orden
-• Primero el teclado: J y K pasan de una incidencia a otra; S, P, A y L cambian estado, prioridad, responsable y etiquetas; D fija la fecha de vencimiento, y ⌘K abre una paleta de comandos para todo lo demás
+• Pensada para el teclado: J y K pasan de una incidencia a otra; S, P, A y L cambian estado, prioridad, responsable y etiquetas; D fija la fecha de vencimiento, y ⌘K abre una paleta de comandos para todo lo demás
 • Selecciona varias incidencias y cámbialas a la vez
 • Echa un vistazo a una incidencia con Espacio, o ábrela junto a sus propiedades, subincidencias y comentarios
-• Subincidencias y bloqueos: pon cualquier incidencia bajo otra, añade existentes como subincidencias y marca qué bloquea a qué
+• Subincidencias y bloqueos: pon cualquier incidencia bajo otra, añade incidencias existentes como subincidencias y marca qué bloquea a qué
 • Descripciones como en GitHub, con tablas, listas de tareas que se marcan y diagramas Mermaid
 • Atrás y Adelante funcionan como en un navegador
 
