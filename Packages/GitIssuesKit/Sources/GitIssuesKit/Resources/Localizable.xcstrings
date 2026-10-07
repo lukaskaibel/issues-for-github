@@ -1052,7 +1052,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "このプロジェクトには「Priority」フィールドがありません。Urgent、High、Medium、Lowの選択肢で追加します。"
+            "value" : "このプロジェクトには「Priority」フィールドがありません。Urgent、High、Medium、Lowの選択肢を持つフィールドを追加します。"
           }
         },
         "ko" : {
@@ -6638,7 +6638,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ — 選択が必要です"
+            "value" : "%@（選択が必要です）"
           }
         },
         "ko" : {
@@ -12944,7 +12944,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "今週末"
+            "value" : "今週中"
           }
         },
         "ko" : {
@@ -22856,7 +22856,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "あなたが担当者に割り当てられました"
+            "value" : "担当者に割り当てられました"
           }
         },
         "ko" : {
@@ -22916,7 +22916,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "あなたがメンションされました"
+            "value" : "メンションされました"
           }
         },
         "ko" : {
@@ -22976,7 +22976,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "あなたにレビューがリクエストされました"
+            "value" : "レビューをリクエストされました"
           }
         },
         "ko" : {
@@ -30590,7 +30590,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"%(change)@\" was discarded. %(error)@"
+            "value" : "“%(change)@” was discarded. %(error)@"
           }
         },
         "es" : {
@@ -32336,7 +32336,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "GitHub上"
+            "value" : "GitHub上の内容"
           }
         },
         "ko" : {
@@ -35462,7 +35462,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Priority: None"
+            "value" : "Priority: none"
           }
         },
         "es" : {
@@ -41402,7 +41402,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "折りたたみ"
+            "value" : "折りたたまれています"
           }
         },
         "ko" : {
@@ -41624,7 +41624,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "展開"
+            "value" : "展開されています"
           }
         },
         "ko" : {
@@ -46934,7 +46934,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Status: None"
+            "value" : "Status: none"
           }
         },
         "es" : {
