@@ -138,7 +138,7 @@ extension AppModel {
             withAnimation(Theme.overlay) { peekItemId = nil }
         } else if let item = targetItem {
             withAnimation(Theme.overlay) { peekItemId = item.id }
-            loadRepoMeta(projectId: item.projectId)
+            loadRepoMeta(for: item)
         }
     }
 
@@ -146,6 +146,6 @@ extension AppModel {
     func followPeek(to id: String) {
         guard peekItemId != nil, peekItemId != id, let item = scopedItems.first(where: { $0.id == id }) else { return }
         peekItemId = id
-        loadRepoMeta(projectId: item.projectId)
+        loadRepoMeta(for: item)
     }
 }

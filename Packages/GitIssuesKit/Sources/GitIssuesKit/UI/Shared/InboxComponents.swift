@@ -94,7 +94,7 @@ struct InboxSubjectIcon: View {
     var item: Item?
 
     var body: some View {
-        if let item, !item.isDetached, item.statusId != nil {
+        if let item, item.isOnBoard, item.statusId != nil {
             StatusIcon(glyph: model.glyph(of: item))
         } else if entry.isPullRequest {
             Image(systemName: entry.state == "MERGED" ? "arrow.triangle.merge" : "arrow.triangle.pull")
@@ -112,20 +112,6 @@ struct InboxSubjectIcon: View {
         case ("CLOSED", "NOT_PLANNED"), ("CLOSED", "DUPLICATE"): StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary)
         case ("CLOSED", _): StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
         default: StatusGlyph(category: .unstarted, progress: 0, color: Theme.textBody)
-        }
-    }
-}
-
-extension Item {
-    /// Open, closed or merged as GitHub shows it, for an issue that has no status column: its name, symbol and colour.
-    var gitHubState: (title: String, systemImage: String, color: Color) {
-        switch (kind, state, stateReason) {
-        case (.pullRequest, "MERGED", _): ("Merged", "arrow.triangle.merge", Theme.accent)
-        case (.pullRequest, "CLOSED", _): ("Closed", "arrow.triangle.pull", Theme.textTertiary)
-        case (.pullRequest, _, _): ("Open", "arrow.triangle.pull", Theme.positive)
-        case (_, "CLOSED", "NOT_PLANNED"), (_, "CLOSED", "DUPLICATE"): ("Not planned", "xmark.circle", Theme.textTertiary)
-        case (_, "CLOSED", _): ("Closed", "checkmark.circle", Theme.accent)
-        default: ("Open", "circle.circle", Theme.positive)
         }
     }
 }
@@ -156,9 +142,15 @@ extension InboxEntry {
 }
 
 extension AppModel {
-    /// "#12" for an issue on a board, "website#12" for one that isn't, so you know where it lives.
+    /// "#12" for an issue on a board, "website#12" for one that isn't, or that is on a board from a repository
+    /// the board doesn't otherwise use, so you know where it lives.
     func inboxNumber(_ entry: InboxEntry, item: Item?) -> String {
-        entry.displayNumber(withRepo: item == nil || item?.isDetached == true)
+        entry.displayNumber(withRepo: inboxNamesRepository(item))
+    }
+
+    func inboxNamesRepository(_ item: Item?) -> Bool {
+        guard let item, item.isOnBoard else { return true }
+        return repo(of: item) == nil
     }
 
     /// The heading of what happened on the issue: news since you last read it, or what happened lately.

@@ -179,27 +179,8 @@ struct PeekPanel: View {
         }
     }
 }
-/// Open, closed or merged, as GitHub says, for an issue that has no status column.
-struct StateChip: View {
-    var item: Item
-
-    var body: some View {
-        let (title, symbol, color) = item.gitHubState
-        HStack(spacing: 5) {
-            Image(systemName: symbol).font(.system(size: 11, weight: .semibold))
-            Text(title)
-        }
-        .font(.smallMedium)
-        .foregroundStyle(color)
-        .padding(.horizontal, 8)
-        .frame(height: 22)
-        .background(Capsule().fill(color.opacity(0.12)))
-        .padding(.leading, 8)
-    }
-}
-
 /// Status, priority, assignees, labels and sub-issues as a row of chips, each changeable in place: in the peek, and
-/// beside the Inbox where the issue view is narrow. An issue on no board has only assignees and labels.
+/// beside the Inbox where the issue view is narrow. For an issue on no board, the status puts it on one.
 struct PropertyChipRow: View {
     @Environment(AppModel.self) private var model
     var item: Item
@@ -207,17 +188,13 @@ struct PropertyChipRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                if item.isDetached {
-                    // Without a board there's no status column, only GitHub's open or closed.
-                    StateChip(item: item)
-                } else {
-                    PropertyButton(kind: .status, item: item) {
-                        HStack(spacing: 6) {
-                            StatusIcon(glyph: model.glyph(of: item))
-                            Text(model.statusOption(of: item)?.name ?? "No status")
-                        }
-                        .font(.small)
+                PropertyButton(kind: .status, item: item) {
+                    HStack(spacing: 6) {
+                        StatusIcon(glyph: model.glyph(of: item))
+                        Text(model.statusText(of: item))
+                            .foregroundStyle(model.statusIsPlaceholder(item) ? Theme.textTertiary : Theme.text)
                     }
+                    .font(.small)
                 }
                 if model.project(of: item)?.priorityFieldId != nil {
                     PropertyButton(kind: .priority, item: item) {

@@ -24,7 +24,7 @@ mkdir -p "$results"
 
 shoot() {
   local label=$1 id=$2 folder=$3
-  echo "Screenshots on $label…"
+  echo "Screenshots on ${label}…"
   xcrun simctl boot "$id" 2>/dev/null || true
   xcrun simctl bootstatus "$id" -b >/dev/null
   # A fresh simulator shows a tip over the keyboard the first time it appears.

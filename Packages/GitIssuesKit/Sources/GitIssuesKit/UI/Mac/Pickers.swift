@@ -157,7 +157,7 @@ struct ItemPicker: View {
     var body: some View {
         if let item = model.item(id: itemId) {
             PickerList(
-                placeholder: kind.placeholder,
+                placeholder: model.pickerPlaceholder(kind, for: item),
                 items: model.pickerItems(kind, for: item),
                 hint: kind.hint,
                 staysOpen: kind.staysOpen,

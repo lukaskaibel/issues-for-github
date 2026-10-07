@@ -39,7 +39,7 @@ struct Sidebar: View {
                 .buttonStyle(PlainPressStyle())
                 .help("New issue (C)")
                 .accessibilityLabel("New issue")
-                .disabled(model.currentProjectId == nil)
+                .disabled(model.currentProjectId == nil && model.currentRepositoryId == nil)
             }
             .padding(.trailing, 6)
             .frame(height: 32)
@@ -66,7 +66,30 @@ struct Sidebar: View {
                     ForEach(open.filter { !model.hiddenProjectIds.contains($0.id) }) { project in
                         ProjectRow(project: project, hidden: false)
                     }
-                    HiddenProjects(projects: open.filter { model.hiddenProjectIds.contains($0.id) })
+                    HiddenGroup(count: open.filter { model.hiddenProjectIds.contains($0.id) }.count, noun: "projects") {
+                        ForEach(open.filter { model.hiddenProjectIds.contains($0.id) }) { project in
+                            ProjectRow(project: project, hidden: true)
+                        }
+                    }
+
+                    // Like the teams in Linear: every issue of a repository, whether it is on a board or not.
+                    let repos = model.boardRepositories
+                    if !repos.isEmpty {
+                        Text("Repositories")
+                            .font(.tinySemibold)
+                            .foregroundStyle(Theme.textTertiary)
+                            .padding(.horizontal, 6)
+                            .padding(.top, 14)
+                            .padding(.bottom, 4)
+                        ForEach(repos.filter { !model.hiddenRepositoryIds.contains($0.id) }) { repo in
+                            RepositoryRow(repo: repo, hidden: false)
+                        }
+                        HiddenGroup(count: repos.filter { model.hiddenRepositoryIds.contains($0.id) }.count, noun: "repositories") {
+                            ForEach(repos.filter { model.hiddenRepositoryIds.contains($0.id) }) { repo in
+                                RepositoryRow(repo: repo, hidden: true)
+                            }
+                        }
+                    }
                 }
             }
             .scrollIndicators(.never)
@@ -125,13 +148,57 @@ struct ProjectRow: View {
     }
 }
 
-/// Hidden projects fold away under one quiet line at the end of the list.
-struct HiddenProjects: View {
-    var projects: [Project]
+/// One repository in the sidebar. Right-click to hide it, copy its link or open it on GitHub.
+struct RepositoryRow: View {
+    @Environment(AppModel.self) private var model
+    var repo: RepoRef
+    var hidden: Bool
+
+    var body: some View {
+        let active = model.scope == .repository(repo.id)
+        Button {
+            model.select(.repository(repo.id))
+        } label: {
+            HStack(spacing: 8) {
+                RepositoryIcon()
+                    .foregroundStyle(active ? Theme.textSecondary : Theme.textTertiary)
+                    .opacity(hidden ? 0.5 : 1)
+                Text(model.displayName(of: repo)).lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .font(active ? .uiMedium : .ui)
+            .foregroundStyle(active ? Theme.text : hidden ? Theme.textTertiary : Theme.textSecondary)
+            .padding(.horizontal, 6)
+            .frame(height: 28)
+            .hoverFill(active: active)
+        }
+        .buttonStyle(PlainPressStyle())
+        .help(repo.nameWithOwner)
+        .contextMenu {
+            if hidden {
+                Button("Show in Sidebar", systemImage: "eye") { model.setHidden(repo, false) }
+            } else {
+                Button("Hide from Sidebar", systemImage: "eye.slash") { model.setHidden(repo, true) }
+            }
+            Divider()
+            if let url = repo.url {
+                Button("Copy Link", systemImage: "link") { model.copyLink(url.absoluteString, for: repo.nameWithOwner) }
+                Button("Open on GitHub", systemImage: "arrow.up.right.square") { NSWorkspace.shared.open(url) }
+            }
+        }
+        .transition(.opacity)
+    }
+}
+
+/// Hidden projects or repositories fold away under one quiet line at the end of their list.
+struct HiddenGroup<Rows: View>: View {
+    var count: Int
+    var noun: String
+    @ViewBuilder var rows: Rows
     @State var expanded = false
 
     var body: some View {
-        if !projects.isEmpty {
+        if count > 0 {
             Button {
                 withAnimation(Theme.spring) { expanded.toggle() }
             } label: {
@@ -140,7 +207,7 @@ struct HiddenProjects: View {
                         .font(.system(size: 9, weight: .semibold))
                         .rotationEffect(.degrees(expanded ? 90 : 0))
                         .frame(width: 14)
-                    Text("\(projects.count) hidden")
+                    Text("\(count) hidden")
                     Spacer(minLength: 0)
                 }
                 .font(.small)
@@ -150,11 +217,9 @@ struct HiddenProjects: View {
                 .hoverFill()
             }
             .buttonStyle(PlainPressStyle())
-            .help(expanded ? "Fold hidden projects away" : "Show hidden projects")
+            .help(expanded ? "Fold hidden \(noun) away" : "Show hidden \(noun)")
             if expanded {
-                ForEach(projects) { project in
-                    ProjectRow(project: project, hidden: true)
-                }
+                rows
             }
         }
     }

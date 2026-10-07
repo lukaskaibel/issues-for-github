@@ -65,6 +65,17 @@ struct ProjectsScreen: View {
                             }
                         }
                     }
+                    let repos = model.boardRepositories
+                    if !repos.isEmpty {
+                        // Like the teams in Linear: every issue of a repository, whether it is on a board or not.
+                        Section("Repositories") {
+                            ForEach(repos) { repo in
+                                NavigationLink(value: Route.repository(repo.id)) {
+                                    RepositoryRow(repo: repo)
+                                }
+                            }
+                        }
+                    }
                     if !closed.isEmpty {
                         Section("Closed") {
                             ForEach(closed) { project in
@@ -108,6 +119,94 @@ private struct ProjectRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct RepositoryRow: View {
+    @Environment(AppModel.self) private var model
+    var repo: RepoRef
+
+    var body: some View {
+        let open = model.items(in: .repository(repo.id)).filter { !model.isDone($0) }.count
+        HStack(spacing: 12) {
+            RepositoryIcon(size: 15)
+                .foregroundStyle(Theme.textSecondary)
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(repo.shortName).font(.body.weight(.medium)).foregroundStyle(Theme.text)
+                Text("\(repo.nameWithOwner.dropLast(repo.shortName.count + 1)) · \(open) open")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.textSecondary)
+            }
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Every issue of a repository, on a board or not, as a list grouped like My Issues.
+struct RepositoryScreen: View {
+    @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
+    @Environment(\.wideLayout) private var wide
+    var repoId: String
+
+    var body: some View {
+        let repo = model.repository(id: repoId)
+        Group {
+            if repo == nil {
+                MobileEmptyState(title: "This repository is gone", message: "None of your open boards use it any more.", systemImage: "questionmark.square.dashed")
+            } else {
+                IssueList(scope: .repository(repoId))
+            }
+        }
+        .background(Theme.panel)
+        .navigationTitle(repo.map { model.displayName(of: $0) } ?? "Repository")
+        .navigationBarTitleDisplayMode(.inline)
+        .modifier(EditorRole(active: wide))
+        .toolbar {
+            if wide, let repo {
+                // As a project's header on a wide iPad: on the leading edge, the owner before the name.
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 8) {
+                        RepositoryIcon(size: 13).foregroundStyle(Theme.textSecondary)
+                        let owner = Text(repo.nameWithOwner.dropLast(repo.shortName.count)).foregroundStyle(Theme.textSecondary)
+                        Text("\(owner)\(Text(repo.shortName).foregroundStyle(Theme.text))")
+                            .font(.headline)
+                            .lineLimit(1)
+                    }
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
+            ToolbarItemGroup(placement: .primaryAction) {
+                Menu {
+                    Button {
+                        navigation.sheet = .arrangeSections(.repository(repoId))
+                    } label: {
+                        Label("Arrange Sections…", systemImage: "arrow.up.arrow.down")
+                    }
+                    Divider()
+                    Button {
+                        model.refresh()
+                    } label: {
+                        Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    if let url = repo?.url {
+                        Button {
+                            Platform.open(url)
+                        } label: {
+                            Label("Open on GitHub", systemImage: "arrow.up.right.square")
+                        }
+                    }
+                } label: {
+                    Label("Options", systemImage: "ellipsis")
+                }
+                NewIssueButton(context: NewIssueContext(repoId: repoId))
+            }
+        }
+        .onAppear { model.setActiveRepository(repoId) }
+        .onDisappear { model.setActiveRepository(nil) }
+        .task(id: model.dataVersion) { await model.preloadAvatars(for: .repository(repoId)) }
     }
 }
 
@@ -173,6 +272,15 @@ struct ProjectScreen: View {
             navigation.rememberProject(projectId)
         }
         .task(id: model.dataVersion) { await model.preloadAvatars(for: .project(projectId)) }
+    }
+}
+
+/// A wide iPad puts the header on the leading edge, as on the Mac.
+private struct EditorRole: ViewModifier {
+    var active: Bool
+
+    func body(content: Content) -> some View {
+        if active { content.toolbarRole(.editor) } else { content }
     }
 }
 
@@ -344,7 +452,7 @@ struct IssueList: View {
         Button {
             openRoute(.issue(item.id))
         } label: {
-            IssueRow(item: item, showsProject: scope == .myIssues)
+            IssueRow(item: item, showsProject: showsProject)
         }
         .buttonStyle(RowButtonStyle())
         .listRowInsets(EdgeInsets())
@@ -389,6 +497,15 @@ struct IssueList: View {
         }
     }
 
+    /// Where rows come from several boards, each says which; an issue on none says its repository.
+    private var showsProject: Bool {
+        switch scope {
+        case .myIssues: true
+        case .repository(let id): model.boards(ofRepository: id).count > 1
+        case .project, .inbox: false
+        }
+    }
+
     private func addAction(for section: ListSection) -> (() -> Void)? {
         guard case .project(let projectId) = scope else { return nil }
         return {
@@ -404,9 +521,24 @@ struct IssueList: View {
         case .myIssues:
             MobileEmptyState(
                 title: "Nothing assigned to you",
-                message: "Issues assigned to you on any of your project boards show up here.",
+                message: "Open issues assigned to you show up here, on a board or not.",
                 systemImage: "scope"
             )
+        case .repository(let repoId):
+            if model.status.readRepositories.contains(repoId) || model.isDemo {
+                MobileEmptyState(
+                    title: "No open issues",
+                    message: "Issues closed in the last four weeks show up here too.",
+                    systemImage: "tray"
+                ) {
+                    Button("New Issue") {
+                        navigation.sheet = .newIssue(NewIssueContext(repoId: repoId))
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            } else {
+                MobileEmptyState(title: "Loading issues…", message: "Fetching this repository from GitHub.", showsProgress: true)
+            }
         case .project(let projectId):
             MobileEmptyState(
                 title: "No issues yet",

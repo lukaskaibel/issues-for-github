@@ -47,6 +47,8 @@ enum ViewMode: String {
 enum Scope: Hashable, Codable {
     case project(String)
     case myIssues
+    /// Every issue of a repository, on a board or not. The id is the repository's.
+    case repository(String)
     case inbox
 }
 
@@ -142,6 +144,10 @@ public final class AppModel {
     var hiddenProjectIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenProjects") ?? []) {
         didSet { UserDefaults.standard.set(Array(hiddenProjectIds), forKey: "hiddenProjects") }
     }
+    /// Repositories tucked away in the sidebar, like hidden projects.
+    var hiddenRepositoryIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenRepositories") ?? []) {
+        didSet { UserDefaults.standard.set(Array(hiddenRepositoryIds), forKey: "hiddenRepositories") }
+    }
     var overlay: Overlay? {
         didSet {
             if overlay != nil, overlay != oldValue { overlayOpenedAt = Date() }
@@ -185,8 +191,8 @@ public final class AppModel {
     /// Bumped when a snoozed entry is due back, so the Inbox shows it.
     var inboxClock = Date()
     @ObservationIgnored var inboxWake: Task<Void, Never>?
-    /// Labels and assignable people of repositories that aren't on any board, for issues seen only in the Inbox.
-    var detachedRepoMeta: [String: (labels: [LabelRef], people: [Person])] = [:]
+    /// Labels and assignable people of repositories none of your boards use, for issues of them.
+    var otherRepoMeta: [String: (labels: [LabelRef], people: [Person])] = [:]
     /// Bumped to open the snooze menu of what is selected in the Inbox (H, or "Pick a Date…" in the right-click menu).
     var inboxSnoozeRequest = InboxSnoozeRequest()
     #if os(macOS)
@@ -313,7 +319,7 @@ public final class AppModel {
         inboxSelectedId = nil
         inboxPicked = []
         inboxUndo = nil
-        detachedRepoMeta = [:]
+        otherRepoMeta = [:]
         history = []
         historyIndex = -1
         overlay = nil
@@ -460,8 +466,7 @@ public final class AppModel {
         _ = detail(for: contentId)
         details[contentId]?.users += 1
         let projectId = item.projectId
-        // An issue on no board reads its repository's labels and people for itself (see loadDetachedRepoMeta).
-        let repoId = item.isDetached ? nil : item.repoId
+        let repoId = item.repoId
         let fetchable = item.kind != .draft && !item.isLocalOnly
         let engine = self.engine
         Task {
@@ -494,9 +499,44 @@ public final class AppModel {
         currentProjectId.flatMap { id in projects.first { $0.id == id } }
     }
 
+    var currentRepositoryId: String? {
+        if case .repository(let id) = scope { return id }
+        return nil
+    }
+
+    var currentRepository: RepoRef? {
+        currentRepositoryId.flatMap(repository(id:))
+    }
+
+    func repository(id: String) -> RepoRef? {
+        repos.first { $0.id == id }
+    }
+
+    /// Repositories in the sidebar: those your open boards use, by name. Their issues are all read, so the ones
+    /// on none of your boards show up too.
+    var boardRepositories: [RepoRef] {
+        let open = Set(openProjects.map(\.id))
+        var seen = Set<String>()
+        return repos
+            .filter { open.contains($0.projectId) && seen.insert($0.id).inserted }
+            .sorted { $0.shortName.localizedCaseInsensitiveCompare($1.shortName) == .orderedAscending }
+    }
+
+    /// A repository's name, with its owner when another one in the sidebar has the same name.
+    func displayName(of repo: RepoRef) -> String {
+        let twins = boardRepositories.filter { $0.shortName.caseInsensitiveCompare(repo.shortName) == .orderedSame }
+        return twins.count > 1 ? repo.nameWithOwner : repo.shortName
+    }
+
     /// True until the open project has been fetched from GitHub once.
     var isLoadingProject: Bool {
         currentProject.map { $0.lastSyncedAt == nil } ?? false
+    }
+
+    /// True until the repository on screen has been read from GitHub once since the app started.
+    var isLoadingRepository: Bool {
+        guard let id = currentRepositoryId, !isDemo else { return false }
+        return !status.readRepositories.contains(id)
     }
 
     func isLoading(projectId: String) -> Bool {
@@ -512,7 +552,7 @@ public final class AppModel {
         projects.filter { !$0.closed }
     }
 
-    /// Items of a scope, in board order.
+    /// Items of a scope, in board order. Issues on none of your boards come first, newest first.
     func items(in scope: Scope) -> [Item] {
         switch scope {
         case .project(let id): return allItems.filter { $0.projectId == id }
@@ -521,6 +561,15 @@ public final class AppModel {
             return allItems.filter { item in item.assignees.contains { $0.login == login } }
         case .inbox:
             return []
+        case .repository(let id):
+            // An issue on two boards is one issue here. Issues closed long ago stay on their boards only.
+            let cutoff = Date().addingTimeInterval(-SyncEngine.closedIssueWindow)
+            var seen = Set<String>()
+            return allItems.filter { item in
+                guard item.repoId == id, item.kind == .issue else { return false }
+                if item.isClosed, let closed = item.closedAt, closed < cutoff { return false }
+                return seen.insert(item.contentId ?? item.id).inserted
+            }
         }
     }
 
@@ -533,12 +582,14 @@ public final class AppModel {
         projects.first { $0.id == item.projectId }
     }
 
-    func statusOptions(projectId: String) -> [FieldOption] {
-        options.filter { $0.projectId == projectId && $0.kind == .status }
+    func statusOptions(projectId: String?) -> [FieldOption] {
+        guard let projectId else { return [] }
+        return options.filter { $0.projectId == projectId && $0.kind == .status }
     }
 
-    func priorityOptions(projectId: String) -> [FieldOption] {
-        options.filter { $0.projectId == projectId && $0.kind == .priority }
+    func priorityOptions(projectId: String?) -> [FieldOption] {
+        guard let projectId else { return [] }
+        return options.filter { $0.projectId == projectId && $0.kind == .priority }
     }
 
     func statusOption(of item: Item) -> FieldOption? {
@@ -556,20 +607,36 @@ public final class AppModel {
     }
 
     func glyph(of item: Item) -> StatusGlyph {
-        glyph(projectId: item.projectId, optionId: item.statusId)
+        guard item.isOnBoard else { return .withoutProject(item) }
+        return glyph(projectId: item.projectId, optionId: item.statusId)
     }
 
     /// GitHub reuses option ids across projects (every default "Todo" has the same one), so glyphs are keyed per project.
-    func glyph(projectId: String, optionId: String?) -> StatusGlyph {
-        optionId.flatMap { glyphs["\(projectId)/\($0)"] } ?? .none
+    func glyph(projectId: String?, optionId: String?) -> StatusGlyph {
+        guard let projectId else { return .none }
+        return optionId.flatMap { glyphs["\(projectId)/\($0)"] } ?? .none
     }
 
-    func repos(projectId: String) -> [RepoRef] {
-        repos.filter { $0.projectId == projectId }
+    func repos(projectId: String?) -> [RepoRef] {
+        guard let projectId else { return [] }
+        return repos.filter { $0.projectId == projectId }
     }
 
     func repo(of item: Item) -> RepoRef? {
-        repos.first { $0.projectId == item.projectId && $0.id == item.repoId }
+        repos.first { $0.id == item.repoId && (item.projectId == nil || $0.projectId == item.projectId) }
+    }
+
+    /// Boards an issue on none of them can go on: the boards its repository is on, or else every board you can
+    /// change.
+    func boards(toAdd item: Item) -> [Project] {
+        let editable = openProjects.filter { $0.viewerCanUpdate }
+        let linked = editable.filter { project in repos.contains { $0.projectId == project.id && $0.id == item.repoId } }
+        return linked.isEmpty ? editable : linked
+    }
+
+    /// The boards a repository's issues are on, for a new issue created in it.
+    func boards(ofRepository repoId: String) -> [Project] {
+        openProjects.filter { project in project.viewerCanUpdate && repos.contains { $0.projectId == project.id && $0.id == repoId } }
     }
 
     /// The project item for an issue's node id, if that issue is on a board we know.
@@ -640,24 +707,8 @@ public final class AppModel {
                 ListSection(id: $0.id, title: $0.title, glyph: $0.glyph, option: $0.option, items: $0.items)
             }
 
-        case .myIssues:
-            let items = self.items(in: .myIssues)
-            let groups: [(StatusCategory?, String)] = [
-                (.started, "In progress"), (.unstarted, "Todo"), (.backlog, "Backlog"),
-                (nil, "No status"), (.completed, "Done"), (.canceled, "Canceled"),
-            ]
-            for (category, title) in groups {
-                let matching = items.filter { statusOption(of: $0)?.statusCategory == category }
-                guard !matching.isEmpty else { continue }
-                let glyph: StatusGlyph = switch category {
-                case .started: StatusGlyph(category: .started, progress: 0.5, color: Theme.started)
-                case .unstarted: StatusGlyph(category: .unstarted, progress: 0, color: Theme.textBody)
-                case .completed: StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
-                case .canceled: StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary)
-                default: .none
-                }
-                result.append(ListSection(id: title, title: title, glyph: glyph, option: nil, items: matching))
-            }
+        case .myIssues, .repository:
+            result = groupedByKindOfStatus(items(in: scope))
 
         case .inbox:
             break
@@ -673,6 +724,42 @@ public final class AppModel {
         }
         sectionCache[scope] = result
         return result
+    }
+
+    /// Issues from several boards, grouped by what their status means. Issues on none of your boards lead, since
+    /// they wait for someone to put them on one; when there are none, the group isn't there.
+    private func groupedByKindOfStatus(_ items: [Item]) -> [ListSection] {
+        enum Group: CaseIterable {
+            case noProject, started, unstarted, backlog, noStatus, completed, canceled
+        }
+        func group(of item: Item) -> Group {
+            guard item.isOnBoard else {
+                if !item.isClosed { return .noProject }
+                return item.stateReason == "NOT_PLANNED" ? .canceled : .completed
+            }
+            switch statusOption(of: item)?.statusCategory {
+            case .started: return .started
+            case .unstarted: return .unstarted
+            case .backlog: return .backlog
+            case .completed: return .completed
+            case .canceled: return .canceled
+            case nil: return .noStatus
+            }
+        }
+        let grouped = Dictionary(grouping: items, by: group)
+        return Group.allCases.compactMap { kind in
+            guard let matching = grouped[kind], !matching.isEmpty else { return nil }
+            let (title, glyph): (String, StatusGlyph) = switch kind {
+            case .noProject: ("No project", .noProject)
+            case .started: ("In progress", StatusGlyph(category: .started, progress: 0.5, color: Theme.started))
+            case .unstarted: ("Todo", StatusGlyph(category: .unstarted, progress: 0, color: Theme.textBody))
+            case .backlog: ("Backlog", .none)
+            case .noStatus: ("No status", .none)
+            case .completed: ("Done", StatusGlyph(category: .completed, progress: 1, color: Theme.accent))
+            case .canceled: ("Canceled", StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary))
+            }
+            return ListSection(id: title, title: title, glyph: glyph, option: nil, items: matching)
+        }
     }
 
     func rebuild() {
@@ -730,6 +817,7 @@ public final class AppModel {
             UserDefaults.standard.set(id, forKey: "selectedProject")
             setActiveProject(id)
         }
+        setActiveRepository(currentRepositoryId)
         UserDefaults.standard.set(newScope == .inbox, forKey: "inbox.selected")
         if newScope == .inbox { inboxAppeared() }
         rebuild()
@@ -740,6 +828,12 @@ public final class AppModel {
     func setActiveProject(_ id: String?) {
         let engine = self.engine
         Task { await engine.setActiveProject(id) }
+    }
+
+    /// The repository on screen, whose issues are read as often as the board on screen.
+    func setActiveRepository(_ id: String?) {
+        let engine = self.engine
+        Task { await engine.setActiveRepository(id) }
     }
 
     /// Opens an issue. Its comments and sub-issues load when its view appears (see `detailAppeared`).
@@ -803,12 +897,26 @@ public final class AppModel {
         if loadedAny { avatarVersion += 1 }
     }
 
-    func loadRepoMeta(projectId: String) {
+    func loadRepoMeta(projectId: String?) {
         let ids = repos(projectId: projectId).map(\.id)
         let engine = self.engine
         Task {
             for id in ids { try? await engine.loadRepoMeta(projectId: projectId, repoId: id) }
         }
+    }
+
+    /// Labels and people for an issue's pickers: its board's repositories, or its own repository when it is on
+    /// no board.
+    func loadRepoMeta(for item: Item) {
+        guard item.isOnBoard else {
+            guard let repoId = item.repoId else { return }
+            // A repository none of your boards use has no row to keep them in.
+            guard repository(id: repoId) != nil else { return loadOtherRepoMeta(repoId) }
+            let engine = self.engine
+            Task { try? await engine.loadRepoMeta(projectId: nil, repoId: repoId) }
+            return
+        }
+        loadRepoMeta(projectId: item.projectId)
     }
 
     func refresh() {
@@ -824,11 +932,13 @@ public final class AppModel {
 
     // MARK: Writing
 
-    /// Applies mutations locally and queues them for GitHub.
-    func perform(_ mutations: [Mutation]) {
+    /// Applies mutations locally and queues them for GitHub. `inserting` are items to keep first, in the same
+    /// write, such as an issue only the Inbox knew that is being put on a board.
+    func perform(_ mutations: [Mutation], inserting: [Item] = []) {
         guard !mutations.isEmpty else { return }
         do {
             try db.writer.write { db in
+                for item in inserting { try item.insert(db, onConflict: .ignore) }
                 for mutation in mutations { try Outbox.enqueue(db, mutation) }
             }
             reloadNow()

@@ -8,12 +8,15 @@ enum MobileTab: Hashable {
     case myIssues
     case projects
     case project(String)
+    /// A repository's entry in the iPad sidebar.
+    case repository(String)
     case search
 }
 
 /// A screen pushed onto a tab's navigation stack.
 enum Route: Hashable, Codable {
     case project(String)
+    case repository(String)
     case issue(String)
     case statuses(String)
     /// An issue opened from the Inbox: what's new on it shows at the top.
@@ -30,7 +33,7 @@ enum MobileSheet: Identifiable, Equatable {
 
     var id: String {
         switch self {
-        case .newIssue(let context): "new-\(context.projectId ?? "-")-\(context.statusId ?? "-")-\(context.parentItemId ?? "-")"
+        case .newIssue(let context): "new-\(context.projectId ?? "-")-\(context.repoId ?? "-")-\(context.statusId ?? "-")-\(context.parentItemId ?? "-")"
         case .account: "account"
         case .queue: "queue"
         case .arrangeSections(let scope): "arrange-\(scope)"
@@ -41,6 +44,8 @@ enum MobileSheet: Identifiable, Equatable {
 /// Where a new issue starts out: which project, which status, and which parent for a sub-issue.
 struct NewIssueContext: Equatable {
     var projectId: String?
+    /// Started in a repository: the issue is created there, on one of its boards or on none.
+    var repoId: String?
     var statusId: String?
     var parentItemId: String?
     /// Started from My Issues: the new issue is assigned to you, so it shows up there.
@@ -60,6 +65,7 @@ final class MobileNavigation {
     var myIssuesPath: [Route] = []
     var projectsPath: [Route] = []
     var projectPaths: [String: [Route]] = [:]
+    var repositoryPaths: [String: [Route]] = [:]
     var searchPath: [Route] = []
     var sheet: MobileSheet?
     /// What is typed into the search tab's field.
@@ -99,7 +105,7 @@ final class MobileNavigation {
         let value: String = switch tab {
         case .inbox: "inbox"
         case .myIssues: "myIssues"
-        case .projects, .project: "projects"
+        case .projects, .project, .repository: "projects"
         case .search: "search"
         }
         UserDefaults.standard.set(value, forKey: tabKey)
@@ -112,6 +118,7 @@ final class MobileNavigation {
         case .myIssues: myIssuesPath
         case .projects: projectsPath
         case .project(let id): projectPaths[id] ?? []
+        case .repository(let id): repositoryPaths[id] ?? []
         case .search: searchPath
         }
     }
@@ -122,6 +129,7 @@ final class MobileNavigation {
         case .myIssues: myIssuesPath = path
         case .projects: projectsPath = path
         case .project(let id): projectPaths[id] = path
+        case .repository(let id): repositoryPaths[id] = path
         case .search: searchPath = path
         }
     }
@@ -170,14 +178,30 @@ final class MobileNavigation {
         }
     }
 
+    /// Opens a repository: in its own sidebar entry on a wide iPad window, inside the Projects tab otherwise.
+    func showRepository(_ id: String, regular: Bool) {
+        if regular {
+            tab = .repository(id)
+        } else {
+            projectsPath = [.repository(id)]
+            tab = .projects
+        }
+    }
+
     /// Moves between the iPad sidebar and the tab bar when the window changes width, keeping the project open.
     func adapt(regular: Bool) {
         self.regular = regular
         if regular, tab == .projects, case .project(let id)? = projectsPath.first {
             projectPaths[id] = Array(projectsPath.dropFirst())
             tab = .project(id)
+        } else if regular, tab == .projects, case .repository(let id)? = projectsPath.first {
+            repositoryPaths[id] = Array(projectsPath.dropFirst())
+            tab = .repository(id)
         } else if !regular, case .project(let id) = tab {
             projectsPath = [.project(id)] + (projectPaths[id] ?? [])
+            tab = .projects
+        } else if !regular, case .repository(let id) = tab {
+            projectsPath = [.repository(id)] + (repositoryPaths[id] ?? [])
             tab = .projects
         }
     }
@@ -196,6 +220,7 @@ final class MobileNavigation {
         projectsPath = strip(projectsPath)
         searchPath = strip(searchPath)
         for (key, path) in projectPaths { projectPaths[key] = strip(path) }
+        for (key, path) in repositoryPaths { repositoryPaths[key] = strip(path) }
     }
 
     /// Follows issues whose temporary id was replaced once GitHub created them.
@@ -213,6 +238,7 @@ final class MobileNavigation {
         projectsPath = remap(projectsPath)
         searchPath = remap(searchPath)
         for (key, path) in projectPaths { projectPaths[key] = remap(path) }
+        for (key, path) in repositoryPaths { repositoryPaths[key] = remap(path) }
     }
 }
 

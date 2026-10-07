@@ -87,6 +87,7 @@ extension AppModel {
         let targets = targets(for: item)
         switch kind {
         case .status:
+            guard item.isOnBoard else { return addToProjectItems(for: item) }
             return statusOptions(projectId: item.projectId).enumerated().map { index, option in
                 PickerItem(
                     id: option.id, title: option.name,
@@ -162,6 +163,52 @@ extension AppModel {
 
     static let newSubIssueId = "new-sub-issue"
 
+    /// For an issue on none of your boards, the status picker puts it on one: the columns of each board it can
+    /// go on, named after the board when there are several. One pick adds it and sets the column.
+    private func addToProjectItems(for item: Item) -> [PickerItem] {
+        let boards = boards(toAdd: item)
+        let several = boards.count > 1
+        var index = 0
+        return boards.flatMap { project -> [PickerItem] in
+            let statuses = statusOptions(projectId: project.id)
+            guard !statuses.isEmpty else {
+                return [PickerItem(
+                    id: "\(project.id)/", title: project.title,
+                    icon: AnyView(ProjectSwatch(title: project.title, size: 12))
+                )]
+            }
+            return statuses.map { option in
+                index += 1
+                return PickerItem(
+                    id: "\(project.id)/\(option.id)", title: option.name,
+                    icon: AnyView(StatusIcon(glyph: glyph(projectId: project.id, optionId: option.id))),
+                    shortcut: !several && index <= 9 ? "\(index)" : nil,
+                    prefix: several ? project.title : nil
+                )
+            }
+        }
+    }
+
+    /// The status as a chip or property shows it. An issue on none of your boards has none, only open or closed.
+    func statusText(of item: Item) -> String {
+        guard item.isOnBoard else {
+            if item.state == "MERGED" { return "Merged" }
+            return item.isClosed ? "Closed" : "No project"
+        }
+        return statusOption(of: item)?.name ?? "No status"
+    }
+
+    func statusIsPlaceholder(_ item: Item) -> Bool {
+        item.isOnBoard ? item.statusId == nil : !item.isClosed
+    }
+
+    /// What a picker's field says. An issue on no board is put on one rather than given a status.
+    func pickerPlaceholder(_ kind: PickerKind, for item: Item) -> String {
+        guard kind == .status, !item.isOnBoard else { return kind.placeholder }
+        let boards = boards(toAdd: item)
+        return boards.count == 1 ? "Add to \(boards[0].title)…" : "Add to project…"
+    }
+
     /// A part of a sub-issue row: on the Mac it opens its own picker, as in Linear; elsewhere it is only shown.
     @ViewBuilder
     private func rowPart<Content: View>(_ kind: PickerKind, _ itemId: String, @ViewBuilder _ content: () -> Content) -> some View {
@@ -176,6 +223,7 @@ extension AppModel {
     func tooltip(_ kind: PickerKind, for item: Item) -> String {
         switch kind {
         case .status:
+            guard item.isOnBoard else { return item.isClosed ? "Closed, on no board" : "Add to project" }
             return "Status: \(statusOption(of: item)?.name ?? "None")"
         case .priority:
             return "Priority: \(priorityOption(of: item)?.name ?? "None")"
@@ -201,6 +249,13 @@ extension AppModel {
         let targets = targets(for: current).map { target in allItems.first { $0.id == target.id } ?? target }
         switch kind {
         case .status:
+            guard current.isOnBoard else {
+                let parts = id.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+                guard let project = projects.first(where: { $0.id == parts.first }) else { return }
+                let option = statusOptions(projectId: project.id).first { $0.id == parts.last }
+                addToProject(targets, project: project, status: option)
+                return
+            }
             if let option = statusOptions(projectId: current.projectId).first(where: { $0.id == id }) {
                 setStatus(of: targets, toOptionNamed: option.name, id: option.id)
             }
@@ -225,14 +280,22 @@ extension AppModel {
         people(projectId: item.projectId, repoId: item.repoId)
     }
 
-    func people(projectId: String, repoId: String?) -> [Person] {
-        // An issue seen only in the Inbox has no board; its repository's people were read for it.
-        var result = projectId.isEmpty
-            ? repoId.flatMap { detachedRepoMeta[$0]?.people } ?? []
-            : repos.first { $0.projectId == projectId && $0.id == repoId }?.assignableUsers ?? []
+    /// A repository's labels and people are the same whichever board it is on; any board's copy will do.
+    private func repoMeta(projectId: String?, repoId: String?) -> RepoRef? {
+        let matching = repos.filter { $0.id == repoId }
+        return matching.first { $0.projectId == projectId && $0.metaLoadedAt != nil }
+            ?? matching.first { $0.metaLoadedAt != nil }
+            ?? matching.first { $0.projectId == projectId }
+    }
+
+    func people(projectId: String?, repoId: String?) -> [Person] {
+        var result = repoMeta(projectId: projectId, repoId: repoId)?.assignableUsers ?? []
+        // A repository none of your boards use.
+        if result.isEmpty, let repoId, let meta = otherRepoMeta[repoId] { result = meta.people }
         if result.isEmpty {
             var seen = Set<String>()
-            result = allItems.filter { $0.projectId == projectId }.flatMap(\.assignees).filter { seen.insert($0.id).inserted }
+            let nearby = allItems.filter { projectId == nil ? $0.repoId == repoId : $0.projectId == projectId }
+            result = nearby.flatMap(\.assignees).filter { seen.insert($0.id).inserted }
             if let viewer, seen.insert(viewer.id).inserted { result.append(viewer.person) }
         }
         let me = viewer?.id
@@ -246,14 +309,13 @@ extension AppModel {
         labels(projectId: item.projectId, repoId: item.repoId)
     }
 
-    func labels(projectId: String, repoId: String?) -> [LabelRef] {
-        let result = projectId.isEmpty
-            ? repoId.flatMap { detachedRepoMeta[$0]?.labels } ?? []
-            : repos.first { $0.projectId == projectId && $0.id == repoId }?.labels ?? []
+    func labels(projectId: String?, repoId: String?) -> [LabelRef] {
+        var result = repoMeta(projectId: projectId, repoId: repoId)?.labels ?? []
+        if result.isEmpty, let repoId, let meta = otherRepoMeta[repoId] { result = meta.labels }
         if !result.isEmpty { return result }
         var seen = Set<String>()
         return allItems
-            .filter { $0.projectId == projectId && $0.repoId == repoId }
+            .filter { $0.repoId == repoId }
             .flatMap(\.labels)
             .filter { seen.insert($0.id).inserted }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }

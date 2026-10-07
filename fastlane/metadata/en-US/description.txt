@@ -7,7 +7,8 @@ THE INBOX
 • Snoozed and unread ones stay in step on all your devices through iCloud
 
 ON THE MAC
-• Every project as a board or a list, plus My Issues across all of them
+• Every project as a board or a list, plus My Issues with everything assigned to you
+• Every issue of your repositories, also those on no board, which one click puts on one
 • Drag cards between columns, and shape the columns: add, rename, recolour and reorder them
 • Keyboard first: J and K move between issues, S, P, A and L change status, priority, assignee and labels, and ⌘K opens a command palette for everything else
 • Select several issues and change them at once
@@ -16,14 +17,14 @@ ON THE MAC
 
 ON IPHONE
 • The Inbox as the first tab, with the number of unread notifications
-• My Issues across all your projects, grouped by status
-• Every project as a list, with sections that fold
+• My Issues with everything assigned to you, grouped by status
+• Every project and repository as a list, with sections that fold
 • Swipe right to mark an issue done, swipe left to assign it to yourself or delete it
 • Touch and hold an issue to change its status, priority, assignee or labels
 • Search every project by title or number
 
 ON IPAD
-• A sidebar with all your projects, and the board with drag and drop
+• A sidebar with all your projects and repositories, and the board with drag and drop
 • The Inbox with the issue beside it, as in Mail
 • Issues open beside their properties, as on the Mac
 • With a keyboard: J and K to move, S, P, A and L to change an issue, ⌘N for a new one

@@ -209,10 +209,30 @@ struct ProjectHeader: View {
             case .myIssues:
                 Image(systemName: "scope").font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textSecondary)
                 Text("My Issues").font(.uiSemibold)
+            case .repository:
+                if let repo = model.currentRepository {
+                    RepositoryIcon()
+                    // Owner and name as GitHub writes them; there is no board, so no switch between board and list.
+                    let owner = Text(repo.nameWithOwner.dropLast(repo.shortName.count)).foregroundStyle(Theme.textSecondary)
+                    Text("\(owner)\(Text(repo.shortName).font(.uiSemibold))")
+                        .lineLimit(1)
+                }
             case .inbox, nil:
                 EmptyView()
             }
             Spacer()
+            if let repo = model.currentRepository, let url = repo.url {
+                Button {
+                    Platform.open(url)
+                } label: {
+                    HStack(spacing: 5) {
+                        Text("Open on GitHub")
+                        Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .semibold))
+                    }
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .help("Open \(repo.nameWithOwner) on GitHub")
+            }
             if let project = model.currentProject, project.priorityFieldId == nil, project.viewerCanUpdate, project.lastSyncedAt != nil {
                 Button("Add Priority field") { model.addPriorityField(projectId: project.id) }
                     .buttonStyle(SecondaryButtonStyle())

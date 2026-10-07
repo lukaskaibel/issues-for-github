@@ -1,7 +1,7 @@
 import XCTest
 
-/// The Inbox on iPhone and iPad, on the sample data: Kai assigned Jordan #25, Theo commented on #8 and mentioned
-/// Jordan on #15, Mira asked for a review of a pull request, and a few older ones are read.
+/// The Inbox on iPhone and iPad, on the sample data: Kai assigned Jordan #25, Theo commented on #8, mentioned Jordan
+/// on #15 and assigned #27 (on no board), Mira asked for a review of a pull request, and a few older ones are read.
 final class InboxTests: AppTestCase {
     private func launchInbox() {
         launch(["-mobile.tab", "inbox"])
@@ -96,21 +96,44 @@ final class InboxTests: AppTestCase {
         waitGone(element("inbox-row-25"))
     }
 
-    func testIssueOutsideTheBoardsCanBeAddedToOne() throws {
+    func testIssueOnNoBoardGoesOntoOneFromTheInbox() throws {
         try XCTSkipIf(isPad, "iPhone layout")
         launchInbox()
-        // acme/brand isn't on any of Jordan's boards.
+        // #27 is in the app's repository but on no board.
+        let row = element("inbox-row-git-issues-27")
+        scrollTo(row)
+        XCTAssertTrue(row.label.contains("Theo Novak assigned you"))
+        row.tap()
+        let status = element("chip-status")
+        wait(status)
+        waitForLabel(status, containing: "No project")
+        status.tap()
+        let todo = button("Todo")
+        wait(todo)
+        todo.tap()
+        waitForLabel(status, containing: "Todo")
+    }
+
+    func testIssueOnlyTheInboxKnowsGoesOntoABoard() throws {
+        try XCTSkipIf(isPad, "iPhone layout")
+        launchInbox()
+        // No board uses acme/brand, so the app knows the issue only from the notification.
         let outside = element("inbox-row-brand-4")
         scrollTo(outside)
         outside.tap()
-        wait(labelled("Not on any of your boards"))
-        snapshot("Issue on no board")
-        element("add-to-project").tap()
-        let project = labelled("Git Issues", type: .button)
-        wait(project)
-        project.tap()
-        waitGone(labelled("Not on any of your boards"))
-        wait(element("chip-status"))
+        let status = element("chip-status")
+        wait(status)
+        waitForLabel(status, containing: "No project")
+        snapshot("Issue only the Inbox knows")
+        status.tap()
+        // It could go on either board.
+        let board = labelled("Git Issues", type: .button)
+        wait(board)
+        board.tap()
+        let todo = button("Todo")
+        wait(todo)
+        todo.tap()
+        waitForLabel(status, containing: "Todo")
     }
 
     // MARK: iPad

@@ -8,6 +8,8 @@ public enum DemoData {
     static let mira = Person(id: "demo-user-mira", login: "mira", name: "Mira Patel")
     static let theo = Person(id: "demo-user-theo", login: "theo", name: "Theo Novak")
     static let kai = Person(id: "demo-user-kai", login: "kai", name: "Kai Andersen")
+    /// Not on the team: files issues now and then.
+    static let sam = Person(id: "demo-user-sam", login: "sam", name: "Sam Ortiz")
     static var team: [Person] { [viewer.person, mira, theo, kai] }
 
     public static func database() throws -> AppDatabase {
@@ -115,6 +117,12 @@ public enum DemoData {
         IssueSpec(number: 35, title: "Dark mode for the docs", status: "Done", priority: "Medium", labels: ["design"], assignees: [kai], hoursAgo: 60),
     ]
 
+    /// Issues filed straight in the app's repository, on no board yet: they show under "No project".
+    private static let appIssuesWithoutProject: [IssueSpec] = [
+        IssueSpec(number: 27, title: "App quits when a project has no Status field", status: "", priority: nil, labels: ["bug"], assignees: [viewer.person], body: "Reported on 0.1.0: open a project without a Status field and the app quits right away.", hoursAgo: 4),
+        IssueSpec(number: 26, title: "Support GitHub Enterprise Server", status: "", priority: nil, labels: ["feature"], body: "Sign in to a company's own GitHub, with its own address.", hoursAgo: 50),
+    ]
+
     private static let comments: [Int: [(Person, String, Double)]] = [
         9: [
             (mira, "The settle feels good now. Could the tilt follow pointer velocity instead of using a fixed angle?", 0.8),
@@ -192,6 +200,19 @@ public enum DemoData {
                 }
             }
         }
+        for issue in appIssuesWithoutProject {
+            let date = now.addingTimeInterval(-issue.hoursAgo * 3600)
+            try Item(
+                id: Item.idWithoutProject(contentId(issue.number)), projectId: nil, kind: .issue,
+                position: Item.positionWithoutProject(updatedAt: date),
+                contentId: contentId(issue.number), number: issue.number, title: issue.title, body: issue.body,
+                state: "OPEN", url: "https://github.com/\(app.repo)/issues/\(issue.number)", repoId: app.repoId, repo: app.repo,
+                authorLogin: sam.login, createdAt: date, updatedAt: date,
+                assignees: issue.assignees,
+                labels: app.labels.filter { issue.labels.contains($0.name) },
+                viewerCanDelete: true
+            ).insert(db)
+        }
         try seedInbox(db, now: now)
     }
 
@@ -212,8 +233,8 @@ public enum DemoData {
     }
 
     /// The Inbox of the sample data: what Mira, Theo and Kai did that Jordan should know about, as GitHub would
-    /// report it. Three of the issues are on the boards; a pull request, a new issue on the website and an issue
-    /// in a repository without a board are not.
+    /// report it. Most of the issues are on the boards; #27 and a new issue on the website are on none but in their
+    /// repositories, and a pull request and an issue in a repository no board uses are only in the Inbox.
     private static func seedInbox(_ db: Database, now: Date) throws {
         func ago(_ hours: Double) -> Date { now.addingTimeInterval(-hours * 3600) }
         func entry(
@@ -227,7 +248,8 @@ public enum DemoData {
                 lastReadAt: readHoursAgo.map(ago), subjectType: type, title: title, repo: repo, number: number
             )
             entry.enrichedFor = entry.updatedAt
-            entry.contentId = repo == app.repo && type == "Issue" ? contentId(number) : "demo-\(repo.replacingOccurrences(of: "/", with: "-"))-\(number)"
+            let known = (repo == app.repo || repo == site.repo) && type == "Issue"
+            entry.contentId = known ? contentId(number) : "demo-\(repo.replacingOccurrences(of: "/", with: "-"))-\(number)"
             entry.url = "https://github.com/\(repo)/\(type == "PullRequest" ? "pull" : "issues")/\(number)"
             entry.state = state
             entry.stateReason = stateReason
@@ -273,6 +295,14 @@ public enum DemoData {
             ]
         )
         try entry(
+            "27", reason: "assign", unread: true, hours: 4, readHoursAgo: 30, repo: app.repo, repoId: app.repoId, number: 27,
+            title: "App quits when a project has no Status field",
+            body: "Reported on 0.1.0: open a project without a Status field and the app quits right away.",
+            author: sam, assignees: [viewer.person], labels: appLabels.filter { $0.name == "bug" }, activity: [
+                InboxActivity(kind: .assigned, actor: theo, at: ago(4), detail: viewer.login),
+            ]
+        )
+        try entry(
             "37", reason: "subscribed", unread: true, hours: 1, repo: site.repo, repoId: site.repoId, number: 37,
             title: "Footer links break on small screens",
             body: "On a phone the footer links wrap into each other. They should stack, one per line, below 480 pt.",
@@ -301,6 +331,16 @@ public enum DemoData {
                 InboxActivity(kind: .commented, actor: mira, at: ago(96), text: tokensComment, commentId: "demo-comment-brand-4-0"),
             ]
         )
+        // On no board, in a repository a board uses: the app reads it like the website's other issues.
+        try Item(
+            id: Item.idWithoutProject(contentId(37)), projectId: nil, kind: .issue,
+            position: Item.positionWithoutProject(updatedAt: ago(1)),
+            contentId: contentId(37), number: 37, title: "Footer links break on small screens",
+            body: "On a phone the footer links wrap into each other. They should stack, one per line, below 480 pt.",
+            state: "OPEN", url: "https://github.com/\(site.repo)/issues/37", repoId: site.repoId, repo: site.repo,
+            authorLogin: kai.login, createdAt: ago(1), updatedAt: ago(1),
+            labels: siteLabels.filter { $0.name == "design" }
+        ).insert(db)
         try Comment(
             id: "demo-comment-brand-4-0", issueId: "demo-\(brand.replacingOccurrences(of: "/", with: "-"))-4",
             authorLogin: mira.login, authorAvatarUrl: nil, body: tokensComment, createdAt: ago(96)

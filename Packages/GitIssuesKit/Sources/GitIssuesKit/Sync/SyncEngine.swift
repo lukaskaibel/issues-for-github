@@ -9,6 +9,7 @@ public actor SyncEngine {
     public nonisolated let status: SyncStatus
 
     private var activeProjectId: String?
+    private var activeRepoId: String?
     private var watchedIssueId: String?
     private var pollInterval: TimeInterval = 15
 
@@ -16,6 +17,10 @@ public actor SyncEngine {
     private var lastDetailPull: Date?
     private var lastProjectListPull: Date?
     private var forceSweep: Set<String> = []
+    /// Issues of repositories, read for the ones that are on none of your boards.
+    private var lastRepoPull: [String: Date] = [:]
+    private var lastFullRepoPull: [String: Date] = [:]
+    private var lastAssignedPull: Date?
     /// Items GitHub lists but will not show us (no access); remembered so they are not re-requested forever.
     private var unhydratable: [String: String] = [:]
     private var wasOffline = true
@@ -98,6 +103,13 @@ public actor SyncEngine {
         kick()
     }
 
+    /// The repository on screen, whose issues are kept as fresh as the board on screen.
+    public func setActiveRepository(_ id: String?) {
+        guard activeRepoId != id else { return }
+        activeRepoId = id
+        if id != nil { kick() }
+    }
+
     public func setWatchedIssue(_ contentId: String?) {
         guard watchedIssueId != contentId else { return }
         watchedIssueId = contentId
@@ -118,6 +130,9 @@ public actor SyncEngine {
         if let activeProjectId { forceSweep.insert(activeProjectId) }
         lastPull = [:]
         lastProjectListPull = nil
+        lastRepoPull = [:]
+        lastFullRepoPull = [:]
+        lastAssignedPull = nil
         kick()
     }
 
@@ -175,6 +190,7 @@ public actor SyncEngine {
             }
             if Date() >= nextInboxPull { try await pullInboxInRound() }
             try await pullOneBackgroundProject()
+            try await pullRepositories()
 
             wasOffline = false
             await finish(.idle, syncedAt: Date())
@@ -328,8 +344,8 @@ public actor SyncEngine {
 
         let sweepSnapshot = sweep
         let hydratedSnapshot = hydrated
-        let notices = try await db.writer.write { db -> [Notice] in
-            guard var project = try Project.fetchOne(db, key: projectId) else { return [] }
+        let written = try await db.writer.write { db -> (notices: [Notice], leftBoard: Set<String>, remaps: [String: String]) in
+            guard var project = try Project.fetchOne(db, key: projectId) else { return ([], [], [:]) }
             project.title = meta.title
             project.closed = meta.closed
             project.viewerCanUpdate = meta.viewerCanUpdate
@@ -344,6 +360,8 @@ public actor SyncEngine {
             try Self.writeRepos(db, projectId: projectId, repos: repos)
 
             var notices: [Notice] = []
+            var leftBoard = Set<String>()
+            var remaps: [String: String] = [:]
             if changed {
                 notices += try Self.reconcile(db, hydrated: hydratedSnapshot)
 
@@ -357,7 +375,10 @@ public actor SyncEngine {
                     try db.execute(sql: "UPDATE item SET position = ? WHERE id = ?", arguments: [Double(index + 1) * 1024, entry.id])
                 }
 
-                notices += try Self.removeMissing(db, projectId: projectId, remoteIds: Set(sweepSnapshot.map(\.id)))
+                let removed = try Self.removeMissing(db, projectId: projectId, remoteIds: Set(sweepSnapshot.map(\.id)))
+                notices += removed.notices
+                leftBoard = removed.repoIds
+                remaps = try Self.dropCopiesWithoutProject(db)
                 try Outbox.rebase(db)
                 try Outbox.clearSettledDirtyFlags(db, projectId: projectId)
                 project.remoteUpdatedAt = meta.updatedAt
@@ -365,11 +386,32 @@ public actor SyncEngine {
             }
             project.lastSyncedAt = Date()
             try project.update(db)
-            return notices
+            return (notices, leftBoard, remaps)
         }
         forceSweep.remove(projectId)
         lastPull[projectId] = Date()
-        await post(notices)
+        // An issue taken off the board may now be on none; its repository says so at the next full read.
+        for repoId in written.leftBoard { lastFullRepoPull[repoId] = nil }
+        if !written.leftBoard.isEmpty { lastAssignedPull = nil }
+        if !written.remaps.isEmpty { await publish(remaps: written.remaps) }
+        await post(written.notices)
+    }
+
+    /// An issue that came onto a board is shown there and no longer as an issue on no board. Returns the old ids
+    /// with the board item's, so whatever showed the issue can follow it.
+    static func dropCopiesWithoutProject(_ db: Database) throws -> [String: String] {
+        var remaps: [String: String] = [:]
+        let rows = try Row.fetchAll(db, sql: """
+            SELECT loose.id AS looseId, board.id AS boardId FROM item loose
+            JOIN item board ON board.contentId = loose.contentId AND board.projectId IS NOT NULL
+            WHERE loose.projectId IS NULL
+            """)
+        for row in rows {
+            let looseId: String = row["looseId"]
+            remaps[looseId] = row["boardId"]
+            try db.execute(sql: "DELETE FROM item WHERE id = ?", arguments: [looseId])
+        }
+        return remaps
     }
 
     private static func writeOptions(_ db: Database, projectId: String, meta: RemoteProjectMeta) throws {
@@ -479,13 +521,17 @@ public actor SyncEngine {
         return .conflict
     }
 
-    private static func removeMissing(_ db: Database, projectId: String, remoteIds: Set<String>) throws -> [Notice] {
+    private static func removeMissing(_ db: Database, projectId: String, remoteIds: Set<String>) throws -> (notices: [Notice], repoIds: Set<String>) {
         var notices: [Notice] = []
+        var repoIds = Set<String>()
         let entries = try Outbox.active(db)
-        // An issue we created moments ago may not be listed yet.
+        // An issue we created or put on the board moments ago may not be listed yet.
         let justCreated = Set(entries.compactMap { entry -> String? in
-            if case .createIssue(let m) = entry.mutation { return m.itemId }
-            return nil
+            switch entry.mutation {
+            case .createIssue(let m): m.itemId
+            case .addToProject(let m): m.itemId
+            default: nil
+            }
         })
         let localItems = try Item.filter(Column("projectId") == projectId).fetchAll(db)
         for item in localItems where !remoteIds.contains(item.id) && !item.isLocalOnly && !justCreated.contains(item.id) {
@@ -501,9 +547,186 @@ public actor SyncEngine {
                     isWarning: true
                 ))
             }
+            if let repoId = item.repoId, item.kind == .issue { repoIds.insert(repoId) }
             try item.delete(db)
         }
-        return notices
+        return (notices, repoIds)
+    }
+
+    // MARK: Issues on no board
+
+    /// Repositories of your open boards. Their issues that are on none of your boards are read from them.
+    private func boardRepositories() async throws -> [String] {
+        try await db.reader.read { db in
+            try String.fetchAll(db, sql: """
+                SELECT DISTINCT r.id FROM repo r JOIN project p ON p.id = r.projectId WHERE p.closed = 0
+                """)
+        }
+    }
+
+    /// The repository on screen every cycle, one other repository per cycle, at most once a minute each, and the
+    /// issues assigned to you elsewhere every five minutes.
+    private func pullRepositories() async throws {
+        let repos = try await boardRepositories()
+        func read(_ repoId: String) async throws {
+            do {
+                try await pullRepository(repoId)
+            } catch let error as APIError where !error.isTransient {
+                // A repository we cannot read should not stop everything else from syncing.
+                lastRepoPull[repoId] = Date()
+            }
+        }
+        if let activeRepoId, repos.contains(activeRepoId),
+           lastRepoPull[activeRepoId].map({ Date().timeIntervalSince($0) >= pollInterval - 1 }) ?? true {
+            try await read(activeRepoId)
+        }
+        if let next = repos.first(where: { $0 != activeRepoId && (lastRepoPull[$0].map { Date().timeIntervalSince($0) > 60 } ?? true) }) {
+            try await read(next)
+        }
+        if lastAssignedPull.map({ Date().timeIntervalSince($0) > 300 }) ?? true {
+            do {
+                try await pullAssigned(boardRepos: Set(repos))
+            } catch let error as APIError where !error.isTransient {
+                lastAssignedPull = Date()
+            }
+        }
+    }
+
+    /// How long closed issues on no board stay in lists, like the done issues Linear shows by default.
+    static let closedIssueWindow: TimeInterval = 28 * 24 * 3600
+
+    /// Reads a repository's issues. Every half hour all of them (the open ones and those closed lately), so
+    /// issues that were moved or deleted disappear; in between only what changed. A light list comes first; only
+    /// issues on none of your boards that changed are then read in full.
+    public func pullRepository(_ repoId: String) async throws {
+        guard !isDemo else { return }
+        let started = Date()
+        let full = lastFullRepoPull[repoId].map { started.timeIntervalSince($0) > 1800 } ?? true
+        var refs: [IssueRef]
+        if full {
+            refs = try await api.repositoryIssueRefs(repoId: repoId, states: ["OPEN"], since: nil)
+            refs += try await api.repositoryIssueRefs(
+                repoId: repoId, states: ["CLOSED"], since: started.addingTimeInterval(-Self.closedIssueWindow)
+            )
+        } else {
+            let since = (lastRepoPull[repoId] ?? started).addingTimeInterval(-120)
+            refs = try await api.repositoryIssueRefs(repoId: repoId, states: nil, since: since)
+        }
+        try await writeIssuesWithoutProject(refs, prune: full ? .repository(repoId) : nil)
+        lastRepoPull[repoId] = started
+        if full { lastFullRepoPull[repoId] = started }
+        await markRead(repoId)
+    }
+
+    @MainActor
+    private func markRead(_ repoId: String) {
+        status.readRepositories.insert(repoId)
+    }
+
+    /// Open issues assigned to you in repositories none of your boards use; the others come with their repository.
+    private func pullAssigned(boardRepos: Set<String>) async throws {
+        guard !isDemo else { return }
+        let started = Date()
+        let refs = try await api.assignedIssueRefs().filter { ref in
+            ref.repoId.map { !boardRepos.contains($0) } ?? false
+        }
+        try await writeIssuesWithoutProject(refs, prune: .outside(boardRepos))
+        lastAssignedPull = started
+    }
+
+    /// Reads in full what changed among the listed issues on no board, and writes them.
+    private func writeIssuesWithoutProject(_ refs: [IssueRef], prune: Prune?) async throws {
+        let wanted = try await db.reader.read { try Self.issuesToRead(in: refs, $0) }
+        let fetched = try await api.issues(ids: wanted)
+        let (notices, staleBoards) = try await db.writer.write { db in
+            try Self.writeIssuesWithoutProject(db, fetched, listed: refs, prune: prune)
+        }
+        refreshSoon(staleBoards)
+        await post(notices)
+    }
+
+    /// Issues of a light read that aren't on a board here and aren't here as they are on GitHub. Reading them in
+    /// full says whether they are on one of your boards after all (and that board is read again) or on none.
+    static func issuesToRead(in refs: [IssueRef], _ db: Database, now: Date = Date()) throws -> [String] {
+        let onBoards = try String.fetchSet(db, sql: "SELECT contentId FROM item WHERE projectId IS NOT NULL AND contentId IS NOT NULL")
+        var known: [String: String] = [:]
+        for row in try Row.fetchAll(db, sql: "SELECT id, remoteUpdatedAt FROM item WHERE projectId IS NULL") {
+            known[row["id"]] = row["remoteUpdatedAt"] ?? ""
+        }
+        return refs.filter { ref in
+            guard !onBoards.contains(ref.contentId) else { return false }
+            if ref.isClosed, let closed = ref.closedAt, now.timeIntervalSince(closed) > closedIssueWindow { return false }
+            return known[ref.itemId] != ref.updatedAt
+        }.map(\.contentId)
+    }
+
+    /// Boards that have an issue GitHub lists but this device doesn't have yet are read again soon.
+    private func refreshSoon(_ projectIds: Set<String>) {
+        for id in projectIds {
+            forceSweep.insert(id)
+            lastPull[id] = nil
+        }
+    }
+
+    enum Prune: Equatable {
+        /// Everything of this repository was read: issues on no board that weren't listed are gone.
+        case repository(String)
+        /// Everything outside these repositories was read.
+        case outside(Set<String>)
+    }
+
+    /// Writes issues read from a repository or a search. Issues on one of your boards are left to the board;
+    /// the rest become items without a project. `listed` is everything the read listed, of which `issues` are
+    /// the ones read in full. Returns notices and the boards that should be read again because one of their
+    /// issues isn't here yet.
+    static func writeIssuesWithoutProject(
+        _ db: Database, _ issues: [RemoteIssue], listed: [IssueRef]? = nil, prune: Prune?, now: Date = Date()
+    ) throws -> (notices: [Notice], staleBoards: Set<String>) {
+        let openBoards = try String.fetchSet(db, sql: "SELECT id FROM project WHERE closed = 0")
+        let onBoards = try String.fetchSet(db, sql: "SELECT contentId FROM item WHERE projectId IS NOT NULL AND contentId IS NOT NULL")
+        let listed = Set((listed?.map(\.itemId)) ?? issues.map(\.item.id))
+        var staleBoards = Set<String>()
+        var loose: [Item] = []
+        for issue in issues {
+            guard let contentId = issue.item.contentId else { continue }
+            let boards = Set(issue.projectIds).intersection(openBoards)
+            if !boards.isEmpty {
+                if !onBoards.contains(contentId) { staleBoards.formUnion(boards) }
+                continue
+            }
+            // Someone took it off a board, or this device just put it on one and GitHub doesn't know yet.
+            if onBoards.contains(contentId) { continue }
+            if issue.item.isClosed, let closed = issue.item.closedAt, now.timeIntervalSince(closed) > closedIssueWindow { continue }
+            loose.append(issue.item)
+        }
+
+        let notices = try reconcile(db, hydrated: loose)
+        for item in loose { try item.save(db) }
+
+        if let prune {
+            let justCreated = Set(try Outbox.active(db).compactMap { entry -> String? in
+                if case .createIssue(let m) = entry.mutation { return m.itemId }
+                return nil
+            })
+            var stale = try Item.filter(Column("projectId") == nil).fetchAll(db).filter { item in
+                !listed.contains(item.id) && !item.isLocalOnly && !justCreated.contains(item.id)
+            }
+            switch prune {
+            case .repository(let repoId):
+                stale = stale.filter { $0.repoId == repoId }
+            case .outside(let repos):
+                stale = stale.filter { $0.repoId.map { !repos.contains($0) } ?? true }
+            }
+            for item in stale { try item.delete(db) }
+        }
+        // Closed long enough ago to drop out of the lists.
+        try db.execute(
+            sql: "DELETE FROM item WHERE projectId IS NULL AND state != 'OPEN' AND closedAt < ?",
+            arguments: [now.addingTimeInterval(-closedIssueWindow)]
+        )
+        try Outbox.rebase(db)
+        try Outbox.clearSettledDirtyFlags(db, projectId: nil)
+        return (notices, staleBoards)
     }
 
     // MARK: Push
@@ -616,19 +839,29 @@ public actor SyncEngine {
                 try await store(entry, mutation: .createIssue(m), state: .pending)
             }
             guard let contentId = m.createdContentId else { return .deferred }
-            let itemId = try await api.addToProject(projectId: m.projectId, contentId: contentId)
+            guard let projectId = m.projectId else {
+                return .sent([m.itemId: Item.idWithoutProject(contentId), m.contentId: contentId])
+            }
+            let itemId = try await api.addToProject(projectId: projectId, contentId: contentId)
             if let fieldId = m.statusFieldId, let optionId = m.statusId {
-                try await api.setFieldValue(projectId: m.projectId, itemId: itemId, fieldId: fieldId, optionId: optionId)
+                try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: optionId)
             }
             if let fieldId = m.priorityFieldId, let optionId = m.priorityId {
-                try await api.setFieldValue(projectId: m.projectId, itemId: itemId, fieldId: fieldId, optionId: optionId)
+                try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: optionId)
             }
             return .sent([m.itemId: itemId, m.contentId: contentId])
 
+        case .addToProject(let m):
+            let itemId = try await api.addToProject(projectId: m.projectId, contentId: m.contentId)
+            if let fieldId = m.statusFieldId, let optionId = m.statusId {
+                try await api.setFieldValue(projectId: m.projectId, itemId: itemId, fieldId: fieldId, optionId: optionId)
+            }
+            return .sent([m.itemId: itemId])
+
         case .deleteItem(let m):
             do {
-                if m.isDraft {
-                    try await api.deleteProjectItem(projectId: m.projectId, itemId: m.itemId)
+                if m.isDraft, let projectId = m.projectId {
+                    try await api.deleteProjectItem(projectId: projectId, itemId: m.itemId)
                 } else if let contentId = m.contentId {
                     try await api.deleteIssue(contentId: contentId)
                 }
@@ -645,12 +878,6 @@ public actor SyncEngine {
         case .unsubscribeThread(let m):
             try await ignoringGone { try await self.api.unsubscribeThread(m.threadId) }
 
-        case .addToProject(let m):
-            let itemId = try await api.addToProject(projectId: m.projectId, contentId: m.contentId)
-            // Read the card from GitHub soon, with everything the board knows about it.
-            forceSweep.insert(m.projectId)
-            lastPull[m.projectId] = nil
-            return .sent([m.itemId: itemId])
         }
         return .sent([:])
     }
@@ -688,6 +915,10 @@ public actor SyncEngine {
         )
         guard !remaps.isEmpty else { return }
         for (old, new) in remaps {
+            // The board item may be here already, read from GitHub while the change was on its way.
+            if try Item.exists(db, key: new) {
+                try db.execute(sql: "DELETE FROM item WHERE id = ?", arguments: [old])
+            }
             try db.execute(sql: "UPDATE item SET id = ? WHERE id = ?", arguments: [new, old])
             try db.execute(sql: "UPDATE item SET contentId = ? WHERE contentId = ?", arguments: [new, old])
             try db.execute(sql: "UPDATE item SET parentId = ? WHERE parentId = ?", arguments: [new, old])
@@ -762,9 +993,13 @@ public actor SyncEngine {
     }
 
     /// Labels and assignable people of a repository, for the pickers. Cached for ten minutes.
-    public func loadRepoMeta(projectId: String, repoId: String, force: Bool = false) async throws {
+    public func loadRepoMeta(projectId: String?, repoId: String, force: Bool = false) async throws {
         guard !isDemo else { return }
-        let existing = try await db.reader.read { try RepoRef.fetchOne($0, key: ["projectId": projectId, "id": repoId]) }
+        let existing = try await db.reader.read { db in
+            try RepoRef.filter(Column("id") == repoId).order(Column("metaLoadedAt").desc).fetchOne(db)
+        }
+        // An issue's repository that none of your boards use has nowhere to keep its labels and people.
+        guard existing != nil else { return }
         if !force, let loaded = existing?.metaLoadedAt, Date().timeIntervalSince(loaded) < 600 { return }
         let meta = try await api.repoMeta(repoId: repoId)
         try await db.writer.write { db in
@@ -851,11 +1086,12 @@ public actor SyncEngine {
                     m.createdNumber = number
                     m.createdUrl = "https://github.com/\(m.repo)/issues/\(number)"
                     try await store(entry, mutation: .createIssue(m), state: .pending)
-                    remaps = [m.itemId: "demo-item-\(number)", m.contentId: contentId]
-                case .addComment(let m):
-                    remaps = [m.commentId: "demo-comment-\(UUID().uuidString.lowercased())"]
+                    let itemId = m.projectId == nil ? Item.idWithoutProject(contentId) : "demo-item-\(number)"
+                    remaps = [m.itemId: itemId, m.contentId: contentId]
                 case .addToProject(let m):
                     remaps = [m.itemId: "demo-item-\(UUID().uuidString.lowercased())"]
+                case .addComment(let m):
+                    remaps = [m.commentId: "demo-comment-\(UUID().uuidString.lowercased())"]
                 default:
                     break
                 }

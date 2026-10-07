@@ -493,9 +493,6 @@ private struct InboxIssue: View {
                             withAnimation(Theme.spring) { proxy.scrollTo(commentId, anchor: .top) }
                         }
                     }
-                    if item.isDetached {
-                        DetachedBanner(entry: entry)
-                    }
                     ForEach(model.conflict(for: item)) { conflict in
                         ConflictBanner(entry: conflict)
                     }
@@ -567,43 +564,6 @@ private struct InboxNews: View {
         .padding(.vertical, 11)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(entry.activityIsNew ? Theme.selectionFill : Theme.groupHeader))
-    }
-}
-
-/// An issue on none of your boards: say so, and offer to put it on one.
-private struct DetachedBanner: View {
-    @Environment(AppModel.self) private var model
-    var entry: InboxEntry
-    @State private var open = false
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "rectangle.split.3x1")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Theme.textTertiary)
-            Text("Not on any of your boards").font(.smallMedium)
-            Spacer(minLength: 8)
-            if !model.projectsAcceptingIssues.isEmpty {
-                Button("Add to Project…") { open = true }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .dropdown(isPresented: $open) { close in
-                        PickerList(
-                            placeholder: "Add to project…",
-                            items: model.projectsAcceptingIssues.map { project in
-                                PickerItem(id: project.id, title: project.title, subtitle: project.ownerLogin, icon: AnyView(ProjectSwatch(title: project.title)))
-                            },
-                            width: 280,
-                            onPick: { model.addToProject(entry, projectId: $0) },
-                            onClose: close
-                        )
-                    }
-            }
-        }
-        .padding(.leading, 12)
-        .padding(.trailing, 8)
-        .padding(.vertical, 7)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.groupHeader))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
     }
 }
 

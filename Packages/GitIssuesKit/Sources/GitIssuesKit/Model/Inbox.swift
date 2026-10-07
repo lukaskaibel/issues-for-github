@@ -330,20 +330,29 @@ public struct InboxMeta: Codable, Equatable, Sendable {
 }
 
 extension Item {
-    /// An issue that isn't on any board the app knows, shown from the Inbox. It has no project, so no status or
-    /// priority, and its title and description are read-only here.
-    public var isDetached: Bool { projectId.isEmpty }
+    /// An issue only the Inbox knows: on none of your boards, and in a repository the app doesn't read (one you
+    /// only watch, say). It is made from the notification each time and not kept, so its title and description are
+    /// read-only here; putting it on a board keeps it from then on.
+    public var isDetached: Bool { id.hasPrefix(Self.detachedPrefix) }
 
     static let detachedPrefix = "detached-"
 
-    /// The Inbox entry's issue as a card that belongs to no project.
+    /// An Inbox-only issue as one the app keeps, on no board, so that it can be put on one.
+    var keptWithoutProject: Item {
+        guard isDetached, let contentId else { return self }
+        var item = self
+        item.id = Item.idWithoutProject(contentId)
+        return item
+    }
+
+    /// The Inbox entry's issue as an item on no board.
     init?(detached entry: InboxEntry) {
         guard let contentId = entry.contentId, !entry.missing else { return nil }
         self.init(
             id: Self.detachedPrefix + contentId,
-            projectId: "",
+            projectId: nil,
             kind: entry.isPullRequest ? .pullRequest : .issue,
-            position: 0,
+            position: Item.positionWithoutProject(updatedAt: entry.updatedAt),
             contentId: contentId,
             number: entry.number,
             title: entry.title,

@@ -242,20 +242,30 @@ struct InboxTests {
         #expect(try entry(db, "t1").assignees.map(\.login) == ["jordan"])
     }
 
-    @Test func addingToAProjectMakesACard() throws {
+    @Test func anIssueOnlyTheInboxKnowsGoesOntoABoard() throws {
         var outside = Self.entry("t1")
         outside.contentId = "I_9"
         outside.repoId = "R_1"
         let db = try makeDatabase([outside])
+        let detached = try #require(Item(detached: outside))
+        #expect(detached.isDetached)
+        #expect(!detached.isEditableContent)
+
+        // Kept as an issue of no board first, then put on the board in one write, as AppModel.addToProject does.
+        let kept = detached.keptWithoutProject
+        #expect(kept.id == Item.idWithoutProject("I_9"))
+        #expect(!kept.isDetached)
         try db.writer.write { db in
             try Project(id: "P1", ownerLogin: "acme", ownerIsOrg: true, number: 1, title: "Board", url: "", closed: false, viewerCanUpdate: true).insert(db)
-            try Outbox.enqueue(db, .addToProject(.init(itemId: "local-card", contentId: "I_9", projectId: "P1", label: "#12")))
+            try kept.insert(db)
+            try Outbox.enqueue(db, .addToProject(.init(itemId: kept.id, contentId: "I_9", projectId: "P1", statusFieldId: "F1", statusId: "todo")))
         }
-        let card = try db.reader.read { try Item.fetchOne($0, key: "local-card") }
+        let card = try db.reader.read { try Item.fetchOne($0, key: kept.id) }
         #expect(card?.projectId == "P1")
-        #expect(card?.contentId == "I_9")
-        #expect(card?.statusId == nil)
-        #expect(try db.reader.read { try RepoRef.fetchCount($0) } == 1)
+        #expect(card?.statusId == "todo")
+        #expect(card?.title == "Crash on launch")
+        // An issue the app already keeps stays as it is.
+        #expect(kept.keptWithoutProject == kept)
     }
 
     @Test func theSampleDataHasAnInbox() throws {

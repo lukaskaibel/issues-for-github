@@ -82,8 +82,8 @@ and status, priority, assignees and labels are in the sidebar. Step to the next 
 The Inbox shows what happened that concerns you, as Linear's does: who assigned you, mentioned you, commented, asked
 for your review or closed an issue you follow. It is GitHub's own notifications, so what you read or archive here is
 read or done on github.com and on your other devices too. Pick one and its issue opens beside the list, with what's
-new on top and the new comment marked; change it right there. J and K move on, U marks read or unread, E archives and
-H snoozes until later.
+new on top and the new comment marked; change it right there, and press S to put one that's on none of your boards
+onto one. J and K move on, U marks read or unread, E archives and H snoozes until later.
 
 <!-- The picture comes with the next run of Tools/readme-images.sh, which makes inbox-light.webp and inbox-dark.webp;
      take this comment away then.
@@ -117,6 +117,18 @@ a click. The app follows the system appearance, or stays light or dark if you pr
 
 <img alt="The list grouped by status, half in the dark appearance and half in the light one" src="Design/screenshots/list-appearance.webp">
 
+### Every issue, on a board or not
+
+An issue someone opened straight in a repository isn't lost because nobody put it on a board. The sidebar lists the
+repositories your boards use, like the teams in Linear, and each shows all its issues, grouped by status like My
+Issues. Those on no board come first, under **No project**: click the circle with the plus (or press `S`), pick a
+column, and the issue is on the board. My Issues shows everything assigned to you, on a board or not.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/repository-dark.webp">
+  <img alt="A repository in the sidebar, with its issues as a list: two under No project at the top, then In progress and Todo" src="Design/screenshots/repository-light.webp">
+</picture>
+
 ## iPhone and iPad
 
 <picture>
@@ -133,13 +145,13 @@ The interface uses the system's own parts.
   <img alt="Three iPhones: an issue with its properties as chips, the menu on a long press, and a new issue being typed" src="Design/screenshots/iphone-light.webp">
 </picture>
 
-- **iPhone:** a list per project and My Issues, grouped by status, with sections that fold and headers that stay
-  pinned. Tabs for the Inbox (with its count), My Issues, Projects and Search. Swipe right to mark an issue done, swipe
-  left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click. In the Inbox,
-  swipe right to read and left to snooze or archive. In an issue, the title and description are edited in place
-  (Markdown is styled as you type), the properties are chips under the title, and the comment field stays at the
-  bottom as in Messages.
-- **iPad:** the tabs become a sidebar with every project as an entry, as on the Mac. Projects open as a board or a
+- **iPhone:** a list per project, per repository and My Issues, grouped by status, with sections that fold and
+  headers that stay pinned. Tabs for the Inbox (with its count), My Issues, Projects (with the repositories below the
+  projects) and Search. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and
+  hold for the same menu as the Mac's right-click. In the Inbox, swipe right to read and left to snooze or archive. In
+  an issue, the title and description are edited in place (Markdown is styled as you type), the properties are chips
+  under the title, and the comment field stays at the bottom as in Messages.
+- **iPad:** the tabs become a sidebar with every project and repository as an entry, as on the Mac. Projects open as a board or a
   list; cards are moved with drag and drop (touch and hold, then drag). An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
   work: J and K, S P A L I, ⌘1 ⌘2 ⌘3, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S.
@@ -151,7 +163,8 @@ The interface uses the system's own parts.
 
 ## What it does
 
-- **Board and list** for every GitHub Project you can see, plus **My Issues** across all of them.
+- **Board and list** for every GitHub Project you can see, plus **My Issues**: everything assigned to you.
+- **Every issue of your repositories**, also those on none of your boards, which one click puts on one.
 - **An Inbox** with GitHub's notifications about issues and pull requests: who did what, the issue beside it, and
   read, archive, snooze and unsubscribe in one key. Read and archived are the same on github.com.
 - **Instant.** Every change is written to a local database first and shows in the same frame. GitHub is updated in
@@ -179,12 +192,15 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Moving a card to a "done" or "cancelled" column | Status changes, and the issue is closed as *completed* or *not planned* |
 | Priority | A single-select project field named **Priority** (the app can add it for you) |
 | Card order | The item's position in the project |
+| Repositories in the sidebar | The repositories linked to your projects, and those their issues come from |
+| No project | An issue that is in none of your projects; adding it to one is GitHub's *Add to project* |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
 | Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there |
 
-Only issues that are in a Project appear on the boards and lists; the Inbox also shows issues from elsewhere that
-GitHub tells you about, and can put them on a board. What a column means (backlog, in progress, done, cancelled) is inferred
-from its name, since GitHub stores only the label.
+Boards show the issues in their project; a repository shows all its open issues and those closed in the last four
+weeks, on a board or not. My Issues shows the open issues assigned to you anywhere on GitHub. The Inbox also shows
+issues and pull requests from other repositories that GitHub tells you about, and can put them on a board. What a
+column means (backlog, in progress, done, cancelled) is inferred from its name, since GitHub stores only the label.
 
 ## Offline and conflicts
 
@@ -294,14 +310,14 @@ Hover an issue or move to it with the arrow keys, then:
 |---|---|
 | `⌘K` or `/` | Command palette: run a command or jump to an issue |
 | `C` or `⌘N` | New issue |
-| `S` `P` `A` `L` | Change status, priority, assignee, labels |
+| `S` `P` `A` `L` | Change status, priority, assignee, labels; `S` puts an issue on no board onto one |
 | `I` | Assign to me, or unassign |
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
 | `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
 | `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
-| `G` then `B` / `L` / `M` / `I` / `P` | Go to board, list, My Issues, the Inbox, or switch project |
+| `G` then `B` / `L` / `M` / `I` / `P` | Go to board, list, My Issues, the Inbox, or switch project or repository |
 | `⌘1` `⌘2` `⌘3` | Board, list, My Issues |
 | `⌘↵` | Save a description, send a comment, create the issue |
 | `⌘⇧C` / `⌘⇧O` | Copy the issue's GitHub link / open it on GitHub |
@@ -338,9 +354,9 @@ To change several issues at once, pick them with `X`, the checkbox at the start 
 Shift-click. A bar at the bottom then sets status, priority, assignee or labels for all of them, and so do the
 usual keys, dropdowns and right-click menu. `Esc` clears the pick.
 
-Right-click a project in the sidebar to hide it; hidden projects wait, folded away, at the end of the list. Click
-your name at the top of the sidebar for the account menu: Sync Now, changes still waiting to be sent, appearance,
-settings and signing out. It works with the arrow keys like any menu.
+Right-click a project or repository in the sidebar to hide it; hidden ones wait, folded away, at the end of their
+list. Click your name at the top of the sidebar for the account menu: Sync Now, changes still waiting to be sent,
+appearance, settings and signing out. It works with the arrow keys like any menu.
 
 ## Using it on iPhone and iPad
 
@@ -349,7 +365,7 @@ settings and signing out. It works with the arrow keys like any menu.
 | Tap a section header | Fold it in or out |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
-| Touch and hold an issue | Status, priority, assignee and labels as submenus; copy link, share, open on GitHub, delete |
+| Touch and hold an issue | Status, priority, assignee and labels as submenus (Add to Project for an issue on no board); copy link, share, open on GitHub, delete |
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place; the bar above the keyboard adds bold, italics, code, lists and links |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |

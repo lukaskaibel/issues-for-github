@@ -233,8 +233,6 @@ extension AppModel {
         guard let item = actionItem else { return false }
         switch key {
         case "s":
-            // An issue seen only in the Inbox has no board, so no status.
-            guard !item.isDetached else { return false }
             overlay = .palette(.status(itemId: item.id))
         case "p":
             guard project(of: item)?.priorityFieldId != nil else { return false }

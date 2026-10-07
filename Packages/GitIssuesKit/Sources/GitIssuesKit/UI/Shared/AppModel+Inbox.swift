@@ -91,43 +91,47 @@ extension AppModel {
 
     // MARK: The issue behind an entry
 
-    /// The card on a board, or, for an issue on none of them, the issue as a card of no project.
+    /// The card on a board, else the issue as the app keeps it on no board, else the issue as the notification
+    /// tells it (a repository the app doesn't read).
     func inboxItem(for entry: InboxEntry) -> Item? {
-        if let contentId = entry.contentId, let card = boardItem(contentId: contentId) { return card }
+        if let contentId = entry.contentId, let item = localItem(contentId: contentId) { return item }
         return Item(detached: entry)
     }
 
-    /// An issue can be on several boards; the one on screen or opened last wins.
-    private func boardItem(contentId: String) -> Item? {
-        let cards = allItems.filter { $0.contentId == contentId }
-        guard cards.count > 1 else { return cards.first }
+    /// An issue can be on several boards; the one on screen or opened last wins, and any board over none.
+    private func localItem(contentId: String) -> Item? {
+        let copies = allItems.filter { $0.contentId == contentId }
+        guard copies.count > 1 else { return copies.first }
         let preferred = currentProjectId ?? UserDefaults.standard.string(forKey: "selectedProject")
-        return cards.first { $0.projectId == preferred } ?? cards.first
+        return copies.first { $0.projectId == preferred } ?? copies.first(where: \.isOnBoard) ?? copies.first
     }
 
     /// The entry for the issue behind an Inbox-only card.
     func detachedItem(id: String) -> Item? {
         guard id.hasPrefix(Item.detachedPrefix) else { return nil }
         let contentId = String(id.dropFirst(Item.detachedPrefix.count))
-        // Added to a board since: from now on it's that card.
-        if let card = boardItem(contentId: contentId) { return card }
+        // Added to a board since, or read with its repository: from now on it's that one.
+        if let item = localItem(contentId: contentId) { return item }
         return inboxEntries.first { $0.contentId == contentId }.flatMap { Item(detached: $0) }
     }
 
-    /// Labels and people for an issue on no board, read from its repository once.
-    func loadDetachedRepoMeta(_ item: Item) {
-        guard item.isDetached, let repoId = item.repoId, detachedRepoMeta[repoId] == nil else { return }
-        // A repository that is on some board has its labels and people already.
-        if let known = repos.first(where: { $0.id == repoId && $0.metaLoadedAt != nil }) {
-            detachedRepoMeta[repoId] = (known.labels, known.assignableUsers)
-            return
-        }
+    /// Labels and people of a repository none of your boards use, read once while the app runs.
+    func loadOtherRepoMeta(_ repoId: String) {
+        guard otherRepoMeta[repoId] == nil else { return }
         let engine = self.engine
         Task {
             if let meta = try? await engine.repoMeta(repoId: repoId) {
-                detachedRepoMeta[repoId] = (meta.labels, meta.users)
+                otherRepoMeta[repoId] = (meta.labels, meta.users)
             }
         }
+    }
+
+    /// Inbox-only issues being put on a board become issues of no board first, which the board then takes. Insert
+    /// them only together with the move onto a board: the sync drops issues of no board in repositories it doesn't
+    /// read.
+    func keptForAdding(_ items: [Item]) -> (items: [Item], inserted: [Item]) {
+        let kept = items.map(\.keptWithoutProject)
+        return (kept, kept.indices.filter { items[$0].isDetached }.map { kept[$0] })
     }
 
     // MARK: Opening
@@ -153,10 +157,7 @@ extension AppModel {
         inboxSelectedId = entry?.id
         guard let entry else { return }
         markRead([entry])
-        if let item = inboxItem(for: entry) {
-            loadDetachedRepoMeta(item)
-            if !item.isDetached { loadRepoMeta(projectId: item.projectId) }
-        }
+        if let item = inboxItem(for: entry) { loadRepoMeta(for: item) }
     }
 
     /// J and K, and the arrow keys: the next or previous entry, which opens beside the list.
@@ -366,19 +367,6 @@ extension AppModel {
         }
     }
 
-    // MARK: Putting it on a board
-
-    /// Adds an issue seen only in the Inbox to a project, as a card without a status. It can then be moved and
-    /// changed like any other card.
-    func addToProject(_ entry: InboxEntry, projectId: String) {
-        guard let contentId = entry.contentId else { return }
-        perform([.addToProject(.init(itemId: LocalID.make(), contentId: contentId, projectId: projectId, label: entry.label))])
-    }
-
-    /// Projects an issue can be added to: open ones you can edit.
-    var projectsAcceptingIssues: [Project] {
-        openProjects.filter(\.viewerCanUpdate)
-    }
 }
 
 /// Choices for snoozing, as in Linear.

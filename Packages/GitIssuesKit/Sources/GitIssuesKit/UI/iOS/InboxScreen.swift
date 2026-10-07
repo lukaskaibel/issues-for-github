@@ -274,13 +274,13 @@ struct MobileInboxRow: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(entry.spoken(summary, unread: unread))
         .accessibilityAddTraits(.isButton)
-        .accessibilityIdentifier(Self.identifier(entry, item: item))
+        .accessibilityIdentifier(Self.identifier(entry, withRepo: model.inboxNamesRepository(item)))
     }
 
     /// "inbox-row-25" for an issue on a board, "inbox-row-brand-4" for one that isn't.
-    static func identifier(_ entry: InboxEntry, item: Item?) -> String {
+    static func identifier(_ entry: InboxEntry, withRepo: Bool) -> String {
         let number = entry.number.map(String.init) ?? entry.id
-        return item == nil || item?.isDetached == true ? "inbox-row-\(entry.repoShortName)-\(number)" : "inbox-row-\(number)"
+        return withRepo ? "inbox-row-\(entry.repoShortName)-\(number)" : "inbox-row-\(number)"
     }
 
     private func line(_ summary: InboxSummary) -> Text {
@@ -322,9 +322,7 @@ struct InboxMenuContent: View {
         }
         if !entry.missing, let item = model.inboxItem(for: entry) {
             Divider()
-            if !item.isDetached {
-                StatusMenu(item: item)
-            }
+            StatusMenu(item: item)
             if model.project(of: item)?.priorityFieldId != nil {
                 PriorityMenu(item: item)
             }
@@ -455,44 +453,6 @@ struct MobileInboxNews: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(entry.activityIsNew ? Theme.selectionFill : Theme.groupHeader))
         .accessibilityElement(children: .combine)
-    }
-}
-
-/// An issue on none of your boards: say so, and offer to put it on one.
-struct MobileDetachedBanner: View {
-    @Environment(AppModel.self) private var model
-    var entry: InboxEntry
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "rectangle.split.3x1")
-                .foregroundStyle(Theme.textTertiary)
-            Text("Not on any of your boards")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(Theme.text)
-            Spacer(minLength: 8)
-            if !model.projectsAcceptingIssues.isEmpty {
-                Menu("Add to Project") {
-                    ForEach(model.projectsAcceptingIssues) { project in
-                        Button {
-                            model.addToProject(entry, projectId: project.id)
-                        } label: {
-                            Label {
-                                Text(project.title)
-                            } icon: {
-                                Image(uiImage: SwatchImages.image(for: project.title))
-                            }
-                        }
-                    }
-                }
-                .font(.subheadline.weight(.semibold))
-                .accessibilityIdentifier("add-to-project")
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.groupHeader))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
     }
 }
 

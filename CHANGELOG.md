@@ -17,10 +17,17 @@ All notable changes to this project are recorded here. The format follows
   H snoozes until later today, tomorrow, next week or a date, ⇧S unsubscribes, ⌥U reads everything and ⇧⌫ archives
   everything read; ⌘-click and Shift-click pick several. For you and Watching keep repositories you only watch
   apart. On the iPhone the Inbox is the first tab, with the count on it: swipe right to read, left to snooze or
-  archive, touch and hold for everything. On the iPad the issue sits beside the list, as in Mail. Issues on none of
-  your boards open too, to read, comment, assign and label, and Add to Project puts them on one. Snoozes and entries
-  marked unread are kept in iCloud, so your devices agree. Releases, CI runs and discussions stay on GitHub; the end
+  archive, touch and hold for everything. On the iPad the issue sits beside the list, as in Mail. An issue on none of
+  your boards opens there too and goes onto one with its status, as everywhere. One from a repository none of your
+  boards use, such as one you only watch, can be commented on, assigned, labelled and put on a board; its title and
+  description are changed on GitHub. Snoozes and entries marked unread are kept in iCloud, so your devices agree. Releases, CI runs and discussions stay on GitHub; the end
   of the list says how many there are. `gi-cli inbox` lists the notifications as the Inbox reads them.
+- **Every issue, on a board or not.** Issues that are on none of your GitHub Projects no longer stay invisible. My
+  Issues shows every open issue assigned to you, wherever it is, and the sidebar has a Repositories section with the
+  repositories your boards use, like the teams in Linear (on the iPhone, in the Projects tab). A repository lists all
+  its issues, grouped by status like My Issues; those on no board lead under **No project**. Click their circle with
+  the plus, press S or use the right-click menu, and pick a column: the issue goes onto the board, in that column.
+  A new issue started in a repository can go on one of its boards or on none.
 - Change several issues at once, as in Linear. Pick them with X, the checkbox at the start of a list row,
   ⌘-click or Shift-click (Shift with the arrows or J/K picks a run, ⌘A picks everything on screen). A bar at the
   bottom sets status, priority, assignee and labels for all of them; S, P, A, L, I, the command palette and the
@@ -90,8 +97,8 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
-- G then B and G then L go to the board or list of the project used last when you are in the Inbox or My Issues;
-  before, they did nothing there.
+- G then B goes to the board of the project used last from the Inbox, My Issues or a repository, and G then L from
+  the Inbox to that project's list; before, they did nothing there.
 - The sidebar is calmer, as in Linear. The account, search and New Issue share the top row, and the state of
   syncing is a dot on your avatar: green when everything is on GitHub, the accent while changes go out, amber when
   you're offline or something needs you. "Synced just now" moved into the account menu (and the avatar's tooltip).
