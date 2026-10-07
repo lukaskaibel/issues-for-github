@@ -206,7 +206,7 @@
       }
     },
     "addSubIssueButton" : {
-      "comment" : "iPhone and iPad, issue screen: VoiceOver label of the + button beside the 'Sub-issues' heading, which starts writing a new sub-issue.",
+      "comment" : "Mac, issue view: tooltip and VoiceOver label of the + button beside the 'Sub-issues' heading; it opens the New Issue window for a sub-issue of this issue (GitHub term).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -273,6 +273,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add to project…"
+          }
+        }
+      }
+    },
+    "addToProjectMenu" : {
+      "comment" : "Mac, right-click menu of an issue that is on no project board: submenu listing the user's GitHub projects (boards) to put it on. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to Project"
           }
         }
       }
@@ -733,6 +745,18 @@
         }
       }
     },
+    "archiveWithShortcut" : {
+      "comment" : "Mac, Inbox: tooltip and VoiceOver label of the archive button on a notification and above the issue beside it; archiving removes the notification from the Inbox (GitHub calls this 'Done'). (E) is the key; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archive (E)"
+          }
+        }
+      }
+    },
     "archivedNotification" : {
       "comment" : "Inbox (Mac, iPhone, iPad): short notice with an Undo button after one notification was archived (verb, past tense). %(number)@ is the issue's number, e.g. '#14'.",
       "extractionState" : "manual",
@@ -957,6 +981,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Back to the Usual Order"
+          }
+        }
+      }
+    },
+    "backWithEscShortcut" : {
+      "comment" : "Mac, issue view: tooltip and VoiceOver label of the arrow button at the top left that goes back to the board or list. (Esc) names the key that does the same; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back (Esc)"
           }
         }
       }
@@ -1261,6 +1297,18 @@
         }
       }
     },
+    "chooseRepositoryPlaceholder" : {
+      "comment" : "Mac, New Issue window, after 'Repository': shown in the menu for the issue's GitHub repository while none is chosen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose…"
+          }
+        }
+      }
+    },
     "classicTokenScopes" : {
       "comment" : "iPhone and iPad, token sign-in sheet: note under the token field. 'Classic token' and 'scopes' are GitHub's terms; keep repo, project, read:org and api.github.com as they are.",
       "extractionState" : "manual",
@@ -1273,6 +1321,18 @@
         }
       }
     },
+    "clearSelection" : {
+      "comment" : "Mac, right-click menu on several selected issues: unselects them all. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Selection"
+          }
+        }
+      }
+    },
     "clearSelectionCommand" : {
       "comment" : "Mac, command palette (⌘K): command that unpicks all picked issues.",
       "extractionState" : "manual",
@@ -1281,6 +1341,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Clear selection"
+          }
+        }
+      }
+    },
+    "clearSelectionWithEscShortcut" : {
+      "comment" : "Mac, selection bar: tooltip of the × button that unselects all issues. (Esc) is the key that does the same; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear selection (Esc)"
+          }
+        }
+      }
+    },
+    "closeWithEscShortcut" : {
+      "comment" : "Mac, New Issue window: tooltip and VoiceOver label of the × button that closes the window (what was typed is kept for next time). (Esc) is the key that does the same; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close (Esc)"
+          }
+        }
+      }
+    },
+    "closeWithSpaceShortcut" : {
+      "comment" : "Mac, quick look (Peek): tooltip and VoiceOver label of the × button that closes the quick look. (Space) names the space bar, which does the same: call it as your language's keyboard shortcuts do.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close (Space)"
           }
         }
       }
@@ -1525,6 +1621,18 @@
         }
       }
     },
+    "commentSending" : {
+      "comment" : "Mac, issue view: shown instead of the time on a comment the user just wrote that is still being sent to GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sending…"
+          }
+        }
+      }
+    },
     "conflictDescriptionEditedOnGitHub" : {
       "comment" : "iPhone and iPad, issue screen: warning banner after the user changed the issue's description while someone else changed it on GitHub. The user's version is in the description below the banner; GitHub's is shown in the banner.",
       "extractionState" : "manual",
@@ -1545,6 +1653,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%(number)@ was edited on GitHub too."
+          }
+        }
+      }
+    },
+    "conflictGitHubVersion" : {
+      "comment" : "Mac, issue view, conflict warning banner: small heading above the text as it is now on GitHub (the other version of the title or description).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On GitHub"
           }
         }
       }
@@ -1605,6 +1725,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copy Branch Name"
+          }
+        }
+      }
+    },
+    "copyBranchNameWithShortcut" : {
+      "comment" : "Mac, issue view header: tooltip and VoiceOver label of the button that copies a git branch name made from the issue's number and title, for starting work on it. (⌘⇧.) is its keyboard shortcut; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy branch name (⌘⇧.)"
           }
         }
       }
@@ -1681,6 +1813,42 @@
         }
       }
     },
+    "copyLinkWithShortcut" : {
+      "comment" : "Mac, issue view and Inbox header: tooltip and VoiceOver label of the link button that copies the issue's GitHub web address. (⌘⇧C) is its keyboard shortcut; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy link (⌘⇧C)"
+          }
+        }
+      }
+    },
+    "copyLinks" : {
+      "comment" : "Mac, right-click menu on several selected issues: copies the GitHub web addresses of all of them. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Links"
+          }
+        }
+      }
+    },
+    "copyLinksWithShortcut" : {
+      "comment" : "Mac, selection bar: tooltip of the link button that copies the GitHub web addresses of all selected issues. (⌘⇧C) is its keyboard shortcut; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy links (⌘⇧C)"
+          }
+        }
+      }
+    },
     "create" : {
       "comment" : "iPhone and iPad, new issue sheet: button (a verb) that creates the issue on GitHub and closes the sheet.",
       "extractionState" : "manual",
@@ -1701,6 +1869,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Create Issue"
+          }
+        }
+      }
+    },
+    "createIssueMac" : {
+      "comment" : "Mac, New Issue window: button that creates the issue and sends it to GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create issue"
           }
         }
       }
@@ -1737,6 +1917,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%(date)@ by %(author)@"
+          }
+        }
+      }
+    },
+    "createdOnDateTooltip" : {
+      "comment" : "Mac, issue list: second line of the tooltip of the date on a row: when the issue was created. %(date)@ is a date and time such as 'October 3, 2026 at 14:05'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created %(date)@"
+          }
+        }
+      }
+    },
+    "createdRowLabel" : {
+      "comment" : "Mac, issue view, properties panel: label of the row showing when the issue was created and by whom. Short: about 10 characters.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created"
           }
         }
       }
@@ -1813,6 +2017,18 @@
         }
       }
     },
+    "deleteDraft" : {
+      "comment" : "Mac: right-click menu item that deletes a draft (a GitHub project item that is only a note, not an issue yet), after asking. Destructive. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Draft…"
+          }
+        }
+      }
+    },
     "deleteDraftCommand" : {
       "comment" : "Mac, command palette (⌘K): command that asks whether to delete the draft in focus. 'Draft' is the GitHub term for an item that exists only on the project board.",
       "extractionState" : "manual",
@@ -1845,6 +2061,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The column is removed from the project on GitHub."
+          }
+        }
+      }
+    },
+    "deleteIssue" : {
+      "comment" : "Mac: right-click menu item that deletes the issue on GitHub, after asking. Destructive. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Issue…"
           }
         }
       }
@@ -1989,6 +2217,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Discard"
+          }
+        }
+      }
+    },
+    "discardDraft" : {
+      "comment" : "Mac, New Issue window: button shown when the window brings back what was typed the last time it was closed; it throws that text away to start over. 'Draft' is the unsent text here, not a GitHub draft.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard draft"
           }
         }
       }
@@ -2557,6 +2797,18 @@
         }
       }
     },
+    "escClearsPick" : {
+      "comment" : "Mac, Inbox: hint under the buttons for several selected notifications: the Esc key unselects them. Keep 'Esc'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esc clears the pick"
+          }
+        }
+      }
+    },
     "eventApproved" : {
       "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai approved it' (the pull request, in a review).",
       "extractionState" : "manual",
@@ -2941,6 +3193,30 @@
         }
       }
     },
+    "foldAllGroups" : {
+      "comment" : "Mac, issue list: right-click menu item on a group header that folds every group, hiding all issues under their headers. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fold All"
+          }
+        }
+      }
+    },
+    "foldGroup" : {
+      "comment" : "Mac, issue list: right-click menu item on a group header (a status, such as 'In Progress') that folds the group, hiding its issues. A verb.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fold"
+          }
+        }
+      }
+    },
     "foldHiddenProjectsAway" : {
       "comment" : "Mac sidebar: tooltip of the line that folds the hidden GitHub projects back in, while they are shown.",
       "extractionState" : "manual",
@@ -3217,6 +3493,18 @@
         }
       }
     },
+    "inboxActionsMac" : {
+      "comment" : "Mac, Inbox header: tooltip and VoiceOver label of the ⋯ button that opens a menu of actions for all notifications.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inbox actions"
+          }
+        }
+      }
+    },
     "inboxApprovedIt" : {
       "comment" : "Inbox row, line under the title: a reviewer approved the pull request. %(who)@ is a person's name or GitHub login.",
       "extractionState" : "manual",
@@ -3261,6 +3549,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%(who)@ assigned you"
+          }
+        }
+      }
+    },
+    "inboxCaughtUpMessage" : {
+      "comment" : "Mac, Inbox: under 'You're all caught up', saying what the Inbox shows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When someone assigns you, mentions you or comments on an issue you follow, it shows up here."
+          }
+        }
+      }
+    },
+    "inboxCaughtUpTitle" : {
+      "comment" : "Mac, Inbox: title shown when there are no notifications.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're all caught up"
           }
         }
       }
@@ -3345,6 +3657,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "For you"
+          }
+        }
+      }
+    },
+    "inboxIssueLoadingMessage" : {
+      "comment" : "Mac, Inbox: under 'Loading the issue…'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading it from GitHub."
+          }
+        }
+      }
+    },
+    "inboxIssueLoadingTitle" : {
+      "comment" : "Mac, Inbox: title on the right while the issue a notification is about loads, with a spinner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading the issue…"
+          }
+        }
+      }
+    },
+    "inboxIssueUnavailableMessage" : {
+      "comment" : "Mac, Inbox: under 'This issue isn't available any more'; buttons under it open the notification on GitHub or archive it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It was deleted or moved, or you no longer have access. GitHub's notification is still here."
+          }
+        }
+      }
+    },
+    "inboxIssueUnavailableTitle" : {
+      "comment" : "Mac, Inbox: title on the right when the issue or pull request a notification is about can't be loaded from GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This issue isn't available any more"
           }
         }
       }
@@ -3513,6 +3873,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Latest activity"
+          }
+        }
+      }
+    },
+    "inboxLoadingMessage" : {
+      "comment" : "Mac, Inbox: under 'Loading your notifications…'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fetching them from GitHub."
+          }
+        }
+      }
+    },
+    "inboxLoadingTitle" : {
+      "comment" : "Mac, Inbox: title shown while the GitHub notifications load for the first time, with a spinner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading your notifications…"
           }
         }
       }
@@ -3717,6 +4101,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PR"
+          }
+        }
+      }
+    },
+    "inboxOfflineMessage" : {
+      "comment" : "Mac, Inbox: under 'You're offline'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your notifications load as soon as you're back online."
+          }
+        }
+      }
+    },
+    "inboxOfflineTitle" : {
+      "comment" : "Mac, Inbox: title shown instead of the notifications when they haven't been loaded yet and there is no internet connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline"
           }
         }
       }
@@ -3937,6 +4345,30 @@
         }
       }
     },
+    "inboxTokenCantReadMessage" : {
+      "comment" : "Mac, Inbox: explanation under 'Your token can't read notifications'. 'Fine-grained' and 'classic' are GitHub's names for its two kinds of personal access token (use GitHub's terms in your language if it has them); 'repo' is the name of a GitHub permission (scope) and stays as it is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub doesn't let fine-grained tokens read them. Sign in with GitHub, or use a classic token with the repo scope. Everything else keeps working."
+          }
+        }
+      }
+    },
+    "inboxTokenCantReadTitle" : {
+      "comment" : "Mac, Inbox: title of the message shown instead of the notifications when the user signed in with a GitHub personal access token that isn't allowed to read notifications.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your token can't read notifications"
+          }
+        }
+      }
+    },
     "inboxUnassignedPerson" : {
       "comment" : "Inbox row, line under the issue's title. %(who)@ removed %(person)@ (a GitHub login, e.g. 'mira') from the issue's assignees.",
       "extractionState" : "manual",
@@ -4117,6 +4549,18 @@
         }
       }
     },
+    "issueRowSpokenWithDue" : {
+      "comment" : "Mac, issue list: what VoiceOver reads for a row of an issue that has a due date. %(number)@ is the issue's number such as '#12', %(title)@ its title, %(due)@ when it is due, such as 'Due Friday, 9 October'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(number)@ %(title)@, %(due)@"
+          }
+        }
+      }
+    },
     "issueTitle" : {
       "comment" : "iPhone and iPad: VoiceOver label of the field holding the issue's title (issue screen, new issue sheet).",
       "extractionState" : "manual",
@@ -4213,6 +4657,18 @@
         }
       }
     },
+    "keepMineConflictMac" : {
+      "comment" : "Mac, issue view, conflict warning banner: button that sends the user's own version of the title or description to GitHub, replacing the version there.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep mine"
+          }
+        }
+      }
+    },
     "keepMineMac" : {
       "comment" : "Mac: button in a notice at the bottom right of the window when someone changed the same thing on GitHub; keeps the user's own value instead of GitHub's.",
       "extractionState" : "manual",
@@ -4221,6 +4677,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keep mine"
+          }
+        }
+      }
+    },
+    "labelCount" : {
+      "comment" : "Mac, New Issue window: chip showing the picked labels when there are several, e.g. '3 labels' (with one, the label's name is shown instead). GitHub labels: tags such as 'bug'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld label"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld labels"
+                }
+              }
+            }
           }
         }
       }
@@ -4311,6 +4791,18 @@
     },
     "leaveACommentPlaceholder" : {
       "comment" : "iPhone and iPad, issue screen: placeholder in the comment field at the bottom.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave a comment…"
+          }
+        }
+      }
+    },
+    "leaveCommentPlaceholder" : {
+      "comment" : "Mac, issue view and Inbox: placeholder in the empty box for writing a comment on the issue.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4549,6 +5041,18 @@
         }
       }
     },
+    "markAsDoneTooltip" : {
+      "comment" : "Mac, issue view, list of sub-issues: tooltip of the status icon of an open sub-issue that isn't on this board; a click closes it as completed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as done"
+          }
+        }
+      }
+    },
     "markAsRead" : {
       "comment" : "Inbox: menu item or button for a notification.",
       "extractionState" : "manual",
@@ -4573,6 +5077,18 @@
         }
       }
     },
+    "markAsReadWithShortcut" : {
+      "comment" : "Mac, Inbox: tooltip and VoiceOver label of the button that shows on an unread notification under the pointer. (U) is the key that does the same; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as read (U)"
+          }
+        }
+      }
+    },
     "markAsUnread" : {
       "comment" : "Inbox: menu item or button for a notification.",
       "extractionState" : "manual",
@@ -4593,6 +5109,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mark as unread"
+          }
+        }
+      }
+    },
+    "markAsUnreadWithShortcut" : {
+      "comment" : "Mac, Inbox: tooltip and VoiceOver label of the button that shows on a read notification under the pointer. (U) is the key that does the same; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as unread (U)"
           }
         }
       }
@@ -4633,6 +5161,18 @@
         }
       }
     },
+    "markSubIssueAsDone" : {
+      "comment" : "Mac, issue view, list of sub-issues: VoiceOver label of the status icon of an open sub-issue; activating it closes the sub-issue as completed (GitHub term: an issue that belongs to another one).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark sub-issue as done"
+          }
+        }
+      }
+    },
     "markUnread" : {
       "comment" : "iPhone and iPad Inbox: swipe action that marks a notification as unread again. Short.",
       "extractionState" : "manual",
@@ -4645,6 +5185,30 @@
         }
       }
     },
+    "menuIssueCount" : {
+      "comment" : "Mac: greyed-out first line of the right-click menu when several issues are selected; the menu acts on all of them. Example: '3 issues'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld issue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld issues"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "more" : {
       "comment" : "iPhone and iPad, issue screen: VoiceOver label of the toolbar button with the ⋯ icon, which opens a menu of more actions.",
       "extractionState" : "manual",
@@ -4653,6 +5217,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "More"
+          }
+        }
+      }
+    },
+    "moreEventsBelow" : {
+      "comment" : "Mac, Inbox: under the list of the latest things that happened on an issue (at most 5): how many more there are; they are further down, in the issue's activity. Example: 'and 3 more below'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "and %(count)lld more below"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "and %(count)lld more below"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "moreNotificationsOnGitHub" : {
+      "comment" : "Mac, Inbox: last row of the list: how many notifications GitHub has that aren't about issues or pull requests (releases, CI runs…); a click opens them on github.com. Example: '4 more on GitHub'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld more on GitHub"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld more on GitHub"
+                }
+              }
+            }
           }
         }
       }
@@ -4813,6 +5425,18 @@
         }
       }
     },
+    "newCommentBadge" : {
+      "comment" : "Mac, Inbox: small badge on a comment that was added since the user last read the issue. Very short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New"
+          }
+        }
+      }
+    },
     "newIssue" : {
       "comment" : "Menu item, button or sheet title for writing a new issue. Title case, as in menus.",
       "extractionState" : "manual",
@@ -4827,6 +5451,42 @@
     },
     "newIssueAction" : {
       "comment" : "Mac: VoiceOver label of the sidebar's button for writing a new issue, and a command in the command palette (⌘K) that does the same. Sentence case. 'Issue' is the GitHub term.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New issue"
+          }
+        }
+      }
+    },
+    "newIssueBoardTooltip" : {
+      "comment" : "Mac, New Issue window: tooltip of the project chip at the top left, a menu to choose which GitHub project (board) the new issue is put on, or none.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The board the issue goes on"
+          }
+        }
+      }
+    },
+    "newIssueButtonLabel" : {
+      "comment" : "Mac, issue list: VoiceOver label of the + button on a group header that starts a new issue in that group.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New issue"
+          }
+        }
+      }
+    },
+    "newIssueHeader" : {
+      "comment" : "Mac, New Issue window: title at the top, after the project's name, as in 'Roadmap › New issue'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4861,6 +5521,30 @@
         }
       }
     },
+    "newIssueInGroupMenu" : {
+      "comment" : "Mac, issue list: right-click menu item on a group header that starts a new issue with that group's status. %(group)@ is the status name from the GitHub project, such as 'In Progress'. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Issue in %(group)@"
+          }
+        }
+      }
+    },
+    "newIssueInGroupTooltip" : {
+      "comment" : "Mac, issue list: tooltip of the + button on a group header that starts a new issue with that group's status. %(group)@ is the status name from the GitHub project, such as 'In Progress'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New issue in %(group)@"
+          }
+        }
+      }
+    },
     "newIssueInStatus" : {
       "comment" : "VoiceOver, iPhone and iPad: label of the '+' button in the header of a list section or a board column, which starts a new issue with that status. %(status)@ is the status name from GitHub, e.g. 'In Progress'.",
       "extractionState" : "manual",
@@ -4869,6 +5553,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New issue in %(status)@"
+          }
+        }
+      }
+    },
+    "newIssueNotOnGitHubYet" : {
+      "comment" : "Mac, issue view, list of sub-issues: shown in place of the number (such as '#12') of a sub-issue that was just created and hasn't reached GitHub yet. Very short: about 5 characters.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New"
           }
         }
       }
@@ -4981,6 +5677,18 @@
         }
       }
     },
+    "newSubIssueHeader" : {
+      "comment" : "Mac, New Issue window: title at the top when writing a sub-issue (GitHub term: an issue that belongs to another one), as in 'Roadmap › New sub-issue'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New sub-issue"
+          }
+        }
+      }
+    },
     "nextIssue" : {
       "comment" : "iPad, issue screen: toolbar button with a down arrow (read by VoiceOver) and the J keyboard command; opens the next issue of the list. Title case.",
       "extractionState" : "manual",
@@ -4989,6 +5697,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Next Issue"
+          }
+        }
+      }
+    },
+    "nextIssueWithShortcut" : {
+      "comment" : "Mac, issue view header: tooltip and VoiceOver label of the down-arrow button that opens the issue below this one in the list. (J) is the key that does the same; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next issue (J)"
           }
         }
       }
@@ -5205,6 +5925,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Not Now"
+          }
+        }
+      }
+    },
+    "notOnGitHubYet" : {
+      "comment" : "Mac, issue view header: shown beside the number of an issue that was created in the app but hasn't been sent to GitHub yet (for example while offline).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not on GitHub yet"
           }
         }
       }
@@ -5497,6 +6229,30 @@
         }
       }
     },
+    "notificationCountMenu" : {
+      "comment" : "Mac, Inbox: greyed-out first line of the right-click menu when several notifications are selected; the menu acts on all of them. Example: '3 notifications'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld notification"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld notifications"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "notificationsAreOff" : {
       "comment" : "Settings, Reminders section: shown when the system doesn't allow the app (named 'Issues') to show notifications.",
       "extractionState" : "manual",
@@ -5517,6 +6273,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your notifications load as soon as you're back online."
+          }
+        }
+      }
+    },
+    "notificationsPicked" : {
+      "comment" : "Mac, Inbox: title on the right while several notifications are selected (with ⌘- or Shift-click), above buttons that act on all of them. Example: '3 notifications picked'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld notification picked"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld notifications picked"
+                }
+              }
+            }
           }
         }
       }
@@ -5665,6 +6445,18 @@
         }
       }
     },
+    "openIssueWithShortcut" : {
+      "comment" : "Mac, quick look (Peek) and Inbox: tooltip and VoiceOver label of the button that opens the issue in the full issue view. (↵) is the Return key; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the issue (↵)"
+          }
+        }
+      }
+    },
     "openNotificationSettings" : {
       "comment" : "Settings, Reminders section: button that opens the system's notification settings for the app, when notifications are turned off there.",
       "extractionState" : "manual",
@@ -5685,6 +6477,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open on GitHub"
+          }
+        }
+      }
+    },
+    "openParentIssue" : {
+      "comment" : "Mac, issue view: tooltip of the parent issue's number and title, in the header and in the properties panel; a click opens it. The parent is the issue this sub-issue belongs to (GitHub sub-issues).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the parent issue"
           }
         }
       }
@@ -5773,6 +6577,18 @@
         }
       }
     },
+    "otherNotificationsTooltip" : {
+      "comment" : "Mac, Inbox: tooltip of the '… more on GitHub' row at the end of the list. 'CI runs' are GitHub Actions workflow runs; the second sentence says what a click does.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Releases, CI runs, discussions and alerts aren't shown here. Open GitHub's notifications."
+          }
+        }
+      }
+    },
     "overdueSince" : {
       "comment" : "Tooltip and VoiceOver text of an issue's due date that has passed (cards, rows, issue details). %(date)@ is a long date, e.g. 'Friday, 9 October 2026'.",
       "extractionState" : "manual",
@@ -5845,6 +6661,78 @@
         }
       }
     },
+    "parentIssueNotOnBoard" : {
+      "comment" : "Mac, issue view: tooltip of the parent issue's number and title when it can't be opened because it isn't on this project board. The parent is the issue this sub-issue belongs to (GitHub sub-issues).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The parent issue isn't on this board"
+          }
+        }
+      }
+    },
+    "peek" : {
+      "comment" : "Mac: right-click menu item of an issue that shows it in a quick look panel over the board or list, without leaving it (like Quick Look in the Finder). A verb, short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peek"
+          }
+        }
+      }
+    },
+    "peekHintClose" : {
+      "comment" : "Mac, quick look (Peek): hint at the bottom, after the key cap 'Space': that key closes the quick look. A short verb, lower case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "close"
+          }
+        }
+      }
+    },
+    "peekHintNext" : {
+      "comment" : "Mac, quick look (Peek): hint at the bottom, after the key caps 'J K': these keys move the quick look to the next or previous issue. Short, lower case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "next"
+          }
+        }
+      }
+    },
+    "peekHintOpen" : {
+      "comment" : "Mac, quick look (Peek): hint at the bottom, after the key cap '↵' (Return): that key opens the issue in the full issue view. A short verb, lower case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "open"
+          }
+        }
+      }
+    },
+    "peekUpdated" : {
+      "comment" : "Mac, quick look (Peek): bottom right, when the issue last changed. %(date)@ is a time today such as '14:05', or a date such as 'Oct 3' or 'Oct 2025'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updated %(date)@"
+          }
+        }
+      }
+    },
     "peopleCount" : {
       "comment" : "iPhone and iPad: shown in place of a name when an issue is assigned to several people (2 or more), on chips and in the properties column. Short.",
       "extractionState" : "manual",
@@ -5905,6 +6793,18 @@
         }
       }
     },
+    "pickNotificationHint" : {
+      "comment" : "Mac, Inbox: under 'No notification selected'. J and K are keys; keep them.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick one on the left, or move through them with J and K."
+          }
+        }
+      }
+    },
     "pickNotificationOnLeft" : {
       "comment" : "iPad Inbox: explanation under 'No notification selected'. J and K are keys on the keyboard; keep them.",
       "extractionState" : "manual",
@@ -5929,6 +6829,18 @@
         }
       }
     },
+    "postComment" : {
+      "comment" : "Mac, issue view and Inbox: button (a verb) under the comment box that posts the comment to GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comment"
+          }
+        }
+      }
+    },
     "previousIssue" : {
       "comment" : "iPad, issue screen: toolbar button with an up arrow (read by VoiceOver) and the K keyboard command; opens the previous issue of the list. Title case.",
       "extractionState" : "manual",
@@ -5937,6 +6849,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Previous Issue"
+          }
+        }
+      }
+    },
+    "previousIssueWithShortcut" : {
+      "comment" : "Mac, issue view header: tooltip and VoiceOver label of the up-arrow button that opens the issue above this one in the list. (K) is the key that does the same; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous issue (K)"
           }
         }
       }
@@ -6841,6 +7765,18 @@
         }
       }
     },
+    "reopenSubIssue" : {
+      "comment" : "Mac, issue view, list of sub-issues: VoiceOver label of the status icon of a closed sub-issue; activating it reopens the sub-issue (GitHub term: an issue that belongs to another one).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reopen sub-issue"
+          }
+        }
+      }
+    },
     "repositories" : {
       "comment" : "Heading above the list of GitHub repositories (sidebar section, group of search results).",
       "extractionState" : "manual",
@@ -7189,6 +8125,30 @@
         }
       }
     },
+    "selectedCount" : {
+      "comment" : "Mac: start of the bar that floats at the bottom of the board or list while issues are selected: how many issues, e.g. '3 selected'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld selected"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld selected"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "selectedIssueCount" : {
       "comment" : "Mac, command palette (⌘K): chip at the top, and heading above the commands, when several issues are picked; the commands apply to all of them. %(count)lld is 2 or more.",
       "extractionState" : "manual",
@@ -7425,6 +8385,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Show Changes"
+          }
+        }
+      }
+    },
+    "showComment" : {
+      "comment" : "Mac, Inbox: tooltip of a line in the list of what happened on an issue that is about a comment; a click scrolls down to that comment.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the comment"
           }
         }
       }
@@ -7753,6 +8725,18 @@
         }
       }
     },
+    "snoozeEllipsis" : {
+      "comment" : "Mac, Inbox: button for several selected notifications that opens the snooze menu (hide them until a time picked next, then bring them back). A verb.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snooze…"
+          }
+        }
+      }
+    },
     "snoozeLaterToday" : {
       "comment" : "Inbox (Mac, iPhone, iPad): choice in the Snooze menu that brings the notification back in a few hours. The time is shown beside it. Title case, as in menus.",
       "extractionState" : "manual",
@@ -7837,6 +8821,18 @@
         }
       }
     },
+    "snoozeWithShortcut" : {
+      "comment" : "Mac, Inbox: tooltip and VoiceOver label of the clock button above the issue that opens the snooze menu (hide the notification until a time picked next). (H) is the key; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snooze (H)"
+          }
+        }
+      }
+    },
     "snoozedBackAtTime" : {
       "comment" : "Inbox: message under 'Snoozed …' when the notification comes back later today. %(time)@ is a time of day, e.g. '18:00' or '6:00 PM'.",
       "extractionState" : "manual",
@@ -7905,6 +8901,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Someone"
+          }
+        }
+      }
+    },
+    "spaceKeyCap" : {
+      "comment" : "Mac, quick look (Peek): name of the space bar, shown as a key cap in the hints at the bottom ('Space close'). Use the name your language's keyboard shortcuts give it (as macOS menus show it). Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Space"
           }
         }
       }
@@ -8137,6 +9145,30 @@
         }
       }
     },
+    "subIssueOfNumber" : {
+      "comment" : "Mac, New Issue window: chip showing which issue the new sub-issue will belong to (GitHub sub-issues). %(number)@ is the parent issue's number, such as '#12'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-issue of %(number)@"
+          }
+        }
+      }
+    },
+    "subIssueOpensOnGitHub" : {
+      "comment" : "Mac, issue view, list of sub-issues: tooltip of the small arrow on a sub-issue that isn't on this project board; a click on the row opens it on github.com in the web browser.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not on this board; opens on GitHub"
+          }
+        }
+      }
+    },
     "subIssues" : {
       "comment" : "iPhone and iPad: heading above an issue's list of sub-issues (GitHub sub-issues: issues under this one), and title of the sheet that picks them.",
       "extractionState" : "manual",
@@ -8169,6 +9201,18 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "subIssuesDoneOfTotal" : {
+      "comment" : "Mac, issue view, beside the 'Sub-issues' heading: how many sub-issues are closed out of all of them, e.g. '2 of 5', next to a progress bar. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(done)lld of %(total)lld"
           }
         }
       }
@@ -8413,6 +9457,18 @@
         }
       }
     },
+    "titleWithShortcutKey" : {
+      "comment" : "Mac, selection bar: tooltip of a button that changes a property of every selected issue: its name and the key that does the same. %(title)@ is a name such as 'Status' or 'Labels' (translated separately), %(key)@ a key such as 'S'. Example: 'Status (S)'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(title)@ (%(key)@)"
+          }
+        }
+      }
+    },
     "today" : {
       "comment" : "A day: in due dates, date suggestions and the Inbox's snooze choices.",
       "extractionState" : "manual",
@@ -8605,6 +9661,30 @@
         }
       }
     },
+    "unfoldAllGroups" : {
+      "comment" : "Mac, issue list: right-click menu item on a folded group header that unfolds every group, showing all issues again. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unfold All"
+          }
+        }
+      }
+    },
+    "unfoldGroup" : {
+      "comment" : "Mac, issue list: right-click menu item on a folded group header (a status, such as 'In Progress') that shows its issues again. A verb.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unfold"
+          }
+        }
+      }
+    },
     "unreadCount" : {
       "comment" : "Mac sidebar: VoiceOver value of the Inbox row, read after its name. %(count)lld is the number of unread notifications (1, 2, …).",
       "extractionState" : "manual",
@@ -8701,6 +9781,18 @@
         }
       }
     },
+    "updatedOnDateTooltip" : {
+      "comment" : "Mac, issue list: first line of the tooltip of the date on a row: when the issue last changed. %(date)@ is a date and time such as 'October 3, 2026 at 14:05'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updated %(date)@"
+          }
+        }
+      }
+    },
     "useGitHubCLILogin" : {
       "comment" : "Mac sign-in screen: button that signs in with the login of GitHub's command-line tool 'gh'.",
       "extractionState" : "manual",
@@ -8709,6 +9801,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Use my GitHub CLI login"
+          }
+        }
+      }
+    },
+    "useGitHubVersion" : {
+      "comment" : "Mac, issue view, conflict warning banner: button that drops the user's change and keeps the title or description as it is on GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the GitHub version"
           }
         }
       }

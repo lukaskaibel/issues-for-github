@@ -42,17 +42,19 @@ private struct InboxList: View {
         let entries = model.visibleInbox
         if model.inboxMeta.access == .denied {
             EmptyState(
-                title: "Your token can't read notifications",
-                message: "GitHub doesn't let fine-grained tokens read them. Sign in with GitHub, or use a classic token with the repo scope. Everything else keeps working."
+                title: String(localized: .inboxTokenCantReadTitle),
+                message: String(localized: .inboxTokenCantReadMessage)
             ) {
-                Button("Sign In Again") { model.signOut() }
+                Button(.signInAgain) { model.signOut() }
                     .buttonStyle(SecondaryButtonStyle())
             }
         } else if model.inboxMeta.access == .unknown, model.inboxEntries.isEmpty {
             if model.status.phase == .offline {
-                EmptyState(title: "You're offline", message: "Your notifications load as soon as you're back online.")
+                EmptyState(title: String(localized: .inboxOfflineTitle), message: String(localized: .inboxOfflineMessage))
             } else {
-                EmptyState(title: "Loading your notifications…", message: "Fetching them from GitHub.", showsProgress: true)
+                EmptyState(
+                    title: String(localized: .inboxLoadingTitle), message: String(localized: .inboxLoadingMessage), showsProgress: true
+                )
             }
         } else if entries.isEmpty {
             InboxCaughtUp()
@@ -88,13 +90,13 @@ private struct InboxHeader: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("Inbox").font(.uiSemibold)
+            Text(.inbox).font(.uiSemibold)
             // Watching is offered only while it has something.
             if !model.inbox(.watching).isEmpty {
                 BucketSwitch()
             }
             Spacer()
-            IconButton(systemName: "ellipsis", label: "Inbox actions") { menuOpen = true }
+            IconButton(systemName: "ellipsis", label: String(localized: .inboxActionsMac)) { menuOpen = true }
                 .dropdown(isPresented: $menuOpen) { close in
                     InboxActionsMenu(close: close)
                 }
@@ -160,11 +162,11 @@ private struct InboxActionsMenu: View {
     var close: () -> Void
     @State private var active: Int?
 
-    private var rows: [(title: String, image: String, shortcut: String?, action: () -> Void)] {
+    private var rows: [(title: LocalizedStringResource, image: String, shortcut: String?, action: () -> Void)] {
         [
-            ("Mark All as Read", "circle", "⌥U", { model.markAllRead() }),
-            ("Archive All Read", "archivebox", "⇧⌫", { model.archiveAllRead() }),
-            ("Open GitHub Notifications", "arrow.up.right.square", nil, {
+            (.markAllAsRead, "circle", "⌥U", { model.markAllRead() }),
+            (.archiveAllRead, "archivebox", "⇧⌫", { model.archiveAllRead() }),
+            (.openGitHubNotifications, "arrow.up.right.square", nil, {
                 if let url = URL(string: "https://github.com/notifications") { NSWorkspace.shared.open(url) }
             }),
         ]
@@ -176,7 +178,7 @@ private struct InboxActionsMenu: View {
             ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                 if index == 2 { MenuDivider() }
                 MenuRow(
-                    title: row.title, systemImage: row.image, shortcut: row.shortcut, active: active == index,
+                    title: String(localized: row.title), systemImage: row.image, shortcut: row.shortcut, active: active == index,
                     action: { pick(row.action) },
                     onHover: { inside in if inside { active = index } else if active == index { active = nil } }
                 )
@@ -243,10 +245,10 @@ private struct InboxRow: View {
             Spacer(minLength: 4)
             if hovering {
                 HStack(spacing: 2) {
-                    IconButton(systemName: unread ? "circle.inset.filled" : "circle", label: unread ? "Mark as read (U)" : "Mark as unread (U)", size: 24) {
+                    IconButton(systemName: unread ? "circle.inset.filled" : "circle", label: String(localized: unread ? .markAsReadWithShortcut : .markAsUnreadWithShortcut), size: 24) {
                         model.toggleRead(model.inboxTargets(for: entry))
                     }
-                    IconButton(systemName: "archivebox", label: "Archive (E)", size: 24) {
+                    IconButton(systemName: "archivebox", label: String(localized: .archiveWithShortcut), size: 24) {
                         model.archive(model.inboxTargets(for: entry))
                     }
                 }
@@ -286,8 +288,8 @@ private struct InboxRow: View {
         .accessibilityLabel(entry.spoken(summary, unread: unread))
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
         .accessibilityAction { model.selectInboxEntry(entry) }
-        .accessibilityAction(named: unread ? "Mark as Read" : "Mark as Unread") { model.toggleRead([entry]) }
-        .accessibilityAction(named: "Archive") { model.archive([entry]) }
+        .accessibilityAction(named: unread ? Text(.markAsRead) : Text(.markAsUnread)) { model.toggleRead([entry]) }
+        .accessibilityAction(named: Text(.archive)) { model.archive([entry]) }
     }
 
     /// "Mira Patel: The settle feels good now…", the lead set apart from the comment.
@@ -320,7 +322,7 @@ private struct OtherNotifications: View {
             if let url = URL(string: "https://github.com/notifications") { NSWorkspace.shared.open(url) }
         } label: {
             HStack(spacing: 5) {
-                Text("\(count) more on GitHub")
+                Text(.moreNotificationsOnGitHub(count: count))
                 Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .semibold))
             }
             .font(.small)
@@ -330,7 +332,7 @@ private struct OtherNotifications: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainPressStyle())
-        .help("Releases, CI runs, discussions and alerts aren't shown here. Open GitHub's notifications.")
+        .help(Text(.otherNotificationsTooltip))
     }
 }
 
@@ -341,8 +343,8 @@ private struct InboxCaughtUp: View {
                 .font(.system(size: 28, weight: .light))
                 .foregroundStyle(Theme.textTertiary)
                 .padding(.bottom, 6)
-            Text("You're all caught up").font(.uiSemibold)
-            Text("When someone assigns you, mentions you or comments on an issue you follow, it shows up here.")
+            Text(.inboxCaughtUpTitle).font(.uiSemibold)
+            Text(.inboxCaughtUpMessage)
                 .font(.small)
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
@@ -366,7 +368,7 @@ private struct InboxUndoToast: View {
                 model.undoInbox()
             } label: {
                 HStack(spacing: 6) {
-                    Text("Undo")
+                    Text(.undo)
                     Text("⌘Z").foregroundStyle(Theme.textTertiary)
                 }
             }
@@ -399,8 +401,8 @@ private struct InboxPane: View {
                 Color.clear.frame(height: Theme.headerHeight)
                     .overlay(alignment: .bottom) { Rectangle().fill(Theme.panelBorder).frame(height: 1) }
                 EmptyState(
-                    title: model.visibleInbox.isEmpty ? "" : "No notification selected",
-                    message: model.visibleInbox.isEmpty ? "" : "Pick one on the left, or move through them with J and K."
+                    title: model.visibleInbox.isEmpty ? "" : String(localized: .noNotificationSelected),
+                    message: model.visibleInbox.isEmpty ? "" : String(localized: .pickNotificationHint)
                 )
             }
         }
@@ -417,13 +419,13 @@ private struct InboxEntryPane: View {
             header(item)
             if entry.missing {
                 EmptyState(
-                    title: "This issue isn't available any more",
-                    message: "It was deleted or moved, or you no longer have access. GitHub's notification is still here."
+                    title: String(localized: .inboxIssueUnavailableTitle),
+                    message: String(localized: .inboxIssueUnavailableMessage)
                 ) {
                     HStack(spacing: 8) {
-                        Button("Open on GitHub") { openOnGitHub() }
+                        Button(.openOnGitHub) { openOnGitHub() }
                             .buttonStyle(SecondaryButtonStyle())
-                        Button("Archive") { model.archive([entry]) }
+                        Button(.archive) { model.archive([entry]) }
                             .buttonStyle(SecondaryButtonStyle())
                     }
                 }
@@ -431,7 +433,10 @@ private struct InboxEntryPane: View {
                 InboxIssue(item: item, entry: entry)
                     .id(item.id)
             } else {
-                EmptyState(title: "Loading the issue…", message: "Reading it from GitHub.", showsProgress: true)
+                EmptyState(
+                    title: String(localized: .inboxIssueLoadingTitle), message: String(localized: .inboxIssueLoadingMessage),
+                    showsProgress: true
+                )
             }
         }
     }
@@ -448,16 +453,16 @@ private struct InboxEntryPane: View {
             Text(entry.displayNumber(withRepo: false)).font(.uiSemibold).monospacedDigit()
             Spacer(minLength: 8)
             SnoozeButton(entries: [entry])
-            IconButton(systemName: "archivebox", label: "Archive (E)") { model.archive([entry]) }
-            IconButton(systemName: "link", label: "Copy link (⌘⇧C)") {
+            IconButton(systemName: "archivebox", label: String(localized: .archiveWithShortcut)) { model.archive([entry]) }
+            IconButton(systemName: "link", label: String(localized: .copyLinkWithShortcut)) {
                 if let url = entry.webURL { model.copyLink(url.absoluteString, for: entry.label) }
             }
             if let item, !item.isDetached {
-                IconButton(systemName: "arrow.up.left.and.arrow.down.right", label: "Open the issue (↵)") { model.open(item) }
+                IconButton(systemName: "arrow.up.left.and.arrow.down.right", label: String(localized: .openIssueWithShortcut)) { model.open(item) }
             }
             Button(action: openOnGitHub) {
                 HStack(spacing: 6) {
-                    Text("Open on GitHub")
+                    Text(.openOnGitHub)
                     Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .medium))
                 }
             }
@@ -532,11 +537,12 @@ private struct InboxNews: View {
                 .font(.tinySemibold)
                 .foregroundStyle(entry.activityIsNew ? Theme.accent : Theme.textSecondary)
             ForEach(Array(events.enumerated()), id: \.offset) { _, event in
+                let name = event.actor.map { Text(InboxEntry.name($0)) } ?? Text(.inboxSomeone)
                 let row = HStack(spacing: 8) {
                     if let actor = event.actor {
                         Avatar(login: actor.login, url: actor.avatarUrl, size: 16)
                     }
-                    Text("\(Text(event.actor.map(InboxEntry.name) ?? "Someone").fontWeight(.semibold).foregroundStyle(Theme.text)) \(model.inboxEventLine(event, entry: entry))")
+                    Text("\(name.fontWeight(.semibold).foregroundStyle(Theme.text)) \(model.inboxEventLine(event, entry: entry))")
                         .foregroundStyle(Theme.textBody)
                         .lineLimit(1)
                     Spacer(minLength: 8)
@@ -549,13 +555,13 @@ private struct InboxNews: View {
                 if let commentId = event.commentId {
                     Button { showComment(commentId) } label: { row.contentShape(Rectangle()) }
                         .buttonStyle(PlainPressStyle())
-                        .help("Show the comment")
+                        .help(Text(.showComment))
                 } else {
                     row
                 }
             }
             if entry.activity.count > events.count {
-                Text("and \(entry.activity.count - events.count) more below")
+                Text(.moreEventsBelow(count: entry.activity.count - events.count))
                     .font(.small)
                     .foregroundStyle(Theme.textTertiary)
             }
@@ -577,15 +583,15 @@ private struct InboxPickedSummary: View {
             Color.clear.frame(height: Theme.headerHeight)
                 .overlay(alignment: .bottom) { Rectangle().fill(Theme.panelBorder).frame(height: 1) }
             VStack(spacing: 12) {
-                Text("\(entries.count) notifications picked").font(.uiSemibold)
+                Text(.notificationsPicked(count: entries.count)).font(.uiSemibold)
                 HStack(spacing: 8) {
-                    Button(entries.contains(where: model.isUnread) ? "Mark as Read" : "Mark as Unread") { model.toggleRead(entries) }
+                    Button(entries.contains(where: model.isUnread) ? .markAsRead : .markAsUnread) { model.toggleRead(entries) }
                         .buttonStyle(SecondaryButtonStyle())
                     SnoozeButton(entries: entries, titled: true)
-                    Button("Archive") { model.archive(entries) }
+                    Button(.archive) { model.archive(entries) }
                         .buttonStyle(SecondaryButtonStyle())
                 }
-                Text("Esc clears the pick").font(.small).foregroundStyle(Theme.textTertiary)
+                Text(.escClearsPick).font(.small).foregroundStyle(Theme.textTertiary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -605,10 +611,10 @@ private struct SnoozeButton: View {
     var body: some View {
         Group {
             if titled {
-                Button("Snooze…") { show(pickDate: false) }
+                Button(.snoozeEllipsis) { show(pickDate: false) }
                     .buttonStyle(SecondaryButtonStyle())
             } else {
-                IconButton(systemName: "clock", label: "Snooze (H)") { show(pickDate: false) }
+                IconButton(systemName: "clock", label: String(localized: .snoozeWithShortcut)) { show(pickDate: false) }
             }
         }
         .dropdown(isPresented: $open) { close in
@@ -639,16 +645,16 @@ private struct SnoozeMenu: View {
         Group {
             if picking {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Snooze until").font(.tinySemibold).foregroundStyle(Theme.textSecondary)
-                    DatePicker("Snooze until", selection: $date, in: Date()..., displayedComponents: [.date, .hourAndMinute])
+                    Text(.snoozeUntil).font(.tinySemibold).foregroundStyle(Theme.textSecondary)
+                    DatePicker(.snoozeUntil, selection: $date, in: Date()..., displayedComponents: [.date, .hourAndMinute])
                         .datePickerStyle(.graphical)
                         .labelsHidden()
                     HStack {
                         Spacer()
-                        Button("Cancel", action: close)
+                        Button(.cancel, action: close)
                             .buttonStyle(SecondaryButtonStyle())
                             .keyboardShortcut(.cancelAction)
-                        Button("Snooze") { snooze(until: date) }
+                        Button(.snooze) { snooze(until: date) }
                             .buttonStyle(PrimaryButtonStyle())
                             .keyboardShortcut(.defaultAction)
                     }
@@ -665,7 +671,7 @@ private struct SnoozeMenu: View {
                     }
                     MenuDivider()
                     MenuRow(
-                        title: "Pick a Date…", systemImage: nil, active: active == SnoozeChoice.allCases.count,
+                        title: String(localized: .pickADate), systemImage: nil, active: active == SnoozeChoice.allCases.count,
                         action: { picking = true },
                         onHover: { inside in hover(SnoozeChoice.allCases.count, inside) }
                     )
@@ -714,12 +720,12 @@ struct InboxMenuBuilder {
         menu.autoenablesItems = false
         let targets = model.inboxTargets(for: entry)
         if targets.count > 1 {
-            let title = NSMenuItem(title: "\(targets.count) notifications", action: nil, keyEquivalent: "")
+            let title = NSMenuItem(title: String(localized: .notificationCountMenu(count: targets.count)), action: nil, keyEquivalent: "")
             title.isEnabled = false
             menu.addItem(title)
         }
         let unread = model.isUnread(targets[0])
-        let read = ClosureMenuItem(unread ? "Mark as Read" : "Mark as Unread") { [model] in model.toggleRead(targets) }
+        let read = ClosureMenuItem(String(localized: unread ? .markAsRead : .markAsUnread)) { [model] in model.toggleRead(targets) }
         read.image = MenuIcons.symbol(unread ? "circle" : "circle.inset.filled")
         hint(read, "u")
         menu.addItem(read)
@@ -730,20 +736,20 @@ struct InboxMenuBuilder {
             snooze.addItem(entry)
         }
         snooze.addItem(.separator())
-        snooze.addItem(ClosureMenuItem("Pick a Date…") { [model, entry] in
+        snooze.addItem(ClosureMenuItem(String(localized: .pickADate)) { [model, entry] in
             if targets.count == 1 { model.selectInboxEntry(entry) }
             model.inboxSnoozeRequest = InboxSnoozeRequest(token: model.inboxSnoozeRequest.token + 1, pickDate: true)
         })
-        let snoozeItem = NSMenuItem(title: "Snooze", action: nil, keyEquivalent: "")
+        let snoozeItem = NSMenuItem(title: String(localized: .snooze), action: nil, keyEquivalent: "")
         snoozeItem.image = MenuIcons.symbol("clock")
         snoozeItem.submenu = snooze
         menu.addItem(snoozeItem)
 
-        let archive = ClosureMenuItem("Archive") { [model] in model.archive(targets) }
+        let archive = ClosureMenuItem(String(localized: .archive)) { [model] in model.archive(targets) }
         archive.image = MenuIcons.symbol("archivebox")
         hint(archive, "e")
         menu.addItem(archive)
-        let unsubscribe = ClosureMenuItem("Unsubscribe") { [model] in model.unsubscribe(targets) }
+        let unsubscribe = ClosureMenuItem(String(localized: .unsubscribe)) { [model] in model.unsubscribe(targets) }
         unsubscribe.image = MenuIcons.symbol("bell.slash")
         unsubscribe.keyEquivalent = "S"
         unsubscribe.keyEquivalentModifierMask = [.shift]
@@ -760,10 +766,10 @@ struct InboxMenuBuilder {
 
         if targets.count == 1, let url = entry.webURL {
             menu.addItem(.separator())
-            let copy = ClosureMenuItem("Copy Link") { [model, entry] in model.copyLink(url.absoluteString, for: entry.label) }
+            let copy = ClosureMenuItem(String(localized: .copyLink)) { [model, entry] in model.copyLink(url.absoluteString, for: entry.label) }
             copy.image = MenuIcons.symbol("link")
             menu.addItem(copy)
-            let github = ClosureMenuItem("Open on GitHub") { NSWorkspace.shared.open(url) }
+            let github = ClosureMenuItem(String(localized: .openOnGitHub)) { NSWorkspace.shared.open(url) }
             github.image = MenuIcons.symbol("arrow.up.right.square")
             menu.addItem(github)
         }

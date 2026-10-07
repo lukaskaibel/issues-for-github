@@ -11,7 +11,7 @@ struct SelectionBar: View {
         if let first = items.first {
             HStack(spacing: 4) {
                 HStack(spacing: 6) {
-                    Text("\(items.count) selected").font(.uiMedium).monospacedDigit()
+                    Text(.selectedCount(count: items.count)).font(.uiMedium).monospacedDigit()
                     Button {
                         model.clearSelection()
                     } label: {
@@ -22,7 +22,7 @@ struct SelectionBar: View {
                             .hoverFill(radius: 9)
                     }
                     .buttonStyle(PlainPressStyle())
-                    .help("Clear selection (Esc)")
+                    .help(Text(.clearSelectionWithEscShortcut))
                 }
                 .padding(.leading, 12)
                 .padding(.trailing, 6)
@@ -32,24 +32,24 @@ struct SelectionBar: View {
                 // The icons show the picked issues' value when they share one.
                 let sameStatus = Set(items.map { model.statusOption(of: $0)?.name ?? "" }).count == 1
                 let samePriority = Set(items.map { model.priorityLevel(of: $0) }).count == 1
-                BarAction(kind: .status, item: first, title: "Status", key: "S") {
+                BarAction(kind: .status, item: first, title: .status, key: "S") {
                     StatusIcon(glyph: sameStatus ? model.glyph(of: first) : .none, size: 13)
                 }
                 if model.project(of: first)?.priorityFieldId != nil {
-                    BarAction(kind: .priority, item: first, title: "Priority", key: "P") {
+                    BarAction(kind: .priority, item: first, title: .priority, key: "P") {
                         PriorityIcon(level: samePriority ? model.priorityLevel(of: first) : .none)
                     }
                 }
                 if items.contains(where: { $0.kind != .draft }) {
-                    BarAction(kind: .assignees, item: first, title: "Assignee", key: "A") {
+                    BarAction(kind: .assignees, item: first, title: .assignee, key: "A") {
                         Image(systemName: "person.crop.circle").font(.system(size: 13))
                     }
-                    BarAction(kind: .labels, item: first, title: "Labels", key: "L") {
+                    BarAction(kind: .labels, item: first, title: .labels, key: "L") {
                         Image(systemName: "tag").font(.system(size: 12))
                     }
                 }
                 if items.contains(where: model.canHaveDueDate) {
-                    BarAction(kind: .dueDate, item: first, title: "Due date", key: "D") {
+                    BarAction(kind: .dueDate, item: first, title: .dueDate, key: "D") {
                         Image(systemName: "calendar").font(.system(size: 12))
                     }
                 }
@@ -62,7 +62,7 @@ struct SelectionBar: View {
                         .hoverFill(radius: 7)
                 }
                 .buttonStyle(PlainPressStyle())
-                .help("Copy links (⌘⇧C)")
+                .help(Text(.copyLinksWithShortcut))
                 .padding(.trailing, 4)
             }
             .foregroundStyle(Theme.textBody)
@@ -79,7 +79,7 @@ struct SelectionBar: View {
 private struct BarAction<Icon: View>: View {
     var kind: PickerKind
     var item: Item
-    var title: String
+    var title: LocalizedStringResource
     var key: String
     @ViewBuilder var icon: Icon
 
@@ -99,7 +99,7 @@ private struct BarAction<Icon: View>: View {
             .hoverFill(active: open, radius: 7)
         }
         .buttonStyle(PlainPressStyle())
-        .help("\(title) (\(key))")
+        .help(Text(.titleWithShortcutKey(title: String(localized: title), key: key)))
         .dropdown(isPresented: $open) { close in
             ItemPicker(kind: kind, itemId: item.id, close: close)
         }
@@ -125,10 +125,10 @@ struct PeekPanel: View {
                     Text(repo).font(.small).foregroundStyle(Theme.textTertiary).lineLimit(1)
                 }
                 Spacer(minLength: 8)
-                Button("Open") { model.open(item) }
+                Button(.openIssue) { model.open(item) }
                     .buttonStyle(SecondaryButtonStyle())
-                    .help("Open the issue (↵)")
-                IconButton(systemName: "xmark", label: "Close (Space)") { model.togglePeek() }
+                    .help(Text(.openIssueWithShortcut))
+                IconButton(systemName: "xmark", label: String(localized: .closeWithSpaceShortcut)) { model.togglePeek() }
             }
             .padding(.leading, 16)
             .padding(.trailing, 10)
@@ -146,7 +146,7 @@ struct PeekPanel: View {
                     PropertyChipRow(item: item)
 
                     if item.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        Text("No description").foregroundStyle(Theme.textTertiary)
+                        Text(.noDescription).foregroundStyle(Theme.textTertiary)
                     } else {
                         MarkdownText(text: Diff3.normalize(item.body), onChange: item.isEditableContent ? setBody : nil)
                     }
@@ -157,12 +157,12 @@ struct PeekPanel: View {
             .scrollIndicators(.never)
 
             HStack(spacing: 14) {
-                hint("Space", "close")
-                hint("J K", "next")
-                hint("↵", "open")
+                hint(String(localized: .spaceKeyCap), .peekHintClose)
+                hint("J K", .peekHintNext)
+                hint("↵", .peekHintOpen)
                 Spacer()
                 if let updated = item.updatedAt {
-                    Text("Updated \(relativeDate(updated))").font(.tiny).foregroundStyle(Theme.textTertiary)
+                    Text(.peekUpdated(date: relativeDate(updated))).font(.tiny).foregroundStyle(Theme.textTertiary)
                 }
             }
             .padding(.horizontal, 16)
@@ -183,7 +183,7 @@ struct PeekPanel: View {
         model.setBody(current, to: text)
     }
 
-    private func hint(_ keys: String, _ action: String) -> some View {
+    private func hint(_ keys: String, _ action: LocalizedStringResource) -> some View {
         HStack(spacing: 5) {
             Keycap(keys)
             Text(action).font(.tiny).foregroundStyle(Theme.textTertiary)
@@ -212,7 +212,7 @@ struct PropertyChipRow: View {
                     PropertyButton(kind: .priority, item: item) {
                         HStack(spacing: 6) {
                             PriorityIcon(level: model.priorityLevel(of: item))
-                            Text(model.priorityOption(of: item)?.name ?? "No priority")
+                            (model.priorityOption(of: item).map { Text($0.name) } ?? Text(.noPriority))
                         }
                         .font(.small)
                     }
@@ -222,10 +222,10 @@ struct PropertyChipRow: View {
                         HStack(spacing: 6) {
                             if item.assignees.isEmpty {
                                 Image(systemName: "person.crop.circle.dashed").foregroundStyle(Theme.textTertiary)
-                                Text("Unassigned").foregroundStyle(Theme.textTertiary)
+                                Text(.unassigned).foregroundStyle(Theme.textTertiary)
                             } else {
                                 AvatarStack(people: item.assignees, size: 16)
-                                Text(item.assignees.count == 1 ? item.assignees[0].login : "\(item.assignees.count) people")
+                                item.assignees.count == 1 ? Text(item.assignees[0].login) : Text(.peopleCount(count: item.assignees.count))
                             }
                         }
                         .font(.small)
@@ -234,7 +234,7 @@ struct PropertyChipRow: View {
                         PropertyButton(kind: .labels, item: item) {
                             HStack(spacing: 6) {
                                 Image(systemName: "tag").foregroundStyle(Theme.textTertiary)
-                                Text("Labels").foregroundStyle(Theme.textTertiary)
+                                Text(.labels).foregroundStyle(Theme.textTertiary)
                             }
                             .font(.small)
                         }
