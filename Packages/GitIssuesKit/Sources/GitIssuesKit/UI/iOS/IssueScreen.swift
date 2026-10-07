@@ -648,7 +648,13 @@ private struct PropertiesColumn: View {
         let links = model.links(of: item, relation)
         let count = relation == .blockedBy ? item.blockedByCount : item.blockingCount
         let title = relation == .blockedBy ? "Blocked by" : "Blocking"
-        let numbers = links.isEmpty ? "\(count) issue\(count == 1 ? "" : "s")" : links.map(\.displayNumber).joined(separator: ", ")
+        let numbers = links.isEmpty ? "\(count) issue\(count == 1 ? "" : "s")" : links.map(\.displayNumber).formatted(.list(type: .and))
+        let label = switch (relation, links.isEmpty && count == 0) {
+        case (.blockedBy, true): "Blocked by: none"
+        case (.blockedBy, false): "Blocked by: \(numbers)"
+        case (.blocking, true): "Blocking: none"
+        case (.blocking, false): "Blocking: \(numbers)"
+        }
         return row(title) {
             Button { picker = relation == .blockedBy ? .blockedBy : .blocking } label: {
                 value {
@@ -661,7 +667,7 @@ private struct PropertiesColumn: View {
                 }
             }
             .buttonStyle(PlainPressStyle())
-            .accessibilityLabel(links.isEmpty && count == 0 ? "\(title): none" : "\(title): \(numbers)")
+            .accessibilityLabel(label)
             .accessibilityIdentifier(relation == .blockedBy ? "property-blocked-by" : "property-blocking")
         }
     }

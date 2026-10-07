@@ -834,7 +834,7 @@ private struct PropertiesPanel: View {
                 } else {
                     HStack(spacing: 6) {
                         if relation == .blockedBy { BlockedIcon() } else { BlockingIcon() }
-                        Text(links.isEmpty ? "\(count) issue\(count == 1 ? "" : "s")" : links.map(\.displayNumber).joined(separator: ", "))
+                        Text(links.isEmpty ? "\(count) issue\(count == 1 ? "" : "s")" : links.map(\.displayNumber).formatted(.list(type: .and)))
                             .monospacedDigit()
                             .lineLimit(1)
                     }

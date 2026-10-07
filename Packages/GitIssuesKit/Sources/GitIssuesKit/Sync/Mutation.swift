@@ -548,11 +548,22 @@ extension Mutation {
             let project = try String.fetchOne(db, sql: "SELECT title FROM project WHERE id = ?", arguments: [m.projectId])
             return (try number(contentId: m.contentId), "Added to \(project ?? "a project")")
         case .setParent(let m):
-            let text = m.parentId == nil ? "Removed from its parent" : "Made a sub-issue of \(m.parentNumber.map { "#\($0)" } ?? "a new issue")"
+            let text = if m.parentId == nil {
+                "Removed from its parent"
+            } else if let parent = m.parentNumber {
+                "Made a sub-issue of #\(parent)"
+            } else {
+                "Made a sub-issue of a new issue"
+            }
             return (try number(contentId: m.child.contentId), text)
         case .setBlocking(let m):
-            let blocker = m.blocker.number.map { "#\($0)" } ?? "a new issue"
-            return (try number(contentId: m.blocked.contentId), m.isBlocked ? "Marked as blocked by \(blocker)" : "No longer blocked by \(blocker)")
+            let text = switch (m.isBlocked, m.blocker.number) {
+            case (true, let blocker?): "Marked as blocked by #\(blocker)"
+            case (true, nil): "Marked as blocked by a new issue"
+            case (false, let blocker?): "No longer blocked by #\(blocker)"
+            case (false, nil): "No longer blocked by a new issue"
+            }
+            return (try number(contentId: m.blocked.contentId), text)
         case .markThreadRead(let m): return (m.label.components(separatedBy: " ").first ?? "", "Marked as read")
         case .archiveThread(let m): return (m.label.components(separatedBy: " ").first ?? "", "Archived in the Inbox")
         case .unsubscribeThread(let m): return (m.label.components(separatedBy: " ").first ?? "", "Unsubscribed")

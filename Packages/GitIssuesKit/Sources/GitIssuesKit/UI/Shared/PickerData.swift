@@ -362,11 +362,11 @@ extension AppModel {
             let relation: LinkedIssue.Relation = kind == .blockedBy ? .blockedBy : .blocking
             let open = links(of: item, relation).filter { !$0.isClosed }
             let count = kind == .blockedBy ? item.blockedByCount : item.blockingCount
-            let what = kind == .blockedBy ? "Blocked by" : "Blocking"
             if !open.isEmpty, open.count == count {
-                return "\(what) " + open.map(\.displayNumber).formatted(.list(type: .and))
+                let numbers = open.map(\.displayNumber).formatted(.list(type: .and))
+                return kind == .blockedBy ? "Blocked by \(numbers)" : "Blocking \(numbers)"
             }
-            return "\(what) \(count) issue\(count == 1 ? "" : "s")"
+            return kind == .blockedBy ? "Blocked by \(count) issue\(count == 1 ? "" : "s")" : "Blocking \(count) issue\(count == 1 ? "" : "s")"
         }
     }
 
