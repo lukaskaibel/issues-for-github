@@ -219,7 +219,7 @@ struct MainTabs: View {
             navigation.tab = .myIssues
             navigation.myIssuesPath = [.issue(item.id)]
         } else {
-            navigation.showProject(item.projectId, regular: wide)
+            if let projectId = item.projectId { navigation.showProject(projectId, regular: wide) }
             navigation.push(.issue(item.id), on: navigation.tab)
         }
     }
