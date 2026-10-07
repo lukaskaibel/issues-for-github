@@ -42,7 +42,7 @@ struct IssueDetailView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            IconButton(systemName: "chevron.left", label: "Back (Esc)") { model.leaveIssue() }
+            IconButton(systemName: "chevron.left", label: String(localized: .backWithEscShortcut)) { model.leaveIssue() }
             if let project = model.project(of: item) {
                 Button {
                     model.closeDetail()
@@ -83,12 +83,12 @@ struct IssueDetailView: View {
                 }
                 .buttonStyle(PlainPressStyle())
                 .disabled(parent == nil)
-                .help(parent == nil ? "The parent issue isn't on this board" : "Open the parent issue")
+                .help(parent == nil ? Text(.parentIssueNotOnBoard) : Text(.openParentIssue))
                 Text("›").foregroundStyle(Theme.textTertiary)
             }
             Text(item.displayNumber).font(.uiSemibold).monospacedDigit()
             if item.isLocalOnly {
-                Text("Not on GitHub yet")
+                Text(.notOnGitHubYet)
                     .font(.small)
                     .foregroundStyle(Theme.textTertiary)
             }
@@ -98,21 +98,21 @@ struct IssueDetailView: View {
                     .font(.small)
                     .monospacedDigit()
                     .foregroundStyle(Theme.textTertiary)
-                IconButton(systemName: "chevron.up", label: "Previous issue (K)") { model.step(-1) }
-                IconButton(systemName: "chevron.down", label: "Next issue (J)") { model.step(1) }
+                IconButton(systemName: "chevron.up", label: String(localized: .previousIssueWithShortcut)) { model.step(-1) }
+                IconButton(systemName: "chevron.down", label: String(localized: .nextIssueWithShortcut)) { model.step(1) }
             }
             if item.url != nil {
                 // As in Linear's issue header: the link and the branch name, a click away.
-                IconButton(systemName: "link", label: "Copy link (⌘⇧C)") { model.copyLink(item) }
+                IconButton(systemName: "link", label: String(localized: .copyLinkWithShortcut)) { model.copyLink(item) }
                     .padding(.leading, 6)
                 if item.number != nil {
-                    IconButton(systemName: "arrow.triangle.branch", label: "Copy branch name (⌘⇧.)") { model.copyBranchName(item) }
+                    IconButton(systemName: "arrow.triangle.branch", label: String(localized: .copyBranchNameWithShortcut)) { model.copyBranchName(item) }
                 }
                 Button {
                     model.openOnGitHub(item)
                 } label: {
                     HStack(spacing: 6) {
-                        Text("Open on GitHub")
+                        Text(.openOnGitHub)
                         Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .medium))
                     }
                 }
@@ -151,7 +151,7 @@ struct TitleField: View {
     }
 
     private var field: some View {
-        TextField("Issue title", text: $title, axis: .vertical)
+        TextField(.issueTitlePlaceholder, text: $title, axis: .vertical)
             .textFieldStyle(.plain)
             .font(.system(size: 22, weight: .semibold))
             .focused($focused)
@@ -191,7 +191,7 @@ struct DescriptionView: View {
         DescriptionBody(text: item.body, isEditable: item.isEditableContent, onSave: save, editing: $editing) { takesFocus in
             MarkdownEditor(
                 text: item.body,
-                placeholder: item.isEditableContent ? "Add a description…" : "No description",
+                placeholder: item.isEditableContent ? .addDescriptionPlaceholder : .noDescription,
                 isEditable: item.isEditableContent,
                 onSave: save,
                 editing: $editing,
@@ -216,11 +216,11 @@ struct ConflictBanner: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("The \(what) was also edited on GitHub. Nothing has been overwritten: your version is shown below and has not been sent.")
+            Text(message)
                 .fixedSize(horizontal: false, vertical: true)
             if let theirs {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("On GitHub").font(.tinySemibold).foregroundStyle(Theme.warning)
+                    Text(.conflictGitHubVersion).font(.tinySemibold).foregroundStyle(Theme.warning)
                     Text(theirs)
                         .font(.small)
                         .foregroundStyle(Theme.textBody)
@@ -232,9 +232,9 @@ struct ConflictBanner: View {
                 .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.warning.opacity(0.08)))
             }
             HStack(spacing: 8) {
-                Button("Keep mine") { model.resolveConflict(entry, keepMine: true) }
+                Button(.keepMine) { model.resolveConflict(entry, keepMine: true) }
                     .buttonStyle(PrimaryButtonStyle())
-                Button("Use the GitHub version") { model.resolveConflict(entry, keepMine: false) }
+                Button(.useGitHubVersion) { model.resolveConflict(entry, keepMine: false) }
                     .buttonStyle(SecondaryButtonStyle())
             }
         }
@@ -244,9 +244,9 @@ struct ConflictBanner: View {
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.warning.opacity(0.45), lineWidth: 1))
     }
 
-    private var what: String {
-        if case .setTitle = entry.mutation { return "title" }
-        return "description"
+    private var message: LocalizedStringResource {
+        if case .setTitle = entry.mutation { return .conflictTitleEditedOnGitHub }
+        return .conflictDescriptionEditedOnGitHub
     }
 
     private var theirs: String? {
@@ -268,10 +268,10 @@ struct SubIssuesSection: View {
         let showsPriority = model.project(of: item)?.priorityFieldId != nil
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 10) {
-                Text("Sub-issues").font(.uiSemibold)
+                Text(.subIssues).font(.uiSemibold)
                 if !subs.isEmpty {
                     let done = subs.filter(\.isClosed).count
-                    Text("\(done) of \(subs.count)")
+                    Text(.subIssuesDoneOfTotal(done: done, total: subs.count))
                         .font(.small)
                         .foregroundStyle(Theme.textTertiary)
                         .monospacedDigit()
@@ -280,7 +280,7 @@ struct SubIssuesSection: View {
                         .frame(width: 64)
                 }
                 Spacer()
-                IconButton(systemName: "plus", label: "Add sub-issue", size: 22) {
+                IconButton(systemName: "plus", label: String(localized: .addSubIssue), size: 22) {
                     model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
                 }
             }
@@ -327,7 +327,7 @@ private struct SubIssueRow: View {
                 }
                 .frame(width: 14, height: 12)
             }
-            Text(sub.number > 0 ? "#\(sub.number)" : "New")
+            (sub.number > 0 ? Text("#\(sub.number)") : Text(.newIssueNotOnGitHubYet))
                 .font(.small)
                 .monospacedDigit()
                 .foregroundStyle(Theme.textTertiary)
@@ -345,8 +345,8 @@ private struct SubIssueRow: View {
                     StatusIcon(glyph: glyph(boardItem))
                 }
                 .buttonStyle(PlainPressStyle())
-                .help(sub.isClosed ? "Reopen" : "Mark as done")
-                .accessibilityLabel(sub.isClosed ? "Reopen sub-issue" : "Mark sub-issue as done")
+                .help(sub.isClosed ? Text(.reopen) : Text(.markAsDoneTooltip))
+                .accessibilityLabel(sub.isClosed ? Text(.reopenSubIssue) : Text(.markSubIssueAsDone))
             }
 
             Text(sub.title)
@@ -357,7 +357,7 @@ private struct SubIssueRow: View {
                 Image(systemName: "arrow.up.right")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Theme.textTertiary)
-                    .help("Not on this board; opens on GitHub")
+                    .help(Text(.subIssueOpensOnGitHub))
             }
             if let boardItem {
                 PartButton(kind: .assignees, itemId: boardItem.id) {
@@ -399,13 +399,13 @@ private struct SubIssueRow: View {
         .onDisappear { ContextMenus.shared.remove(menuRegion) }
         .contextMenu {
             if boardItem == nil {
-                Button(sub.isClosed ? "Reopen" : "Mark as Done") {
+                Button(sub.isClosed ? .reopen : .markAsDone) {
                     withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
                 }
                 if let url = sub.url {
                     Divider()
-                    Button("Copy Link") { model.copyLink(url, for: "#\(sub.number) \(sub.title)") }
-                    Button("Open on GitHub") {
+                    Button(.copyLink) { model.copyLink(url, for: "#\(sub.number) \(sub.title)") }
+                    Button(.openOnGitHub) {
                         if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
                     }
                 }
@@ -436,7 +436,7 @@ struct ActivitySection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Activity").font(.uiSemibold)
+            Text(.activity).font(.uiSemibold)
 
             ForEach(comments) { comment in
                 let new = highlighted.contains(comment.id)
@@ -444,12 +444,12 @@ struct ActivitySection: View {
                     HStack(spacing: 8) {
                         Avatar(login: comment.authorLogin ?? "ghost", url: comment.authorAvatarUrl, size: 18)
                         Text(comment.authorLogin ?? "ghost").font(.system(size: 12, weight: .semibold))
-                        Text(comment.isLocalOnly ? "Sending…" : relativeDate(comment.createdAt))
+                        (comment.isLocalOnly ? Text(.commentSending) : Text(relativeDate(comment.createdAt)))
                             .font(.small)
                             .foregroundStyle(Theme.textTertiary)
                         if new {
                             Spacer(minLength: 8)
-                            Text("New").font(.tinySemibold).foregroundStyle(Theme.accent)
+                            Text(.newCommentBadge).font(.tinySemibold).foregroundStyle(Theme.accent)
                         }
                     }
                     MarkdownText(text: comment.body)
@@ -465,7 +465,7 @@ struct ActivitySection: View {
             VStack(alignment: .trailing, spacing: 8) {
                 ZStack(alignment: .topLeading) {
                     if draft.isEmpty {
-                        Text("Leave a comment…")
+                        Text(.leaveCommentPlaceholder)
                             .font(.system(size: 14))
                             .foregroundStyle(Theme.textTertiary)
                             .padding(.leading, 5)
@@ -485,7 +485,7 @@ struct ActivitySection: View {
                 }
                 HStack(spacing: 10) {
                     Text("⌘↵").font(.tiny).foregroundStyle(Theme.textTertiary)
-                    Button("Comment", action: send)
+                    Button(.postComment, action: send)
                         .buttonStyle(PrimaryButtonStyle())
                         .keyboardShortcut(.return, modifiers: .command)
                         .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -518,7 +518,7 @@ private struct PropertiesPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            row("Status") {
+            row(.status) {
                 PropertyButton(kind: .status, item: item) {
                     HStack(spacing: 8) {
                         StatusIcon(glyph: model.glyph(of: item))
@@ -529,34 +529,34 @@ private struct PropertiesPanel: View {
                 }
             }
             if model.project(of: item)?.priorityFieldId != nil {
-                row("Priority") {
+                row(.priority) {
                     PropertyButton(kind: .priority, item: item) {
                         HStack(spacing: 8) {
                             PriorityIcon(level: model.priorityLevel(of: item))
-                            Text(model.priorityOption(of: item)?.name ?? "No priority")
+                            (model.priorityOption(of: item).map { Text($0.name) } ?? Text(.noPriority))
                                 .foregroundStyle(item.priorityId == nil ? Theme.textTertiary : Theme.text)
                         }
                     }
                 }
             }
             if item.kind != .draft {
-                row("Assignee") {
+                row(.assignee) {
                     PropertyButton(kind: .assignees, item: item) {
                         if item.assignees.isEmpty {
-                            Text("Unassigned").foregroundStyle(Theme.textTertiary)
+                            Text(.unassigned).foregroundStyle(Theme.textTertiary)
                         } else {
                             HStack(spacing: 8) {
                                 AvatarStack(people: item.assignees)
-                                Text(item.assignees.count == 1 ? item.assignees[0].login : "\(item.assignees.count) people")
+                                (item.assignees.count == 1 ? Text(item.assignees[0].login) : Text(.peopleCount(count: item.assignees.count)))
                                     .lineLimit(1)
                             }
                         }
                     }
                 }
-                row("Labels") {
+                row(.labels) {
                     PropertyButton(kind: .labels, item: item) {
                         if item.labels.isEmpty {
-                            Text("Add label").foregroundStyle(Theme.textTertiary)
+                            Text(.addLabel).foregroundStyle(Theme.textTertiary)
                         } else {
                             WrappingLabels(labels: item.labels)
                         }
@@ -564,7 +564,7 @@ private struct PropertiesPanel: View {
                 }
             }
             if model.canHaveDueDate(item) {
-                row("Due date") {
+                row(.dueDate) {
                     PropertyButton(kind: .dueDate, item: item) {
                         if let due = model.dueBadge(for: item) {
                             HStack(spacing: 7) {
@@ -574,7 +574,7 @@ private struct PropertiesPanel: View {
                             }
                             .help(due.tooltip)
                         } else {
-                            Text("Add due date").foregroundStyle(Theme.textTertiary)
+                            Text(.addDueDate).foregroundStyle(Theme.textTertiary)
                         }
                     }
                 }
@@ -583,7 +583,7 @@ private struct PropertiesPanel: View {
             Rectangle().fill(Theme.panelBorder).frame(height: 1).padding(.vertical, 10)
 
             if let project = model.project(of: item) {
-                row("Project") {
+                row(.project) {
                     HStack(spacing: 8) {
                         ProjectSwatch(title: project.title)
                         Text(project.title).lineLimit(1)
@@ -591,19 +591,19 @@ private struct PropertiesPanel: View {
                     .padding(.horizontal, 8)
                 }
             } else if !item.isOnBoard, !model.boards(toAdd: item).isEmpty {
-                row("Project") {
+                row(.project) {
                     PropertyButton(kind: .status, item: item) {
-                        Text("Add to project").foregroundStyle(Theme.textTertiary)
+                        Text(.addToProjectPlaceholder).foregroundStyle(Theme.textTertiary)
                     }
                 }
             }
             if let repo = item.repo {
-                row("Repository") {
+                row(.repository) {
                     Text(repo).foregroundStyle(Theme.textBody).lineLimit(1).truncationMode(.middle).padding(.horizontal, 8)
                 }
             }
             if let parentNumber = item.parentNumber {
-                row("Parent") {
+                row(.parentIssue) {
                     let parent = item.parentId.flatMap { model.item(contentId: $0) }
                     Button {
                         if let parent { model.open(parent) }
@@ -616,12 +616,12 @@ private struct PropertiesPanel: View {
                     }
                     .buttonStyle(PlainPressStyle())
                     .disabled(parent == nil)
-                    .help(parent == nil ? "The parent issue isn't on this board" : "Open the parent issue")
+                    .help(parent == nil ? Text(.parentIssueNotOnBoard) : Text(.openParentIssue))
                 }
             }
             if let created = item.createdAt {
-                row("Created") {
-                    Text("\(relativeDate(created))\(item.authorLogin.map { " by \($0)" } ?? "")")
+                row(.createdRowLabel) {
+                    (item.authorLogin.map { Text(.createdDateByAuthor(date: relativeDate(created), author: $0)) } ?? Text(relativeDate(created)))
                         .foregroundStyle(Theme.textBody)
                         .lineLimit(1)
                         .padding(.horizontal, 8)
@@ -635,7 +635,7 @@ private struct PropertiesPanel: View {
         .onAppear { model.loadRepoMeta(for: item) }
     }
 
-    private func row<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+    private func row<Content: View>(_ title: LocalizedStringResource, @ViewBuilder content: () -> Content) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             Text(title)
                 .font(.small)

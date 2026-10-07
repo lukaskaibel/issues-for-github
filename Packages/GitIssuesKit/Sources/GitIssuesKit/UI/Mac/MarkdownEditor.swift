@@ -9,7 +9,7 @@ import SwiftUI
 struct MarkdownEditor: NSViewRepresentable {
     /// The text as it is in the model. Shown whenever you aren't in the middle of editing it.
     var text: String
-    var placeholder: String
+    var placeholder: LocalizedStringResource
     var isEditable: Bool
     var onSave: (String) -> Void
     /// Whether the text is being typed in.
@@ -46,7 +46,7 @@ struct MarkdownEditor: NSViewRepresentable {
         view.linkTextAttributes = [.foregroundColor: NSColor(Theme.accent), .cursor: NSCursor.pointingHand]
         view.typingAttributes = MarkdownStyler.baseAttributes
         view.string = Diff3.normalize(text)
-        view.placeholder = placeholder
+        view.placeholder = String(localized: placeholder)
         view.isEditable = isEditable
         view.isSelectable = true
         view.onEndEditing = { [weak coordinator = context.coordinator] in coordinator?.saveNow() }
@@ -61,6 +61,7 @@ struct MarkdownEditor: NSViewRepresentable {
     func updateNSView(_ view: MarkdownTextView, context: Context) {
         context.coordinator.parent = self
         view.isEditable = isEditable
+        let placeholder = String(localized: placeholder)
         if view.placeholder != placeholder {
             view.placeholder = placeholder
             view.needsDisplay = true
