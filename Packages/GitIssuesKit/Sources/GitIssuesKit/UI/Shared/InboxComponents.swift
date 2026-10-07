@@ -36,21 +36,22 @@ extension InboxSummary.Sign {
 
     /// How VoiceOver names the kind of entry.
     var spoken: String {
-        switch self {
-        case .assigned: "Assigned"
-        case .mentioned: "Mention"
-        case .commented, .comments: "Comment"
-        case .reviewRequested: "Review requested"
-        case .approved: "Approved"
-        case .changesRequested: "Changes requested"
-        case .completed: "Completed"
-        case .notPlanned: "Closed"
-        case .reopened: "Reopened"
-        case .merged: "Merged"
-        case .opened: "New issue"
-        case .statusChanged: "Status changed"
-        case .activity: "Activity"
+        let kind: LocalizedStringResource = switch self {
+        case .assigned: .inboxKindAssigned
+        case .mentioned: .inboxKindMention
+        case .commented, .comments: .inboxKindComment
+        case .reviewRequested: .inboxKindReviewRequested
+        case .approved: .inboxKindApproved
+        case .changesRequested: .inboxKindChangesRequested
+        case .completed: .inboxKindCompleted
+        case .notPlanned: .inboxKindClosed
+        case .reopened: .inboxKindReopened
+        case .merged: .inboxKindMerged
+        case .opened: .inboxKindNewIssue
+        case .statusChanged: .inboxKindStatusChanged
+        case .activity: .inboxKindActivity
         }
+        return String(localized: kind)
     }
 }
 
@@ -119,10 +120,10 @@ struct InboxSubjectIcon: View {
 /// "now", "12m", "3h", "Yesterday", "Mon", "Oct 3": as short as the Inbox's time column, as in Linear.
 func inboxTime(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> String {
     let seconds = now.timeIntervalSince(date)
-    if seconds < 60 { return "now" }
-    if seconds < 3600 { return "\(Int(seconds / 60))m" }
-    if calendar.isDateInToday(date) || seconds < 6 * 3600 { return "\(Int(seconds / 3600))h" }
-    if calendar.isDateInYesterday(date) { return "Yesterday" }
+    if seconds < 60 { return String(localized: .inboxTimeNow) }
+    if seconds < 3600 { return String(localized: .inboxTimeMinutes(minutes: Int(seconds / 60))) }
+    if calendar.isDateInToday(date) || seconds < 6 * 3600 { return String(localized: .inboxTimeHours(hours: Int(seconds / 3600))) }
+    if calendar.isDateInYesterday(date) { return String(localized: .yesterday) }
     if seconds < 6 * 86_400 { return date.formatted(.dateTime.weekday(.abbreviated)) }
     if calendar.isDate(date, equalTo: now, toGranularity: .year) { return date.formatted(.dateTime.month(.abbreviated).day()) }
     return date.formatted(.dateTime.month(.abbreviated).day().year())
@@ -132,7 +133,7 @@ extension InboxEntry {
     /// What VoiceOver reads for a row.
     func spoken(_ summary: InboxSummary, unread: Bool) -> String {
         var parts: [String] = []
-        if unread { parts.append("Unread") }
+        if unread { parts.append(String(localized: .unreadEntry)) }
         parts.append(summary.sign.spoken)
         parts.append("\(displayNumber(withRepo: false)) \(title)")
         parts.append([summary.lead, summary.excerpt].compactMap { $0 }.joined(separator: " "))
@@ -155,39 +156,65 @@ extension AppModel {
 
     /// The heading of what happened on the issue: news since you last read it, or what happened lately.
     func inboxNewsTitle(_ entry: InboxEntry) -> String {
-        guard entry.activityIsNew else { return "Latest activity" }
-        guard let since = entry.activitySince else { return "New" }
-        if Calendar.current.isDateInToday(since) { return "New since \(since.formatted(.dateTime.hour().minute()))" }
-        if Calendar.current.isDateInYesterday(since) { return "New since yesterday" }
-        return "New since \(since.formatted(.dateTime.month(.abbreviated).day()))"
+        guard entry.activityIsNew else { return String(localized: .inboxLatestActivity) }
+        guard let since = entry.activitySince else { return String(localized: .inboxNew) }
+        if Calendar.current.isDateInToday(since) {
+            return String(localized: .inboxNewSinceTime(time: since.formatted(.dateTime.hour().minute())))
+        }
+        if Calendar.current.isDateInYesterday(since) { return String(localized: .inboxNewSinceYesterday) }
+        return String(localized: .inboxNewSinceDate(date: since.formatted(.dateTime.month(.abbreviated).day())))
     }
 
-    /// One line of what happened, for the list at the top of the issue.
+    /// One line of what happened, for the list at the top of the issue. It follows the name of who did it.
     func inboxEventLine(_ event: InboxActivity, entry: InboxEntry) -> String {
         let me = viewer?.login.lowercased()
-        func whom(_ login: String?) -> String { login?.lowercased() == me ? "you" : (login ?? "someone") }
+        /// Done to you, to someone named, or to someone GitHub doesn't name: a sentence for each.
+        func whom(
+            _ login: String?, you: LocalizedStringResource, named: (String) -> LocalizedStringResource, someone: LocalizedStringResource
+        ) -> LocalizedStringResource {
+            guard let login else { return someone }
+            return login.lowercased() == me ? you : named(login)
+        }
+        let line: LocalizedStringResource
         switch event.kind {
-        case .commented: return InboxEntry.mentions(event.text, login: viewer?.login) ? "mentioned you" : "commented"
-        case .assigned: return "assigned \(whom(event.detail))"
-        case .unassigned: return "unassigned \(whom(event.detail))"
-        case .mentioned: return "mentioned you"
-        case .opened: return entry.isPullRequest ? "opened this pull request" : "opened the issue"
+        case .commented:
+            line = InboxEntry.mentions(event.text, login: viewer?.login) ? .eventMentionedYou : .eventCommented
+        case .assigned:
+            line = whom(event.detail, you: .eventAssignedYou, named: { .eventAssignedPerson(login: $0) }, someone: .eventAssignedSomeone)
+        case .unassigned:
+            line = whom(event.detail, you: .eventUnassignedYou, named: { .eventUnassignedPerson(login: $0) }, someone: .eventUnassignedSomeone)
+        case .mentioned:
+            line = .eventMentionedYou
+        case .opened:
+            line = entry.isPullRequest ? .eventOpenedPullRequest : .eventOpenedIssue
         case .closed:
             switch event.detail {
-            case "NOT_PLANNED": return "closed it as not planned"
-            case "DUPLICATE": return "closed it as a duplicate"
-            default: return entry.isPullRequest ? "closed it" : "closed it as completed"
+            case "NOT_PLANNED": line = .eventClosedNotPlanned
+            case "DUPLICATE": line = .eventClosedDuplicate
+            default: line = entry.isPullRequest ? .eventClosedPullRequest : .eventClosedCompleted
             }
-        case .reopened: return "reopened it"
-        case .merged: return "merged it"
-        case .reviewRequested: return event.detail?.lowercased() == me ? "requested your review" : "requested a review from \(event.detail ?? "someone")"
+        case .reopened:
+            line = .eventReopened
+        case .merged:
+            line = .eventMerged
+        case .reviewRequested:
+            line = whom(
+                event.detail, you: .eventRequestedYourReview, named: { .eventRequestedReviewFrom(login: $0) }, someone: .eventRequestedReviewFromSomeone
+            )
         case .reviewed:
             switch event.detail {
-            case "APPROVED": return "approved it"
-            case "CHANGES_REQUESTED": return "requested changes"
-            default: return "reviewed it"
+            case "APPROVED": line = .eventApproved
+            case "CHANGES_REQUESTED": line = .eventRequestedChanges
+            default: line = .eventReviewed
             }
-        case .statusChanged: return "moved it to \(event.detail ?? "another status")\(event.project.map { " in \($0)" } ?? "")"
+        case .statusChanged:
+            line = switch (event.detail, event.project) {
+            case let (status?, project?): .eventMovedToStatusInProject(status: status, project: project)
+            case let (status?, nil): .eventMovedToStatus(status: status)
+            case let (nil, project?): .eventMovedToAnotherStatusInProject(project: project)
+            case (nil, nil): .eventMovedToAnotherStatus
+            }
         }
+        return String(localized: line)
     }
 }

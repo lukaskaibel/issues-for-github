@@ -21,9 +21,9 @@ enum AppearanceSetting: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .system: "System"
-        case .light: "Light"
-        case .dark: "Dark"
+        case .system: String(localized: .appearanceSystem)
+        case .light: String(localized: .appearanceLight)
+        case .dark: String(localized: .appearanceDark)
         }
     }
 
@@ -92,20 +92,21 @@ enum AppIconChoice: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var title: String {
-        switch self {
-        case .card: "Card, light or dark with the system"
-        case .cardLight: "Card, light"
-        case .cardDark: "Card, dark"
-        case .cardViolet: "Card on violet"
-        case .boardLight: "Board"
-        case .boardDark: "Board, dark"
-        case .colourLight: "Board on colour"
-        case .colourDark: "Board on colour, dark"
-        case .barsLight: "Three bars"
-        case .barsDark: "Three bars, dark"
-        case .checklistLight: "Checklist"
-        case .checklistDark: "Checklist, dark"
+        let name: LocalizedStringResource = switch self {
+        case .card: .appIconCardAuto
+        case .cardLight: .appIconCardLight
+        case .cardDark: .appIconCardDark
+        case .cardViolet: .appIconCardViolet
+        case .boardLight: .appIconBoard
+        case .boardDark: .appIconBoardDark
+        case .colourLight: .appIconBoardOnColour
+        case .colourDark: .appIconBoardOnColourDark
+        case .barsLight: .appIconThreeBars
+        case .barsDark: .appIconThreeBarsDark
+        case .checklistLight: .appIconChecklist
+        case .checklistDark: .appIconChecklistDark
         }
+        return String(localized: name)
     }
 
     private var resource: String {
@@ -162,10 +163,10 @@ enum AppIconChoice: String, CaseIterable, Identifiable {
     /// Short names for the iOS picker.
     var shortTitle: String {
         switch self {
-        case .card: "Automatic"
-        case .cardLight: "Light"
-        case .cardDark: "Dark"
-        case .cardViolet: "Violet"
+        case .card: String(localized: .appIconAutomatic)
+        case .cardLight: String(localized: .appIconLight)
+        case .cardDark: String(localized: .appIconDark)
+        case .cardViolet: String(localized: .appIconViolet)
         default: title
         }
     }

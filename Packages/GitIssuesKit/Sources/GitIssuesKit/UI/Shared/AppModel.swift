@@ -14,7 +14,7 @@ struct BoardColumn: Identifiable, Equatable {
     var glyph: StatusGlyph
     var items: [Item]
 
-    var title: String { option?.name ?? "No status" }
+    var title: String { option?.name ?? String(localized: .noStatus) }
 }
 
 struct ListSection: Identifiable, Equatable {
@@ -354,7 +354,7 @@ public final class AppModel {
                 signedIn = true
                 startSyncing()
             } catch {
-                status.post(Notice(title: "The sample data could not be loaded", message: error.localizedDescription, isWarning: true))
+                status.post(Notice(title: String(localized: .sampleDataCouldNotLoad), message: error.localizedDescription, isWarning: true))
             }
         }
     }
@@ -763,16 +763,17 @@ public final class AppModel {
         let grouped = Dictionary(grouping: items, by: group)
         return Group.allCases.compactMap { kind in
             guard let matching = grouped[kind], !matching.isEmpty else { return nil }
-            let (title, glyph): (String, StatusGlyph) = switch kind {
-            case .noProject: ("No project", .noProject)
-            case .started: ("In progress", StatusGlyph(category: .started, progress: 0.5, color: Theme.started))
-            case .unstarted: ("Todo", StatusGlyph(category: .unstarted, progress: 0, color: Theme.textBody))
-            case .backlog: ("Backlog", .none)
-            case .noStatus: ("No status", .none)
-            case .completed: ("Done", StatusGlyph(category: .completed, progress: 1, color: Theme.accent))
-            case .canceled: ("Canceled", StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary))
+            // The id stays the same in every language: folded sections and the order of sections are kept by it.
+            let (id, title, glyph): (String, LocalizedStringResource, StatusGlyph) = switch kind {
+            case .noProject: ("No project", .noProject, .noProject)
+            case .started: ("In progress", .statusGroupInProgress, StatusGlyph(category: .started, progress: 0.5, color: Theme.started))
+            case .unstarted: ("Todo", .statusGroupTodo, StatusGlyph(category: .unstarted, progress: 0, color: Theme.textBody))
+            case .backlog: ("Backlog", .statusGroupBacklog, .none)
+            case .noStatus: ("No status", .noStatus, .none)
+            case .completed: ("Done", .statusGroupDone, StatusGlyph(category: .completed, progress: 1, color: Theme.accent))
+            case .canceled: ("Canceled", .statusGroupCanceled, StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary))
             }
-            return ListSection(id: title, title: title, glyph: glyph, option: nil, items: matching)
+            return ListSection(id: id, title: String(localized: title), glyph: glyph, option: nil, items: matching)
         }
     }
 
@@ -986,7 +987,7 @@ public final class AppModel {
             }
             reloadNow()
         } catch {
-            status.post(Notice(title: "That change could not be saved", message: error.localizedDescription, isWarning: true))
+            status.post(Notice(title: String(localized: .changeCouldNotBeSaved), message: error.localizedDescription, isWarning: true))
         }
         let engine = self.engine
         Task { await engine.kick() }
