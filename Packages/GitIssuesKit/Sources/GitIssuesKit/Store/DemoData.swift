@@ -8,6 +8,8 @@ public enum DemoData {
     static let mira = Person(id: "demo-user-mira", login: "mira", name: "Mira Patel")
     static let theo = Person(id: "demo-user-theo", login: "theo", name: "Theo Novak")
     static let kai = Person(id: "demo-user-kai", login: "kai", name: "Kai Andersen")
+    /// Not on the team: files issues now and then.
+    static let sam = Person(id: "demo-user-sam", login: "sam", name: "Sam Ortiz")
     static var team: [Person] { [viewer.person, mira, theo, kai] }
 
     public static func database() throws -> AppDatabase {
@@ -119,11 +121,11 @@ public enum DemoData {
         IssueSpec(number: 15, title: "Conflict banner when text changed on GitHub", status: "In Progress", priority: "High", labels: ["sync"], assignees: [theo], hoursAgo: 7),
         IssueSpec(number: 17, title: "Command palette with fuzzy search", status: "Todo", priority: "High", labels: ["ui"], assignees: [viewer.person], hoursAgo: 20, due: 1),
         IssueSpec(number: 14, title: "Sign in with GitHub device flow", status: "Todo", priority: "Medium", labels: ["auth"], assignees: [viewer.person, kai], hoursAgo: 22, due: 3),
-        IssueSpec(number: 25, title: "Crash when a label name contains an emoji", status: "Todo", priority: "Urgent", labels: ["bug"], assignees: [kai], body: "Steps to reproduce:\n\n1. Add a label named `🔥 hot`\n2. Open the labels picker\n3. The app quits", hoursAgo: 12, due: -2),
+        IssueSpec(number: 25, title: "Crash when a label name contains an emoji", status: "Todo", priority: "Urgent", labels: ["bug"], assignees: [kai, viewer.person], body: "Steps to reproduce:\n\n1. Add a label named `🔥 hot`\n2. Open the labels picker\n3. The app quits", hoursAgo: 12, due: -2),
         IssueSpec(number: 18, title: "Notarized builds and automatic updates", status: "Backlog", priority: "Low", labels: ["release"], hoursAgo: 70, due: 24),
         IssueSpec(number: 19, title: "Show linked pull requests and CI state", status: "Backlog", priority: "Low", labels: ["feature"], hoursAgo: 80),
         IssueSpec(number: 20, title: "Milestones as roadmap projects", status: "Backlog", priority: "Low", labels: ["feature"], hoursAgo: 90),
-        IssueSpec(number: 21, title: "Inbox from GitHub notifications", status: "Backlog", priority: nil, labels: ["feature"], hoursAgo: 100),
+        IssueSpec(number: 21, title: "Inbox from GitHub notifications", status: "Done", priority: "High", labels: ["feature"], assignees: [viewer.person], hoursAgo: 30),
         IssueSpec(number: 22, title: "Cycles backed by the Iteration field", status: "Backlog", priority: "Low", labels: ["feature"], hoursAgo: 110),
         IssueSpec(number: 10, title: "Lift and tilt on drag start", status: "Done", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 26),
         IssueSpec(number: 11, title: "Neighbouring cards make room with springs", status: "Done", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 27),
@@ -152,6 +154,8 @@ public enum DemoData {
             (viewer.person, "Good idea, I'll try it with the velocity from the drag gesture and clamp it to 5°.", 0.5),
         ],
         8: [(theo, "Queued changes survive a relaunch now, the outbox is in the database.", 1.5)],
+        14: [(kai, "The device code screen works on iPad now.", 22)],
+        15: [(theo, "@jordan can you check the wording of the banner? It should say what happens to your text.", 2)],
         25: [(kai, "Reproduced on 0.1.0. The label picker measures the name with the wrong font.", 10)],
     ]
 
@@ -231,12 +235,149 @@ public enum DemoData {
                 position: Item.positionWithoutProject(updatedAt: date),
                 contentId: contentId(issue.number), number: issue.number, title: issue.title, body: issue.body,
                 state: "OPEN", url: "https://github.com/\(app.repo)/issues/\(issue.number)", repoId: app.repoId, repo: app.repo,
-                authorLogin: "sam", createdAt: date, updatedAt: date,
+                authorLogin: sam.login, createdAt: date, updatedAt: date,
                 assignees: issue.assignees,
                 labels: app.labels.filter { issue.labels.contains($0.name) },
                 viewerCanDelete: true
             ).insert(db)
         }
+        try seedInbox(db, now: now)
+    }
+
+    // MARK: Inbox
+
+    private static let brandLabels = [
+        LabelRef(id: "demo-label-tokens", name: "tokens", color: "5B63D3"),
+        LabelRef(id: "demo-label-ios", name: "ios", color: "1D76DB"),
+    ]
+
+    /// Labels and people of the sample repositories, for issues seen only in the Inbox.
+    static func repoMeta(repoId: String) -> (labels: [LabelRef], users: [Person]) {
+        switch repoId {
+        case app.repoId: (appLabels, team)
+        case site.repoId: (siteLabels, team)
+        default: (brandLabels, team)
+        }
+    }
+
+    /// The Inbox of the sample data: what Mira, Theo and Kai did that Jordan should know about, as GitHub would
+    /// report it. Most of the issues are on the boards; #27 and a new issue on the website are on none but in their
+    /// repositories, and a pull request and an issue in a repository no board uses are only in the Inbox.
+    private static func seedInbox(_ db: Database, now: Date) throws {
+        func ago(_ hours: Double) -> Date { now.addingTimeInterval(-hours * 3600) }
+        func entry(
+            _ id: String, reason: String, unread: Bool, hours: Double, readHoursAgo: Double? = nil,
+            type: String = "Issue", repo: String, repoId: String, number: Int, title: String,
+            state: String = "OPEN", stateReason: String? = nil, body: String = "", author: Person,
+            assignees: [Person] = [], labels: [LabelRef] = [], activity: [InboxActivity]
+        ) throws {
+            var entry = InboxEntry(
+                id: "demo-thread-\(id)", reason: reason, unread: unread, updatedAt: ago(hours),
+                lastReadAt: readHoursAgo.map(ago), subjectType: type, title: title, repo: repo, number: number
+            )
+            entry.enrichedFor = entry.updatedAt
+            let known = (repo == app.repo || repo == site.repo) && type == "Issue"
+            entry.contentId = known ? contentId(number) : "demo-\(repo.replacingOccurrences(of: "/", with: "-"))-\(number)"
+            entry.url = "https://github.com/\(repo)/\(type == "PullRequest" ? "pull" : "issues")/\(number)"
+            entry.state = state
+            entry.stateReason = stateReason
+            entry.body = body
+            entry.repoId = repoId
+            entry.authorLogin = author.login
+            entry.createdAt = activity.last?.at ?? entry.updatedAt
+            entry.assignees = assignees
+            entry.labels = labels
+            entry.activity = activity
+            entry.activityIsNew = unread
+            entry.activitySince = unread ? entry.lastReadAt : nil
+            try entry.insert(db)
+        }
+        let brand = "acme/brand"
+
+        try entry(
+            "25", reason: "assign", unread: true, hours: 0.2, readHoursAgo: 26, repo: app.repo, repoId: app.repoId, number: 25,
+            title: "Crash when a label name contains an emoji", author: kai, activity: [
+                InboxActivity(kind: .assigned, actor: kai, at: ago(0.2), detail: viewer.login),
+                InboxActivity(kind: .statusChanged, actor: kai, at: ago(0.2), detail: "Todo", project: app.title),
+                InboxActivity(kind: .commented, actor: kai, at: ago(10), text: comments[25]?.first?.1, commentId: "demo-comment-25-0"),
+            ]
+        )
+        try entry(
+            "8", reason: "comment", unread: true, hours: 1.5, readHoursAgo: 5, repo: app.repo, repoId: app.repoId, number: 8,
+            title: "Offline change queue that replays on reconnect", author: viewer.person, activity: [
+                InboxActivity(kind: .commented, actor: theo, at: ago(1.5), text: comments[8]?.first?.1, commentId: "demo-comment-8-0"),
+            ]
+        )
+        try entry(
+            "15", reason: "mention", unread: true, hours: 2, repo: app.repo, repoId: app.repoId, number: 15,
+            title: "Conflict banner when text changed on GitHub", author: theo, activity: [
+                InboxActivity(kind: .commented, actor: theo, at: ago(2), text: comments[15]?.first?.1, commentId: "demo-comment-15-0"),
+            ]
+        )
+        try entry(
+            "36", reason: "review_requested", unread: true, hours: 3, type: "PullRequest", repo: app.repo, repoId: app.repoId,
+            number: 36, title: "Tilt cards with the pointer's velocity",
+            body: "Follows up on #9: the tilt now follows the pointer's velocity, clamped to 5°, and settles back with the drop.",
+            author: mira, assignees: [mira], labels: appLabels.filter { $0.name == "ui" }, activity: [
+                InboxActivity(kind: .reviewRequested, actor: mira, at: ago(3), detail: viewer.login),
+            ]
+        )
+        try entry(
+            "27", reason: "assign", unread: true, hours: 4, readHoursAgo: 30, repo: app.repo, repoId: app.repoId, number: 27,
+            title: "App quits when a project has no Status field",
+            body: "Reported on 0.1.0: open a project without a Status field and the app quits right away.",
+            author: sam, assignees: [viewer.person], labels: appLabels.filter { $0.name == "bug" }, activity: [
+                InboxActivity(kind: .assigned, actor: theo, at: ago(4), detail: viewer.login),
+            ]
+        )
+        try entry(
+            "37", reason: "subscribed", unread: true, hours: 1, repo: site.repo, repoId: site.repoId, number: 37,
+            title: "Footer links break on small screens",
+            body: "On a phone the footer links wrap into each other. They should stack, one per line, below 480 pt.",
+            author: kai, labels: siteLabels.filter { $0.name == "design" }, activity: [
+                InboxActivity(kind: .opened, actor: kai, at: ago(1), text: "On a phone the footer links wrap into each other. They should stack, one per line, below 480 pt."),
+            ]
+        )
+        try entry(
+            "4", reason: "comment", unread: false, hours: 26, readHoursAgo: 20, repo: app.repo, repoId: app.repoId, number: 4,
+            title: "Local database with instant edits", state: "CLOSED", stateReason: "COMPLETED", author: theo, activity: [
+                InboxActivity(kind: .closed, actor: theo, at: ago(26), detail: "COMPLETED"),
+            ]
+        )
+        try entry(
+            "14", reason: "assign", unread: false, hours: 22, readHoursAgo: 21, repo: app.repo, repoId: app.repoId, number: 14,
+            title: "Sign in with GitHub device flow", author: viewer.person, activity: [
+                InboxActivity(kind: .commented, actor: kai, at: ago(22), text: comments[14]?.first?.1, commentId: "demo-comment-14-0"),
+            ]
+        )
+        let tokensComment = "@jordan the iOS names should follow the Mac ones. Can you take a look?"
+        try entry(
+            "brand-4", reason: "mention", unread: false, hours: 96, readHoursAgo: 90, repo: brand, repoId: "demo-repo-brand", number: 4,
+            title: "Rename the accent colour tokens",
+            body: "The accent colour is called `tint` on iOS and `accent` on the Mac. One name for both makes the design files easier to follow.",
+            author: mira, assignees: [mira], labels: brandLabels.filter { $0.name == "tokens" }, activity: [
+                InboxActivity(kind: .commented, actor: mira, at: ago(96), text: tokensComment, commentId: "demo-comment-brand-4-0"),
+            ]
+        )
+        // On no board, in a repository a board uses: the app reads it like the website's other issues.
+        try Item(
+            id: Item.idWithoutProject(contentId(37)), projectId: nil, kind: .issue,
+            position: Item.positionWithoutProject(updatedAt: ago(1)),
+            contentId: contentId(37), number: 37, title: "Footer links break on small screens",
+            body: "On a phone the footer links wrap into each other. They should stack, one per line, below 480 pt.",
+            state: "OPEN", url: "https://github.com/\(site.repo)/issues/37", repoId: site.repoId, repo: site.repo,
+            authorLogin: kai.login, createdAt: ago(1), updatedAt: ago(1),
+            labels: siteLabels.filter { $0.name == "design" }
+        ).insert(db)
+        try Comment(
+            id: "demo-comment-brand-4-0", issueId: "demo-\(brand.replacingOccurrences(of: "/", with: "-"))-4",
+            authorLogin: mira.login, authorAvatarUrl: nil, body: tokensComment, createdAt: ago(96)
+        ).insert(db)
+
+        var meta = InboxMeta()
+        meta.access = .ok
+        meta.others = ["Release": 1, "CheckSuite": 1]
+        try meta.write(db)
     }
 
     private static func optionId(_ spec: ProjectSpec, _ name: String) -> String {

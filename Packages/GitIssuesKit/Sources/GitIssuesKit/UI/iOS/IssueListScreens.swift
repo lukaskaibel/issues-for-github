@@ -422,6 +422,8 @@ struct IssueList: View {
                                 ForEach(section.items) { item in
                                     row(item)
                                 }
+                                // Touch and hold, then drag, to give an issue a new place in its section.
+                                .onMove(perform: canMove ? { move(in: section, from: $0, to: $1) } : nil)
                             }
                         } header: {
                             SectionHeaderBand(
@@ -497,12 +499,26 @@ struct IssueList: View {
         }
     }
 
+    /// Issues keep their place on the board, so they can be moved in a project you can edit. My Issues mixes
+    /// projects and has no such order.
+    private var canMove: Bool {
+        guard case .project(let id) = scope else { return false }
+        return model.projects.first { $0.id == id }?.viewerCanUpdate == true
+    }
+
+    private func move(in section: ListSection, from source: IndexSet, to destination: Int) {
+        guard case .project(let projectId) = scope, let from = source.first, section.items.indices.contains(from),
+              let column = model.columns(projectId: projectId).first(where: { $0.id == section.id }) else { return }
+        // `destination` counts the issue itself in its old place; `drop` counts the others.
+        model.drop(section.items[from], in: column, at: destination > from ? destination - 1 : destination)
+    }
+
     /// Where rows come from several boards, each says which; an issue on none says its repository.
     private var showsProject: Bool {
         switch scope {
         case .myIssues: true
         case .repository(let id): model.boards(ofRepository: id).count > 1
-        case .project: false
+        case .project, .inbox: false
         }
     }
 
@@ -516,6 +532,8 @@ struct IssueList: View {
     @ViewBuilder
     private var emptyState: some View {
         switch scope {
+        case .inbox:
+            EmptyView()
         case .myIssues:
             MobileEmptyState(
                 title: "Nothing assigned to you",

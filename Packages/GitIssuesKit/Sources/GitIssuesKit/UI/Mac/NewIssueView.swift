@@ -288,10 +288,12 @@ struct NewIssueView: View {
 
     private func create() {
         guard canCreate else { return }
-        if model.createIssue(draft) != nil {
+        if let id = model.createIssue(draft) {
             created = true
             model.unsentNewIssue = nil
             model.overlay = nil
+            // The new issue takes the keyboard focus, so Return opens it and S, A or L change it right away.
+            if model.openItem == nil, model.scopedItems.contains(where: { $0.id == id }) { model.moveFocus(to: id) }
         }
     }
 
@@ -322,7 +324,7 @@ struct NewIssueView: View {
                 PickerList(
                     placeholder: kind.placeholder,
                     items: items(kind),
-                    staysOpen: kind.staysOpen,
+                    multiple: kind.multiple,
                     width: kind.width,
                     onPick: { pick(kind, $0) },
                     onClose: close

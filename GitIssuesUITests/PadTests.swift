@@ -21,6 +21,18 @@ final class PadTests: AppTestCase {
         wait(app.navigationBars[title])
     }
 
+    /// Turning the iPad brings in the sidebar, whose header reads the model; that once quit the app.
+    func testTurningTheIPadKeepsTheAppRunning() {
+        launch()
+        wait(element("row-#9"))
+        XCUIDevice.shared.orientation = .landscapeLeft
+        wait(element("row-#9"))
+        XCTAssertEqual(app.state, .runningForeground)
+        XCUIDevice.shared.orientation = .portrait
+        wait(element("row-#9"))
+        XCTAssertEqual(app.state, .runningForeground)
+    }
+
     func testSidebarAndBoard() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()
@@ -179,10 +191,11 @@ final class PadTests: AppTestCase {
         button("In Review").tap()
         waitForLabel(element("property-status"), containing: "In Review")
 
+        // From the keyboard, the picker's search takes the typing and Return picks the first match.
         app.typeKey("l", modifierFlags: [])
         wait(app.navigationBars["Labels"])
-        button("bug").tap()
-        button("Done").tap()
+        app.typeText("bug\n")
+        waitGone(app.navigationBars["Labels"])
         waitForLabel(element("property-labels"), containing: "bug")
 
         // Letters typed into the title are text, not shortcuts.

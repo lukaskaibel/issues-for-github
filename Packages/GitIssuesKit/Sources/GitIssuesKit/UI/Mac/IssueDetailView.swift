@@ -131,18 +131,30 @@ struct IssueDetailView: View {
 
 // MARK: - Title and description
 
-private struct TitleField: View {
+struct TitleField: View {
     @Environment(AppModel.self) private var model
     var item: Item
     @State private var title = ""
     @FocusState private var focused: Bool
 
     var body: some View {
+        if item.isEditableContent {
+            field
+        } else {
+            // Read-only (a pull request, or an issue on no board): plain text, not a dimmed field.
+            Text(item.title)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(Theme.text)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var field: some View {
         TextField("Issue title", text: $title, axis: .vertical)
             .textFieldStyle(.plain)
             .font(.system(size: 22, weight: .semibold))
             .focused($focused)
-            .disabled(!item.isEditableContent)
             .onAppear { title = item.title }
             .onChange(of: item.title) { _, new in
                 if !focused { title = new }
@@ -170,7 +182,7 @@ private struct TitleField: View {
     }
 }
 
-private struct DescriptionView: View {
+struct DescriptionView: View {
     @Environment(AppModel.self) private var model
     var item: Item
     @State private var editing = false
@@ -191,14 +203,14 @@ private struct DescriptionView: View {
 
     private func save(_ text: String) {
         // The latest copy, since the view may have been drawn before the last sync.
-        guard let current = model.allItems.first(where: { $0.id == item.id }) else { return }
+        guard let current = model.item(id: item.id) else { return }
         // Leave untouched text exactly as GitHub stores it, line endings included.
         guard text != Diff3.normalize(current.body) else { return }
         model.setBody(current, to: text)
     }
 }
 
-private struct ConflictBanner: View {
+struct ConflictBanner: View {
     @Environment(AppModel.self) private var model
     var entry: OutboxEntry
 
@@ -247,7 +259,7 @@ private struct ConflictBanner: View {
 
 // MARK: - Sub-issues
 
-private struct SubIssuesSection: View {
+struct SubIssuesSection: View {
     @Environment(AppModel.self) private var model
     var item: Item
 
@@ -413,9 +425,11 @@ private struct SubIssueRow: View {
 
 // MARK: - Comments
 
-private struct ActivitySection: View {
+struct ActivitySection: View {
     @Environment(AppModel.self) private var model
     var item: Item
+    /// Comments that are new since you last read the issue, from the Inbox; they are marked.
+    var highlighted: Set<String> = []
 
     @State private var draft = ""
     @FocusState private var focused: Bool
@@ -425,6 +439,7 @@ private struct ActivitySection: View {
             Text("Activity").font(.uiSemibold)
 
             ForEach(comments) { comment in
+                let new = highlighted.contains(comment.id)
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         Avatar(login: comment.authorLogin ?? "ghost", url: comment.authorAvatarUrl, size: 18)
@@ -432,13 +447,18 @@ private struct ActivitySection: View {
                         Text(comment.isLocalOnly ? "Sending…" : relativeDate(comment.createdAt))
                             .font(.small)
                             .foregroundStyle(Theme.textTertiary)
+                        if new {
+                            Spacer(minLength: 8)
+                            Text("New").font(.tinySemibold).foregroundStyle(Theme.accent)
+                        }
                     }
                     MarkdownText(text: comment.body)
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.groupHeader))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(new ? Theme.selectionBorder : Theme.panelBorder, lineWidth: 1))
+                .id(comment.id)
                 .transition(.opacity.combined(with: .offset(y: 6)))
             }
 

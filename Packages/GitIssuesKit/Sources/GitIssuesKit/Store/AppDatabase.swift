@@ -174,6 +174,35 @@ public final class AppDatabase: Sendable {
             for index in indexes { try db.execute(sql: index) }
             try db.create(index: "item_on_repoId", on: "item", columns: ["repoId"], options: .ifNotExists)
         }
+        migrator.registerMigration("inbox") { db in
+            try db.create(table: "inboxEntry") { t in
+                t.primaryKey("id", .text)
+                t.column("reason", .text).notNull()
+                t.column("unread", .boolean).notNull()
+                t.column("updatedAt", .datetime).notNull()
+                t.column("lastReadAt", .datetime)
+                t.column("subjectType", .text).notNull()
+                t.column("title", .text).notNull()
+                t.column("repo", .text).notNull()
+                t.column("number", .integer)
+                t.column("archivedFor", .datetime)
+                t.column("enrichedFor", .datetime)
+                t.column("missing", .boolean).notNull().defaults(to: false)
+                t.column("contentId", .text).indexed()
+                t.column("url", .text)
+                t.column("state", .text)
+                t.column("stateReason", .text)
+                t.column("body", .text).notNull().defaults(to: "")
+                t.column("repoId", .text)
+                t.column("authorLogin", .text)
+                t.column("createdAt", .datetime)
+                t.column("assignees", .text).notNull().defaults(to: "[]")
+                t.column("labels", .text).notNull().defaults(to: "[]")
+                t.column("activity", .text).notNull().defaults(to: "[]")
+                t.column("activityIsNew", .boolean).notNull().defaults(to: false)
+                t.column("activitySince", .datetime)
+            }
+        }
         // Named rather than numbered, so it can't clash with other branches; it stays after any migration that
         // rebuilds the item table.
         migrator.registerMigration("dueDates") { db in
@@ -233,7 +262,7 @@ extension AppDatabase {
     /// Removes everything, for sign-out.
     public func wipe() throws {
         try writer.write { db in
-            for table in ["outbox", "comment", "subIssue", "repo", "item", "fieldOption", "project", "kv"] {
+            for table in ["outbox", "comment", "subIssue", "repo", "item", "fieldOption", "project", "inboxEntry", "kv"] {
                 try db.execute(sql: "DELETE FROM \(table)")
             }
         }

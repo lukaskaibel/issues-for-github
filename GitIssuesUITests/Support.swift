@@ -16,10 +16,12 @@ class AppTestCase: XCTestCase {
         super.tearDown()
     }
 
+    /// Starts in My Issues unless the test asks for another tab with `-mobile.tab`; a fresh install opens the Inbox.
     @discardableResult
     func launch(_ arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-demo.active", "YES", "-uiTestReset", "YES"] + arguments
+        let tab = arguments.contains("-mobile.tab") ? [] : ["-mobile.tab", "myIssues"]
+        app.launchArguments = ["-demo.active", "YES", "-uiTestReset", "YES"] + tab + arguments
         app.launch()
         self.app = app
         return app
@@ -39,6 +41,12 @@ class AppTestCase: XCTestCase {
 
     func button(_ label: String) -> XCUIElement {
         app.buttons[label].firstMatch
+    }
+
+    /// A row of a picker sheet, by the name it starts with. Its circle, which picks without closing the sheet,
+    /// is `element("check-<name>")`.
+    func pickerRow(_ name: String) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch
     }
 
     func wait(_ element: XCUIElement, _ timeout: TimeInterval = 6, file: StaticString = #filePath, line: UInt = #line) {

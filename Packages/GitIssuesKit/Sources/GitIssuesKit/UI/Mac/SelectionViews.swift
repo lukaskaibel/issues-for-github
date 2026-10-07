@@ -143,7 +143,7 @@ struct PeekPanel: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .onTapGesture { model.open(item) }
 
-                    properties
+                    PropertyChipRow(item: item)
 
                     if item.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Text("No description").foregroundStyle(Theme.textTertiary)
@@ -177,14 +177,34 @@ struct PeekPanel: View {
         .shadow(color: Theme.shadow, radius: 30, y: 12)
     }
 
-    /// Status, priority, assignees, the due date, labels and sub-issues, each changeable in place.
-    private var properties: some View {
+    /// A ticked checkbox, saved like any edit of the description.
+    private func setBody(_ text: String) {
+        guard let current = model.item(id: item.id), text != Diff3.normalize(current.body) else { return }
+        model.setBody(current, to: text)
+    }
+
+    private func hint(_ keys: String, _ action: String) -> some View {
+        HStack(spacing: 5) {
+            Keycap(keys)
+            Text(action).font(.tiny).foregroundStyle(Theme.textTertiary)
+        }
+    }
+}
+
+/// Status, priority, assignees, labels and sub-issues as a row of chips, each changeable in place: in the peek, and
+/// beside the Inbox where the issue view is narrow. For an issue on no board, the status puts it on one.
+struct PropertyChipRow: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 PropertyButton(kind: .status, item: item) {
                     HStack(spacing: 6) {
                         StatusIcon(glyph: model.glyph(of: item))
-                        Text(model.statusOption(of: item)?.name ?? "No status")
+                        Text(model.statusText(of: item))
+                            .foregroundStyle(model.statusIsPlaceholder(item) ? Theme.textTertiary : Theme.text)
                     }
                     .font(.small)
                 }
@@ -210,6 +230,15 @@ struct PeekPanel: View {
                         }
                         .font(.small)
                     }
+                    if item.labels.isEmpty {
+                        PropertyButton(kind: .labels, item: item) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "tag").foregroundStyle(Theme.textTertiary)
+                                Text("Labels").foregroundStyle(Theme.textTertiary)
+                            }
+                            .font(.small)
+                        }
+                    }
                 }
                 // Only when there is one, to keep the row short; D adds one.
                 if let due = model.dueBadge(for: item) {
@@ -224,31 +253,24 @@ struct PeekPanel: View {
                     }
                 }
             }
-            if !item.labels.isEmpty || item.subTotal > 0 {
+            if item.kind != .draft || item.subTotal > 0 {
                 HStack(spacing: 6) {
-                    ForEach(item.labels) { LabelChip(label: $0) }
+                    if !item.labels.isEmpty {
+                        PropertyButton(kind: .labels, item: item) {
+                            HStack(spacing: 6) {
+                                ForEach(item.labels) { LabelChip(label: $0) }
+                            }
+                        }
+                        .padding(.leading, -8)
+                    }
                     if item.subTotal > 0 {
                         SubIssueChip(completed: item.subCompleted, total: item.subTotal)
                     }
                 }
-                .padding(.leading, 8)
             }
         }
         .padding(.leading, -8)
         .foregroundStyle(Theme.textBody)
-    }
-
-    /// A ticked checkbox, saved like any edit of the description.
-    private func setBody(_ text: String) {
-        guard let current = model.item(id: item.id), text != Diff3.normalize(current.body) else { return }
-        model.setBody(current, to: text)
-    }
-
-    private func hint(_ keys: String, _ action: String) -> some View {
-        HStack(spacing: 5) {
-            Keycap(keys)
-            Text(action).font(.tiny).foregroundStyle(Theme.textTertiary)
-        }
     }
 }
 #endif

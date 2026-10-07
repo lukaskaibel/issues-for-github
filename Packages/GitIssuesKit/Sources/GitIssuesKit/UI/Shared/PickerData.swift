@@ -69,7 +69,8 @@ enum PickerKind: Equatable {
         }
     }
 
-    var staysOpen: Bool { self == .assignees || self == .labels }
+    /// People and labels take several values; the rest one.
+    var multiple: Bool { self == .assignees || self == .labels }
 
     var help: String {
         switch self {
@@ -197,7 +198,10 @@ extension AppModel {
 
     /// The status as a chip or property shows it. An issue on none of your boards has none, only open or closed.
     func statusText(of item: Item) -> String {
-        guard item.isOnBoard else { return item.isClosed ? "Closed" : "No project" }
+        guard item.isOnBoard else {
+            if item.state == "MERGED" { return "Merged" }
+            return item.isClosed ? "Closed" : "No project"
+        }
         return statusOption(of: item)?.name ?? "No status"
     }
 
@@ -297,6 +301,8 @@ extension AppModel {
 
     func people(projectId: String?, repoId: String?) -> [Person] {
         var result = repoMeta(projectId: projectId, repoId: repoId)?.assignableUsers ?? []
+        // A repository none of your boards use.
+        if result.isEmpty, let repoId, let meta = otherRepoMeta[repoId] { result = meta.people }
         if result.isEmpty {
             var seen = Set<String>()
             let nearby = allItems.filter { projectId == nil ? $0.repoId == repoId : $0.projectId == projectId }
@@ -315,7 +321,8 @@ extension AppModel {
     }
 
     func labels(projectId: String?, repoId: String?) -> [LabelRef] {
-        let result = repoMeta(projectId: projectId, repoId: repoId)?.labels ?? []
+        var result = repoMeta(projectId: projectId, repoId: repoId)?.labels ?? []
+        if result.isEmpty, let repoId, let meta = otherRepoMeta[repoId] { result = meta.labels }
         if !result.isEmpty { return result }
         var seen = Set<String>()
         return allItems

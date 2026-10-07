@@ -132,6 +132,15 @@ struct MainTabs: View {
     var body: some View {
         @Bindable var navigation = navigation
         TabView(selection: $navigation.tab) {
+            Tab("Inbox", systemImage: "tray", value: MobileTab.inbox) {
+                if wide {
+                    InboxSplit()
+                } else {
+                    TabStack(tab: .inbox) { InboxScreen() }
+                }
+            }
+            .badge(model.inboxUnreadCount)
+            .customizationID("inbox")
             Tab("My Issues", systemImage: "scope", value: MobileTab.myIssues) {
                 TabStack(tab: .myIssues) { MyIssuesScreen() }
             }
@@ -184,8 +193,13 @@ struct MainTabs: View {
             model.revealItemId = nil
             reveal(id)
         }
+        // The sidebar's header and bottom bar are hosted on their own when the sidebar first appears, which can be
+        // when an iPad turns from portrait to landscape; they get the model and navigation handed on explicitly, or
+        // they'd find none.
         .tabViewSidebarHeader {
             SidebarAccountHeader()
+                .environment(model)
+                .environment(navigation)
         }
         .tabViewSidebarBottomBar {
             // Nothing while everything is on GitHub (the dot on the avatar says so); a card when you're offline or
@@ -199,6 +213,8 @@ struct MainTabs: View {
                 }
             }
             .animation(Theme.overlay, value: model.syncAttention)
+            .environment(model)
+            .environment(navigation)
         }
         .tabBarMinimizeBehavior(.onScrollDown)
         .onChange(of: wide, initial: true) { _, wide in
@@ -238,15 +254,25 @@ struct TabStack<Root: View>: View {
         )) {
             root
                 .navigationDestination(for: Route.self) { route in
-                    switch route {
-                    case .project(let id): ProjectScreen(projectId: id)
-                    case .repository(let id): RepositoryScreen(repoId: id)
-                    case .issue(let id): IssueScreen(itemId: id)
-                    case .statuses(let id): StatusEditor(projectId: id)
-                    }
+                    RouteDestination(route: route)
                 }
         }
         .environment(\.openRoute, OpenRouteAction { [navigation] route in navigation.push(route, on: tab) })
+    }
+}
+
+/// The screen a route leads to, in any tab's stack.
+struct RouteDestination: View {
+    var route: Route
+
+    var body: some View {
+        switch route {
+        case .project(let id): ProjectScreen(projectId: id)
+        case .repository(let id): RepositoryScreen(repoId: id)
+        case .issue(let id): IssueScreen(itemId: id)
+        case .inboxIssue(let entry, let item): IssueScreen(itemId: item, inboxEntryId: entry)
+        case .statuses(let id): StatusEditor(projectId: id)
+        }
     }
 }
 
@@ -440,6 +466,8 @@ struct MobileCommands: Commands {
                 .disabled(noBoard)
             Button("My Issues") { navigation?.tab = .myIssues }
                 .keyboardShortcut("3", modifiers: .command)
+                .disabled(unavailable)
+            Button("Inbox") { navigation?.tab = .inbox }
                 .disabled(unavailable)
             Divider()
             Button("Sync with GitHub Now") { model.refresh() }

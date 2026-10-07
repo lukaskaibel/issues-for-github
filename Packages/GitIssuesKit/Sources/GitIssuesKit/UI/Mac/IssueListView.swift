@@ -31,6 +31,8 @@ struct IssueListView: View {
                         }
                     )
                 },
+                // My Issues mixes projects, so there is no one order to put an issue into.
+                canMoveRows: model.currentProject?.viewerCanUpdate == true,
                 focusedId: model.focusedItemId,
                 focusScrollToken: model.focusScrollToken,
                 avatarVersion: model.avatarVersion

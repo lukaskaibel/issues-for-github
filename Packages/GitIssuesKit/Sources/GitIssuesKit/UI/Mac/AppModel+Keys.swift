@@ -105,9 +105,21 @@ extension AppModel {
             return true
         }
         let key = event.charactersIgnoringModifiers?.lowercased() ?? ""
+        if scope == .inbox, let handled = handleInboxKey(event, key: key, modifiers: modifiers) {
+            return handled
+        }
         // ⌘A picks every issue on screen.
         if modifiers == .command, key == "a", openItem == nil, !orderedItems.isEmpty {
             selectAll()
+            return true
+        }
+        // ⌥↑ and ⌥↓ (or ⌥K and ⌥J) move the issue up or down its column, or its section of the list. The
+        // keyboard focus goes with it, so pressing again keeps moving the same issue.
+        if modifiers == .option, openItem == nil, currentProjectId != nil,
+           let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key] {
+            if let id = cursorId, let item = scopedItems.first(where: { $0.id == id }), move(item, by: delta) {
+                moveFocus(to: item.id)
+            }
             return true
         }
         guard modifiers.isEmpty else { return false }
@@ -156,17 +168,23 @@ extension AppModel {
             pendingGoTo = nil
             switch key {
             case "b":
+                // From the Inbox or My Issues, back to the project used last.
+                if currentProjectId == nil { selectLastProject() }
                 if currentProjectId != nil {
                     closeDetail()
                     withAnimation(Theme.spring) { viewMode = .board }
                 }
                 return true
             case "l":
+                if scope == .inbox { selectLastProject() }
                 closeDetail()
                 withAnimation(Theme.spring) { viewMode = .list }
                 return true
             case "m":
                 select(.myIssues)
+                return true
+            case "i":
+                select(.inbox)
                 return true
             case "p":
                 overlay = .palette(.projects)
@@ -242,6 +260,82 @@ extension AppModel {
             overlay = .palette(.dueDate(itemId: item.id))
         default:
             return false
+        }
+        return true
+    }
+
+    /// The Inbox's own keys, as in Linear: J and K move and show the issue, U reads, E or ⌫ archives, H snoozes,
+    /// ⇧S unsubscribes, ⌥U reads everything and ⇧⌫ archives everything read. Returns nil for keys it leaves to the
+    /// rest, such as S, P, A, L and I, which act on the selected entry's issue as anywhere else.
+    private func handleInboxKey(_ event: NSEvent, key: String, modifiers: NSEvent.ModifierFlags) -> Bool? {
+        let shift = event.modifierFlags.contains(.shift)
+        if modifiers == .command, key == "z", inboxUndo != nil {
+            undoInbox()
+            return true
+        }
+        // With the issue open full size, J and K go on to the next notification's issue.
+        if let openItem {
+            guard modifiers.isEmpty, !shift, key == "j" || key == "k" else { return nil }
+            stepInboxOpen(key == "j" ? 1 : -1, from: openItem)
+            return true
+        }
+        if modifiers == .command, key == "a" {
+            inboxPicked = Set(visibleInbox.map(\.id))
+            return true
+        }
+        if modifiers == .option, key == "u" {
+            markAllRead()
+            return true
+        }
+        guard modifiers.isEmpty else { return nil }
+        // The key after G belongs to the "go to" sequence.
+        if let started = pendingGoTo, Date().timeIntervalSince(started) < 1.2 { return nil }
+        if event.keyCode == 53 {
+            guard !inboxPicked.isEmpty else { return nil }
+            inboxPicked = []
+            return true
+        }
+        let targets = inboxPicked.isEmpty
+            ? inboxSelected.map { [$0] } ?? []
+            : visibleInbox.filter { inboxPicked.contains($0.id) }
+        let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key]
+        if let delta {
+            if shift, let current = inboxSelected ?? visibleInbox.first {
+                // Shift with the arrows or J/K picks a run, as in the list.
+                if inboxPicked.isEmpty { inboxPicked = [current.id] }
+                stepInbox(delta)
+                if let reached = inboxSelected { extendInboxPick(to: reached) }
+            } else {
+                stepInbox(delta)
+            }
+            return true
+        }
+        switch event.keyCode {
+        case 36: // return
+            if let entry = inboxSelected, let item = inboxItem(for: entry), !item.isDetached { open(item) }
+            return true
+        case 51: // delete
+            if shift { archiveAllRead() } else { archive(targets) }
+            return true
+        case 49: // space: the issue is beside the list already
+            return true
+        default:
+            break
+        }
+        switch key {
+        case "u":
+            toggleRead(targets)
+        case "e":
+            archive(targets)
+        case "h":
+            guard !targets.isEmpty else { return true }
+            inboxSnoozeRequest = InboxSnoozeRequest(token: inboxSnoozeRequest.token + 1, pickDate: false)
+        case "s" where shift:
+            unsubscribe(targets)
+        case "x":
+            if let entry = inboxSelected { toggleInboxPick(entry) }
+        default:
+            return nil
         }
         return true
     }

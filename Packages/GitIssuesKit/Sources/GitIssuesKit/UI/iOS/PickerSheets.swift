@@ -1,47 +1,66 @@
 #if os(iOS)
 import SwiftUI
 
-/// A searchable list to pick a property from, as a sheet: one value for status and priority, several for
-/// people and labels. The same choices, in the same order, as the Mac's dropdowns.
+/// A searchable list to pick a property from, as a sheet, with the same choices in the same order as the Mac's
+/// dropdowns. A tap picks and closes it. People and labels take several: the circle at the start of a row picks
+/// without closing, for the next one.
 struct PickerSheet: View {
     var title: String
     var prompt: String
     var multiple: Bool
+    /// Opened with a key on an iPad keyboard: typing goes straight to the search, and Return picks the first match.
+    var focusesSearch = false
     var items: () -> [PickerItem]
     var onPick: (String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var picked = 0
+    @State private var searching = false
 
     var body: some View {
         NavigationStack {
             let visible = filtered(items())
             List {
                 ForEach(visible) { item in
-                    Button {
-                        picked += 1
-                        onPick(item.id)
-                        if !multiple { dismiss() }
-                    } label: {
-                        HStack(spacing: 12) {
-                            item.icon
-                                .frame(width: 24, height: 24)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(item.title).foregroundStyle(Theme.text)
-                                if let subtitle = item.subtitle {
-                                    Text(subtitle).font(.footnote).foregroundStyle(Theme.textSecondary)
+                    HStack(spacing: 12) {
+                        if multiple {
+                            Button {
+                                pick(item, keepOpen: true)
+                            } label: {
+                                Image(systemName: item.selected ? "checkmark.circle.fill" : "circle")
+                                    .font(.title3)
+                                    .foregroundStyle(item.selected ? Theme.accent : Theme.textTertiary)
+                                    .frame(width: 28, height: 36)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel(item.selected ? "Remove \(item.title), keep choosing" : "Add \(item.title), keep choosing")
+                            .accessibilityIdentifier("check-\(item.title)")
+                        }
+                        Button {
+                            pick(item, keepOpen: false)
+                        } label: {
+                            HStack(spacing: 12) {
+                                item.icon
+                                    .frame(width: 24, height: 24)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(item.title).foregroundStyle(Theme.text)
+                                    if let subtitle = item.subtitle {
+                                        Text(subtitle).font(.footnote).foregroundStyle(Theme.textSecondary)
+                                    }
+                                }
+                                Spacer(minLength: 8)
+                                if item.selected, !multiple {
+                                    Image(systemName: "checkmark")
+                                        .font(.body.weight(.semibold))
+                                        .foregroundStyle(Theme.accent)
                                 }
                             }
-                            Spacer(minLength: 8)
-                            if item.selected {
-                                Image(systemName: "checkmark")
-                                    .font(.body.weight(.semibold))
-                                    .foregroundStyle(Theme.accent)
-                            }
+                            .contentShape(Rectangle())
                         }
-                        .contentShape(Rectangle())
+                        .buttonStyle(.borderless)
+                        .accessibilityAddTraits(item.selected ? .isSelected : [])
                     }
-                    .accessibilityAddTraits(item.selected ? .isSelected : [])
                 }
                 if visible.isEmpty {
                     if query.isEmpty {
@@ -53,7 +72,11 @@ struct PickerSheet: View {
                     }
                 }
             }
-            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: prompt)
+            .searchable(text: $query, isPresented: $searching, placement: .navigationBarDrawer(displayMode: .always), prompt: prompt)
+            .onSubmit(of: .search) {
+                if let first = visible.first { pick(first, keepOpen: false) }
+            }
+            .onAppear { if focusesSearch { searching = true } }
             .searchPresentationToolbarBehavior(.avoidHidingContent)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
@@ -66,6 +89,12 @@ struct PickerSheet: View {
         .sensoryFeedback(.selection, trigger: picked)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+    }
+
+    private func pick(_ item: PickerItem, keepOpen: Bool) {
+        picked += 1
+        onPick(item.id)
+        if !keepOpen { dismiss() }
     }
 
     private func filtered(_ items: [PickerItem]) -> [PickerItem] {
@@ -109,6 +138,7 @@ struct IssuePickerSheet: View {
     @Environment(AppModel.self) private var model
     var kind: PickerKind
     var itemId: String
+    var focusesSearch = false
 
     var body: some View {
         if kind == .dueDate {
@@ -122,7 +152,8 @@ struct IssuePickerSheet: View {
         PickerSheet(
             title: kind.sheetTitle,
             prompt: kind.searchPrompt,
-            multiple: kind.staysOpen,
+            multiple: kind.multiple,
+            focusesSearch: focusesSearch,
             items: {
                 guard let item = model.item(id: itemId) else { return [] }
                 return model.pickerItems(kind, for: item)

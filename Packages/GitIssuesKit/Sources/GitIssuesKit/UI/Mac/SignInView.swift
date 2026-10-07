@@ -45,6 +45,7 @@ struct SignInView: View {
                             HStack(spacing: 8) {
                                 SecureField("Token with repo, project and read:org scopes", text: $token)
                                     .textFieldStyle(.plain)
+                                    .focusOnAppear()
                                     .padding(.horizontal, 10)
                                     .frame(width: 320, height: 28)
                                     .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.control))

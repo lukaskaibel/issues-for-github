@@ -38,6 +38,8 @@ struct IssueTable: NSViewRepresentable {
 
     @Environment(AppModel.self) private var model
     var sections: [IssueSectionModel]
+    /// Whether issues can be dragged to a new place: in a project you can edit, not in My Issues.
+    var canMoveRows = false
     var focusedId: String?
     var focusScrollToken: Int
     var avatarVersion: Int
@@ -67,8 +69,8 @@ struct IssueTable: NSViewRepresentable {
         table.action = #selector(Coordinator.clicked(_:))
         table.coordinator = context.coordinator
         context.coordinator.table = table
-        // Section headers can be dragged to reorder the sections; rows open a gap where it would land.
-        table.registerForDraggedTypes([Coordinator.sectionType])
+        // Issues and section headers can be dragged to a new place; rows open a gap where it would land.
+        table.registerForDraggedTypes([Coordinator.itemType, Coordinator.sectionType])
         table.setDraggingSourceOperationMask(.move, forLocal: true)
         table.draggingDestinationFeedbackStyle = .gap
 
@@ -99,6 +101,7 @@ struct IssueTable: NSViewRepresentable {
     }
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
+        context.coordinator.canMoveRows = canMoveRows
         context.coordinator.apply(
             sections: sections, focusedId: focusedId, focusScrollToken: focusScrollToken, avatarVersion: avatarVersion
         )
@@ -131,6 +134,9 @@ struct IssueTable: NSViewRepresentable {
         private var hoveredId: String?
         private var focusScrollToken = 0
         private var avatarVersion = 0
+        var canMoveRows = false
+        /// The issue being dragged, whose row stays behind faded until it lands.
+        private var draggedId: String?
 
         init(model: AppModel) {
             self.model = model
@@ -156,9 +162,15 @@ struct IssueTable: NSViewRepresentable {
                     configureView(at: row, in: table)
                 }
             } else {
-                let difference = newIds.difference(from: oldIds)
+                let difference = newIds.difference(from: oldIds).inferringMoves()
                 if old.isEmpty || difference.count > 300 {
                     table.reloadData()
+                } else if let move = Self.singleMove(difference) {
+                    // One issue changed place, by a drag or a new status: it slides there.
+                    table.beginUpdates()
+                    table.moveRow(at: move.from, to: move.to)
+                    table.endUpdates()
+                    for row in visibleRows(in: table) { configureView(at: row, in: table) }
                 } else {
                     // Rows slide to their new place when an issue changes status or order.
                     table.beginUpdates()
@@ -199,6 +211,15 @@ struct IssueTable: NSViewRepresentable {
             }
         }
 
+        /// The one row that moved, when that is all that changed.
+        private static func singleMove(_ difference: CollectionDifference<String>) -> (from: Int, to: Int)? {
+            guard difference.count == 2,
+                  case .remove(let from, _, let removedTo?) = difference.removals.first,
+                  case .insert(let to, _, let insertedFrom?) = difference.insertions.first,
+                  removedTo == to, insertedFrom == from else { return nil }
+            return (from, to)
+        }
+
         private func visibleRows(in table: NSTableView) -> Range<Int> {
             let range = table.rows(in: table.visibleRect)
             let lower = max(0, range.location)
@@ -219,6 +240,7 @@ struct IssueTable: NSViewRepresentable {
                 let cell = view as? IssueRowCell
                 cell?.model = model
                 cell?.configure(row, highlighted: row.item.id == hoveredId || row.item.id == focusedId)
+                cell?.alphaValue = row.item.id == draggedId ? 0.35 : 1
             }
         }
 
@@ -280,15 +302,48 @@ struct IssueTable: NSViewRepresentable {
             }
         }
 
-        // MARK: Reordering sections
+        // MARK: Reordering issues and sections
 
+        static let itemType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.item")
         static let sectionType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.section")
 
         func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? {
-            guard entries.indices.contains(row), case .header(let section) = entries[row] else { return nil }
+            guard entries.indices.contains(row) else { return nil }
             let item = NSPasteboardItem()
-            item.setString(section.id, forType: Self.sectionType)
+            switch entries[row] {
+            case .header(let section):
+                item.setString(section.id, forType: Self.sectionType)
+            case .row(let issue):
+                guard canMoveRows else { return nil }
+                item.setString(issue.item.id, forType: Self.itemType)
+            }
             return item
+        }
+
+        func tableView(
+            _ tableView: NSTableView, draggingSession session: NSDraggingSession, willBeginAt screenPoint: NSPoint,
+            forRowIndexes rowIndexes: IndexSet
+        ) {
+            guard let row = rowIndexes.first, let item = item(at: row) else { return }
+            // The issue lifts off as a card, and its row stays behind faded until it lands.
+            if let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell,
+               let image = cell.dragImage() {
+                let frame = tableView.rect(ofRow: row)
+                session.enumerateDraggingItems(options: [], for: tableView, classes: [NSPasteboardItem.self], searchOptions: [:]) { dragged, _, _ in
+                    dragged.setDraggingFrame(frame, contents: image)
+                }
+            }
+            draggedId = item.id
+            configureView(at: row, in: tableView)
+        }
+
+        func tableView(
+            _ tableView: NSTableView, draggingSession session: NSDraggingSession, endedAt screenPoint: NSPoint,
+            operation: NSDragOperation
+        ) {
+            let id = draggedId
+            draggedId = nil
+            refreshHighlight(for: [id])
         }
 
         /// Rows where a section may be dropped: in front of each header, or after the last row.
@@ -296,12 +351,36 @@ struct IssueTable: NSViewRepresentable {
             entries.indices.filter { if case .header = entries[$0] { return true } else { return false } } + [entries.count]
         }
 
+        /// Where an issue dropped above `row` lands: the section it joins, and its place among that section's
+        /// other issues. Above a header is the end of the section before it.
+        private func landing(above row: Int, moving id: String) -> (sectionId: String, index: Int)? {
+            guard row > 0 else { return nil }
+            guard let header = entries[..<min(row, entries.count)].lastIndex(where: {
+                if case .header = $0 { return true } else { return false }
+            }), case .header(let section) = entries[header] else { return nil }
+            return (section.id, entries[(header + 1)..<row].filter { $0.id != id }.count)
+        }
+
+        /// Within its section the issue changes place; in another one it takes that status, as on the board.
+        func dropItem(_ id: String, above row: Int) -> Bool {
+            guard let item = model.item(id: id), let projectId = item.projectId, let landing = landing(above: row, moving: id),
+                  let column = model.columns(projectId: projectId).first(where: { $0.id == landing.sectionId })
+            else { return false }
+            model.drop(item, in: column, at: landing.index)
+            return true
+        }
+
         func tableView(
             _ tableView: NSTableView, validateDrop info: NSDraggingInfo, proposedRow row: Int,
             proposedDropOperation dropOperation: NSTableView.DropOperation
         ) -> NSDragOperation {
-            guard info.draggingSource as? NSTableView === tableView,
-                  let nearest = sectionBoundaries.min(by: { abs($0 - row) < abs($1 - row) }) else { return [] }
+            guard info.draggingSource as? NSTableView === tableView else { return [] }
+            if info.draggingPasteboard.string(forType: Self.itemType) != nil {
+                // Anywhere below the first header; in the middle of a row means just above it.
+                tableView.setDropRow(max(row, 1), dropOperation: .above)
+                return .move
+            }
+            guard let nearest = sectionBoundaries.min(by: { abs($0 - row) < abs($1 - row) }) else { return [] }
             tableView.setDropRow(nearest, dropOperation: .above)
             return .move
         }
@@ -309,6 +388,7 @@ struct IssueTable: NSViewRepresentable {
         func tableView(
             _ tableView: NSTableView, acceptDrop info: NSDraggingInfo, row: Int, dropOperation: NSTableView.DropOperation
         ) -> Bool {
+            if let id = info.draggingPasteboard.string(forType: Self.itemType) { return dropItem(id, above: row) }
             guard let id = info.draggingPasteboard.string(forType: Self.sectionType) else { return false }
             var target: String?
             if entries.indices.contains(row), case .header(let section) = entries[row] { target = section.id }
@@ -635,6 +715,35 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
+
+    /// The row as a card lifted off the list, to drag around.
+    func dragImage() -> NSImage? {
+        guard let content = bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
+        // Without the hover fill and checkbox, which belong to the pointer, not to the issue.
+        let wasHighlighted = highlighted, wasHovered = hoveredPart
+        highlighted = false
+        hoveredPart = nil
+        cacheDisplay(in: bounds, to: content)
+        highlighted = wasHighlighted
+        hoveredPart = wasHovered
+        needsDisplay = true
+        let appearance = effectiveAppearance
+        return NSImage(size: bounds.size, flipped: false) { rect in
+            appearance.performAsCurrentDrawingAppearance {
+                let card = NSBezierPath(
+                    roundedRect: rect.insetBy(dx: IssueTable.inset, dy: 1).insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7
+                )
+                NSColor(Theme.cardLifted).setFill()
+                card.fill()
+                NSColor(Theme.cardLiftedBorder).setStroke()
+                card.lineWidth = 1
+                card.stroke()
+            }
+            // On top of the card; a plain `draw(in:)` would copy the transparent pixels over it.
+            content.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+            return true
+        }
+    }
 
     override func draw(_ dirtyRect: NSRect) {
         guard let row, let context = NSGraphicsContext.current?.cgContext else { return }
@@ -1094,114 +1203,7 @@ struct ItemMenuBuilder {
             menu.addItem(title)
         }
 
-        // An issue on none of your boards goes onto one instead of getting a status.
-        if !item.isOnBoard, item.kind == .issue {
-            let boards = model.boards(toAdd: item)
-            if !boards.isEmpty {
-                let add = NSMenu()
-                for project in boards {
-                    let statuses = model.statusOptions(projectId: project.id)
-                    let target = boards.count == 1 ? add : NSMenu()
-                    if statuses.isEmpty {
-                        target.addItem(ClosureMenuItem(project.title) { [model, item] in
-                            model.pick(.status, id: "\(project.id)/", for: item)
-                        })
-                    }
-                    for (index, option) in statuses.enumerated() {
-                        let entry = ClosureMenuItem(option.name) { [model, item] in
-                            model.pick(.status, id: "\(project.id)/\(option.id)", for: item)
-                        }
-                        entry.image = MenuIcons.status(model.glyph(projectId: project.id, optionId: option.id))
-                        if boards.count == 1 { number(entry, index + 1) }
-                        target.addItem(entry)
-                    }
-                    if boards.count > 1 { add.addItem(submenu(project.title, nil, target)) }
-                }
-                let title = boards.count == 1 ? "Add to \(boards[0].title)" : "Add to Project"
-                menu.addItem(submenu(title, MenuIcons.status(.noProject), add))
-            }
-        }
-
-        let statuses = model.statusOptions(projectId: item.projectId)
-        if !statuses.isEmpty {
-            let status = NSMenu()
-            for (index, option) in statuses.enumerated() {
-                let checked = targets.allSatisfy { model.statusOption(of: $0)?.name == option.name }
-                let entry = ClosureMenuItem(option.name, checked: checked) { [model, item] in
-                    model.pick(.status, id: option.id, for: item)
-                }
-                entry.image = MenuIcons.status(model.glyph(projectId: item.projectId, optionId: option.id))
-                number(entry, index + 1)
-                status.addItem(entry)
-            }
-            menu.addItem(submenu("Status", MenuIcons.status(model.glyph(of: item)), status))
-        }
-
-        let priorities = model.priorityOptions(projectId: item.projectId)
-        if !priorities.isEmpty {
-            let priority = NSMenu()
-            let none = ClosureMenuItem("No priority", checked: targets.allSatisfy { $0.priorityId == nil }) { [model, item] in
-                model.pick(.priority, id: "", for: item)
-            }
-            none.image = MenuIcons.priority(.none)
-            number(none, 0)
-            priority.addItem(none)
-            for (index, option) in priorities.enumerated() {
-                let checked = targets.allSatisfy { model.priorityOption(of: $0)?.name == option.name }
-                let entry = ClosureMenuItem(option.name, checked: checked) { [model, item] in
-                    model.pick(.priority, id: option.id, for: item)
-                }
-                entry.image = MenuIcons.priority(option.priorityLevel)
-                number(entry, index + 1)
-                priority.addItem(entry)
-            }
-            menu.addItem(submenu("Priority", MenuIcons.priority(model.priorityLevel(of: item)), priority))
-        }
-
-        if item.kind != .draft {
-            let people = NSMenu()
-            people.autoenablesItems = false
-            for person in model.people(for: item) {
-                let checked = targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } }
-                let entry = ClosureMenuItem(person.login, checked: checked) { [model, item] in
-                    model.pick(.assignees, id: person.id, for: item)
-                }
-                entry.image = MenuIcons.avatar(person)
-                people.addItem(entry)
-            }
-            let icon = item.assignees.first.map(MenuIcons.avatar) ?? MenuIcons.symbol("person.crop.circle")
-            menu.addItem(submenu("Assignee", icon, people))
-
-            let labels = NSMenu()
-            for label in model.labels(for: item) {
-                let checked = targets.allSatisfy { target in target.labels.contains { $0.name == label.name } }
-                let entry = ClosureMenuItem(label.name, checked: checked) { [model, item] in
-                    model.pick(.labels, id: label.id, for: item)
-                }
-                entry.image = MenuIcons.labelDot(label.color)
-                labels.addItem(entry)
-            }
-            if labels.items.isEmpty {
-                let empty = NSMenuItem(title: "No labels in this repository", action: nil, keyEquivalent: "")
-                empty.isEnabled = false
-                labels.addItem(empty)
-            }
-            menu.addItem(submenu("Labels", MenuIcons.symbol("tag"), labels))
-
-            if let viewer = model.viewer {
-                let mine = targets.allSatisfy { target in target.assignees.contains { $0.id == viewer.id } }
-                let assignMe = ClosureMenuItem(mine ? "Unassign Me" : "Assign to Me") { [model] in
-                    model.toggleAssignMe(targets)
-                }
-                assignMe.image = MenuIcons.symbol(mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
-                hint(assignMe, "i")
-                menu.addItem(assignMe)
-            }
-        }
-
-        if targets.contains(where: model.canHaveDueDate) {
-            menu.addItem(submenu("Due Date", MenuIcons.symbol("calendar"), dueDateMenu(targets)))
-        }
+        for entry in propertyItems(targets: targets) { menu.addItem(entry) }
 
         menu.addItem(.separator())
         if several {
@@ -1213,7 +1215,7 @@ struct ItemMenuBuilder {
             let clear = ClosureMenuItem("Clear Selection") { [model] in model.clearSelection() }
             clear.image = MenuIcons.symbol("xmark.circle")
             menu.addItem(clear)
-            showImages(in: menu)
+            Self.showImages(in: menu)
             return menu
         }
         let open = ClosureMenuItem("Open") { [model, item] in model.open(item) }
@@ -1256,7 +1258,7 @@ struct ItemMenuBuilder {
             }
             menu.addItem(delete)
         }
-        showImages(in: menu)
+        Self.showImages(in: menu)
         return menu
     }
 
@@ -1289,8 +1291,121 @@ struct ItemMenuBuilder {
         return menu
     }
 
+    /// Status, priority, assignee, labels and Assign to Me, as submenus: the part of the menu the Inbox shows too.
+    func propertyItems(targets: [Item]) -> [NSMenuItem] {
+        var entries: [NSMenuItem] = []
+        // An issue on none of your boards goes onto one instead of getting a status.
+        if !item.isOnBoard {
+            let boards = model.boards(toAdd: item)
+            if !boards.isEmpty {
+                let add = NSMenu()
+                for project in boards {
+                    let statuses = model.statusOptions(projectId: project.id)
+                    let target = boards.count == 1 ? add : NSMenu()
+                    if statuses.isEmpty {
+                        target.addItem(ClosureMenuItem(project.title) { [model, item] in
+                            model.pick(.status, id: "\(project.id)/", for: item)
+                        })
+                    }
+                    for (index, option) in statuses.enumerated() {
+                        let entry = ClosureMenuItem(option.name) { [model, item] in
+                            model.pick(.status, id: "\(project.id)/\(option.id)", for: item)
+                        }
+                        entry.image = MenuIcons.status(model.glyph(projectId: project.id, optionId: option.id))
+                        if boards.count == 1 { number(entry, index + 1) }
+                        target.addItem(entry)
+                    }
+                    if boards.count > 1 { add.addItem(submenu(project.title, nil, target)) }
+                }
+                let title = boards.count == 1 ? "Add to \(boards[0].title)" : "Add to Project"
+                entries.append(submenu(title, MenuIcons.status(.noProject), add))
+            }
+        }
+
+        let statuses = model.statusOptions(projectId: item.projectId)
+        if !statuses.isEmpty {
+            let status = NSMenu()
+            for (index, option) in statuses.enumerated() {
+                let checked = targets.allSatisfy { model.statusOption(of: $0)?.name == option.name }
+                let entry = ClosureMenuItem(option.name, checked: checked) { [model, item] in
+                    model.pick(.status, id: option.id, for: item)
+                }
+                entry.image = MenuIcons.status(model.glyph(projectId: item.projectId, optionId: option.id))
+                number(entry, index + 1)
+                status.addItem(entry)
+            }
+            entries.append(submenu("Status", MenuIcons.status(model.glyph(of: item)), status))
+        }
+
+        let priorities = model.priorityOptions(projectId: item.projectId)
+        if !priorities.isEmpty {
+            let priority = NSMenu()
+            let none = ClosureMenuItem("No priority", checked: targets.allSatisfy { $0.priorityId == nil }) { [model, item] in
+                model.pick(.priority, id: "", for: item)
+            }
+            none.image = MenuIcons.priority(.none)
+            number(none, 0)
+            priority.addItem(none)
+            for (index, option) in priorities.enumerated() {
+                let checked = targets.allSatisfy { model.priorityOption(of: $0)?.name == option.name }
+                let entry = ClosureMenuItem(option.name, checked: checked) { [model, item] in
+                    model.pick(.priority, id: option.id, for: item)
+                }
+                entry.image = MenuIcons.priority(option.priorityLevel)
+                number(entry, index + 1)
+                priority.addItem(entry)
+            }
+            entries.append(submenu("Priority", MenuIcons.priority(model.priorityLevel(of: item)), priority))
+        }
+
+        if item.kind != .draft {
+            let people = NSMenu()
+            people.autoenablesItems = false
+            for person in model.people(for: item) {
+                let checked = targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } }
+                let entry = ClosureMenuItem(person.login, checked: checked) { [model, item] in
+                    model.pick(.assignees, id: person.id, for: item)
+                }
+                entry.image = MenuIcons.avatar(person)
+                people.addItem(entry)
+            }
+            let icon = item.assignees.first.map(MenuIcons.avatar) ?? MenuIcons.symbol("person.crop.circle")
+            entries.append(submenu("Assignee", icon, people))
+
+            let labels = NSMenu()
+            for label in model.labels(for: item) {
+                let checked = targets.allSatisfy { target in target.labels.contains { $0.name == label.name } }
+                let entry = ClosureMenuItem(label.name, checked: checked) { [model, item] in
+                    model.pick(.labels, id: label.id, for: item)
+                }
+                entry.image = MenuIcons.labelDot(label.color)
+                labels.addItem(entry)
+            }
+            if labels.items.isEmpty {
+                let empty = NSMenuItem(title: "No labels in this repository", action: nil, keyEquivalent: "")
+                empty.isEnabled = false
+                labels.addItem(empty)
+            }
+            entries.append(submenu("Labels", MenuIcons.symbol("tag"), labels))
+
+            if let viewer = model.viewer {
+                let mine = targets.allSatisfy { target in target.assignees.contains { $0.id == viewer.id } }
+                let assignMe = ClosureMenuItem(mine ? "Unassign Me" : "Assign to Me") { [model] in
+                    model.toggleAssignMe(targets)
+                }
+                assignMe.image = MenuIcons.symbol(mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
+                hint(assignMe, "i")
+                entries.append(assignMe)
+            }
+        }
+        if targets.contains(where: model.canHaveDueDate) {
+            entries.append(submenu("Due Date", MenuIcons.symbol("calendar"), dueDateMenu(targets)))
+        }
+        return entries
+    }
+
     /// macOS 27 hides menu item images unless asked; these icons carry meaning, so they stay visible.
-    private func showImages(in menu: NSMenu) {
+    static func showImages(in menu: NSMenu) {
         for entry in menu.items {
             if entry.image != nil { entry.preferredImageVisibility = .visible }
             if let submenu = entry.submenu { showImages(in: submenu) }

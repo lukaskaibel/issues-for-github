@@ -51,9 +51,11 @@ extension AppModel {
         perform(statusMutations(item, option))
     }
 
-    /// Puts issues that are on none of your boards onto one, in the chosen column.
+    /// Puts issues that are on none of your boards onto one, in the chosen column. A pull request the Inbox
+    /// showed can go on one too.
     func addToProject(_ items: [Item], project: Project, status option: FieldOption?) {
-        let mutations = items.filter { !$0.isOnBoard && $0.kind == .issue }.flatMap { item -> [Mutation] in
+        let (items, inserted) = keptForAdding(items.filter { !$0.isOnBoard && $0.kind != .draft })
+        let mutations = items.flatMap { item -> [Mutation] in
             guard let contentId = item.contentId else { return [] }
             let add = Mutation.addToProject(.init(
                 itemId: item.id, contentId: contentId, projectId: project.id,
@@ -61,7 +63,7 @@ extension AppModel {
             ))
             return [add] + stateMutations(item, for: option)
         }
-        withAnimation(Theme.spring) { perform(mutations) }
+        withAnimation(Theme.spring) { perform(mutations, inserting: inserted) }
     }
 
     /// Whether an issue counts as finished: in a done or cancelled column, or closed on GitHub.
@@ -116,6 +118,18 @@ extension AppModel {
             mutations.append(.move(.init(itemId: item.id, projectId: projectId, afterItemId: afterId)))
         }
         perform(mutations)
+    }
+
+    /// Moves an issue one place up or down within its column, which is also its section of the list.
+    /// Returns false at either end of the column, or where the project can't be changed.
+    @discardableResult
+    func move(_ item: Item, by delta: Int) -> Bool {
+        guard let projectId = item.projectId, project(of: item)?.viewerCanUpdate == true,
+              let column = columns(projectId: projectId).first(where: { $0.items.contains { $0.id == item.id } }),
+              let index = column.items.firstIndex(where: { $0.id == item.id }),
+              column.items.indices.contains(index + delta) else { return false }
+        drop(item, in: column, at: index + delta)
+        return true
     }
 
     // MARK: Content
@@ -228,7 +242,14 @@ extension AppModel {
 
     func delete(_ item: Item) {
         deletionCandidate = nil
+        let wasCurrent = openItemId == item.id || cursorId == item.id
         if openItemId == item.id { closeDetail() }
+        // The keyboard carries on from the issue after it (or before it, at the end), so deleting doesn't send
+        // you back to the top.
+        let order = wasCurrent ? orderedItems : []
+        let next = order.firstIndex { $0.id == item.id }.flatMap { index in
+            order.indices.contains(index + 1) ? order[index + 1] : index > 0 ? order[index - 1] : nil
+        }
         if focusedItemId == item.id { focusedItemId = nil }
         if hoveredItemId == item.id { hoveredItemId = nil }
         history.removeAll { $0.itemId == item.id }
@@ -239,6 +260,7 @@ extension AppModel {
                 isDraft: item.kind == .draft, label: "\(item.displayNumber) \(item.title)"
             ))])
         }
+        if let next { moveFocus(to: next.id) }
     }
 
     // MARK: Columns
@@ -282,7 +304,7 @@ extension AppModel {
         case .project(let id): "listOrder.\(id)"
         case .myIssues: "listOrder.mine"
         case .repository(let id): "listOrder.repository.\(id)"
-        case nil: nil
+        case .inbox, nil: nil
         }
     }
 
@@ -331,7 +353,7 @@ extension AppModel {
         case .project(let id): "collapsed.\(id)"
         case .myIssues: "collapsed.mine"
         case .repository(let id): "collapsed.repository.\(id)"
-        case nil: nil
+        case .inbox, nil: nil
         }
     }
 
