@@ -38,10 +38,11 @@ public enum APIError: Error, LocalizedError, Sendable {
 
     /// The thing the request referred to no longer exists (deleted, transferred, or access removed).
     public var isNotFound: Bool {
-        if case .graphql(let items) = self {
-            return items.contains { $0.type == "NOT_FOUND" }
+        switch self {
+        case .graphql(let items): items.contains { $0.type == "NOT_FOUND" }
+        case .http(let code, _): code == 404
+        default: false
         }
-        return false
     }
 }
 
@@ -150,5 +151,64 @@ public final class GraphQLClient: Sendable {
     private static func classify(_ errors: [GraphQLErrorItem]) -> APIError {
         if errors.contains(where: { $0.type == "RATE_LIMITED" }) { return .rateLimited }
         return .graphql(errors)
+    }
+
+    // MARK: REST
+
+    private let restBase = URL(string: "https://api.github.com")!
+
+    /// Calls GitHub's REST API, for the few things GraphQL can't do (notifications). Returns the body and the
+    /// response for 2xx and 304; anything else throws, mapped like the GraphQL errors.
+    public func rest(
+        _ method: String,
+        _ path: String,
+        query: [URLQueryItem] = [],
+        headers: [String: String] = [:],
+        json: [String: Any]? = nil
+    ) async throws -> (Data, HTTPURLResponse) {
+        #if DEBUG
+        if Self.simulateOffline.withLock({ $0 }) { throw APIError.offline("Simulated for testing.") }
+        #endif
+        let token = try await tokenSource.token()
+        var components = URLComponents(url: restBase.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
+        if !query.isEmpty { components.queryItems = query }
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = method
+        request.setValue("bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+        request.setValue("GitIssues-Mac", forHTTPHeaderField: "User-Agent")
+        // GitHub answers 304 to a conditional request only when the cache stays out of the way.
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        for (field, value) in headers { request.setValue(value, forHTTPHeaderField: field) }
+        if let json {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: json)
+        }
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch let error as URLError {
+            throw APIError.offline(error.localizedDescription)
+        }
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.offline("No response.")
+        }
+        switch http.statusCode {
+        case 200..<300, 304:
+            return (data, http)
+        case 401:
+            throw APIError.unauthorized
+        case 403, 429:
+            let text = String(data: data, encoding: .utf8) ?? ""
+            if http.value(forHTTPHeaderField: "x-ratelimit-remaining") == "0" || text.contains("rate limit") {
+                throw APIError.rateLimited
+            }
+            throw APIError.http(http.statusCode, text)
+        default:
+            throw APIError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+        }
     }
 }

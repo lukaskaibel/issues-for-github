@@ -1063,110 +1063,7 @@ struct ItemMenuBuilder {
             menu.addItem(title)
         }
 
-        // An issue on none of your boards goes onto one instead of getting a status.
-        if !item.isOnBoard, item.kind == .issue {
-            let boards = model.boards(toAdd: item)
-            if !boards.isEmpty {
-                let add = NSMenu()
-                for project in boards {
-                    let statuses = model.statusOptions(projectId: project.id)
-                    let target = boards.count == 1 ? add : NSMenu()
-                    if statuses.isEmpty {
-                        target.addItem(ClosureMenuItem(project.title) { [model, item] in
-                            model.pick(.status, id: "\(project.id)/", for: item)
-                        })
-                    }
-                    for (index, option) in statuses.enumerated() {
-                        let entry = ClosureMenuItem(option.name) { [model, item] in
-                            model.pick(.status, id: "\(project.id)/\(option.id)", for: item)
-                        }
-                        entry.image = MenuIcons.status(model.glyph(projectId: project.id, optionId: option.id))
-                        if boards.count == 1 { number(entry, index + 1) }
-                        target.addItem(entry)
-                    }
-                    if boards.count > 1 { add.addItem(submenu(project.title, nil, target)) }
-                }
-                let title = boards.count == 1 ? "Add to \(boards[0].title)" : "Add to Project"
-                menu.addItem(submenu(title, MenuIcons.status(.noProject), add))
-            }
-        }
-
-        let statuses = model.statusOptions(projectId: item.projectId)
-        if !statuses.isEmpty {
-            let status = NSMenu()
-            for (index, option) in statuses.enumerated() {
-                let checked = targets.allSatisfy { model.statusOption(of: $0)?.name == option.name }
-                let entry = ClosureMenuItem(option.name, checked: checked) { [model, item] in
-                    model.pick(.status, id: option.id, for: item)
-                }
-                entry.image = MenuIcons.status(model.glyph(projectId: item.projectId, optionId: option.id))
-                number(entry, index + 1)
-                status.addItem(entry)
-            }
-            menu.addItem(submenu("Status", MenuIcons.status(model.glyph(of: item)), status))
-        }
-
-        let priorities = model.priorityOptions(projectId: item.projectId)
-        if !priorities.isEmpty {
-            let priority = NSMenu()
-            let none = ClosureMenuItem("No priority", checked: targets.allSatisfy { $0.priorityId == nil }) { [model, item] in
-                model.pick(.priority, id: "", for: item)
-            }
-            none.image = MenuIcons.priority(.none)
-            number(none, 0)
-            priority.addItem(none)
-            for (index, option) in priorities.enumerated() {
-                let checked = targets.allSatisfy { model.priorityOption(of: $0)?.name == option.name }
-                let entry = ClosureMenuItem(option.name, checked: checked) { [model, item] in
-                    model.pick(.priority, id: option.id, for: item)
-                }
-                entry.image = MenuIcons.priority(option.priorityLevel)
-                number(entry, index + 1)
-                priority.addItem(entry)
-            }
-            menu.addItem(submenu("Priority", MenuIcons.priority(model.priorityLevel(of: item)), priority))
-        }
-
-        if item.kind != .draft {
-            let people = NSMenu()
-            people.autoenablesItems = false
-            for person in model.people(for: item) {
-                let checked = targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } }
-                let entry = ClosureMenuItem(person.login, checked: checked) { [model, item] in
-                    model.pick(.assignees, id: person.id, for: item)
-                }
-                entry.image = MenuIcons.avatar(person)
-                people.addItem(entry)
-            }
-            let icon = item.assignees.first.map(MenuIcons.avatar) ?? MenuIcons.symbol("person.crop.circle")
-            menu.addItem(submenu("Assignee", icon, people))
-
-            let labels = NSMenu()
-            for label in model.labels(for: item) {
-                let checked = targets.allSatisfy { target in target.labels.contains { $0.name == label.name } }
-                let entry = ClosureMenuItem(label.name, checked: checked) { [model, item] in
-                    model.pick(.labels, id: label.id, for: item)
-                }
-                entry.image = MenuIcons.labelDot(label.color)
-                labels.addItem(entry)
-            }
-            if labels.items.isEmpty {
-                let empty = NSMenuItem(title: "No labels in this repository", action: nil, keyEquivalent: "")
-                empty.isEnabled = false
-                labels.addItem(empty)
-            }
-            menu.addItem(submenu("Labels", MenuIcons.symbol("tag"), labels))
-
-            if let viewer = model.viewer {
-                let mine = targets.allSatisfy { target in target.assignees.contains { $0.id == viewer.id } }
-                let assignMe = ClosureMenuItem(mine ? "Unassign Me" : "Assign to Me") { [model] in
-                    model.toggleAssignMe(targets)
-                }
-                assignMe.image = MenuIcons.symbol(mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
-                hint(assignMe, "i")
-                menu.addItem(assignMe)
-            }
-        }
+        for entry in propertyItems(targets: targets) { menu.addItem(entry) }
 
         menu.addItem(.separator())
         if several {
@@ -1178,7 +1075,7 @@ struct ItemMenuBuilder {
             let clear = ClosureMenuItem("Clear Selection") { [model] in model.clearSelection() }
             clear.image = MenuIcons.symbol("xmark.circle")
             menu.addItem(clear)
-            showImages(in: menu)
+            Self.showImages(in: menu)
             return menu
         }
         let open = ClosureMenuItem("Open") { [model, item] in model.open(item) }
@@ -1221,12 +1118,122 @@ struct ItemMenuBuilder {
             }
             menu.addItem(delete)
         }
-        showImages(in: menu)
+        Self.showImages(in: menu)
         return menu
     }
 
+    /// Status, priority, assignee, labels and Assign to Me, as submenus: the part of the menu the Inbox shows too.
+    func propertyItems(targets: [Item]) -> [NSMenuItem] {
+        var entries: [NSMenuItem] = []
+        // An issue on none of your boards goes onto one instead of getting a status.
+        if !item.isOnBoard {
+            let boards = model.boards(toAdd: item)
+            if !boards.isEmpty {
+                let add = NSMenu()
+                for project in boards {
+                    let statuses = model.statusOptions(projectId: project.id)
+                    let target = boards.count == 1 ? add : NSMenu()
+                    if statuses.isEmpty {
+                        target.addItem(ClosureMenuItem(project.title) { [model, item] in
+                            model.pick(.status, id: "\(project.id)/", for: item)
+                        })
+                    }
+                    for (index, option) in statuses.enumerated() {
+                        let entry = ClosureMenuItem(option.name) { [model, item] in
+                            model.pick(.status, id: "\(project.id)/\(option.id)", for: item)
+                        }
+                        entry.image = MenuIcons.status(model.glyph(projectId: project.id, optionId: option.id))
+                        if boards.count == 1 { number(entry, index + 1) }
+                        target.addItem(entry)
+                    }
+                    if boards.count > 1 { add.addItem(submenu(project.title, nil, target)) }
+                }
+                let title = boards.count == 1 ? "Add to \(boards[0].title)" : "Add to Project"
+                entries.append(submenu(title, MenuIcons.status(.noProject), add))
+            }
+        }
+
+        let statuses = model.statusOptions(projectId: item.projectId)
+        if !statuses.isEmpty {
+            let status = NSMenu()
+            for (index, option) in statuses.enumerated() {
+                let checked = targets.allSatisfy { model.statusOption(of: $0)?.name == option.name }
+                let entry = ClosureMenuItem(option.name, checked: checked) { [model, item] in
+                    model.pick(.status, id: option.id, for: item)
+                }
+                entry.image = MenuIcons.status(model.glyph(projectId: item.projectId, optionId: option.id))
+                number(entry, index + 1)
+                status.addItem(entry)
+            }
+            entries.append(submenu("Status", MenuIcons.status(model.glyph(of: item)), status))
+        }
+
+        let priorities = model.priorityOptions(projectId: item.projectId)
+        if !priorities.isEmpty {
+            let priority = NSMenu()
+            let none = ClosureMenuItem("No priority", checked: targets.allSatisfy { $0.priorityId == nil }) { [model, item] in
+                model.pick(.priority, id: "", for: item)
+            }
+            none.image = MenuIcons.priority(.none)
+            number(none, 0)
+            priority.addItem(none)
+            for (index, option) in priorities.enumerated() {
+                let checked = targets.allSatisfy { model.priorityOption(of: $0)?.name == option.name }
+                let entry = ClosureMenuItem(option.name, checked: checked) { [model, item] in
+                    model.pick(.priority, id: option.id, for: item)
+                }
+                entry.image = MenuIcons.priority(option.priorityLevel)
+                number(entry, index + 1)
+                priority.addItem(entry)
+            }
+            entries.append(submenu("Priority", MenuIcons.priority(model.priorityLevel(of: item)), priority))
+        }
+
+        if item.kind != .draft {
+            let people = NSMenu()
+            people.autoenablesItems = false
+            for person in model.people(for: item) {
+                let checked = targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } }
+                let entry = ClosureMenuItem(person.login, checked: checked) { [model, item] in
+                    model.pick(.assignees, id: person.id, for: item)
+                }
+                entry.image = MenuIcons.avatar(person)
+                people.addItem(entry)
+            }
+            let icon = item.assignees.first.map(MenuIcons.avatar) ?? MenuIcons.symbol("person.crop.circle")
+            entries.append(submenu("Assignee", icon, people))
+
+            let labels = NSMenu()
+            for label in model.labels(for: item) {
+                let checked = targets.allSatisfy { target in target.labels.contains { $0.name == label.name } }
+                let entry = ClosureMenuItem(label.name, checked: checked) { [model, item] in
+                    model.pick(.labels, id: label.id, for: item)
+                }
+                entry.image = MenuIcons.labelDot(label.color)
+                labels.addItem(entry)
+            }
+            if labels.items.isEmpty {
+                let empty = NSMenuItem(title: "No labels in this repository", action: nil, keyEquivalent: "")
+                empty.isEnabled = false
+                labels.addItem(empty)
+            }
+            entries.append(submenu("Labels", MenuIcons.symbol("tag"), labels))
+
+            if let viewer = model.viewer {
+                let mine = targets.allSatisfy { target in target.assignees.contains { $0.id == viewer.id } }
+                let assignMe = ClosureMenuItem(mine ? "Unassign Me" : "Assign to Me") { [model] in
+                    model.toggleAssignMe(targets)
+                }
+                assignMe.image = MenuIcons.symbol(mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
+                hint(assignMe, "i")
+                entries.append(assignMe)
+            }
+        }
+        return entries
+    }
+
     /// macOS 27 hides menu item images unless asked; these icons carry meaning, so they stay visible.
-    private func showImages(in menu: NSMenu) {
+    static func showImages(in menu: NSMenu) {
         for entry in menu.items {
             if entry.image != nil { entry.preferredImageVisibility = .visible }
             if let submenu = entry.submenu { showImages(in: submenu) }

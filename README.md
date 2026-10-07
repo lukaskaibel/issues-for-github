@@ -79,6 +79,22 @@ next issue with the arrows at the top.
   <img alt="An issue with its description, five sub-issues of which four are done, two comments, and its properties" src="Design/screenshots/issue-light.webp">
 </picture>
 
+### An inbox for what changed
+
+The Inbox shows what happened that concerns you, as Linear's does: who assigned you, mentioned you, commented, asked
+for your review or closed an issue you follow. It is GitHub's own notifications, so what you read or archive here is
+read or done on github.com and on your other devices too. Pick one and its issue opens beside the list, with what's
+new on top and the new comment marked; change it right there, and press S to put one that's on none of your boards
+onto one. J and K move on, U marks read or unread, E archives and H snoozes until later.
+
+<!-- The picture comes with the next run of Tools/readme-images.sh, which makes inbox-light.webp and inbox-dark.webp;
+     take this comment away then.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/inbox-dark.webp">
+  <img alt="The Inbox: notifications on the left, such as Kai Andersen assigned you and Theo Novak mentioned you, and the selected issue on the right with what's new since yesterday" src="Design/screenshots/inbox-light.webp">
+</picture>
+-->
+
 ### Keyboard first
 
 ⌘K opens the command palette: every action, and a search across your issues. Single keys act on the issue you
@@ -132,24 +148,28 @@ The interface uses the system's own parts.
 </picture>
 
 - **iPhone:** a list per project, per repository and My Issues, grouped by status, with sections that fold and
-  headers that stay pinned. Tabs for My Issues, Projects (with the repositories below the projects) and Search. Swipe right to mark an issue done, swipe left to assign it to
-  yourself or delete it, touch and hold for the same menu as the Mac's right-click. In an issue, the title and
-  description are edited in place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams are
-  drawn until you tap them), the properties are chips under the title, and the comment field stays at the bottom as in
-  Messages.
+  headers that stay pinned. Tabs for the Inbox (with its count), My Issues, Projects (with the repositories below the
+  projects) and Search. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and
+  hold for the same menu as the Mac's right-click. In the Inbox, swipe right to read and left to snooze or archive. In
+  an issue, the title and description are edited in place (Markdown is styled as you type; tables, checklists, code and
+  Mermaid diagrams are drawn until you tap them), the properties are chips under the title, and the comment field stays
+  at the bottom as in Messages.
 - **iPad:** the tabs become a sidebar with every project and repository as an entry, as on the Mac. Projects open as a board or a
   list; cards are moved with drag and drop (touch and hold, then drag). An issue shows its properties in a column
-  beside it. With a keyboard, the Mac's shortcuts work: J and K, S P A L I, ⌘1 ⌘2 ⌘3, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵.
+  beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
+  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S.
 - **Sample data:** "Explore with Sample Data" on the sign-in screen shows two sample projects without a GitHub account.
   Nothing there is sent anywhere.
 - **In the background:** changes made just before locking the phone are still sent, and iOS refreshes the app now and
-  then so it opens up to date. There are no push notifications: GitHub can't push to an app without a server of its
-  own, which Issues deliberately doesn't have.
+  then so it opens up to date, the Inbox included. There are no push notifications: GitHub can't push to an app
+  without a server of its own, which Issues deliberately doesn't have.
 
 ## What it does
 
 - **Board and list** for every GitHub Project you can see, plus **My Issues**: everything assigned to you.
 - **Every issue of your repositories**, also those on none of your boards, which one click puts on one.
+- **An Inbox** with GitHub's notifications about issues and pull requests: who did what, the issue beside it, and
+  read, archive, snooze and unsubscribe in one key. Read and archived are the same on github.com.
 - **Instant.** Every change is written to a local database first and shows in the same frame. GitHub is updated in
   the background.
 - **Works offline.** Changes queue up and are sent when the connection returns.
@@ -180,15 +200,19 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Repositories in the sidebar | The repositories linked to your projects, and those their issues come from |
 | No project | An issue that is in none of your projects; adding it to one is GitHub's *Add to project* |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
+| Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there |
 
 Boards show the issues in their project; a repository shows all its open issues and those closed in the last four
-weeks, on a board or not. My Issues shows the open issues assigned to you anywhere on GitHub. What a column means
-(backlog, in progress, done, cancelled) is inferred from its name, since GitHub stores only the label.
+weeks, on a board or not. My Issues shows the open issues assigned to you anywhere on GitHub. The Inbox also shows
+issues and pull requests from other repositories that GitHub tells you about, and can put them on a board. What a
+column means (backlog, in progress, done, cancelled) is inferred from its name, since GitHub stores only the label.
 
 ## Offline and conflicts
 
 GitHub cannot push changes to a desktop app, so the app asks for changes every 15 seconds while it is in front, and
-immediately when you return to it. Other people's changes therefore appear with a short delay.
+immediately when you return to it. Other people's changes therefore appear with a short delay. The Inbox asks for new
+notifications at the pace GitHub sets, about once a minute; when nothing changed, that costs nothing against GitHub's
+rate limit.
 
 The dot on your avatar at the top of the sidebar shows how syncing is going: green when everything is on GitHub, the
 accent colour while your changes go out, an amber ring when you're offline, and amber when something needs you. Hover
@@ -269,7 +293,7 @@ The sign-in screen offers up to three ways to sign in, depending on your setup, 
 | Option | When to use it |
 |---|---|
 | **Use my GitHub CLI login** | You have [`gh`](https://cli.github.com) installed and signed in. Nothing to configure. If projects don't load, run `gh auth refresh -s project,read:org`. Not in the App Store build. |
-| **Personal access token** | Create a classic token with the `repo`, `project` and `read:org` scopes. It is stored in your Mac's keychain. |
+| **Personal access token** | Create a classic token with the `repo`, `project` and `read:org` scopes. It is stored in your Mac's keychain. Fine-grained tokens can't read notifications, so the Inbox stays empty with one. |
 | **Sign in with GitHub** | Shown when the build has an OAuth client ID. Register a GitHub OAuth app with the device flow enabled and set its client ID as `GITHUB_CLIENT_ID` in `Config/Local.xcconfig`. |
 | **Explore with Sample Data** | Two sample projects to try everything without a GitHub account. Nothing there is sent anywhere; leave them from the account menu. |
 
@@ -298,7 +322,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
-| `G` then `B` / `L` / `M` / `P` | Go to board, list, My Issues, or switch project or repository |
+| `G` then `B` / `L` / `M` / `I` / `P` | Go to board, list, My Issues, the Inbox, or switch project or repository |
 | `⌘1` `⌘2` `⌘3` | Board, list, My Issues |
 | `⌘↵` | Save a description, send a comment, create the issue |
 | `⌘⇧C` / `⌘⇧O` | Copy the issue's GitHub link / open it on GitHub |
@@ -306,6 +330,22 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘⌫` | Delete the issue (asks first; needs admin rights in the repository) |
 | `⌘R` | Sync with GitHub now |
 | `⌘,` | Settings: light, dark or system appearance, and the app icon |
+
+In the Inbox:
+
+| Key | Action |
+|---|---|
+| `J` `K` or `↑` `↓` | Next or previous notification; its issue opens beside the list and counts as read |
+| `Return` | Open the issue full size; `Esc` goes back to the Inbox |
+| `U` / `⌥U` | Mark read or unread / mark everything read |
+| `E` or `⌫` | Archive (GitHub's *Done*); `⌘Z` or the message at the bottom undoes it for a few seconds |
+| `⇧⌫` | Archive everything read |
+| `H` | Snooze until later today, tomorrow, next week or a date |
+| `⇧S` | Unsubscribe: GitHub tells you about it again only if you're mentioned or comment |
+| `S` `P` `A` `L` `I` | Change the issue, as anywhere else |
+
+`⌘`-click and Shift-click pick several notifications to read, snooze or archive together. Right-click one for
+everything at once.
 
 Click an issue's priority, status, labels, assignees or sub-issue count to change it in place, or right-click
 it for everything at once. The sub-issue count lists the sub-issues, whose status, priority and assignee change
@@ -338,11 +378,14 @@ appearance, settings and signing out. It works with the arrow keys like any menu
 | Tap the description | Edit it in place; the bar above the keyboard adds bold, italics, code, lists and links |
 | Tap a drawn description (table, checklist, code, diagram) | Show its Markdown; tap again to edit. Tap a checkbox to tick it |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
+| Swipe right in the Inbox | Read, or unread |
+| Swipe left in the Inbox | Archive, or snooze |
+| Touch and hold in the Inbox | Read, snooze, archive, unsubscribe, and the issue's status, priority, assignee and labels |
 
 ## Not there yet
 
-Cycles, an inbox for notifications, roadmaps, linked pull requests, file uploads and real-time updates are planned
-but not built. Also good to know in 0.1.0:
+Cycles, roadmaps, linked pull requests, file uploads, real-time updates and notifications on screen for new Inbox
+entries are planned but not built. Also good to know in 0.1.0:
 
 - Pull requests and draft issues appear on the board and can be moved, but their text is read-only.
 - Images in descriptions of private repositories may not load.
@@ -401,7 +444,9 @@ python3 -m http.server --directory Website
 ```
 
 `gi-cli selftest` runs every kind of write end to end against GitHub. It only touches a project titled
-"Git Issues Sandbox", which you create yourself with Status and Priority fields.
+"Git Issues Sandbox", which you create yourself with Status and Priority fields. `gi-cli inbox` lists your
+notifications the way the Inbox reads them and changes nothing; `gi-cli inbox read|archive <thread id>` only acts on
+notifications from the sandbox project's repositories.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose changes. The design choices behind sync are documented in
 the source, starting with `Sync/SyncEngine.swift` and `Sync/Mutation.swift`.

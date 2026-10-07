@@ -8,6 +8,20 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **An Inbox for what changed**, as in Linear: who assigned you, mentioned you or your team, commented, asked for
+  your review, closed, reopened or merged an issue or pull request you follow, with who did it and the comment
+  itself. It is GitHub's own notifications, so what you read or archive is read or done on github.com and your other
+  devices too. On the Mac it is the first row of the sidebar, with the number of unread entries (also on the Dock
+  icon, which Settings can turn off); the issue opens beside the list with what's new on top and the new comments
+  marked, and changes in place. J and K move, U reads or unreads, E or ⌫ archives (⌘Z or the message undoes it),
+  H snoozes until later today, tomorrow, next week or a date, ⇧S unsubscribes, ⌥U reads everything and ⇧⌫ archives
+  everything read; ⌘-click and Shift-click pick several. For you and Watching keep repositories you only watch
+  apart. On the iPhone the Inbox is the first tab, with the count on it: swipe right to read, left to snooze or
+  archive, touch and hold for everything. On the iPad the issue sits beside the list, as in Mail. An issue on none of
+  your boards opens there too and goes onto one with its status, as everywhere. One from a repository none of your
+  boards use, such as one you only watch, can be commented on, assigned, labelled and put on a board; its title and
+  description are changed on GitHub. Snoozes and entries marked unread are kept in iCloud, so your devices agree. Releases, CI runs and discussions stay on GitHub; the end
+  of the list says how many there are. `gi-cli inbox` lists the notifications as the Inbox reads them.
 - **Every issue, on a board or not.** Issues that are on none of your GitHub Projects no longer stay invisible. My
   Issues shows every open issue assigned to you, wherever it is, and the sidebar has a Repositories section with the
   repositories your boards use, like the teams in Linear (on the iPhone, in the Projects tab). A repository lists all
@@ -89,6 +103,8 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- G then B goes to the board of the project used last from the Inbox, My Issues or a repository, and G then L from
+  the Inbox to that project's list; before, they did nothing there.
 - A single line break in a comment or a drawn description stays a line break, as on GitHub.
 - The sidebar is calmer, as in Linear. The account, search and New Issue share the top row, and the state of
   syncing is a dot on your avatar: green when everything is on GitHub, the accent while changes go out, amber when
@@ -118,6 +134,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Turning an iPad from portrait to landscape could quit the app when the sidebar appeared.
 - HTML comments such as the hints issue templates leave (`<!-- … -->`) no longer show in comments and the peek;
   GitHub hides them too.
 - When a saved sign-in no longer works, such as a GitHub CLI login without the CLI or a token missing from the

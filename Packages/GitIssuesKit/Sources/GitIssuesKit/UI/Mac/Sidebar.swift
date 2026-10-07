@@ -45,6 +45,10 @@ struct Sidebar: View {
             .frame(height: 32)
             .padding(.bottom, 8)
 
+            SidebarRow(title: "Inbox", systemImage: "tray", active: model.scope == .inbox, count: model.inboxUnreadCount) {
+                model.select(.inbox)
+            }
+            .help("Inbox (G then I)")
             SidebarRow(title: "My Issues", systemImage: "scope", active: model.scope == .myIssues) {
                 model.select(.myIssues)
             }
@@ -457,6 +461,8 @@ struct SidebarRow: View {
     var title: String
     var systemImage: String
     var active = false
+    /// Shown on the right when there is something: the Inbox's unread entries.
+    var count = 0
     var action: () -> Void
 
     var body: some View {
@@ -467,13 +473,22 @@ struct SidebarRow: View {
                     .frame(width: 14)
                 Text(title)
                 Spacer(minLength: 0)
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.small)
+                        .monospacedDigit()
+                        .foregroundStyle(active ? Theme.text : Theme.textSecondary)
+                        .contentTransition(.numericText())
+                }
             }
             .foregroundStyle(active ? Theme.text : Theme.textSecondary)
             .padding(.horizontal, 6)
             .frame(height: 28)
             .hoverFill(active: active)
+            .animation(Theme.quick, value: count)
         }
         .buttonStyle(PlainPressStyle())
+        .accessibilityValue(count > 0 ? "\(count) unread" : "")
     }
 }
 

@@ -21,6 +21,18 @@ final class PadTests: AppTestCase {
         wait(app.navigationBars[title])
     }
 
+    /// Turning the iPad brings in the sidebar, whose header reads the model; that once quit the app.
+    func testTurningTheIPadKeepsTheAppRunning() {
+        launch()
+        wait(element("row-#9"))
+        XCUIDevice.shared.orientation = .landscapeLeft
+        wait(element("row-#9"))
+        XCTAssertEqual(app.state, .runningForeground)
+        XCUIDevice.shared.orientation = .portrait
+        wait(element("row-#9"))
+        XCTAssertEqual(app.state, .runningForeground)
+    }
+
     func testSidebarAndBoard() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()

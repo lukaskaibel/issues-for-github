@@ -63,6 +63,13 @@ final class ScreenshotTests: AppTestCase {
         shot("6-search")
     }
 
+    func testPhoneInbox() throws {
+        try XCTSkipIf(isPad, "iPhone screenshots")
+        launchForScreenshots(["-mobile.tab", "inbox"])
+        wait(element("inbox-row-25"))
+        shot("8-inbox")
+    }
+
     func testPhoneDark() throws {
         try XCTSkipIf(isPad, "iPhone screenshots")
         launchForScreenshots(["-appearance", "dark"])
@@ -96,6 +103,16 @@ final class ScreenshotTests: AppTestCase {
         wait(element("row-#9"))
         shot("4-list")
         app.segmentedControls.buttons["Board"].tap()
+    }
+
+    func testPadInbox() throws {
+        try XCTSkipUnless(isPad, "iPad screenshots")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launchForScreenshots(["-mobile.tab", "inbox"])
+        wait(element("inbox-row-25"))
+        element("inbox-row-25").tap()
+        wait(labelled("New since yesterday"))
+        shot("6-inbox")
     }
 
     func testPadDark() throws {

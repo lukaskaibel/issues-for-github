@@ -6,6 +6,8 @@ extension AppModel {
     /// The issue shortcuts and palette commands apply to.
     var targetItem: Item? {
         if let openItem { return openItem }
+        // In the Inbox, the issue of the selected entry.
+        if scope == .inbox { return inboxSelected.flatMap { inboxItem(for: $0) } }
         guard let id = hoveredItemId ?? focusedItemId else { return nil }
         return scopedItems.first { $0.id == id }
     }

@@ -60,6 +60,8 @@ enum Theme {
     static let overlay = Animation.spring(response: 0.26, dampingFraction: 0.86)
 
     static let sidebarWidth: CGFloat = 220
+    /// The Inbox's list beside the issue, as wide as Linear's.
+    static let inboxListWidth: CGFloat = 372
     static let headerHeight: CGFloat = 44
     static let rowHeight: CGFloat = 36
 

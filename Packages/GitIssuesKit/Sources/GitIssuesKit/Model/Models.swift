@@ -133,7 +133,9 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
     public static func positionWithoutProject(updatedAt: Date?) -> Double {
         -(updatedAt ?? Date()).timeIntervalSince1970
     }
-    public var isEditableContent: Bool { kind == .issue }
+    /// Title and description can be edited here: issues. Pull requests and issues seen only in the Inbox (which
+    /// the app doesn't keep) are read-only.
+    public var isEditableContent: Bool { kind == .issue && !isDetached }
     public var repoShortName: String? { repo?.split(separator: "/").last.map(String.init) }
 
     /// The branch name GitHub suggests for the issue: its number and title, such as "14-sign-in-with-device-flow".

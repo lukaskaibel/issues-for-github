@@ -7,6 +7,8 @@ import GRDB
 //   gi-cli projects
 //   gi-cli pull <project title>
 //   gi-cli selftest            (writes to the "Git Issues Sandbox" project only)
+//   gi-cli inbox               (reads the notifications; changes nothing)
+//   gi-cli inbox read|archive <thread id>   (only for threads of the sandbox project's repositories)
 
 struct CLITokens: TokenSource {
     func token() async throws -> String { try await GitHubCLI.token() }
@@ -99,8 +101,40 @@ func run() async throws {
     case "selftest":
         try await SelfTest.run()
 
+    case "inbox":
+        let (db, engine, _, api) = try await makeEngine()
+        try await engine.refreshProjects()
+        let start = Date()
+        try await engine.pullInbox()
+        print("Inbox read in \(String(format: "%.1f", Date().timeIntervalSince(start)))s")
+        let viewer = db.viewer()?.login
+        let (entries, meta) = try await db.reader.read { (try InboxEntry.order(Column("updatedAt").desc).fetchAll($0), try InboxMeta.read($0)) }
+        print("access: \(meta.access.rawValue), other notifications on GitHub: \(meta.otherCount)")
+        if args.count == 3 {
+            // Writes only where the self-test may: threads of the sandbox project's repositories.
+            let sandbox = try findProject(db, title: SelfTest.sandboxTitle)
+            guard sandbox.title == SelfTest.sandboxTitle else { throw CLIError("Refusing to write outside the sandbox.") }
+            let repos = Set(try await api.projectMeta(id: sandbox.id).repos.map(\.nameWithOwner))
+            guard let entry = entries.first(where: { $0.id == args[2] }), repos.contains(entry.repo) else {
+                throw CLIError("Thread \(args[2]) isn't one of the sandbox's repositories (\(repos.sorted().joined(separator: ", "))).")
+            }
+            switch args[1] {
+            case "read": try await api.markThreadRead(entry.id)
+            case "archive": try await api.markThreadDone(entry.id)
+            default: throw CLIError("Usage: gi-cli inbox read|archive <thread id>")
+            }
+            print("\(args[1]): \(entry.label)")
+            return
+        }
+        for entry in entries {
+            let summary = entry.summary(viewer: viewer)
+            let flags = [entry.unread ? "unread" : nil, entry.missing ? "missing" : nil, entry.bucket == .watching ? "watching" : nil].compactMap { $0 }
+            print("  \(entry.id)  \(entry.displayNumber(withRepo: true)) \(entry.title)")
+            print("      \(summary.sign.rawValue): \(summary.lead) \(summary.excerpt.map { String($0.prefix(80)) } ?? "")  [\(flags.joined(separator: ", "))] \(entry.activity.count) events")
+        }
+
     default:
-        print("Usage: gi-cli projects | pull <project title> | selftest")
+        print("Usage: gi-cli projects | pull <project title> | selftest | inbox [read|archive <thread id>]")
     }
 }
 
