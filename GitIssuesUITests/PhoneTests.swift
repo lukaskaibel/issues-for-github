@@ -147,6 +147,33 @@ final class PhoneTests: AppTestCase {
         XCTAssertTrue(labelled("how close").waitForExistence(timeout: 4))
     }
 
+    func testDrawnDescriptionTicksBoxesAndShowsTheText() {
+        launch()
+        wait(element("row-#9"))
+        scrollTo(element("row-#16"))
+        element("row-#16").tap()
+        // A checklist, a table and a diagram: drawn as on GitHub, with boxes that tick.
+        let box = app.buttons["Images pasted from the clipboard"]
+        wait(box)
+        XCTAssertEqual(box.value as? String, "Unchecked")
+        box.tap()
+        waitForValue(box, equalTo: "Checked")
+        snapshot("Drawn description")
+
+        // A tap shows the Markdown, ticked box included; a second tap edits it.
+        labelled("drawn the way GitHub draws it").tap()
+        waitGone(box)
+        let text = element("issue-description")
+        XCTAssertTrue((text.value as? String)?.contains("- [x] Images pasted from the clipboard") == true)
+        text.tap()
+        let done = button("Done")
+        wait(done)
+        snapshot("Editing a drawn description")
+        done.tap()
+        wait(box)
+        XCTAssertEqual(box.value as? String, "Checked")
+    }
+
     func testCommentsAndSubIssues() {
         launch()
         element("row-#9").tap()

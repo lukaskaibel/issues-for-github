@@ -74,7 +74,27 @@ public enum DemoData {
 
     private static let appIssues: [IssueSpec] = [
         IssueSpec(number: 5, title: "Keyboard navigation across board and list", status: "In Review", priority: "Medium", labels: ["ui"], assignees: [viewer.person], body: "J and K move through issues, Return opens one and Escape goes back. Arrow keys switch columns on the board.", hoursAgo: 3),
-        IssueSpec(number: 16, title: "Markdown editor for descriptions and comments", status: "In Review", priority: "Low", labels: ["ui"], assignees: [viewer.person, mira], body: "Style Markdown while typing: headings, **bold**, _italics_, `code` and lists.", hoursAgo: 5),
+        IssueSpec(number: 16, title: "Markdown editor for descriptions and comments", status: "In Review", priority: "Low", labels: ["ui"], assignees: [viewer.person, mira], body: """
+            Style Markdown while typing: headings, **bold**, _italics_, `code` and lists. A description with a table, a checklist, code or a diagram is drawn the way GitHub draws it, and a click brings up the text.
+
+            - [x] Headings, bold, italics and code
+            - [x] Lists and quotes
+            - [x] Tables and Mermaid diagrams
+            - [ ] Images pasted from the clipboard
+
+            | Element | While typing | Drawn |
+            |---|---|---|
+            | Table | Rows of pipes | A grid |
+            | Checklist | `- [ ]` | Boxes that tick |
+            | Diagram | Mermaid code | A picture |
+
+            ```mermaid
+            flowchart LR
+                Drawn -->|click| Editor
+                Editor -->|Escape| Drawn
+                Drawn -->|tick a box| Saved[Saved to GitHub]
+            ```
+            """, hoursAgo: 5),
         IssueSpec(number: 6, title: "Delta sync for project items", status: "In Review", priority: "High", labels: ["sync"], assignees: [theo], body: "Only fetch items whose `updatedAt` changed since the last sweep.", hoursAgo: 8),
         IssueSpec(number: 24, title: "Animate the column count when a card lands", status: "In Review", priority: nil, hoursAgo: 9),
         IssueSpec(number: 7, title: "Sub-issue tree in issue detail", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [mira], hoursAgo: 4),
@@ -113,6 +133,12 @@ public enum DemoData {
         IssueSpec(number: 33, title: "Write the release notes for 0.2", status: "Todo", priority: "Medium", labels: ["content"], assignees: [viewer.person], hoursAgo: 11),
         IssueSpec(number: 34, title: "Open Graph images for every page", status: "Todo", priority: "Low", labels: ["seo"], hoursAgo: 30),
         IssueSpec(number: 35, title: "Dark mode for the docs", status: "Done", priority: "Medium", labels: ["design"], assignees: [kai], hoursAgo: 60),
+    ]
+
+    /// Issues filed straight in the app's repository, on no board yet: they show under "No project".
+    private static let appIssuesWithoutProject: [IssueSpec] = [
+        IssueSpec(number: 27, title: "App quits when a project has no Status field", status: "", priority: nil, labels: ["bug"], assignees: [viewer.person], body: "Reported on 0.1.0: open a project without a Status field and the app quits right away.", hoursAgo: 4),
+        IssueSpec(number: 26, title: "Support GitHub Enterprise Server", status: "", priority: nil, labels: ["feature"], body: "Sign in to a company's own GitHub, with its own address.", hoursAgo: 50),
     ]
 
     private static let comments: [Int: [(Person, String, Double)]] = [
@@ -189,6 +215,19 @@ public enum DemoData {
                     ).insert(db)
                 }
             }
+        }
+        for issue in appIssuesWithoutProject {
+            let date = now.addingTimeInterval(-issue.hoursAgo * 3600)
+            try Item(
+                id: Item.idWithoutProject(contentId(issue.number)), projectId: nil, kind: .issue,
+                position: Item.positionWithoutProject(updatedAt: date),
+                contentId: contentId(issue.number), number: issue.number, title: issue.title, body: issue.body,
+                state: "OPEN", url: "https://github.com/\(app.repo)/issues/\(issue.number)", repoId: app.repoId, repo: app.repo,
+                authorLogin: "sam", createdAt: date, updatedAt: date,
+                assignees: issue.assignees,
+                labels: app.labels.filter { issue.labels.contains($0.name) },
+                viewerCanDelete: true
+            ).insert(db)
         }
     }
 

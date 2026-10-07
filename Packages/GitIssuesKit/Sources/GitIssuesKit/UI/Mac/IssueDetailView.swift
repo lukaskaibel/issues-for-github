@@ -54,6 +54,18 @@ struct IssueDetailView: View {
                 }
                 .buttonStyle(PlainPressStyle())
                 Text("›").foregroundStyle(Theme.textTertiary)
+            } else if let repo = item.repoShortName {
+                // On no board, the issue's place is its repository.
+                Button {
+                    model.closeDetail()
+                } label: {
+                    HStack(spacing: 7) {
+                        RepositoryIcon().foregroundStyle(Theme.textTertiary)
+                        Text(repo).foregroundStyle(Theme.textSecondary)
+                    }
+                }
+                .buttonStyle(PlainPressStyle())
+                Text("›").foregroundStyle(Theme.textTertiary)
             }
             if let parentNumber = item.parentNumber {
                 // A sub-issue shows its parent on the way, as in Linear; clicking it goes up.
@@ -161,14 +173,19 @@ private struct TitleField: View {
 private struct DescriptionView: View {
     @Environment(AppModel.self) private var model
     var item: Item
+    @State private var editing = false
 
     var body: some View {
-        MarkdownEditor(
-            text: item.body,
-            placeholder: item.isEditableContent ? "Add a description…" : "No description",
-            isEditable: item.isEditableContent,
-            onSave: save
-        )
+        DescriptionBody(text: item.body, isEditable: item.isEditableContent, onSave: save, editing: $editing) { takesFocus in
+            MarkdownEditor(
+                text: item.body,
+                placeholder: item.isEditableContent ? "Add a description…" : "No description",
+                isEditable: item.isEditableContent,
+                onSave: save,
+                editing: $editing,
+                takesFocus: takesFocus
+            )
+        }
         .id(item.id)
     }
 
@@ -485,8 +502,9 @@ private struct PropertiesPanel: View {
                 PropertyButton(kind: .status, item: item) {
                     HStack(spacing: 8) {
                         StatusIcon(glyph: model.glyph(of: item))
-                        Text(model.statusOption(of: item)?.name ?? "No status")
-                            .foregroundStyle(item.statusId == nil ? Theme.textTertiary : Theme.text)
+                        // An issue on no board has no status; clicking here puts it on one.
+                        Text(model.statusText(of: item))
+                            .foregroundStyle(model.statusIsPlaceholder(item) ? Theme.textTertiary : Theme.text)
                     }
                 }
             }
@@ -536,6 +554,12 @@ private struct PropertiesPanel: View {
                     }
                     .padding(.horizontal, 8)
                 }
+            } else if !item.isOnBoard, !model.boards(toAdd: item).isEmpty {
+                row("Project") {
+                    PropertyButton(kind: .status, item: item) {
+                        Text("Add to project").foregroundStyle(Theme.textTertiary)
+                    }
+                }
             }
             if let repo = item.repo {
                 row("Repository") {
@@ -572,7 +596,7 @@ private struct PropertiesPanel: View {
         .padding(.top, 20)
         .padding(.leading, 16)
         .padding(.trailing, 12)
-        .onAppear { model.loadRepoMeta(projectId: item.projectId) }
+        .onAppear { model.loadRepoMeta(for: item) }
     }
 
     private func row<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {

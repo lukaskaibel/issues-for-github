@@ -1097,6 +1097,17 @@ extension StatusPainter {
         context.setStrokeColor(color)
         context.setFillColor(color)
         context.setLineWidth(1.5)
+        if glyph.addsToProject {
+            context.strokeEllipse(in: rect)
+            context.setLineWidth(1.4 * s)
+            context.setLineCap(.round)
+            context.move(to: point(7, 4.6))
+            context.addLine(to: point(7, 9.4))
+            context.move(to: point(4.6, 7))
+            context.addLine(to: point(9.4, 7))
+            context.strokePath()
+            return
+        }
         switch glyph.category {
         case .backlog:
             context.setLineDash(phase: 0, lengths: [2, 2.3])
@@ -1151,7 +1162,7 @@ struct ItemMenuBuilder {
         let menu = NSMenu()
         // Keep the enabled states set here instead of AppKit's automatic ones.
         menu.autoenablesItems = false
-        model.loadRepoMeta(projectId: item.projectId)
+        model.loadRepoMeta(for: item)
         // On a picked issue, the menu acts on everything picked; checkmarks show values they all share.
         let targets = model.targets(for: item)
         let several = targets.count > 1
@@ -1159,6 +1170,34 @@ struct ItemMenuBuilder {
             let title = NSMenuItem(title: "\(targets.count) issues", action: nil, keyEquivalent: "")
             title.isEnabled = false
             menu.addItem(title)
+        }
+
+        // An issue on none of your boards goes onto one instead of getting a status.
+        if !item.isOnBoard, item.kind == .issue {
+            let boards = model.boards(toAdd: item)
+            if !boards.isEmpty {
+                let add = NSMenu()
+                for project in boards {
+                    let statuses = model.statusOptions(projectId: project.id)
+                    let target = boards.count == 1 ? add : NSMenu()
+                    if statuses.isEmpty {
+                        target.addItem(ClosureMenuItem(project.title) { [model, item] in
+                            model.pick(.status, id: "\(project.id)/", for: item)
+                        })
+                    }
+                    for (index, option) in statuses.enumerated() {
+                        let entry = ClosureMenuItem(option.name) { [model, item] in
+                            model.pick(.status, id: "\(project.id)/\(option.id)", for: item)
+                        }
+                        entry.image = MenuIcons.status(model.glyph(projectId: project.id, optionId: option.id))
+                        if boards.count == 1 { number(entry, index + 1) }
+                        target.addItem(entry)
+                    }
+                    if boards.count > 1 { add.addItem(submenu(project.title, nil, target)) }
+                }
+                let title = boards.count == 1 ? "Add to \(boards[0].title)" : "Add to Project"
+                menu.addItem(submenu(title, MenuIcons.status(.noProject), add))
+            }
         }
 
         let statuses = model.statusOptions(projectId: item.projectId)

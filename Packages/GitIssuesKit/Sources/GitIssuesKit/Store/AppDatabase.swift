@@ -155,6 +155,25 @@ public final class AppDatabase: Sendable {
             try db.execute(sql: "UPDATE item SET remoteUpdatedAt = NULL")
             try db.execute(sql: "UPDATE project SET remoteUpdatedAt = NULL")
         }
+        migrator.registerMigration("v3") { db in
+            // Issues on none of your boards are items without a project. SQLite can't loosen a column, so the table
+            // is built again from its own definition, with every column other migrations added, and copied over.
+            let definition = try String.fetchOne(db, sql: "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'item'") ?? ""
+            let loosened = definition
+                .replacingOccurrences(of: #"CREATE TABLE "item""#, with: #"CREATE TABLE "newItem""#)
+                .replacingOccurrences(of: #""projectId" TEXT NOT NULL"#, with: #""projectId" TEXT"#)
+            guard loosened.hasPrefix(#"CREATE TABLE "newItem""#) else {
+                throw DatabaseError(message: "The item table has an unexpected definition: \(definition)")
+            }
+            let indexes = try String.fetchAll(db, sql: "SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = 'item' AND sql IS NOT NULL")
+            let columns = try db.columns(in: "item").map(\.name.quotedDatabaseIdentifier).joined(separator: ", ")
+            try db.execute(sql: loosened)
+            try db.execute(sql: "INSERT INTO newItem (\(columns)) SELECT \(columns) FROM item")
+            try db.drop(table: "item")
+            try db.rename(table: "newItem", to: "item")
+            for index in indexes { try db.execute(sql: index) }
+            try db.create(index: "item_on_repoId", on: "item", columns: ["repoId"], options: .ifNotExists)
+        }
         return migrator
     }
 }

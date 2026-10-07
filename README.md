@@ -70,8 +70,10 @@ labels, tick their checkboxes or Shift-click them, and it stays open. Right-clic
 
 ### Issues that read well
 
-Descriptions are Markdown, edited in place: click and type. Sub-issues come with a progress bar, comments sit below,
-and status, priority, assignees and labels are in the sidebar. Step to the next issue with the arrows at the top.
+Descriptions are Markdown, edited in place: click and type. One with a table, a checklist, code or a Mermaid diagram
+is drawn the way GitHub draws it, with checkboxes that tick; a click on the text brings up the Markdown. Sub-issues come
+with a progress bar, comments sit below, and status, priority, assignees and labels are in the sidebar. Step to the
+next issue with the arrows at the top.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">
@@ -103,6 +105,18 @@ board. The app follows the system appearance, or stays light or dark if you pref
 
 <img alt="The list grouped by status, half in the dark appearance and half in the light one" src="Design/screenshots/list-appearance.webp">
 
+### Every issue, on a board or not
+
+An issue someone opened straight in a repository isn't lost because nobody put it on a board. The sidebar lists the
+repositories your boards use, like the teams in Linear, and each shows all its issues, grouped by status like My
+Issues. Those on no board come first, under **No project**: click the circle with the plus (or press `S`), pick a
+column, and the issue is on the board. My Issues shows everything assigned to you, on a board or not.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/repository-dark.webp">
+  <img alt="A repository in the sidebar, with its issues as a list: two under No project at the top, then In progress and Todo" src="Design/screenshots/repository-light.webp">
+</picture>
+
 ## iPhone and iPad
 
 <picture>
@@ -119,13 +133,14 @@ The interface uses the system's own parts.
   <img alt="Three iPhones: an issue with its properties as chips, the menu on a long press, and a new issue being typed" src="Design/screenshots/iphone-light.webp">
 </picture>
 
-- **iPhone:** a list per project and My Issues, grouped by status, with sections that fold and headers that stay
-  pinned. Tabs for My Issues, Projects and Search. Swipe right to mark an issue done, swipe left to assign it to
-  yourself or delete it, touch and hold for the same menu as the Mac's right-click, and drag after holding to give
-  an issue a new place in its section. In an issue, the title and description are edited in place (Markdown is
-  styled as you type), the properties are chips under the title, and the comment field stays at the bottom as in
-  Messages.
-- **iPad:** the tabs become a sidebar with every project as an entry, as on the Mac. Projects open as a board or a
+- **iPhone:** a list per project, per repository and My Issues, grouped by status, with sections that fold and
+  headers that stay pinned. Tabs for My Issues, Projects (with the repositories below the projects) and Search. Swipe
+  right to mark an issue done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as
+  the Mac's right-click, and drag after holding to give an issue a new place in its section. In an issue, the title
+  and description are edited in place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams
+  are drawn until you tap them), the properties are chips under the title, and the comment field stays at the bottom
+  as in Messages.
+- **iPad:** the tabs become a sidebar with every project and repository as an entry, as on the Mac. Projects open as a board or a
   list; cards are moved with drag and drop (touch and hold, then drag). An issue shows its properties in a column
   beside it. With a keyboard, the Mac's shortcuts work: J and K, S P A L I, ⌘1 ⌘2 ⌘3, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵. S, P, A
   and L open their picker ready to type in; Return picks the first match.
@@ -137,7 +152,8 @@ The interface uses the system's own parts.
 
 ## What it does
 
-- **Board and list** for every GitHub Project you can see, plus **My Issues** across all of them.
+- **Board and list** for every GitHub Project you can see, plus **My Issues**: everything assigned to you.
+- **Every issue of your repositories**, also those on none of your boards, which one click puts on one.
 - **Instant.** Every change is written to a local database first and shows in the same frame. GitHub is updated in
   the background.
 - **Works offline.** Changes queue up and are sent when the connection returns.
@@ -146,6 +162,8 @@ The interface uses the system's own parts.
 - **Status columns are yours to shape.** Add, rename, recolour and remove columns from the board, and drag a column
   by its header to move it; they are the project's Status field on GitHub. In the list, drag a section by its header
   to arrange the list your way (that order is a preference on your Mac and leaves GitHub alone).
+- **GitHub's Markdown.** Headings, lists, code, tables, checklists that tick and Mermaid diagrams, drawn natively
+  in the app's type and colours.
 - **Keyboard first.** Single keys change status, priority, assignee and labels. Back and forward work like a
   browser: ⌘[ and ⌘], the side buttons of a mouse, or a two-finger swipe.
 - **Native.** Swift and SwiftUI, with AppKit where it matters for smoothness. Apple silicon only.
@@ -163,10 +181,13 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Moving a card to a "done" or "cancelled" column | Status changes, and the issue is closed as *completed* or *not planned* |
 | Priority | A single-select project field named **Priority** (the app can add it for you) |
 | Card order | The item's position in the project |
+| Repositories in the sidebar | The repositories linked to your projects, and those their issues come from |
+| No project | An issue that is in none of your projects; adding it to one is GitHub's *Add to project* |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
 
-Only issues that are in a Project appear. What a column means (backlog, in progress, done, cancelled) is inferred
-from its name, since GitHub stores only the label.
+Boards show the issues in their project; a repository shows all its open issues and those closed in the last four
+weeks, on a board or not. My Issues shows the open issues assigned to you anywhere on GitHub. What a column means
+(backlog, in progress, done, cancelled) is inferred from its name, since GitHub stores only the label.
 
 ## Offline and conflicts
 
@@ -274,7 +295,7 @@ Hover an issue or move to it with the arrow keys, then:
 |---|---|
 | `⌘K` or `/` | Command palette: run a command or jump to an issue |
 | `C` or `⌘N` | New issue |
-| `S` `P` `A` `L` | Change status, priority, assignee, labels |
+| `S` `P` `A` `L` | Change status, priority, assignee, labels; `S` puts an issue on no board onto one |
 | `I` | Assign to me, or unassign |
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
 | `⌥↑` `⌥↓` or `⌥K` `⌥J` | Move the issue up or down its column or list section |
@@ -282,7 +303,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
-| `G` then `B` / `L` / `M` / `P` | Go to board, list, My Issues, or switch project |
+| `G` then `B` / `L` / `M` / `P` | Go to board, list, My Issues, or switch project or repository |
 | `⌘1` `⌘2` `⌘3` | Board, list, My Issues |
 | `⌘↵` | Save a description, send a comment, create the issue |
 | `⌘⇧C` / `⌘⇧O` | Copy the issue's GitHub link / open it on GitHub |
@@ -296,6 +317,9 @@ it for everything at once. A pick closes the dropdown; for several assignees or 
 of each row, or hold Shift while you click or press Return. The sub-issue count lists the sub-issues, whose status, priority and assignee change
 right there too. In the list, click a section header to fold it; Option-click folds them all.
 
+A description with a table, a checklist, code or a Mermaid diagram is drawn as on GitHub. Click a checkbox to tick it;
+click anywhere else to edit the Markdown, and `Esc` or `⌘↵` draws it again.
+
 On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. In the list, drag a
 row up or down within its section, or into another section to change its status; My Issues mixes projects, so its
 rows stay where their boards put them. Drag a column by its
@@ -306,9 +330,9 @@ To change several issues at once, pick them with `X`, the checkbox at the start 
 Shift-click. A bar at the bottom then sets status, priority, assignee or labels for all of them, and so do the
 usual keys, dropdowns and right-click menu. `Esc` clears the pick.
 
-Right-click a project in the sidebar to hide it; hidden projects wait, folded away, at the end of the list. Click
-your name at the top of the sidebar for the account menu: Sync Now, changes still waiting to be sent, appearance,
-settings and signing out. It works with the arrow keys like any menu.
+Right-click a project or repository in the sidebar to hide it; hidden ones wait, folded away, at the end of their
+list. Click your name at the top of the sidebar for the account menu: Sync Now, changes still waiting to be sent,
+appearance, settings and signing out. It works with the arrow keys like any menu.
 
 ## Using it on iPhone and iPad
 
@@ -317,11 +341,12 @@ settings and signing out. It works with the arrow keys like any menu.
 | Tap a section header | Fold it in or out |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
-| Touch and hold an issue | Status, priority, assignee and labels as submenus; copy link, share, open on GitHub, delete |
+| Touch and hold an issue | Status, priority, assignee and labels as submenus (Add to Project for an issue on no board); copy link, share, open on GitHub, delete |
 | Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
 | Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several |
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place; the bar above the keyboard adds bold, italics, code, lists and links |
+| Tap a drawn description (table, checklist, code, diagram) | Show its Markdown; tap again to edit. Tap a checkbox to tick it |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
 
 ## Not there yet
@@ -398,9 +423,11 @@ the [changelog](CHANGELOG.md). Until 1.0, minor versions may change behaviour.
 
 ## Acknowledgements
 
-Built with [GRDB](https://github.com/groue/GRDB.swift) and
-[MarkdownUI](https://github.com/gonzalezreal/swift-markdown-ui). The interaction design is inspired by
-[Linear](https://linear.app).
+Built with [GRDB](https://github.com/groue/GRDB.swift), [MarkdownUI](https://github.com/gonzalezreal/swift-markdown-ui)
+with [swift-cmark](https://github.com/swiftlang/swift-cmark), and
+[BeautifulMermaid](https://github.com/lukilabs/beautiful-mermaid-swift), which lays diagrams out with
+[elk-swift](https://github.com/lukilabs/elk-swift) (Eclipse Public License 2.0; its source is at that link). The
+interaction design is inspired by [Linear](https://linear.app).
 
 Issues is an independent project and is not affiliated with, endorsed by, or sponsored by GitHub or Linear.
 

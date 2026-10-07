@@ -8,6 +8,18 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Every issue, on a board or not.** Issues that are on none of your GitHub Projects no longer stay invisible. My
+  Issues shows every open issue assigned to you, wherever it is, and the sidebar has a Repositories section with the
+  repositories your boards use, like the teams in Linear (on the iPhone, in the Projects tab). A repository lists all
+  its issues, grouped by status like My Issues; those on no board lead under **No project**. Click their circle with
+  the plus, press S or use the right-click menu, and pick a column: the issue goes onto the board, in that column.
+  A new issue started in a repository can go on one of its boards or on none.
+- **Descriptions drawn as on GitHub.** A description with a table, a checklist, a code block or a Mermaid diagram is
+  drawn the way GitHub draws it, on the Mac, iPhone and iPad: tables with lines and a header row, checkboxes that tick
+  with a click (saved to GitHub like any edit), code in a box that scrolls sideways, and flowcharts, sequence, state,
+  class, ER and XY diagrams drawn natively. A click on the text shows the Markdown to edit, and leaving it draws it
+  again. Plain descriptions are still edited right where you click. Comments and the peek show tables, checklists
+  and diagrams too, and the peek's checkboxes tick as well.
 - Issues can be put in a new order in the list, as on the board: drag a row up or down within its section, or into
   another section to change its status. The row lifts off as a card and the list makes room where it would land.
   ⌥↑ and ⌥↓ (or ⌥K and ⌥J) move the issue under the pointer or keyboard focus one place up or down its column or
@@ -82,6 +94,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- A single line break in a comment or a drawn description stays a line break, as on GitHub.
 - Fewer clicks: picking a value closes the dropdown, for assignees and labels too, so one change is one click. To
   pick several people or labels, tick the checkbox at the start of their rows, or hold Shift while you click or press
   Return; the dropdown then stays open. On iPhone and iPad a tap in the assignee and label sheets picks and closes
@@ -119,6 +132,8 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- HTML comments such as the hints issue templates leave (`<!-- … -->`) no longer show in comments and the peek;
+  GitHub hides them too.
 - Renaming a column, adding one and the token field on the sign-in screen take the keyboard focus straight away,
   so you can type without clicking into them first.
 - When a saved sign-in no longer works, such as a GitHub CLI login without the CLI or a token missing from the

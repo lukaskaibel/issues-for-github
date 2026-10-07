@@ -143,7 +143,7 @@ struct PeekPanel: View {
                     if item.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Text("No description").foregroundStyle(Theme.textTertiary)
                     } else {
-                        MarkdownText(text: item.body)
+                        MarkdownText(text: Diff3.normalize(item.body), onChange: item.isEditableContent ? setBody : nil)
                     }
                 }
                 .padding(18)
@@ -230,6 +230,12 @@ struct PeekPanel: View {
         }
         .padding(.leading, -8)
         .foregroundStyle(Theme.textBody)
+    }
+
+    /// A ticked checkbox, saved like any edit of the description.
+    private func setBody(_ text: String) {
+        guard let current = model.item(id: item.id), text != Diff3.normalize(current.body) else { return }
+        model.setBody(current, to: text)
     }
 
     private func hint(_ keys: String, _ action: String) -> some View {

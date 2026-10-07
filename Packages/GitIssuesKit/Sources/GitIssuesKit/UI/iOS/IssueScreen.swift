@@ -122,8 +122,8 @@ struct IssueScreen: View {
         ToolbarItem(placement: .principal) {
             VStack(spacing: 1) {
                 Text(item.displayNumber).font(.headline).monospacedDigit()
-                if let project = model.project(of: item) {
-                    Text(project.title).font(.caption).foregroundStyle(Theme.textSecondary).lineLimit(1)
+                if let place = model.project(of: item)?.title ?? item.repoShortName {
+                    Text(place).font(.caption).foregroundStyle(Theme.textSecondary).lineLimit(1)
                 }
             }
             .accessibilityElement(children: .combine)
@@ -170,7 +170,8 @@ struct IssueScreen: View {
 
     /// Where the issue sits among its project's issues, in list order, for stepping through them.
     private func position(of item: Item) -> (index: Int, items: [Item])? {
-        let items = model.sections(for: .project(item.projectId)).flatMap(\.items)
+        let scope: Scope = item.projectId.map { .project($0) } ?? item.repoId.map { .repository($0) } ?? .myIssues
+        let items = model.sections(for: scope).flatMap(\.items)
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return nil }
         return (index, items)
     }
@@ -257,13 +258,16 @@ private struct DescriptionEditor: View {
     @Binding var editing: Bool
 
     var body: some View {
-        MarkdownTextEditor(
-            text: item.body,
-            placeholder: item.isEditableContent ? "Add a description…" : "No description",
-            isEditable: item.isEditableContent,
-            onSave: save,
-            editing: $editing
-        )
+        // A tap on a drawn description shows the text, and a second tap puts the caret where it lands.
+        DescriptionBody(text: item.body, isEditable: item.isEditableContent, onSave: save, editing: $editing) { _ in
+            MarkdownTextEditor(
+                text: item.body,
+                placeholder: item.isEditableContent ? "Add a description…" : "No description",
+                isEditable: item.isEditableContent,
+                onSave: save,
+                editing: $editing
+            )
+        }
         .id(item.id)
     }
 
@@ -296,11 +300,11 @@ private struct PropertyChips: View {
             Menu {
                 StatusMenuItems(item: item)
             } label: {
-                PropertyChip(text: model.statusOption(of: item)?.name ?? "No status", placeholder: item.statusId == nil) {
+                PropertyChip(text: model.statusText(of: item), placeholder: model.statusIsPlaceholder(item)) {
                     StatusIcon(glyph: model.glyph(of: item), size: 16)
                 }
             }
-            .accessibilityLabel("Status: \(model.statusOption(of: item)?.name ?? "No status")")
+            .accessibilityLabel("Status: \(model.statusText(of: item))")
             .accessibilityIdentifier("chip-status")
             if model.project(of: item)?.priorityFieldId != nil {
                 Menu {
@@ -383,11 +387,11 @@ private struct PropertiesColumn: View {
                     } label: {
                         value {
                             StatusIcon(glyph: model.glyph(of: item), size: 15)
-                            Text(model.statusOption(of: item)?.name ?? "No status")
-                                .foregroundStyle(item.statusId == nil ? Theme.textTertiary : Theme.text)
+                            Text(model.statusText(of: item))
+                                .foregroundStyle(model.statusIsPlaceholder(item) ? Theme.textTertiary : Theme.text)
                         }
                     }
-                    .accessibilityLabel("Status: \(model.statusOption(of: item)?.name ?? "No status")")
+                    .accessibilityLabel("Status: \(model.statusText(of: item))")
                     .accessibilityIdentifier("property-status")
                 }
                 if model.project(of: item)?.priorityFieldId != nil {
@@ -452,6 +456,17 @@ private struct PropertiesColumn: View {
                             Text(project.title).lineLimit(1)
                         }
                         .padding(.horizontal, 8)
+                    }
+                } else if !item.isOnBoard, item.kind == .issue, !model.boards(toAdd: item).isEmpty {
+                    row("Project") {
+                        Menu {
+                            AddToProjectMenuItems(item: item)
+                        } label: {
+                            value {
+                                Text("Add to project").foregroundStyle(Theme.textTertiary)
+                            }
+                        }
+                        .accessibilityIdentifier("property-project")
                     }
                 }
                 if let repo = item.repo {
@@ -518,6 +533,14 @@ struct StatusMenuItems: View {
     var item: Item
 
     var body: some View {
+        if !item.isOnBoard {
+            AddToProjectMenuItems(item: item)
+        } else {
+            picker
+        }
+    }
+
+    private var picker: some View {
         Picker("Status", selection: Binding(
             get: { item.statusId },
             set: { id in

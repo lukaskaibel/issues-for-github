@@ -40,6 +40,8 @@ public final class SyncStatus {
     public var notices: [Notice] = []
     /// Temporary ids that have since been replaced by GitHub's, so open views can follow along.
     public var idRemaps: [String: String] = [:]
+    /// Repositories whose issues have been read at least once since the app started.
+    public var readRepositories: Set<String> = []
 
     public init() {}
 

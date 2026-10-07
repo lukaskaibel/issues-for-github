@@ -154,7 +154,7 @@ struct IssuePickerSheet: View {
             }
         )
         .task {
-            if let item = model.item(id: itemId) { model.loadRepoMeta(projectId: item.projectId) }
+            if let item = model.item(id: itemId) { model.loadRepoMeta(for: item) }
         }
     }
 }
