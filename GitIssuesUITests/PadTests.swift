@@ -161,13 +161,19 @@ final class PadTests: AppTestCase {
         openProject("Git Issues")
         let card = element("card-#17")
         wait(card)
-        card.press(forDuration: 1.2)
-        wait(button("Status"))
+        openCardMenu(card)
         snapshot("iPad card menu")
         button("Status").tap()
         button("In Review").tap()
+        closedCardMenu()
         let moved = element("column-In Review").descendants(matching: .any).matching(identifier: "card-#17").firstMatch
         wait(moved)
+
+        // With the menu closed, nothing is left animating: the next step doesn't wait out XCTest's minute.
+        let start = Date()
+        moved.tap()
+        waitForLabel(element("property-status"), containing: "In Review")
+        XCTAssertLessThan(Date().timeIntervalSince(start), 20, "Something on the board kept animating after its menu closed")
     }
 
     func testIssueKeysAndBack() {
