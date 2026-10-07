@@ -112,9 +112,9 @@ struct LocalizationTests {
     // MARK: The code
 
     @Test func everyTextIsUsed() {
-        let code = Self.code.map(\.text).joined(separator: "\n")
+        let members = Set(Self.code.flatMap { $0.text.matches(of: #/\.([a-z][A-Za-z0-9]*)/#).map { String($0.output.1) } })
         for key in Self.catalog.keys {
-            #expect(code.contains(try! Regex("\\.\(key)\\b")), "\(key) isn't used")
+            #expect(members.contains(key), "\(key) isn't used")
         }
     }
 
@@ -127,7 +127,7 @@ struct LocalizationTests {
                 let code = line.split(separator: "//", maxSplits: 1).first.map(String.init) ?? ""
                 for match in code.matches(of: Self.textInView) {
                     let literal = String(match.output.1)
-                    if Self.notForTranslation.contains(literal) { continue }
+                    if Self.notForTranslation.contains(literal) || literal.contains(Self.sqlOrHeader) { continue }
                     Issue.record("\(file):\(number + 1): \"\(literal)\" is English in the code; add it to the catalog")
                 }
             }
@@ -137,8 +137,22 @@ struct LocalizationTests {
     /// A string literal handed to a view or to a parameter that shows it, which reads like words.
     static let textInView = #/(?:\b(?:Text|Button|Label|Toggle|Section|Menu|Picker|TextField|SecureField|LabeledContent|ContentUnavailableView|NavigationLink|Tab|CommandMenu|CommandGroup|Link|ShareLink|GroupBox|DisclosureGroup|ProgressView|ClosureMenuItem|NSMenuItem)\(|\.(?:navigationTitle|help|accessibilityLabel|accessibilityHint|accessibilityValue|alert|confirmationDialog|badge|screenKey)\(|\b(?:title|label|text|message|placeholder|subtitle|prompt|tooltip|hint|lead|detail|named|header|footer|caption|body):\s*|\breturn\s+|\?\s*|:\s+(?=")|\?\?\s*)"((?:[A-Z][a-z’']|(?:[^"\\]|\\.)*[A-Za-z] [A-Za-z])(?:[^"\\]|\\.)*)"/#
 
-    /// English that isn't shown as UI text: GitHub's names and values, which the app matches or writes.
-    static let notForTranslation: Set<String> = []
+    /// SQL, and HTTP header names such as "Content-Type".
+    static let sqlOrHeader = #/^(?:SELECT|UPDATE|INSERT|DELETE|CREATE|ALTER|DROP|PRAGMA|WITH) |^[A-Z][a-z]+(?:-[A-Z][a-z]+)+$/#
+
+    /// English that isn't shown as UI text.
+    static let notForTranslation: Set<String> = [
+        // The brand, shown in place of the login until it is known.
+        "GitHub",
+        // Field and option names the app looks for or creates on GitHub, where teammates see them.
+        "Status", "Priority", "Due date", "Urgent", "High", "Medium", "Low",
+        // GitHub's search query, HTTP headers and the Info.plist key of the OAuth app.
+        "is:issue is:open assignee:@me archived:false", "Authorization", "Accept", "Link", "GitHubClientID",
+        // Names inside the app: the database folder, alternate icons, a date template, a background task.
+        "GitIssues", "AppIcon-Light", "AppIcon-Dark", "AppIcon-Violet", "Md", "Send queued changes",
+        // A database that can't be migrated; for whoever debugs it.
+        "The item table has an unexpected definition: \\(definition)",
+    ]
 }
 
 // MARK: - Reading the catalog

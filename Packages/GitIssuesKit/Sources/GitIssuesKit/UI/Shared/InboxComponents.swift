@@ -165,8 +165,8 @@ extension AppModel {
         return String(localized: .inboxNewSinceDate(date: since.formatted(.dateTime.month(.abbreviated).day())))
     }
 
-    /// One line of what happened, for the list at the top of the issue. It follows the name of who did it.
-    func inboxEventLine(_ event: InboxActivity, entry: InboxEntry) -> String {
+    /// One line of what happened, for the list at the top of the issue, naming who did it: "Kai commented".
+    func inboxEventLine(_ event: InboxActivity, entry: InboxEntry, name: String) -> String {
         let me = viewer?.login.lowercased()
         /// Done to you, to someone named, or to someone GitHub doesn't name: a sentence for each.
         func whom(
@@ -178,43 +178,57 @@ extension AppModel {
         let line: LocalizedStringResource
         switch event.kind {
         case .commented:
-            line = InboxEntry.mentions(event.text, login: viewer?.login) ? .eventMentionedYou : .eventCommented
+            line = InboxEntry.mentions(event.text, login: viewer?.login)
+                ? .eventMentionedYou(name: name) : .eventCommented(name: name)
         case .assigned:
-            line = whom(event.detail, you: .eventAssignedYou, named: { .eventAssignedPerson(login: $0) }, someone: .eventAssignedSomeone)
+            line = whom(
+                event.detail, you: .eventAssignedYou(name: name),
+                named: { .eventAssignedPerson(name: name, login: $0) }, someone: .eventAssignedSomeone(name: name)
+            )
         case .unassigned:
-            line = whom(event.detail, you: .eventUnassignedYou, named: { .eventUnassignedPerson(login: $0) }, someone: .eventUnassignedSomeone)
+            line = whom(
+                event.detail, you: .eventUnassignedYou(name: name),
+                named: { .eventUnassignedPerson(name: name, login: $0) }, someone: .eventUnassignedSomeone(name: name)
+            )
         case .mentioned:
-            line = .eventMentionedYou
+            line = .eventMentionedYou(name: name)
         case .opened:
-            line = entry.isPullRequest ? .eventOpenedPullRequest : .eventOpenedIssue
+            line = entry.isPullRequest ? .eventOpenedPullRequest(name: name) : .eventOpenedIssue(name: name)
         case .closed:
             switch event.detail {
-            case "NOT_PLANNED": line = .eventClosedNotPlanned
-            case "DUPLICATE": line = .eventClosedDuplicate
-            default: line = entry.isPullRequest ? .eventClosedPullRequest : .eventClosedCompleted
+            case "NOT_PLANNED": line = .eventClosedNotPlanned(name: name)
+            case "DUPLICATE": line = .eventClosedDuplicate(name: name)
+            default: line = entry.isPullRequest ? .eventClosedPullRequest(name: name) : .eventClosedCompleted(name: name)
             }
         case .reopened:
-            line = .eventReopened
+            line = .eventReopened(name: name)
         case .merged:
-            line = .eventMerged
+            line = .eventMerged(name: name)
         case .reviewRequested:
             line = whom(
-                event.detail, you: .eventRequestedYourReview, named: { .eventRequestedReviewFrom(login: $0) }, someone: .eventRequestedReviewFromSomeone
+                event.detail, you: .eventRequestedYourReview(name: name),
+                named: { .eventRequestedReviewFrom(name: name, login: $0) }, someone: .eventRequestedReviewFromSomeone(name: name)
             )
         case .reviewed:
             switch event.detail {
-            case "APPROVED": line = .eventApproved
-            case "CHANGES_REQUESTED": line = .eventRequestedChanges
-            default: line = .eventReviewed
+            case "APPROVED": line = .eventApproved(name: name)
+            case "CHANGES_REQUESTED": line = .eventRequestedChanges(name: name)
+            default: line = .eventReviewed(name: name)
             }
         case .statusChanged:
             line = switch (event.detail, event.project) {
-            case let (status?, project?): .eventMovedToStatusInProject(status: status, project: project)
-            case let (status?, nil): .eventMovedToStatus(status: status)
-            case let (nil, project?): .eventMovedToAnotherStatusInProject(project: project)
-            case (nil, nil): .eventMovedToAnotherStatus
+            case let (status?, project?): .eventMovedToStatusInProject(name: name, status: status, project: project)
+            case let (status?, nil): .eventMovedToStatus(name: name, status: status)
+            case let (nil, project?): .eventMovedToAnotherStatusInProject(name: name, project: project)
+            case (nil, nil): .eventMovedToAnotherStatus(name: name)
             }
         }
         return String(localized: line)
     }
+}
+
+/// A sentence with the name of who did something set off, wherever the language puts it: "**Kai** commented".
+func sentence(_ text: String, emphasizing name: String, _ style: (Text) -> Text) -> Text {
+    guard let range = text.range(of: name) else { return Text(text) }
+    return Text("\(Text(text[..<range.lowerBound]))\(style(Text(name)))\(Text(text[range.upperBound...]))")
 }

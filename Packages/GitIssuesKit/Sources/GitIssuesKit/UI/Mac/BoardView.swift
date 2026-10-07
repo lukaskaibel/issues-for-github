@@ -433,9 +433,9 @@ extension ColumnHeader {
                     edit { $0.color = color }
                 } label: {
                     if column.option?.color == color {
-                        Label(Self.colourName(color), systemImage: "checkmark")
+                        Label(Defaults.colourName(color), systemImage: "checkmark")
                     } else {
-                        Text(Self.colourName(color))
+                        Text(Defaults.colourName(color))
                     }
                 }
             }
@@ -449,19 +449,6 @@ extension ColumnHeader {
     }
 
     /// GitHub's name for a colour ("GRAY") as the menu shows it.
-    static func colourName(_ color: String) -> String {
-        switch color {
-        case "GRAY": String(localized: .colourGray)
-        case "BLUE": String(localized: .colourBlue)
-        case "GREEN": String(localized: .colourGreen)
-        case "YELLOW": String(localized: .colourYellow)
-        case "ORANGE": String(localized: .colourOrange)
-        case "RED": String(localized: .colourRed)
-        case "PINK": String(localized: .colourPink)
-        case "PURPLE": String(localized: .colourPurple)
-        default: color.capitalized
-        }
-    }
 }
 
 struct AddColumnButton: View {

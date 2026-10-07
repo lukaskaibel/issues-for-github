@@ -386,7 +386,7 @@ private struct MobileInboxUndo: View {
             model.undoInbox()
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: undo.message.hasPrefix("Unsubscribed") ? "bell.slash" : "archivebox")
+                Image(systemName: undo.icon)
                     .foregroundStyle(Theme.accent)
                 Text(undo.message).foregroundStyle(Theme.text).lineLimit(1)
                 Text(.undo).fontWeight(.semibold).foregroundStyle(Theme.accent)
@@ -432,7 +432,8 @@ struct MobileInboxNews: View {
                         Avatar(login: actor.login, url: actor.avatarUrl, size: 18)
                             .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
                     }
-                    Text("\(Text(event.actor.map(InboxEntry.name) ?? String(localized: .someone)).fontWeight(.semibold)) \(model.inboxEventLine(event, entry: entry))")
+                    let name = event.actor.map(InboxEntry.name) ?? String(localized: .someone)
+                    sentence(model.inboxEventLine(event, entry: entry, name: name), emphasizing: name) { $0.fontWeight(.semibold) }
                         .foregroundStyle(Theme.text)
                     Spacer(minLength: 8)
                     Text(inboxTime(event.at, now: model.inboxClock))

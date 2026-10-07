@@ -360,7 +360,7 @@ private struct InboxUndoToast: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: undo.message.hasPrefix("Unsubscribed") ? "bell.slash" : "archivebox")
+            Image(systemName: undo.icon)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Theme.accent)
             Text(undo.message).lineLimit(1)
@@ -537,12 +537,14 @@ private struct InboxNews: View {
                 .font(.tinySemibold)
                 .foregroundStyle(entry.activityIsNew ? Theme.accent : Theme.textSecondary)
             ForEach(Array(events.enumerated()), id: \.offset) { _, event in
-                let name = event.actor.map { Text(InboxEntry.name($0)) } ?? Text(.inboxSomeone)
+                let name = event.actor.map(InboxEntry.name) ?? String(localized: .inboxSomeone)
                 let row = HStack(spacing: 8) {
                     if let actor = event.actor {
                         Avatar(login: actor.login, url: actor.avatarUrl, size: 16)
                     }
-                    Text("\(name.fontWeight(.semibold).foregroundStyle(Theme.text)) \(model.inboxEventLine(event, entry: entry))")
+                    sentence(model.inboxEventLine(event, entry: entry, name: name), emphasizing: name) {
+                        $0.fontWeight(.semibold).foregroundStyle(Theme.text)
+                    }
                         .foregroundStyle(Theme.textBody)
                         .lineLimit(1)
                     Spacer(minLength: 8)

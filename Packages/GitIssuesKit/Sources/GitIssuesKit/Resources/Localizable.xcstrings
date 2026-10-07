@@ -1430,7 +1430,7 @@
       }
     },
     "colourBlue" : {
-      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "comment" : "Name of one of GitHub's colours for a status column (blue), in the colour menu of a column on the board (Mac, iPhone, iPad) and of the Statuses screen (iPhone, iPad). One word.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1442,7 +1442,7 @@
       }
     },
     "colourGray" : {
-      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "comment" : "Name of one of GitHub's colours for a status column (gray), in the colour menu of a column on the board (Mac, iPhone, iPad) and of the Statuses screen (iPhone, iPad). One word.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1454,7 +1454,7 @@
       }
     },
     "colourGreen" : {
-      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "comment" : "Name of one of GitHub's colours for a status column (green), in the colour menu of a column on the board (Mac, iPhone, iPad) and of the Statuses screen (iPhone, iPad). One word.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1478,7 +1478,7 @@
       }
     },
     "colourOrange" : {
-      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "comment" : "Name of one of GitHub's colours for a status column (orange), in the colour menu of a column on the board (Mac, iPhone, iPad) and of the Statuses screen (iPhone, iPad). One word.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1490,7 +1490,7 @@
       }
     },
     "colourPink" : {
-      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "comment" : "Name of one of GitHub's colours for a status column (pink), in the colour menu of a column on the board (Mac, iPhone, iPad) and of the Statuses screen (iPhone, iPad). One word.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1502,7 +1502,7 @@
       }
     },
     "colourPurple" : {
-      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "comment" : "Name of one of GitHub's colours for a status column (purple), in the colour menu of a column on the board (Mac, iPhone, iPad) and of the Statuses screen (iPhone, iPad). One word.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1514,7 +1514,7 @@
       }
     },
     "colourRed" : {
-      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "comment" : "Name of one of GitHub's colours for a status column (red), in the colour menu of a column on the board (Mac, iPhone, iPad) and of the Statuses screen (iPhone, iPad). One word.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1526,7 +1526,7 @@
       }
     },
     "colourYellow" : {
-      "comment" : "Name of one of GitHub's colours for a status, in the colour menu of the Statuses screen (iPhone, iPad).",
+      "comment" : "Name of one of GitHub's colours for a status column (yellow), in the colour menu of a column on the board (Mac, iPhone, iPad) and of the Statuses screen (iPhone, iPad). One word.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2810,313 +2810,313 @@
       }
     },
     "eventApproved" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai approved it' (the pull request, in a review).",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai approved it' (the pull request, in a review).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "approved it"
+            "value" : "%(name)@ approved it"
           }
         }
       }
     },
     "eventAssignedPerson" : {
-      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai assigned mona' (to the issue). %(login)@ is a GitHub user name.",
+      "comment" : "Inbox, what happened on an issue: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai assigned mona' (to the issue). %(login)@ is a GitHub user name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "assigned %(login)@"
+            "value" : "%(name)@ assigned %(login)@"
           }
         }
       }
     },
     "eventAssignedSomeone" : {
-      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai assigned someone' (to the issue), when GitHub doesn't say whom.",
+      "comment" : "Inbox, what happened on an issue: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai assigned someone' (to the issue), when GitHub doesn't say whom.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "assigned someone"
+            "value" : "%(name)@ assigned someone"
           }
         }
       }
     },
     "eventAssignedYou" : {
-      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai assigned you' (to the issue).",
+      "comment" : "Inbox, what happened on an issue: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai assigned you' (to the issue).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "assigned you"
+            "value" : "%(name)@ assigned you"
           }
         }
       }
     },
     "eventClosedCompleted" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai closed it as completed' (the issue; GitHub's wording).",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai closed it as completed' (the issue; GitHub's wording).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "closed it as completed"
+            "value" : "%(name)@ closed it as completed"
           }
         }
       }
     },
     "eventClosedDuplicate" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai closed it as a duplicate' (the issue).",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai closed it as a duplicate' (the issue).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "closed it as a duplicate"
+            "value" : "%(name)@ closed it as a duplicate"
           }
         }
       }
     },
     "eventClosedNotPlanned" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai closed it as not planned' (the issue; GitHub's wording).",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai closed it as not planned' (the issue; GitHub's wording).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "closed it as not planned"
+            "value" : "%(name)@ closed it as not planned"
           }
         }
       }
     },
     "eventClosedPullRequest" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai closed it' (a pull request, without merging it).",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai closed it' (a pull request, without merging it).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "closed it"
+            "value" : "%(name)@ closed it"
           }
         }
       }
     },
     "eventCommented" : {
-      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai commented'.",
+      "comment" : "Inbox, what happened on an issue: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai commented'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "commented"
+            "value" : "%(name)@ commented"
           }
         }
       }
     },
     "eventMentionedYou" : {
-      "comment" : "Inbox, what happened on an issue: follows the name of the person who did it, in bold, e.g. 'Kai mentioned you'. Lowercase, as the middle of a sentence.",
+      "comment" : "Inbox, what happened on an issue: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai mentioned you'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "mentioned you"
+            "value" : "%(name)@ mentioned you"
           }
         }
       }
     },
     "eventMerged" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai merged it' (the pull request).",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai merged it' (the pull request).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "merged it"
+            "value" : "%(name)@ merged it"
           }
         }
       }
     },
     "eventMovedToAnotherStatus" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai moved it to another status', when GitHub doesn't say which or on what board.",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai moved it to another status', when GitHub doesn't say which or on what board.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "moved it to another status"
+            "value" : "%(name)@ moved it to another status"
           }
         }
       }
     },
     "eventMovedToAnotherStatusInProject" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai moved it to another status in Website', when GitHub doesn't say which. %(project)@ is the GitHub project's name.",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai moved it to another status in Website', when GitHub doesn't say which. %(project)@ is the GitHub project's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "moved it to another status in %(project)@"
+            "value" : "%(name)@ moved it to another status in %(project)@"
           }
         }
       }
     },
     "eventMovedToStatus" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai moved it to In Progress'. %(status)@ is a status column of a project board, as named on GitHub.",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai moved it to In Progress'. %(status)@ is a status column of a project board, as named on GitHub.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "moved it to %(status)@"
+            "value" : "%(name)@ moved it to %(status)@"
           }
         }
       }
     },
     "eventMovedToStatusInProject" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai moved it to In Progress in Website'. %(status)@ is a status column of a project board, %(project)@ the GitHub project's name, both as named on GitHub.",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai moved it to In Progress in Website'. %(status)@ is a status column of a project board, %(project)@ the GitHub project's name, both as named on GitHub.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "moved it to %(status)@ in %(project)@"
+            "value" : "%(name)@ moved it to %(status)@ in %(project)@"
           }
         }
       }
     },
     "eventOpenedIssue" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai opened the issue' (created it). 'Issue' is a GitHub term.",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai opened the issue' (created it). 'Issue' is a GitHub term.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "opened the issue"
+            "value" : "%(name)@ opened the issue"
           }
         }
       }
     },
     "eventOpenedPullRequest" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai opened this pull request'. 'Pull request' is a GitHub term.",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai opened this pull request'. 'Pull request' is a GitHub term.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "opened this pull request"
+            "value" : "%(name)@ opened this pull request"
           }
         }
       }
     },
     "eventReopened" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai reopened it' (the issue or pull request).",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai reopened it' (the issue or pull request).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "reopened it"
+            "value" : "%(name)@ reopened it"
           }
         }
       }
     },
     "eventRequestedChanges" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai requested changes' (to the pull request, in a review).",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai requested changes' (to the pull request, in a review).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "requested changes"
+            "value" : "%(name)@ requested changes"
           }
         }
       }
     },
     "eventRequestedReviewFrom" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai requested a review from mona' (of a pull request). %(login)@ is a GitHub user or team name.",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai requested a review from mona' (of a pull request). %(login)@ is a GitHub user or team name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "requested a review from %(login)@"
+            "value" : "%(name)@ requested a review from %(login)@"
           }
         }
       }
     },
     "eventRequestedReviewFromSomeone" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai requested a review from someone' (of a pull request), when GitHub doesn't say whom.",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai requested a review from someone' (of a pull request), when GitHub doesn't say whom.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "requested a review from someone"
+            "value" : "%(name)@ requested a review from someone"
           }
         }
       }
     },
     "eventRequestedYourReview" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai requested your review' (of a pull request).",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai requested your review' (of a pull request).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "requested your review"
+            "value" : "%(name)@ requested your review"
           }
         }
       }
     },
     "eventReviewed" : {
-      "comment" : "Inbox, what happened: follows the name of the person in bold, e.g. 'Kai reviewed it' (the pull request).",
+      "comment" : "Inbox, what happened: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai reviewed it' (the pull request).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "reviewed it"
+            "value" : "%(name)@ reviewed it"
           }
         }
       }
     },
     "eventUnassignedPerson" : {
-      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai unassigned mona' (took them off the issue). %(login)@ is a GitHub user name.",
+      "comment" : "Inbox, what happened on an issue: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai unassigned mona' (took them off the issue). %(login)@ is a GitHub user name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "unassigned %(login)@"
+            "value" : "%(name)@ unassigned %(login)@"
           }
         }
       }
     },
     "eventUnassignedSomeone" : {
-      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai unassigned someone', when GitHub doesn't say whom.",
+      "comment" : "Inbox, what happened on an issue: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai unassigned someone', when GitHub doesn't say whom.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "unassigned someone"
+            "value" : "%(name)@ unassigned someone"
           }
         }
       }
     },
     "eventUnassignedYou" : {
-      "comment" : "Inbox, what happened on an issue: follows the name of the person in bold, e.g. 'Kai unassigned you' (took you off the issue).",
+      "comment" : "Inbox, what happened on an issue: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai unassigned you' (took you off the issue).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "unassigned you"
+            "value" : "%(name)@ unassigned you"
           }
         }
       }
@@ -4298,7 +4298,7 @@
       }
     },
     "inboxSomeone" : {
-      "comment" : "Inbox: stands for the person who did something when GitHub doesn't say who. Inserted as %(who)@ at the start of the Inbox lines, e.g. 'Someone mentioned you'.",
+      "comment" : "Inbox: stands for the person who did something when GitHub doesn't say who. Inserted as the name in the Inbox's sentences, e.g. 'Someone mentioned you'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -8894,7 +8894,7 @@
       }
     },
     "someone" : {
-      "comment" : "iPhone and iPad, issue opened from the Inbox: stands for a person GitHub doesn't name, at the start of a line such as 'Someone commented'.",
+      "comment" : "iPhone and iPad, issue opened from the Inbox: stands for a person GitHub doesn't name, inserted as the name in a sentence such as 'Someone commented'.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

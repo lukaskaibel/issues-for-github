@@ -42,7 +42,7 @@ struct StatusEditor: View {
                             )) {
                                 ForEach(Defaults.optionColors, id: \.self) { color in
                                     Label {
-                                        Text(Self.colourName(color))
+                                        Text(Defaults.colourName(color))
                                     } icon: {
                                         MenuImages.label(Self.hex(color), scheme)
                                     }
@@ -57,7 +57,7 @@ struct StatusEditor: View {
                                 .frame(width: 32, height: 32)
                                 .contentShape(Rectangle())
                         }
-                        .accessibilityLabel(.colourIs(colour: Self.colourName(option.color)))
+                        .accessibilityLabel(.colourIs(colour: Defaults.colourName(option.color)))
                     }
                     .deleteDisabled(statuses.count <= 1)
                 }
@@ -144,19 +144,6 @@ struct StatusEditor: View {
     }
 
     /// The name of one of GitHub's option colours ("BLUE"), as the user reads it.
-    static func colourName(_ color: String) -> String {
-        switch color {
-        case "GRAY": String(localized: .colourGray)
-        case "BLUE": String(localized: .colourBlue)
-        case "GREEN": String(localized: .colourGreen)
-        case "YELLOW": String(localized: .colourYellow)
-        case "ORANGE": String(localized: .colourOrange)
-        case "RED": String(localized: .colourRed)
-        case "PINK": String(localized: .colourPink)
-        case "PURPLE": String(localized: .colourPurple)
-        default: color.capitalized
-        }
-    }
 
     /// GitHub's option colours as hex, for the colour menu's dots.
     static func hex(_ color: String) -> String {

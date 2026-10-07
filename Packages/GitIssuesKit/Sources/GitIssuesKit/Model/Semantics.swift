@@ -231,4 +231,19 @@ public enum Defaults {
     ]
 
     public static let optionColors = ["GRAY", "BLUE", "GREEN", "YELLOW", "ORANGE", "RED", "PINK", "PURPLE"]
+
+    /// One of GitHub's option colours as it is called in a menu: "GRAY" is "Gray".
+    static func colourName(_ color: String) -> String {
+        switch color {
+        case "GRAY": String(localized: .colourGray)
+        case "BLUE": String(localized: .colourBlue)
+        case "GREEN": String(localized: .colourGreen)
+        case "YELLOW": String(localized: .colourYellow)
+        case "ORANGE": String(localized: .colourOrange)
+        case "RED": String(localized: .colourRed)
+        case "PINK": String(localized: .colourPink)
+        case "PURPLE": String(localized: .colourPurple)
+        default: color.capitalized
+        }
+    }
 }

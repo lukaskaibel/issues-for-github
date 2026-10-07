@@ -318,7 +318,7 @@ private struct MobileColumnHeader: View {
                         )) {
                             ForEach(Defaults.optionColors, id: \.self) { color in
                                 Label {
-                                    Text(Self.colourName(color))
+                                    Text(Defaults.colourName(color))
                                 } icon: {
                                     MenuImages.label(StatusEditor.hex(color), scheme)
                                 }
@@ -393,19 +393,6 @@ private struct MobileColumnHeader: View {
     private var canEdit: Bool { model.projects.first { $0.id == projectId }?.viewerCanUpdate == true }
 
     /// A colour GitHub offers for a status, by its name there ("GRAY", "BLUE" …).
-    private static func colourName(_ color: String) -> String {
-        switch color {
-        case "GRAY": String(localized: .colourGray)
-        case "BLUE": String(localized: .colourBlue)
-        case "GREEN": String(localized: .colourGreen)
-        case "YELLOW": String(localized: .colourYellow)
-        case "ORANGE": String(localized: .colourOrange)
-        case "RED": String(localized: .colourRed)
-        case "PINK": String(localized: .colourPink)
-        case "PURPLE": String(localized: .colourPurple)
-        default: color.capitalized
-        }
-    }
 
     private var statuses: [FieldOption] { model.statusOptions(projectId: projectId) }
     private var position: Int { statuses.firstIndex { $0.id == column.id } ?? 0 }

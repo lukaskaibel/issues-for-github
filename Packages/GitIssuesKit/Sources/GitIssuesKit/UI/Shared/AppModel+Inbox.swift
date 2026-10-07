@@ -7,6 +7,8 @@ struct InboxUndo: Identifiable, Equatable {
     var id = UUID()
     /// "Archived #14", "Unsubscribed from #9" …
     var message: String
+    /// The symbol shown with it: an archive box, or a bell crossed out for unsubscribing.
+    var icon: String
     var threadIds: [String]
     var outboxIds: [Int64]
     /// Each entry's personal record before the change, to put back.
@@ -260,7 +262,7 @@ extension AppModel {
         let message = entries.count == 1
             ? String(localized: .archivedNotification(number: entries[0].displayNumber(withRepo: false)))
             : String(localized: .archivedNotifications(count: entries.count))
-        change(entries, message: message) { entry in
+        change(entries, message: message, icon: "archivebox") { entry in
             [.archiveThread(.init(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label))]
         }
     }
@@ -276,13 +278,13 @@ extension AppModel {
         let message = entries.count == 1
             ? String(localized: .unsubscribedFromIssue(number: entries[0].displayNumber(withRepo: false)))
             : String(localized: .unsubscribedFromIssues(count: entries.count))
-        change(entries, message: message) { entry in
+        change(entries, message: message, icon: "bell.slash") { entry in
             let change = Mutation.ThreadChange(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label)
             return [.unsubscribeThread(change), .archiveThread(change)]
         }
     }
 
-    private func change(_ entries: [InboxEntry], message: String, mutations: (InboxEntry) -> [Mutation]) {
+    private func change(_ entries: [InboxEntry], message: String, icon: String, mutations: (InboxEntry) -> [Mutation]) {
         let before = visibleInbox
         let ids = entries.map(\.id)
         var records: [String: PersonalStore.Record?] = [:]
@@ -300,7 +302,7 @@ extension AppModel {
             inboxPicked = []
             selectNeighbour(after: Set(ids), in: before)
         }
-        inboxUndo = InboxUndo(message: message, threadIds: ids, outboxIds: added, records: records, unread: unread)
+        inboxUndo = InboxUndo(message: message, icon: icon, threadIds: ids, outboxIds: added, records: records, unread: unread)
         let engine = self.engine
         let undoId = inboxUndo?.id
         Task {
