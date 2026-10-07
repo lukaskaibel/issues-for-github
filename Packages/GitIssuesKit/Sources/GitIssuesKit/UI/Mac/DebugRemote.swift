@@ -445,6 +445,13 @@ enum DebugRemote {
             if let item = model.openItem { model.addComment(to: item, body: argument) }
         case "notice":
             model.status.post(Notice(title: "Test notice", message: argument))
+        case "notify":
+            // notify <start|done|tomorrow|open> <number>: answers a due-date notification as if it had been tapped.
+            let bits = argument.split(separator: " ").map(String.init)
+            if bits.count == 2, let item = item(bits[1], model) {
+                let action = bits[0] == "open" ? "com.apple.UNNotificationDefaultActionIdentifier" : bits[0]
+                Task { await Notifier.shared.handle(action: action, userInfo: [Notifier.Key.itemId: item.id, Notifier.Key.contentId: item.contentId ?? ""]) }
+            }
         default:
             break
         }

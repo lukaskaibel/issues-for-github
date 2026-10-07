@@ -224,3 +224,54 @@ struct OutboxTests {
         #expect(try db.reader.read { try OutboxEntry.fetchCount($0) } == 0)
     }
 }
+
+@Suite("Due dates in the queue of changes")
+struct DueDateOutboxTests {
+    private func makeDatabase() throws -> AppDatabase {
+        let db = try AppDatabase.inMemory()
+        try db.writer.write { db in
+            try Project(
+                id: OutboxTests.projectId, ownerLogin: "octo", ownerIsOrg: false, number: 1, title: "Board", url: "",
+                closed: false, viewerCanUpdate: true
+            ).insert(db)
+            try OutboxTests.item(1).insert(db)
+        }
+        return db
+    }
+
+    private func setDate(_ date: String?, base: String?) -> Mutation {
+        .setDate(.init(itemId: "item-1", projectId: OutboxTests.projectId, date: date, base: base))
+    }
+
+    @Test func aDateShowsAtOnceEvenBeforeTheProjectHasAField() throws {
+        let db = try makeDatabase()
+        try db.writer.write { try Outbox.enqueue($0, setDate("2026-10-09", base: nil)) }
+        let item = try db.reader.read { try Item.fetchOne($0, key: "item-1")! }
+        #expect(item.dueDate == "2026-10-09")
+        #expect(item.due == CalendarDay(year: 2026, month: 10, day: 9))
+    }
+
+    @Test func changingTheDateTwiceSendsOneChangeWithTheFirstBase() throws {
+        let db = try makeDatabase()
+        try db.writer.write { db in
+            try Outbox.enqueue(db, setDate("2026-10-09", base: nil))
+            try Outbox.enqueue(db, setDate("2026-10-12", base: "2026-10-09"))
+        }
+        let entries = try db.reader.read { try OutboxEntry.fetchAll($0) }
+        #expect(entries.count == 1)
+        #expect(entries.first?.mutation == setDate("2026-10-12", base: nil))
+    }
+
+    @Test func anUnsentDateSurvivesFreshDataFromGitHub() throws {
+        let db = try makeDatabase()
+        try db.writer.write { db in
+            try Outbox.enqueue(db, setDate(nil, base: "2026-10-09"))
+            var remote = OutboxTests.item(1)
+            remote.dueDate = "2026-10-09"
+            try remote.save(db)
+            try Outbox.rebase(db)
+        }
+        let item = try db.reader.read { try Item.fetchOne($0, key: "item-1")! }
+        #expect(item.dueDate == nil)
+    }
+}

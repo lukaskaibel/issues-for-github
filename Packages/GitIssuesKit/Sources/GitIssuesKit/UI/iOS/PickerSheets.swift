@@ -87,6 +87,7 @@ extension PickerKind {
         case .priority: "Priority"
         case .assignees: "Assignee"
         case .labels: "Labels"
+        case .dueDate: "Due Date"
         case .subIssues: "Sub-issues"
         }
     }
@@ -97,6 +98,7 @@ extension PickerKind {
         case .priority: "Search priorities"
         case .assignees: "Search people"
         case .labels: "Search labels"
+        case .dueDate: "Type a date"
         case .subIssues: "Search sub-issues"
         }
     }
@@ -109,6 +111,14 @@ struct IssuePickerSheet: View {
     var itemId: String
 
     var body: some View {
+        if kind == .dueDate {
+            IssueDueDateSheet(itemId: itemId)
+        } else {
+            list
+        }
+    }
+
+    private var list: some View {
         PickerSheet(
             title: kind.sheetTitle,
             prompt: kind.searchPrompt,

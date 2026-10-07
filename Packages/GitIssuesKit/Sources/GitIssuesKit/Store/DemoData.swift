@@ -28,6 +28,8 @@ public enum DemoData {
         var labels: [LabelRef]
         /// Whether the project has a Priority field; the website has none, so adding one can be tried.
         var hasPriority = true
+        /// Whether it has a "Due date" field; on the website the first date adds one.
+        var hasDueField = true
     }
 
     private static let appLabels = [
@@ -55,7 +57,8 @@ public enum DemoData {
         id: "demo-project-site", number: 2, title: "Website", repoId: "demo-repo-site", repo: "acme/website",
         statuses: [("Todo", "GRAY"), ("In Progress", "YELLOW"), ("Done", "PURPLE")],
         labels: siteLabels,
-        hasPriority: false
+        hasPriority: false,
+        hasDueField: false
     )
 
     // MARK: Issues
@@ -70,15 +73,17 @@ public enum DemoData {
         var body = ""
         var parent: Int?
         var hoursAgo: Double = 30
+        /// Due this many days from today; negative is overdue.
+        var due: Int?
     }
 
     private static let appIssues: [IssueSpec] = [
         IssueSpec(number: 5, title: "Keyboard navigation across board and list", status: "In Review", priority: "Medium", labels: ["ui"], assignees: [viewer.person], body: "J and K move through issues, Return opens one and Escape goes back. Arrow keys switch columns on the board.", hoursAgo: 3),
         IssueSpec(number: 16, title: "Markdown editor for descriptions and comments", status: "In Review", priority: "Low", labels: ["ui"], assignees: [viewer.person, mira], body: "Style Markdown while typing: headings, **bold**, _italics_, `code` and lists.", hoursAgo: 5),
-        IssueSpec(number: 6, title: "Delta sync for project items", status: "In Review", priority: "High", labels: ["sync"], assignees: [theo], body: "Only fetch items whose `updatedAt` changed since the last sweep.", hoursAgo: 8),
+        IssueSpec(number: 6, title: "Delta sync for project items", status: "In Review", priority: "High", labels: ["sync"], assignees: [theo], body: "Only fetch items whose `updatedAt` changed since the last sweep.", hoursAgo: 8, due: 2),
         IssueSpec(number: 24, title: "Animate the column count when a card lands", status: "In Review", priority: nil, hoursAgo: 9),
         IssueSpec(number: 7, title: "Sub-issue tree in issue detail", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [mira], hoursAgo: 4),
-        IssueSpec(number: 8, title: "Offline change queue that replays on reconnect", status: "In Progress", priority: "High", labels: ["sync"], assignees: [viewer.person], body: "Every change is written locally first and queued. When the connection returns, the queue is sent in order.", hoursAgo: 2),
+        IssueSpec(number: 8, title: "Offline change queue that replays on reconnect", status: "In Progress", priority: "High", labels: ["sync"], assignees: [viewer.person], body: "Every change is written locally first and queued. When the connection returns, the queue is sent in order.", hoursAgo: 2, due: 9),
         IssueSpec(number: 9, title: "Drag cards between columns with spring physics", status: "In Progress", priority: "Urgent", labels: ["ui"], assignees: [viewer.person], body: """
             A card should lift under the pointer, tilt slightly while it moves, and settle into place with a spring. Neighbouring cards make room as the drag passes over them.
 
@@ -89,13 +94,13 @@ public enum DemoData {
             ```swift
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { drop() }
             ```
-            """, hoursAgo: 1),
+            """, hoursAgo: 1, due: 0),
         IssueSpec(number: 13, title: "Cancel a drag with Escape", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 6),
         IssueSpec(number: 15, title: "Conflict banner when text changed on GitHub", status: "In Progress", priority: "High", labels: ["sync"], assignees: [theo], hoursAgo: 7),
-        IssueSpec(number: 17, title: "Command palette with fuzzy search", status: "Todo", priority: "High", labels: ["ui"], assignees: [viewer.person], hoursAgo: 20),
-        IssueSpec(number: 14, title: "Sign in with GitHub device flow", status: "Todo", priority: "Medium", labels: ["auth"], assignees: [viewer.person, kai], hoursAgo: 22),
-        IssueSpec(number: 25, title: "Crash when a label name contains an emoji", status: "Todo", priority: "Urgent", labels: ["bug"], assignees: [kai], body: "Steps to reproduce:\n\n1. Add a label named `🔥 hot`\n2. Open the labels picker\n3. The app quits", hoursAgo: 12),
-        IssueSpec(number: 18, title: "Notarized builds and automatic updates", status: "Backlog", priority: "Low", labels: ["release"], hoursAgo: 70),
+        IssueSpec(number: 17, title: "Command palette with fuzzy search", status: "Todo", priority: "High", labels: ["ui"], assignees: [viewer.person], hoursAgo: 20, due: 1),
+        IssueSpec(number: 14, title: "Sign in with GitHub device flow", status: "Todo", priority: "Medium", labels: ["auth"], assignees: [viewer.person, kai], hoursAgo: 22, due: 3),
+        IssueSpec(number: 25, title: "Crash when a label name contains an emoji", status: "Todo", priority: "Urgent", labels: ["bug"], assignees: [kai], body: "Steps to reproduce:\n\n1. Add a label named `🔥 hot`\n2. Open the labels picker\n3. The app quits", hoursAgo: 12, due: -2),
+        IssueSpec(number: 18, title: "Notarized builds and automatic updates", status: "Backlog", priority: "Low", labels: ["release"], hoursAgo: 70, due: 24),
         IssueSpec(number: 19, title: "Show linked pull requests and CI state", status: "Backlog", priority: "Low", labels: ["feature"], hoursAgo: 80),
         IssueSpec(number: 20, title: "Milestones as roadmap projects", status: "Backlog", priority: "Low", labels: ["feature"], hoursAgo: 90),
         IssueSpec(number: 21, title: "Inbox from GitHub notifications", status: "Backlog", priority: nil, labels: ["feature"], hoursAgo: 100),
@@ -129,12 +134,14 @@ public enum DemoData {
     private static func seed(_ db: Database) throws {
         try KV.setViewer(db, viewer)
         let now = Date()
+        let today = CalendarDay.today()
         for (spec, issues) in [(app, appIssues), (site, siteIssues)] {
             try Project(
                 id: spec.id, ownerLogin: "acme", ownerIsOrg: true, number: spec.number, title: spec.title,
                 url: "https://github.com/orgs/acme/projects/\(spec.number)", closed: false, viewerCanUpdate: true,
                 remoteUpdatedAt: nil, itemsTotal: issues.count,
-                statusFieldId: "\(spec.id)-status", priorityFieldId: spec.hasPriority ? "\(spec.id)-priority" : nil, lastSyncedAt: now
+                statusFieldId: "\(spec.id)-status", priorityFieldId: spec.hasPriority ? "\(spec.id)-priority" : nil,
+                dueFieldId: spec.hasDueField ? "\(spec.id)-due" : nil, lastSyncedAt: now
             ).insert(db)
             for (index, status) in spec.statuses.enumerated() {
                 try FieldOption(
@@ -161,6 +168,7 @@ public enum DemoData {
                 try Item(
                     id: "demo-item-\(issue.number)", projectId: spec.id, kind: .issue, position: Double(index + 1) * 1024,
                     statusId: optionId(spec, issue.status), priorityId: spec.hasPriority ? issue.priority.map { optionId(spec, $0) } : nil,
+                    dueDate: spec.hasDueField ? issue.due.map { today.adding(days: $0).string } : nil,
                     contentId: contentId(issue.number), number: issue.number, title: issue.title, body: issue.body,
                     state: closed ? "CLOSED" : "OPEN", stateReason: closed ? "COMPLETED" : nil,
                     url: "https://github.com/\(spec.repo)/issues/\(issue.number)", repoId: spec.repoId, repo: spec.repo,

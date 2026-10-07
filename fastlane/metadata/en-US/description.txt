@@ -3,7 +3,7 @@ Issues is a fast, native app for GitHub Issues and GitHub Projects, on the Mac, 
 ON THE MAC
 • Every project as a board or a list, plus My Issues across all of them
 • Drag cards between columns, and shape the columns: add, rename, recolour and reorder them
-• Keyboard first: J and K move between issues, S, P, A and L change status, priority, assignee and labels, and ⌘K opens a command palette for everything else
+• Keyboard first: J and K move between issues, S, P, A and L change status, priority, assignee and labels, D sets the due date, and ⌘K opens a command palette for everything else
 • Select several issues and change them at once
 • Peek at an issue with Space, or open it beside its properties, sub-issues and comments
 • Back and forward work as in a browser
@@ -19,6 +19,12 @@ ON IPAD
 • A sidebar with all your projects, and the board with drag and drop
 • Issues open beside their properties, as on the Mac
 • With a keyboard: J and K to move, S, P, A and L to change an issue, ⌘N for a new one
+
+DUE DATES THAT REMIND YOU
+• Give an issue the day it is due: tomorrow, Friday, next week, a day in the calendar, or typed as "in 3 days"
+• Cards and lists show it, orange on the day and red once it has passed
+• On the day, your Mac, iPhone and iPad remind you, with buttons to start the issue, mark it done or move it to tomorrow
+• The date is the project's Due date field on GitHub, so your team sees it too
 
 FAST AND RELIABLE
 • Every change shows at once and goes to GitHub in the background

@@ -31,6 +31,7 @@ enum PaletteMode: Hashable {
     case priority(itemId: String)
     case assignees(itemId: String)
     case labels(itemId: String)
+    case dueDate(itemId: String)
     case projects
 }
 
@@ -174,7 +175,18 @@ public final class AppModel {
 
     static let demoKey = "demo.active"
 
-    public init() {
+    /// The one model of the app. Shared so a notification's button can act even when the app was launched in
+    /// the background for it, before any window exists.
+    public static let shared = AppModel()
+
+    /// Reminders of due issues, scheduled on this device.
+    var notifier: Notifier { Notifier.shared }
+
+    /// An issue to bring up from outside the app, such as a tapped notification; the iPhone and iPad navigation
+    /// picks it up.
+    var revealItemId: String?
+
+    private init() {
         #if DEBUG
         // UI tests start from a clean slate: no remembered tab, folded sections or recent issues.
         if UserDefaults.standard.bool(forKey: "uiTestReset"), let domain = Bundle.main.bundleIdentifier {
@@ -219,6 +231,7 @@ public final class AppModel {
         #endif
         #endif
         if signedIn { startSyncing() }
+        Notifier.shared.attach(self)
     }
 
     private static func api(_ auth: AuthStore) -> GitHubAPI {
@@ -394,6 +407,7 @@ public final class AppModel {
         outbox = snapshot.outbox
         if scope == nil { restoreScope() }
         rebuild()
+        notifier.scheduleSoon()
     }
 
     // MARK: Issue detail
@@ -751,6 +765,34 @@ public final class AppModel {
     func refreshAndWait() async {
         await engine.forceRefresh()
         await engine.syncNow()
+    }
+
+    /// One sync round, for an issue a notification names that this device hasn't seen yet.
+    func syncAndWait() async {
+        guard signedIn else { return }
+        await engine.syncNow()
+    }
+
+    /// Sends what is queued now rather than at the next round, for changes made from a notification while
+    /// the app is in the background. Offline, they stay queued.
+    func sendQueuedChanges() async {
+        guard signedIn, !isDemo else { return }
+        try? await engine.pushPending()
+    }
+
+    /// Brings an issue up from outside the app: its project (or My Issues, where it is listed) and the issue.
+    func reveal(_ item: Item) {
+        peekItemId = nil
+        overlay = nil
+        #if os(macOS)
+        let listed = scope == .myIssues && items(in: .myIssues).contains { $0.id == item.id }
+        if !listed, scope != .project(item.projectId) { select(.project(item.projectId)) }
+        open(item)
+        NSApp.activate()
+        mainWindow?.makeKeyAndOrderFront(nil)
+        #else
+        revealItemId = item.id
+        #endif
     }
 
     // MARK: Writing

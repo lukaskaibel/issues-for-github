@@ -101,6 +101,43 @@ final class PhoneTests: AppTestCase {
         waitForLabel(element("chip-labels"), containing: "bug")
     }
 
+    func testDueDateSheet() {
+        launch()
+        element("row-#13").tap()
+        let chip = element("chip-due")
+        wait(chip)
+        waitForLabel(chip, containing: "none")
+        func day(_ offset: Int) -> String {
+            Calendar.current.date(byAdding: .day, value: offset, to: Date())!
+                .formatted(.dateTime.weekday(.wide).day().month(.wide).year())
+        }
+
+        chip.tap()
+        let tomorrow = labelled("Tomorrow", type: .button)
+        wait(tomorrow)
+        snapshot("Due date sheet")
+        tomorrow.tap()
+        waitForLabel(chip, containing: day(1))
+
+        // A date typed in a few words.
+        chip.tap()
+        let search = app.searchFields.firstMatch
+        wait(search)
+        search.tap()
+        search.typeText("in 3")
+        let found = labelled("In 3 days", type: .button)
+        wait(found)
+        snapshot("Due date typed")
+        found.tap()
+        waitForLabel(chip, containing: day(3))
+
+        chip.tap()
+        let remove = button("Remove Due Date")
+        scrollTo(remove, in: app.collectionViews.firstMatch)
+        remove.tap()
+        waitForLabel(chip, containing: "none")
+    }
+
     func testDescriptionEditsInPlace() {
         launch()
         wait(element("row-#9"))

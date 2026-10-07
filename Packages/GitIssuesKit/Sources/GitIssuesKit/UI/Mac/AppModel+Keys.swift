@@ -237,6 +237,8 @@ extension AppModel {
         case "i":
             guard item.kind != .draft, viewer != nil else { return false }
             toggleAssignMe(targets(for: item))
+        case "d":
+            overlay = .palette(.dueDate(itemId: item.id))
         default:
             return false
         }

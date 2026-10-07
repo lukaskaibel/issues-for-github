@@ -8,6 +8,14 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Due dates, with reminders.** Give an issue the day it is due: press `D`, click its date, or use the command
+  palette, the right-click menu or the selection bar for several issues at once; on iPhone and iPad, tap the date chip
+  or touch and hold the issue. Pick today, tomorrow, Friday, next week or in two weeks, click a day in the month, or
+  type it in a few words ("fri", "next week", "in 3 days", "12.10."). The date is the project's "Due date" field on
+  GitHub, which the app adds the first time; cards, list rows and the issue show it, orange on the day and red once
+  it has passed. On the day an issue assigned to you is due, your Mac, iPhone and iPad remind you with a notification,
+  and once more the next morning if it is still open. Its buttons start the issue, mark it done or move it to
+  tomorrow. The time is set in Settings (9:00 at first); GitHub's dates have no time of day, so issues don't either.
 - Change several issues at once, as in Linear. Pick them with X, the checkbox at the start of a list row,
   ⌘-click or Shift-click (Shift with the arrows or J/K picks a run, ⌘A picks everything on screen). A bar at the
   bottom sets status, priority, assignee and labels for all of them; S, P, A, L, I, the command palette and the

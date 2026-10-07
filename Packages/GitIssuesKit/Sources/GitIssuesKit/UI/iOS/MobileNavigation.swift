@@ -24,6 +24,8 @@ enum MobileSheet: Identifiable, Equatable {
     /// The changes waiting to be sent, from the card at the bottom of the iPad sidebar.
     case queue
     case arrangeSections(Scope)
+    /// The due date of an issue, from a menu that has no screen of its own to show it.
+    case dueDate(String)
 
     var id: String {
         switch self {
@@ -31,6 +33,7 @@ enum MobileSheet: Identifiable, Equatable {
         case .account: "account"
         case .queue: "queue"
         case .arrangeSections(let scope): "arrange-\(scope)"
+        case .dueDate(let id): "due-\(id)"
         }
     }
 }

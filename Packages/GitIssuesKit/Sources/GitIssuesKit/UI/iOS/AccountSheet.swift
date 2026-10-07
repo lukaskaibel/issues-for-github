@@ -54,6 +54,8 @@ struct AccountSheet: View {
                     .labelsHidden()
                 }
 
+                ReminderSettingsSection()
+
                 if UIApplication.shared.supportsAlternateIcons {
                     Section("App Icon") {
                         HStack(spacing: 0) {

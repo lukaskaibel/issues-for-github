@@ -12,6 +12,8 @@ struct PickerList: View {
     var width: CGFloat = 260
     var maxRows = 9
     var fieldFont: Font = .ui
+    /// Rows for what is typed, in place of filtering `items`, for pickers that read the text (dates).
+    var search: ((String) -> [PickerItem])? = nil
     var onPick: (String) -> Void
     var onClose: () -> Void
 
@@ -94,6 +96,7 @@ struct PickerList: View {
 
     private var filtered: [PickerItem] {
         guard !query.isEmpty else { return items }
+        if let search { return search(query) }
         return items
             .compactMap { item -> (PickerItem, Int)? in
                 let score = max(fuzzyScore(query, item.title) ?? -1, item.subtitle.flatMap { fuzzyScore(query, $0) } ?? -1)
@@ -155,7 +158,16 @@ struct ItemPicker: View {
     var close: () -> Void
 
     var body: some View {
-        if let item = model.allItems.first(where: { $0.id == itemId }) {
+        if kind == .dueDate, let item = model.allItems.first(where: { $0.id == itemId }) {
+            DueDatePicker(
+                current: Set(model.targets(for: item).map(\.dueDate)),
+                addsField: model.addsDueField(for: item),
+                width: width ?? kind.width,
+                fieldFont: fieldFont,
+                onPick: { model.setDueDate(of: model.targets(for: model.item(id: item.id) ?? item), to: $0) },
+                onClose: close
+            )
+        } else if let item = model.allItems.first(where: { $0.id == itemId }) {
             PickerList(
                 placeholder: kind.placeholder,
                 items: model.pickerItems(kind, for: item),

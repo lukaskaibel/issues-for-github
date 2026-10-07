@@ -22,6 +22,12 @@ public struct RemoteSelectField: Sendable {
     public var options: [RemoteOption]
 }
 
+/// A project field that is not a single select, such as a Date field.
+public struct RemoteField: Sendable, Hashable {
+    public var id: String
+    public var name: String
+}
+
 public struct RemoteProjectMeta: Sendable {
     public var id: String
     public var title: String
@@ -31,7 +37,12 @@ public struct RemoteProjectMeta: Sendable {
     public var itemsTotal: Int
     public var statusField: RemoteSelectField?
     public var priorityField: RemoteSelectField?
+    /// The Date field that says when an issue is due, picked by its name (see `dueFieldNames`).
+    public var dueField: RemoteField?
     public var repos: [(id: String, nameWithOwner: String)]
+
+    /// Names of Date fields that mean "due", in order of preference. "Start date" never does.
+    public static let dueFieldNames = ["due date", "due", "deadline", "target date", "due on", "end date"]
 }
 
 public struct SweepEntry: Sendable, Hashable {
@@ -118,7 +129,8 @@ public final class GitHubAPI: Sendable {
             id title updatedAt closed viewerCanUpdate
             items { totalCount }
             fields(first: 50) { nodes { __typename
-              ... on ProjectV2SingleSelectField { id name options { id name color description } } } }
+              ... on ProjectV2SingleSelectField { id name options { id name color description } }
+              ... on ProjectV2Field { id name dataType } } }
             repositories(first: 50) { nodes { id nameWithOwner } }
           } }
         }
@@ -129,13 +141,18 @@ public final class GitHubAPI: Sendable {
         }
         func field(named name: String) -> RemoteSelectField? {
             node.fields.items
-                .first { $0.id != nil && $0.name?.caseInsensitiveCompare(name) == .orderedSame }
+                .first { $0.id != nil && $0.options != nil && $0.name?.caseInsensitiveCompare(name) == .orderedSame }
                 .map { dto in
                     RemoteSelectField(id: dto.id!, name: dto.name!, options: (dto.options ?? []).map {
                         RemoteOption(id: $0.id, name: $0.name, color: $0.color, descr: $0.description ?? "")
                     })
                 }
         }
+        let dateFields = node.fields.items.filter { $0.dataType == "DATE" && $0.id != nil && $0.name != nil }
+        let dueField = RemoteProjectMeta.dueFieldNames.lazy
+            .compactMap { wanted in dateFields.first { $0.name!.lowercased() == wanted } }
+            .first
+            .map { RemoteField(id: $0.id!, name: $0.name!) }
         return RemoteProjectMeta(
             id: node.id,
             title: node.title,
@@ -145,6 +162,7 @@ public final class GitHubAPI: Sendable {
             itemsTotal: node.items.totalCount,
             statusField: field(named: "Status"),
             priorityField: field(named: "Priority"),
+            dueField: dueField,
             repos: (node.repositories?.items ?? []).map { ($0.id, $0.nameWithOwner) }
         )
     }
@@ -187,7 +205,9 @@ public final class GitHubAPI: Sendable {
     }
 
     /// Full card data for the given project items. `position` is left at 0 for the caller to fill in.
-    public func hydrate(itemIds: [String], projectId: String, statusFieldId: String?, priorityFieldId: String?) async throws -> [Item] {
+    public func hydrate(
+        itemIds: [String], projectId: String, statusFieldId: String?, priorityFieldId: String?, dueFieldId: String?
+    ) async throws -> [Item] {
         struct Response: Decodable {
             var nodes: [ItemDTO?]
         }
@@ -201,7 +221,7 @@ public final class GitHubAPI: Sendable {
         for chunk in itemIds.chunked(into: 40) {
             let response: Response = try await client.run(query, variables: ["ids": chunk], allowPartial: true)
             result += response.nodes.compactMap { $0 }.compactMap {
-                $0.item(projectId: projectId, statusFieldId: statusFieldId, priorityFieldId: priorityFieldId)
+                $0.item(projectId: projectId, statusFieldId: statusFieldId, priorityFieldId: priorityFieldId, dueFieldId: dueFieldId)
             }
         }
         return result
@@ -329,6 +349,20 @@ public final class GitHubAPI: Sendable {
             """
             let _: Ack = try await client.run(query, variables: ["p": projectId, "i": itemId, "f": fieldId])
         }
+    }
+
+    /// Sets a Date field to a day ("2026-10-09"), or clears it.
+    public func setDateValue(projectId: String, itemId: String, fieldId: String, date: String?) async throws {
+        guard let date else {
+            try await setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: nil)
+            return
+        }
+        let query = """
+        mutation($p: ID!, $i: ID!, $f: ID!, $d: Date!) {
+          updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: {date: $d}}) { clientMutationId }
+        }
+        """
+        let _: Ack = try await client.run(query, variables: ["p": projectId, "i": itemId, "f": fieldId, "d": date])
     }
 
     public func moveItem(projectId: String, itemId: String, afterId: String?) async throws {
@@ -534,6 +568,30 @@ public final class GitHubAPI: Sendable {
     }
 }
 
+extension GitHubAPI {
+    /// Adds a Date field (used to add "Due date" to a project that has none) and returns it.
+    public func createDateField(projectId: String, name: String) async throws -> RemoteField {
+        struct Response: Decodable {
+            struct Payload: Decodable {
+                var projectV2Field: FieldDTO?
+            }
+            var createProjectV2Field: Payload?
+        }
+        let query = """
+        mutation($p: ID!, $name: String!) {
+          createProjectV2Field(input: {projectId: $p, dataType: DATE, name: $name}) {
+            projectV2Field { ... on ProjectV2Field { id name } }
+          }
+        }
+        """
+        let response: Response = try await client.run(query, variables: ["p": projectId, "name": name])
+        guard let field = response.createProjectV2Field?.projectV2Field, let id = field.id else {
+            throw APIError.decoding("createProjectV2Field returned no field.")
+        }
+        return RemoteField(id: id, name: field.name ?? name)
+    }
+}
+
 // MARK: - Wire types
 
 enum GQL {
@@ -541,7 +599,8 @@ enum GQL {
     fragment ItemFields on ProjectV2Item {
       id updatedAt type
       fieldValues(first: 30) { nodes { __typename
-        ... on ProjectV2ItemFieldSingleSelectValue { optionId field { ... on ProjectV2SingleSelectField { id } } } } }
+        ... on ProjectV2ItemFieldSingleSelectValue { optionId field { ... on ProjectV2SingleSelectField { id } } }
+        ... on ProjectV2ItemFieldDateValue { date field { ... on ProjectV2Field { id } } } } }
       content { __typename
         ... on Issue { id number title body state stateReason url createdAt updatedAt closedAt
           author { login } repository { id nameWithOwner }
@@ -613,6 +672,8 @@ struct FieldDTO: Decodable {
     var id: String?
     var name: String?
     var options: [OptionDTO]?
+    /// DATE, TEXT, NUMBER and so on, for fields that are not single selects.
+    var dataType: String?
 }
 
 struct ProjectDTO: Decodable {
@@ -635,6 +696,8 @@ struct ItemDTO: Decodable {
     struct FieldValue: Decodable {
         struct FieldRef: Decodable { var id: String? }
         var optionId: String?
+        /// "2026-10-09", for a Date field.
+        var date: String?
         var field: FieldRef?
     }
     struct Content: Decodable {
@@ -676,7 +739,7 @@ struct ItemDTO: Decodable {
     var fieldValues: Nodes<FieldValue>?
     var content: Content?
 
-    func item(projectId: String, statusFieldId: String?, priorityFieldId: String?) -> Item? {
+    func item(projectId: String, statusFieldId: String?, priorityFieldId: String?, dueFieldId: String?) -> Item? {
         guard let id, let type, let kind = ItemKind(rawValue: type), kind != .redacted, let content else { return nil }
         func option(for fieldId: String?) -> String? {
             guard let fieldId else { return nil }
@@ -691,6 +754,9 @@ struct ItemDTO: Decodable {
             dirty: false,
             statusId: option(for: statusFieldId),
             priorityId: option(for: priorityFieldId),
+            dueDate: dueFieldId.flatMap { fieldId in
+                fieldValues?.items.first { $0.field?.id == fieldId }?.date.flatMap(CalendarDay.init)?.string
+            },
             contentId: content.id,
             number: content.number,
             title: content.title ?? "",

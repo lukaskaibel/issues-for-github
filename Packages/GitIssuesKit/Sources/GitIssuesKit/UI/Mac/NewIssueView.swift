@@ -113,6 +113,10 @@ struct NewIssueView: View {
                         Text(draft.labels.count == 1 ? draft.labels[0].name : "\(draft.labels.count) labels")
                     }
                 }
+                chip(.dueDate) {
+                    DueDateIcon(size: 11)
+                    Text(draft.dueDate.flatMap(CalendarDay.init)?.mediumLabel() ?? "Due date")
+                }
                 if let parent = draft.parent {
                     HStack(spacing: 6) {
                         SubIssueGlyph().frame(width: 12, height: 12)
@@ -241,14 +245,24 @@ struct NewIssueView: View {
         }
         .buttonStyle(PlainPressStyle())
         .dropdown(isPresented: Binding(get: { openPicker == kind }, set: { if !$0 { openPicker = nil } })) { close in
-            PickerList(
-                placeholder: kind.placeholder,
-                items: items(kind),
-                staysOpen: kind.staysOpen,
-                width: kind.width,
-                onPick: { pick(kind, $0) },
-                onClose: close
-            )
+            if kind == .dueDate {
+                DueDatePicker(
+                    current: [draft.dueDate],
+                    addsField: model.projects.first { $0.id == draft.projectId }?.dueFieldId == nil,
+                    width: kind.width,
+                    onPick: { draft.dueDate = $0?.string },
+                    onClose: close
+                )
+            } else {
+                PickerList(
+                    placeholder: kind.placeholder,
+                    items: items(kind),
+                    staysOpen: kind.staysOpen,
+                    width: kind.width,
+                    onPick: { pick(kind, $0) },
+                    onClose: close
+                )
+            }
         }
     }
 
@@ -278,7 +292,7 @@ struct NewIssueView: View {
                     icon: AnyView(Circle().fill(Theme.labelColor(label.color)).frame(width: 9, height: 9))
                 )
             }
-        case .subIssues:
+        case .dueDate, .subIssues:
             return []
         }
     }
@@ -301,6 +315,8 @@ struct NewIssueView: View {
             } else if let label = model.labels(projectId: draft.projectId, repoId: draft.repoId).first(where: { $0.id == id }) {
                 draft.labels.append(label)
             }
+        case .dueDate:
+            draft.dueDate = CalendarDay(id)?.string
         case .subIssues:
             break
         }

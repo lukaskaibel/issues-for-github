@@ -64,8 +64,23 @@ GitHub in the background.
   <img alt="A card is dragged from In Progress to In Review, the cards there make room, and Esc sends it back" src="Design/screenshots/drag-light.webp">
 </picture>
 
-Every property is one click away: click a card's priority, status, labels, assignees or sub-issue count and a
-dropdown opens right there. Type to filter, press a number to pick. Right-click a card for everything at once.
+Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count
+and a dropdown opens right there. Type to filter, press a number to pick. Right-click a card for everything at once.
+
+### Due dates that remind you
+
+Press `D` and give an issue the day it is due: today, tomorrow, Friday, next week, a day in the month, or typed in a
+few words ("fri", "in 3 days", "12.10."). Cards and rows show the date, orange on the day and red once it has passed.
+On the day an issue assigned to you is due, your Mac, iPhone and iPad each remind you with a notification, whose
+buttons start the issue, mark it done or move it to tomorrow. The date is the project's "Due date" field on GitHub,
+so your team sees it there; GitHub's dates have no time of day, and the reminder comes at the time set in Settings.
+
+<!-- Shown once Tools/readme-images.sh has made the picture, in the one picture run after all open branches merge.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/due-date-dark.webp">
+  <img alt="The due date picker with Today, Tomorrow, Friday, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
+</picture>
+-->
 
 ### Issues that read well
 
@@ -128,8 +143,9 @@ The interface uses the system's own parts.
 - **Sample data:** "Explore with Sample Data" on the sign-in screen shows two sample projects without a GitHub account.
   Nothing there is sent anywhere.
 - **In the background:** changes made just before locking the phone are still sent, and iOS refreshes the app now and
-  then so it opens up to date. There are no push notifications: GitHub can't push to an app without a server of its
-  own, which Issues deliberately doesn't have.
+  then so it opens up to date. Reminders of due issues are notifications the phone schedules itself, so they come on
+  time. Other notifications from GitHub aren't there: GitHub can't push to an app without a server of its own, which
+  Issues deliberately doesn't have.
 
 ## What it does
 
@@ -142,8 +158,10 @@ The interface uses the system's own parts.
 - **Status columns are yours to shape.** Add, rename, recolour and remove columns from the board, and drag a column
   by its header to move it; they are the project's Status field on GitHub. In the list, drag a section by its header
   to arrange the list your way (that order is a preference on your Mac and leaves GitHub alone).
-- **Keyboard first.** Single keys change status, priority, assignee and labels. Back and forward work like a
-  browser: ⌘[ and ⌘], the side buttons of a mouse, or a two-finger swipe.
+- **Keyboard first.** Single keys change status, priority, assignee, labels and the due date. Back and forward work
+  like a browser: ⌘[ and ⌘], the side buttons of a mouse, or a two-finger swipe.
+- **Due dates and reminders.** The day an issue is due, typed in a few words or picked in a month, and a notification
+  on that day for issues assigned to you, from each of your devices.
 - **Native.** Swift and SwiftUI, with AppKit where it matters for smoothness. Apple silicon only.
 - **On iPhone and iPad too.** One app for all three: the same sync, offline queue and actions, with an interface
   built from the system's own parts (see above).
@@ -158,6 +176,8 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Columns | The project's **Status** field |
 | Moving a card to a "done" or "cancelled" column | Status changes, and the issue is closed as *completed* or *not planned* |
 | Priority | A single-select project field named **Priority** (the app can add it for you) |
+| Due date | A date field of the project named **Due date**, *Due*, *Deadline* or *Target date* (the app adds one the first time you set a date) |
+| Reminders | Notifications each of your devices schedules itself from the due dates; nothing on GitHub |
 | Card order | The item's position in the project |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
 
@@ -272,6 +292,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `C` or `⌘N` | New issue |
 | `S` `P` `A` `L` | Change status, priority, assignee, labels |
 | `I` | Assign to me, or unassign |
+| `D` | Set the due date: type "fri", "next week", "in 3 days" or "12.10.", or pick a day |
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
 | `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
 | `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
@@ -284,10 +305,10 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘⇧.` | Copy a branch name for the issue, as GitHub suggests it |
 | `⌘⌫` | Delete the issue (asks first; needs admin rights in the repository) |
 | `⌘R` | Sync with GitHub now |
-| `⌘,` | Settings: light, dark or system appearance, and the app icon |
+| `⌘,` | Settings: light, dark or system appearance, the app icon, and reminders of due issues |
 
-Click an issue's priority, status, labels, assignees or sub-issue count to change it in place, or right-click
-it for everything at once. The sub-issue count lists the sub-issues, whose status, priority and assignee change
+Click an issue's priority, status, labels, assignees, due date or sub-issue count to change it in place, or
+right-click it for everything at once. The sub-issue count lists the sub-issues, whose status, priority and assignee change
 right there too. In the list, click a section header to fold it; Option-click folds them all.
 
 On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. Drag a column by its
@@ -295,8 +316,8 @@ header to reorder it, double-click its name to rename it, right-click it for its
 use **Add column** at the right end of the board.
 
 To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
-Shift-click. A bar at the bottom then sets status, priority, assignee or labels for all of them, and so do the
-usual keys, dropdowns and right-click menu. `Esc` clears the pick.
+Shift-click. A bar at the bottom then sets status, priority, assignee, labels or the due date for all of them, and so
+do the usual keys, dropdowns and right-click menu. `Esc` clears the pick.
 
 Right-click a project in the sidebar to hide it; hidden projects wait, folded away, at the end of the list. Click
 your name at the top of the sidebar for the account menu: Sync Now, changes still waiting to be sent, appearance,
@@ -309,7 +330,9 @@ settings and signing out. It works with the arrow keys like any menu.
 | Tap a section header | Fold it in or out |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
-| Touch and hold an issue | Status, priority, assignee and labels as submenus; copy link, share, open on GitHub, delete |
+| Touch and hold an issue | Status, priority, assignee, labels and due date as submenus; copy link, share, open on GitHub, delete |
+| Tap the date chip of an issue | Pick a due date: quick choices, a calendar, or typed in the search field |
+| Touch and hold a reminder | Start the issue, mark it done or move it to tomorrow, without opening the app |
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place; the bar above the keyboard adds bold, italics, code, lists and links |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |

@@ -6,6 +6,7 @@ import GRDB
 /// what lets pending changes be re-applied on top of fresh data from GitHub.
 public enum Mutation: Codable, Sendable, Equatable {
     case setField(SetField)
+    case setDate(SetDate)
     case move(Move)
     case setTitle(SetText)
     case setBody(SetText)
@@ -23,6 +24,17 @@ public enum Mutation: Codable, Sendable, Equatable {
         public var kind: OptionKind
         public var optionId: String?
         /// The value shown before the first of the still-unsent changes to this field.
+        public var base: String?
+    }
+
+    /// Sets or clears the day an issue is due. The project's Date field is looked up when the change is sent,
+    /// and added to the project then if it has none, so a date can be set offline on any board.
+    public struct SetDate: Codable, Sendable, Equatable {
+        public var itemId: String
+        public var projectId: String
+        /// "2026-10-09", or nil to clear it.
+        public var date: String?
+        /// The value shown before the first of the still-unsent changes to it.
         public var base: String?
     }
 
@@ -91,6 +103,7 @@ public enum Mutation: Codable, Sendable, Equatable {
         public var statusId: String?
         public var priorityFieldId: String?
         public var priorityId: String?
+        public var dueDate: String?
         public var assignees: [Person]
         public var labels: [LabelRef]
         public var parentContentId: String?
@@ -112,6 +125,7 @@ extension Mutation {
     var coalesceKey: String? {
         switch self {
         case .setField(let m): "field:\(m.itemId):\(m.fieldId)"
+        case .setDate(let m): "date:\(m.itemId)"
         case .move(let m): "move:\(m.itemId)"
         case .setTitle(let m): "title:\(m.contentId)"
         case .setBody(let m): "body:\(m.contentId)"
@@ -125,6 +139,7 @@ extension Mutation {
     var referencedIds: [String] {
         switch self {
         case .setField(let m): [m.itemId]
+        case .setDate(let m): [m.itemId]
         case .move(let m): [m.itemId] + (m.afterItemId.map { [$0] } ?? [])
         case .setTitle(let m), .setBody(let m): [m.itemId, m.contentId]
         case .setState(let m): [m.contentId]
@@ -141,6 +156,7 @@ extension Mutation {
     var itemId: String? {
         switch self {
         case .setField(let m): m.itemId
+        case .setDate(let m): m.itemId
         case .move(let m): m.itemId
         case .setTitle(let m), .setBody(let m): m.itemId
         case .createIssue(let m): m.itemId
@@ -171,6 +187,9 @@ extension Mutation {
         case .setField(var m):
             m.itemId = r(m.itemId)
             return .setField(m)
+        case .setDate(var m):
+            m.itemId = r(m.itemId)
+            return .setDate(m)
         case .move(var m):
             m.itemId = r(m.itemId)
             m.afterItemId = r(m.afterItemId)
@@ -218,6 +237,9 @@ extension Mutation {
         case .setField(let m):
             let column = m.kind == .status ? "statusId" : "priorityId"
             try db.execute(sql: "UPDATE item SET \(column) = ?, dirty = 1 WHERE id = ?", arguments: [m.optionId, m.itemId])
+
+        case .setDate(let m):
+            try db.execute(sql: "UPDATE item SET dueDate = ?, dirty = 1 WHERE id = ?", arguments: [m.date, m.itemId])
 
         case .move(let m):
             guard let projectId = try String.fetchOne(db, sql: "SELECT projectId FROM item WHERE id = ?", arguments: [m.itemId]) else { return }
@@ -309,6 +331,7 @@ extension Mutation {
                 dirty: true,
                 statusId: m.statusId,
                 priorityId: m.priorityId,
+                dueDate: m.dueDate,
                 contentId: m.contentId,
                 number: m.createdNumber,
                 title: m.title,
@@ -357,6 +380,9 @@ extension Mutation {
             }
             let field = m.kind == .status ? "Status" : "Priority"
             return (try number(itemId: m.itemId), name.map { "\(field) changed to \($0)" } ?? "\(field) cleared")
+        case .setDate(let m):
+            let day = m.date.flatMap(CalendarDay.init).map { $0.date().formatted(.dateTime.day().month(.abbreviated)) }
+            return (try number(itemId: m.itemId), day.map { "Due date set to \($0)" } ?? "Due date removed")
         case .move(let m): return (try number(itemId: m.itemId), "Moved")
         case .setTitle(let m): return (try number(contentId: m.contentId), "Title edited")
         case .setBody(let m): return (try number(contentId: m.contentId), "Description edited")
@@ -514,6 +540,9 @@ extension Mutation {
         case (.setField(var new), .setField(let old)):
             new.base = old.base
             return .setField(new)
+        case (.setDate(var new), .setDate(let old)):
+            new.base = old.base
+            return .setDate(new)
         case (.setTitle(var new), .setTitle(let old)):
             new.base = old.theirs ?? old.base
             return .setTitle(new)

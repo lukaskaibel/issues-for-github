@@ -9,7 +9,10 @@ collects nothing about you.
   one of your devices, it is stored in iCloud Keychain so they all stay signed in; Apple encrypts it end to end.
 - **A copy of your projects and issues** is kept in a database on your device, so the app opens instantly and works
   offline. Signing out deletes it.
-- **Preferences** such as the appearance, the app icon and the order of list sections stay on your device.
+- **Preferences** such as the appearance, the app icon, the order of list sections and the time of reminders stay on
+  your device.
+- **Reminders** of issues that are due are notifications your device schedules itself from the due dates it has
+  synced. They are not sent anywhere, and turning them off in Settings removes them.
 
 ## What is sent, and to whom
 

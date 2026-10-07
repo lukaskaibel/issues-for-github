@@ -48,6 +48,9 @@ struct SelectionBar: View {
                         Image(systemName: "tag").font(.system(size: 12))
                     }
                 }
+                BarAction(kind: .dueDate, item: first, title: "Due date", key: "D") {
+                    Image(systemName: "calendar").font(.system(size: 12))
+                }
                 Button {
                     model.copyLinks(items)
                 } label: {
@@ -172,7 +175,7 @@ struct PeekPanel: View {
         .shadow(color: Theme.shadow, radius: 30, y: 12)
     }
 
-    /// Status, priority, assignees, labels and sub-issues, each changeable in place.
+    /// Status, priority, assignees, the due date, labels and sub-issues, each changeable in place.
     private var properties: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
@@ -204,6 +207,18 @@ struct PeekPanel: View {
                             }
                         }
                         .font(.small)
+                    }
+                }
+                // Only when there is one, to keep the row short; D adds one.
+                if let due = model.dueBadge(for: item) {
+                    PropertyButton(kind: .dueDate, item: item) {
+                        HStack(spacing: 6) {
+                            DueDateIcon(tone: due.tone, size: 11)
+                            Text(due.day.mediumLabel())
+                                .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.textBody)
+                        }
+                        .font(.small)
+                        .help(due.tooltip)
                     }
                 }
             }

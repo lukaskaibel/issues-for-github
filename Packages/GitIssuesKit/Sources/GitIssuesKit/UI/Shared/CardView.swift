@@ -7,6 +7,7 @@ struct CardModel: Equatable {
     var showsPriority: Bool
     /// Repository names only matter on boards that span more than one.
     var showsRepo: Bool
+    var due: DueBadge?
 }
 
 extension AppModel {
@@ -15,7 +16,8 @@ extension AppModel {
             item: item,
             priority: priorityLevel(of: item),
             showsPriority: project(of: item)?.priorityFieldId != nil,
-            showsRepo: repos(projectId: item.projectId).count > 1
+            showsRepo: repos(projectId: item.projectId).count > 1,
+            due: dueBadge(for: item)
         )
     }
 }
@@ -56,7 +58,7 @@ struct CardView: View, Equatable {
         }
         .frame(width: width, height: Self.height(titleHeight: titleHeight))
         .accessibilityElement()
-        .accessibilityLabel("\(card.item.displayNumber) \(card.item.title)")
+        .accessibilityLabel("\(card.item.displayNumber) \(card.item.title)" + (card.due.map { ", \($0.tooltip)" } ?? ""))
         .accessibilityAddTraits(.isButton)
     }
 
@@ -181,7 +183,15 @@ private struct CardPainter {
             drawPriority(card.priority, x: x, midY: bottomY)
             x += 14 + 6
         }
-        let limit = size.width - padding.width
+        // The due date comes last but always shows, so labels make room for it.
+        var dueChip: (text: GraphicsContext.ResolvedText, width: CGFloat)?
+        if let due = card.due {
+            let text = context.resolve(
+                Text("\(Image(systemName: "calendar")) \(due.label)").font(.system(size: CardView.chipSize)).foregroundStyle(due.tone.color)
+            )
+            dueChip = (text, text.measure(in: CGSize(width: 200, height: 40)).width + 14)
+        }
+        let limit = size.width - padding.width - (dueChip.map { $0.width + 6 } ?? 0)
         var shown = 0
         // Labels are measured first, so the highlight can sit behind all of them.
         var labelLayout: [(label: LabelRef, text: GraphicsContext.ResolvedText, rect: CGRect)] = []
@@ -234,7 +244,14 @@ private struct CardPainter {
                     with: .color(Theme.textSecondary), lineWidth: 1.2
                 )
                 context.draw(text, at: CGPoint(x: rect.minX + 7 + 11 + 4, y: bottomY), anchor: .leading)
+                x = rect.maxX + 6
             }
+        }
+        if let dueChip {
+            let rect = CGRect(x: x, y: bottomY - 10, width: dueChip.width, height: 20)
+            part(.dueDate, rect)
+            chip(rect, hovered: hovered(.dueDate))
+            context.draw(dueChip.text, at: CGPoint(x: rect.minX + 7, y: bottomY), anchor: .leading)
         }
     }
 
