@@ -1,7 +1,8 @@
 Issues is a fast, native app for GitHub Issues and GitHub Projects, on the Mac, iPhone and iPad. It is calm to look at and quick to use, and everything stays in GitHub: teammates who don't use the app see the same issues and boards on github.com.
 
 ON THE MAC
-• Every project as a board or a list, plus My Issues across all of them
+• Every project as a board or a list, plus My Issues with everything assigned to you
+• Every issue of your repositories, also those on no board, which one click puts on one
 • Drag cards between columns, and shape the columns: add, rename, recolour and reorder them
 • Keyboard first: J and K move between issues, S, P, A and L change status, priority, assignee and labels, and ⌘K opens a command palette for everything else
 • Select several issues and change them at once
@@ -10,15 +11,15 @@ ON THE MAC
 • Back and forward work as in a browser
 
 ON IPHONE
-• My Issues across all your projects, grouped by status
-• Every project as a list, with sections that fold
+• My Issues with everything assigned to you, grouped by status
+• Every project and repository as a list, with sections that fold
 • Swipe right to mark an issue done, swipe left to assign it to yourself or delete it
 • Touch and hold an issue to change its status, priority, assignee or labels
 • Search every project by title or number
 • Tables, checklists and Mermaid diagrams in descriptions, drawn as on GitHub
 
 ON IPAD
-• A sidebar with all your projects, and the board with drag and drop
+• A sidebar with all your projects and repositories, and the board with drag and drop
 • Issues open beside their properties, as on the Mac
 • With a keyboard: J and K to move, S, P, A and L to change an issue, ⌘N for a new one
 

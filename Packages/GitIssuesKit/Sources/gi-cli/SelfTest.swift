@@ -38,9 +38,9 @@ enum SelfTest {
                 for mutation in mutations { try Outbox.enqueue(db, mutation) }
             }
         }
-        /// GitHub's project reads lag behind writes for a moment; poll B until it sees what we expect.
+        /// GitHub's project reads lag behind writes, at times for half a minute; poll B until it sees what we expect.
         func eventually(_ name: String, _ predicate: () throws -> Bool) async throws {
-            for _ in 0..<12 {
+            for _ in 0..<24 {
                 try await engineB.pull(projectId: project.id)
                 if try predicate() {
                     check(name, true)
@@ -192,7 +192,40 @@ enum SelfTest {
             }
         }
 
-        print("9. Status columns")
+        print("9. An issue on no board, then onto the board")
+        let looseTemp = LocalID.make(), looseTempContent = LocalID.make()
+        let looseTitle = "Self-test issue on no board \(stamp)"
+        try enqueue(.createIssue(.init(
+            itemId: looseTemp, contentId: looseTempContent, projectId: nil, repoId: repo.id, repo: repo.nameWithOwner,
+            title: looseTitle, body: "Created by gi-cli selftest.", assignees: [], labels: [], author: viewer.login, createdAt: Date()
+        )))
+        try await engineA.pushPending()
+        let looseId = await MainActor.run { statusA.idRemaps[looseTemp] }
+        let looseContent = await MainActor.run { statusA.idRemaps[looseTempContent] }
+        check("it keeps an id of its own, without a project", looseId?.hasPrefix(Item.withoutProjectPrefix) == true)
+        var looseSeen: Item?
+        for _ in 0..<12 {
+            try await engineB.pullRepository(repo.id)
+            looseSeen = try await dbB.reader.read { try Item.filter(Column("title") == looseTitle).fetchOne($0) }
+            if looseSeen != nil { break }
+            try await Task.sleep(for: .seconds(1.5))
+        }
+        check("teammate reads it from the repository, on no board", looseSeen != nil && looseSeen?.projectId == nil)
+        if let looseId, let looseContent {
+            try enqueue(.addToProject(.init(
+                itemId: looseId, contentId: looseContent, projectId: project.id, statusFieldId: statusField, statusId: backlog.id
+            )))
+            check("on the board at once", try await dbA.reader.read { try Item.fetchOne($0, key: looseId)?.projectId } == project.id)
+            try await engineA.pushPending()
+            try await eventually("teammate sees it on the board in Backlog, and no longer on no board") {
+                let copies = try dbB.reader.read { try Item.filter(Column("title") == looseTitle).fetchAll($0) }
+                return copies.count == 1 && copies[0].projectId == project.id && copies[0].statusId == backlog.id
+            }
+            try enqueue(.setState(.init(contentId: looseContent, closed: true, reason: "NOT_PLANNED")))
+            try await engineA.pushPending()
+        }
+
+        print("10. Status columns")
         let before = statuses.map { RemoteOption(id: $0.id, name: $0.name, color: $0.color, descr: $0.descr) }
         try await engineA.updateOptions(projectId: project.id, fieldId: statusField, kind: .status, options: before + [RemoteOption(id: nil, name: "Self-test column", color: "PINK")])
         var now = try options(.status)
@@ -209,7 +242,7 @@ enum SelfTest {
         try await engineB.forcePull(projectId: project.id)
         check("cards kept their status through all of that", try item(dbB, 9).statusId == (try item(dbA, 9)).statusId && (try item(dbB, 9)).statusId != nil)
 
-        print("10. Restore")
+        print("11. Restore")
         let restore = try item(dbA, 16)
         try enqueue(
             .setField(.init(itemId: restore.id, projectId: project.id, fieldId: statusField, kind: .status, optionId: originalStatus, base: restore.statusId)),
