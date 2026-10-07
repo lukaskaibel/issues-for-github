@@ -7,7 +7,7 @@ import UIKit
 /// while you are reading. Changes are saved after a short pause and when you leave the field.
 struct MarkdownTextEditor: View {
     var text: String
-    var placeholder: String
+    var placeholder: LocalizedStringResource
     var isEditable: Bool
     var onSave: (String) -> Void
     /// Whether the description is being edited right now.
@@ -15,9 +15,9 @@ struct MarkdownTextEditor: View {
     @State private var height: CGFloat = MarkdownStyler.lineHeight
 
     var body: some View {
-        MarkdownTextViewBridge(text: text, placeholder: placeholder, isEditable: isEditable, onSave: onSave, height: $height, editing: editing)
+        MarkdownTextViewBridge(text: text, placeholder: String(localized: placeholder), isEditable: isEditable, onSave: onSave, height: $height, editing: editing)
             .frame(height: max(height, MarkdownStyler.lineHeight))
-            .accessibilityLabel("Description")
+            .accessibilityLabel(.description)
             .accessibilityIdentifier("issue-description")
     }
 }
@@ -299,7 +299,7 @@ final class MarkdownUITextView: UITextView {
     /// word is still being composed, as in Japanese or Chinese input.
     override var keyCommands: [UIKeyCommand]? {
         guard isEditable, isFirstResponder else { return super.keyCommands }
-        let done = UIKeyCommand(title: "Done", action: #selector(finishEditing), input: "\r", modifierFlags: .command)
+        let done = UIKeyCommand(title: String(localized: .done), action: #selector(finishEditing), input: "\r", modifierFlags: .command)
         done.wantsPriorityOverSystemBehavior = true
         var commands = (super.keyCommands ?? []) + [done]
         if markedTextRange == nil {
@@ -373,11 +373,11 @@ private final class MarkdownKeyboardBar: UIView {
         backgroundColor = .clear
 
         let buttons = UIStackView(arrangedSubviews: [
-            button("bold", "Bold") { $0.wrapSelection("**", "**") },
-            button("italic", "Italic") { $0.wrapSelection("_", "_") },
-            button("chevron.left.forwardslash.chevron.right", "Code") { $0.wrapSelection("`", "`") },
-            button("checklist", "Checklist") { $0.prefixLine("- [ ] ") },
-            button("link", "Link") { $0.wrapSelection("[", "](https://)", placeholder: "link") },
+            button("bold", .formatBold) { $0.wrapSelection("**", "**") },
+            button("italic", .formatItalic) { $0.wrapSelection("_", "_") },
+            button("chevron.left.forwardslash.chevron.right", .formatCode) { $0.wrapSelection("`", "`") },
+            button("checklist", .formatChecklist) { $0.prefixLine("- [ ] ") },
+            button("link", .formatLink) { $0.wrapSelection("[", "](https://)", placeholder: String(localized: .linkTextPlaceholder)) },
         ])
         buttons.axis = .horizontal
         buttons.spacing = 2
@@ -401,7 +401,7 @@ private final class MarkdownKeyboardBar: UIView {
             _ = self?.textView?.resignFirstResponder()
         })
         done.tintColor = UIColor(Theme.accent)
-        done.accessibilityLabel = "Done"
+        done.accessibilityLabel = String(localized: .done)
         done.translatesAutoresizingMaskIntoConstraints = false
 
         addSubview(capsule)
@@ -442,7 +442,7 @@ private final class MarkdownKeyboardBar: UIView {
         CGSize(width: UIView.noIntrinsicMetric, height: 58)
     }
 
-    private func button(_ symbol: String, _ label: String, _ action: @escaping (MarkdownUITextView) -> Void) -> UIButton {
+    private func button(_ symbol: String, _ label: LocalizedStringResource, _ action: @escaping (MarkdownUITextView) -> Void) -> UIButton {
         var configuration = UIButton.Configuration.plain()
         configuration.image = UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .medium))
         configuration.baseForegroundColor = .label
@@ -450,7 +450,7 @@ private final class MarkdownKeyboardBar: UIView {
             guard let view = self?.textView else { return }
             action(view)
         })
-        button.accessibilityLabel = label
+        button.accessibilityLabel = String(localized: label)
         button.widthAnchor.constraint(equalToConstant: 46).isActive = true
         return button
     }

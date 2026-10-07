@@ -34,8 +34,8 @@ struct IssueScreen: View {
                 }
         } else {
             MobileEmptyState(
-                title: "This issue is gone",
-                message: "It was deleted or removed from its project.",
+                title: String(localized: .issueGoneTitle),
+                message: String(localized: .issueGoneMessage),
                 systemImage: "questionmark.square.dashed"
             )
             .background(Theme.panel)
@@ -107,20 +107,20 @@ struct IssueScreen: View {
         ZStack {
             // Beside the Inbox's list on an iPad, the list takes J and K.
             if !besideInboxList {
-                Button("Next Issue") { stepFromCurrent(1) }.keyboardShortcut("j", modifiers: [])
-                Button("Previous Issue") { stepFromCurrent(-1) }.keyboardShortcut("k", modifiers: [])
+                Button(.nextIssue) { stepFromCurrent(1) }.keyboardShortcut("j", modifiers: [])
+                Button(.previousIssue) { stepFromCurrent(-1) }.keyboardShortcut("k", modifiers: [])
             }
-            Button("Status") { navigation.requestPicker(.status) }.keyboardShortcut("s", modifiers: [])
+            Button(.status) { navigation.requestPicker(.status) }.keyboardShortcut("s", modifiers: [])
             if model.project(of: item)?.priorityFieldId != nil {
-                Button("Priority") { navigation.requestPicker(.priority) }.keyboardShortcut("p", modifiers: [])
+                Button(.priority) { navigation.requestPicker(.priority) }.keyboardShortcut("p", modifiers: [])
             }
             if item.kind != .draft {
-                Button("Assignee") { navigation.requestPicker(.assignees) }.keyboardShortcut("a", modifiers: [])
-                Button("Labels") { navigation.requestPicker(.labels) }.keyboardShortcut("l", modifiers: [])
-                Button("Assign to Me") { assignCurrentToMe() }.keyboardShortcut("i", modifiers: [])
+                Button(.assignee) { navigation.requestPicker(.assignees) }.keyboardShortcut("a", modifiers: [])
+                Button(.labels) { navigation.requestPicker(.labels) }.keyboardShortcut("l", modifiers: [])
+                Button(.assignToMe) { assignCurrentToMe() }.keyboardShortcut("i", modifiers: [])
             }
             if model.canHaveDueDate(item) {
-                Button("Due Date") { navigation.requestPicker(.dueDate) }.keyboardShortcut("d", modifiers: [])
+                Button(.dueDateTitle) { navigation.requestPicker(.dueDate) }.keyboardShortcut("d", modifiers: [])
             }
         }
         .opacity(0)
@@ -160,13 +160,13 @@ struct IssueScreen: View {
                 Button {
                     step(-1, from: item)
                 } label: {
-                    Label("Previous Issue", systemImage: "chevron.up")
+                    Label(.previousIssue, systemImage: "chevron.up")
                 }
                 .disabled(position.index == 0)
                 Button {
                     step(1, from: item)
                 } label: {
-                    Label("Next Issue", systemImage: "chevron.down")
+                    Label(.nextIssue, systemImage: "chevron.down")
                 }
                 .disabled(position.index >= position.items.count - 1)
             }
@@ -178,7 +178,7 @@ struct IssueScreen: View {
                     model.archive([entry])
                     navigation.pop()
                 } label: {
-                    Label("Archive", systemImage: "archivebox")
+                    Label(.archive, systemImage: "archivebox")
                 }
                 .accessibilityIdentifier("issue-archive")
             }
@@ -190,13 +190,13 @@ struct IssueScreen: View {
                     Button {
                         navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
                     } label: {
-                        Label("Add Sub-issue", systemImage: "arrow.turn.down.right")
+                        Label(.addSubIssue, systemImage: "arrow.turn.down.right")
                     }
                     Divider()
                 }
                 ItemMenuContent(item: item, showsOpen: false)
             } label: {
-                Label("More", systemImage: "ellipsis")
+                Label(.more, systemImage: "ellipsis")
             }
         }
     }
@@ -277,7 +277,7 @@ private struct IssueTitleField: View {
     }
 
     private var field: some View {
-        TextField("Issue title", text: $title, axis: .vertical)
+        TextField(.issueTitlePlaceholder, text: $title, axis: .vertical)
             .font(.title2.weight(.semibold))
             .foregroundStyle(Theme.text)
             .focused($focused)
@@ -300,9 +300,9 @@ private struct IssueTitleField: View {
                 focused = false
             }
             // ⌘↵ and Escape finish the title, as on the Mac.
-            .screenKey("Done", "\r", modifiers: .command, isActive: focused) { focused = false }
-            .screenKey("Done", UIKeyCommand.inputEscape, isActive: focused) { focused = false }
-            .accessibilityLabel("Title")
+            .screenKey(.done, "\r", modifiers: .command, isActive: focused) { focused = false }
+            .screenKey(.done, UIKeyCommand.inputEscape, isActive: focused) { focused = false }
+            .accessibilityLabel(.issueTitle)
     }
 
     private func commit() {
@@ -324,7 +324,7 @@ private struct DescriptionEditor: View {
         DescriptionBody(text: item.body, isEditable: item.isEditableContent, onSave: save, editing: $editing) { _ in
             MarkdownTextEditor(
                 text: item.body,
-                placeholder: item.isEditableContent ? "Add a description…" : "No description",
+                placeholder: item.isEditableContent ? .addDescriptionPlaceholder : .noDescription,
                 isEditable: item.isEditableContent,
                 onSave: save,
                 editing: $editing
@@ -366,17 +366,17 @@ private struct PropertyChips: View {
                     StatusIcon(glyph: model.glyph(of: item), size: 16)
                 }
             }
-            .accessibilityLabel("Status: \(model.statusText(of: item))")
+            .accessibilityLabel(.statusIs(status: model.statusText(of: item)))
             .accessibilityIdentifier("chip-status")
             if model.project(of: item)?.priorityFieldId != nil {
                 Menu {
                     PriorityMenuItems(item: item)
                 } label: {
-                    PropertyChip(text: model.priorityOption(of: item)?.name ?? "Priority", placeholder: item.priorityId == nil) {
+                    PropertyChip(text: model.priorityOption(of: item)?.name ?? String(localized: .priority), placeholder: item.priorityId == nil) {
                         PriorityIcon(level: model.priorityLevel(of: item))
                     }
                 }
-                .accessibilityLabel("Priority: \(model.priorityOption(of: item)?.name ?? "None")")
+                .accessibilityLabel(model.priorityOption(of: item).map { .priorityIs(priority: $0.name) } ?? .priorityNone)
                 .accessibilityIdentifier("chip-priority")
             }
             if item.kind != .draft {
@@ -384,23 +384,23 @@ private struct PropertyChips: View {
                     picker = .assignees
                 } label: {
                     if item.assignees.isEmpty {
-                        PropertyChip(text: "Assignee", placeholder: true) {
+                        PropertyChip(text: String(localized: .assignee), placeholder: true) {
                             Image(systemName: "person").foregroundStyle(Theme.textTertiary)
                         }
                     } else {
-                        PropertyChip(text: item.assignees.count == 1 ? item.assignees[0].login : "\(item.assignees.count) people") {
+                        PropertyChip(text: item.assignees.count == 1 ? item.assignees[0].login : String(localized: .peopleCount(count: item.assignees.count))) {
                             AvatarStack(people: item.assignees, size: 20)
                         }
                     }
                 }
                 .buttonStyle(PlainPressStyle())
-                .accessibilityLabel(item.assignees.isEmpty ? "Assignee: none" : "Assignees: \(item.assignees.map(\.login).joined(separator: ", "))")
+                .accessibilityLabel(item.assignees.isEmpty ? .assigneeNone : .assigneesAre(names: item.assignees.map(\.login).joined(separator: ", ")))
                 .accessibilityIdentifier("chip-assignee")
                 Button {
                     picker = .labels
                 } label: {
                     if item.labels.isEmpty {
-                        PropertyChip(text: "Labels", placeholder: true) {
+                        PropertyChip(text: String(localized: .labels), placeholder: true) {
                             Image(systemName: "tag").foregroundStyle(Theme.textTertiary)
                         }
                     } else {
@@ -414,7 +414,7 @@ private struct PropertyChips: View {
                     }
                 }
                 .buttonStyle(PlainPressStyle())
-                .accessibilityLabel(item.labels.isEmpty ? "Labels: none" : "Labels: \(item.labels.map(\.name).joined(separator: ", "))")
+                .accessibilityLabel(item.labels.isEmpty ? .labelsNone : .labelsAre(names: item.labels.map(\.name).joined(separator: ", ")))
                 .accessibilityIdentifier("chip-labels")
             }
             if model.canHaveDueDate(item) {
@@ -426,13 +426,13 @@ private struct PropertyChips: View {
                             DueDateIcon(tone: due.tone, size: 13)
                         }
                     } else {
-                        PropertyChip(text: "Due date", placeholder: true) {
+                        PropertyChip(text: String(localized: .dueDate), placeholder: true) {
                             DueDateIcon(size: 13)
                         }
                     }
                 }
                 .buttonStyle(PlainPressStyle())
-                .accessibilityLabel(model.dueBadge(for: item)?.tooltip ?? "Due date: none")
+                .accessibilityLabel(model.dueBadge(for: item)?.tooltip ?? String(localized: .dueDateNone))
                 .accessibilityIdentifier("chip-due")
             }
             if let parentNumber = item.parentNumber {
@@ -441,7 +441,7 @@ private struct PropertyChips: View {
                         openRoute(.issue(parent.id))
                     }
                 } label: {
-                    PropertyChip(text: "Sub-issue of #\(parentNumber)") {
+                    PropertyChip(text: String(localized: .subIssueOf(number: "#\(parentNumber)"))) {
                         SubIssueGlyph().frame(width: 12, height: 12).foregroundStyle(Theme.textSecondary)
                     }
                 }
@@ -461,7 +461,7 @@ private struct PropertiesColumn: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
-                row("Status") {
+                row(.status) {
                     Menu {
                         StatusMenuItems(item: item)
                     } label: {
@@ -471,46 +471,46 @@ private struct PropertiesColumn: View {
                                 .foregroundStyle(model.statusIsPlaceholder(item) ? Theme.textTertiary : Theme.text)
                         }
                     }
-                    .accessibilityLabel("Status: \(model.statusText(of: item))")
+                    .accessibilityLabel(.statusIs(status: model.statusText(of: item)))
                     .accessibilityIdentifier("property-status")
                 }
                 if model.project(of: item)?.priorityFieldId != nil {
-                    row("Priority") {
+                    row(.priority) {
                         Menu {
                             PriorityMenuItems(item: item)
                         } label: {
                             value {
                                 PriorityIcon(level: model.priorityLevel(of: item))
-                                Text(model.priorityOption(of: item)?.name ?? "No priority")
+                                Text(model.priorityOption(of: item)?.name ?? String(localized: .noPriority))
                                     .foregroundStyle(item.priorityId == nil ? Theme.textTertiary : Theme.text)
                             }
                         }
-                        .accessibilityLabel("Priority: \(model.priorityOption(of: item)?.name ?? "None")")
+                        .accessibilityLabel(model.priorityOption(of: item).map { .priorityIs(priority: $0.name) } ?? .priorityNone)
                         .accessibilityIdentifier("property-priority")
                     }
                 }
                 if item.kind != .draft {
-                    row("Assignee") {
+                    row(.assignee) {
                         Button { picker = .assignees } label: {
                             value {
                                 if item.assignees.isEmpty {
-                                    Text("Unassigned").foregroundStyle(Theme.textTertiary)
+                                    Text(.unassigned).foregroundStyle(Theme.textTertiary)
                                 } else {
                                     AvatarStack(people: item.assignees, size: 20)
-                                    Text(item.assignees.count == 1 ? item.assignees[0].login : "\(item.assignees.count) people")
+                                    Text(item.assignees.count == 1 ? item.assignees[0].login : String(localized: .peopleCount(count: item.assignees.count)))
                                         .foregroundStyle(Theme.text)
                                 }
                             }
                         }
                         .buttonStyle(PlainPressStyle())
-                        .accessibilityLabel(item.assignees.isEmpty ? "Assignee: none" : "Assignees: \(item.assignees.map(\.login).joined(separator: ", "))")
+                        .accessibilityLabel(item.assignees.isEmpty ? .assigneeNone : .assigneesAre(names: item.assignees.map(\.login).joined(separator: ", ")))
                         .accessibilityIdentifier("property-assignee")
                     }
-                    row("Labels") {
+                    row(.labels) {
                         Button { picker = .labels } label: {
                             value {
                                 if item.labels.isEmpty {
-                                    Text("Add label").foregroundStyle(Theme.textTertiary)
+                                    Text(.addLabel).foregroundStyle(Theme.textTertiary)
                                 } else {
                                     FlowLayout(spacing: 6) {
                                         ForEach(item.labels) { label in
@@ -524,12 +524,12 @@ private struct PropertiesColumn: View {
                             }
                         }
                         .buttonStyle(PlainPressStyle())
-                        .accessibilityLabel(item.labels.isEmpty ? "Labels: none" : "Labels: \(item.labels.map(\.name).joined(separator: ", "))")
+                        .accessibilityLabel(item.labels.isEmpty ? .labelsNone : .labelsAre(names: item.labels.map(\.name).joined(separator: ", ")))
                         .accessibilityIdentifier("property-labels")
                     }
                 }
                 if model.canHaveDueDate(item) {
-                    row("Due date") {
+                    row(.dueDate) {
                         Button { picker = .dueDate } label: {
                             value {
                                 if let due = model.dueBadge(for: item) {
@@ -537,18 +537,18 @@ private struct PropertiesColumn: View {
                                     Text(due.day.mediumLabel())
                                         .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.text)
                                 } else {
-                                    Text("Add due date").foregroundStyle(Theme.textTertiary)
+                                    Text(.addDueDate).foregroundStyle(Theme.textTertiary)
                                 }
                             }
                         }
                         .buttonStyle(PlainPressStyle())
-                        .accessibilityLabel(model.dueBadge(for: item)?.tooltip ?? "Due date: none")
+                        .accessibilityLabel(model.dueBadge(for: item)?.tooltip ?? String(localized: .dueDateNone))
                         .accessibilityIdentifier("property-due")
                     }
                 }
                 Rectangle().fill(Theme.panelBorder).frame(height: 1).padding(.vertical, 12)
                 if let project = model.project(of: item) {
-                    row("Project") {
+                    row(.project) {
                         HStack(spacing: 8) {
                             ProjectSwatch(title: project.title)
                             Text(project.title).lineLimit(1)
@@ -556,24 +556,24 @@ private struct PropertiesColumn: View {
                         .padding(.horizontal, 8)
                     }
                 } else if !item.isOnBoard, !model.boards(toAdd: item).isEmpty {
-                    row("Project") {
+                    row(.project) {
                         Menu {
                             AddToProjectMenuItems(item: item)
                         } label: {
                             value {
-                                Text("Add to project").foregroundStyle(Theme.textTertiary)
+                                Text(.addToProjectPlaceholder).foregroundStyle(Theme.textTertiary)
                             }
                         }
                         .accessibilityIdentifier("property-project")
                     }
                 }
                 if let repo = item.repo {
-                    row("Repository") {
+                    row(.repository) {
                         Text(repo).foregroundStyle(Theme.textBody).lineLimit(1).truncationMode(.middle).padding(.horizontal, 8)
                     }
                 }
                 if let parentNumber = item.parentNumber {
-                    row("Parent") {
+                    row(.parentIssue) {
                         Button {
                             if let parentId = item.parentId, let parent = model.item(contentId: parentId) { openRoute(.issue(parent.id)) }
                         } label: {
@@ -585,8 +585,8 @@ private struct PropertiesColumn: View {
                     }
                 }
                 if let created = item.createdAt {
-                    row("Created") {
-                        Text("\(relativeDate(created))\(item.authorLogin.map { " by \($0)" } ?? "")")
+                    row(.created) {
+                        Text(item.authorLogin.map { String(localized: .createdDateByAuthor(date: relativeDate(created), author: $0)) } ?? relativeDate(created))
                             .foregroundStyle(Theme.textBody)
                             .lineLimit(1)
                             .padding(.horizontal, 8)
@@ -603,7 +603,7 @@ private struct PropertiesColumn: View {
         .sensoryFeedback(.selection, trigger: item.priorityId)
     }
 
-    private func row<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+    private func row<Content: View>(_ title: LocalizedStringResource, @ViewBuilder content: () -> Content) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             Text(title)
                 .font(.footnote)
@@ -639,7 +639,7 @@ struct StatusMenuItems: View {
     }
 
     private var picker: some View {
-        Picker("Status", selection: Binding(
+        Picker(.status, selection: Binding(
             get: { item.statusId },
             set: { id in
                 let current = model.item(id: item.id) ?? item
@@ -666,7 +666,7 @@ struct PriorityMenuItems: View {
     var item: Item
 
     var body: some View {
-        Picker("Priority", selection: Binding(
+        Picker(.priority, selection: Binding(
             get: { item.priorityId ?? "" },
             set: { id in
                 let current = model.item(id: item.id) ?? item
@@ -674,7 +674,7 @@ struct PriorityMenuItems: View {
             }
         )) {
             Label {
-                Text("No priority")
+                Text(.noPriority)
             } icon: {
                 MenuImages.priority(.none, scheme)
             }
@@ -701,7 +701,7 @@ private struct MobileConflictBanner: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label {
-                Text("The \(what) was also edited on GitHub. Nothing has been overwritten: your version is shown below and has not been sent.")
+                Text(message)
                     .fixedSize(horizontal: false, vertical: true)
             } icon: {
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.warning)
@@ -709,7 +709,7 @@ private struct MobileConflictBanner: View {
             .font(.subheadline)
             if let theirs {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("On GitHub").font(.caption.weight(.semibold)).foregroundStyle(Theme.warning)
+                    Text(.onGitHubVersion).font(.caption.weight(.semibold)).foregroundStyle(Theme.warning)
                     Text(theirs)
                         .font(.footnote)
                         .foregroundStyle(Theme.textBody)
@@ -721,9 +721,9 @@ private struct MobileConflictBanner: View {
                 .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.warning.opacity(0.08)))
             }
             HStack(spacing: 10) {
-                Button("Keep Mine") { model.resolveConflict(entry, keepMine: true) }
+                Button(.keepMine) { model.resolveConflict(entry, keepMine: true) }
                     .buttonStyle(.borderedProminent)
-                Button("Use GitHub's") { model.resolveConflict(entry, keepMine: false) }
+                Button(.useGitHubsVersion) { model.resolveConflict(entry, keepMine: false) }
                     .buttonStyle(.bordered)
             }
             .font(.subheadline.weight(.medium))
@@ -734,9 +734,9 @@ private struct MobileConflictBanner: View {
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Theme.warning.opacity(0.45), lineWidth: 1))
     }
 
-    private var what: String {
-        if case .setTitle = entry.mutation { return "title" }
-        return "description"
+    private var message: LocalizedStringResource {
+        if case .setTitle = entry.mutation { return .conflictTitleEditedOnGitHub }
+        return .conflictDescriptionEditedOnGitHub
     }
 
     private var theirs: String? {
@@ -758,10 +758,10 @@ private struct MobileSubIssues: View {
         let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text("Sub-issues").font(.headline)
+                Text(.subIssues).font(.headline)
                 if !subs.isEmpty {
                     let done = subs.filter(\.isClosed).count
-                    Text("\(done) of \(subs.count)")
+                    Text(.subIssuesProgress(done: done, total: subs.count))
                         .font(.footnote)
                         .foregroundStyle(Theme.textTertiary)
                         .monospacedDigit()
@@ -780,7 +780,7 @@ private struct MobileSubIssues: View {
                 }
                 .buttonStyle(PlainPressStyle())
                 .foregroundStyle(Theme.textSecondary)
-                .accessibilityLabel("Add sub-issue")
+                .accessibilityLabel(.addSubIssueButton)
             }
             if !subs.isEmpty {
                 VStack(spacing: 0) {
@@ -818,7 +818,7 @@ private struct MobileSubIssueRow: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(PlainPressStyle())
-            .accessibilityLabel(sub.isClosed ? "Reopen #\(sub.number)" : "Mark #\(sub.number) as done")
+            .accessibilityLabel(sub.isClosed ? .reopenIssueNumber(number: sub.number) : .markIssueNumberAsDone(number: sub.number))
             .accessibilityIdentifier("sub-toggle-#\(sub.number)")
             .sensoryFeedback(.success, trigger: toggled)
             Button {
@@ -829,7 +829,7 @@ private struct MobileSubIssueRow: View {
                 }
             } label: {
                 HStack(spacing: 10) {
-                    Text(sub.number > 0 ? "#\(sub.number)" : "New")
+                    Text(sub.number > 0 ? "#\(sub.number)" : String(localized: .newIssueNotSent))
                         .font(.footnote)
                         .monospacedDigit()
                         .foregroundStyle(Theme.textTertiary)
@@ -842,7 +842,7 @@ private struct MobileSubIssueRow: View {
                         Image(systemName: "arrow.up.right")
                             .font(.caption.weight(.medium))
                             .foregroundStyle(Theme.textTertiary)
-                            .accessibilityLabel("Opens on GitHub")
+                            .accessibilityLabel(.opensOnGitHub)
                     }
                     if !sub.assignees.isEmpty {
                         AvatarStack(people: sub.assignees, size: 20)
@@ -863,20 +863,20 @@ private struct MobileSubIssueRow: View {
                 Button {
                     withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
                 } label: {
-                    Label(sub.isClosed ? "Reopen" : "Mark as Done", systemImage: sub.isClosed ? "arrow.uturn.backward" : "checkmark.circle")
+                    Label(sub.isClosed ? .reopen : .markAsDone, systemImage: sub.isClosed ? "arrow.uturn.backward" : "checkmark.circle")
                 }
                 if let url = sub.url {
                     Divider()
                     Button {
                         model.copyLink(url, for: "#\(sub.number) \(sub.title)")
                     } label: {
-                        Label("Copy Link", systemImage: "link")
+                        Label(.copyLink, systemImage: "link")
                     }
                     if let parsed = URL(string: url) {
                         Button {
                             Platform.open(parsed)
                         } label: {
-                            Label("Open on GitHub", systemImage: "arrow.up.right.square")
+                            Label(.openOnGitHub, systemImage: "arrow.up.right.square")
                         }
                     }
                 }
@@ -905,9 +905,9 @@ private struct MobileActivity: View {
     var body: some View {
         let comments = item.contentId.map { model.detail(for: $0).comments } ?? []
         VStack(alignment: .leading, spacing: 12) {
-            Text("Activity").font(.headline)
+            Text(.activity).font(.headline)
             if comments.isEmpty {
-                Text("No comments yet.")
+                Text(.noCommentsYet)
                     .font(.subheadline)
                     .foregroundStyle(Theme.textTertiary)
             }
@@ -917,12 +917,12 @@ private struct MobileActivity: View {
                     HStack(spacing: 8) {
                         Avatar(login: comment.authorLogin ?? "ghost", url: comment.authorAvatarUrl, size: 20)
                         Text(comment.authorLogin ?? "ghost").font(.footnote.weight(.semibold))
-                        Text(comment.isLocalOnly ? "Sending…" : relativeDate(comment.createdAt))
+                        Text(comment.isLocalOnly ? String(localized: .sendingComment) : relativeDate(comment.createdAt))
                             .font(.footnote)
                             .foregroundStyle(Theme.textTertiary)
                         if new {
                             Spacer(minLength: 8)
-                            Text("New").font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
+                            Text(.newSinceLastRead).font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
                         }
                     }
                     MarkdownText(text: comment.body)
@@ -932,7 +932,7 @@ private struct MobileActivity: View {
                 .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.groupHeader))
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(new ? Theme.selectionBorder : Theme.panelBorder, lineWidth: 1))
                 .accessibilityElement(children: .combine)
-                .accessibilityHint(new ? "New" : "")
+                .accessibilityHint(new ? String(localized: .newSinceLastRead) : "")
                 .transition(.opacity.combined(with: .offset(y: 6)))
             }
         }
@@ -951,11 +951,11 @@ private struct CommentComposer: View {
     var body: some View {
         let empty = draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         HStack(alignment: .bottom, spacing: 10) {
-            TextField("Leave a comment…", text: $draft, axis: .vertical)
+            TextField(.leaveACommentPlaceholder, text: $draft, axis: .vertical)
                 .lineLimit(1...6)
                 .focused($focused)
                 // ⌘↵ sends, as on the Mac; Return alone starts a new line.
-                .screenKey("Send Comment", "\r", modifiers: .command, isActive: focused) { send() }
+                .screenKey(.sendComment, "\r", modifiers: .command, isActive: focused) { send() }
                 .accessibilityIdentifier("comment-field")
                 .padding(.horizontal, 16)
                 .padding(.vertical, 11)
@@ -969,7 +969,7 @@ private struct CommentComposer: View {
             .buttonBorderShape(.circle)
             .disabled(empty)
             .keyboardShortcut(.return, modifiers: .command)
-            .accessibilityLabel("Send comment")
+            .accessibilityLabel(.sendCommentButton)
             .accessibilityIdentifier("comment-send")
         }
         .padding(.horizontal, 16)

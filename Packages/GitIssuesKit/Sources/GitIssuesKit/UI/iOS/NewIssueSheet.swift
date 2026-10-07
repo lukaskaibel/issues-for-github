@@ -26,7 +26,7 @@ struct NewIssueSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     whereChips
-                    TextField("Issue title", text: $draft.title, axis: .vertical)
+                    TextField(.issueTitlePlaceholder, text: $draft.title, axis: .vertical)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(Theme.text)
                         .focused($focus, equals: .title)
@@ -38,17 +38,17 @@ struct NewIssueSheet: View {
                             focus = .body
                         }
                         .onSubmit { focus = .body }
-                        .accessibilityLabel("Title")
+                        .accessibilityLabel(.issueTitle)
                         .accessibilityIdentifier("new-title")
-                    TextField("Add a description…", text: $draft.body, axis: .vertical)
+                    TextField(.addDescriptionPlaceholder, text: $draft.body, axis: .vertical)
                         .font(.body)
                         .foregroundStyle(Theme.textBody)
                         .lineLimit(4...)
                         .focused($focus, equals: .body)
-                        .accessibilityLabel("Description")
+                        .accessibilityLabel(.description)
                         .accessibilityIdentifier("new-description")
                     if repos.isEmpty, draft.projectId != nil {
-                        Label("This project has no repository yet. Issues are created in a repository linked to the project; link one on GitHub first.", systemImage: "exclamationmark.triangle")
+                        Label(.projectHasNoRepository, systemImage: "exclamationmark.triangle")
                             .font(.footnote)
                             .foregroundStyle(Theme.warning)
                     }
@@ -60,27 +60,27 @@ struct NewIssueSheet: View {
             .scrollDismissesKeyboard(.interactively)
             .background(Theme.panel)
             // ⌘↵ creates the issue from inside the text too, where Return alone moves on or breaks the line.
-            .screenKey("Create Issue", "\r", modifiers: .command) { create() }
+            .screenKey(.createIssue, "\r", modifiers: .command) { create() }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 propertyBar
             }
-            .navigationTitle(draft.parent == nil ? "New Issue" : "New Sub-issue")
+            .navigationTitle(draft.parent == nil ? LocalizedStringResource.newIssue : .newSubIssue)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", systemImage: "xmark") {
+                    Button(.cancel, systemImage: "xmark") {
                         if hasContent { confirmDiscard = true } else { dismiss() }
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create", action: create)
+                    Button(.create, action: create)
                         .disabled(!canCreate)
                         .keyboardShortcut(.return, modifiers: .command)
                 }
             }
-            .confirmationDialog("Discard this issue?", isPresented: $confirmDiscard, titleVisibility: .visible) {
-                Button("Discard", role: .destructive) { dismiss() }
-                Button("Keep Editing", role: .cancel) {}
+            .confirmationDialog(.discardThisIssue, isPresented: $confirmDiscard, titleVisibility: .visible) {
+                Button(.discard, role: .destructive) { dismiss() }
+                Button(.keepEditing, role: .cancel) {}
             }
             .sheet(item: $picker) { kind in
                 DraftPickerSheet(kind: kind, draft: $draft)
@@ -115,9 +115,9 @@ struct NewIssueSheet: View {
                             selectProject(nil)
                         } label: {
                             if draft.projectId == nil {
-                                Label("No project", systemImage: "checkmark")
+                                Label(.noProject, systemImage: "checkmark")
                             } else {
-                                Text("No project")
+                                Text(.noProject)
                             }
                         }
                     }
@@ -127,18 +127,18 @@ struct NewIssueSheet: View {
                             ProjectSwatch(title: project.title, size: 11)
                             Text(project.title)
                         } else if context.repoId != nil {
-                            Text("No project")
+                            Text(.noProject)
                         } else {
-                            Text("Choose a project")
+                            Text(.chooseAProject)
                         }
                         Image(systemName: "chevron.down").font(.caption2.weight(.bold))
                     }
                 }
-                .accessibilityLabel("Project: \(project?.title ?? "none")")
+                .accessibilityLabel(project.map { .projectIs(project: $0.title) } ?? .projectNone)
             } else if let parent = draft.parent {
                 contextChip {
                     SubIssueGlyph().frame(width: 11, height: 11)
-                    Text("Sub-issue of \(parent.displayNumber)")
+                    Text(.subIssueOf(number: parent.displayNumber))
                 }
             }
             if context.repoId != nil || (draft.projectId == nil && draft.parent != nil), let repo = repos.first {
@@ -146,7 +146,7 @@ struct NewIssueSheet: View {
                     RepositoryIcon(size: 10)
                     Text(repo.shortName)
                 }
-                .accessibilityLabel("Repository: \(repo.nameWithOwner)")
+                .accessibilityLabel(.repositoryIs(repository: repo.nameWithOwner))
             } else if repos.count > 1, draft.parent == nil {
                 Menu {
                     ForEach(repos) { repo in
@@ -162,11 +162,11 @@ struct NewIssueSheet: View {
                     }
                 } label: {
                     contextChip {
-                        Text(repos.first { $0.id == draft.repoId }?.shortName ?? "Repository")
+                        Text(repos.first { $0.id == draft.repoId }?.shortName ?? String(localized: .repository))
                         Image(systemName: "chevron.down").font(.caption2.weight(.bold))
                     }
                 }
-                .accessibilityLabel("Repository: \(repos.first { $0.id == draft.repoId }?.nameWithOwner ?? "none")")
+                .accessibilityLabel(repos.first { $0.id == draft.repoId }.map { .repositoryIs(repository: $0.nameWithOwner) } ?? .repositoryNone)
             }
         }
     }
@@ -188,7 +188,7 @@ struct NewIssueSheet: View {
             HStack(spacing: 8) {
                 if !statuses.isEmpty {
                     Menu {
-                        Picker("Status", selection: $draft.statusId) {
+                        Picker(.status, selection: $draft.statusId) {
                             ForEach(statuses) { option in
                                 Label {
                                     Text(option.name)
@@ -200,18 +200,18 @@ struct NewIssueSheet: View {
                         }
                         .pickerStyle(.inline)
                     } label: {
-                        PropertyChip(text: statuses.first { $0.id == draft.statusId }?.name ?? "Status") {
+                        PropertyChip(text: statuses.first { $0.id == draft.statusId }?.name ?? String(localized: .status)) {
                             StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: draft.statusId), size: 16)
                         }
                     }
-                    .accessibilityLabel("Status: \(statuses.first { $0.id == draft.statusId }?.name ?? "none")")
+                    .accessibilityLabel(statuses.first { $0.id == draft.statusId }.map { .statusIs(status: $0.name) } ?? .statusNone)
                     .accessibilityIdentifier("new-status")
                 }
                 if !priorities.isEmpty {
                     Menu {
-                        Picker("Priority", selection: $draft.priorityId) {
+                        Picker(.priority, selection: $draft.priorityId) {
                             Label {
-                                Text("No priority")
+                                Text(.noPriority)
                             } icon: {
                                 MenuImages.priority(.none, scheme)
                             }
@@ -228,56 +228,56 @@ struct NewIssueSheet: View {
                         .pickerStyle(.inline)
                     } label: {
                         let option = priorities.first { $0.id == draft.priorityId }
-                        PropertyChip(text: option?.name ?? "Priority", placeholder: option == nil) {
+                        PropertyChip(text: option?.name ?? String(localized: .priority), placeholder: option == nil) {
                             PriorityIcon(level: option?.priorityLevel ?? .none)
                         }
                     }
-                    .accessibilityLabel("Priority: \(priorities.first { $0.id == draft.priorityId }?.name ?? "none")")
+                    .accessibilityLabel(priorities.first { $0.id == draft.priorityId }.map { .priorityIs(priority: $0.name) } ?? .priorityNone)
                     .accessibilityIdentifier("new-priority")
                 }
                 Button {
                     picker = .assignees
                 } label: {
                     if draft.assignees.isEmpty {
-                        PropertyChip(text: "Assignee", placeholder: true) {
+                        PropertyChip(text: String(localized: .assignee), placeholder: true) {
                             Image(systemName: "person").foregroundStyle(Theme.textTertiary)
                         }
                     } else {
-                        PropertyChip(text: draft.assignees.count == 1 ? draft.assignees[0].login : "\(draft.assignees.count) people") {
+                        PropertyChip(text: draft.assignees.count == 1 ? draft.assignees[0].login : String(localized: .peopleCount(count: draft.assignees.count))) {
                             AvatarStack(people: draft.assignees, size: 18)
                         }
                     }
                 }
                 .buttonStyle(PlainPressStyle())
-                .accessibilityLabel(draft.assignees.isEmpty ? "Assignee: none" : "Assignees: \(draft.assignees.map(\.login).joined(separator: ", "))")
+                .accessibilityLabel(draft.assignees.isEmpty ? .assigneeNone : .assigneesAre(names: draft.assignees.map(\.login).joined(separator: ", ")))
                 .accessibilityIdentifier("new-assignee")
                 Button {
                     picker = .labels
                 } label: {
                     if draft.labels.isEmpty {
-                        PropertyChip(text: "Labels", placeholder: true) {
+                        PropertyChip(text: String(localized: .labels), placeholder: true) {
                             Image(systemName: "tag").foregroundStyle(Theme.textTertiary)
                         }
                     } else {
-                        PropertyChip(text: draft.labels.count == 1 ? draft.labels[0].name : "\(draft.labels.count) labels") {
+                        PropertyChip(text: draft.labels.count == 1 ? draft.labels[0].name : String(localized: .labelsCount(count: draft.labels.count))) {
                             Circle().fill(Theme.labelColor(draft.labels[0].color)).frame(width: 8, height: 8)
                         }
                     }
                 }
                 .buttonStyle(PlainPressStyle())
-                .accessibilityLabel(draft.labels.isEmpty ? "Labels: none" : "Labels: \(draft.labels.map(\.name).joined(separator: ", "))")
+                .accessibilityLabel(draft.labels.isEmpty ? .labelsNone : .labelsAre(names: draft.labels.map(\.name).joined(separator: ", ")))
                 .accessibilityIdentifier("new-labels")
                 if draft.projectId != nil {
                     Button {
                         picker = .dueDate
                     } label: {
                         let day = draft.dueDate.flatMap(CalendarDay.init)
-                        PropertyChip(text: day?.mediumLabel() ?? "Due date", placeholder: day == nil) {
+                        PropertyChip(text: day?.mediumLabel() ?? String(localized: .dueDate), placeholder: day == nil) {
                             DueDateIcon(size: 13)
                         }
                     }
                     .buttonStyle(PlainPressStyle())
-                    .accessibilityLabel(draft.dueDate.flatMap(CalendarDay.init).map { "Due \($0.longLabel)" } ?? "Due date: none")
+                    .accessibilityLabel(draft.dueDate.flatMap(CalendarDay.init).map { .dueOnDate(date: $0.longLabel) } ?? .dueDateNone)
                     .accessibilityIdentifier("new-due")
                 }
             }
