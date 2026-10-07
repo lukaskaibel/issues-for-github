@@ -678,6 +678,8 @@ struct ActivitySection: View {
 private struct PropertiesPanel: View {
     @Environment(AppModel.self) private var model
     var item: Item
+    /// As wide as the longest label in this language needs, and never narrower than in English.
+    @State private var labelWidth: CGFloat = 84
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -819,7 +821,9 @@ private struct PropertiesPanel: View {
             Text(title)
                 .font(.small)
                 .foregroundStyle(Theme.textTertiary)
-                .frame(width: 84, alignment: .leading)
+                .fixedSize()
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { labelWidth = max(labelWidth, $0 + 14) }
+                .frame(width: labelWidth, alignment: .leading)
             content()
             Spacer(minLength: 0)
         }

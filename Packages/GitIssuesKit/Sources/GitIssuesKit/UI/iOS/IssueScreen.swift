@@ -462,6 +462,8 @@ private struct PropertiesColumn: View {
     @Environment(\.openRoute) private var openRoute
     var item: Item
     @Binding var picker: PickerKind?
+    /// As wide as the longest label in this language needs, and never narrower than in English.
+    @State private var labelWidth: CGFloat = 88
 
     var body: some View {
         ScrollView {
@@ -633,7 +635,9 @@ private struct PropertiesColumn: View {
             Text(title)
                 .font(.footnote)
                 .foregroundStyle(Theme.textTertiary)
-                .frame(width: 88, alignment: .leading)
+                .fixedSize()
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { labelWidth = max(labelWidth, $0 + 14) }
+                .frame(width: labelWidth, alignment: .leading)
             content()
             Spacer(minLength: 0)
         }
