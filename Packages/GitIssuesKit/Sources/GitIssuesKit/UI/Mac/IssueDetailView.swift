@@ -161,14 +161,19 @@ private struct TitleField: View {
 private struct DescriptionView: View {
     @Environment(AppModel.self) private var model
     var item: Item
+    @State private var editing = false
 
     var body: some View {
-        MarkdownEditor(
-            text: item.body,
-            placeholder: item.isEditableContent ? "Add a description…" : "No description",
-            isEditable: item.isEditableContent,
-            onSave: save
-        )
+        DescriptionBody(text: item.body, isEditable: item.isEditableContent, onSave: save, editing: $editing) { takesFocus in
+            MarkdownEditor(
+                text: item.body,
+                placeholder: item.isEditableContent ? "Add a description…" : "No description",
+                isEditable: item.isEditableContent,
+                onSave: save,
+                editing: $editing,
+                takesFocus: takesFocus
+            )
+        }
         .id(item.id)
     }
 

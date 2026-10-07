@@ -69,8 +69,10 @@ dropdown opens right there. Type to filter, press a number to pick. Right-click 
 
 ### Issues that read well
 
-Descriptions are Markdown, edited in place: click and type. Sub-issues come with a progress bar, comments sit below,
-and status, priority, assignees and labels are in the sidebar. Step to the next issue with the arrows at the top.
+Descriptions are Markdown, edited in place: click and type. One with a table, a checklist, code or a Mermaid diagram
+is drawn the way GitHub draws it, with checkboxes that tick; a click on the text brings up the Markdown. Sub-issues come
+with a progress bar, comments sit below, and status, priority, assignees and labels are in the sidebar. Step to the
+next issue with the arrows at the top.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">
@@ -120,8 +122,9 @@ The interface uses the system's own parts.
 - **iPhone:** a list per project and My Issues, grouped by status, with sections that fold and headers that stay
   pinned. Tabs for My Issues, Projects and Search. Swipe right to mark an issue done, swipe left to assign it to
   yourself or delete it, touch and hold for the same menu as the Mac's right-click. In an issue, the title and
-  description are edited in place (Markdown is styled as you type), the properties are chips under the title, and the
-  comment field stays at the bottom as in Messages.
+  description are edited in place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams are
+  drawn until you tap them), the properties are chips under the title, and the comment field stays at the bottom as in
+  Messages.
 - **iPad:** the tabs become a sidebar with every project as an entry, as on the Mac. Projects open as a board or a
   list; cards are moved with drag and drop (touch and hold, then drag). An issue shows its properties in a column
   beside it. With a keyboard, the Mac's shortcuts work: J and K, S P A L I, ⌘1 ⌘2 ⌘3, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵.
@@ -142,6 +145,8 @@ The interface uses the system's own parts.
 - **Status columns are yours to shape.** Add, rename, recolour and remove columns from the board, and drag a column
   by its header to move it; they are the project's Status field on GitHub. In the list, drag a section by its header
   to arrange the list your way (that order is a preference on your Mac and leaves GitHub alone).
+- **GitHub's Markdown.** Headings, lists, code, tables, checklists that tick and Mermaid diagrams, drawn natively
+  in the app's type and colours.
 - **Keyboard first.** Single keys change status, priority, assignee and labels. Back and forward work like a
   browser: ⌘[ and ⌘], the side buttons of a mouse, or a two-finger swipe.
 - **Native.** Swift and SwiftUI, with AppKit where it matters for smoothness. Apple silicon only.
@@ -290,6 +295,9 @@ Click an issue's priority, status, labels, assignees or sub-issue count to chang
 it for everything at once. The sub-issue count lists the sub-issues, whose status, priority and assignee change
 right there too. In the list, click a section header to fold it; Option-click folds them all.
 
+A description with a table, a checklist, code or a Mermaid diagram is drawn as on GitHub. Click a checkbox to tick it;
+click anywhere else to edit the Markdown, and `Esc` or `⌘↵` draws it again.
+
 On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. Drag a column by its
 header to reorder it, double-click its name to rename it, right-click it for its menu (rename, colour, delete), and
 use **Add column** at the right end of the board.
@@ -312,6 +320,7 @@ settings and signing out. It works with the arrow keys like any menu.
 | Touch and hold an issue | Status, priority, assignee and labels as submenus; copy link, share, open on GitHub, delete |
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place; the bar above the keyboard adds bold, italics, code, lists and links |
+| Tap a drawn description (table, checklist, code, diagram) | Show its Markdown; tap again to edit. Tap a checkbox to tick it |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
 
 ## Not there yet
@@ -388,9 +397,11 @@ the [changelog](CHANGELOG.md). Until 1.0, minor versions may change behaviour.
 
 ## Acknowledgements
 
-Built with [GRDB](https://github.com/groue/GRDB.swift) and
-[MarkdownUI](https://github.com/gonzalezreal/swift-markdown-ui). The interaction design is inspired by
-[Linear](https://linear.app).
+Built with [GRDB](https://github.com/groue/GRDB.swift), [MarkdownUI](https://github.com/gonzalezreal/swift-markdown-ui)
+with [swift-cmark](https://github.com/swiftlang/swift-cmark), and
+[BeautifulMermaid](https://github.com/lukilabs/beautiful-mermaid-swift), which lays diagrams out with
+[elk-swift](https://github.com/lukilabs/elk-swift) (Eclipse Public License 2.0; its source is at that link). The
+interaction design is inspired by [Linear](https://linear.app).
 
 Issues is an independent project and is not affiliated with, endorsed by, or sponsored by GitHub or Linear.
 

@@ -8,6 +8,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Descriptions with a table, a checklist, a code block or a Mermaid diagram are drawn the way GitHub draws them, on
+  the Mac, iPhone and iPad: tables with lines and a header row, checkboxes that tick with a click (saved to GitHub
+  like any edit), code in a box that scrolls sideways, and flowcharts, sequence, state, class, ER and XY diagrams
+  drawn natively. A click on the text shows the
+  Markdown to edit, and leaving it draws it again. Plain descriptions are still edited right where you click.
+  Comments and the peek show tables, checklists and diagrams too, and the peek's checkboxes tick as well.
 - Change several issues at once, as in Linear. Pick them with X, the checkbox at the start of a list row,
   ⌘-click or Shift-click (Shift with the arrows or J/K picks a run, ⌘A picks everything on screen). A bar at the
   bottom sets status, priority, assignee and labels for all of them; S, P, A, L, I, the command palette and the
@@ -77,6 +83,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- A single line break in a comment or a drawn description stays a line break, as on GitHub.
 - The sidebar is calmer, as in Linear. The account, search and New Issue share the top row, and the state of
   syncing is a dot on your avatar: green when everything is on GitHub, the accent while changes go out, amber when
   you're offline or something needs you. "Synced just now" moved into the account menu (and the avatar's tooltip).
@@ -105,6 +112,8 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- HTML comments such as the hints issue templates leave (`<!-- … -->`) no longer show in comments and the peek;
+  GitHub hides them too.
 - When a saved sign-in no longer works, such as a GitHub CLI login without the CLI or a token missing from the
   keychain, the sign-in screen appears instead of an endless "Looking for your projects…".
 - The issue view's back arrow and Escape return to the issue you came from, such as the parent of a sub-issue,
