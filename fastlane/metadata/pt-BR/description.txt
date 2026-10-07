@@ -1,9 +1,9 @@
-O Issues é um app rápido e nativo para GitHub Issues e GitHub Projects, no Mac, iPhone e iPad. É tranquilo de olhar e rápido de usar, e tudo fica no GitHub: colegas que não usam o app veem as mesmas issues e os mesmos quadros em github.com.
+O Issues é um app rápido e nativo para GitHub Issues e GitHub Projects, no Mac, iPhone e iPad. Tem um visual tranquilo e é rápido de usar, e tudo fica no GitHub: colegas que não usam o app veem as mesmas issues e os mesmos quadros em github.com.
 
 A ENTRADA
 • O que mudou para você, a partir das notificações do GitHub: quem atribuiu algo a você, mencionou você, comentou, pediu sua revisão ou fechou uma issue que você acompanha
 • Abra uma e a issue está logo ali, com as novidades no topo e o comentário novo destacado
-• Suas issues com prazo aparecem no dia, com Começar, Marcar como concluída e Mover para amanhã
+• Suas issues com prazo aparecem no dia, com Começar, Concluir e Mover para amanhã
 • Leia, arquive e adie com uma tecla ou deslizando o dedo; o que está lido e arquivado fica igual em github.com
 • As adiadas e as não lidas ficam em sincronia em todos os seus dispositivos pelo iCloud
 
@@ -42,10 +42,10 @@ PRAZOS QUE LEMBRAM VOCÊ
 RÁPIDO E CONFIÁVEL
 • Toda alteração aparece na hora e vai para o GitHub em segundo plano
 • Funciona offline: as alterações aguardam e são enviadas quando você voltar a ficar online
-• Cuidado com o trabalho dos outros: quando outra pessoa alterou o mesmo texto, nada é sobrescrito
+• Respeita o trabalho dos outros: quando outra pessoa alterou o mesmo texto, nada é sobrescrito
 
 PRIVADO
-• Sem conta, sem servidor, sem rastreamento. Seu login fica nas suas chaves e só é enviado ao GitHub.
+• Sem conta, sem servidor, sem rastreamento. Seu login fica nas chaves do seu dispositivo e só é enviado ao GitHub.
 • Iniciou sessão em um dos seus dispositivos? Os outros iniciam sessão sozinhos pelas Chaves do iCloud.
 
 Em inglês, alemão, francês, espanhol, português, russo, japonês, coreano e chinês, seguindo o idioma do seu dispositivo.
