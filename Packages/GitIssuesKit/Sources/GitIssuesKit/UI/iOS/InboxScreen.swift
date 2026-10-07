@@ -277,10 +277,12 @@ struct MobileInboxRow: View {
         .accessibilityIdentifier(Self.identifier(entry, withRepo: model.inboxNamesRepository(item)))
     }
 
-    /// "inbox-row-25" for an issue on a board, "inbox-row-brand-4" for one that isn't.
+    /// "inbox-row-25" for an issue on a board, "inbox-row-brand-4" for one that isn't; "inbox-due-25" for the issue
+    /// being due.
     static func identifier(_ entry: InboxEntry, withRepo: Bool) -> String {
         let number = entry.number.map(String.init) ?? entry.id
-        return withRepo ? "inbox-row-\(entry.repoShortName)-\(number)" : "inbox-row-\(number)"
+        let kind = entry.isDue ? "inbox-due" : "inbox-row"
+        return withRepo ? "\(kind)-\(entry.repoShortName)-\(number)" : "\(kind)-\(number)"
     }
 
     private func line(_ summary: InboxSummary) -> Text {
@@ -315,10 +317,12 @@ struct InboxMenuContent: View {
         } label: {
             Label(.archive, systemImage: "archivebox")
         }
-        Button {
-            model.unsubscribe([entry])
-        } label: {
-            Label(.unsubscribe, systemImage: "bell.slash")
+        if !entry.isDue {
+            Button {
+                model.unsubscribe([entry])
+            } label: {
+                Label(.unsubscribe, systemImage: "bell.slash")
+            }
         }
         if !entry.missing, let item = model.inboxItem(for: entry) {
             Divider()

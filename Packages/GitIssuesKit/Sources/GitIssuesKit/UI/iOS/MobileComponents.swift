@@ -80,6 +80,9 @@ struct IssueRow: View {
                     Text(repo)
                 }
             }
+            if item.blockedByCount > 0 {
+                MobileChip { BlockedIcon(size: 9) }
+            }
             if item.subTotal > 0 {
                 MobileChip {
                     SubIssueGlyph().frame(width: 11, height: 11)
@@ -105,9 +108,10 @@ struct IssueRow: View {
     private var accessibilityText: String {
         let status = item.isOnBoard
             ? model.statusOption(of: item)?.name ?? String(localized: .noStatus)
-            : String(localized: item.isClosed ? LocalizedStringResource.closedIssueState : .noProject)
+            : String(localized: item.isClosed ? LocalizedStringResource.stateClosed : .noProject)
         var parts = [item.displayNumber, item.title, status]
         if let priority = model.priorityOption(of: item)?.name { parts.append(String(localized: .priorityLevelSpoken(priority: priority))) }
+        if item.blockedByCount > 0 { parts.append(String(localized: .blockedSpoken)) }
         if !item.labels.isEmpty {
             parts.append(String(localized: .labelsSpoken(labels: item.labels.map(\.name).joined(separator: ", "))))
         }

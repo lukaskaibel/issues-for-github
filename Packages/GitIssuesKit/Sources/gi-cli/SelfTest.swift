@@ -192,6 +192,30 @@ enum SelfTest {
             }
         }
 
+        print("8b. Parent and blocker")
+        if let createdNumber {
+            let created = try item(dbA, createdNumber)
+            let other = try item(dbA, 5)
+            try enqueue(.setParent(.init(
+                child: created.summary!, parentId: other.contentId, parentNumber: other.number, parentTitle: other.title, base: created.parentId
+            )))
+            check("moved under #5 at once", try item(dbA, createdNumber).parentNumber == 5)
+            try await engineA.pushPending()
+            try await eventually("teammate sees it under #5 instead of #9") { try item(dbB, createdNumber).parentNumber == 5 }
+            try enqueue(.setParent(.init(child: try item(dbA, createdNumber).summary!, parentId: nil, base: other.contentId)))
+            try await engineA.pushPending()
+            try await eventually("teammate sees it without a parent") { try item(dbB, createdNumber).parentId == nil }
+
+            try enqueue(.setBlocking(.init(blocked: try item(dbA, createdNumber).summary!, blocker: other.summary!, isBlocked: true, base: false)))
+            try await engineA.pushPending()
+            let blockedDetail = try await apiB.issueDetail(contentId: created.contentId!)
+            check("GitHub lists #5 as blocking it", blockedDetail.links.contains { $0.relation == .blockedBy && $0.number == 5 })
+            try enqueue(.setBlocking(.init(blocked: try item(dbA, createdNumber).summary!, blocker: other.summary!, isBlocked: false, base: true)))
+            try await engineA.pushPending()
+            let unblockedDetail = try await apiB.issueDetail(contentId: created.contentId!)
+            check("and no longer after that", !unblockedDetail.links.contains { $0.relation == .blockedBy })
+        }
+
         print("9. An issue on no board, then onto the board")
         let looseTemp = LocalID.make(), looseTempContent = LocalID.make()
         let looseTitle = "Self-test issue on no board \(stamp)"

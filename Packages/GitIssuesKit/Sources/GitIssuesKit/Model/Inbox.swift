@@ -161,6 +161,8 @@ public struct InboxSummary: Equatable, Sendable {
     public enum Sign: String, Sendable {
         case assigned, mentioned, commented, comments, reviewRequested, approved, changesRequested
         case completed, notPlanned, reopened, merged, opened, statusChanged, activity
+        /// An issue of yours that is due today, or was due and is still open.
+        case due, overdue
     }
 
     public var actor: Person?
@@ -194,6 +196,7 @@ extension InboxEntry {
 
     /// What the row says: who did what, and the comment or mention it was about.
     public func summary(viewer: String?) -> InboxSummary {
+        if isDue { return dueSummary }
         let me = viewer?.lowercased()
         func isMe(_ login: String?) -> Bool { me != nil && login?.lowercased() == me }
         guard let event = headline(viewer: viewer) else { return fallbackSummary }
@@ -323,6 +326,56 @@ extension InboxEntry {
     static func teamMention(in text: String?) -> String? {
         guard let text, let range = text.range(of: "@[A-Za-z0-9-]+/[A-Za-z0-9_.-]+", options: .regularExpression) else { return nil }
         return String(text[range])
+    }
+}
+
+// MARK: - Issues that are due
+
+extension InboxEntry {
+    /// GitHub's reasons are words such as "assign"; these two are the app's own, for issues that are due.
+    static let dueReason = "due"
+    static let overdueReason = "overdue"
+
+    /// An entry the app makes itself from an issue's due date, which GitHub knows nothing about: read, archived and
+    /// snoozed are kept with the user's other Inbox records, and nothing about it is sent to GitHub.
+    public var isDue: Bool { reason == Self.dueReason || reason == Self.overdueReason }
+
+    /// The day a due entry is about.
+    public var dueDay: CalendarDay? {
+        guard isDue, let last = id.split(separator: ":").last else { return nil }
+        return CalendarDay(String(last))
+    }
+
+    /// The entry for an issue due on `day`: "due:<issue>:<day>" from the reminder on that day, and
+    /// "overdue:<issue>:<day>" from the reminder the morning after. It is dated with the reminder, so it sorts in
+    /// with the notifications.
+    init(due item: Item, day: CalendarDay, overdue: Bool, at moment: Date) {
+        let reason = overdue ? Self.overdueReason : Self.dueReason
+        self.init(
+            id: "\(reason):\(item.contentId ?? item.id):\(day.string)", reason: reason, unread: true, updatedAt: moment,
+            subjectType: item.kind == .pullRequest ? "PullRequest" : "Issue", title: item.title, repo: item.repo ?? "",
+            number: item.number
+        )
+        enrichedFor = moment
+        contentId = item.contentId
+        url = item.url
+        state = item.state
+        stateReason = item.stateReason
+        body = item.body
+        repoId = item.repoId
+        authorLogin = item.authorLogin
+        createdAt = item.createdAt
+        assignees = item.assignees
+        labels = item.labels
+    }
+
+    /// "Due today", or "Overdue since yesterday" and "Overdue since Mon, 5 Oct".
+    fileprivate var dueSummary: InboxSummary {
+        guard let day = dueDay else { return InboxSummary(lead: String(localized: .inboxDueLead), sign: .due) }
+        guard reason == Self.overdueReason else { return InboxSummary(lead: String(localized: .dueToday), sign: .due) }
+        let lead = day.days(from: .today()) == -1
+            ? String(localized: .overdueSinceYesterday) : String(localized: .overdueSinceDay(day: day.mediumLabel()))
+        return InboxSummary(lead: lead, sign: .overdue)
     }
 }
 

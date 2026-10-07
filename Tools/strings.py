@@ -248,6 +248,7 @@ def main(args):
                     with open(path, encoding="utf-8") as f:
                         text = f.read()
                     changed = re.sub(r"(?<![\w.])\." + re.escape(old) + r"\b", "." + new, text)
+                    changed = re.sub(r"\bLocalizedStringResource\." + re.escape(old) + r"\b", "LocalizedStringResource." + new, changed)
                     if changed != text:
                         with open(path, "w", encoding="utf-8") as f:
                             f.write(changed)

@@ -20,6 +20,7 @@ extension InboxSummary.Sign {
         case .opened: "plus"
         case .statusChanged: "arrow.right"
         case .activity: "circle.fill"
+        case .due, .overdue: "calendar"
         }
     }
 
@@ -31,6 +32,8 @@ extension InboxSummary.Sign {
         case .statusChanged: Theme.started
         case .commented, .comments: Theme.textSecondary
         case .notPlanned, .activity: Theme.textTertiary
+        case .due: Theme.urgent
+        case .overdue: Theme.overdue
         }
     }
 
@@ -50,9 +53,14 @@ extension InboxSummary.Sign {
         case .opened: .inboxKindNewIssue
         case .statusChanged: .inboxKindStatusChanged
         case .activity: .inboxKindActivity
+        case .due: .inboxKindDueToday
+        case .overdue: .inboxKindOverdue
         }
         return String(localized: kind)
     }
+
+    /// An entry the app made from a due date rather than one GitHub sent.
+    var isDue: Bool { self == .due || self == .overdue }
 }
 
 /// Who did it, with what they did as a small sign in the corner. The sign sits on a ring of the row's own
@@ -66,7 +74,12 @@ struct InboxAvatar: View {
         let badge = (size * 0.62).rounded()
         ZStack(alignment: .bottomTrailing) {
             Group {
-                if let actor = summary.actor {
+                if summary.sign.isDue {
+                    // Nobody did anything: the day came. A calendar in the colour of how near it is.
+                    Circle().fill(summary.sign.color.opacity(0.14))
+                        .overlay(Image(systemName: "calendar").font(.system(size: size * 0.46, weight: .semibold)).foregroundStyle(summary.sign.color))
+                        .frame(width: size, height: size)
+                } else if let actor = summary.actor {
                     Avatar(login: actor.login, url: actor.avatarUrl, size: size)
                 } else {
                     // GitHub said something happened, not who did it.
@@ -76,12 +89,14 @@ struct InboxAvatar: View {
                 }
             }
             .frame(width: size, height: size, alignment: .topLeading)
-            Image(systemName: summary.sign.systemImage)
-                .font(.system(size: badge * 0.56, weight: .bold))
-                .foregroundStyle(summary.sign.color)
-                .frame(width: badge, height: badge)
-                .background(Circle().fill(ground))
-                .offset(x: badge * 0.3, y: badge * 0.3)
+            if !summary.sign.isDue {
+                Image(systemName: summary.sign.systemImage)
+                    .font(.system(size: badge * 0.56, weight: .bold))
+                    .foregroundStyle(summary.sign.color)
+                    .frame(width: badge, height: badge)
+                    .background(Circle().fill(ground))
+                    .offset(x: badge * 0.3, y: badge * 0.3)
+            }
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)

@@ -855,9 +855,10 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
         if canEditFields, let labelsRect { parts.append((.labels, labelsRect)) }
 
-        // The title takes what is left, with the sub-issue count directly after it.
+        // The title takes what is left, with the sub-issue count and a flag when blocked directly after it.
         let subWidth: CGFloat? = subCount == nil ? nil : subCountSize.width + 7 + 11 + 4 + 7
-        let available = max(40, right - 12 - x - (subWidth.map { $0 + 10 } ?? 0))
+        let blockedWidth: CGFloat? = row.item.blockedByCount > 0 ? 26 : nil
+        let available = max(40, right - 12 - x - (subWidth.map { $0 + 10 } ?? 0) - (blockedWidth.map { $0 + 6 } ?? 0))
         let titleWidth = min(titleSize.width, available)
         title.draw(
             with: NSRect(x: x, y: midY - titleSize.height / 2, width: available, height: titleSize.height),
@@ -886,6 +887,19 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             dot.stroke()
             subCount.draw(at: NSPoint(x: rect.minX + 7 + 11 + 4, y: midY - subCountSize.height / 2))
         }
+        if let blockedWidth {
+            let after = x + titleWidth + 10 + (subWidth.map { $0 + 6 } ?? 0)
+            let rect = NSRect(x: after, y: midY - 10, width: blockedWidth, height: 20)
+            parts.append((.blockedBy, rect))
+            drawChip(rect, hovered: hoveredPart == .blockedBy)
+            if let flag = Self.blockedFlag {
+                let size = flag.size
+                flag.draw(
+                    in: NSRect(x: rect.midX - size.width / 2, y: midY - size.height / 2, width: size.width, height: size.height),
+                    from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
+                )
+            }
+        }
         // Tooltips follow the parts; rebuilt only when they moved.
         if parts.map(\.rect) != self.parts.map(\.rect) || toolTipsNeedUpdate {
             toolTipsNeedUpdate = false
@@ -897,6 +911,12 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     }
 
     private var toolTipsNeedUpdate = true
+
+    private static var blockedFlag: NSImage? {
+        NSImage(systemSymbolName: "flag.fill", accessibilityDescription: nil)?.withSymbolConfiguration(
+            NSImage.SymbolConfiguration(pointSize: 9, weight: .medium).applying(.init(paletteColors: [NSColor(Theme.blocked)]))
+        )
+    }
 
     func view(_ view: NSView, stringForToolTip tag: NSView.ToolTipTag, point: NSPoint, userData data: UnsafeMutableRawPointer?) -> String {
         guard let row else { return "" }
@@ -1208,6 +1228,11 @@ struct ItemMenuBuilder {
         }
 
         for entry in propertyItems(targets: targets) { menu.addItem(entry) }
+        let relations = relationItems(targets: targets)
+        if !relations.isEmpty {
+            menu.addItem(.separator())
+            for entry in relations { menu.addItem(entry) }
+        }
 
         menu.addItem(.separator())
         if several {
@@ -1405,6 +1430,55 @@ struct ItemMenuBuilder {
         if targets.contains(where: model.canHaveDueDate) {
             entries.append(submenu(String(localized: .dueDateTitle), MenuIcons.symbol("calendar"), dueDateMenu(targets)))
         }
+        return entries
+    }
+
+    /// Parent, sub-issues and blockers. Each opens its picker in the command palette, where issues are found by
+    /// typing.
+    func relationItems(targets: [Item]) -> [NSMenuItem] {
+        guard targets.allSatisfy(model.canRelate) else { return [] }
+        var entries: [NSMenuItem] = []
+        let hasParent = targets.contains { $0.parentId != nil }
+        let parent = ClosureMenuItem(String(localized: hasParent ? .changeParentIssueMenuItem : .setParentIssueMenuItem)) { [model, item] in
+            model.overlay = .palette(.parent(itemId: item.id))
+        }
+        parent.image = MenuIcons.symbol("arrow.turn.left.up")
+        entries.append(parent)
+        if hasParent {
+            let number = targets.count == 1 ? item.parentNumber : nil
+            let title = number.map { String(localized: .removeFromNumber(number: "#\($0)")) } ?? String(localized: .removeFromParentMenuItem)
+            let remove = ClosureMenuItem(title) { [model] in
+                model.setParent(of: targets, to: nil)
+            }
+            remove.image = MenuIcons.symbol("arrow.uturn.left")
+            entries.append(remove)
+        }
+        if targets.count == 1 {
+            let add = NSMenu()
+            let new = ClosureMenuItem(String(localized: .newSubIssueMenuItem)) { [model, item] in
+                model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
+            }
+            new.image = MenuIcons.symbol("plus")
+            add.addItem(new)
+            let existing = ClosureMenuItem(String(localized: .addExistingIssueMenuItem)) { [model, item] in
+                model.overlay = .palette(.addSubIssue(itemId: item.id))
+            }
+            existing.image = MenuIcons.symbol("magnifyingglass")
+            add.addItem(existing)
+            entries.append(submenu(String(localized: .addSubIssue), MenuIcons.subIssue, add))
+        }
+        let mark = NSMenu()
+        let blockedBy = ClosureMenuItem(String(localized: .blockedByMenuItem)) { [model, item] in
+            model.overlay = .palette(.blockedBy(itemId: item.id))
+        }
+        blockedBy.image = MenuIcons.blocked
+        mark.addItem(blockedBy)
+        let blocking = ClosureMenuItem(String(localized: .blockingMenuItem)) { [model, item] in
+            model.overlay = .palette(.blocking(itemId: item.id))
+        }
+        blocking.image = MenuIcons.blocking
+        mark.addItem(blocking)
+        entries.append(submenu(String(localized: .markAsMenu), MenuIcons.blocked, mark))
         return entries
     }
 

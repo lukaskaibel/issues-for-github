@@ -16,6 +16,11 @@ struct PickerList: View {
     var fieldFont: Font = .ui
     /// Rows for what is typed, in place of filtering `items`, for pickers that read the text (dates).
     var search: ((String) -> [PickerItem])? = nil
+    /// Single-choice pickers open on the current value; others on the first row that isn't checked.
+    var opensOnSelection = true
+    /// How many rows are drawn at most, for lists of issues that can run into the thousands.
+    var limit = Int.max
+    var onQueryChange: (String) -> Void = { _ in }
     var onPick: (String) -> Void
     var onClose: () -> Void
 
@@ -100,21 +105,27 @@ struct PickerList: View {
         .onAppear {
             focused = true
             // Single-choice pickers start on the current value, so Return keeps it.
-            if !multiple, let current = items.firstIndex(where: \.selected) { index = current }
+            if multiple {
+                return
+            } else if opensOnSelection, let current = items.firstIndex(where: \.selected) {
+                index = current
+            } else if !opensOnSelection, let first = items.firstIndex(where: { !$0.selected }) {
+                index = first
+            }
         }
-        .onChange(of: query) { index = 0 }
+        .onChange(of: query) {
+            index = 0
+            onQueryChange(query)
+        }
     }
 
     private var filtered: [PickerItem] {
-        guard !query.isEmpty else { return items }
-        if let search { return search(query) }
-        return items
-            .compactMap { item -> (PickerItem, Int)? in
-                let score = max(fuzzyScore(query, item.title) ?? -1, item.subtitle.flatMap { fuzzyScore(query, $0) } ?? -1)
-                return score >= 0 ? (item, score) : nil
-            }
-            .sorted { $0.1 > $1.1 }
-            .map(\.0)
+        if let search, !query.isEmpty { return search(query) }
+        let rows = matching(query, in: items)
+        guard rows.count > limit else { return rows }
+        // Rows that are always there stay, after the best matches.
+        let kept = rows.filter(\.alwaysShown)
+        return Array(rows.filter { !$0.alwaysShown }.prefix(limit - kept.count)) + kept
     }
 
     private func pick(_ item: PickerItem, keepOpen: Bool = false) {
@@ -143,7 +154,9 @@ struct PickerRow: View {
             }
             item.icon.frame(width: 18, height: 18)
             if let prefix = item.prefix {
+                // Issue numbers in a column of their own, so titles start in line.
                 Text(prefix).font(.small).monospacedDigit().foregroundStyle(Theme.textTertiary).lineLimit(1)
+                    .frame(minWidth: prefix.hasPrefix("#") ? 30 : nil, alignment: .leading)
             }
             Text(item.title).lineLimit(1).truncationMode(.tail)
             if let subtitle = item.subtitle {
@@ -198,6 +211,7 @@ struct ItemPicker: View {
     var width: CGFloat?
     var fieldFont: Font = .ui
     var close: () -> Void
+    @State private var query = ""
 
     var body: some View {
         if kind == .dueDate, let item = model.item(id: itemId) {
@@ -218,9 +232,23 @@ struct ItemPicker: View {
                 width: width ?? kind.width,
                 maxRows: 10,
                 fieldFont: fieldFont,
-                onPick: { model.pick(kind, id: $0, for: item) },
+                opensOnSelection: kind.opensOnSelection,
+                limit: kind.picksIssues ? 60 : .max,
+                onQueryChange: { query = $0 },
+                onPick: { id in
+                    // A title typed to look for an issue becomes the new one's, when none was picked.
+                    if id == AppModel.newSubIssueId {
+                        let title = query.trimmingCharacters(in: .whitespacesAndNewlines)
+                        model.newIssueTitle = title.isEmpty ? nil : title
+                    }
+                    model.pick(kind, id: id, for: item)
+                },
                 onClose: close
             )
+            .onAppear {
+                // Sub-issues and blockers show checked or left out, so the picker wants them fresh.
+                if kind.picksIssues { model.loadRelations(for: item) }
+            }
         }
     }
 }

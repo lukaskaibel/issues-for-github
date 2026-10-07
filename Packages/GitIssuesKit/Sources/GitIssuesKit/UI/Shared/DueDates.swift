@@ -96,6 +96,41 @@ extension AppModel {
         if day != nil { notifier.requestPermissionIfNeeded() }
     }
 
+    /// The issues reminders are about: open, assigned to you, on a board that isn't closed, with a due date. An issue
+    /// on several boards counts once.
+    func remindableDueItems() -> [(item: Item, day: CalendarDay)] {
+        guard let viewer else { return [] }
+        let closedProjects = Set(projects.filter(\.closed).map(\.id))
+        var seen = Set<String>()
+        var result: [(item: Item, day: CalendarDay)] = []
+        for item in allItems {
+            guard let day = item.due, let projectId = item.projectId, !closedProjects.contains(projectId),
+                  item.assignees.contains(where: { $0.id == viewer.id }), !isDone(item),
+                  seen.insert(item.contentId ?? item.id).inserted else { continue }
+            result.append((item, day))
+        }
+        return result
+    }
+
+    // MARK: What a reminder offers
+
+    /// Start: the board's first status of work in progress, such as In Progress.
+    func startWork(on item: Item) {
+        guard let started = statusOptions(projectId: item.projectId).first(where: { $0.statusCategory == .started }) else { return }
+        withAnimation(Theme.spring) { setStatus(item, to: started) }
+    }
+
+    /// Mark as Done: the board's done column, or closed on GitHub.
+    func markDone(_ item: Item) {
+        guard !isDone(item) else { return }
+        withAnimation(Theme.spring) { toggleDone(item) }
+    }
+
+    /// Move to Tomorrow: the due date on GitHub becomes tomorrow, and the reminder comes again then.
+    func moveToTomorrow(_ item: Item) {
+        setDueDate(of: [item], to: CalendarDay.today().adding(days: 1))
+    }
+
     /// Whether an issue can have a due date: the date is a field of its board, so it needs one.
     func canHaveDueDate(_ item: Item) -> Bool {
         item.isOnBoard
@@ -156,6 +191,50 @@ extension AppModel {
             icon: AnyView(Image(systemName: symbol).font(iconFont).foregroundStyle(Theme.textSecondary)),
             trailing: AnyView(Text(detail).font(.small).monospacedDigit().foregroundStyle(Theme.textTertiary))
         )
+    }
+}
+
+/// On an issue opened from a due entry in the Inbox: that it is due, and the reminder's three buttons.
+struct DueEntryBanner: View {
+    @Environment(AppModel.self) private var model
+    var entry: InboxEntry
+    var item: Item
+
+    var body: some View {
+        let summary = model.inboxSummary(entry)
+        let canStart = model.statusOption(of: item)?.statusCategory != .started
+            && model.statusOptions(projectId: item.projectId).contains { $0.statusCategory == .started }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 7) {
+                DueDateIcon(tone: summary.sign == .overdue ? .overdue : .today, size: 12)
+                Text(summary.lead)
+                    .font(.uiSemibold)
+                    .foregroundStyle(summary.sign.color)
+            }
+            HStack(spacing: 8) {
+                if canStart {
+                    button(.reminderActionStart, "play.circle") { model.startWork(on: item) }
+                }
+                button(.reminderActionMarkAsDone, "checkmark.circle") { model.markDone(item) }
+                button(.reminderActionMoveToTomorrow, "calendar") { model.moveToTomorrow(item) }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.groupHeader))
+    }
+
+    @ViewBuilder
+    private func button(_ title: LocalizedStringResource, _ symbol: String, action: @escaping () -> Void) -> some View {
+        #if os(macOS)
+        Button(action: action) { Label(title, systemImage: symbol) }
+            .buttonStyle(SecondaryButtonStyle())
+        #else
+        Button(action: action) { Label(title, systemImage: symbol).font(.subheadline.weight(.medium)) }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        #endif
     }
 }
 

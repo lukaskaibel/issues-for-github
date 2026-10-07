@@ -22,6 +22,14 @@ struct CommandPalette: View {
                 step(.labels, id)
             case .dueDate(let id):
                 step(.dueDate, id)
+            case .parent(let id):
+                step(.parent, id)
+            case .addSubIssue(let id):
+                step(.addSubIssue, id)
+            case .blockedBy(let id):
+                step(.blockedBy, id)
+            case .blocking(let id):
+                step(.blocking, id)
             case .projects:
                 PickerList(
                     placeholder: String(localized: .switchProjectPlaceholder),
@@ -63,7 +71,10 @@ struct CommandPalette: View {
     private func step(_ kind: PickerKind, _ itemId: String) -> some View {
         if let item = model.item(id: itemId) {
             ContextChip(item: item, count: model.targets(for: item).count)
-            ItemPicker(kind: kind, itemId: itemId, width: 640, fieldFont: .system(size: 15)) { model.overlay = nil }
+            // A pick can open something else, such as the new-issue dialog; that stays.
+            ItemPicker(kind: kind, itemId: itemId, width: 640, fieldFont: .system(size: 15)) { [mode] in
+                if model.overlay == .palette(mode) { model.overlay = nil }
+            }
         }
     }
 }
@@ -293,9 +304,29 @@ private struct RootPalette: View {
                     model.setDueDate(of: targets, to: nil)
                 })
             }
-            if item.kind == .issue, !several, !item.isDetached {
-                list.append(PaletteCommand(id: "sub", title: .addSubIssueCommand, section: section, icon: AnyView(SubIssueGlyph().frame(width: 12, height: 12).foregroundStyle(Theme.textSecondary))) {
-                    model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
+            if model.canRelate(item) {
+                let subIcon = AnyView(SubIssueGlyph().frame(width: 12, height: 12).foregroundStyle(Theme.textSecondary))
+                if !several {
+                    list.append(PaletteCommand(id: "sub", title: .createSubIssueCommand, section: section, icon: subIcon) {
+                        model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
+                    })
+                    list.append(PaletteCommand(id: "sub-existing", title: .addExistingSubIssueCommand, section: section, icon: subIcon) {
+                        model.overlay = .palette(.addSubIssue(itemId: item.id))
+                    })
+                }
+                list.append(PaletteCommand(id: "parent", title: .setParentIssueCommand, section: section, icon: symbol("arrow.turn.left.up"), keys: ["M", "P"]) {
+                    model.overlay = .palette(.parent(itemId: item.id))
+                })
+                if targets.contains(where: { $0.parentId != nil }) {
+                    list.append(PaletteCommand(id: "parent-remove", title: .removeFromParentCommand, section: section, icon: symbol("xmark")) {
+                        model.setParent(of: targets, to: nil)
+                    })
+                }
+                list.append(PaletteCommand(id: "blocked-by", title: .markAsBlockedByCommand, section: section, icon: AnyView(BlockedIcon()), keys: ["M", "B"]) {
+                    model.overlay = .palette(.blockedBy(itemId: item.id))
+                })
+                list.append(PaletteCommand(id: "blocking", title: .markAsBlockingCommand, section: section, icon: AnyView(BlockingIcon()), keys: ["M", "X"]) {
+                    model.overlay = .palette(.blocking(itemId: item.id))
                 })
             }
             if model.canDelete(item), !several {

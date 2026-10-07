@@ -125,9 +125,11 @@ struct LocalizationTests {
         for (file, text) in Self.code where !skipped.contains(file) {
             for (number, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
                 let code = line.split(separator: "//", maxSplits: 1).first.map(String.init) ?? ""
-                for match in code.matches(of: Self.textInView) {
-                    let literal = String(match.output.1)
-                    if Self.notForTranslation.contains(literal) || literal.contains(Self.sqlOrHeader) { continue }
+                let literals = code.matches(of: Self.textInView).map { String($0.output.1) }
+                    + code.matches(of: Self.textToHelper).map { String($0.output.1) }
+                for literal in literals {
+                    if Self.notForTranslation.contains(literal) || Self.notForTranslation.contains("\(file): \(literal)")
+                        || literal.contains(Self.sqlOrHeader) { continue }
                     Issue.record("\(file):\(number + 1): \"\(literal)\" is English in the code; add it to the catalog")
                 }
             }
@@ -136,6 +138,9 @@ struct LocalizationTests {
 
     /// A string literal handed to a view or to a parameter that shows it, which reads like words.
     static let textInView = #/(?:\b(?:Text|Button|Label|Toggle|Section|Menu|Picker|TextField|SecureField|LabeledContent|ContentUnavailableView|NavigationLink|Tab|CommandMenu|CommandGroup|Link|ShareLink|GroupBox|DisclosureGroup|ProgressView|ClosureMenuItem|NSMenuItem)\(|\.(?:navigationTitle|help|accessibilityLabel|accessibilityHint|accessibilityValue|alert|confirmationDialog|badge|screenKey)\(|\b(?:title|label|text|message|placeholder|subtitle|prompt|tooltip|hint|lead|detail|named|header|footer|caption|body):\s*|\breturn\s+|\?\s*|:\s+(?=")|\?\?\s*)"((?:[A-Z][a-z’']|(?:[^"\\]|\\.)*[A-Za-z] [A-Za-z])(?:[^"\\]|\\.)*)"/#
+
+    /// A capitalised text as the first argument of a function of the app's own, as in `submenu("Mark As", …)`.
+    static let textToHelper = #/\b(?!print\b|fatalError\b|assert\b|precondition\b|assertionFailure\b)[a-z][A-Za-z]*\(\s*"([A-Z][a-z’']+(?:[ …][^"]*)?)"/#
 
     /// SQL, and HTTP header names such as "Content-Type".
     static let sqlOrHeader = #/^(?:SELECT|UPDATE|INSERT|DELETE|CREATE|ALTER|DROP|PRAGMA|WITH) |^[A-Z][a-z]+(?:-[A-Z][a-z]+)+$/#
@@ -150,8 +155,10 @@ struct LocalizationTests {
         "is:issue is:open assignee:@me archived:false", "Authorization", "Accept", "Link", "GitHubClientID",
         // Names inside the app: the database folder, alternate icons, a date template, a background task.
         "GitIssues", "AppIcon-Light", "AppIcon-Dark", "AppIcon-Violet", "Md", "Send queued changes",
-        // A database that can't be migrated; for whoever debugs it.
-        "The item table has an unexpected definition: \\(definition)",
+        // GitHub's names for what a notification is about.
+        "Inbox.swift: Issue", "PullRequest",
+        // For whoever debugs: a database that can't be migrated, and errors the debug build can simulate.
+        "The item table has an unexpected definition: \\(definition)", "Simulated for testing.", "The network connection was lost.",
     ]
 }
 

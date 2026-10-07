@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump"]
+        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -74,11 +74,14 @@ enum DebugRemote {
                 model.select(.project(project.id))
             }
         case "entry":
-            // entry <number>: selects the Inbox entry about that issue, as a click does; "entry none" clears it.
-            let entry = model.visibleInbox.first { "\($0.number ?? -1)" == argument || $0.displayNumber(withRepo: true) == argument }
+            // entry <number>: selects the Inbox entry about that issue, as a click does; "entry due <number>" the entry
+            // for the issue being due; "entry none" clears it.
+            let due = argument.hasPrefix("due ")
+            let number = due ? String(argument.dropFirst(4)) : argument
+            let entry = model.visibleInbox.first { $0.isDue == due && ("\($0.number ?? -1)" == number || $0.displayNumber(withRepo: true) == number) }
             model.selectInboxEntry(entry)
         case "inboxdump":
-            for entry in model.inboxEntries {
+            for entry in model.inboxEntries + model.dueInboxEntries {
                 let summary = model.inboxSummary(entry)
                 log("inbox \(entry.displayNumber(withRepo: true)) \(entry.bucket.rawValue) unread=\(model.isUnread(entry)) archived=\(entry.isArchived) \(summary.sign.rawValue): \(summary.lead) \(summary.excerpt ?? "")")
             }
@@ -93,10 +96,28 @@ enum DebugRemote {
         case "focus":
             model.focusedItemId = item(argument, model)?.id
         case "overlay":
-            switch argument {
-            case "palette": model.overlay = .palette(.root)
-            case "new": model.overlay = .newIssue(statusId: nil, parentItemId: nil)
+            // overlay palette|new|none, or overlay parent|subissue|blockedby|blocking <number> for a relation picker.
+            let bits = argument.split(separator: " ").map(String.init)
+            let target = bits.count > 1 ? item(bits[1], model)?.id : nil
+            switch (bits.first, target) {
+            case ("palette", _): model.overlay = .palette(.root)
+            case ("new", _): model.overlay = .newIssue(statusId: nil, parentItemId: nil)
+            case ("parent", let id?): model.overlay = .palette(.parent(itemId: id))
+            case ("subissue", let id?): model.overlay = .palette(.addSubIssue(itemId: id))
+            case ("blockedby", let id?): model.overlay = .palette(.blockedBy(itemId: id))
+            case ("blocking", let id?): model.overlay = .palette(.blocking(itemId: id))
             default: model.overlay = nil
+            }
+        case "menudump":
+            // menudump <number>: the issue's right-click menu, one entry per line, submenus indented.
+            if let item = item(argument, model) {
+                func dump(_ menu: NSMenu, _ depth: Int) {
+                    for entry in menu.items {
+                        log(String(repeating: "  ", count: depth) + (entry.isSeparatorItem ? "—" : entry.title))
+                        if let submenu = entry.submenu { dump(submenu, depth + 1) }
+                    }
+                }
+                dump(ItemMenuBuilder(model: model, item: item).menu(), 0)
             }
         case "key":
             sendKeys(argument)

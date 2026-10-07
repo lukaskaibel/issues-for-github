@@ -85,6 +85,42 @@
         }
       }
     },
+    "addExistingIssueChoice" : {
+      "comment" : "Row at the end of the picker of an issue's sub-issues: opens a list of existing issues to put under it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add existing issue…"
+          }
+        }
+      }
+    },
+    "addExistingIssueMenuItem" : {
+      "comment" : "Menu item in the 'Add Sub-issue' submenu (Mac, iPhone, iPad): opens a list of existing issues to put under this one. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Existing Issue…"
+          }
+        }
+      }
+    },
+    "addExistingSubIssueCommand" : {
+      "comment" : "Mac, command palette (⌘K), command for the issue in focus: opens a list of existing issues to put under it as sub-issues.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add existing issue as sub-issue…"
+          }
+        }
+      }
+    },
     "addKeepChoosing" : {
       "comment" : "iPhone and iPad, sheet that picks assignees or labels: VoiceOver label of the empty circle at the start of a row; adds the person or label and leaves the sheet open for more. %(name)@ is a GitHub user or label name.",
       "extractionState" : "manual",
@@ -181,6 +217,18 @@
         }
       }
     },
+    "addRelatedIssue" : {
+      "comment" : "Placeholder in the 'Blocked by' and 'Blocking' rows of an issue's properties (Mac, iPad) when there is none; opens a list of issues to pick.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add issue"
+          }
+        }
+      }
+    },
     "addStatus" : {
       "comment" : "iPhone and iPad, Statuses screen of a project: button that adds a status, which is a new column of the board. Title case.",
       "extractionState" : "manual",
@@ -194,7 +242,7 @@
       }
     },
     "addSubIssue" : {
-      "comment" : "iPhone and iPad, issue screen: item in the ⋯ menu that starts writing a new sub-issue of this issue (a GitHub sub-issue: an issue under another issue). Title case, as in menus.",
+      "comment" : "Submenu (Mac, iPhone, iPad) of an issue with 'New Sub-issue' and 'Add Existing Issue…' (GitHub sub-issues). Title case.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -206,7 +254,7 @@
       }
     },
     "addSubIssueButton" : {
-      "comment" : "Mac, issue view: tooltip and VoiceOver label of the + button beside the 'Sub-issues' heading; it opens the New Issue window for a sub-issue of this issue (GitHub term).",
+      "comment" : "Add sub-issue (GitHub sub-issues): Mac issue view, tooltip and VoiceOver label of the + button beside the 'Sub-issues' heading, which opens a list to pick an existing issue or start a new one; also the tooltip of that kind of picker and the iPhone/iPad VoiceOver label of the same button.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -217,14 +265,14 @@
         }
       }
     },
-    "addSubIssueCommand" : {
-      "comment" : "Mac, command palette (⌘K): command for writing a new issue under the issue in focus. 'Sub-issue' is the GitHub term.",
+    "addSubIssuePlaceholder" : {
+      "comment" : "Mac: placeholder in the search field of the picker that lists issues, from an issue's properties or a menu: picks an existing issue to put under this one, or starts a new one (GitHub sub-issues).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add sub-issue"
+            "value" : "Add sub-issue…"
           }
         }
       }
@@ -961,6 +1009,222 @@
         }
       }
     },
+    "blockedByCount" : {
+      "comment" : "Tooltip of the 'blocked' chip on a card or row, when not every blocking issue is on the user's boards: how many issues block it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Blocked by %(count)lld issue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Blocked by %(count)lld issues"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "blockedByHelp" : {
+      "comment" : "The 'blocked by' relation of an issue (the issues that must be done first): heading of its list in the issue view (Mac, iPhone, iPad), label of its row in the properties, and tooltip. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocked by"
+          }
+        }
+      }
+    },
+    "blockedByMenuItem" : {
+      "comment" : "Item in the 'Mark As' submenu of an issue (Mac, iPhone, iPad): opens a list of issues that block this one (GitHub's 'blocked by' relation). Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocked By…"
+          }
+        }
+      }
+    },
+    "blockedByNoneSpoken" : {
+      "comment" : "iPad, issue screen, VoiceOver label of the 'Blocked by' row when no issue blocks this one.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocked by: none"
+          }
+        }
+      }
+    },
+    "blockedByNumbers" : {
+      "comment" : "Tooltip of the 'blocked' chip on a card or row. %(numbers)@ is a list of issue numbers, already joined with the language's 'and', such as '#6 and #14'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocked by %(numbers)@"
+          }
+        }
+      }
+    },
+    "blockedBySheetTitle" : {
+      "comment" : "iPhone and iPad: title of the sheet listing issues that block this one (GitHub's 'blocked by' relation). Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocked By"
+          }
+        }
+      }
+    },
+    "blockedBySpoken" : {
+      "comment" : "iPad, issue screen, VoiceOver label of the 'Blocked by' row. %(numbers)@ is a list of issue numbers joined with the language's 'and' (#6 and #14), or a count such as '3 issues'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocked by: %(numbers)@"
+          }
+        }
+      }
+    },
+    "blockedChip" : {
+      "comment" : "Chip on an issue that another issue blocks (Mac selection bar, iPhone and iPad issue screen); opens the list of what blocks it. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocked"
+          }
+        }
+      }
+    },
+    "blockedSpoken" : {
+      "comment" : "iPhone and iPad, VoiceOver: one of the parts read for an issue in a list, after its status and priority, when another issue blocks it. Lower case, as the parts are joined with commas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "blocked"
+          }
+        }
+      }
+    },
+    "blockingCount" : {
+      "comment" : "Tooltip of the 'blocking' chip on a card or row, when not every blocked issue is on the user's boards: how many issues it blocks.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Blocking %(count)lld issue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Blocking %(count)lld issues"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "blockingHelp" : {
+      "comment" : "The 'blocking' relation of an issue (the issues that wait for this one): heading of its list in the issue view (Mac, iPhone, iPad), label of its row in the properties, and tooltip. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocking"
+          }
+        }
+      }
+    },
+    "blockingMenuItem" : {
+      "comment" : "Item in the 'Mark As' submenu of an issue (Mac, iPhone, iPad): opens a list of issues that this one blocks. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocking…"
+          }
+        }
+      }
+    },
+    "blockingNoneSpoken" : {
+      "comment" : "iPad, issue screen, VoiceOver label of the 'Blocking' row when this issue blocks none.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocking: none"
+          }
+        }
+      }
+    },
+    "blockingNumbers" : {
+      "comment" : "Tooltip of the 'blocking' chip on a card or row. %(numbers)@ is a list of issue numbers, already joined with the language's 'and', such as '#6 and #14'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocking %(numbers)@"
+          }
+        }
+      }
+    },
+    "blockingSheetTitle" : {
+      "comment" : "iPhone and iPad: title of the sheet listing issues that this one blocks (GitHub's 'blocking' relation). Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocking"
+          }
+        }
+      }
+    },
+    "blockingSpoken" : {
+      "comment" : "iPad, issue screen, VoiceOver label of the 'Blocking' row. %(numbers)@ is a list of issue numbers joined with the language's 'and' (#6 and #14), or a count such as '3 issues'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocking: %(numbers)@"
+          }
+        }
+      }
+    },
     "board" : {
       "comment" : "View mode: issues in columns by status, like a kanban board. Picker segment, menu item and button.",
       "extractionState" : "manual",
@@ -1041,6 +1305,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%(change)@ — needs your decision"
+          }
+        }
+      }
+    },
+    "changeParentIssueMenuItem" : {
+      "comment" : "Menu item (Mac right-click menu, iPhone and iPad menus) for an issue that is a sub-issue: opens a list of issues to put it under instead. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change Parent Issue…"
           }
         }
       }
@@ -1797,6 +2073,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Create issue"
+          }
+        }
+      }
+    },
+    "createSubIssueCommand" : {
+      "comment" : "Mac, command palette (⌘K), command for the issue in focus: starts writing a new issue under it (GitHub sub-issues).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create sub-issue"
           }
         }
       }
@@ -3469,6 +3757,18 @@
         }
       }
     },
+    "inboxDueLead" : {
+      "comment" : "Inbox row, line under the title: the app's own reminder that an issue assigned to the user is due, when the day isn't known. One word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due"
+          }
+        }
+      }
+    },
     "inboxForYou" : {
       "comment" : "Inbox (Mac, iPhone, iPad): name of the half of the Inbox with notifications that involve the user (assigned, mentioned, asked for a review, their own issues). Segment of a picker. Short.",
       "extractionState" : "manual",
@@ -3565,6 +3865,18 @@
         }
       }
     },
+    "inboxKindDueToday" : {
+      "comment" : "Inbox, VoiceOver: what an entry is about. The app's own reminder that an issue assigned to the user is due today. Read before the issue's number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Due today"
+          }
+        }
+      }
+    },
     "inboxKindMention" : {
       "comment" : "Inbox, VoiceOver: what a notification is about. Someone mentioned you (a noun). Read before the issue's number and title.",
       "extractionState" : "manual",
@@ -3597,6 +3909,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New issue"
+          }
+        }
+      }
+    },
+    "inboxKindOverdue" : {
+      "comment" : "Inbox, VoiceOver: what an entry is about. The app's own reminder that an issue assigned to the user is past its due date. Read before the issue's number and title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overdue"
           }
         }
       }
@@ -4310,7 +4634,7 @@
       }
     },
     "issuesCount" : {
-      "comment" : "iPhone and iPad, Statuses screen of a project: VoiceOver label of the number beside a status, how many issues have it.",
+      "comment" : "A number of issues: VoiceOver label of the count beside a status on the iPhone and iPad Statuses screen, and the 'Blocked by'/'Blocking' rows of an issue's properties when the issues aren't on the user's boards (Mac, iPad).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -4669,6 +4993,54 @@
         }
       }
     },
+    "markAsBlockedByCommand" : {
+      "comment" : "Mac, command palette (⌘K), command for the issue in focus: opens a list of issues that block it (GitHub's 'blocked by' relation). Also the tooltip and VoiceOver label of the + button beside the 'Blocked by' list in the issue view.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as blocked by…"
+          }
+        }
+      }
+    },
+    "markAsBlockedByPlaceholder" : {
+      "comment" : "Mac: placeholder in the search field of the picker that lists issues, from an issue's properties or a menu: picks issues that block this one.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as blocked by…"
+          }
+        }
+      }
+    },
+    "markAsBlockingCommand" : {
+      "comment" : "Mac, command palette (⌘K), command for the issue in focus: opens a list of issues that it blocks (GitHub's 'blocking' relation). Also the tooltip and VoiceOver label of the + button beside the 'Blocking' list in the issue view.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as blocking…"
+          }
+        }
+      }
+    },
+    "markAsBlockingPlaceholder" : {
+      "comment" : "Mac: placeholder in the search field of the picker that lists issues, from an issue's properties or a menu: picks issues that this one blocks.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as blocking…"
+          }
+        }
+      }
+    },
     "markAsDone" : {
       "comment" : "iPhone and iPad: item (a verb) in the long-press menu of a sub-issue that closes it as completed. Title case, as in menus.",
       "extractionState" : "manual",
@@ -4689,6 +5061,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mark as done"
+          }
+        }
+      }
+    },
+    "markAsMenu" : {
+      "comment" : "Submenu of an issue (Mac, iPhone, iPad) with 'Blocked By…' and 'Blocking…'. Title case; together they read 'Mark as blocked by…'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark As"
           }
         }
       }
@@ -5162,7 +5546,7 @@
       }
     },
     "newSubIssue" : {
-      "comment" : "iPhone and iPad: title of the sheet for writing a new sub-issue (a GitHub sub-issue: an issue under another issue). Title case.",
+      "comment" : "iPhone and iPad: title of the sheet for writing a new sub-issue (a GitHub sub-issue: an issue under another issue). Title case. Also the menu item (iPhone, iPad) in 'Add Sub-issue' that starts writing a new sub-issue.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5193,6 +5577,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New sub-issue"
+          }
+        }
+      }
+    },
+    "newSubIssueMenuItem" : {
+      "comment" : "Mac, right-click menu of an issue, in the 'Add Sub-issue' submenu: starts writing a new issue under it. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Sub-issue…"
           }
         }
       }
@@ -5353,6 +5749,18 @@
         }
       }
     },
+    "noParentIssue" : {
+      "comment" : "Tooltip of the parent chip of an issue that is no sub-issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No parent issue"
+          }
+        }
+      }
+    },
     "noPriority" : {
       "comment" : "Shown when an issue has no priority; also the choice in the priority picker that clears it.",
       "extractionState" : "manual",
@@ -5445,6 +5853,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Not on GitHub yet"
+          }
+        }
+      }
+    },
+    "notOnYourBoardsOpensOnGitHub" : {
+      "comment" : "Mac, issue view, list of blocking or blocked issues: tooltip of the arrow beside an issue that is on none of the user's boards; clicking opens it on github.com.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not on your boards; opens on GitHub"
           }
         }
       }
@@ -5990,7 +6410,7 @@
       }
     },
     "opensOnGitHub" : {
-      "comment" : "iPhone and iPad, issue screen: VoiceOver label of the ↗ arrow on a sub-issue that is on none of the user's boards, so a tap opens it on github.com.",
+      "comment" : "iPhone and iPad, issue screen, list of blocking or blocked issues: VoiceOver label of the arrow beside an issue that is on none of the user's boards.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -6057,6 +6477,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Overdue since %(date)@"
+          }
+        }
+      }
+    },
+    "overdueSinceDay" : {
+      "comment" : "Inbox row, line under the title: the app's own reminder that an issue assigned to the user is past its due date. %(day)@ is a short date with weekday, such as 'Mon, 5 Oct'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overdue since %(day)@"
           }
         }
       }
@@ -6129,6 +6561,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The parent issue isn't on this board"
+          }
+        }
+      }
+    },
+    "parentIssueSheetTitle" : {
+      "comment" : "iPhone and iPad: title of the sheet listing issues to make this one a sub-issue of. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parent Issue"
+          }
+        }
+      }
+    },
+    "parentNoneSpoken" : {
+      "comment" : "iPad, issue screen, VoiceOver label of the Parent row when the issue is no sub-issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parent: none"
+          }
+        }
+      }
+    },
+    "parentSpoken" : {
+      "comment" : "iPad, issue screen, VoiceOver label of the Parent row: the issue this one is a sub-issue of. %(number)@ is its number such as '#12', %(title)@ its title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parent: %(number)@ %(title)@"
           }
         }
       }
@@ -6745,6 +7213,30 @@
         }
       }
     },
+    "queuedMadeSubIssueOf" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number: the issue was made a sub-issue of another issue. %(number)@ is that issue's number, such as '#12'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Made a sub-issue of %(number)@"
+          }
+        }
+      }
+    },
+    "queuedMadeSubIssueOfNewIssue" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number: the issue was made a sub-issue of an issue that hasn't reached GitHub yet (so it has no number).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Made a sub-issue of a new issue"
+          }
+        }
+      }
+    },
     "queuedMarkedAsRead" : {
       "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. An Inbox notification was marked as read.",
       "extractionState" : "manual",
@@ -6757,6 +7249,30 @@
         }
       }
     },
+    "queuedMarkedBlockedBy" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number: the issue was marked as blocked by another issue (GitHub's 'blocked by' relation). %(number)@ is that issue's number, such as '#12'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked as blocked by %(number)@"
+          }
+        }
+      }
+    },
+    "queuedMarkedBlockedByNewIssue" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number: the issue was marked as blocked by an issue that hasn't reached GitHub yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked as blocked by a new issue"
+          }
+        }
+      }
+    },
     "queuedMoved" : {
       "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number. Also quoted in a warning when GitHub refused the change. The issue was moved to another place in the board's order.",
       "extractionState" : "manual",
@@ -6765,6 +7281,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Moved"
+          }
+        }
+      }
+    },
+    "queuedNoLongerBlockedBy" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number: the 'blocked by' relation to another issue was removed. %(number)@ is that issue's number, such as '#12'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No longer blocked by %(number)@"
+          }
+        }
+      }
+    },
+    "queuedNoLongerBlockedByNewIssue" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number: the 'blocked by' relation to an issue that hasn't reached GitHub yet was removed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No longer blocked by a new issue"
           }
         }
       }
@@ -6789,6 +7329,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Priority cleared"
+          }
+        }
+      }
+    },
+    "queuedRemovedFromParent" : {
+      "comment" : "List of changes waiting to be sent to GitHub (Mac: popover of the sync line at the bottom of the sidebar; iPhone, iPad: Queued Changes screen), next to the issue's number: the issue was taken out of its parent issue, so it is no longer a sub-issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removed from its parent"
           }
         }
       }
@@ -6926,7 +7478,7 @@
       }
     },
     "reminderActionMarkAsDone" : {
-      "comment" : "Button of the reminder notification for a due issue (Mac, iPhone, iPad): moves the issue to the done column. Short.",
+      "comment" : "Button of the reminder notification for a due issue (Mac, iPhone, iPad): moves the issue to the done column. Short. Also a button on the Inbox entry for a due issue.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -6938,7 +7490,7 @@
       }
     },
     "reminderActionMoveToTomorrow" : {
-      "comment" : "Button of the reminder notification for a due issue (Mac, iPhone, iPad): changes the due date to tomorrow. Short.",
+      "comment" : "Button of the reminder notification for a due issue (Mac, iPhone, iPad): changes the due date to tomorrow. Short. Also a button on the Inbox entry for a due issue.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -6950,7 +7502,7 @@
       }
     },
     "reminderActionStart" : {
-      "comment" : "Button of the reminder notification for a due issue (Mac, iPhone, iPad): moves the issue to the first 'in progress' column (a verb: start working on it). Short.",
+      "comment" : "Button of the reminder notification for a due issue (Mac, iPhone, iPad): moves the issue to the first 'in progress' column (a verb: start working on it). Short. Also a button on the Inbox entry for a due issue.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7057,6 +7609,42 @@
         }
       }
     },
+    "removeFromNumber" : {
+      "comment" : "Menu item and picker row that takes an issue out of its parent issue. %(number)@ is the parent's number, such as '#12'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from %(number)@"
+          }
+        }
+      }
+    },
+    "removeFromParentCommand" : {
+      "comment" : "Mac, command palette (⌘K), command for the issue in focus: takes it out of its parent issue, so it is no longer a sub-issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from parent"
+          }
+        }
+      }
+    },
+    "removeFromParentMenuItem" : {
+      "comment" : "Menu item (Mac right-click menu, iPhone and iPad menus) that takes an issue out of its parent issue, so it is no longer a sub-issue. Title case, as in menus.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from Parent"
+          }
+        }
+      }
+    },
     "removeKeepChoosing" : {
       "comment" : "iPhone and iPad, sheet that picks assignees or labels: VoiceOver label of the checked circle at the start of a row; takes the person or label off and leaves the sheet open. %(name)@ is a GitHub user or label name.",
       "extractionState" : "manual",
@@ -7065,6 +7653,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove %(name)@, keep choosing"
+          }
+        }
+      }
+    },
+    "removeRelation" : {
+      "comment" : "Mac, issue view: tooltip of the × button on a row in the list of blocking or blocked issues; removes that 'blocked by' or 'blocking' link.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove relation"
+          }
+        }
+      }
+    },
+    "removeRelationMenuItem" : {
+      "comment" : "Right-click or long-press menu of a row in the list of blocking or blocked issues (Mac, iPhone, iPad): removes that link. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Relation"
           }
         }
       }
@@ -7353,6 +7965,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Search"
+          }
+        }
+      }
+    },
+    "searchByTitleOrNumber" : {
+      "comment" : "iPhone and iPad: placeholder in the search field of the sheets that list issues (parent, sub-issues, blocked by, blocking).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search by title or number"
           }
         }
       }
@@ -7653,6 +8277,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Set due date…"
+          }
+        }
+      }
+    },
+    "setParent" : {
+      "comment" : "Mac issue view and iPad issue screen, properties: placeholder in the Parent row when the issue has no parent issue; opens a list of issues to make it a sub-issue of. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set parent"
+          }
+        }
+      }
+    },
+    "setParentIssueCommand" : {
+      "comment" : "Mac, command palette (⌘K), command for the issue in focus: opens a list of issues to make it a sub-issue of.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set parent issue…"
+          }
+        }
+      }
+    },
+    "setParentIssueHelp" : {
+      "comment" : "Mac: tooltip of the Parent row of an issue's properties, which opens a list of issues to make it a sub-issue of.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set parent issue"
+          }
+        }
+      }
+    },
+    "setParentIssueMenuItem" : {
+      "comment" : "Menu item (Mac right-click menu, iPhone and iPad menus) that opens a list of issues to make this one a sub-issue of. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Parent Issue…"
+          }
+        }
+      }
+    },
+    "setParentIssuePlaceholder" : {
+      "comment" : "Mac: placeholder in the search field of the picker that lists issues, from an issue's properties or a menu: picks the issue to make this one a sub-issue of.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set parent issue…"
           }
         }
       }

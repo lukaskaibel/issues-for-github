@@ -20,6 +20,8 @@ public enum Mutation: Codable, Sendable, Equatable {
     case archiveThread(ThreadChange)
     case unsubscribeThread(ThreadChange)
     case addToProject(AddToProject)
+    case setParent(SetParent)
+    case setBlocking(SetBlocking)
 
     public struct SetField: Codable, Sendable, Equatable {
         public var itemId: String
@@ -141,6 +143,26 @@ public enum Mutation: Codable, Sendable, Equatable {
         public var statusFieldId: String?
         public var statusId: String?
     }
+
+    /// Makes an issue a sub-issue of another, moves it to another parent, or takes it out of its parent.
+    public struct SetParent: Codable, Sendable, Equatable {
+        public var child: IssueSummary
+        /// The new parent; nil takes the issue out of the one it has.
+        public var parentId: String?
+        public var parentNumber: Int?
+        public var parentTitle: String?
+        /// The parent before the first of the still-unsent changes to it, which is the one GitHub knows.
+        public var base: String?
+    }
+
+    /// Marks an issue as blocked by another one, or no longer.
+    public struct SetBlocking: Codable, Sendable, Equatable {
+        public var blocked: IssueSummary
+        public var blocker: IssueSummary
+        public var isBlocked: Bool
+        /// How it was before the first of the still-unsent changes to it, which is how GitHub has it.
+        public var base: Bool
+    }
 }
 
 // MARK: - Identity
@@ -157,6 +179,8 @@ extension Mutation {
         case .setState(let m): "state:\(m.contentId)"
         case .deleteItem(let m): "delete:\(m.itemId)"
         case .addToProject(let m): "add:\(m.itemId)"
+        case .setParent(let m): "parent:\(m.child.contentId)"
+        case .setBlocking(let m): "blocking:\(m.blocked.contentId):\(m.blocker.contentId)"
         case .markThreadRead(let m): "read:\(m.threadId)"
         case .archiveThread(let m): "archive:\(m.threadId)"
         case .unsubscribeThread(let m): "unsubscribe:\(m.threadId)"
@@ -180,6 +204,8 @@ extension Mutation {
         case .deleteItem(let m): m.isDraft ? [m.itemId] : (m.contentId.map { [$0] } ?? [m.itemId])
         case .markThreadRead, .archiveThread, .unsubscribeThread: []
         case .addToProject(let m): [m.contentId]
+        case .setParent(let m): [m.child.contentId] + [m.parentId, m.base].compactMap { $0 }
+        case .setBlocking(let m): [m.blocked.contentId, m.blocker.contentId]
         }
     }
 
@@ -207,6 +233,8 @@ extension Mutation {
         case .createIssue(let m): m.contentId
         case .deleteItem(let m): m.contentId
         case .addToProject(let m): m.contentId
+        case .setParent(let m): m.child.contentId
+        case .setBlocking(let m): m.blocked.contentId
         default: nil
         }
     }
@@ -280,6 +308,15 @@ extension Mutation {
             m.itemId = r(m.itemId)
             m.contentId = r(m.contentId)
             return .addToProject(m)
+        case .setParent(var m):
+            m.child.contentId = r(m.child.contentId)
+            m.parentId = r(m.parentId)
+            m.base = r(m.base)
+            return .setParent(m)
+        case .setBlocking(var m):
+            m.blocked.contentId = r(m.blocked.contentId)
+            m.blocker.contentId = r(m.blocker.contentId)
+            return .setBlocking(m)
         }
     }
 }
@@ -321,6 +358,8 @@ extension Mutation {
         case .setTitle(let m):
             try db.execute(sql: "UPDATE item SET title = ?, dirty = 1 WHERE contentId = ?", arguments: [m.value, m.contentId])
             try db.execute(sql: "UPDATE subIssue SET title = ? WHERE id = ?", arguments: [m.value, m.contentId])
+            try db.execute(sql: "UPDATE linkedIssue SET title = ? WHERE id = ?", arguments: [m.value, m.contentId])
+            try db.execute(sql: "UPDATE item SET parentTitle = ? WHERE parentId = ?", arguments: [m.value, m.contentId])
 
         case .setBody(let m):
             try db.execute(sql: "UPDATE item SET body = ?, dirty = 1 WHERE contentId = ?", arguments: [m.value, m.contentId])
@@ -333,6 +372,10 @@ extension Mutation {
             )
             try db.execute(
                 sql: "UPDATE subIssue SET state = ?, stateReason = ? WHERE id = ?",
+                arguments: [state, m.closed ? m.reason : nil, m.contentId]
+            )
+            try db.execute(
+                sql: "UPDATE linkedIssue SET state = ?, stateReason = ? WHERE id = ?",
                 arguments: [state, m.closed ? m.reason : nil, m.contentId]
             )
 
@@ -388,6 +431,7 @@ extension Mutation {
                 try db.execute(sql: "DELETE FROM item WHERE contentId = ? AND projectId IS ?", arguments: [contentId, m.projectId])
                 try db.execute(sql: "DELETE FROM subIssue WHERE id = ?", arguments: [contentId])
                 try db.execute(sql: "DELETE FROM comment WHERE issueId = ?", arguments: [contentId])
+                try db.execute(sql: "DELETE FROM linkedIssue WHERE id = ? OR issueId = ?", arguments: [contentId, contentId])
             }
 
         case .markThreadRead(let m):
@@ -458,6 +502,12 @@ extension Mutation {
                 arguments: [m.projectId, (last ?? 0) + 1024, m.itemId]
             )
             try db.execute(sql: "UPDATE item SET statusId = ?, dirty = 1 WHERE id = ?", arguments: [m.statusId, m.itemId])
+
+        case .setParent(let m):
+            try m.apply(db)
+
+        case .setBlocking(let m):
+            try m.apply(db)
         }
     }
 
@@ -509,6 +559,23 @@ extension Mutation {
         case .addToProject(let m):
             let project = try String.fetchOne(db, sql: "SELECT title FROM project WHERE id = ?", arguments: [m.projectId])
             return line(try number(contentId: m.contentId), project.map { .queuedAddedToProject(project: $0) } ?? .queuedAddedToAProject)
+        case .setParent(let m):
+            let text: LocalizedStringResource = if m.parentId == nil {
+                .queuedRemovedFromParent
+            } else if let parent = m.parentNumber {
+                .queuedMadeSubIssueOf(number: "#\(parent)")
+            } else {
+                .queuedMadeSubIssueOfNewIssue
+            }
+            return line(try number(contentId: m.child.contentId), text)
+        case .setBlocking(let m):
+            let text: LocalizedStringResource = switch (m.isBlocked, m.blocker.number) {
+            case (true, let blocker?): .queuedMarkedBlockedBy(number: "#\(blocker)")
+            case (true, nil): .queuedMarkedBlockedByNewIssue
+            case (false, let blocker?): .queuedNoLongerBlockedBy(number: "#\(blocker)")
+            case (false, nil): .queuedNoLongerBlockedByNewIssue
+            }
+            return line(try number(contentId: m.blocked.contentId), text)
         case .markThreadRead(let m): return line(leadingNumber(m.label), .queuedMarkedAsRead)
         case .archiveThread(let m): return line(leadingNumber(m.label), .queuedArchivedInInbox)
         case .unsubscribeThread(let m): return line(leadingNumber(m.label), .queuedUnsubscribed)
@@ -670,6 +737,12 @@ extension Mutation {
         case (.setBody(var new), .setBody(let old)):
             new.base = old.theirs ?? old.base
             return .setBody(new)
+        case (.setParent(var new), .setParent(let old)):
+            new.base = old.base
+            return .setParent(new)
+        case (.setBlocking(var new), .setBlocking(let old)):
+            new.base = old.base
+            return .setBlocking(new)
         default:
             return self
         }

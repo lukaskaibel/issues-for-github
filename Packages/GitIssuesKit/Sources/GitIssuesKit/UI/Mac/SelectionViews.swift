@@ -266,6 +266,24 @@ struct PropertyChipRow: View {
                     if item.subTotal > 0 {
                         SubIssueChip(completed: item.subCompleted, total: item.subTotal)
                     }
+                    if let parentNumber = item.parentNumber, model.canRelate(item) {
+                        PropertyButton(kind: .parent, item: item) {
+                            Chip {
+                                SubIssueGlyph().frame(width: 11, height: 11)
+                                Text(.subIssueOf(number: "#\(parentNumber)"))
+                            }
+                        }
+                        .padding(.leading, -8)
+                    }
+                    if item.blockedByCount > 0, model.canRelate(item) {
+                        PropertyButton(kind: .blockedBy, item: item) {
+                            Chip {
+                                BlockedIcon(size: 9)
+                                Text(.blockedChip)
+                            }
+                        }
+                        .padding(.leading, -8)
+                    }
                 }
             }
         }

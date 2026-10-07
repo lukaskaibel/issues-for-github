@@ -9,9 +9,10 @@ collects nothing about you.
   one of your devices, it is stored in iCloud Keychain so they all stay signed in; Apple encrypts it end to end.
 - **A copy of your projects and issues**, and of your GitHub notifications about issues and pull requests (the
   Inbox), is kept in a database on your device, so the app opens instantly and works offline. Signing out deletes it.
-- **Inbox entries you snoozed or marked unread** are kept in iCloud's key-value storage of your Apple account, so your
-  devices agree; GitHub has no place for them. They hold the notification's number on GitHub and a date, nothing
-  else, and are removed after 30 days. Only you and your devices can read them.
+- **Inbox entries you snoozed or marked unread**, and whether you read or archived an issue that was due, are kept in
+  iCloud's key-value storage of your Apple account, so your devices agree; GitHub has no place for them. They hold
+  the notification's number on GitHub (or the issue's id and the day it was due) and dates, nothing else, and are
+  removed after 30 days. Only you and your devices can read them.
 - **Preferences** such as the appearance, the app icon, the order of list sections and the time of reminders stay on
   your device.
 - **Reminders** of issues that are due are notifications your device schedules itself from the due dates it has

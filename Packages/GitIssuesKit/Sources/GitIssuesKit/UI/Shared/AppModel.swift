@@ -32,6 +32,10 @@ enum PaletteMode: Hashable {
     case assignees(itemId: String)
     case labels(itemId: String)
     case dueDate(itemId: String)
+    case parent(itemId: String)
+    case addSubIssue(itemId: String)
+    case blockedBy(itemId: String)
+    case blocking(itemId: String)
     case projects
 }
 
@@ -74,6 +78,8 @@ public final class AppModel {
     private(set) var options: [FieldOption] = []
     private(set) var repos: [RepoRef] = []
     private(set) var outbox: [OutboxEntry] = []
+    /// What blocks the issues whose detail was read, and what they block.
+    private(set) var links: [LinkedIssue] = []
     /// GitHub's notifications about issues and pull requests, newest first, archived ones included.
     private(set) var inboxEntries: [InboxEntry] = []
     private(set) var inboxMeta = InboxMeta()
@@ -141,6 +147,8 @@ public final class AppModel {
     var collapseVersion = 0
     /// A new issue that was closed before it was created, kept for the next time the dialog opens.
     @ObservationIgnored var unsentNewIssue: NewIssueDraft?
+    /// A title typed into a picker before choosing to create a new issue instead, for the dialog to start with.
+    @ObservationIgnored var newIssueTitle: String?
     /// Projects tucked away in the sidebar. They can still be found in the command palette.
     var hiddenProjectIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenProjects") ?? []) {
         didSet { UserDefaults.standard.set(Array(hiddenProjectIds), forKey: "hiddenProjects") }
@@ -209,6 +217,8 @@ public final class AppModel {
     @ObservationIgnored private var dataObservation: AnyDatabaseCancellable?
     @ObservationIgnored private var pathMonitor: NWPathMonitor?
     @ObservationIgnored var pendingGoTo: Date?
+    /// M was pressed: B, X or P next marks the issue as blocked, blocking, or a sub-issue, as in Linear.
+    @ObservationIgnored var pendingMark: Date?
     @ObservationIgnored var lifecycleObservers: [NSObjectProtocol] = []
 
     static let demoKey = "demo.active"
@@ -386,6 +396,7 @@ public final class AppModel {
         options = []
         repos = []
         outbox = []
+        links = []
         inboxEntries = []
         inboxMeta = InboxMeta()
         status.phase = .idle
@@ -404,6 +415,7 @@ public final class AppModel {
         var options: [FieldOption]
         var repos: [RepoRef]
         var outbox: [OutboxEntry]
+        var links: [LinkedIssue]
         var inbox: [InboxEntry]
         var inboxMeta: InboxMeta
     }
@@ -418,6 +430,7 @@ public final class AppModel {
             options: try FieldOption.order(Column("position")).fetchAll(db),
             repos: try RepoRef.order(Column("nameWithOwner")).fetchAll(db),
             outbox: try OutboxEntry.order(Column("id")).fetchAll(db),
+            links: try LinkedIssue.order(Column("position")).fetchAll(db),
             inbox: try InboxEntry.order(Column("updatedAt").desc).fetchAll(db),
             inboxMeta: try InboxMeta.read(db)
         )
@@ -457,6 +470,7 @@ public final class AppModel {
         if repos != snapshot.repos { repos = snapshot.repos }
         if allItems != snapshot.items { allItems = snapshot.items }
         outbox = snapshot.outbox
+        if links != snapshot.links { links = snapshot.links }
         if inboxEntries != snapshot.inbox { inboxEntries = snapshot.inbox }
         if inboxMeta != snapshot.inboxMeta { inboxMeta = snapshot.inboxMeta }
         if scope == nil { restoreScope() }

@@ -257,6 +257,7 @@ final class PhoneTests: AppTestCase {
         wait(element("issue-title"))
         app.navigationBars.buttons["More"].tap()
         button("Add Sub-issue").tap()
+        button("New Sub-issue").tap()
         let subTitle = element("new-title")
         wait(subTitle)
         subTitle.typeText("Snap to the nearest gap")
@@ -266,6 +267,45 @@ final class PhoneTests: AppTestCase {
         scrollTo(sub)
         wait(sub, 8)
         snapshot("New sub-issue")
+    }
+
+    func testExistingIssueBecomesSubIssueAndBlocker() {
+        launch()
+        element("row-#9").tap()
+        wait(element("issue-title"))
+
+        // The plus beside the sub-issues finds an issue that exists already, by its number.
+        let add = element("sub-add")
+        scrollTo(add)
+        add.tap()
+        button("Add Existing Issue…").tap()
+        let search = app.searchFields.firstMatch
+        wait(search)
+        search.tap()
+        search.typeText("17")
+        let palette = labelled("Command palette with fuzzy search", type: .button)
+        wait(palette)
+        snapshot("Existing issue as sub-issue")
+        palette.tap()
+        let sub = element("sub-#17")
+        scrollTo(sub)
+        wait(sub)
+
+        // Marked as blocked by #6 from the issue's menu, it lists #6 under Blocked by.
+        app.navigationBars.buttons["More"].tap()
+        button("Mark As").tap()
+        button("Blocked By…").tap()
+        let blockerSearch = app.searchFields.firstMatch
+        wait(blockerSearch)
+        blockerSearch.tap()
+        blockerSearch.typeText("Delta")
+        let delta = labelled("Delta sync for project items", type: .button)
+        wait(delta)
+        delta.tap()
+        let blocker = element("link-#6")
+        scrollTo(blocker)
+        wait(blocker)
+        snapshot("Blocked by")
     }
 
     func testIssueMenuCopiesLinkAndDeletes() {

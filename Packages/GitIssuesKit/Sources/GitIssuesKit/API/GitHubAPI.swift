@@ -55,6 +55,8 @@ public struct RemoteIssueDetail: Sendable {
     public var body: String
     public var comments: [Comment]
     public var subIssues: [SubIssue]
+    /// Issues this one is blocked by, and issues it blocks.
+    public var links: [LinkedIssue] = []
 }
 
 public struct CreatedIssue: Sendable {
@@ -353,6 +355,8 @@ public final class GitHubAPI: Sendable {
                 var body: String?
                 var comments: Nodes<CommentDTO>?
                 var subIssues: Nodes<SubDTO>?
+                var blockedBy: Nodes<SubDTO>?
+                var blocking: Nodes<SubDTO>?
             }
             var node: Node?
         }
@@ -365,6 +369,8 @@ public final class GitHubAPI: Sendable {
               subIssues(first: 100) { nodes { id number title state stateReason url
                 repository { id nameWithOwner }
                 assignees(first: 3) { nodes { id login name avatarUrl } } } }
+              blockedBy(first: 50) { nodes { id number title state stateReason url repository { id nameWithOwner } } }
+              blocking(first: 50) { nodes { id number title state stateReason url repository { id nameWithOwner } } }
             }
             ... on PullRequest {
               title body
@@ -387,7 +393,17 @@ public final class GitHubAPI: Sendable {
                 assignees: (sub.assignees?.items ?? []).map(\.person)
             )
         }
-        return RemoteIssueDetail(title: node.title ?? "", body: node.body ?? "", comments: comments, subIssues: subs)
+        var links: [LinkedIssue] = []
+        for (relation, nodes) in [(LinkedIssue.Relation.blockedBy, node.blockedBy), (.blocking, node.blocking)] {
+            links += (nodes?.items ?? []).enumerated().map { index, other in
+                LinkedIssue(
+                    id: other.id, issueId: contentId, relation: relation, number: other.number, title: other.title,
+                    state: other.state, stateReason: other.stateReason, repo: other.repository?.nameWithOwner,
+                    url: other.url, position: index
+                )
+            }
+        }
+        return RemoteIssueDetail(title: node.title ?? "", body: node.body ?? "", comments: comments, subIssues: subs, links: links)
     }
 
     /// Current title and body, fetched right before sending a text edit to catch concurrent changes.
@@ -546,6 +562,30 @@ public final class GitHubAPI: Sendable {
             """
             let _: Ack = try await client.run(query, variables: ["id": contentId, "ids": remove])
         }
+    }
+
+    /// Makes `childId` a sub-issue of `parentId`, taking it out of the parent it had.
+    public func addSubIssue(parentId: String, childId: String) async throws {
+        let query = """
+        mutation($p: ID!, $c: ID!) { addSubIssue(input: {issueId: $p, subIssueId: $c, replaceParent: true}) { clientMutationId } }
+        """
+        let _: Ack = try await client.run(query, variables: ["p": parentId, "c": childId])
+    }
+
+    public func removeSubIssue(parentId: String, childId: String) async throws {
+        let query = """
+        mutation($p: ID!, $c: ID!) { removeSubIssue(input: {issueId: $p, subIssueId: $c}) { clientMutationId } }
+        """
+        let _: Ack = try await client.run(query, variables: ["p": parentId, "c": childId])
+    }
+
+    /// Marks `issueId` as blocked by `blockerId`, or no longer.
+    public func setBlockedBy(issueId: String, blockerId: String, blocked: Bool) async throws {
+        let name = blocked ? "addBlockedBy" : "removeBlockedBy"
+        let query = """
+        mutation($i: ID!, $b: ID!) { \(name)(input: {issueId: $i, blockingIssueId: $b}) { clientMutationId } }
+        """
+        let _: Ack = try await client.run(query, variables: ["i": issueId, "b": blockerId])
     }
 
     /// Returns the new comment's id.
@@ -708,6 +748,7 @@ enum GQL {
       parent { id number title }
       viewerCanDelete
       subIssuesSummary { total completed }
+      issueDependenciesSummary { blockedBy blocking }
       comments { totalCount }
       projectItems(first: 20) { nodes { project { id } } }
     }
@@ -733,6 +774,7 @@ enum GQL {
           parent { id number title }
           viewerCanDelete
           subIssuesSummary { total completed }
+          issueDependenciesSummary { blockedBy blocking }
           comments { totalCount } }
         ... on PullRequest { id number title body state url createdAt updatedAt closedAt
           author { login } repository { id nameWithOwner }
@@ -834,6 +876,10 @@ struct ItemDTO: Decodable {
             var total: Int
             var completed: Int
         }
+        struct DependencySummary: Decodable {
+            var blockedBy: Int
+            var blocking: Int
+        }
         var __typename: String
         var id: String?
         var number: Int?
@@ -852,6 +898,7 @@ struct ItemDTO: Decodable {
         var labels: Nodes<LabelDTO>?
         var parent: Parent?
         var subIssuesSummary: SubSummary?
+        var issueDependenciesSummary: DependencySummary?
         var comments: Count?
         var viewerCanDelete: Bool?
     }
@@ -916,7 +963,9 @@ extension ItemDTO.Content {
             commentCount: content.comments?.totalCount ?? 0,
             assignees: (content.assignees?.items ?? []).map(\.person),
             labels: (content.labels?.items ?? []).map(\.label),
-            viewerCanDelete: content.viewerCanDelete ?? false
+            viewerCanDelete: content.viewerCanDelete ?? false,
+            blockedByCount: content.issueDependenciesSummary?.blockedBy ?? 0,
+            blockingCount: content.issueDependenciesSummary?.blocking ?? 0
         )
     }
 }

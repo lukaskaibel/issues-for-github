@@ -39,6 +39,25 @@ final class InboxTests: AppTestCase {
         waitForRead(element("inbox-row-25"))
     }
 
+    func testAnOverdueIssueIsInTheInboxAndMovesToTomorrow() throws {
+        try XCTSkipIf(isPad, "iPhone layout")
+        launchInbox()
+        // #25 was due two days ago and is assigned to Jordan.
+        let row = element("inbox-due-25")
+        wait(row)
+        XCTAssertTrue(isUnread(row))
+        XCTAssertTrue(row.label.contains("Overdue since"))
+        row.tap()
+        let later = button("Move to Tomorrow")
+        wait(later)
+        XCTAssertTrue(button("Mark as Done").exists)
+        snapshot("Overdue issue from the Inbox")
+        later.tap()
+        goBack()
+        waitGone(element("inbox-due-25"))
+        wait(element("inbox-row-25"))
+    }
+
     func testSwipeLeftArchivesAndUndoBringsItBack() throws {
         try XCTSkipIf(isPad, "iPhone layout")
         launchInbox()

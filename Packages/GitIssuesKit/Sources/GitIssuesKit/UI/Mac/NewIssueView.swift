@@ -259,7 +259,10 @@ struct NewIssueView: View {
         }
         // A sub-issue lives in its parent's repository; one started in a repository lives there.
         let repoId = parent?.repoId ?? repoScope ?? projectId.flatMap { model.defaultRepoId(projectId: $0) }
-        if let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id,
+        // A title typed into the sub-issue picker starts a fresh issue rather than last time's.
+        let typed = model.newIssueTitle
+        model.newIssueTitle = nil
+        if typed == nil, let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id,
            repoScope != nil ? unsent.repoId == repoScope : unsent.projectId == projectId {
             draft = unsent
             if let statusId { draft.statusId = statusId }
@@ -273,6 +276,7 @@ struct NewIssueView: View {
         new.parent = parent
         new.repoId = repoId
         new.statusId = statusId ?? defaultStatus(projectId: projectId)
+        new.title = typed ?? ""
         draft = new
         focus = .title
         model.loadRepoMeta(projectId: projectId)
@@ -359,7 +363,7 @@ struct NewIssueView: View {
                     icon: AnyView(Circle().fill(Theme.labelColor(label.color)).frame(width: 9, height: 9))
                 )
             }
-        case .dueDate, .subIssues:
+        case .dueDate, .subIssues, .parent, .addSubIssue, .blockedBy, .blocking:
             return []
         }
     }
@@ -384,7 +388,7 @@ struct NewIssueView: View {
             }
         case .dueDate:
             draft.dueDate = CalendarDay(id)?.string
-        case .subIssues:
+        case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking:
             break
         }
     }

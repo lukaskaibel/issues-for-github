@@ -123,6 +123,9 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
     public var labels: [LabelRef] = []
     /// Whether GitHub lets you delete this issue (it takes admin rights in the repository).
     public var viewerCanDelete: Bool = false
+    /// Open issues this one is blocked by, and open issues it blocks, as GitHub counts them.
+    public var blockedByCount: Int = 0
+    public var blockingCount: Int = 0
 
     public var isLocalOnly: Bool { id.hasPrefix(LocalID.prefix) }
     public var isOnBoard: Bool { projectId != nil }
@@ -164,6 +167,28 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
         if let number { return "#\(number)" }
         return String(localized: kind == .draft ? .draftNumber : .unsentIssueNumber)
     }
+
+    /// How the issue shows in another one's sub-issues or relations.
+    public var summary: IssueSummary? {
+        guard let contentId else { return nil }
+        return IssueSummary(
+            contentId: contentId, number: number, title: title, state: state, stateReason: stateReason,
+            repo: repo, url: url, assignees: assignees
+        )
+    }
+}
+
+/// What an issue looks like in another one's list of sub-issues or relations. Changes carry it along, so the list
+/// shows the issue at once, before GitHub has answered.
+public struct IssueSummary: Codable, Sendable, Equatable {
+    public var contentId: String
+    public var number: Int?
+    public var title: String
+    public var state: String
+    public var stateReason: String?
+    public var repo: String?
+    public var url: String?
+    public var assignees: [Person] = []
 }
 
 public struct Comment: Codable, FetchableRecord, PersistableRecord, Identifiable, Hashable, Sendable {
@@ -194,6 +219,35 @@ public struct SubIssue: Codable, FetchableRecord, PersistableRecord, Identifiabl
     public var assignees: [Person] = []
 
     public var isClosed: Bool { state != "OPEN" }
+}
+
+/// An issue that blocks another one, or that the other one blocks, as the other's detail lists it.
+public struct LinkedIssue: Codable, FetchableRecord, PersistableRecord, Identifiable, Hashable, Sendable {
+    public static let databaseTableName = "linkedIssue"
+
+    public enum Relation: String, Codable, Sendable, CaseIterable {
+        /// The issue listed has to be done first.
+        case blockedBy
+        /// The issue listed waits for this one.
+        case blocking
+    }
+
+    /// The listed issue's node id.
+    public var id: String
+    /// The issue whose relations these are.
+    public var issueId: String
+    public var relation: Relation
+    public var number: Int
+    public var title: String
+    public var state: String
+    public var stateReason: String?
+    public var repo: String?
+    public var url: String?
+    public var position: Int
+
+    public var isClosed: Bool { state != "OPEN" }
+    /// Unique among one issue's relations.
+    public var key: String { "\(relation.rawValue)/\(id)" }
 }
 
 public struct RepoRef: Codable, FetchableRecord, PersistableRecord, Identifiable, Hashable, Sendable {

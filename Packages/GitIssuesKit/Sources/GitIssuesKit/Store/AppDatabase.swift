@@ -216,6 +216,28 @@ public final class AppDatabase: Sendable {
             try db.execute(sql: "UPDATE item SET remoteUpdatedAt = NULL")
             try db.execute(sql: "UPDATE project SET remoteUpdatedAt = NULL")
         }
+        migrator.registerMigration("relations") { db in
+            try db.create(table: "linkedIssue") { t in
+                t.column("id", .text).notNull()
+                t.column("issueId", .text).notNull().indexed()
+                t.column("relation", .text).notNull()
+                t.column("number", .integer).notNull()
+                t.column("title", .text).notNull()
+                t.column("state", .text).notNull()
+                t.column("stateReason", .text)
+                t.column("repo", .text)
+                t.column("url", .text)
+                t.column("position", .integer).notNull()
+                t.primaryKey(["issueId", "relation", "id"])
+            }
+            try db.alter(table: "item") { t in
+                t.add(column: "blockedByCount", .integer).notNull().defaults(to: 0)
+                t.add(column: "blockingCount", .integer).notNull().defaults(to: 0)
+            }
+            // Read every issue again once, so the new counts are filled in.
+            try db.execute(sql: "UPDATE item SET remoteUpdatedAt = NULL")
+            try db.execute(sql: "UPDATE project SET remoteUpdatedAt = NULL")
+        }
         return migrator
     }
 }
@@ -262,7 +284,7 @@ extension AppDatabase {
     /// Removes everything, for sign-out.
     public func wipe() throws {
         try writer.write { db in
-            for table in ["outbox", "comment", "subIssue", "repo", "item", "fieldOption", "project", "inboxEntry", "kv"] {
+            for table in ["outbox", "comment", "subIssue", "linkedIssue", "repo", "item", "fieldOption", "project", "inboxEntry", "kv"] {
                 try db.execute(sql: "DELETE FROM \(table)")
             }
         }

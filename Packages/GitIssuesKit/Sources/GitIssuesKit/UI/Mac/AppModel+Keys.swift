@@ -141,6 +141,27 @@ extension AppModel {
             return false
         }
 
+        // "Mark as" sequences, as in Linear: M then B (blocked by), X (blocking) or P (parent issue). They act on
+        // the issue in focus, or on all that are picked.
+        if let started = pendingMark, Date().timeIntervalSince(started) < 1.2 {
+            pendingMark = nil
+            if let item = actionItem, targets(for: item).allSatisfy(canRelate) {
+                switch key {
+                case "b":
+                    overlay = .palette(.blockedBy(itemId: item.id))
+                    return true
+                case "x":
+                    overlay = .palette(.blocking(itemId: item.id))
+                    return true
+                case "p":
+                    overlay = .palette(.parent(itemId: item.id))
+                    return true
+                default:
+                    break
+                }
+            }
+        }
+
         if openItem == nil {
             // Space peeks at the issue under the pointer or focus, and closes the peek again.
             if event.keyCode == 49 {
@@ -258,6 +279,9 @@ extension AppModel {
         case "d":
             guard targets(for: item).contains(where: canHaveDueDate) else { return false }
             overlay = .palette(.dueDate(itemId: item.id))
+        case "m":
+            guard targets(for: item).allSatisfy(canRelate) else { return false }
+            pendingMark = Date()
         default:
             return false
         }
@@ -288,8 +312,9 @@ extension AppModel {
             return true
         }
         guard modifiers.isEmpty else { return nil }
-        // The key after G belongs to the "go to" sequence.
+        // The key after G or M belongs to its sequence.
         if let started = pendingGoTo, Date().timeIntervalSince(started) < 1.2 { return nil }
+        if let started = pendingMark, Date().timeIntervalSince(started) < 1.2 { return nil }
         if event.keyCode == 53 {
             guard !inboxPicked.isEmpty else { return nil }
             inboxPicked = []
