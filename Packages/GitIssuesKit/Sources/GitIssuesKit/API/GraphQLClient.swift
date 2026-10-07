@@ -17,13 +17,13 @@ public enum APIError: Error, LocalizedError, Sendable {
 
     public var errorDescription: String? {
         switch self {
-        case .noToken: "Not signed in to GitHub."
-        case .unauthorized: "GitHub rejected the sign-in. Please sign in again."
-        case .offline(let detail): "Can't reach GitHub. \(detail)"
-        case .rateLimited: "GitHub's rate limit was reached. Syncing resumes shortly."
-        case .http(let code, _): "GitHub returned an error (\(code))."
+        case .noToken: String(localized: .errorNotSignedIn)
+        case .unauthorized: String(localized: .errorSignInRejected)
+        case .offline(let detail): String(localized: .errorCantReachGitHub(detail: detail))
+        case .rateLimited: String(localized: .errorRateLimited)
+        case .http(let code, _): String(localized: .errorGitHubReturnedError(code: code))
         case .graphql(let items): items.map(\.message).joined(separator: " ")
-        case .decoding(let detail): "Unexpected response from GitHub. \(detail)"
+        case .decoding(let detail): String(localized: .errorUnexpectedResponse(detail: detail))
         }
     }
 
@@ -111,7 +111,7 @@ public final class GraphQLClient: Sendable {
             throw APIError.offline(error.localizedDescription)
         }
         guard let http = response as? HTTPURLResponse else {
-            throw APIError.offline("No response.")
+            throw APIError.offline(String(localized: .errorNoResponse))
         }
         switch http.statusCode {
         case 200: break
@@ -141,7 +141,7 @@ public final class GraphQLClient: Sendable {
             throw Self.classify(errors)
         }
         guard let result = envelope.data else {
-            throw APIError.decoding("Empty response.")
+            throw APIError.decoding(String(localized: .errorEmptyResponse))
         }
         return result
     }
@@ -194,7 +194,7 @@ public final class GraphQLClient: Sendable {
             throw APIError.offline(error.localizedDescription)
         }
         guard let http = response as? HTTPURLResponse else {
-            throw APIError.offline("No response.")
+            throw APIError.offline(String(localized: .errorNoResponse))
         }
         switch http.statusCode {
         case 200..<300, 304:

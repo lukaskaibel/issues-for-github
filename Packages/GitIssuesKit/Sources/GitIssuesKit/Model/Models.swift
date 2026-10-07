@@ -162,7 +162,7 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
     /// "#12" for issues and pull requests, "Draft" otherwise.
     public var displayNumber: String {
         if let number { return "#\(number)" }
-        return kind == .draft ? "Draft" : "New"
+        return String(localized: kind == .draft ? .draftNumber : .unsentIssueNumber)
     }
 }
 
