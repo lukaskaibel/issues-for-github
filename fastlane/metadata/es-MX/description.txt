@@ -1,0 +1,56 @@
+Issues es una app rápida y nativa para GitHub Issues y GitHub Projects, en Mac, iPhone y iPad. Es tranquila a la vista y rápida de usar, y todo se queda en GitHub: los compañeros que no usan la app ven las mismas incidencias y tableros en github.com.
+
+ENTRADA
+• Lo que cambió para ti, según las notificaciones de GitHub: quién te asignó, te mencionó, comentó, solicitó tu revisión o cerró una incidencia que sigues
+• Abre una y ahí está la incidencia, con lo nuevo arriba y el comentario nuevo marcado
+• Tus incidencias que vencen aparecen ese día, con Empezar, Marcar como completada y Pasar a mañana
+• Lee, archiva y pospón con una tecla o deslizando; lo leído y lo archivado coincide con github.com
+• Las pospuestas y las no leídas coinciden en todos tus dispositivos gracias a iCloud
+
+EN EL MAC
+• Cada proyecto como tablero o lista, y Mis incidencias con todo lo que tienes asignado
+• Todas las incidencias de tus repositorios, incluso las que no están en ningún tablero: un clic las pone en uno
+• Arrastra incidencias a otro lugar, en el tablero o en la lista, y adapta las columnas: añádelas, renómbralas, cambia su color y su orden
+• Primero el teclado: J y K pasan de una incidencia a otra; S, P, A y L cambian estado, prioridad, responsable y etiquetas; D fija la fecha de vencimiento, y ⌘K abre una paleta de comandos para todo lo demás
+• Selecciona varias incidencias y cámbialas a la vez
+• Echa un vistazo a una incidencia con Espacio, o ábrela junto a sus propiedades, subincidencias y comentarios
+• Subincidencias y bloqueos: pon cualquier incidencia bajo otra, añade existentes como subincidencias y marca qué bloquea a qué
+• Descripciones como en GitHub, con tablas, listas de tareas que se marcan y diagramas Mermaid
+• Atrás y Adelante funcionan como en un navegador
+
+EN EL IPHONE
+• Entrada como primera pestaña, con el número de notificaciones sin leer
+• Mis incidencias con todo lo que tienes asignado, agrupado por estado
+• Cada proyecto y repositorio como lista, con secciones que se contraen
+• Desliza a la derecha para completar una incidencia y a la izquierda para asignártela o eliminarla
+• Mantén el dedo sobre una incidencia para cambiar su estado, prioridad, responsable, etiquetas, incidencia principal o bloqueos, o arrástrala
+• Busca en todos los proyectos por título o número
+• Tablas, listas de tareas y diagramas Mermaid en las descripciones, como en GitHub
+
+EN EL IPAD
+• Una barra lateral con todos tus proyectos y repositorios, y el tablero con arrastrar y soltar
+• Entrada con la incidencia al lado, como en Mail
+• Las incidencias se abren junto a sus propiedades, como en el Mac
+• Con teclado: J y K para moverte; S, P, A y L para cambiar una incidencia; ⌘N para una nueva
+
+FECHAS DE VENCIMIENTO QUE TE AVISAN
+• Indica cuándo vence una incidencia: mañana, el viernes, la próxima semana, un día del calendario o escribiendo “en 3 días”
+• Tarjetas y listas lo muestran: en naranja ese día y en rojo cuando ya pasó
+• Ese día, tu Mac, iPhone y iPad te lo recuerdan, con botones para empezarla, completarla o pasarla a mañana
+• La fecha es el campo “Due date” del proyecto en GitHub, así que tu equipo también la ve
+
+RÁPIDA Y FIABLE
+• Cada cambio se ve al instante y se envía a GitHub en segundo plano
+• Funciona sin conexión: los cambios esperan y se envían cuando vuelve la conexión
+• Cuidadosa con el trabajo de los demás: si otra persona cambió el mismo texto, no se sobrescribe nada
+
+PRIVADA
+• Sin cuenta, sin servidor, sin rastreo. Tu inicio de sesión se queda en tu llavero y solo se envía a GitHub.
+• ¿Sesión iniciada en uno de tus dispositivos? Los demás la inician solos con el Llavero de iCloud.
+
+En inglés, alemán, francés, español, portugués, ruso, japonés, coreano y chino, según el idioma de tu dispositivo.
+
+Pruébala sin cuenta: “Explorar con datos de ejemplo” abre dos proyectos de ejemplo.
+
+Issues es de código abierto: github.com/lukaskaibel/issues-for-github
+Issues no está afiliada a GitHub ni cuenta con su respaldo.

@@ -1,0 +1,1 @@
+在 Mac、iPhone 和 iPad 上，以看板和列表的形式使用你的 GitHub Projects：用键盘即可快速操作，编辑即时显示，离线时也能继续工作。

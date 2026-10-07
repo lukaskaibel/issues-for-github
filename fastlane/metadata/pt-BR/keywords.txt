@@ -1,0 +1,1 @@
+github,kanban,tarefas,projetos,quadro,bugs,ágil,sprint,roadmap,scrum,desenvolvedor,produtividade

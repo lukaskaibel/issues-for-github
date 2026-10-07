@@ -1,0 +1,1 @@
+github,kanban,tareas,tablero,proyectos,tickets,errores,bugs,desarrollador,ágil,sprint,productividad
