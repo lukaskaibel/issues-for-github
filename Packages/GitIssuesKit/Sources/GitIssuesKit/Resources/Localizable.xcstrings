@@ -21086,7 +21086,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Novidades desde %@"
+            "value" : "Novidades desde as %@"
           }
         },
         "ru" : {
@@ -38432,7 +38432,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Marcar como concluída"
+            "value" : "Concluir"
           }
         },
         "ru" : {
@@ -44462,7 +44462,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Encerrar sessão em todos os dispositivos"
+            "value" : "Encerrar todas as sessões"
           }
         },
         "ru" : {
@@ -44522,7 +44522,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Encerrar sessão em todos os dispositivos…"
+            "value" : "Encerrar todas as sessões…"
           }
         },
         "ru" : {
@@ -46424,7 +46424,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estes são o campo Status do projeto no GitHub e as colunas do quadro. As alterações são salvas no GitHub na hora, então é preciso estar conectado."
+            "value" : "Estas são as opções do campo Status do projeto no GitHub e as colunas do quadro. As alterações são salvas no GitHub na hora, então é preciso estar conectado."
           }
         },
         "ru" : {
@@ -50294,7 +50294,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inscrição em %@ cancelada"
+            "value" : "Inscrição cancelada em %@"
           }
         },
         "ru" : {
@@ -50417,13 +50417,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Inscrição em %lld issue cancelada"
+                  "value" : "Inscrição cancelada em %lld issue"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Inscrição em %lld issues cancelada"
+                  "value" : "Inscrição cancelada em %lld issues"
                 }
               }
             }
