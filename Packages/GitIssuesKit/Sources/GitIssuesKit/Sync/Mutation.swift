@@ -15,6 +15,7 @@ public enum Mutation: Codable, Sendable, Equatable {
     case addComment(AddComment)
     case createIssue(CreateIssue)
     case deleteItem(DeleteItem)
+    case addToProject(AddToProject)
 
     public struct SetField: Codable, Sendable, Equatable {
         public var itemId: String
@@ -71,7 +72,8 @@ public enum Mutation: Codable, Sendable, Equatable {
 
     public struct DeleteItem: Codable, Sendable, Equatable {
         public var itemId: String
-        public var projectId: String
+        /// Nil for an issue on none of your boards.
+        public var projectId: String?
         /// The issue behind the card; nil for a draft.
         public var contentId: String?
         public var isDraft: Bool
@@ -82,7 +84,8 @@ public enum Mutation: Codable, Sendable, Equatable {
     public struct CreateIssue: Codable, Sendable, Equatable {
         public var itemId: String
         public var contentId: String
-        public var projectId: String
+        /// The board the new issue goes on; nil creates it in the repository only.
+        public var projectId: String?
         public var repoId: String
         public var repo: String
         public var title: String
@@ -103,6 +106,16 @@ public enum Mutation: Codable, Sendable, Equatable {
         public var createdNumber: Int?
         public var createdUrl: String?
     }
+
+    /// Puts an issue that is on none of your boards onto one, in a column.
+    public struct AddToProject: Codable, Sendable, Equatable {
+        /// The issue's id while it is on no board; it becomes the project item's id once GitHub has added it.
+        public var itemId: String
+        public var contentId: String
+        public var projectId: String
+        public var statusFieldId: String?
+        public var statusId: String?
+    }
 }
 
 // MARK: - Identity
@@ -117,6 +130,7 @@ extension Mutation {
         case .setBody(let m): "body:\(m.contentId)"
         case .setState(let m): "state:\(m.contentId)"
         case .deleteItem(let m): "delete:\(m.itemId)"
+        case .addToProject(let m): "add:\(m.itemId)"
         default: nil
         }
     }
@@ -134,6 +148,7 @@ extension Mutation {
         case .createIssue(let m): m.parentContentId.map { [$0] } ?? []
         // An issue is deleted by its own id; only a draft needs the project item.
         case .deleteItem(let m): m.isDraft ? [m.itemId] : (m.contentId.map { [$0] } ?? [m.itemId])
+        case .addToProject(let m): [m.contentId]
         }
     }
 
@@ -145,6 +160,7 @@ extension Mutation {
         case .setTitle(let m), .setBody(let m): m.itemId
         case .createIssue(let m): m.itemId
         case .deleteItem(let m): m.itemId
+        case .addToProject(let m): m.itemId
         default: nil
         }
     }
@@ -158,6 +174,7 @@ extension Mutation {
         case .addComment(let m): m.contentId
         case .createIssue(let m): m.contentId
         case .deleteItem(let m): m.contentId
+        case .addToProject(let m): m.contentId
         default: nil
         }
     }
@@ -205,6 +222,10 @@ extension Mutation {
             m.itemId = r(m.itemId)
             m.contentId = r(m.contentId)
             return .deleteItem(m)
+        case .addToProject(var m):
+            m.itemId = r(m.itemId)
+            m.contentId = r(m.contentId)
+            return .addToProject(m)
         }
     }
 }
@@ -292,19 +313,25 @@ extension Mutation {
         case .deleteItem(let m):
             try Item.deleteOne(db, key: m.itemId)
             if let contentId = m.contentId {
-                try db.execute(sql: "DELETE FROM item WHERE contentId = ? AND projectId = ?", arguments: [contentId, m.projectId])
+                try db.execute(sql: "DELETE FROM item WHERE contentId = ? AND projectId IS ?", arguments: [contentId, m.projectId])
                 try db.execute(sql: "DELETE FROM subIssue WHERE id = ?", arguments: [contentId])
                 try db.execute(sql: "DELETE FROM comment WHERE issueId = ?", arguments: [contentId])
             }
 
         case .createIssue(let m):
             guard try !Item.exists(db, key: m.itemId) else { return }
-            let last = try Double.fetchOne(db, sql: "SELECT MAX(position) FROM item WHERE projectId = ?", arguments: [m.projectId])
+            let position: Double
+            if let projectId = m.projectId {
+                let last = try Double.fetchOne(db, sql: "SELECT MAX(position) FROM item WHERE projectId = ?", arguments: [projectId])
+                position = (last ?? 0) + 1024
+            } else {
+                position = Item.positionWithoutProject(updatedAt: m.createdAt)
+            }
             try Item(
                 id: m.itemId,
                 projectId: m.projectId,
                 kind: .issue,
-                position: (last ?? 0) + 1024,
+                position: position,
                 remoteUpdatedAt: nil,
                 dirty: true,
                 statusId: m.statusId,
@@ -333,6 +360,15 @@ extension Mutation {
                     repo: m.repo, url: m.createdUrl, position: count, assignees: m.assignees
                 ).insert(db)
             }
+
+        case .addToProject(let m):
+            // The issue joins the end of the board once; applying this again leaves its place alone.
+            let last = try Double.fetchOne(db, sql: "SELECT MAX(position) FROM item WHERE projectId = ?", arguments: [m.projectId])
+            try db.execute(
+                sql: "UPDATE item SET projectId = ?, position = ?, priorityId = NULL WHERE id = ? AND projectId IS NULL",
+                arguments: [m.projectId, (last ?? 0) + 1024, m.itemId]
+            )
+            try db.execute(sql: "UPDATE item SET statusId = ?, dirty = 1 WHERE id = ?", arguments: [m.statusId, m.itemId])
         }
     }
 
@@ -366,6 +402,9 @@ extension Mutation {
         case .addComment(let m): return (try number(contentId: m.contentId), "Comment added")
         case .createIssue(let m): return ("New", "Issue created: \(m.title)")
         case .deleteItem(let m): return (m.label.components(separatedBy: " ").first ?? "", "Deleted")
+        case .addToProject(let m):
+            let project = try String.fetchOne(db, sql: "SELECT title FROM project WHERE id = ?", arguments: [m.projectId])
+            return (try number(contentId: m.contentId), "Added to \(project ?? "a project")")
         }
     }
 }
@@ -494,8 +533,9 @@ public enum Outbox {
         )
     }
 
-    /// Clears the dirty flag on cards that no outbox entry refers to any more.
-    static func clearSettledDirtyFlags(_ db: Database, projectId: String) throws {
+    /// Clears the dirty flag on cards that no outbox entry refers to any more. A nil project means the issues
+    /// that are on none of your boards.
+    static func clearSettledDirtyFlags(_ db: Database, projectId: String?) throws {
         let entries = try active(db)
         let itemIds = Set(entries.compactMap(\.mutation.itemId))
         let contentIds = Set(entries.compactMap(\.mutation.contentId))

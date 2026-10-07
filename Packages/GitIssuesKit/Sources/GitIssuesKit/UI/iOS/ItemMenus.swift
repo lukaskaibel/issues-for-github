@@ -76,8 +76,27 @@ struct StatusMenu: View {
     var item: Item
 
     var body: some View {
+        if item.isOnBoard {
+            statusMenu
+        } else {
+            // An issue on none of your boards goes onto one instead of getting a status.
+            let boards = model.boards(toAdd: item)
+            Menu {
+                AddToProjectMenuItems(item: item)
+            } label: {
+                Label {
+                    Text(boards.count == 1 ? "Add to \(boards[0].title)" : "Add to Project")
+                } icon: {
+                    MenuImages.status(model.glyph(of: item), scheme)
+                }
+            }
+            .disabled(boards.isEmpty || item.kind != .issue)
+        }
+    }
+
+    private var statusMenu: some View {
         let statuses = model.statusOptions(projectId: item.projectId)
-        Menu {
+        return Menu {
             Picker("Status", selection: selection) {
                 ForEach(statuses) { option in
                     Label {
@@ -108,6 +127,52 @@ struct StatusMenu: View {
                 withAnimation(Theme.spring) { model.setStatus(current, to: option) }
             }
         )
+    }
+}
+
+/// For an issue on none of your boards: the columns of the boards it can go on. One tap puts it there.
+struct AddToProjectMenuItems: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var scheme
+    var item: Item
+
+    var body: some View {
+        let boards = model.boards(toAdd: item)
+        if boards.count == 1, let project = boards.first {
+            Section("Add to \(project.title)") { columns(of: project) }
+        } else {
+            ForEach(boards) { project in
+                Menu {
+                    columns(of: project)
+                } label: {
+                    Text(project.title)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func columns(of project: Project) -> some View {
+        let statuses = model.statusOptions(projectId: project.id)
+        if statuses.isEmpty {
+            Button(project.title) { add(to: project, "") }
+        }
+        ForEach(statuses) { option in
+            Button {
+                add(to: project, option.id)
+            } label: {
+                Label {
+                    Text(option.name)
+                } icon: {
+                    MenuImages.status(model.glyph(projectId: project.id, optionId: option.id), scheme)
+                }
+            }
+        }
+    }
+
+    private func add(to project: Project, _ optionId: String) {
+        let current = model.item(id: item.id) ?? item
+        model.pick(.status, id: "\(project.id)/\(optionId)", for: current)
     }
 }
 
@@ -187,7 +252,7 @@ struct AssigneeMenu: View {
                 }
             }
         }
-        .onAppear { model.loadRepoMeta(projectId: item.projectId) }
+        .onAppear { model.loadRepoMeta(for: item) }
     }
 }
 
@@ -234,6 +299,9 @@ struct IssuePreview: View {
                 if let project = model.project(of: item) {
                     ProjectSwatch(title: project.title, size: 10)
                     Text(project.title).lineLimit(1)
+                } else if let repo = item.repoShortName {
+                    RepositoryIcon(size: 9)
+                    Text(repo).lineLimit(1)
                 }
             }
             .font(.footnote)

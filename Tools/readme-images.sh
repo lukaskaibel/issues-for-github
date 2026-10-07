@@ -107,7 +107,8 @@ for theme in dark light; do
   say "open 9"; sleep 1.5; shot "issue-$theme"
   say "close" "focus 9" "overlay palette"; sleep 1.2; shot "palette-$theme"
   say "overlay none" "focus" "mode list"; sleep 1.2; shot "list-$theme"
-  say "mode board" "overlay new"; sleep 1
+  say "select repo git-issues"; sleep 1.2; shot "repository-$theme"
+  say "select Git Issues" "mode board" "overlay new"; sleep 1
   say "key Haptic feedback when a card lands"; sleep 1; shot "new-$theme"
   say "overlay none"
 
