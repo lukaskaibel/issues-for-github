@@ -121,8 +121,8 @@ extension AppModel {
     /// Returns false at either end of the column, or where the project can't be changed.
     @discardableResult
     func move(_ item: Item, by delta: Int) -> Bool {
-        guard project(of: item)?.viewerCanUpdate == true,
-              let column = columns(projectId: item.projectId).first(where: { $0.items.contains { $0.id == item.id } }),
+        guard let projectId = item.projectId, project(of: item)?.viewerCanUpdate == true,
+              let column = columns(projectId: projectId).first(where: { $0.items.contains { $0.id == item.id } }),
               let index = column.items.firstIndex(where: { $0.id == item.id }),
               column.items.indices.contains(index + delta) else { return false }
         drop(item, in: column, at: index + delta)

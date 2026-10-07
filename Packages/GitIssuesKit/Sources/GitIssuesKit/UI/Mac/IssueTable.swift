@@ -362,8 +362,8 @@ struct IssueTable: NSViewRepresentable {
 
         /// Within its section the issue changes place; in another one it takes that status, as on the board.
         func dropItem(_ id: String, above row: Int) -> Bool {
-            guard let item = model.item(id: id), let landing = landing(above: row, moving: id),
-                  let column = model.columns(projectId: item.projectId).first(where: { $0.id == landing.sectionId })
+            guard let item = model.item(id: id), let projectId = item.projectId, let landing = landing(above: row, moving: id),
+                  let column = model.columns(projectId: projectId).first(where: { $0.id == landing.sectionId })
             else { return false }
             model.drop(item, in: column, at: landing.index)
             return true
