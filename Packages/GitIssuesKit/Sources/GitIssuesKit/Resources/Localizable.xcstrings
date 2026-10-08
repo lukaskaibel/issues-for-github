@@ -33170,7 +33170,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les versions, exécutions CI et discussions restent sur GitHub."
+            "value" : "Les releases, exécutions CI et discussions restent sur GitHub."
           }
         },
         "ja" : {
@@ -33230,7 +33230,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les versions, exécutions CI, discussions et alertes ne s’affichent pas ici. Cliquez pour ouvrir les notifications de GitHub."
+            "value" : "Les releases, exécutions CI, discussions et alertes ne s’affichent pas ici. Cliquez pour ouvrir les notifications de GitHub."
           }
         },
         "ja" : {
