@@ -390,8 +390,13 @@ public actor SyncEngine {
                     item.position = Double((order[item.id] ?? sweepSnapshot.count) + 1) * 1024
                     try item.save(db)
                 }
+                // Whether you may delete an issue goes with your rights in its repository, which change without the
+                // issue changing, so it is written for every card, not only those read in full.
                 for (index, entry) in sweepSnapshot.enumerated() {
-                    try db.execute(sql: "UPDATE item SET position = ? WHERE id = ?", arguments: [Double(index + 1) * 1024, entry.id])
+                    try db.execute(
+                        sql: "UPDATE item SET position = ?, viewerCanDelete = COALESCE(?, viewerCanDelete) WHERE id = ?",
+                        arguments: [Double(index + 1) * 1024, entry.viewerCanDelete, entry.id]
+                    )
                 }
 
                 let removed = try Self.removeMissing(db, projectId: projectId, remoteIds: Set(sweepSnapshot.map(\.id)))
@@ -736,6 +741,7 @@ public actor SyncEngine {
     ) throws -> (notices: [Notice], staleBoards: Set<String>) {
         let openBoards = try String.fetchSet(db, sql: "SELECT id FROM project WHERE closed = 0")
         let onBoards = try String.fetchSet(db, sql: "SELECT contentId FROM item WHERE projectId IS NOT NULL AND contentId IS NOT NULL")
+        let refs = listed ?? []
         let listed = Set((listed?.map(\.itemId)) ?? issues.map(\.item.id))
         var staleBoards = Set<String>()
         var loose: [Item] = []
@@ -754,6 +760,15 @@ public actor SyncEngine {
 
         let notices = try reconcile(db, hydrated: loose)
         for item in loose { try item.save(db) }
+        // Your rights change without the issue changing, so whether you may delete it is taken from the light read,
+        // for every issue it listed, on a board or not.
+        for ref in refs {
+            guard let canDelete = ref.viewerCanDelete else { continue }
+            try db.execute(
+                sql: "UPDATE item SET viewerCanDelete = ? WHERE contentId = ? AND viewerCanDelete != ?",
+                arguments: [canDelete, ref.contentId, canDelete]
+            )
+        }
 
         if let prune {
             let justCreated = Set(try Outbox.active(db).compactMap { entry -> String? in

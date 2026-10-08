@@ -48,6 +48,9 @@ public struct RemoteProjectMeta: Sendable {
 public struct SweepEntry: Sendable, Hashable {
     public var id: String
     public var updatedAt: String
+    /// For an issue, whether you may delete it. That follows your rights in its repository, which change without
+    /// the issue changing, so every light read asks again. Nil for drafts and pull requests.
+    public var viewerCanDelete: Bool?
 }
 
 public struct RemoteIssueDetail: Sendable {
@@ -80,6 +83,8 @@ public struct IssueRef: Sendable, Hashable {
     public var updatedAt: String
     public var isClosed: Bool
     public var closedAt: Date?
+    /// Asked again on every light read, like a sweep's: your rights change without the issue changing.
+    public var viewerCanDelete: Bool?
 
     public var itemId: String { Item.idWithoutProject(contentId) }
 }
@@ -194,8 +199,10 @@ public final class GitHubAPI: Sendable {
             struct Node: Decodable {
                 struct Items: Decodable {
                     struct Entry: Decodable {
+                        struct Content: Decodable { var viewerCanDelete: Bool? }
                         var id: String
                         var updatedAt: String
+                        var content: Content?
                     }
                     var pageInfo: PageInfo
                     var nodes: [Entry?]
@@ -209,7 +216,7 @@ public final class GitHubAPI: Sendable {
           node(id: $id) { ... on ProjectV2 {
             items(first: 100, after: $after, orderBy: {field: POSITION, direction: ASC}) {
               pageInfo { hasNextPage endCursor }
-              nodes { id updatedAt }
+              nodes { id updatedAt content { ... on Issue { viewerCanDelete } } }
             }
           } }
         }
@@ -219,7 +226,9 @@ public final class GitHubAPI: Sendable {
         repeat {
             let response: Response = try await client.run(query, variables: ["id": projectId, "after": cursor], allowPartial: true)
             guard let items = response.node?.items else { break }
-            entries += items.nodes.compactMap { $0 }.map { SweepEntry(id: $0.id, updatedAt: $0.updatedAt) }
+            entries += items.nodes.compactMap { $0 }.map {
+                SweepEntry(id: $0.id, updatedAt: $0.updatedAt, viewerCanDelete: $0.content?.viewerCanDelete)
+            }
             cursor = items.pageInfo.hasNextPage ? items.pageInfo.endCursor : nil
         } while cursor != nil
         return entries
@@ -756,7 +765,7 @@ enum GQL {
 
     static let issueRefFields = """
     fragment IssueRefFields on Issue {
-      id updatedAt state closedAt repository { id }
+      id updatedAt state closedAt repository { id } viewerCanDelete
     }
     """
 
@@ -977,10 +986,14 @@ struct IssueRefDTO: Decodable {
     var state: String?
     var closedAt: Date?
     var repository: RepoRefDTO?
+    var viewerCanDelete: Bool?
 
     var ref: IssueRef? {
         guard let id, let updatedAt else { return nil }
-        return IssueRef(contentId: id, repoId: repository?.id, updatedAt: updatedAt, isClosed: state != "OPEN", closedAt: closedAt)
+        return IssueRef(
+            contentId: id, repoId: repository?.id, updatedAt: updatedAt, isClosed: state != "OPEN", closedAt: closedAt,
+            viewerCanDelete: viewerCanDelete
+        )
     }
 }
 

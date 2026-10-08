@@ -120,6 +120,28 @@ struct IssuesWithoutProjectTests {
         #expect(wanted == ["issue-3"])
     }
 
+    @Test func whetherYouMayDeleteAnIssueIsTakenFromEveryLightRead() throws {
+        let db = try makeDatabase()
+        var known = Self.remote(2)
+        known.item.remoteUpdatedAt = "2026-10-07T08:00:00Z"
+        try write(db, [known])
+        // An owner let repository admins delete issues. Neither issue changed, so neither is read in full, but the
+        // light read says you may delete them now: the card on the board and the issue on none.
+        let refs = [1, 2].map { number in
+            IssueRef(
+                contentId: "issue-\(number)", repoId: "R1", updatedAt: "2026-10-07T08:00:00Z", isClosed: false,
+                viewerCanDelete: true
+            )
+        }
+        let wanted = try db.reader.read { try SyncEngine.issuesToRead(in: refs, $0) }
+        #expect(wanted.isEmpty)
+        try db.writer.write { _ = try SyncEngine.writeIssuesWithoutProject($0, [], listed: refs, prune: nil) }
+        let deletable = try db.reader.read { db in
+            try Item.filter(Column("viewerCanDelete") == true).fetchAll(db).compactMap(\.number).sorted()
+        }
+        #expect(deletable == [1, 2])
+    }
+
     @Test func puttingAnIssueOnABoardShowsAtOnceAndKeepsItsPlace() throws {
         let db = try makeDatabase()
         try write(db, [Self.remote(2)])
