@@ -52,7 +52,11 @@ final class PadTests: AppTestCase {
         let target = element("column-In Progress")
         wait(card)
         wait(target)
-        card.press(forDuration: 1.0, thenDragTo: target)
+        // Touch and hold until the card's menu opens, then drag the card out of it. The drag takes over from the
+        // menu only after the finger has moved some way; when the app is busy that came after XCTest's finger, at
+        // its usual speed, had already arrived and let go, and the card stayed where it was. Moving slowly and
+        // resting over the column lets the drag reach it before the finger lifts.
+        card.press(forDuration: 1.0, thenDragTo: target, withVelocity: .slow, thenHoldForDuration: 0.5)
         snapshot("After drag")
         // The card now opens with its new status.
         element("card-#17").tap()
