@@ -32,7 +32,7 @@ struct CommandPalette: View {
                 step(.blocking, id)
             case .projects:
                 PickerList(
-                    placeholder: "Switch project or repository…",
+                    placeholder: String(localized: .switchProjectPlaceholder),
                     items: model.projects.filter { !$0.closed }.map { project in
                         PickerItem(
                             id: project.id, title: project.title, subtitle: project.ownerLogin,
@@ -87,7 +87,7 @@ private struct ContextChip: View {
     var body: some View {
         HStack(spacing: 6) {
             if count > 1 {
-                Text("\(count) issues")
+                Text(.selectedIssueCount(count: count))
             } else {
                 Text(item.displayNumber).foregroundStyle(Theme.textSecondary)
                 Text(item.title).lineLimit(1)
@@ -107,10 +107,21 @@ private struct ContextChip: View {
 private struct PaletteCommand: Identifiable {
     var id: String
     var title: String
+    /// The title in English as well, so typing a command's English name finds it in any language.
+    var englishTitle: String?
     var section: String
     var icon: AnyView
     var keys: [String] = []
     var run: () -> Void
+}
+
+extension PaletteCommand {
+    /// A command of the app, titled from the String Catalog.
+    init(id: String, title: LocalizedStringResource, section: String, icon: AnyView, keys: [String] = [], run: @escaping () -> Void) {
+        var english = title
+        english.locale = Locale(identifier: "en")
+        self.init(id: id, title: String(localized: title), englishTitle: String(localized: english), section: section, icon: icon, keys: keys, run: run)
+    }
 }
 
 private struct RootPalette: View {
@@ -125,7 +136,7 @@ private struct RootPalette: View {
             if let target = model.actionItem {
                 ContextChip(item: target, count: model.targets(for: target).count)
             }
-            TextField("Type a command or search issues…", text: $query)
+            TextField(.commandPalettePlaceholder, text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 15))
                 .focused($focused)
@@ -179,7 +190,7 @@ private struct RootPalette: View {
                             .onHover { if $0 { index = position } }
                         }
                         if rows.isEmpty {
-                            Text("Nothing matches \"\(query)\"")
+                            Text(.nothingMatchesQuery(query: query))
                                 .foregroundStyle(Theme.textSecondary)
                                 .padding(.horizontal, 16)
                                 .frame(height: 44)
@@ -211,11 +222,25 @@ private struct RootPalette: View {
         AnyView(Image(systemName: name).font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textSecondary))
     }
 
+    /// "Snooze until tomorrow (Thu 9:00)": one sentence per choice, so each reads well in every language.
+    private func snoozeTitle(_ choice: SnoozeChoice) -> LocalizedStringResource {
+        let time = choice.hint()
+        return switch choice {
+        case .laterToday: .snoozeUntilLaterTodayCommand(time: time)
+        case .tomorrow: .snoozeUntilTomorrowCommand(time: time)
+        case .nextWeek: .snoozeUntilNextWeekCommand(time: time)
+        }
+    }
+
     private var results: [PaletteCommand] {
         let commands = self.commands
         guard !query.isEmpty else { return commands }
         let matchedCommands = commands
-            .compactMap { command in fuzzyScore(query, command.title).map { (command, $0) } }
+            .compactMap { command -> (PaletteCommand, Int)? in
+                // The shown title or the English one, whichever matches better.
+                let scores = [command.title, command.englishTitle].compactMap { $0.flatMap { fuzzyScore(query, $0) } }
+                return scores.max().map { (command, $0) }
+            }
             .sorted { $0.1 > $1.1 }
             .map(\.0)
         let pool = model.scope == .myIssues || model.scope == .inbox ? model.allItems : model.scopedItems
@@ -228,14 +253,15 @@ private struct RootPalette: View {
             .sorted { $0.1 > $1.1 }
             .prefix(8)
             .map { item, _ in
-                PaletteCommand(
-                    id: "issue-\(item.id)", title: "\(item.displayNumber)  \(item.title)", section: "Issues",
+                let title = "\(item.displayNumber)  \(item.title)"
+                return PaletteCommand(
+                    id: "issue-\(item.id)", title: title, section: String(localized: .issues),
                     icon: AnyView(StatusIcon(glyph: model.glyph(of: item)))
                 ) { model.open(item) }
             }
         return issues + matchedCommands.map { command in
             var command = command
-            command.section = "Commands"
+            command.section = String(localized: .commandsSection)
             return command
         }
     }
@@ -245,86 +271,86 @@ private struct RootPalette: View {
         if let item = model.actionItem {
             let targets = model.targets(for: item)
             let several = targets.count > 1
-            let section = several ? "\(targets.count) issues" : "This issue"
-            list.append(PaletteCommand(id: "status", title: item.isOnBoard ? "Change status…" : "Add to project…", section: section, icon: AnyView(StatusIcon(glyph: model.glyph(of: item))), keys: ["S"]) {
+            let section = String(localized: several ? .selectedIssueCount(count: targets.count) : .thisIssueSection)
+            list.append(PaletteCommand(id: "status", title: item.isOnBoard ? .changeStatusCommand : .addToProjectCommand, section: section, icon: AnyView(StatusIcon(glyph: model.glyph(of: item))), keys: ["S"]) {
                 model.overlay = .palette(.status(itemId: item.id))
             })
             if model.project(of: item)?.priorityFieldId != nil {
-                list.append(PaletteCommand(id: "priority", title: "Set priority…", section: section, icon: AnyView(PriorityIcon(level: .high)), keys: ["P"]) {
+                list.append(PaletteCommand(id: "priority", title: .setPriorityCommand, section: section, icon: AnyView(PriorityIcon(level: .high)), keys: ["P"]) {
                     model.overlay = .palette(.priority(itemId: item.id))
                 })
             }
             if item.kind != .draft {
-                list.append(PaletteCommand(id: "assign", title: "Assign to…", section: section, icon: symbol("person"), keys: ["A"]) {
+                list.append(PaletteCommand(id: "assign", title: .assignToCommand, section: section, icon: symbol("person"), keys: ["A"]) {
                     model.overlay = .palette(.assignees(itemId: item.id))
                 })
                 if let viewer = model.viewer {
                     let mine = targets.allSatisfy { target in target.assignees.contains { $0.id == viewer.id } }
-                    list.append(PaletteCommand(id: "assign-me", title: mine ? "Unassign me" : "Assign to me", section: section, icon: symbol("person.fill"), keys: ["I"]) {
+                    list.append(PaletteCommand(id: "assign-me", title: mine ? .unassignMeCommand : .assignToMeCommand, section: section, icon: symbol("person.fill"), keys: ["I"]) {
                         model.toggleAssignMe(targets)
                     })
                 }
-                list.append(PaletteCommand(id: "labels", title: "Add labels…", section: section, icon: symbol("tag"), keys: ["L"]) {
+                list.append(PaletteCommand(id: "labels", title: .addLabelsCommand, section: section, icon: symbol("tag"), keys: ["L"]) {
                     model.overlay = .palette(.labels(itemId: item.id))
                 })
             }
             if targets.contains(where: model.canHaveDueDate) {
-                list.append(PaletteCommand(id: "due", title: "Set due date…", section: section, icon: symbol("calendar"), keys: ["D"]) {
+                list.append(PaletteCommand(id: "due", title: .setDueDateCommand, section: section, icon: symbol("calendar"), keys: ["D"]) {
                     model.overlay = .palette(.dueDate(itemId: item.id))
                 })
             }
             if targets.contains(where: { $0.dueDate != nil }) {
-                list.append(PaletteCommand(id: "due-remove", title: "Remove due date", section: section, icon: symbol("calendar.badge.minus")) {
+                list.append(PaletteCommand(id: "due-remove", title: .removeDueDateCommand, section: section, icon: symbol("calendar.badge.minus")) {
                     model.setDueDate(of: targets, to: nil)
                 })
             }
             if model.canRelate(item) {
                 let subIcon = AnyView(SubIssueGlyph().frame(width: 12, height: 12).foregroundStyle(Theme.textSecondary))
                 if !several {
-                    list.append(PaletteCommand(id: "sub", title: "Create sub-issue", section: section, icon: subIcon) {
+                    list.append(PaletteCommand(id: "sub", title: .createSubIssueCommand, section: section, icon: subIcon) {
                         model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
                     })
-                    list.append(PaletteCommand(id: "sub-existing", title: "Add existing issue as sub-issue…", section: section, icon: subIcon) {
+                    list.append(PaletteCommand(id: "sub-existing", title: .addExistingSubIssueCommand, section: section, icon: subIcon) {
                         model.overlay = .palette(.addSubIssue(itemId: item.id))
                     })
                 }
-                list.append(PaletteCommand(id: "parent", title: "Set parent issue…", section: section, icon: symbol("arrow.turn.left.up"), keys: ["M", "P"]) {
+                list.append(PaletteCommand(id: "parent", title: .setParentIssueCommand, section: section, icon: symbol("arrow.turn.left.up"), keys: ["M", "P"]) {
                     model.overlay = .palette(.parent(itemId: item.id))
                 })
                 if targets.contains(where: { $0.parentId != nil }) {
-                    list.append(PaletteCommand(id: "parent-remove", title: "Remove from parent", section: section, icon: symbol("xmark")) {
+                    list.append(PaletteCommand(id: "parent-remove", title: .removeFromParentCommand, section: section, icon: symbol("xmark")) {
                         model.setParent(of: targets, to: nil)
                     })
                 }
-                list.append(PaletteCommand(id: "blocked-by", title: "Mark as blocked by…", section: section, icon: AnyView(BlockedIcon()), keys: ["M", "B"]) {
+                list.append(PaletteCommand(id: "blocked-by", title: .markAsBlockedByCommand, section: section, icon: AnyView(BlockedIcon()), keys: ["M", "B"]) {
                     model.overlay = .palette(.blockedBy(itemId: item.id))
                 })
-                list.append(PaletteCommand(id: "blocking", title: "Mark as blocking…", section: section, icon: AnyView(BlockingIcon()), keys: ["M", "X"]) {
+                list.append(PaletteCommand(id: "blocking", title: .markAsBlockingCommand, section: section, icon: AnyView(BlockingIcon()), keys: ["M", "X"]) {
                     model.overlay = .palette(.blocking(itemId: item.id))
                 })
             }
             if model.canDelete(item), !several {
-                list.append(PaletteCommand(id: "delete", title: item.kind == .draft ? "Delete draft…" : "Delete issue…", section: section, icon: symbol("trash"), keys: ["⌘", "⌫"]) {
+                list.append(PaletteCommand(id: "delete", title: item.kind == .draft ? .deleteDraftCommand : .deleteIssueCommand, section: section, icon: symbol("trash"), keys: ["⌘", "⌫"]) {
                     model.requestDelete(item)
                 })
             }
             if item.url != nil {
-                list.append(PaletteCommand(id: "copy", title: several ? "Copy GitHub links" : "Copy GitHub link", section: section, icon: symbol("link"), keys: ["⌘", "⇧", "C"]) {
+                list.append(PaletteCommand(id: "copy", title: several ? .copyGitHubLinksCommand : .copyGitHubLinkCommand, section: section, icon: symbol("link"), keys: ["⌘", "⇧", "C"]) {
                     model.copyLinks(targets)
                 })
                 if !several {
-                    list.append(PaletteCommand(id: "github", title: "Open on GitHub", section: section, icon: symbol("arrow.up.right")) {
+                    list.append(PaletteCommand(id: "github", title: .openOnGitHub, section: section, icon: symbol("arrow.up.right")) {
                         model.openOnGitHub(item)
                     })
                 }
             }
         }
         if model.openItem == nil, !model.orderedItems.isEmpty {
-            list.append(PaletteCommand(id: "select-all", title: "Select all issues", section: "Selection", icon: symbol("checkmark.circle"), keys: ["⌘", "A"]) {
+            list.append(PaletteCommand(id: "select-all", title: .selectAllIssuesCommand, section: String(localized: .selectionSection), icon: symbol("checkmark.circle"), keys: ["⌘", "A"]) {
                 model.selectAll()
             })
             if !model.selectedIds.isEmpty {
-                list.append(PaletteCommand(id: "select-none", title: "Clear selection", section: "Selection", icon: symbol("xmark.circle"), keys: ["Esc"]) {
+                list.append(PaletteCommand(id: "select-none", title: .clearSelectionCommand, section: String(localized: .selectionSection), icon: symbol("xmark.circle"), keys: ["Esc"]) {
                     model.clearSelection()
                 })
             }
@@ -333,77 +359,77 @@ private struct RootPalette: View {
             let entries = model.inboxPicked.isEmpty
                 ? model.inboxSelected.map { [$0] } ?? []
                 : model.visibleInbox.filter { model.inboxPicked.contains($0.id) }
-            let section = entries.count > 1 ? "\(entries.count) notifications" : "Inbox"
+            let section = String(localized: entries.count > 1 ? .selectedNotificationCount(count: entries.count) : .inbox)
             if let first = entries.first {
                 let unread = model.isUnread(first)
-                list.append(PaletteCommand(id: "inbox-read", title: unread ? "Mark as read" : "Mark as unread", section: section, icon: symbol(unread ? "circle" : "circle.inset.filled"), keys: ["U"]) {
+                list.append(PaletteCommand(id: "inbox-read", title: unread ? .markAsReadCommand : .markAsUnreadCommand, section: section, icon: symbol(unread ? "circle" : "circle.inset.filled"), keys: ["U"]) {
                     model.toggleRead(entries)
                 })
-                list.append(PaletteCommand(id: "inbox-archive", title: "Archive", section: section, icon: symbol("archivebox"), keys: ["E"]) {
+                list.append(PaletteCommand(id: "inbox-archive", title: .archive, section: section, icon: symbol("archivebox"), keys: ["E"]) {
                     model.archive(entries)
                 })
                 for choice in SnoozeChoice.allCases {
-                    list.append(PaletteCommand(id: "inbox-snooze-\(choice)", title: "Snooze until \(choice.title.lowercased()) (\(choice.hint()))", section: section, icon: symbol("clock")) {
+                    list.append(PaletteCommand(id: "inbox-snooze-\(choice)", title: snoozeTitle(choice), section: section, icon: symbol("clock")) {
                         model.snooze(entries, until: choice.date())
                     })
                 }
-                list.append(PaletteCommand(id: "inbox-unsubscribe", title: "Unsubscribe", section: section, icon: symbol("bell.slash"), keys: ["⇧", "S"]) {
+                list.append(PaletteCommand(id: "inbox-unsubscribe", title: .unsubscribe, section: section, icon: symbol("bell.slash"), keys: ["⇧", "S"]) {
                     model.unsubscribe(entries)
                 })
             }
-            list.append(PaletteCommand(id: "inbox-read-all", title: "Mark all as read", section: "Inbox", icon: symbol("circle"), keys: ["⌥", "U"]) {
+            list.append(PaletteCommand(id: "inbox-read-all", title: .markAllAsReadCommand, section: String(localized: .inbox), icon: symbol("circle"), keys: ["⌥", "U"]) {
                 model.markAllRead()
             })
-            list.append(PaletteCommand(id: "inbox-archive-read", title: "Archive all read", section: "Inbox", icon: symbol("archivebox"), keys: ["⇧", "⌫"]) {
+            list.append(PaletteCommand(id: "inbox-archive-read", title: .archiveAllReadCommand, section: String(localized: .inbox), icon: symbol("archivebox"), keys: ["⇧", "⌫"]) {
                 model.archiveAllRead()
             })
         }
-        let go = "Go to"
+        let go = String(localized: .goToSection)
         if model.scope != .inbox {
-            list.append(PaletteCommand(id: "inbox", title: "Inbox", section: go, icon: symbol("tray"), keys: ["G", "I"]) {
+            list.append(PaletteCommand(id: "inbox", title: .inbox, section: go, icon: symbol("tray"), keys: ["G", "I"]) {
                 model.select(.inbox)
             })
         }
         if model.currentProjectId != nil || model.currentRepositoryId != nil {
-            list.append(PaletteCommand(id: "new", title: "New issue", section: go, icon: symbol("plus"), keys: ["C"]) {
+            list.append(PaletteCommand(id: "new", title: .newIssueAction, section: go, icon: symbol("plus"), keys: ["C"]) {
                 model.overlay = .newIssue(statusId: nil, parentItemId: nil)
             })
         }
         if model.currentProjectId != nil {
-            list.append(PaletteCommand(id: "board", title: "Board", section: go, icon: symbol("rectangle.split.3x1"), keys: ["G", "B"]) {
+            list.append(PaletteCommand(id: "board", title: .board, section: go, icon: symbol("rectangle.split.3x1"), keys: ["G", "B"]) {
                 model.closeDetail()
                 model.viewMode = .board
             })
-            list.append(PaletteCommand(id: "list", title: "List", section: go, icon: symbol("list.bullet"), keys: ["G", "L"]) {
+            list.append(PaletteCommand(id: "list", title: .list, section: go, icon: symbol("list.bullet"), keys: ["G", "L"]) {
                 model.closeDetail()
                 model.viewMode = .list
             })
         }
-        list.append(PaletteCommand(id: "mine", title: "My Issues", section: go, icon: symbol("scope"), keys: ["G", "M"]) {
+        list.append(PaletteCommand(id: "mine", title: .myIssues, section: go, icon: symbol("scope"), keys: ["G", "M"]) {
             model.select(.myIssues)
         })
-        list.append(PaletteCommand(id: "projects", title: "Switch project or repository…", section: go, icon: symbol("square.stack"), keys: ["G", "P"]) {
+        list.append(PaletteCommand(id: "projects", title: .switchProjectCommand, section: go, icon: symbol("square.stack"), keys: ["G", "P"]) {
             model.overlay = .palette(.projects)
         })
         if model.canGoBack {
-            list.append(PaletteCommand(id: "back", title: "Back", section: go, icon: symbol("chevron.left"), keys: ["⌘", "["]) {
+            list.append(PaletteCommand(id: "back", title: .back, section: go, icon: symbol("chevron.left"), keys: ["⌘", "["]) {
                 model.goBack()
             })
         }
         if model.canGoForward {
-            list.append(PaletteCommand(id: "forward", title: "Forward", section: go, icon: symbol("chevron.right"), keys: ["⌘", "]"]) {
+            list.append(PaletteCommand(id: "forward", title: .forward, section: go, icon: symbol("chevron.right"), keys: ["⌘", "]"]) {
                 model.goForward()
             })
         }
         for setting in AppearanceSetting.allCases where setting != model.appearance {
-            list.append(PaletteCommand(id: "appearance-\(setting.rawValue)", title: "Appearance: \(setting.title)", section: "Settings", icon: symbol("circle.lefthalf.filled")) {
+            list.append(PaletteCommand(id: "appearance-\(setting.rawValue)", title: .appearanceCommand(appearance: setting.title), section: String(localized: .settingsSection), icon: symbol("circle.lefthalf.filled")) {
                 model.appearance = setting
             })
         }
-        list.append(PaletteCommand(id: "settings", title: "Settings…", section: "Settings", icon: symbol("gearshape"), keys: ["⌘", ","]) {
+        list.append(PaletteCommand(id: "settings", title: .settingsEllipsis, section: String(localized: .settingsSection), icon: symbol("gearshape"), keys: ["⌘", ","]) {
             model.settingsRequest += 1
         })
-        list.append(PaletteCommand(id: "refresh", title: "Sync with GitHub now", section: go, icon: symbol("arrow.triangle.2.circlepath"), keys: ["⌘", "R"]) {
+        list.append(PaletteCommand(id: "refresh", title: .syncWithGitHubNowCommand, section: go, icon: symbol("arrow.triangle.2.circlepath"), keys: ["⌘", "R"]) {
             model.refresh()
         })
         return list

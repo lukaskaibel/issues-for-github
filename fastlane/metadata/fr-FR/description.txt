@@ -1,0 +1,56 @@
+Issues est une app rapide et native pour GitHub Issues et GitHub Projects, sur Mac, iPhone et iPad. Sobre et efficace, elle garde tout dans GitHub : vos coéquipiers qui ne l’utilisent pas voient les mêmes tickets et tableaux sur github.com.
+
+RÉCEPTION
+• Ce qui a changé pour vous, d’après les notifications GitHub : qui vous a assigné ou mentionné, qui a commenté, demandé votre revue ou fermé un ticket que vous suivez
+• Ouvrez une notification : le ticket est là, avec les nouveautés en haut et le nouveau commentaire signalé
+• Vos tickets à échéance apparaissent le jour même, avec Commencer, Marquer comme terminé et Reporter à demain
+• Lisez, archivez et mettez en attente d’une touche ou d’un balayage ; ce qui est lu ou archivé l’est aussi sur github.com
+• Les notifications en attente et non lues se synchronisent sur vos appareils via iCloud
+
+SUR MAC
+• Chaque projet en tableau ou en liste, plus Mes tickets avec tout ce qui vous est assigné
+• Tous les tickets de vos dépôts, même ceux qui ne sont sur aucun tableau ; un clic les y place
+• Déplacez les tickets sur le tableau ou dans la liste, et organisez les colonnes : ajout, renommage, couleur, ordre
+• Au clavier : J et K passent d’un ticket à l’autre, S, P, A et L changent statut, priorité, responsable et étiquettes, D fixe l’échéance, et ⌘K ouvre une palette de commandes pour le reste
+• Sélectionnez plusieurs tickets et modifiez-les d’un coup
+• Coup d’œil avec Espace, ou ouvrez un ticket à côté de ses propriétés, sous-tickets et commentaires
+• Sous-tickets et blocages : placez un ticket sous un autre, ajoutez-en d’existants comme sous-tickets, indiquez ce qui bloque quoi
+• Descriptions affichées comme sur GitHub, avec tableaux, cases à cocher et diagrammes Mermaid
+• Précédent et Suivant comme dans un navigateur
+
+SUR IPHONE
+• Réception en premier onglet, avec le nombre de notifications non lues
+• Mes tickets avec tout ce qui vous est assigné, par statut
+• Chaque projet et dépôt en liste, avec des sections repliables
+• Balayez vers la droite pour terminer un ticket, vers la gauche pour vous l’assigner ou le supprimer
+• Maintenez le doigt sur un ticket pour changer statut, priorité, responsable, étiquettes, parent ou blocages, ou pour le déplacer
+• Recherche dans tous les projets par titre ou numéro
+• Tableaux, cases à cocher et diagrammes Mermaid dans les descriptions, comme sur GitHub
+
+SUR IPAD
+• Une barre latérale avec vos projets et dépôts, et le tableau en glisser-déposer
+• Réception avec le ticket à côté, comme dans Mail
+• Les tickets s’ouvrent à côté de leurs propriétés, comme sur Mac
+• Avec un clavier : J et K pour naviguer, S, P, A et L pour modifier un ticket, ⌘N pour en créer un
+
+ÉCHÉANCES ET RAPPELS
+• Donnez une échéance à un ticket : demain, vendredi, la semaine prochaine, un jour du calendrier, ou tapez « dans 3 jours »
+• Cartes et listes l’affichent, en orange le jour même, en rouge une fois passée
+• Le jour venu, votre Mac, iPhone et iPad vous préviennent, avec des boutons pour commencer le ticket, le terminer ou le reporter à demain
+• L’échéance est le champ « Due date » du projet sur GitHub : votre équipe la voit aussi
+
+RAPIDE ET FIABLE
+• Chaque modification s’affiche aussitôt et part vers GitHub en arrière-plan
+• Fonctionne hors ligne : les modifications attendent et partent dès votre retour en ligne
+• Respecte le travail des autres : si quelqu’un a modifié le même texte, rien n’est écrasé
+
+CONFIDENTIALITÉ
+• Aucun compte, aucun serveur, aucun pistage. Vos identifiants restent dans votre trousseau et ne sont envoyés qu’à GitHub.
+• Connecté sur un de vos appareils ? Les autres se connectent seuls via le trousseau iCloud.
+
+En anglais, allemand, français, espagnol, portugais, russe, japonais, coréen et chinois, selon la langue de votre appareil.
+
+Essayez sans compte : « Explorer avec des données d’exemple » ouvre deux projets d’exemple.
+
+Issues est open source : github.com/lukaskaibel/issues-for-github
+Issues n’est ni affilié à GitHub ni approuvé par GitHub.

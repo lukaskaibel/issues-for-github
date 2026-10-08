@@ -516,17 +516,17 @@ struct IssueTable: NSViewRepresentable {
         /// A section header's menu: fold this one or all of them, or start an issue in it.
         static func sectionMenu(_ section: IssueSectionModel, model: AppModel) -> NSMenu {
             let menu = NSMenu()
-            let fold = ClosureMenuItem(section.collapsed ? "Unfold" : "Fold") { [model] in model.toggleSection(section.id) }
+            let fold = ClosureMenuItem(String(localized: section.collapsed ? .unfoldGroup : .foldGroup)) { [model] in model.toggleSection(section.id) }
             fold.image = MenuIcons.symbol(section.collapsed ? "chevron.down" : "chevron.right")
             menu.addItem(fold)
-            let all = ClosureMenuItem(section.collapsed ? "Unfold All" : "Fold All") { [model] in
+            let all = ClosureMenuItem(String(localized: section.collapsed ? .unfoldAllGroups : .foldAllGroups)) { [model] in
                 model.toggleAllSections(like: section.id)
             }
             all.image = MenuIcons.symbol(section.collapsed ? "chevron.down.2" : "chevron.right.2")
             menu.addItem(all)
             if section.canAdd {
                 menu.addItem(.separator())
-                let add = ClosureMenuItem("New Issue in \(section.title)") { [model] in
+                let add = ClosureMenuItem(String(localized: .newIssueInGroupMenu(group: section.title))) { [model] in
                     model.overlay = .newIssue(statusId: section.optionId, parentItemId: nil)
                 }
                 add.image = MenuIcons.symbol("plus")
@@ -704,7 +704,9 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             projectSize = project?.size() ?? .zero
             subCountSize = subCount?.size() ?? .zero
             dueSize = dueText?.size() ?? .zero
-            setAccessibilityLabel("\(item.displayNumber) \(item.title)" + (row.due.map { ", \($0.tooltip)" } ?? ""))
+            setAccessibilityLabel(row.due.map {
+                String(localized: .issueRowSpokenWithDue(number: item.displayNumber, title: item.title, due: $0.tooltip))
+            } ?? "\(item.displayNumber) \(item.title)")
             needsDisplay = true
         }
         if highlighted != self.highlighted {
@@ -920,9 +922,11 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         guard let row else { return "" }
         if let part = part(at: point) { return model?.tooltip(part.kind, for: row.item) ?? "" }
         if dateRect.insetBy(dx: -3, dy: -4).contains(point), let updated = row.item.updatedAt {
-            var text = "Updated " + updated.formatted(date: .long, time: .shortened)
-            if let created = row.item.createdAt { text += "\nCreated " + created.formatted(date: .long, time: .shortened) }
-            return text
+            var lines = [String(localized: .updatedOnDateTooltip(date: updated.formatted(date: .long, time: .shortened)))]
+            if let created = row.item.createdAt {
+                lines.append(String(localized: .createdOnDateTooltip(date: created.formatted(date: .long, time: .shortened))))
+            }
+            return lines.joined(separator: "\n")
         }
         return ""
     }
@@ -1026,7 +1030,7 @@ final class IssueHeaderCell: NSView {
         wantsLayer = true
         layerContentsRedrawPolicy = .onSetNeedsDisplay
         addButton.isBordered = false
-        addButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: "New issue")?
+        addButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: String(localized: .newIssueAction))?
             .withSymbolConfiguration(.init(pointSize: 11, weight: .medium))
         addButton.imagePosition = .imageOnly
         addButton.target = self
@@ -1080,7 +1084,7 @@ final class IssueHeaderCell: NSView {
         self.model = model
         addButton.isHidden = !section.canAdd
         addButton.contentTintColor = NSColor(Theme.textSecondary)
-        addButton.toolTip = "New issue in \(section.title)"
+        addButton.toolTip = String(localized: .newIssueInGroupTooltip(group: section.title))
         guard section != self.section else { return }
         self.section = section
         needsDisplay = true
@@ -1218,7 +1222,7 @@ struct ItemMenuBuilder {
         let targets = model.targets(for: item)
         let several = targets.count > 1
         if several {
-            let title = NSMenuItem(title: "\(targets.count) issues", action: nil, keyEquivalent: "")
+            let title = NSMenuItem(title: String(localized: .selectedIssueCount(count: targets.count)), action: nil, keyEquivalent: "")
             title.isEnabled = false
             menu.addItem(title)
         }
@@ -1233,20 +1237,20 @@ struct ItemMenuBuilder {
         menu.addItem(.separator())
         if several {
             if targets.contains(where: { $0.url != nil }) {
-                let copy = ClosureMenuItem("Copy Links") { [model] in model.copyLinks(targets) }
+                let copy = ClosureMenuItem(String(localized: .copyLinks)) { [model] in model.copyLinks(targets) }
                 copy.image = MenuIcons.symbol("link")
                 menu.addItem(copy)
             }
-            let clear = ClosureMenuItem("Clear Selection") { [model] in model.clearSelection() }
+            let clear = ClosureMenuItem(String(localized: .clearSelection)) { [model] in model.clearSelection() }
             clear.image = MenuIcons.symbol("xmark.circle")
             menu.addItem(clear)
             Self.showImages(in: menu)
             return menu
         }
-        let open = ClosureMenuItem("Open") { [model, item] in model.open(item) }
+        let open = ClosureMenuItem(String(localized: .openIssue)) { [model, item] in model.open(item) }
         open.image = MenuIcons.symbol("arrow.up.left.and.arrow.down.right")
         menu.addItem(open)
-        let peek = ClosureMenuItem("Peek") { [model, item] in
+        let peek = ClosureMenuItem(String(localized: .peek)) { [model, item] in
             model.hoveredItemId = item.id
             if model.peekItemId != nil { model.followPeek(to: item.id) } else { model.togglePeek() }
         }
@@ -1254,24 +1258,24 @@ struct ItemMenuBuilder {
         hint(peek, " ")
         menu.addItem(peek)
         if item.url != nil {
-            let copy = ClosureMenuItem("Copy Link") { [model, item] in model.copyLink(item) }
+            let copy = ClosureMenuItem(String(localized: .copyLink)) { [model, item] in model.copyLink(item) }
             copy.image = MenuIcons.symbol("link")
             menu.addItem(copy)
             if item.number != nil {
-                let branch = ClosureMenuItem("Copy Branch Name") { [model, item] in model.copyBranchName(item) }
+                let branch = ClosureMenuItem(String(localized: .copyBranchName)) { [model, item] in model.copyBranchName(item) }
                 branch.image = MenuIcons.symbol("arrow.triangle.branch")
                 branch.keyEquivalent = "."
                 branch.keyEquivalentModifierMask = [.command, .shift]
                 menu.addItem(branch)
             }
-            let github = ClosureMenuItem("Open on GitHub") { [model, item] in model.openOnGitHub(item) }
+            let github = ClosureMenuItem(String(localized: .openOnGitHub)) { [model, item] in model.openOnGitHub(item) }
             github.image = MenuIcons.symbol("arrow.up.right.square")
             menu.addItem(github)
         }
 
         if item.kind == .issue || item.kind == .draft {
             menu.addItem(.separator())
-            let delete = ClosureMenuItem(item.kind == .draft ? "Delete Draft…" : "Delete Issue…") { [model, item] in
+            let delete = ClosureMenuItem(String(localized: item.kind == .draft ? .deleteDraft : .deleteIssue)) { [model, item] in
                 model.requestDelete(item)
             }
             delete.image = MenuIcons.symbol("trash")
@@ -1302,14 +1306,14 @@ struct ItemMenuBuilder {
             menu.addItem(entry)
         }
         menu.addItem(.separator())
-        let other = ClosureMenuItem("Choose a Date…") { [model, item] in
+        let other = ClosureMenuItem(String(localized: .chooseADate)) { [model, item] in
             model.overlay = .palette(.dueDate(itemId: item.id))
         }
         other.image = MenuIcons.symbol("calendar.badge.plus")
         hint(other, "d")
         menu.addItem(other)
         if current.contains(where: { $0 != nil }) {
-            let remove = ClosureMenuItem("Remove Due Date") { [model] in model.setDueDate(of: targets, to: nil) }
+            let remove = ClosureMenuItem(String(localized: .removeDueDate)) { [model] in model.setDueDate(of: targets, to: nil) }
             remove.image = MenuIcons.symbol("calendar.badge.minus")
             menu.addItem(remove)
         }
@@ -1342,7 +1346,7 @@ struct ItemMenuBuilder {
                     }
                     if boards.count > 1 { add.addItem(submenu(project.title, nil, target)) }
                 }
-                let title = boards.count == 1 ? "Add to \(boards[0].title)" : "Add to Project"
+                let title = String(localized: boards.count == 1 ? .addToNamedProject(project: boards[0].title) : .addToProject)
                 entries.append(submenu(title, MenuIcons.status(.noProject), add))
             }
         }
@@ -1359,13 +1363,13 @@ struct ItemMenuBuilder {
                 number(entry, index + 1)
                 status.addItem(entry)
             }
-            entries.append(submenu("Status", MenuIcons.status(model.glyph(of: item)), status))
+            entries.append(submenu(String(localized: .status), MenuIcons.status(model.glyph(of: item)), status))
         }
 
         let priorities = model.priorityOptions(projectId: item.projectId)
         if !priorities.isEmpty {
             let priority = NSMenu()
-            let none = ClosureMenuItem("No priority", checked: targets.allSatisfy { $0.priorityId == nil }) { [model, item] in
+            let none = ClosureMenuItem(String(localized: .noPriority), checked: targets.allSatisfy { $0.priorityId == nil }) { [model, item] in
                 model.pick(.priority, id: "", for: item)
             }
             none.image = MenuIcons.priority(.none)
@@ -1380,7 +1384,7 @@ struct ItemMenuBuilder {
                 number(entry, index + 1)
                 priority.addItem(entry)
             }
-            entries.append(submenu("Priority", MenuIcons.priority(model.priorityLevel(of: item)), priority))
+            entries.append(submenu(String(localized: .priority), MenuIcons.priority(model.priorityLevel(of: item)), priority))
         }
 
         if item.kind != .draft {
@@ -1395,7 +1399,7 @@ struct ItemMenuBuilder {
                 people.addItem(entry)
             }
             let icon = item.assignees.first.map(MenuIcons.avatar) ?? MenuIcons.symbol("person.crop.circle")
-            entries.append(submenu("Assignee", icon, people))
+            entries.append(submenu(String(localized: .assignee), icon, people))
 
             let labels = NSMenu()
             for label in model.labels(for: item) {
@@ -1407,15 +1411,15 @@ struct ItemMenuBuilder {
                 labels.addItem(entry)
             }
             if labels.items.isEmpty {
-                let empty = NSMenuItem(title: "No labels in this repository", action: nil, keyEquivalent: "")
+                let empty = NSMenuItem(title: String(localized: .noLabelsInRepository), action: nil, keyEquivalent: "")
                 empty.isEnabled = false
                 labels.addItem(empty)
             }
-            entries.append(submenu("Labels", MenuIcons.symbol("tag"), labels))
+            entries.append(submenu(String(localized: .labels), MenuIcons.symbol("tag"), labels))
 
             if let viewer = model.viewer {
                 let mine = targets.allSatisfy { target in target.assignees.contains { $0.id == viewer.id } }
-                let assignMe = ClosureMenuItem(mine ? "Unassign Me" : "Assign to Me") { [model] in
+                let assignMe = ClosureMenuItem(String(localized: mine ? .unassignMe : .assignToMe)) { [model] in
                     model.toggleAssignMe(targets)
                 }
                 assignMe.image = MenuIcons.symbol(mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
@@ -1424,7 +1428,7 @@ struct ItemMenuBuilder {
             }
         }
         if targets.contains(where: model.canHaveDueDate) {
-            entries.append(submenu("Due Date", MenuIcons.symbol("calendar"), dueDateMenu(targets)))
+            entries.append(submenu(String(localized: .dueDateTitle), MenuIcons.symbol("calendar"), dueDateMenu(targets)))
         }
         return entries
     }
@@ -1435,14 +1439,15 @@ struct ItemMenuBuilder {
         guard targets.allSatisfy(model.canRelate) else { return [] }
         var entries: [NSMenuItem] = []
         let hasParent = targets.contains { $0.parentId != nil }
-        let parent = ClosureMenuItem(hasParent ? "Change Parent Issue…" : "Set Parent Issue…") { [model, item] in
+        let parent = ClosureMenuItem(String(localized: hasParent ? .changeParentIssueMenuItem : .setParentIssueMenuItem)) { [model, item] in
             model.overlay = .palette(.parent(itemId: item.id))
         }
         parent.image = MenuIcons.symbol("arrow.turn.left.up")
         entries.append(parent)
         if hasParent {
             let number = targets.count == 1 ? item.parentNumber : nil
-            let remove = ClosureMenuItem(number.map { "Remove from #\($0)" } ?? "Remove from Parent") { [model] in
+            let title = number.map { String(localized: .removeFromNumber(number: "#\($0)")) } ?? String(localized: .removeFromParentMenuItem)
+            let remove = ClosureMenuItem(title) { [model] in
                 model.setParent(of: targets, to: nil)
             }
             remove.image = MenuIcons.symbol("arrow.uturn.left")
@@ -1450,30 +1455,30 @@ struct ItemMenuBuilder {
         }
         if targets.count == 1 {
             let add = NSMenu()
-            let new = ClosureMenuItem("New Sub-issue…") { [model, item] in
+            let new = ClosureMenuItem(String(localized: .newSubIssueMenuItem)) { [model, item] in
                 model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
             }
             new.image = MenuIcons.symbol("plus")
             add.addItem(new)
-            let existing = ClosureMenuItem("Add Existing Issue…") { [model, item] in
+            let existing = ClosureMenuItem(String(localized: .addExistingIssueMenuItem)) { [model, item] in
                 model.overlay = .palette(.addSubIssue(itemId: item.id))
             }
             existing.image = MenuIcons.symbol("magnifyingglass")
             add.addItem(existing)
-            entries.append(submenu("Add Sub-issue", MenuIcons.subIssue, add))
+            entries.append(submenu(String(localized: .addSubIssue), MenuIcons.subIssue, add))
         }
         let mark = NSMenu()
-        let blockedBy = ClosureMenuItem("Blocked By…") { [model, item] in
+        let blockedBy = ClosureMenuItem(String(localized: .blockedByMenuItem)) { [model, item] in
             model.overlay = .palette(.blockedBy(itemId: item.id))
         }
         blockedBy.image = MenuIcons.blocked
         mark.addItem(blockedBy)
-        let blocking = ClosureMenuItem("Blocking…") { [model, item] in
+        let blocking = ClosureMenuItem(String(localized: .blockingMenuItem)) { [model, item] in
             model.overlay = .palette(.blocking(itemId: item.id))
         }
         blocking.image = MenuIcons.blocking
         mark.addItem(blocking)
-        entries.append(submenu("Mark As", MenuIcons.blocked, mark))
+        entries.append(submenu(String(localized: .markAsMenu), MenuIcons.blocked, mark))
         return entries
     }
 

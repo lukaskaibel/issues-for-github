@@ -28,23 +28,23 @@ struct NewIssueView: View {
                             Button(project.title) { selectProject(project.id) }
                         }
                         Divider()
-                        Button("No project") { selectProject(nil) }
+                        Button(.noProject) { selectProject(nil) }
                     } label: {
                         projectChip
                     }
                     .menuStyle(.button)
                     .buttonStyle(PlainPressStyle())
                     .fixedSize()
-                    .help("The board the issue goes on")
+                    .help(Text(.newIssueBoardTooltip))
                 } else {
                     projectChip
                 }
                 Text("›").foregroundStyle(Theme.textTertiary)
-                Text(draft.parent == nil ? "New issue" : "New sub-issue").font(.small).foregroundStyle(Theme.textSecondary)
+                Text(draft.parent == nil ? .newIssueHeader : .newSubIssueHeader).font(.small).foregroundStyle(Theme.textSecondary)
                 Spacer()
                 if restored {
                     // Closing the dialog keeps what was typed, as in Linear; this starts over instead.
-                    Button("Discard draft") {
+                    Button(.discardDraft) {
                         model.unsentNewIssue = nil
                         prepare()
                         focus = .title
@@ -54,14 +54,14 @@ struct NewIssueView: View {
                     .foregroundStyle(Theme.textSecondary)
                     .padding(.trailing, 4)
                 }
-                IconButton(systemName: "xmark", label: "Close (Esc)") { model.overlay = nil }
+                IconButton(systemName: "xmark", label: String(localized: .closeWithEscShortcut)) { model.overlay = nil }
             }
             .padding(.leading, 18)
             .padding(.trailing, 14)
             .padding(.top, 14)
 
             VStack(alignment: .leading, spacing: 8) {
-                TextField("Issue title", text: $draft.title)
+                TextField(.issueTitlePlaceholder, text: $draft.title)
                     .textFieldStyle(.plain)
                     .font(.system(size: 18, weight: .semibold))
                     .focused($focus, equals: .title)
@@ -70,7 +70,7 @@ struct NewIssueView: View {
 
                 ZStack(alignment: .topLeading) {
                     if draft.body.isEmpty {
-                        Text("Add a description…")
+                        Text(.addDescriptionPlaceholder)
                             .font(.system(size: 14))
                             .foregroundStyle(Theme.textTertiary)
                             .allowsHitTesting(false)
@@ -94,45 +94,45 @@ struct NewIssueView: View {
                 if draft.projectId != nil {
                     chip(.status) {
                         StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: draft.statusId))
-                        Text(statuses.first { $0.id == draft.statusId }?.name ?? "No status")
+                        (statuses.first { $0.id == draft.statusId }.map { Text($0.name) } ?? Text(.noStatus))
                     }
                 }
                 if !priorities.isEmpty {
                     chip(.priority) {
                         let option = priorities.first { $0.id == draft.priorityId }
                         PriorityIcon(level: option?.priorityLevel ?? .none)
-                        Text(option?.name ?? "Priority")
+                        (option.map { Text($0.name) } ?? Text(.priority))
                     }
                 }
                 chip(.assignees) {
                     if draft.assignees.isEmpty {
                         Image(systemName: "person").font(.system(size: 11, weight: .medium))
-                        Text("Assignee")
+                        Text(.assignee)
                     } else {
                         AvatarStack(people: draft.assignees, size: 16)
-                        Text(draft.assignees.count == 1 ? draft.assignees[0].login : "\(draft.assignees.count) people")
+                        draft.assignees.count == 1 ? Text(draft.assignees[0].login) : Text(.peopleCount(count: draft.assignees.count))
                     }
                 }
                 chip(.labels) {
                     if draft.labels.isEmpty {
                         Image(systemName: "tag").font(.system(size: 11, weight: .medium))
-                        Text("Labels")
+                        Text(.labels)
                     } else {
                         Circle().fill(Theme.labelColor(draft.labels[0].color)).frame(width: 7, height: 7)
-                        Text(draft.labels.count == 1 ? draft.labels[0].name : "\(draft.labels.count) labels")
+                        draft.labels.count == 1 ? Text(draft.labels[0].name) : Text(.labelCount(count: draft.labels.count))
                     }
                 }
                 // The date is a field of the board, so an issue going on none has no date.
                 if draft.projectId != nil {
                     chip(.dueDate) {
                         DueDateIcon(size: 11)
-                        Text(draft.dueDate.flatMap(CalendarDay.init)?.mediumLabel() ?? "Due date")
+                        (draft.dueDate.flatMap(CalendarDay.init).map { Text($0.mediumLabel()) } ?? Text(.dueDate))
                     }
                 }
                 if let parent = draft.parent {
                     HStack(spacing: 6) {
                         SubIssueGlyph().frame(width: 12, height: 12)
-                        Text("Sub-issue of \(parent.displayNumber)")
+                        Text(.subIssueOf(number: parent.displayNumber))
                     }
                     .font(.small)
                     .foregroundStyle(Theme.textBody)
@@ -148,13 +148,13 @@ struct NewIssueView: View {
             Rectangle().fill(Theme.popoverBorder).frame(height: 1)
 
             HStack(spacing: 10) {
-                Text("Repository").font(.small).foregroundStyle(Theme.textSecondary)
+                Text(.repository).font(.small).foregroundStyle(Theme.textSecondary)
                 Menu {
                     ForEach(repos) { repo in
                         Button(repo.nameWithOwner) { selectRepo(repo.id) }
                     }
                 } label: {
-                    Text(repos.first { $0.id == draft.repoId }?.nameWithOwner ?? "Choose…")
+                    (repos.first { $0.id == draft.repoId }.map { Text($0.nameWithOwner) } ?? Text(.chooseRepositoryPlaceholder))
                         .font(.small)
                 }
                 .menuStyle(.borderlessButton)
@@ -163,7 +163,7 @@ struct NewIssueView: View {
                 .disabled(draft.parent != nil || repos.count < 2 || choosesProject)
                 Spacer()
                 Text("⌘↵").font(.tiny).foregroundStyle(Theme.textSecondary)
-                Button("Create issue", action: create)
+                Button(.createIssueMac, action: create)
                     .buttonStyle(PrimaryButtonStyle())
                     .keyboardShortcut(.return, modifiers: .command)
                     .disabled(!canCreate)
@@ -213,7 +213,7 @@ struct NewIssueView: View {
                 Text(project.title)
             } else {
                 RepositoryIcon(size: 10)
-                Text(repos.first?.shortName ?? "No project")
+                (repos.first.map { Text($0.shortName) } ?? Text(.noProject))
             }
             if choosesProject {
                 Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.textTertiary)
@@ -344,7 +344,7 @@ struct NewIssueView: View {
                 PickerItem(id: option.id, title: option.name, selected: draft.statusId == option.id, icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id))))
             }
         case .priority:
-            return [PickerItem(id: "", title: "No priority", selected: draft.priorityId == nil, icon: AnyView(PriorityIcon(level: .none)))]
+            return [PickerItem(id: "", title: String(localized: .noPriority), selected: draft.priorityId == nil, icon: AnyView(PriorityIcon(level: .none)))]
                 + priorities.map { option in
                     PickerItem(id: option.id, title: option.name, selected: draft.priorityId == option.id, icon: AnyView(PriorityIcon(level: option.priorityLevel)))
                 }

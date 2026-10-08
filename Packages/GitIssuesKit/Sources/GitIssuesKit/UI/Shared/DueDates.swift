@@ -27,9 +27,9 @@ struct DueBadge: Equatable {
     /// "Due Friday, 9 October", "Overdue since 3 October".
     var tooltip: String {
         switch tone {
-        case .overdue: "Overdue since \(day.longLabel)"
-        case .today: "Due today"
-        case .upcoming, .settled: "Due \(day.longLabel)"
+        case .overdue: String(localized: .overdueSince(date: day.longLabel))
+        case .today: String(localized: .dueToday)
+        case .upcoming, .settled: String(localized: .dueOn(date: day.longLabel))
         }
     }
 }
@@ -40,9 +40,9 @@ extension CalendarDay {
     func shortLabel(today: CalendarDay = .today()) -> String {
         let distance = days(from: today)
         switch distance {
-        case 0: return "Today"
-        case 1: return "Tomorrow"
-        case -1: return "Yesterday"
+        case 0: return String(localized: .today)
+        case 1: return String(localized: .tomorrow)
+        case -1: return String(localized: .yesterday)
         case 2...6: return date().formatted(.dateTime.weekday(.abbreviated))
         default:
             return year == today.year
@@ -54,9 +54,9 @@ extension CalendarDay {
     /// For the issue's properties: "Today", "Tomorrow", else "Fri, 9 Oct".
     func mediumLabel(today: CalendarDay = .today()) -> String {
         switch days(from: today) {
-        case 0: "Today"
-        case 1: "Tomorrow"
-        case -1: "Yesterday"
+        case 0: String(localized: .today)
+        case 1: String(localized: .tomorrow)
+        case -1: String(localized: .yesterday)
         default:
             year == today.year
                 ? date().formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
@@ -155,7 +155,7 @@ extension AppModel {
         }
         if current.contains(where: { $0 != nil }) {
             rows.append(PickerItem(
-                id: "", title: "Remove due date",
+                id: "", title: String(localized: .removeDueDateRow),
                 icon: AnyView(Image(systemName: "xmark").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary))
             ))
         }
@@ -211,12 +211,10 @@ struct DueEntryBanner: View {
                     .font(.uiSemibold)
                     .foregroundStyle(summary.sign.color)
             }
-            HStack(spacing: 8) {
-                if canStart {
-                    button("Start", "play.circle") { model.startWork(on: item) }
-                }
-                button("Mark as Done", "checkmark.circle") { model.markDone(item) }
-                button("Move to Tomorrow", "calendar") { model.moveToTomorrow(item) }
+            // In a row, or one under another where the row doesn't fit (a phone, a longer language).
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { buttons(canStart: canStart) }
+                VStack(alignment: .leading, spacing: 8) { buttons(canStart: canStart) }
             }
         }
         .padding(.horizontal, 14)
@@ -226,7 +224,16 @@ struct DueEntryBanner: View {
     }
 
     @ViewBuilder
-    private func button(_ title: String, _ symbol: String, action: @escaping () -> Void) -> some View {
+    private func buttons(canStart: Bool) -> some View {
+        if canStart {
+            button(.reminderActionStart, "play.circle") { model.startWork(on: item) }
+        }
+        button(.reminderActionMarkAsDone, "checkmark.circle") { model.markDone(item) }
+        button(.reminderActionMoveToTomorrow, "calendar") { model.moveToTomorrow(item) }
+    }
+
+    @ViewBuilder
+    private func button(_ title: LocalizedStringResource, _ symbol: String, action: @escaping () -> Void) -> some View {
         #if os(macOS)
         Button(action: action) { Label(title, systemImage: symbol) }
             .buttonStyle(SecondaryButtonStyle())

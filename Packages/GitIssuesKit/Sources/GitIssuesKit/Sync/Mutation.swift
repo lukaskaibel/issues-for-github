@@ -523,50 +523,62 @@ extension Mutation {
             } else {
                 value = nil
             }
-            return value.map { "#\($0)" } ?? "New"
+            return value.map { "#\($0)" } ?? String(localized: .unsentIssueNumber)
+        }
+        func line(_ number: String, _ text: LocalizedStringResource) -> (number: String, text: String) {
+            (number, String(localized: text))
+        }
+        /// The "#12" that starts the label of a deletion or an Inbox entry.
+        func leadingNumber(_ label: String) -> String {
+            label.components(separatedBy: " ").first ?? ""
         }
         switch self {
         case .setField(let m):
             let name = try m.optionId.flatMap {
                 try String.fetchOne(db, sql: "SELECT name FROM fieldOption WHERE fieldId = ? AND id = ?", arguments: [m.fieldId, $0])
             }
-            let field = m.kind == .status ? "Status" : "Priority"
-            return (try number(itemId: m.itemId), name.map { "\(field) changed to \($0)" } ?? "\(field) cleared")
+            let text: LocalizedStringResource = switch (m.kind, name) {
+            case (.status, let name?): .queuedStatusChanged(status: name)
+            case (.status, nil): .queuedStatusCleared
+            case (.priority, let name?): .queuedPriorityChanged(priority: name)
+            case (.priority, nil): .queuedPriorityCleared
+            }
+            return line(try number(itemId: m.itemId), text)
         case .setDate(let m):
             let day = m.date.flatMap(CalendarDay.init).map { $0.date().formatted(.dateTime.day().month(.abbreviated)) }
-            return (try number(itemId: m.itemId), day.map { "Due date set to \($0)" } ?? "Due date removed")
-        case .move(let m): return (try number(itemId: m.itemId), "Moved")
-        case .setTitle(let m): return (try number(contentId: m.contentId), "Title edited")
-        case .setBody(let m): return (try number(contentId: m.contentId), "Description edited")
-        case .setState(let m): return (try number(contentId: m.contentId), m.closed ? "Closed" : "Reopened")
-        case .editAssignees(let m): return (try number(contentId: m.contentId), "Assignees changed")
-        case .editLabels(let m): return (try number(contentId: m.contentId), "Labels changed")
-        case .addComment(let m): return (try number(contentId: m.contentId), "Comment added")
-        case .createIssue(let m): return ("New", "Issue created: \(m.title)")
-        case .deleteItem(let m): return (m.label.components(separatedBy: " ").first ?? "", "Deleted")
+            return line(try number(itemId: m.itemId), day.map { .queuedDueDateSet(date: $0) } ?? .queuedDueDateRemoved)
+        case .move(let m): return line(try number(itemId: m.itemId), .queuedMoved)
+        case .setTitle(let m): return line(try number(contentId: m.contentId), .queuedTitleEdited)
+        case .setBody(let m): return line(try number(contentId: m.contentId), .queuedDescriptionEdited)
+        case .setState(let m): return line(try number(contentId: m.contentId), m.closed ? .queuedClosed : .queuedReopened)
+        case .editAssignees(let m): return line(try number(contentId: m.contentId), .queuedAssigneesChanged)
+        case .editLabels(let m): return line(try number(contentId: m.contentId), .queuedLabelsChanged)
+        case .addComment(let m): return line(try number(contentId: m.contentId), .queuedCommentAdded)
+        case .createIssue(let m): return line(String(localized: .unsentIssueNumber), .queuedIssueCreated(title: m.title))
+        case .deleteItem(let m): return line(leadingNumber(m.label), .queuedDeleted)
         case .addToProject(let m):
             let project = try String.fetchOne(db, sql: "SELECT title FROM project WHERE id = ?", arguments: [m.projectId])
-            return (try number(contentId: m.contentId), "Added to \(project ?? "a project")")
+            return line(try number(contentId: m.contentId), project.map { .queuedAddedToProject(project: $0) } ?? .queuedAddedToAProject)
         case .setParent(let m):
-            let text = if m.parentId == nil {
-                "Removed from its parent"
+            let text: LocalizedStringResource = if m.parentId == nil {
+                .queuedRemovedFromParent
             } else if let parent = m.parentNumber {
-                "Made a sub-issue of #\(parent)"
+                .queuedMadeSubIssueOf(number: "#\(parent)")
             } else {
-                "Made a sub-issue of a new issue"
+                .queuedMadeSubIssueOfNewIssue
             }
-            return (try number(contentId: m.child.contentId), text)
+            return line(try number(contentId: m.child.contentId), text)
         case .setBlocking(let m):
-            let text = switch (m.isBlocked, m.blocker.number) {
-            case (true, let blocker?): "Marked as blocked by #\(blocker)"
-            case (true, nil): "Marked as blocked by a new issue"
-            case (false, let blocker?): "No longer blocked by #\(blocker)"
-            case (false, nil): "No longer blocked by a new issue"
+            let text: LocalizedStringResource = switch (m.isBlocked, m.blocker.number) {
+            case (true, let blocker?): .queuedMarkedBlockedBy(number: "#\(blocker)")
+            case (true, nil): .queuedMarkedBlockedByNewIssue
+            case (false, let blocker?): .queuedNoLongerBlockedBy(number: "#\(blocker)")
+            case (false, nil): .queuedNoLongerBlockedByNewIssue
             }
-            return (try number(contentId: m.blocked.contentId), text)
-        case .markThreadRead(let m): return (m.label.components(separatedBy: " ").first ?? "", "Marked as read")
-        case .archiveThread(let m): return (m.label.components(separatedBy: " ").first ?? "", "Archived in the Inbox")
-        case .unsubscribeThread(let m): return (m.label.components(separatedBy: " ").first ?? "", "Unsubscribed")
+            return line(try number(contentId: m.blocked.contentId), text)
+        case .markThreadRead(let m): return line(leadingNumber(m.label), .queuedMarkedAsRead)
+        case .archiveThread(let m): return line(leadingNumber(m.label), .queuedArchivedInInbox)
+        case .unsubscribeThread(let m): return line(leadingNumber(m.label), .queuedUnsubscribed)
         }
     }
 }

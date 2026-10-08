@@ -12,16 +12,16 @@ struct ReminderSettingsSection: View {
 
     var body: some View {
         Section {
-            Toggle("Remind me when issues assigned to me are due", isOn: $notifier.enabled)
+            Toggle(.remindWhenAssignedIssuesDue, isOn: $notifier.enabled)
             if notifier.enabled {
-                DatePicker("Time on the due date", selection: time, displayedComponents: .hourAndMinute)
-                Toggle("Again the next morning if still open", isOn: $notifier.remindsWhenOverdue)
+                DatePicker(.reminderTimeOnDueDate, selection: time, displayedComponents: .hourAndMinute)
+                Toggle(.remindAgainNextMorning, isOn: $notifier.remindsWhenOverdue)
                 permission
             }
         } header: {
-            Text("Reminders")
+            Text(.reminders)
         } footer: {
-            Text("The \(device) reminds you itself, from the due dates on GitHub. Nothing is sent anywhere for it.")
+            Text(footer)
         }
         .onAppear { notifier.refreshAuthorization() }
     }
@@ -30,25 +30,25 @@ struct ReminderSettingsSection: View {
     private var permission: some View {
         switch notifier.authorization {
         case .notDetermined:
-            Button("Allow Notifications") { notifier.requestPermissionIfNeeded(force: true) }
+            Button(.allowNotifications) { notifier.requestPermissionIfNeeded(force: true) }
         case .denied:
             LabeledContent {
-                Button("Open Settings") { openNotificationSettings() }
+                Button(.openNotificationSettings) { openNotificationSettings() }
             } label: {
-                Text("Notifications for Issues are off")
-                Text("Turn them on to get reminders.")
+                Text(.notificationsAreOff)
+                Text(.turnOnNotificationsHint)
             }
         default:
             EmptyView()
         }
     }
 
-    private var device: String {
-        #if os(macOS)
-        "Mac"
-        #else
-        UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
-        #endif
+    private var footer: LocalizedStringResource {
+        switch Platform.device {
+        case .mac: .remindersFooterMac
+        case .iPad: .remindersFooterIPad
+        case .iPhone: .remindersFooterIPhone
+        }
     }
 
     private var time: Binding<Date> {

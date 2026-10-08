@@ -210,10 +210,14 @@ private struct Checkbox: View {
             .buttonStyle(.plain)
             .sensoryFeedback(.selection, trigger: isChecked)
             .accessibilityLabel(item.label)
-            .accessibilityValue(isChecked ? "Checked" : "Unchecked")
+            .accessibilityValue(state)
         } else {
-            mark.accessibilityLabel(isChecked ? "Checked" : "Unchecked")
+            mark.accessibilityLabel(state)
         }
+    }
+
+    private var state: LocalizedStringResource {
+        isChecked ? .checkboxChecked : .checkboxUnchecked
     }
 
     private var mark: some View {

@@ -15,8 +15,8 @@ public enum InboxBucket: String, Codable, Sendable, CaseIterable {
 
     public var title: String {
         switch self {
-        case .forYou: "For you"
-        case .watching: "Watching"
+        case .forYou: String(localized: .inboxForYou)
+        case .watching: String(localized: .inboxWatching)
         }
     }
 }
@@ -139,7 +139,7 @@ public struct InboxEntry: Codable, FetchableRecord, PersistableRecord, Identifia
 
     /// "#12", or "website#12" when the issue isn't on any of your boards and its repository says where it lives.
     public func displayNumber(withRepo: Bool) -> String {
-        guard let number else { return isPullRequest ? "PR" : "Issue" }
+        guard let number else { return String(localized: isPullRequest ? .inboxNumberPullRequest : .inboxNumberIssue) }
         return withRepo ? "\(repoShortName)#\(number)" : "#\(number)"
     }
 
@@ -200,75 +200,107 @@ extension InboxEntry {
         let me = viewer?.lowercased()
         func isMe(_ login: String?) -> Bool { me != nil && login?.lowercased() == me }
         guard let event = headline(viewer: viewer) else { return fallbackSummary }
-        let who = event.actor.map(Self.name) ?? "Someone"
+        let who = event.actor.map(Self.name) ?? String(localized: .someone)
+        func summary(_ lead: LocalizedStringResource, excerpt: String? = nil, sign: InboxSummary.Sign) -> InboxSummary {
+            InboxSummary(actor: event.actor, lead: String(localized: lead), excerpt: excerpt, sign: sign)
+        }
         switch event.kind {
         case .assigned:
-            let whom = isMe(event.detail) ? "you" : (event.detail ?? "someone")
-            return InboxSummary(actor: event.actor, lead: "\(who) assigned \(whom)", sign: .assigned)
+            let lead: LocalizedStringResource = if isMe(event.detail) {
+                .inboxAssignedYou(who: who)
+            } else if let person = event.detail {
+                .inboxAssignedPerson(who: who, person: person)
+            } else {
+                .inboxAssignedSomeone(who: who)
+            }
+            return summary(lead, sign: .assigned)
         case .unassigned:
-            let whom = isMe(event.detail) ? "you" : (event.detail ?? "someone")
-            return InboxSummary(actor: event.actor, lead: "\(who) unassigned \(whom)", sign: .activity)
+            let lead: LocalizedStringResource = if isMe(event.detail) {
+                .inboxUnassignedYou(who: who)
+            } else if let person = event.detail {
+                .inboxUnassignedPerson(who: who, person: person)
+            } else {
+                .inboxUnassignedSomeone(who: who)
+            }
+            return summary(lead, sign: .activity)
         case .mentioned:
-            return InboxSummary(actor: event.actor, lead: "\(who) mentioned you", excerpt: event.text, sign: .mentioned)
+            return summary(.inboxMentionedYou(who: who), excerpt: event.text, sign: .mentioned)
         case .commented:
             if reason == "mention", Self.mentions(event.text, login: viewer) {
-                return InboxSummary(actor: event.actor, lead: "\(who) mentioned you:", excerpt: event.text, sign: .mentioned)
+                return summary(.inboxMentionedYouQuote(who: who), excerpt: event.text, sign: .mentioned)
             }
             if reason == "team_mention", let team = Self.teamMention(in: event.text) {
-                return InboxSummary(actor: event.actor, lead: "\(who) mentioned \(team):", excerpt: event.text, sign: .mentioned)
+                return summary(.inboxMentionedTeamQuote(who: who, team: team), excerpt: event.text, sign: .mentioned)
             }
             let commenters = Self.uniqueActors(activity.filter { $0.kind == .commented })
             if commenters.count > 1 {
-                let others = commenters.count - 1
-                return InboxSummary(actor: event.actor, lead: "\(who) and \(others) other\(others == 1 ? "" : "s") commented", sign: .comments)
+                return summary(.inboxOthersCommented(who: who, count: commenters.count - 1), sign: .comments)
             }
-            return InboxSummary(actor: event.actor, lead: "\(who):", excerpt: event.text, sign: .commented)
+            return summary(.inboxCommentQuote(who: who), excerpt: event.text, sign: .commented)
         case .opened:
             if Self.mentions(event.text, login: viewer) {
-                return InboxSummary(actor: event.actor, lead: "\(who) mentioned you:", excerpt: event.text, sign: .mentioned)
+                return summary(.inboxMentionedYouQuote(who: who), excerpt: event.text, sign: .mentioned)
             }
-            let place = bucket == .watching ? " in \(repo)" : ""
-            return InboxSummary(actor: event.actor, lead: "\(who) opened it\(place)", sign: .opened)
+            let lead: LocalizedStringResource = bucket == .watching
+                ? .inboxOpenedItInRepository(who: who, repository: repo)
+                : .inboxOpenedIt(who: who)
+            return summary(lead, sign: .opened)
         case .closed:
             switch event.detail {
             case "NOT_PLANNED":
-                return InboxSummary(actor: event.actor, lead: "\(who) closed it as not planned", sign: .notPlanned)
+                return summary(.inboxClosedAsNotPlanned(who: who), sign: .notPlanned)
             case "DUPLICATE":
-                return InboxSummary(actor: event.actor, lead: "\(who) closed it as a duplicate", sign: .notPlanned)
+                return summary(.inboxClosedAsDuplicate(who: who), sign: .notPlanned)
             default:
-                return InboxSummary(actor: event.actor, lead: isPullRequest ? "\(who) closed it" : "\(who) closed it as completed", sign: isPullRequest ? .notPlanned : .completed)
+                return isPullRequest
+                    ? summary(.inboxClosedPullRequest(who: who), sign: .notPlanned)
+                    : summary(.inboxClosedAsCompleted(who: who), sign: .completed)
             }
         case .reopened:
-            return InboxSummary(actor: event.actor, lead: "\(who) reopened it", sign: .reopened)
+            return summary(.inboxReopenedIt(who: who), sign: .reopened)
         case .merged:
-            return InboxSummary(actor: event.actor, lead: "\(who) merged it", sign: .merged)
+            return summary(.inboxMergedIt(who: who), sign: .merged)
         case .reviewRequested:
-            let whom = isMe(event.detail) ? "your review" : "a review from \(event.detail ?? "someone")"
-            return InboxSummary(actor: event.actor, lead: "\(who) requested \(whom)", sign: .reviewRequested)
+            let lead: LocalizedStringResource = if isMe(event.detail) {
+                .inboxRequestedYourReview(who: who)
+            } else if let person = event.detail {
+                .inboxRequestedReviewFrom(who: who, person: person)
+            } else {
+                .inboxRequestedReviewFromSomeone(who: who)
+            }
+            return summary(lead, sign: .reviewRequested)
         case .reviewed:
             switch event.detail {
-            case "APPROVED": return InboxSummary(actor: event.actor, lead: "\(who) approved it", sign: .approved)
-            case "CHANGES_REQUESTED": return InboxSummary(actor: event.actor, lead: "\(who) requested changes", excerpt: event.text, sign: .changesRequested)
-            default: return InboxSummary(actor: event.actor, lead: event.text == nil ? "\(who) reviewed it" : "\(who) reviewed it:", excerpt: event.text, sign: .commented)
+            case "APPROVED": return summary(.inboxApprovedIt(who: who), sign: .approved)
+            case "CHANGES_REQUESTED": return summary(.inboxRequestedChanges(who: who), excerpt: event.text, sign: .changesRequested)
+            default: return summary(event.text == nil ? .inboxReviewedIt(who: who) : .inboxReviewedItQuote(who: who), excerpt: event.text, sign: .commented)
             }
         case .statusChanged:
-            let place = event.project.map { " in \($0)" } ?? ""
-            return InboxSummary(actor: event.actor, lead: "\(who) moved it to \(event.detail ?? "another status")\(place)", sign: .statusChanged)
+            let lead: LocalizedStringResource = switch (event.detail, event.project) {
+            case (let status?, let project?): .inboxMovedToInProject(who: who, status: status, project: project)
+            case (let status?, nil): .inboxMovedTo(who: who, status: status)
+            case (nil, let project?): .inboxMovedToAnotherStatusInProject(who: who, project: project)
+            case (nil, nil): .inboxMovedToAnotherStatus(who: who)
+            }
+            return summary(lead, sign: .statusChanged)
         }
     }
 
     /// Before the issue has been read, or when nothing new is left to show, GitHub's reason says enough.
     private var fallbackSummary: InboxSummary {
-        switch reason {
-        case "assign": InboxSummary(lead: "You were assigned", sign: .assigned)
-        case "mention": InboxSummary(lead: "You were mentioned", sign: .mentioned)
-        case "team_mention": InboxSummary(lead: "Your team was mentioned", sign: .mentioned)
-        case "review_requested": InboxSummary(lead: "Your review was requested", sign: .reviewRequested)
+        func summary(_ lead: LocalizedStringResource, sign: InboxSummary.Sign) -> InboxSummary {
+            InboxSummary(lead: String(localized: lead), sign: sign)
+        }
+        return switch reason {
+        case "assign": summary(.inboxYouWereAssigned, sign: .assigned)
+        case "mention": summary(.inboxYouWereMentioned, sign: .mentioned)
+        case "team_mention": summary(.inboxYourTeamWasMentioned, sign: .mentioned)
+        case "review_requested": summary(.inboxYourReviewWasRequested, sign: .reviewRequested)
         case "state_change":
-            state == "MERGED" ? InboxSummary(lead: "Merged", sign: .merged)
-                : state == "CLOSED" ? InboxSummary(lead: "Closed", sign: stateReason == "NOT_PLANNED" ? .notPlanned : .completed)
-                : InboxSummary(lead: "Reopened", sign: .reopened)
-        default: InboxSummary(lead: missing ? "No longer available" : "New activity", sign: .activity)
+            state == "MERGED" ? summary(.inboxMerged, sign: .merged)
+                : state == "CLOSED" ? summary(.inboxClosed, sign: stateReason == "NOT_PLANNED" ? .notPlanned : .completed)
+                : summary(.inboxReopened, sign: .reopened)
+        default: summary(missing ? .inboxNoLongerAvailable : .inboxNewActivity, sign: .activity)
         }
     }
 
@@ -339,10 +371,11 @@ extension InboxEntry {
 
     /// "Due today", or "Overdue since yesterday" and "Overdue since Mon, 5 Oct".
     fileprivate var dueSummary: InboxSummary {
-        guard let day = dueDay else { return InboxSummary(lead: "Due", sign: .due) }
-        guard reason == Self.overdueReason else { return InboxSummary(lead: "Due today", sign: .due) }
-        let since = day.days(from: .today()) == -1 ? "yesterday" : day.mediumLabel()
-        return InboxSummary(lead: "Overdue since \(since)", sign: .overdue)
+        guard let day = dueDay else { return InboxSummary(lead: String(localized: .inboxDueLead), sign: .due) }
+        guard reason == Self.overdueReason else { return InboxSummary(lead: String(localized: .dueToday), sign: .due) }
+        let lead = day.days(from: .today()) == -1
+            ? String(localized: .overdueSinceYesterday) : String(localized: .overdueSinceDay(day: day.mediumLabel()))
+        return InboxSummary(lead: lead, sign: .overdue)
     }
 }
 

@@ -22,14 +22,14 @@ struct SearchScreen: View {
                     Section {
                         ForEach(recent) { item in issueRow(item, highlight: nil) }
                     } header: {
-                        header("Recent")
+                        header(.recentIssues)
                     }
                 }
                 if !model.openProjects.isEmpty {
                     Section {
                         ForEach(model.openProjects) { project in projectRow(project) }
                     } header: {
-                        header("Projects")
+                        header(.projects)
                     }
                 }
             } else {
@@ -39,14 +39,14 @@ struct SearchScreen: View {
                     Section {
                         ForEach(issues) { item in issueRow(item, highlight: trimmed) }
                     } header: {
-                        header("Issues", detail: "\(issues.count) result\(issues.count == 1 ? "" : "s")")
+                        header(.issues, detail: String(localized: .resultCount(count: issues.count)))
                     }
                 }
                 if !projects.isEmpty {
                     Section {
                         ForEach(projects) { project in projectRow(project) }
                     } header: {
-                        header("Projects")
+                        header(.projects)
                     }
                 }
                 if issues.isEmpty, projects.isEmpty {
@@ -59,8 +59,8 @@ struct SearchScreen: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Theme.panel)
-        .navigationTitle("Search")
-        .searchable(text: $navigation.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Issues and projects")
+        .navigationTitle(.search)
+        .searchable(text: $navigation.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: Text(.searchPrompt))
         .searchFocused($focused)
         // Also when ⌘K opened this tab for the first time, so the field wasn't there yet when it was asked for.
         .task(id: navigation.searchFocusRequest) {
@@ -87,7 +87,7 @@ struct SearchScreen: View {
             .map(\.0)
     }
 
-    private func header(_ title: String, detail: String? = nil) -> some View {
+    private func header(_ title: LocalizedStringResource, detail: String? = nil) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.text)
             if let detail {

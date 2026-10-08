@@ -83,7 +83,7 @@ struct PickerList: View {
                                 .onHover { if $0 { index = position } }
                         }
                         if visible.isEmpty {
-                            Text("No matches")
+                            Text(.noMatches)
                                 .foregroundStyle(Theme.textSecondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 12)
@@ -149,7 +149,7 @@ struct PickerRow: View {
                     .frame(width: 22, height: 32)
                     .contentShape(Rectangle())
                     .onTapGesture(perform: onCheck)
-                    .help("Pick and keep the list open, to pick more")
+                    .help(Text(.pickAndKeepOpenTooltip))
                     .padding(.horizontal, -4)
             }
             item.icon.frame(width: 18, height: 18)

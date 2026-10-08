@@ -106,12 +106,18 @@ struct IssueRow: View {
     }
 
     private var accessibilityText: String {
-        let status = item.isOnBoard ? model.statusOption(of: item)?.name ?? "No status" : item.isClosed ? "Closed" : "No project"
+        let status = item.isOnBoard
+            ? model.statusOption(of: item)?.name ?? String(localized: .noStatus)
+            : String(localized: item.isClosed ? LocalizedStringResource.stateClosed : .noProject)
         var parts = [item.displayNumber, item.title, status]
-        if let priority = model.priorityOption(of: item)?.name { parts.append("\(priority) priority") }
-        if item.blockedByCount > 0 { parts.append("blocked") }
-        if !item.labels.isEmpty { parts.append("labels " + item.labels.map(\.name).joined(separator: ", ")) }
-        if !item.assignees.isEmpty { parts.append("assigned to " + item.assignees.map(\.login).joined(separator: ", ")) }
+        if let priority = model.priorityOption(of: item)?.name { parts.append(String(localized: .priorityLevelSpoken(priority: priority))) }
+        if item.blockedByCount > 0 { parts.append(String(localized: .blockedSpoken)) }
+        if !item.labels.isEmpty {
+            parts.append(String(localized: .labelsSpoken(labels: item.labels.map(\.name).joined(separator: ", "))))
+        }
+        if !item.assignees.isEmpty {
+            parts.append(String(localized: .assignedToSpoken(names: item.assignees.map(\.login).joined(separator: ", "))))
+        }
         if let due = model.dueBadge(for: item) { parts.append(due.tooltip) }
         if showsProject, let place = model.project(of: item)?.title ?? item.repoShortName { parts.append(place) }
         return parts.joined(separator: ", ")
@@ -172,9 +178,9 @@ struct SectionHeaderBand: View {
             }
             .buttonStyle(PlainPressStyle())
             .accessibilityIdentifier("section-\(title)")
-            .accessibilityLabel("\(title), \(count) issue\(count == 1 ? "" : "s")")
-            .accessibilityValue(folded ? "Folded" : "Open")
-            .accessibilityHint(folded ? "Shows the issues of this section" : "Hides the issues of this section")
+            .accessibilityLabel(.sectionIssueCount(title: title, count: count))
+            .accessibilityValue(folded ? LocalizedStringResource.sectionFolded : .sectionOpen)
+            .accessibilityHint(folded ? LocalizedStringResource.showsSectionIssues : .hidesSectionIssues)
             if let onAdd {
                 Button(action: onAdd) {
                     Image(systemName: "plus")
@@ -185,7 +191,7 @@ struct SectionHeaderBand: View {
                 }
                 .buttonStyle(PlainPressStyle())
                 .accessibilityIdentifier("add-\(title)")
-                .accessibilityLabel("New issue in \(title)")
+                .accessibilityLabel(.newIssueInStatus(status: title))
             }
         }
         .padding(.leading, 12)

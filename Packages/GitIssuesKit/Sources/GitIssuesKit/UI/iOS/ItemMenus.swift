@@ -15,7 +15,7 @@ struct ItemMenuContent: View {
     var body: some View {
         if showsOpen {
             Button(action: onOpen) {
-                Label("Open", systemImage: "arrow.up.left.and.arrow.down.right")
+                Label(.openIssue, systemImage: "arrow.up.left.and.arrow.down.right")
             }
             Divider()
         }
@@ -31,7 +31,7 @@ struct ItemMenuContent: View {
                 Button {
                     model.toggleAssignee(item, viewer.person)
                 } label: {
-                    Label(mine ? "Unassign Me" : "Assign to Me", systemImage: mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
+                    Label(mine ? .unassignMe : .assignToMe, systemImage: mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
                 }
             }
         }
@@ -47,22 +47,22 @@ struct ItemMenuContent: View {
             Button {
                 model.copyLink(item)
             } label: {
-                Label("Copy Link", systemImage: "link")
+                Label(.copyLink, systemImage: "link")
             }
             if item.branchName != nil {
                 Button {
                     model.copyBranchName(item)
                 } label: {
-                    Label("Copy Branch Name", systemImage: "arrow.triangle.branch")
+                    Label(.copyBranchName, systemImage: "arrow.triangle.branch")
                 }
             }
             ShareLink(item: url, subject: Text(item.title), message: Text("\(item.displayNumber) \(item.title)"), preview: SharePreview("\(item.displayNumber) \(item.title)")) {
-                Label("Share…", systemImage: "square.and.arrow.up")
+                Label(.share, systemImage: "square.and.arrow.up")
             }
             Button {
                 model.openOnGitHub(item)
             } label: {
-                Label("Open on GitHub", systemImage: "arrow.up.right.square")
+                Label(.openOnGitHub, systemImage: "arrow.up.right.square")
             }
         }
         if item.kind == .issue || item.kind == .draft, !item.isDetached {
@@ -70,7 +70,7 @@ struct ItemMenuContent: View {
             Button(role: .destructive) {
                 model.requestDelete(item)
             } label: {
-                Label(item.kind == .draft ? "Delete Draft…" : "Delete Issue…", systemImage: "trash")
+                Label(item.kind == .draft ? .deleteDraft : .deleteIssue, systemImage: "trash")
             }
             .disabled(!model.canDelete(item))
         }
@@ -88,42 +88,42 @@ struct RelationMenuItems: View {
         Button {
             navigation.sheet = .picker(itemId: item.id, kind: .parent)
         } label: {
-            Label(item.parentId == nil ? "Set Parent Issue…" : "Change Parent Issue…", systemImage: "arrow.turn.left.up")
+            Label(item.parentId == nil ? LocalizedStringResource.setParentIssueMenuItem : .changeParentIssueMenuItem, systemImage: "arrow.turn.left.up")
         }
         if item.parentId != nil {
             Button {
                 model.setParent(of: [model.item(id: item.id) ?? item], to: nil)
             } label: {
-                Label(item.parentNumber.map { "Remove from #\($0)" } ?? "Remove from Parent", systemImage: "arrow.uturn.left")
+                Label(item.parentNumber.map { .removeFromNumber(number: "#\($0)") } ?? .removeFromParentMenuItem, systemImage: "arrow.uturn.left")
             }
         }
         Menu {
             Button {
                 navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
             } label: {
-                Label("New Sub-issue", systemImage: "plus")
+                Label(.newSubIssue, systemImage: "plus")
             }
             Button {
                 navigation.sheet = .picker(itemId: item.id, kind: .addSubIssue)
             } label: {
-                Label("Add Existing Issue…", systemImage: "magnifyingglass")
+                Label(.addExistingIssueMenuItem, systemImage: "magnifyingglass")
             }
         } label: {
-            Label("Add Sub-issue", systemImage: "arrow.turn.down.right")
+            Label(.addSubIssue, systemImage: "arrow.turn.down.right")
         }
         Menu {
             Button {
                 navigation.sheet = .picker(itemId: item.id, kind: .blockedBy)
             } label: {
-                Label("Blocked By…", systemImage: "flag.fill")
+                Label(.blockedByMenuItem, systemImage: "flag.fill")
             }
             Button {
                 navigation.sheet = .picker(itemId: item.id, kind: .blocking)
             } label: {
-                Label("Blocking…", systemImage: "flag")
+                Label(.blockingMenuItem, systemImage: "flag")
             }
         } label: {
-            Label("Mark As", systemImage: "flag")
+            Label(.markAsMenu, systemImage: "flag")
         }
     }
 }
@@ -144,7 +144,7 @@ struct StatusMenu: View {
                 AddToProjectMenuItems(item: item)
             } label: {
                 Label {
-                    Text(boards.count == 1 ? "Add to \(boards[0].title)" : "Add to Project")
+                    Text(boards.count == 1 ? .addToNamedProject(project: boards[0].title) : .addToProject)
                 } icon: {
                     MenuImages.status(model.glyph(of: item), scheme)
                 }
@@ -156,7 +156,7 @@ struct StatusMenu: View {
     private var statusMenu: some View {
         let statuses = model.statusOptions(projectId: item.projectId)
         return Menu {
-            Picker("Status", selection: selection) {
+            Picker(.status, selection: selection) {
                 ForEach(statuses) { option in
                     Label {
                         Text(option.name)
@@ -169,7 +169,7 @@ struct StatusMenu: View {
             .pickerStyle(.inline)
         } label: {
             Label {
-                Text("Status")
+                Text(.status)
             } icon: {
                 MenuImages.status(model.glyph(of: item), scheme)
             }
@@ -198,7 +198,7 @@ struct AddToProjectMenuItems: View {
     var body: some View {
         let boards = model.boards(toAdd: item)
         if boards.count == 1, let project = boards.first {
-            Section("Add to \(project.title)") { columns(of: project) }
+            Section(.addToNamedProject(project: project.title)) { columns(of: project) }
         } else {
             ForEach(boards) { project in
                 Menu {
@@ -243,9 +243,9 @@ struct PriorityMenu: View {
 
     var body: some View {
         Menu {
-            Picker("Priority", selection: selection) {
+            Picker(.priority, selection: selection) {
                 Label {
-                    Text("No priority")
+                    Text(.noPriority)
                 } icon: {
                     MenuImages.priority(.none, scheme)
                 }
@@ -262,7 +262,7 @@ struct PriorityMenu: View {
             .pickerStyle(.inline)
         } label: {
             Label {
-                Text("Priority")
+                Text(.priority)
             } icon: {
                 MenuImages.priority(model.priorityLevel(of: item), scheme)
             }
@@ -302,7 +302,7 @@ struct AssigneeMenu: View {
             }
         } label: {
             Label {
-                Text("Assignee")
+                Text(.assignee)
             } icon: {
                 if let first = item.assignees.first {
                     MenuImages.avatar(first, scheme)
@@ -325,7 +325,7 @@ struct LabelsMenu: View {
         let labels = model.labels(for: item)
         Menu {
             if labels.isEmpty {
-                Text("No labels in this repository")
+                Text(.noLabelsInRepository)
             }
             ForEach(labels) { label in
                 Toggle(isOn: Binding(
@@ -340,7 +340,7 @@ struct LabelsMenu: View {
                 }
             }
         } label: {
-            Label("Labels", systemImage: "tag")
+            Label(.labels, systemImage: "tag")
         }
     }
 }
@@ -377,7 +377,7 @@ struct IssuePreview: View {
                     PropertyChip(text: priority.name) { PriorityIcon(level: priority.priorityLevel) }
                 }
                 if let person = item.assignees.first {
-                    PropertyChip(text: item.assignees.count == 1 ? person.login : "\(item.assignees.count) people") {
+                    PropertyChip(text: item.assignees.count == 1 ? person.login : String(localized: .peopleCount(count: item.assignees.count))) {
                         AvatarStack(people: item.assignees, size: 18)
                     }
                 }

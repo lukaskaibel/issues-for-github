@@ -29,20 +29,20 @@ struct StatusEditor: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityHint("Renames the status")
+                        .accessibilityHint(.renamesTheStatus)
                         Text("\(count(option))")
                             .font(.footnote)
                             .monospacedDigit()
                             .foregroundStyle(Theme.textTertiary)
-                            .accessibilityLabel("\(count(option)) issues")
+                            .accessibilityLabel(.issuesCount(count: count(option)))
                         Menu {
-                            Picker("Colour", selection: Binding(
+                            Picker(.colour, selection: Binding(
                                 get: { option.color },
                                 set: { color in edit(option) { $0.color = color } }
                             )) {
                                 ForEach(Defaults.optionColors, id: \.self) { color in
                                     Label {
-                                        Text(color.capitalized)
+                                        Text(Defaults.colourName(color))
                                     } icon: {
                                         MenuImages.label(Self.hex(color), scheme)
                                     }
@@ -57,7 +57,7 @@ struct StatusEditor: View {
                                 .frame(width: 32, height: 32)
                                 .contentShape(Rectangle())
                         }
-                        .accessibilityLabel("Colour: \(option.color.capitalized)")
+                        .accessibilityLabel(.colourIs(colour: Defaults.colourName(option.color)))
                     }
                     .deleteDisabled(statuses.count <= 1)
                 }
@@ -66,47 +66,45 @@ struct StatusEditor: View {
                     if let index = offsets.first { deleting = statuses[index] }
                 }
             } footer: {
-                Text("These are the project's Status field on GitHub and the columns of its board. Changes are saved on GitHub right away, so they need a connection.")
+                Text(.statusEditorFooter)
             }
             Section {
                 Button {
                     name = ""
                     adding = true
                 } label: {
-                    Label("Add Status", systemImage: "plus")
+                    Label(.addStatus, systemImage: "plus")
                 }
             }
         }
         .environment(\.editMode, .constant(.active))
-        .navigationTitle("Statuses")
+        .navigationTitle(.statuses)
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Rename Status", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
-            TextField("Name", text: $name)
-            Button("Cancel", role: .cancel) {}
-            Button("Rename") {
+        .alert(.renameStatus, isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+            TextField(.statusNamePlaceholder, text: $name)
+            Button(.cancel, role: .cancel) {}
+            Button(.rename) {
                 let trimmed = name.trimmingCharacters(in: .whitespaces)
                 if let option = renaming, !trimmed.isEmpty, trimmed != option.name { edit(option) { $0.name = trimmed } }
             }
         }
-        .alert("New Status", isPresented: $adding) {
-            TextField("Name", text: $name)
-            Button("Cancel", role: .cancel) {}
-            Button("Add") { add() }
+        .alert(.newStatus, isPresented: $adding) {
+            TextField(.statusNamePlaceholder, text: $name)
+            Button(.cancel, role: .cancel) {}
+            Button(.add) { add() }
         } message: {
-            Text("A new column at the end of the board.")
+            Text(.newStatusMessage)
         }
         .confirmationDialog(
-            deleting.map { "Delete the \"\($0.name)\" status?" } ?? "",
+            deleting.map { String(localized: .deleteStatusQuestion(name: $0.name)) } ?? "",
             isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
             titleVisibility: .visible,
             presenting: deleting
         ) { option in
-            Button("Delete Status", role: .destructive) { delete(option) }
+            Button(.deleteStatus, role: .destructive) { delete(option) }
         } message: { option in
             let count = count(option)
-            Text(count == 0
-                 ? "The status is removed from the project on GitHub."
-                 : "The status is removed from the project on GitHub. Its \(count) issue\(count == 1 ? "" : "s") stay in the project without a status.")
+            Text(count == 0 ? .statusRemovedFromProject : .statusRemovedIssuesStay(count: count))
         }
     }
 
@@ -144,6 +142,8 @@ struct StatusEditor: View {
         guard !options.isEmpty else { return }
         withAnimation(Theme.spring) { model.saveColumns(projectId: projectId, options) }
     }
+
+    /// The name of one of GitHub's option colours ("BLUE"), as the user reads it.
 
     /// GitHub's option colours as hex, for the colour menu's dots.
     static func hex(_ color: String) -> String {
@@ -188,24 +188,24 @@ struct ArrangeSectionsSheet: View {
                         withAnimation(Theme.spring) { model.setListOrder(ids, in: scope) }
                     }
                 } footer: {
-                    Text("This order is kept on this device only and doesn't change the project on GitHub.")
+                    Text(.sectionOrderFooter)
                 }
                 if !model.customListOrder(for: scope).isEmpty {
                     Section {
-                        Button("Back to the Usual Order") {
+                        Button(.backToUsualOrder) {
                             withAnimation(Theme.spring) { model.resetListOrder(in: scope) }
                         }
                     } footer: {
-                        Text("Work in progress first, then what's next, the backlog and what's done.")
+                        Text(.usualOrderExplanation)
                     }
                 }
             }
             .environment(\.editMode, .constant(.active))
-            .navigationTitle("Arrange Sections")
+            .navigationTitle(.arrangeSections)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", systemImage: "checkmark") { dismiss() }
+                    Button(.done, systemImage: "checkmark") { dismiss() }
                 }
             }
         }
@@ -253,7 +253,7 @@ private struct NoticeBanner: View {
                 }
                 if let label = notice.action?.adoptLabel {
                     HStack(spacing: 8) {
-                        Button("Keep Mine") { model.status.dismiss(notice.id) }
+                        Button(.keepMine) { model.status.dismiss(notice.id) }
                             .buttonStyle(.bordered)
                         Button(label) {
                             if let action = notice.action { model.apply(action) }
@@ -275,7 +275,7 @@ private struct NoticeBanner: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Dismiss")
+            .accessibilityLabel(.dismiss)
         }
         .padding(14)
         .glassEffect(.regular, in: .rect(cornerRadius: 22))

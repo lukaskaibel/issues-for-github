@@ -158,7 +158,7 @@ public final class GitHubAPI: Sendable {
         """
         let response: Response = try await client.run(query, variables: ["id": id], allowPartial: true)
         guard let node = response.node else {
-            throw APIError.graphql([GraphQLErrorItem(message: "Project not found.", type: "NOT_FOUND")])
+            throw APIError.graphql([GraphQLErrorItem(message: String(localized: .errorProjectNotFound), type: "NOT_FOUND")])
         }
         func field(named name: String) -> RemoteSelectField? {
             node.fields.items
@@ -381,7 +381,7 @@ public final class GitHubAPI: Sendable {
         """
         let response: Response = try await client.run(query, variables: ["id": contentId])
         guard let node = response.node else {
-            throw APIError.graphql([GraphQLErrorItem(message: "Issue not found.", type: "NOT_FOUND")])
+            throw APIError.graphql([GraphQLErrorItem(message: String(localized: .errorIssueNotFound), type: "NOT_FOUND")])
         }
         let comments = (node.comments?.items ?? []).map {
             Comment(id: $0.id, issueId: contentId, authorLogin: $0.author?.login, authorAvatarUrl: $0.author?.avatarUrl, body: $0.body, createdAt: $0.createdAt)
@@ -420,7 +420,7 @@ public final class GitHubAPI: Sendable {
         """
         let response: Response = try await client.run(query, variables: ["id": contentId])
         guard let node = response.node, let title = node.title else {
-            throw APIError.graphql([GraphQLErrorItem(message: "Issue not found.", type: "NOT_FOUND")])
+            throw APIError.graphql([GraphQLErrorItem(message: String(localized: .errorIssueNotFound), type: "NOT_FOUND")])
         }
         return (title, node.body ?? "")
     }

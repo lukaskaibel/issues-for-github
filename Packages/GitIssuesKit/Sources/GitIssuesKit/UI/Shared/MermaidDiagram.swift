@@ -18,7 +18,7 @@ struct MermaidDiagram<Fallback: View>: View {
                 if let image = current.image {
                     // At the size of the text around it; a diagram wider than the column scrolls, as code does.
                     ScrollView(.horizontal) {
-                        Image(image, scale: key.scale, label: Text("Diagram"))
+                        Image(image, scale: key.scale, label: Text(.diagram))
                     }
                     .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
                 } else {

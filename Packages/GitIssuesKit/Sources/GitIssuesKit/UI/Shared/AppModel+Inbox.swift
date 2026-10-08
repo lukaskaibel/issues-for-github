@@ -7,6 +7,8 @@ struct InboxUndo: Identifiable, Equatable {
     var id = UUID()
     /// "Archived #14", "Unsubscribed from #9" …
     var message: String
+    /// The symbol shown with it: an archive box, or a bell crossed out for unsubscribing.
+    var icon: String
     var threadIds: [String]
     var outboxIds: [Int64]
     /// Each entry's personal record before the change, to put back.
@@ -288,8 +290,10 @@ extension AppModel {
     /// E or ⌫: out of the Inbox, here and on GitHub, until something new happens. Can be undone for a few seconds.
     func archive(_ entries: [InboxEntry]) {
         guard !entries.isEmpty else { return }
-        let message = entries.count == 1 ? "Archived \(entries[0].displayNumber(withRepo: false))" : "Archived \(entries.count) notifications"
-        change(entries, message: message) { entry in
+        let message = entries.count == 1
+            ? String(localized: .archivedNotification(number: entries[0].displayNumber(withRepo: false)))
+            : String(localized: .archivedNotifications(count: entries.count))
+        change(entries, message: message, icon: "archivebox") { entry in
             entry.isDue ? [] : [.archiveThread(.init(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label))]
         }
     }
@@ -304,14 +308,16 @@ extension AppModel {
         // A due issue is no GitHub notification, so there is nothing to unsubscribe from.
         let entries = entries.filter { !$0.isDue }
         guard !entries.isEmpty else { return }
-        let message = entries.count == 1 ? "Unsubscribed from \(entries[0].displayNumber(withRepo: false))" : "Unsubscribed from \(entries.count) issues"
-        change(entries, message: message) { entry in
+        let message = entries.count == 1
+            ? String(localized: .unsubscribedFromIssue(number: entries[0].displayNumber(withRepo: false)))
+            : String(localized: .unsubscribedFromIssues(count: entries.count))
+        change(entries, message: message, icon: "bell.slash") { entry in
             let change = Mutation.ThreadChange(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label)
             return [.unsubscribeThread(change), .archiveThread(change)]
         }
     }
 
-    private func change(_ entries: [InboxEntry], message: String, mutations: (InboxEntry) -> [Mutation]) {
+    private func change(_ entries: [InboxEntry], message: String, icon: String, mutations: (InboxEntry) -> [Mutation]) {
         let before = visibleInbox
         let ids = entries.map(\.id)
         var records: [String: PersonalStore.Record?] = [:]
@@ -334,7 +340,7 @@ extension AppModel {
             inboxPicked = []
             selectNeighbour(after: Set(ids), in: before)
         }
-        inboxUndo = InboxUndo(message: message, threadIds: ids, outboxIds: added, records: records, unread: unread)
+        inboxUndo = InboxUndo(message: message, icon: icon, threadIds: ids, outboxIds: added, records: records, unread: unread)
         let engine = self.engine
         let undoId = inboxUndo?.id
         Task {
@@ -386,9 +392,13 @@ extension AppModel {
             selectNeighbour(after: Set(entries.map(\.id)), in: before)
         }
         scheduleInboxWake()
-        let when = until.formatted(Calendar.current.isDateInToday(until) ? .dateTime.hour().minute() : .dateTime.weekday(.wide).hour().minute())
-        let what = entries.count == 1 ? entries[0].displayNumber(withRepo: false) : "\(entries.count) notifications"
-        status.post(Notice(title: "Snoozed \(what)", message: "Back \(Calendar.current.isDateInToday(until) ? "at" : "on") \(when), or sooner if something happens."))
+        let title = entries.count == 1
+            ? String(localized: .snoozedNotification(number: entries[0].displayNumber(withRepo: false)))
+            : String(localized: .snoozedNotifications(count: entries.count))
+        let message = Calendar.current.isDateInToday(until)
+            ? String(localized: .snoozedBackAtTime(time: until.formatted(.dateTime.hour().minute())))
+            : String(localized: .snoozedBackOnDay(day: until.formatted(.dateTime.weekday(.wide).hour().minute())))
+        status.post(Notice(title: title, message: message))
     }
 
     /// Moves the Inbox's clock on: every minute, so "12m" becomes "13m", and right when a snoozed entry is due, so
@@ -417,9 +427,9 @@ enum SnoozeChoice: CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .laterToday: "Later Today"
-        case .tomorrow: "Tomorrow"
-        case .nextWeek: "Next Week"
+        case .laterToday: String(localized: .snoozeLaterToday)
+        case .tomorrow: String(localized: .tomorrow)
+        case .nextWeek: String(localized: .snoozeNextWeek)
         }
     }
 

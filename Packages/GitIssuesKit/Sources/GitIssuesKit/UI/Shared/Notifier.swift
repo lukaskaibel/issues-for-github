@@ -85,9 +85,18 @@ final class Notifier {
             UNNotificationCategory(
                 identifier: Self.dueCategory,
                 actions: [
-                    UNNotificationAction(identifier: Action.start, title: "Start", options: [], icon: UNNotificationActionIcon(systemImageName: "play.circle")),
-                    UNNotificationAction(identifier: Action.done, title: "Mark as Done", options: [], icon: UNNotificationActionIcon(systemImageName: "checkmark.circle")),
-                    UNNotificationAction(identifier: Action.tomorrow, title: "Move to Tomorrow", options: [], icon: UNNotificationActionIcon(systemImageName: "calendar")),
+                    UNNotificationAction(
+                        identifier: Action.start, title: String(localized: .reminderActionStart), options: [],
+                        icon: UNNotificationActionIcon(systemImageName: "play.circle")
+                    ),
+                    UNNotificationAction(
+                        identifier: Action.done, title: String(localized: .reminderActionMarkAsDone), options: [],
+                        icon: UNNotificationActionIcon(systemImageName: "checkmark.circle")
+                    ),
+                    UNNotificationAction(
+                        identifier: Action.tomorrow, title: String(localized: .reminderActionMoveToTomorrow), options: [],
+                        icon: UNNotificationActionIcon(systemImageName: "calendar")
+                    ),
                 ],
                 intentIdentifiers: []
             ),
@@ -180,15 +189,20 @@ final class Notifier {
             guard let projectId = item.projectId else { continue }
             let project = model.project(of: item)?.title
             let key = item.contentId ?? item.id
-            var occasions = [("due", day, "Due today")]
+            var occasions = [(kind: "due", day: day, overdue: false)]
             if remindsWhenOverdue {
-                occasions.append(("overdue", day.adding(days: 1, calendar: calendar), "Overdue since yesterday"))
+                occasions.append(("overdue", day.adding(days: 1, calendar: calendar), true))
             }
-            for (kind, fireDay, title) in occasions {
+            for (kind, fireDay, overdue) in occasions {
                 let parts = components(on: fireDay)
                 guard let date = calendar.date(from: parts), date > now else { continue }
                 let content = UNMutableNotificationContent()
-                content.title = project.map { "\(title) · \($0)" } ?? title
+                content.title = switch (overdue, project) {
+                case let (false, project?): String(localized: .dueTodayInProject(project: project))
+                case (false, nil): String(localized: .dueToday)
+                case let (true, project?): String(localized: .overdueSinceYesterdayInProject(project: project))
+                case (true, nil): String(localized: .overdueSinceYesterday)
+                }
                 content.body = "\(item.displayNumber) \(item.title)"
                 content.sound = .default
                 content.categoryIdentifier = Self.dueCategory

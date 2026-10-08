@@ -95,6 +95,38 @@ struct DueDateTests {
         #expect(first("7") == "2026-10-07")
     }
 
+    /// Words in the app's language, read besides English; today is Wednesday, 7 October.
+    @Test(arguments: [
+        ("de_DE", "morgen", "2026-10-08"), ("de_DE", "übermorgen", "2026-10-09"), ("de_DE", "fr", "2026-10-09"),
+        ("de_DE", "nächste woche", "2026-10-12"), ("de_DE", "nächsten fr", "2026-10-16"), ("de_DE", "in 3 tagen", "2026-10-10"),
+        ("de_DE", "2 wochen", "2026-10-21"), ("de_DE", "12. okt", "2026-10-12"), ("de_DE", "tomorrow", "2026-10-08"),
+        ("fr_FR", "demain", "2026-10-08"), ("fr_FR", "ven", "2026-10-09"), ("fr_FR", "vendredi prochain", "2026-10-16"),
+        ("fr_FR", "dans 3 jours", "2026-10-10"), ("fr_FR", "fin du mois", "2026-10-31"),
+        ("es_ES", "mañana", "2026-10-08"), ("es_ES", "manana", "2026-10-08"), ("es_ES", "miercoles", "2026-10-14"),
+        ("es_ES", "próximo viernes", "2026-10-16"), ("es_ES", "en 2 semanas", "2026-10-21"),
+        ("pt_BR", "amanhã", "2026-10-08"), ("pt_BR", "sexta", "2026-10-09"), ("pt_BR", "próxima sexta", "2026-10-16"),
+        ("pt_BR", "em 3 dias", "2026-10-10"),
+        ("ru_RU", "завтра", "2026-10-08"), ("ru_RU", "пятницу", "2026-10-09"), ("ru_RU", "в пятницу", "2026-10-09"),
+        ("ru_RU", "в следующую пятницу", "2026-10-16"), ("ru_RU", "через 3 дня", "2026-10-10"), ("ru_RU", "через 2 недели", "2026-10-21"),
+        ("ja_JP", "明日", "2026-10-08"), ("ja_JP", "金", "2026-10-09"), ("ja_JP", "来週の金曜", "2026-10-16"),
+        ("ja_JP", "来週", "2026-10-12"), ("ja_JP", "3日後", "2026-10-10"), ("ja_JP", "10月12日", "2026-10-12"),
+        ("zh_CN", "明天", "2026-10-08"), ("zh_CN", "周五", "2026-10-09"), ("zh_CN", "下周五", "2026-10-16"),
+        ("zh_CN", "3天后", "2026-10-10"), ("zh_CN", "10月12号", "2026-10-12"), ("zh_CN", "12号", "2026-10-12"),
+        ("ko_KR", "내일", "2026-10-08"), ("ko_KR", "금요일", "2026-10-09"), ("ko_KR", "다음 주 금요일", "2026-10-16"),
+        ("ko_KR", "3일 후", "2026-10-10"), ("ko_KR", "10월 12일", "2026-10-12"),
+    ])
+    func readsTheAppsLanguage(locale: String, query: String, expected: String) {
+        var calendar = Self.calendar
+        calendar.locale = Locale(identifier: locale)
+        let found = DueDateParser.suggestions(for: query, today: Self.today, calendar: calendar).first?.day.string
+        #expect(found == expected, "\(locale): \(query)")
+    }
+
+    @Test func readsOnlyEnglishAndTheAppsLanguage() {
+        // German words mean nothing in an English app.
+        #expect(days("morgen").isEmpty)
+    }
+
     @Test func turnsDownWhatIsNoDate() {
         #expect(days("31.2.").isEmpty)
         #expect(days("banana").isEmpty)

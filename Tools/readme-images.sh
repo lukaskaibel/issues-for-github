@@ -68,7 +68,7 @@ launch() {
   : > "$work/cmd"
   rm -f "$work/cmd.log"
   open -n -g "$app" --args -demo.active YES -screenshotMode YES -viewMode board -appearance "$1" \
-    -debugCommandFile "$PWD/$work/cmd" "-NSWindow Frame main" "160 80 1280 820 0 0 1512 949"
+    -AppleLanguages '(en)' -AppleLocale en_US -debugCommandFile "$PWD/$work/cmd" "-NSWindow Frame main" "160 80 1280 820 0 0 1512 949"
   for _ in $(seq 40); do
     pid=$(pgrep -nf "$PWD/$app/Contents/MacOS" || true)
     [ -n "$pid" ] && break

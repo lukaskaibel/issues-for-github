@@ -1,0 +1,56 @@
+Issues ist eine schnelle, native App für GitHub Issues und GitHub Projects auf Mac, iPhone und iPad. Ruhig fürs Auge, schnell bedient, und alles bleibt in GitHub: Wer im Team die App nicht nutzt, sieht dieselben Issues und Boards auf github.com.
+
+DER EINGANG
+• Was sich für dich geändert hat, aus GitHubs Mitteilungen: wer dir etwas zugewiesen, dich erwähnt, kommentiert, dich um ein Review gebeten oder ein Issue geschlossen hat, dem du folgst
+• Eine Mitteilung öffnet gleich das Issue, Neues steht oben, der neue Kommentar ist markiert
+• Deine fälligen Issues erscheinen am Tag selbst, mit „Beginnen“, „Als erledigt markieren“ und „Auf morgen verschieben“
+• Lesen, archivieren und zurückstellen per Taste oder Wischen; was du liest oder archivierst, gilt auch auf github.com
+• Zurückgestellte und ungelesene bleiben über iCloud auf all deinen Geräten gleich
+
+AUF DEM MAC
+• Jedes Projekt als Board oder Liste, dazu „Meine Issues“ mit allem, was dir zugewiesen ist
+• Jedes Issue deiner Repositories, auch die auf keinem Board; ein Klick bringt sie auf eines
+• Issues verschieben, auf dem Board oder in der Liste, und Spalten gestalten: hinzufügen, umbenennen, umfärben, neu anordnen
+• Per Tastatur: J und K wechseln das Issue, S, P, A und L ändern Status, Priorität, Zuständige und Labels, D setzt das Fälligkeitsdatum, und ⌘K öffnet eine Befehlspalette für alles andere
+• Mehrere Issues auswählen und gemeinsam ändern
+• Issues mit der Leertaste kurz ansehen oder neben Eigenschaften, Sub-Issues und Kommentaren öffnen
+• Sub-Issues und Blocker: Issues anderen unterordnen, vorhandene als Sub-Issues hinzufügen und festhalten, was was blockiert
+• Beschreibungen wie auf GitHub, mit Tabellen, abhakbaren Checklisten und Mermaid-Diagrammen
+• Zurück und Vorwärts wie im Browser
+
+AUF DEM IPHONE
+• Der Eingang als erster Tab, mit der Zahl der ungelesenen Mitteilungen
+• „Meine Issues“ mit allem, was dir zugewiesen ist, nach Status gruppiert
+• Jedes Projekt und Repository als Liste, mit einklappbaren Abschnitten
+• Nach rechts wischen markiert ein Issue als erledigt, nach links weist du es dir zu oder löschst es
+• Issue gedrückt halten: Status, Priorität, Zuständige, Labels, übergeordnetes Issue oder Blocker ändern oder es verschieben
+• Alle Projekte nach Titel oder Nummer durchsuchen
+• Tabellen, Checklisten und Mermaid-Diagramme in Beschreibungen, dargestellt wie auf GitHub
+
+AUF DEM IPAD
+• Seitenleiste mit allen Projekten und Repositories, das Board mit Drag & Drop
+• Der Eingang mit dem Issue daneben, wie in Mail
+• Issues öffnen sich neben ihren Eigenschaften, wie auf dem Mac
+• Mit Tastatur: J und K zum Wechseln, S, P, A und L zum Ändern eines Issues, ⌘N für ein neues
+
+FÄLLIGKEITSDATEN, DIE DICH ERINNERN
+• Gib einem Issue ein Fälligkeitsdatum: morgen, Freitag, nächste Woche, einen Tag im Kalender oder getippt als „in 3 Tagen“
+• Karten und Listen zeigen es, am Tag selbst orange, danach rot
+• Am Tag erinnern dich Mac, iPhone und iPad, mit Tasten zum Beginnen, Erledigen oder Verschieben auf morgen
+• Das Datum ist das Feld „Due date“ des Projekts auf GitHub, also sieht dein Team es auch
+
+SCHNELL UND ZUVERLÄSSIG
+• Jede Änderung ist sofort da und geht im Hintergrund an GitHub
+• Funktioniert offline: Änderungen warten und werden gesendet, sobald du wieder online bist
+• Sorgsam mit der Arbeit anderer: Hat jemand anderes denselben Text geändert, wird nichts überschrieben
+
+PRIVAT
+• Kein Account, kein Server, kein Tracking. Deine Anmeldedaten bleiben in deinem Schlüsselbund und werden nur an GitHub gesendet.
+• Auf einem deiner Geräte angemeldet? Die anderen melden sich über den iCloud-Schlüsselbund von selbst an.
+
+Auf Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Russisch, Japanisch, Koreanisch und Chinesisch, passend zur Sprache deines Geräts.
+
+Ohne Account ausprobieren: „Mit Beispieldaten ausprobieren“ öffnet zwei Beispielprojekte.
+
+Issues ist Open Source: github.com/lukaskaibel/issues-for-github
+Issues ist weder mit GitHub verbunden noch von GitHub unterstützt.

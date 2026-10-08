@@ -1,6 +1,10 @@
 #if os(iOS)
 import SwiftUI
 
+/// The name of the Date field the app adds to a project on GitHub for due dates (see `SyncEngine`). GitHub's data,
+/// so it stays English in every language.
+private let gitHubDueFieldName = "Due date"
+
 /// Picks the day an issue is due: quick choices, a date typed into the search field ("fri", "12.10."), or a day
 /// in the calendar. A pick closes the sheet.
 struct DueDateSheet: View {
@@ -33,17 +37,17 @@ struct DueDateSheet: View {
                         rows(model.dueDateItems(current: current).filter { !$0.id.isEmpty })
                     }
                     Section {
-                        DatePicker("Due date", selection: $day, displayedComponents: .date)
+                        DatePicker(.dueDate, selection: $day, displayedComponents: .date)
                             .datePickerStyle(.graphical)
                             .onChange(of: day) { _, new in pick(CalendarDay(new)) }
                     } footer: {
                         if addsField {
-                            Text("The first due date adds a “Due date” field to the project on GitHub.")
+                            Text(.firstDueDateAddsField(field: gitHubDueFieldName))
                         }
                     }
                     if current.contains(where: { $0 != nil }) {
                         Section {
-                            Button("Remove Due Date", role: .destructive) { pick(nil) }
+                            Button(.removeDueDate, role: .destructive) { pick(nil) }
                                 .frame(maxWidth: .infinity)
                         }
                     }
@@ -52,21 +56,21 @@ struct DueDateSheet: View {
                     rows(found)
                     if found.isEmpty {
                         ContentUnavailableView(
-                            "No date matches “\(query)”",
+                            .noDateMatches(query: query),
                             systemImage: "calendar",
-                            description: Text("Try “tomorrow”, “fri”, “next week”, “in 3 days” or “12.10.”.")
+                            description: Text(.dueDateSearchExamples)
                         )
                         .listRowBackground(Color.clear)
                     }
                 }
             }
-            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Type a date, like “fri” or “12.10.”")
+            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: Text(.dueDateSearchPrompt))
             .searchPresentationToolbarBehavior(.avoidHidingContent)
-            .navigationTitle("Due Date")
+            .navigationTitle(.dueDateTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", systemImage: "xmark") { dismiss() }
+                    Button(.cancel, systemImage: "xmark") { dismiss() }
                 }
             }
         }
@@ -147,18 +151,18 @@ struct DueDateMenu: View {
             Button {
                 navigation.sheet = .dueDate(item.id)
             } label: {
-                Label("Choose a Date…", systemImage: "calendar.badge.plus")
+                Label(.chooseADate, systemImage: "calendar.badge.plus")
             }
             if item.dueDate != nil {
                 Button(role: .destructive) {
                     model.setDueDate(of: [model.item(id: item.id) ?? item], to: nil)
                 } label: {
-                    Label("Remove Due Date", systemImage: "calendar.badge.minus")
+                    Label(.removeDueDate, systemImage: "calendar.badge.minus")
                 }
             }
         } label: {
             Label {
-                Text("Due Date")
+                Text(.dueDateTitle)
                 if let due = model.dueBadge(for: item) { Text(due.day.mediumLabel(today: today)) }
             } icon: {
                 Image(systemName: "calendar")

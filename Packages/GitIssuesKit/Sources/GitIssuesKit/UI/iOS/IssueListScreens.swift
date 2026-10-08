@@ -10,7 +10,7 @@ struct MyIssuesScreen: View {
 
     var body: some View {
         IssueList(scope: .myIssues)
-            .navigationTitle("My Issues")
+            .navigationTitle(.myIssues)
             .navigationSubtitle(SyncSubtitle.text(model))
             .toolbar {
                 if !wide {
@@ -21,16 +21,16 @@ struct MyIssuesScreen: View {
                         Button {
                             navigation.sheet = .arrangeSections(.myIssues)
                         } label: {
-                            Label("Arrange Sections…", systemImage: "arrow.up.arrow.down")
+                            Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
                         }
                         Divider()
                         Button {
                             model.refresh()
                         } label: {
-                            Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+                            Label(.syncNow, systemImage: "arrow.triangle.2.circlepath")
                         }
                     } label: {
-                        Label("Options", systemImage: "ellipsis")
+                        Label(.options, systemImage: "ellipsis")
                     }
                     NewIssueButton(context: NewIssueContext(assignToMe: true))
                 }
@@ -51,8 +51,8 @@ struct ProjectsScreen: View {
         Group {
             if model.projects.isEmpty {
                 MobileEmptyState(
-                    title: model.status.phase == .offline ? "You're offline" : "Looking for your projects…",
-                    message: "Boards come from GitHub Projects. If you have none yet, create one on GitHub and it will show up here.",
+                    title: model.status.phase == .offline ? String(localized: .youreOffline) : String(localized: .lookingForProjects),
+                    message: String(localized: .noProjectsMessage),
                     systemImage: "square.stack",
                     showsProgress: model.status.phase != .offline
                 )
@@ -68,7 +68,7 @@ struct ProjectsScreen: View {
                     let repos = model.boardRepositories
                     if !repos.isEmpty {
                         // Like the teams in Linear: every issue of a repository, whether it is on a board or not.
-                        Section("Repositories") {
+                        Section(.repositories) {
                             ForEach(repos) { repo in
                                 NavigationLink(value: Route.repository(repo.id)) {
                                     RepositoryRow(repo: repo)
@@ -77,7 +77,7 @@ struct ProjectsScreen: View {
                         }
                     }
                     if !closed.isEmpty {
-                        Section("Closed") {
+                        Section(.closedProjects) {
                             ForEach(closed) { project in
                                 NavigationLink(value: Route.project(project.id)) {
                                     ProjectRow(project: project)
@@ -92,7 +92,7 @@ struct ProjectsScreen: View {
                 .refreshable { await model.refreshAndWait() }
             }
         }
-        .navigationTitle("Projects")
+        .navigationTitle(.projects)
         .navigationSubtitle(SyncSubtitle.text(model))
         .toolbar {
             ToolbarItem(placement: .topBarLeading) { AccountButton() }
@@ -112,7 +112,7 @@ private struct ProjectRow: View {
             ProjectSwatch(title: project.title, size: 18)
             VStack(alignment: .leading, spacing: 2) {
                 Text(project.title).font(.body.weight(.medium)).foregroundStyle(Theme.text)
-                Text(project.lastSyncedAt == nil ? project.ownerLogin : "\(project.ownerLogin) · \(open) open")
+                Text(project.lastSyncedAt == nil ? project.ownerLogin : String(localized: .ownerOpenIssueCount(owner: project.ownerLogin, count: open)))
                     .font(.footnote)
                     .foregroundStyle(Theme.textSecondary)
             }
@@ -134,7 +134,7 @@ private struct RepositoryRow: View {
                 .frame(width: 18)
             VStack(alignment: .leading, spacing: 2) {
                 Text(repo.shortName).font(.body.weight(.medium)).foregroundStyle(Theme.text)
-                Text("\(repo.nameWithOwner.dropLast(repo.shortName.count + 1)) · \(open) open")
+                Text(.ownerOpenIssueCount(owner: String(repo.nameWithOwner.dropLast(repo.shortName.count + 1)), count: open))
                     .font(.footnote)
                     .foregroundStyle(Theme.textSecondary)
             }
@@ -155,13 +155,13 @@ struct RepositoryScreen: View {
         let repo = model.repository(id: repoId)
         Group {
             if repo == nil {
-                MobileEmptyState(title: "This repository is gone", message: "None of your open boards use it any more.", systemImage: "questionmark.square.dashed")
+                MobileEmptyState(title: String(localized: .repositoryGoneTitle), message: String(localized: .repositoryGoneMessage), systemImage: "questionmark.square.dashed")
             } else {
                 IssueList(scope: .repository(repoId))
             }
         }
         .background(Theme.panel)
-        .navigationTitle(repo.map { model.displayName(of: $0) } ?? "Repository")
+        .navigationTitle(repo.map { model.displayName(of: $0) } ?? String(localized: .repository))
         .navigationBarTitleDisplayMode(.inline)
         .modifier(EditorRole(active: wide))
         .toolbar {
@@ -183,23 +183,23 @@ struct RepositoryScreen: View {
                     Button {
                         navigation.sheet = .arrangeSections(.repository(repoId))
                     } label: {
-                        Label("Arrange Sections…", systemImage: "arrow.up.arrow.down")
+                        Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
                     }
                     Divider()
                     Button {
                         model.refresh()
                     } label: {
-                        Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+                        Label(.syncNow, systemImage: "arrow.triangle.2.circlepath")
                     }
                     if let url = repo?.url {
                         Button {
                             Platform.open(url)
                         } label: {
-                            Label("Open on GitHub", systemImage: "arrow.up.right.square")
+                            Label(.openOnGitHub, systemImage: "arrow.up.right.square")
                         }
                     }
                 } label: {
-                    Label("Options", systemImage: "ellipsis")
+                    Label(.options, systemImage: "ellipsis")
                 }
                 NewIssueButton(context: NewIssueContext(repoId: repoId))
             }
@@ -222,7 +222,7 @@ struct ProjectScreen: View {
         let project = model.projects.first { $0.id == projectId }
         Group {
             if project == nil {
-                MobileEmptyState(title: "This project is gone", message: "It was closed, deleted, or you no longer have access to it on GitHub.", systemImage: "questionmark.square.dashed")
+                MobileEmptyState(title: String(localized: .projectGoneTitle), message: String(localized: .projectGoneMessage), systemImage: "questionmark.square.dashed")
             } else if model.isLoading(projectId: projectId) {
                 ProjectLoading()
             } else if wide, model.viewMode == .board {
@@ -232,7 +232,7 @@ struct ProjectScreen: View {
             }
         }
         .background(Theme.panel)
-        .navigationTitle(project?.title ?? "Project")
+        .navigationTitle(project?.title ?? String(localized: .project))
         .navigationBarTitleDisplayMode(.inline)
         .modifier(ProjectSwitcher(projectId: projectId, regular: wide))
         .toolbar {
@@ -247,10 +247,10 @@ struct ProjectScreen: View {
                             .font(.headline)
                             .lineLimit(1)
                         if roomy {
-                            Picker("View", selection: Bindable(model).viewMode) {
+                            Picker(.viewModePicker, selection: Bindable(model).viewMode) {
                                 // Named for VoiceOver and the pointer, which would otherwise read the symbols' own names.
-                                Image(systemName: "rectangle.split.3x1").accessibilityLabel("Board").help("Board").tag(ViewMode.board)
-                                Image(systemName: "list.bullet").accessibilityLabel("List").help("List").tag(ViewMode.list)
+                                Image(systemName: "rectangle.split.3x1").accessibilityLabel(.board).help(Text(.board)).tag(ViewMode.board)
+                                Image(systemName: "list.bullet").accessibilityLabel(.list).help(Text(.list)).tag(ViewMode.list)
                             }
                             .pickerStyle(.segmented)
                             .frame(width: 160)
@@ -320,14 +320,14 @@ private struct ProjectLoading: View {
     var body: some View {
         switch model.status.phase {
         case .offline:
-            MobileEmptyState(title: "You're offline", message: "This project loads as soon as you're back online.", systemImage: "wifi.slash")
+            MobileEmptyState(title: String(localized: .youreOffline), message: String(localized: .projectLoadsWhenOnline), systemImage: "wifi.slash")
         case .failed(let message):
-            MobileEmptyState(title: "This project couldn't be loaded", message: message, systemImage: "exclamationmark.triangle") {
-                Button("Try Again") { model.refresh() }
+            MobileEmptyState(title: String(localized: .projectLoadFailed), message: message, systemImage: "exclamationmark.triangle") {
+                Button(.tryAgain) { model.refresh() }
                     .buttonStyle(.bordered)
             }
         default:
-            MobileEmptyState(title: "Loading issues…", message: "Fetching this project from GitHub.", showsProgress: true)
+            MobileEmptyState(title: String(localized: .loadingIssues), message: String(localized: .fetchingProject), showsProgress: true)
         }
     }
 }
@@ -344,9 +344,9 @@ private struct ProjectOptionsMenu: View {
     var body: some View {
         Menu {
             if showsViewMode {
-                Picker("View", selection: Bindable(model).viewMode) {
-                    Label("Board", systemImage: "rectangle.split.3x1").tag(ViewMode.board)
-                    Label("List", systemImage: "list.bullet").tag(ViewMode.list)
+                Picker(.viewModePicker, selection: Bindable(model).viewMode) {
+                    Label(.board, systemImage: "rectangle.split.3x1").tag(ViewMode.board)
+                    Label(.list, systemImage: "list.bullet").tag(ViewMode.list)
                 }
                 .pickerStyle(.inline)
                 Divider()
@@ -354,37 +354,37 @@ private struct ProjectOptionsMenu: View {
             Button {
                 navigation.sheet = .arrangeSections(.project(project.id))
             } label: {
-                Label("Arrange Sections…", systemImage: "arrow.up.arrow.down")
+                Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
             }
             if project.viewerCanUpdate, project.statusFieldId != nil {
                 Button {
                     openRoute(.statuses(project.id))
                 } label: {
-                    Label("Edit Statuses…", systemImage: "circle.dashed")
+                    Label(.editStatuses, systemImage: "circle.dashed")
                 }
             }
             if project.priorityFieldId == nil, project.viewerCanUpdate {
                 Button {
                     model.addPriorityField(projectId: project.id)
                 } label: {
-                    Label("Add Priority Field", systemImage: "chart.bar.fill")
+                    Label(.addPriorityField, systemImage: "chart.bar.fill")
                 }
             }
             Divider()
             Button {
                 model.refresh()
             } label: {
-                Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+                Label(.syncNow, systemImage: "arrow.triangle.2.circlepath")
             }
             if let url = URL(string: project.url), !project.url.isEmpty {
                 Button {
                     Platform.open(url)
                 } label: {
-                    Label("Open on GitHub", systemImage: "arrow.up.right.square")
+                    Label(.openOnGitHub, systemImage: "arrow.up.right.square")
                 }
             }
         } label: {
-            Label("Options", systemImage: "ellipsis")
+            Label(.options, systemImage: "ellipsis")
         }
     }
 }
@@ -467,7 +467,7 @@ struct IssueList: View {
                     doneFeedback += 1
                     withAnimation(Theme.spring) { model.toggleDone(item) }
                 } label: {
-                    Label(done ? "Reopen" : "Done", systemImage: done ? "arrow.uturn.backward" : "checkmark")
+                    Label(done ? LocalizedStringResource.reopen : .markDone, systemImage: done ? "arrow.uturn.backward" : "checkmark")
                 }
                 .tint(Theme.accentFill)
             }
@@ -477,7 +477,7 @@ struct IssueList: View {
                 Button {
                     model.requestDelete(item)
                 } label: {
-                    Label("Delete", systemImage: "trash")
+                    Label(.delete, systemImage: "trash")
                 }
                 .tint(.red)
             }
@@ -486,7 +486,7 @@ struct IssueList: View {
                 Button {
                     model.toggleAssignee(item, viewer.person)
                 } label: {
-                    Label(mine ? "Unassign" : "Assign", systemImage: mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
+                    Label(mine ? LocalizedStringResource.unassignSwipe : .assignSwipe, systemImage: mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
                 }
                 .tint(Color(white: 0.45))
             }
@@ -536,32 +536,32 @@ struct IssueList: View {
             EmptyView()
         case .myIssues:
             MobileEmptyState(
-                title: "Nothing assigned to you",
-                message: "Open issues assigned to you show up here, on a board or not.",
+                title: String(localized: .nothingAssignedTitle),
+                message: String(localized: .myIssuesEmptyMessage),
                 systemImage: "scope"
             )
         case .repository(let repoId):
             if model.status.readRepositories.contains(repoId) || model.isDemo {
                 MobileEmptyState(
-                    title: "No open issues",
-                    message: "Issues closed in the last four weeks show up here too.",
+                    title: String(localized: .noOpenIssues),
+                    message: String(localized: .recentlyClosedShowToo),
                     systemImage: "tray"
                 ) {
-                    Button("New Issue") {
+                    Button(.newIssue) {
                         navigation.sheet = .newIssue(NewIssueContext(repoId: repoId))
                     }
                     .buttonStyle(.borderedProminent)
                 }
             } else {
-                MobileEmptyState(title: "Loading issues…", message: "Fetching this repository from GitHub.", showsProgress: true)
+                MobileEmptyState(title: String(localized: .loadingIssues), message: String(localized: .fetchingRepository), showsProgress: true)
             }
         case .project(let projectId):
             MobileEmptyState(
-                title: "No issues yet",
-                message: "Only issues that are in this GitHub Project appear here.",
+                title: String(localized: .noIssuesYet),
+                message: String(localized: .onlyProjectIssuesAppear),
                 systemImage: "tray"
             ) {
-                Button("New Issue") {
+                Button(.newIssue) {
                     navigation.sheet = .newIssue(NewIssueContext(projectId: projectId))
                 }
                 .buttonStyle(.borderedProminent)
@@ -578,13 +578,13 @@ private struct PriorityFieldBanner: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("No Priority field").font(.subheadline.weight(.semibold))
-                Text("Add one with Urgent, High, Medium and Low to sort by importance.")
+                Text(.noPriorityField).font(.subheadline.weight(.semibold))
+                Text(.addPriorityFieldHint)
                     .font(.footnote)
                     .foregroundStyle(Theme.textSecondary)
             }
             Spacer(minLength: 8)
-            Button("Add") { model.addPriorityField(projectId: projectId) }
+            Button(.add) { model.addPriorityField(projectId: projectId) }
                 .buttonStyle(.bordered)
         }
         .padding(14)
@@ -604,7 +604,7 @@ struct AccountButton: View {
         } label: {
             AccountAvatar(size: 30)
         }
-        .accessibilityLabel("Account and settings")
+        .accessibilityLabel(.accountAndSettings)
         .accessibilityIdentifier("account-button")
     }
 }
@@ -618,7 +618,7 @@ struct NewIssueButton: View {
         Button {
             navigation.sheet = .newIssue(context)
         } label: {
-            Label("New Issue", systemImage: "square.and.pencil")
+            Label(.newIssue, systemImage: "square.and.pencil")
         }
         .accessibilityIdentifier("compose-button")
         .disabled(model.openProjects.isEmpty)

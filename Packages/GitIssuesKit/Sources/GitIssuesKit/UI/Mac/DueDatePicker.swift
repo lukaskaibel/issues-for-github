@@ -36,7 +36,7 @@ struct DueDatePicker: View {
             .padding(.vertical, 6)
             if addsField {
                 Rectangle().fill(Theme.popoverBorder).frame(height: 1)
-                Text("Adds a “Due date” field to the project on GitHub.")
+                Text(.addsDueDateFieldNote)
                     .font(.tiny)
                     .foregroundStyle(Theme.textTertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -77,8 +77,8 @@ struct MonthGrid: View {
                     .font(.smallMedium)
                     .foregroundStyle(Theme.text)
                 Spacer()
-                step("chevron.left", "Previous month") { month = month.adding(months: -1) }
-                step("chevron.right", "Next month") { month = month.adding(months: 1) }
+                step("chevron.left", .previousMonth) { month = month.adding(months: -1) }
+                step("chevron.right", .nextMonth) { month = month.adding(months: 1) }
             }
             .padding(.leading, 6)
             .padding(.bottom, 2)
@@ -130,7 +130,7 @@ struct MonthGrid: View {
         .accessibilityLabel(day.longLabel)
     }
 
-    private func step(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
+    private func step(_ symbol: String, _ label: LocalizedStringResource, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 10, weight: .semibold))
@@ -139,7 +139,7 @@ struct MonthGrid: View {
                 .hoverFill(radius: 5)
         }
         .buttonStyle(PlainPressStyle())
-        .help(label)
+        .help(Text(label))
         .accessibilityLabel(label)
     }
 }

@@ -175,5 +175,5 @@ extension LinkedIssue {
         )
     }
 
-    var displayNumber: String { number > 0 ? "#\(number)" : "New" }
+    var displayNumber: String { number > 0 ? "#\(number)" : String(localized: .unsentIssueNumber) }
 }

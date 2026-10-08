@@ -486,14 +486,19 @@ public actor SyncEngine {
                 let mineName = try m.optionId.flatMap {
                     try String.fetchOne(db, sql: "SELECT name FROM fieldOption WHERE fieldId = ? AND id = ?", arguments: [m.fieldId, $0])
                 }
-                let what = m.kind == .status ? "status" : "priority"
+                let there: LocalizedStringResource = switch (m.kind, theirName) {
+                case (.status, let name?): .noticeStatusSetThere(status: name)
+                case (.status, nil): .noticeStatusSetToNoneThere
+                case (.priority, let name?): .noticePrioritySetThere(priority: name)
+                case (.priority, nil): .noticePrioritySetToNoneThere
+                }
                 var undo = m
                 undo.optionId = theirs
                 undo.base = m.optionId
                 notices.append(Notice(
-                    title: "\(remote.displayNumber) was also changed on GitHub",
-                    message: "Its \(what) was set to \(theirName ?? "none") there. Your change to \(mineName ?? "none") was applied last.",
-                    action: theirName.map { .applyField(undo, label: "Switch to \($0)") }
+                    title: String(localized: .noticeAlsoChangedOnGitHub(number: remote.displayNumber)),
+                    message: Self.clashMessage(there, mine: mineName),
+                    action: theirName.map { .applyField(undo, label: String(localized: .switchToValue(value: $0))) }
                 ))
                 m.base = theirs
                 entry.mutation = .setField(m)
@@ -503,16 +508,20 @@ public actor SyncEngine {
                 guard let remote = byItemId[m.itemId] else { continue }
                 let theirs = remote.dueDate
                 guard theirs != m.base, theirs != m.date else { continue }
-                func name(_ date: String?) -> String {
-                    date.flatMap(CalendarDay.init).map { $0.date().formatted(.dateTime.day().month(.abbreviated)) } ?? "none"
+                func name(_ date: String?) -> String? {
+                    date.flatMap(CalendarDay.init).map { $0.date().formatted(.dateTime.day().month(.abbreviated)) }
                 }
+                let theirName = name(theirs)
                 var undo = m
                 undo.date = theirs
                 undo.base = m.date
                 notices.append(Notice(
-                    title: "\(remote.displayNumber) was also changed on GitHub",
-                    message: "Its due date was set to \(name(theirs)) there. Your change to \(name(m.date)) was applied last.",
-                    action: .applyDate(undo, label: theirs == nil ? "Remove the date" : "Switch to \(name(theirs))")
+                    title: String(localized: .noticeAlsoChangedOnGitHub(number: remote.displayNumber)),
+                    message: Self.clashMessage(
+                        theirName.map { .noticeDueDateSetThere(date: $0) } ?? .noticeDueDateSetToNoneThere,
+                        mine: name(m.date)
+                    ),
+                    action: .applyDate(undo, label: String(localized: theirs.map { .switchToValue(value: theirName ?? $0) } ?? .removeTheDate))
                 ))
                 m.base = theirs
                 entry.mutation = .setDate(m)
@@ -541,6 +550,12 @@ public actor SyncEngine {
             }
         }
         return notices
+    }
+
+    /// "Its status was set to Done there. Your change to In Progress was applied last."
+    private static func clashMessage(_ there: LocalizedStringResource, mine: String?) -> String {
+        let applied: LocalizedStringResource = mine.map { .noticeYourChangeAppliedLast(value: $0) } ?? .noticeYourChangeToNoneAppliedLast
+        return "\(String(localized: there)) \(String(localized: applied))"
     }
 
     /// Decides what to do with an unsent text edit given GitHub's current text.
@@ -578,10 +593,9 @@ public actor SyncEngine {
             }
             for entry in orphaned { try entry.delete(db) }
             if !orphaned.isEmpty {
-                let count = orphaned.count
                 notices.append(Notice(
-                    title: "\(item.displayNumber) is no longer in this project",
-                    message: "It was removed or deleted on GitHub. Your \(count) queued change\(count == 1 ? "" : "s") to it \(count == 1 ? "was" : "were") discarded.",
+                    title: String(localized: .noticeNoLongerInProject(number: item.displayNumber)),
+                    message: String(localized: .noticeQueuedChangesDiscarded(count: orphaned.count)),
                     isWarning: true
                 ))
             }
@@ -824,7 +838,7 @@ public actor SyncEngine {
 
     private func send(_ entry: OutboxEntry) async throws -> SendOutcome {
         if entry.mutation.referencedIds.contains(where: { $0.hasPrefix(LocalID.prefix) }) {
-            throw APIError.graphql([GraphQLErrorItem(message: "The issue this change belongs to was never created on GitHub.", type: "NOT_FOUND")])
+            throw APIError.graphql([GraphQLErrorItem(message: String(localized: .errorIssueNeverCreated), type: "NOT_FOUND")])
         }
         switch entry.mutation {
         case .setField(let m):
@@ -1049,14 +1063,16 @@ public actor SyncEngine {
             try m.apply(db)
         }
         if case .deleteItem(let m) = entry.mutation {
-            return Notice(title: "\(m.label) couldn't be deleted", message: error.localizedDescription, isWarning: true)
+            return Notice(title: String(localized: .noticeCouldNotDelete(issue: m.label)), message: error.localizedDescription, isWarning: true)
         }
         let gone = (error as? APIError)?.isNotFound ?? false
         return Notice(
-            title: gone ? "\(summary.number) no longer exists on GitHub" : "A change to \(summary.number) could not be saved",
-            message: gone
-                ? "\"\(summary.text)\" was discarded."
-                : "\"\(summary.text)\" was discarded. \(error.localizedDescription)",
+            title: String(localized: gone
+                ? .noticeNoLongerExistsOnGitHub(number: summary.number)
+                : .noticeChangeNotSaved(number: summary.number)),
+            message: String(localized: gone
+                ? .noticeChangeDiscarded(change: summary.text)
+                : .noticeChangeDiscardedWithError(change: summary.text, error: error.localizedDescription)),
             isWarning: true
         )
     }

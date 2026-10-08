@@ -268,9 +268,9 @@ public struct DeviceFlow: Sendable {
 
         public var errorDescription: String? {
             switch self {
-            case .notConfigured: "This build has no GitHub OAuth client ID."
-            case .expired: "The code expired. Start again."
-            case .denied: "Access was denied on GitHub."
+            case .notConfigured: String(localized: .errorNoOAuthClientID)
+            case .expired: String(localized: .errorCodeExpired)
+            case .denied: String(localized: .errorAccessDenied)
             case .failed(let detail): detail
             }
         }
@@ -295,7 +295,7 @@ public struct DeviceFlow: Sendable {
         guard let deviceCode = json["device_code"] as? String,
               let userCode = json["user_code"] as? String,
               let uri = (json["verification_uri"] as? String).flatMap(URL.init(string:)) else {
-            throw FlowError.failed((json["error_description"] as? String) ?? "GitHub did not return a code.")
+            throw FlowError.failed((json["error_description"] as? String) ?? String(localized: .errorNoCodeReturned))
         }
         let interval = (json["interval"] as? Double) ?? 5
         let expires = (json["expires_in"] as? Double) ?? 900
@@ -318,7 +318,7 @@ public struct DeviceFlow: Sendable {
             case "slow_down": interval += 5
             case "expired_token": throw FlowError.expired
             case "access_denied": throw FlowError.denied
-            default: throw FlowError.failed((json["error_description"] as? String) ?? "Sign-in failed.")
+            default: throw FlowError.failed((json["error_description"] as? String) ?? String(localized: .errorSignInFailed))
             }
         }
         throw FlowError.expired
