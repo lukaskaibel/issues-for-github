@@ -96,7 +96,8 @@ enum DebugRemote {
         case "focus":
             model.focusedItemId = item(argument, model)?.id
         case "overlay":
-            // overlay palette|new|none, or overlay parent|subissue|blockedby|blocking <number> for a relation picker.
+            // overlay palette|new|none, overlay parent|subissue|blockedby|blocking <number> for a relation picker, or
+            // overlay due <number> for the due date picker.
             let bits = argument.split(separator: " ").map(String.init)
             let target = bits.count > 1 ? item(bits[1], model)?.id : nil
             switch (bits.first, target) {
@@ -106,6 +107,7 @@ enum DebugRemote {
             case ("subissue", let id?): model.overlay = .palette(.addSubIssue(itemId: id))
             case ("blockedby", let id?): model.overlay = .palette(.blockedBy(itemId: id))
             case ("blocking", let id?): model.overlay = .palette(.blocking(itemId: id))
+            case ("due", let id?): model.overlay = .palette(.dueDate(itemId: id))
             default: model.overlay = nil
             }
         case "menudump":
