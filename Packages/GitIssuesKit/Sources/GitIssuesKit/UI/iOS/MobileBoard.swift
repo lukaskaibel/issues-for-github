@@ -10,6 +10,8 @@ struct MobileBoard: View {
     var projectId: String
 
     @State private var target: BoardDropTarget?
+    /// The card a drag hovering this board carries, which may have been lifted in another window: it dims, and a
+    /// card of another project finds no place here. A drop reads its card from the drag instead.
     @State private var dragging: String?
     @State private var dropped = 0
     @State private var addingStatus = false
@@ -26,7 +28,7 @@ struct MobileBoard: View {
                         MobileColumn(
                             projectId: projectId, column: column, width: width,
                             target: $target, dragging: $dragging,
-                            onDrop: { id, index in move(id, to: column, at: index) }
+                            onDrop: { id, slot in move(id, to: column, at: slot) }
                         )
                         .frame(width: width)
                     }
@@ -76,19 +78,24 @@ struct MobileBoard: View {
         return min(max(fitted, 268), 330)
     }
 
-    private func move(_ id: String, to column: BoardColumn, at index: Int) {
+    /// Lands a card at `slot` among all of the column's cards, itself included, or at the end without one.
+    private func move(_ id: String?, to column: BoardColumn, at slot: Int?) {
         target = nil
         dragging = nil
-        guard let item = model.item(id: id), item.projectId == projectId else { return }
+        guard let id, let item = model.item(id: id), item.projectId == projectId else { return }
+        // The model counts the place among the column's other cards.
+        var index = slot ?? column.items.count
+        if let original = column.items.firstIndex(where: { $0.id == id }), original < index { index -= 1 }
         dropped += 1
         withAnimation(Theme.spring) { model.drop(item, in: column, at: index) }
     }
 }
 
-/// Where a dragged card would land: a column, and the position among its other cards.
+/// Where a dragged card would land: a column, and the position among all of its cards. Counting the dragged card
+/// too, this needs no knowing which card it is, which the drag only tells once dropped.
 struct BoardDropTarget: Equatable {
     var columnId: String
-    var index: Int
+    var slot: Int
 }
 
 /// Card frames inside a column, read while dropping. Kept outside view state so scrolling never redraws.
@@ -106,7 +113,7 @@ private struct MobileColumn: View {
     var width: CGFloat
     @Binding var target: BoardDropTarget?
     @Binding var dragging: String?
-    var onDrop: (String, Int) -> Void
+    var onDrop: (String?, Int?) -> Void
 
     @State private var frames = CardFrames()
 
@@ -135,7 +142,8 @@ private struct MobileColumn: View {
             .frame(maxHeight: .infinity)
             .accessibilityIdentifier("column-\(column.title)")
             .onDrop(of: [.plainText, .url], delegate: ColumnDrop(
-                column: column, frames: frames, target: $target, dragging: $dragging, onDrop: onDrop
+                model: model, projectId: projectId, column: column, frames: frames,
+                target: $target, dragging: $dragging, onDrop: onDrop
             ))
         }
     }
@@ -143,10 +151,7 @@ private struct MobileColumn: View {
     /// Where the gap shows among all of the column's cards, the dragged one included.
     private var gapPosition: Int? {
         guard let target, target.columnId == column.id else { return nil }
-        if let original = column.items.firstIndex(where: { $0.id == dragging }), target.index >= original {
-            return min(target.index + 1, column.items.count)
-        }
-        return min(target.index, column.items.count)
+        return min(target.slot, column.items.count)
     }
 
     private var gap: some View {
@@ -178,8 +183,8 @@ private struct MobileColumn: View {
         }
         .onDisappear { frames.frames[item.id] = nil }
         .onDrag {
-            dragging = item.id
-            return CardDragMark.provider(text: dragText(item))
+            CardDragMark.lifted = item.id
+            return CardDragMark.provider(id: item.id, text: dragText(item))
         } preview: {
             CardView(card: model.cardModel(for: item), width: width, lifted: true, avatarVersion: model.avatarVersion)
         }
@@ -209,25 +214,29 @@ private struct MobileColumn: View {
     }
 }
 
-/// Lands cards dropped on a column at the place the finger points to.
+/// Lands cards dropped on a column at the place the finger points to. Which card it is comes from the drag, which
+/// may have started in another window.
 private struct ColumnDrop: DropDelegate {
+    var model: AppModel
+    var projectId: String
     var column: BoardColumn
     var frames: CardFrames
     @Binding var target: BoardDropTarget?
     @Binding var dragging: String?
-    var onDrop: (String, Int) -> Void
+    var onDrop: (String?, Int?) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
-        dragging != nil && CardDragMark.isCard(info)
+        CardDragMark.isCard(info)
     }
 
     func dropEntered(info: DropInfo) {
+        dragging = MainActor.assumeIsolated { CardDragMark.lifted }
         update(info)
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
         update(info)
-        return DropProposal(operation: .move)
+        return DropProposal(operation: fits ? .move : .forbidden)
     }
 
     func dropExited(info: DropInfo) {
@@ -235,43 +244,68 @@ private struct ColumnDrop: DropDelegate {
     }
 
     func performDrop(info: DropInfo) -> Bool {
-        guard let id = dragging, CardDragMark.isCard(info) else { return false }
-        let others = column.items.filter { $0.id != id }.count
-        let index = target?.columnId == column.id ? min(target!.index, others) : others
-        onDrop(id, index)
+        guard CardDragMark.isCard(info) else { return false }
+        let slot = target?.columnId == column.id ? target?.slot : nil
+        CardDragMark.loadId(info) { id in onDrop(id, slot) }
         return true
     }
 
-    /// The position among the column's other cards, from where the finger is.
+    /// A card of another project, dragged in from a window that shows that project, can't land here.
+    private var fits: Bool {
+        guard let dragging else { return true }
+        return MainActor.assumeIsolated { model.item(id: dragging)?.projectId == projectId }
+    }
+
+    /// The position among the column's cards, from where the finger is.
     private func update(_ info: DropInfo) {
-        let others = column.items.filter { $0.id != dragging }
-        var index = 0
-        for (position, item) in others.enumerated() {
-            guard let frame = MainActor.assumeIsolated({ frames.frames[item.id] }) else { continue }
-            if frame.midY < info.location.y { index = position + 1 }
+        guard fits else {
+            if target?.columnId == column.id { target = nil }
+            return
         }
-        let next = BoardDropTarget(columnId: column.id, index: index)
+        var slot = 0
+        for (position, item) in column.items.enumerated() {
+            guard let frame = MainActor.assumeIsolated({ frames.frames[item.id] }) else { continue }
+            if frame.midY < info.location.y { slot = position + 1 }
+        }
+        let next = BoardDropTarget(columnId: column.id, slot: slot)
         if next != target { target = next }
     }
 }
 
-/// Marks a card being dragged as one of this app's, visible to this app only. A long press that opens the menu,
-/// or a drag let go outside the board, leaves no drop behind, so text dragged in from another app afterwards must
-/// not be taken for that card.
+/// Marks a card being dragged as one of this app's, visible to this app only, and carries which card it is, so a
+/// drop moves the card that was dragged, from this window or another. Text dragged in from another app has no mark.
 private enum CardDragMark {
     static let typeIdentifier = "com.lukaskbl.GitIssues.card"
 
-    static func provider(text: String) -> NSItemProvider {
+    /// The card lifted last, in any window: which card a drag carries while it hovers, as its data can only be read
+    /// once it's dropped. SwiftUI asks for a card's drag at every lift, but also on a long press that only opens the
+    /// menu and once more just after a drop, so a drop never goes by this.
+    @MainActor static var lifted: String?
+
+    static func provider(id: String, text: String) -> NSItemProvider {
         let provider = NSItemProvider(object: text as NSString)
         provider.registerDataRepresentation(forTypeIdentifier: typeIdentifier, visibility: .ownProcess) { completion in
-            completion(Data(), nil)
+            completion(Data(id.utf8), nil)
             return nil
         }
         return provider
     }
 
     static func isCard(_ info: DropInfo) -> Bool {
-        info.itemProviders(for: [.plainText, .url]).contains { $0.registeredTypeIdentifiers.contains(typeIdentifier) }
+        provider(info) != nil
+    }
+
+    /// Reads which card a dropped drag carries, and calls back on the main thread, with nil if it can't be read.
+    static func loadId(_ info: DropInfo, then action: @escaping (String?) -> Void) {
+        guard let provider = provider(info) else { return action(nil) }
+        _ = provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, _ in
+            let id = data.flatMap { String(data: $0, encoding: .utf8) }
+            DispatchQueue.main.async { action(id?.isEmpty == false ? id : nil) }
+        }
+    }
+
+    private static func provider(_ info: DropInfo) -> NSItemProvider? {
+        info.itemProviders(for: [.plainText, .url]).first { $0.registeredTypeIdentifiers.contains(typeIdentifier) }
     }
 }
 
