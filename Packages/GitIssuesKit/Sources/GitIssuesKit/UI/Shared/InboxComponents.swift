@@ -137,8 +137,10 @@ func inboxTime(_ date: Date, now: Date = Date(), calendar: Calendar = .current) 
     let seconds = now.timeIntervalSince(date)
     if seconds < 60 { return String(localized: .inboxTimeNow) }
     if seconds < 3600 { return String(localized: .inboxTimeMinutes(minutes: Int(seconds / 60))) }
-    if calendar.isDateInToday(date) || seconds < 6 * 3600 { return String(localized: .inboxTimeHours(hours: Int(seconds / 3600))) }
-    if calendar.isDateInYesterday(date) { return String(localized: .yesterday) }
+    if calendar.isDate(date, inSameDayAs: now) || seconds < 6 * 3600 { return String(localized: .inboxTimeHours(hours: Int(seconds / 3600))) }
+    if let yesterday = calendar.date(byAdding: .day, value: -1, to: now), calendar.isDate(date, inSameDayAs: yesterday) {
+        return String(localized: .yesterday)
+    }
     if seconds < 6 * 86_400 { return date.formatted(.dateTime.weekday(.abbreviated)) }
     if calendar.isDate(date, equalTo: now, toGranularity: .year) { return date.formatted(.dateTime.month(.abbreviated).day()) }
     return date.formatted(.dateTime.month(.abbreviated).day().year())
