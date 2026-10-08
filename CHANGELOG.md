@@ -191,6 +191,8 @@ All notable changes to this project are recorded here. The format follows
   appears, the title gets it back.
 - The board now shows a loading state while a project is fetched for the first time, as the list already did.
   Both say so when you are offline or the project can't be loaded, instead of loading forever.
+- On iPad, a card dragged onto the board in another window of the app lands there. Before, that window refused it,
+  or moved the card it had last dragged itself instead. A card of one project can't be dropped on another's board.
 
 ## [0.1.0] - 2026-10-01
 
