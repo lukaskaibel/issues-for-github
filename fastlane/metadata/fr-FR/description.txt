@@ -1,4 +1,4 @@
-Issues est une app rapide et native pour GitHub Issues et GitHub Projects, sur Mac, iPhone et iPad. Elle garde tout dans GitHub : vos coéquipiers qui ne l’utilisent pas voient les mêmes tickets et tableaux sur github.com.
+Issues est une app rapide et native pour GitHub Issues et GitHub Projects, sur Mac, iPhone et iPad. Sobre et efficace, elle garde tout dans GitHub : vos coéquipiers qui ne l’utilisent pas voient les mêmes tickets et tableaux sur github.com.
 
 RÉCEPTION
 • Ce qui a changé pour vous, d’après les notifications GitHub : qui vous a assigné ou mentionné, qui a commenté, demandé votre revue ou fermé un ticket que vous suivez
@@ -33,7 +33,7 @@ SUR IPAD
 • Les tickets s’ouvrent à côté de leurs propriétés, comme sur Mac
 • Avec un clavier : J et K pour naviguer, S, P, A et L pour modifier un ticket, ⌘N pour en créer un
 
-DES ÉCHÉANCES QUI VOUS RAPPELLENT
+ÉCHÉANCES ET RAPPELS
 • Donnez une échéance à un ticket : demain, vendredi, la semaine prochaine, un jour du calendrier, ou tapez « dans 3 jours »
 • Cartes et listes l’affichent, en orange le jour même, en rouge une fois passée
 • Le jour venu, votre Mac, iPhone et iPad vous préviennent, avec des boutons pour commencer le ticket, le terminer ou le reporter à demain
@@ -41,7 +41,7 @@ DES ÉCHÉANCES QUI VOUS RAPPELLENT
 
 RAPIDE ET FIABLE
 • Chaque modification s’affiche aussitôt et part vers GitHub en arrière-plan
-• Fonctionne hors ligne : les modifications attendent et partent dès le retour de la connexion
+• Fonctionne hors ligne : les modifications attendent et partent dès votre retour en ligne
 • Respecte le travail des autres : si quelqu’un a modifié le même texte, rien n’est écrasé
 
 CONFIDENTIALITÉ
