@@ -132,7 +132,10 @@ All notable changes to this project are recorded here. The format follows
   leaves the field; ⌘↵ does too.
 - Deleting issues, from the right-click menu, the command palette, the Issue menu or with ⌘⌫. A confirmation
   explains that the issue is deleted on GitHub for everyone; Return confirms. Deleting needs admin rights in the
-  repository, so the action is unavailable where GitHub wouldn't allow it. Drafts are removed from the board.
+  repository, and in an organization also its owners' permission for repository admins to delete issues, so the
+  action is unavailable where GitHub wouldn't allow it. When your rights change, the app notices at the next ⌘R or
+  pull-to-refresh, or within half an hour, without anything on the issues changing. Drafts are removed from the
+  board.
 - Right-clicking a sub-issue opens the same menu as a card on the board (status, priority, assign to me, copy link,
   open on GitHub). Sub-issues that aren't on the board offer what applies to them: mark as done or reopen, and the
   links.
