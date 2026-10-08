@@ -76,12 +76,10 @@ On the day an issue assigned to you is due, your Mac, iPhone and iPad each remin
 buttons start the issue, mark it done or move it to tomorrow. The date is the project's "Due date" field on GitHub,
 so your team sees it there; GitHub's dates have no time of day, and the reminder comes at the time set in Settings.
 
-<!-- Shown once Tools/readme-images.sh has made the picture, in the one picture run after all open branches merge.
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/due-date-dark.webp">
-  <img alt="The due date picker with Today, Tomorrow, Friday, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
+  <img alt="The due date picker: Today, Tomorrow, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
 </picture>
--->
 
 ### Issues that read well
 
@@ -106,18 +104,15 @@ onto one. J and K move on, U marks read or unread, E archives and H snoozes unti
 join the list on the day, and the morning after if they're still open, with the reminder's buttons: Start, Mark as
 Done and Move to Tomorrow.
 
-<!-- The picture comes with the next run of Tools/readme-images.sh, which makes inbox-light.webp and inbox-dark.webp;
-     take this comment away then.
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/inbox-dark.webp">
   <img alt="The Inbox: notifications on the left, such as Kai Andersen assigned you and Theo Novak mentioned you, and the selected issue on the right with what's new since yesterday" src="Design/screenshots/inbox-light.webp">
 </picture>
--->
 
 ### Keyboard first
 
 ⌘K opens the command palette: every action, and a search across your issues. Single keys act on the issue you
-hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `L` labels, `I` assign to me.
+hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `L` labels, `D` due date, `I` assign to me.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/palette-dark.webp">
