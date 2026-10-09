@@ -197,6 +197,9 @@ extension AppModel {
         case .commented:
             line = InboxEntry.mentions(event.text, login: viewer?.login)
                 ? .eventMentionedYou(name: name) : .eventCommented(name: name)
+        case .assigned where entry.isSelfAssigned:
+            // GitHub has you as the one who did it; what matters is that it didn't happen here.
+            line = .eventAssignedWithYourAccount
         case .assigned:
             line = whom(
                 event.detail, you: .eventAssignedYou(name: name),

@@ -64,6 +64,25 @@ public enum InboxDetailResult: Sendable {
     case missing
 }
 
+/// An issue your own account assigned you to, which GitHub doesn't notify you of.
+public struct RemoteSelfAssignment: Sendable {
+    /// GitHub's id of the assignment, the same on every device.
+    public var eventId: String
+    public var at: Date
+    /// You, as GitHub has you.
+    public var actor: Person?
+    public var repo: String
+    public var number: Int
+    public var issue: RemoteInboxDetail
+}
+
+/// What a look for assignments found.
+public struct SelfAssignmentList: Sendable {
+    public var assignments: [RemoteSelfAssignment]
+    /// Every issue assigned to you that changed in the time looked at, as it is now, by id.
+    public var issues: [String: RemoteInboxDetail]
+}
+
 // MARK: - Notifications
 
 extension GitHubAPI {
@@ -147,6 +166,80 @@ extension GitHubAPI {
             }
         }
         return result
+    }
+
+    // MARK: Assignments made with your own account
+
+    /// Issues assigned to you that changed since `since`, and the assignments in that time that your own account made:
+    /// GitHub notifies you when someone else assigns you, never when you do (with `gh`, a script or an agent signed in
+    /// as you, or on github.com). Pull requests aren't looked at.
+    public func selfAssignments(since: Date, viewer: String) async throws -> SelfAssignmentList {
+        struct Response: Decodable {
+            struct Search: Decodable {
+                var pageInfo: PageInfo
+                var nodes: [SelfAssignedIssueDTO?]
+            }
+            var search: Search
+        }
+        let query = """
+        query($q: String!, $since: DateTime, $after: String) {
+          search(type: ISSUE, query: $q, first: 50, after: $after) {
+            pageInfo { hasNextPage endCursor }
+            nodes {
+              ... on Issue {
+                __typename id number url title body state stateReason createdAt
+                author { ...Who }
+                repository { id nameWithOwner }
+                assignees(first: 10) { nodes { id login name avatarUrl } }
+                labels(first: 20) { nodes { id name color } }
+                timelineItems(last: 10, since: $since, itemTypes: [ASSIGNED_EVENT]) {
+                  nodes { __typename ... on AssignedEvent { id createdAt actor { ...Who } assignee { ...Assignee } } }
+                }
+              }
+            }
+          }
+        }
+        fragment Who on Actor { login avatarUrl ... on User { name } }
+        fragment Assignee on Assignee { ... on User { login } ... on Bot { login } ... on Mannequin { login } ... on Organization { login } }
+        """
+        let stamp = Self.iso8601.string(from: since)
+        // Closed ones too: an issue opened and closed in one go was still assigned to you.
+        let search = "is:issue assignee:@me archived:false updated:>=\(stamp)"
+        var nodes: [SelfAssignedIssueDTO?] = []
+        var cursor: String?
+        for _ in 0..<4 {
+            let response: Response = try await client.run(query, variables: ["q": search, "since": stamp, "after": cursor], allowPartial: true)
+            nodes += response.search.nodes
+            guard response.search.pageInfo.hasNextPage, let next = response.search.pageInfo.endCursor else { break }
+            cursor = next
+        }
+        return Self.selfAssignments(nodes.compactMap { $0 }, since: since, viewer: viewer)
+    }
+
+    /// Reads the nodes of a search for assignments, as `selfAssignments` asks for them.
+    static func selfAssignments(fromJSON data: Data, since: Date, viewer: String) throws -> SelfAssignmentList {
+        let nodes = try GraphQLClient.decoder.decode([SelfAssignedIssueDTO?].self, from: data)
+        return selfAssignments(nodes.compactMap { $0 }, since: since, viewer: viewer)
+    }
+
+    private static func selfAssignments(_ nodes: [SelfAssignedIssueDTO], since: Date, viewer: String) -> SelfAssignmentList {
+        let me = viewer.lowercased()
+        var list = SelfAssignmentList(assignments: [], issues: [:])
+        for node in nodes {
+            guard let number = node.number, let repo = node.repository?.nameWithOwner, let subject = node.subject else { continue }
+            var issue = subject.detail(repoId: subject.repository?.id ?? "", since: nil, viewer: viewer)
+            issue.activity = []
+            list.issues[issue.contentId] = issue
+            for event in subject.timelineItems?.items ?? [] where event.__typename == "AssignedEvent" {
+                // Someone else assigning you is a notification GitHub sends anyway.
+                guard let id = event.id, let at = event.createdAt, at >= since,
+                      event.actor?.login?.lowercased() == me, event.assignee?.login?.lowercased() == me else { continue }
+                list.assignments.append(RemoteSelfAssignment(
+                    eventId: id, at: at, actor: event.actor?.person, repo: repo, number: number, issue: issue
+                ))
+            }
+        }
+        return list
     }
 
     /// Reads one page of GitHub's list of notification threads.
@@ -295,6 +388,24 @@ private struct SubjectDTO: Decodable {
         let folded = text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
         guard !folded.isEmpty else { return nil }
         return folded.count > 280 ? String(folded.prefix(280)) + "…" : folded
+    }
+}
+
+/// An issue a search for assignments found: the Inbox's view of it, and where it lives.
+private struct SelfAssignedIssueDTO: Decodable {
+    struct Repo: Decodable { var nameWithOwner: String }
+    var number: Int?
+    var repository: Repo?
+    var subject: SubjectDTO?
+
+    enum CodingKeys: String, CodingKey { case number, repository }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        number = try container.decodeIfPresent(Int.self, forKey: .number)
+        repository = try container.decodeIfPresent(Repo.self, forKey: .repository)
+        // A search can list other kinds of things, which come back empty.
+        subject = try? SubjectDTO(from: decoder)
     }
 }
 

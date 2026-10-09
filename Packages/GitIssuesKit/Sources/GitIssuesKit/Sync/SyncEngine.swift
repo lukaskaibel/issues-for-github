@@ -26,6 +26,8 @@ public actor SyncEngine {
     private var wasOffline = true
     /// When GitHub's notifications are asked for next, at the pace GitHub asks for (X-Poll-Interval).
     var nextInboxPull = Date.distantPast
+    /// When assignments made with your own account were last looked for.
+    var selfAssignedChecked: Date?
 
     private var loop: Task<Void, Never>?
     private var sleeper: Task<Void, Never>?

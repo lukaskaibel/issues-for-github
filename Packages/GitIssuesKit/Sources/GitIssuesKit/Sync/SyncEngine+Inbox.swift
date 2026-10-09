@@ -20,7 +20,7 @@ extension SyncEngine {
                 meta.access = .denied
                 meta.lastModified = nil
                 try meta.write(db)
-                try InboxEntry.deleteAll(db)
+                try InboxEntry.filter(Column("reason") != InboxEntry.selfAssignReason).deleteAll(db)
             }
             return
         }
@@ -34,6 +34,7 @@ extension SyncEngine {
             }
         }
         try await enrichInbox()
+        try await pullSelfAssigned()
     }
 
     /// The Inbox's part of a sync round. Being offline or signed out stops the round as usual; anything else that
@@ -76,8 +77,11 @@ extension SyncEngine {
         try meta.write(db)
 
         let relevant = threads.filter(\.isIssueOrPullRequest)
-        // What GitHub no longer lists was archived elsewhere, or is too old to be kept.
-        try InboxEntry.filter(!relevant.map(\.id).contains(Column("id"))).deleteAll(db)
+        // What GitHub no longer lists was archived elsewhere, or is too old to be kept. The app's own entries aren't
+        // GitHub's to list.
+        try InboxEntry
+            .filter(!relevant.map(\.id).contains(Column("id")) && Column("reason") != InboxEntry.selfAssignReason)
+            .deleteAll(db)
         for thread in relevant {
             if var entry = try InboxEntry.fetchOne(db, key: thread.id) {
                 entry.reason = thread.reason
@@ -105,7 +109,7 @@ extension SyncEngine {
     /// issue to show it when it isn't on a board.
     func enrichInbox() async throws {
         let (viewer, wanted) = try await db.reader.read { db in
-            (try KV.viewer(db)?.login, try InboxEntry.fetchAll(db).filter { $0.enrichedFor != $0.updatedAt })
+            (try KV.viewer(db)?.login, try InboxEntry.fetchAll(db).filter { $0.enrichedFor != $0.updatedAt && !$0.isSelfAssigned })
         }
         guard !wanted.isEmpty else { return }
         let requests = wanted.compactMap { entry in
@@ -131,6 +135,73 @@ extension SyncEngine {
             }
             try Outbox.rebase(db)
         }
+    }
+
+    // MARK: Assignments made with your own account
+
+    /// How far each look starts before the last one: GitHub's search lists a change only after a little while.
+    static let selfAssignedOverlap: TimeInterval = 15 * 60
+    /// How long these entries are kept. Whether one was read or archived is kept in iCloud for 30 days.
+    static let selfAssignedLifetime: TimeInterval = 21 * 86_400
+
+    /// Looks for issues your own account assigned you to outside the app (`gh`, a script or an agent signed in as you,
+    /// github.com), at the Inbox's pace. GitHub never notifies you of those, and to GitHub they look the same as the
+    /// ones the app makes; which ones the app made only the app knows, so the Inbox leaves those out itself.
+    func pullSelfAssigned() async throws {
+        guard !isDemo else { return }
+        let started = Date()
+        let (viewer, meta) = try await db.reader.read { (try KV.viewer($0)?.login, try InboxMeta.read($0)) }
+        guard let viewer else { return }
+        guard let from = meta.selfAssignedFrom else {
+            // The first look: from now on. Earlier assignments aren't news, and some of them were made in the app.
+            try await db.writer.write { db in
+                var meta = try InboxMeta.read(db)
+                meta.selfAssignedFrom = started
+                meta.selfAssignedChecked = started
+                try meta.write(db)
+            }
+            selfAssignedChecked = started
+            return
+        }
+        let checked = selfAssignedChecked ?? meta.selfAssignedChecked ?? from
+        let found = try await api.selfAssignments(since: max(from, checked.addingTimeInterval(-Self.selfAssignedOverlap)), viewer: viewer)
+        // Kept now and then, so the first look after a restart covers the time the app was closed.
+        let keep = meta.selfAssignedChecked.map { started.timeIntervalSince($0) > 600 } ?? true
+        try await db.writer.write { db in
+            try Self.writeSelfAssigned(db, found, from: from)
+            if keep {
+                var meta = try InboxMeta.read(db)
+                meta.selfAssignedChecked = started
+                try meta.write(db)
+            }
+        }
+        selfAssignedChecked = started
+    }
+
+    /// Keeps each assignment found as an Inbox entry, and what the entries show of their issues up to date. Writes
+    /// only what changed: this runs every minute.
+    static func writeSelfAssigned(_ db: Database, _ found: SelfAssignmentList, from: Date, now: Date = Date()) throws {
+        var changed = false
+        for assignment in found.assignments where assignment.at >= from {
+            let id = InboxEntry.selfAssignedId(eventId: assignment.eventId)
+            guard try !InboxEntry.exists(db, key: id) else { continue }
+            try InboxEntry(selfAssignment: assignment).insert(db)
+            changed = true
+        }
+        for var entry in try InboxEntry.filter(Column("reason") == InboxEntry.selfAssignReason).fetchAll(db) {
+            guard let issue = entry.contentId.flatMap({ found.issues[$0] }) else { continue }
+            let before = entry
+            entry.refresh(from: issue)
+            guard entry != before else { continue }
+            try entry.update(db)
+            changed = true
+        }
+        let old = InboxEntry.filter(
+            Column("reason") == InboxEntry.selfAssignReason && Column("updatedAt") < now.addingTimeInterval(-selfAssignedLifetime)
+        )
+        if try old.deleteAll(db) > 0 { changed = true }
+        // Assigning and labelling that haven't reached GitHub yet stay on screen.
+        if changed { try Outbox.rebase(db) }
     }
 
     /// From when an entry's activity counts as new: since you last read it, or for one you never read, its last two

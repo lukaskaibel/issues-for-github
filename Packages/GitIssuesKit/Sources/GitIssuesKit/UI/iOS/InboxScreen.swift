@@ -317,7 +317,7 @@ struct InboxMenuContent: View {
         } label: {
             Label(.archive, systemImage: "archivebox")
         }
-        if !entry.isDue {
+        if !entry.isAppMade {
             Button {
                 model.unsubscribe([entry])
             } label: {
