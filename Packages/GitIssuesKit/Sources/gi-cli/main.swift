@@ -128,7 +128,10 @@ func run() async throws {
         }
         for entry in entries {
             let summary = entry.summary(viewer: viewer)
-            let flags = [entry.unread ? "unread" : nil, entry.missing ? "missing" : nil, entry.bucket == .watching ? "watching" : nil].compactMap { $0 }
+            let flags = [
+                entry.isSelfAssigned ? "assigned by your account" : entry.unread ? "unread" : nil,
+                entry.missing ? "missing" : nil, entry.bucket == .watching ? "watching" : nil,
+            ].compactMap { $0 }
             print("  \(entry.id)  \(entry.displayNumber(withRepo: true)) \(entry.title)")
             print("      \(summary.sign.rawValue): \(summary.lead) \(summary.excerpt.map { String($0.prefix(80)) } ?? "")  [\(flags.joined(separator: ", "))] \(entry.activity.count) events")
         }

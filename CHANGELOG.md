@@ -8,6 +8,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Assignments made with your own account in the Inbox.** When your own GitHub account assigns you to an issue
+  outside the app, with `gh`, a script, a coding agent such as Claude Code signed in as you, or on github.com, the
+  issue now shows up in the Inbox: "New issue, assigned to you" when it was opened that way, else "You were assigned".
+  GitHub never notifies you of what your own account does, so the app looks for these itself, about once a minute.
+  Assigning yourself in the app, on any of your devices, doesn't show up: to GitHub the two look the same, so the app
+  notes its own assignments in iCloud for a week. Read, archive and snooze work as for notifications, kept in iCloud
+  like due issues. Pull requests are left out, and only assignments from the first launch of this version on count.
 - **Nine languages.** The app speaks German, French, Spanish, Portuguese (Brazil), Russian, Japanese, Korean and
   Chinese (Simplified) as well as English, on the Mac, iPhone and iPad. It follows the device's language; to use
   another one for Issues alone, pick it under Settings › Apps › Issues on iPhone and iPad, or System Settings ›

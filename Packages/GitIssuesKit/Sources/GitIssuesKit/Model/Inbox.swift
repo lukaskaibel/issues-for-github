@@ -197,6 +197,7 @@ extension InboxEntry {
     /// What the row says: who did what, and the comment or mention it was about.
     public func summary(viewer: String?) -> InboxSummary {
         if isDue { return dueSummary }
+        if isSelfAssigned { return selfAssignedSummary }
         let me = viewer?.lowercased()
         func isMe(_ login: String?) -> Bool { me != nil && login?.lowercased() == me }
         guard let event = headline(viewer: viewer) else { return fallbackSummary }
@@ -377,6 +378,90 @@ extension InboxEntry {
             ? String(localized: .overdueSinceYesterday) : String(localized: .overdueSinceDay(day: day.mediumLabel()))
         return InboxSummary(lead: lead, sign: .overdue)
     }
+
+    /// Entries the app makes itself, which GitHub knows nothing about: read and archived are kept with the user's
+    /// other Inbox records, there is nothing to unsubscribe from, and nothing about them is sent to GitHub.
+    public var isAppMade: Bool { isDue || isSelfAssigned }
+}
+
+// MARK: - Issues you were assigned to with your own account
+
+extension InboxEntry {
+    /// The app's reason for an assignment your own account made outside the app: with `gh`, a script or an agent
+    /// signed in as you, or on github.com. GitHub doesn't notify anyone of what their own account does, so the app
+    /// looks for these assignments itself (`SyncEngine.pullSelfAssigned`).
+    static let selfAssignReason = "self_assign"
+
+    public var isSelfAssigned: Bool { reason == Self.selfAssignReason }
+
+    /// One entry per assignment, "self_assign:<GitHub's id of the assignment>".
+    static func selfAssignedId(eventId: String) -> String {
+        "\(selfAssignReason):\(eventId)"
+    }
+
+    /// The issue was opened in the same go, as `gh issue create --assignee @me` does.
+    var isNewIssueAssigned: Bool {
+        createdAt.map { abs(updatedAt.timeIntervalSince($0)) <= 120 } ?? false
+    }
+
+    fileprivate var selfAssignedSummary: InboxSummary {
+        InboxSummary(
+            actor: activity.first?.actor,
+            lead: String(localized: isNewIssueAssigned ? .inboxNewIssueAssignedToYou : .inboxYouWereAssigned),
+            sign: .assigned
+        )
+    }
+
+    /// How much earlier than the app's record of it an assignment the app made may be dated (clocks differ), and how
+    /// much later (the change waits in the queue while offline).
+    static let assignedHereBefore: TimeInterval = 120
+    static let assignedHereAfter: TimeInterval = 7 * 86_400
+
+    /// The assignments among `entries` that this app made, on this device or another of yours: each time it assigned
+    /// you to an issue accounts for the first assignment of that issue from then on. To GitHub they look the same as
+    /// the ones made with `gh`; only the app knows which were its own.
+    static func assignedInApp(_ entries: [InboxEntry], noted: (String) -> [Date]) -> Set<String> {
+        var own = Set<String>()
+        let byIssue = Dictionary(grouping: entries.filter { $0.isSelfAssigned && $0.contentId != nil }) { $0.contentId ?? "" }
+        for (contentId, assignments) in byIssue {
+            var unclaimed = assignments.sorted { $0.updatedAt < $1.updatedAt }
+            for date in noted(contentId).sorted() {
+                let range = date.addingTimeInterval(-assignedHereBefore)...date.addingTimeInterval(assignedHereAfter)
+                guard let index = unclaimed.firstIndex(where: { range.contains($0.updatedAt) }) else { continue }
+                own.insert(unclaimed.remove(at: index).id)
+            }
+        }
+        return own
+    }
+
+    /// An assignment read from GitHub, with what the Inbox shows of its issue.
+    init(selfAssignment found: RemoteSelfAssignment) {
+        let issue = found.issue
+        self.init(
+            id: Self.selfAssignedId(eventId: found.eventId), reason: Self.selfAssignReason, unread: true,
+            updatedAt: found.at, subjectType: "Issue", title: issue.title, repo: found.repo, number: found.number
+        )
+        enrichedFor = found.at
+        refresh(from: issue)
+        activity = [InboxActivity(kind: .assigned, actor: found.actor, at: found.at, detail: found.actor?.login)]
+        // The assignment itself is the news, however long ago it was read.
+        activityIsNew = true
+    }
+
+    /// The issue as it is now, read again while it keeps changing.
+    mutating func refresh(from issue: RemoteInboxDetail) {
+        title = issue.title
+        contentId = issue.contentId
+        url = issue.url
+        state = issue.state
+        stateReason = issue.stateReason
+        body = issue.body
+        repoId = issue.repoId
+        authorLogin = issue.authorLogin
+        createdAt = issue.createdAt
+        assignees = issue.assignees
+        labels = issue.labels
+    }
 }
 
 // MARK: - Everything that isn't an entry
@@ -397,6 +482,11 @@ public struct InboxMeta: Codable, Equatable, Sendable {
     public var others: [String: Int] = [:]
     /// GitHub's Last-Modified for the list, to ask "anything new?" for free.
     public var lastModified: String?
+    /// When this device first looked for assignments made with your own account: earlier ones aren't news, and may
+    /// have been made in the app before it kept track of its own.
+    public var selfAssignedFrom: Date?
+    /// When it last looked; the next look starts a little before.
+    public var selfAssignedChecked: Date?
 
     public init() {}
 
