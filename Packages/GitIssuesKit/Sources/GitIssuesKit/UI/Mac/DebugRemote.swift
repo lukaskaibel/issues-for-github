@@ -81,7 +81,7 @@ enum DebugRemote {
             let entry = model.visibleInbox.first { $0.isDue == due && ("\($0.number ?? -1)" == number || $0.displayNumber(withRepo: true) == number) }
             model.selectInboxEntry(entry)
         case "inboxdump":
-            for entry in model.inboxEntries + model.dueInboxEntries {
+            for entry in model.inboxEntries + model.dueInboxEntries + model.selfAssignedInboxEntries {
                 let summary = model.inboxSummary(entry)
                 log("inbox \(entry.displayNumber(withRepo: true)) \(entry.bucket.rawValue) unread=\(model.isUnread(entry)) archived=\(entry.isArchived) \(summary.sign.rawValue): \(summary.lead) \(summary.excerpt ?? "")")
             }

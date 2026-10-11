@@ -101,6 +101,8 @@ final class PhoneTests: AppTestCase {
 
     func testOpenIssueEditTitleAndGoBack() {
         launch()
+        // Below #27 and #38, which are on no board and lead My Issues.
+        scrollTo(element("row-#13"))
         element("row-#13").tap()
         let title = element("issue-title")
         wait(title)
@@ -116,6 +118,8 @@ final class PhoneTests: AppTestCase {
 
     func testStatusAndPriorityMenus() {
         launch()
+        // Below #27 and #38, which are on no board and lead My Issues.
+        scrollTo(element("row-#13"))
         element("row-#13").tap()
         wait(element("chip-status"))
         element("chip-status").tap()
@@ -142,6 +146,8 @@ final class PhoneTests: AppTestCase {
 
     func testAssigneeAndLabelSheets() {
         launch()
+        // Below #27 and #38, which are on no board and lead My Issues.
+        scrollTo(element("row-#13"))
         element("row-#13").tap()
         wait(element("chip-assignee"))
         element("chip-assignee").tap()
@@ -172,13 +178,15 @@ final class PhoneTests: AppTestCase {
 
     func testDueDateSheet() {
         launch()
+        // Below #27 and #38, which are on no board and lead My Issues.
+        scrollTo(element("row-#13"))
         element("row-#13").tap()
         let chip = element("chip-due")
         wait(chip)
         waitForLabel(chip, containing: "none")
         func day(_ offset: Int) -> String {
             Calendar.current.date(byAdding: .day, value: offset, to: Date())!
-                .formatted(.dateTime.weekday(.wide).day().month(.wide).year())
+                .formatted(.dateTime.weekday(.wide).day().month(.wide).year().locale(appLocale))
         }
 
         chip.tap()
@@ -353,6 +361,8 @@ final class PhoneTests: AppTestCase {
 
     func testIssueMenuCopiesLinkAndDeletes() {
         launch()
+        // Below #27 and #38, which are on no board and lead My Issues.
+        scrollTo(element("row-#13"))
         element("row-#13").tap()
         wait(element("issue-title"))
         app.navigationBars.buttons["More"].tap()
@@ -374,6 +384,8 @@ final class PhoneTests: AppTestCase {
 
     func testShareSheet() {
         launch()
+        // Below #27 and #38, which are on no board and lead My Issues.
+        scrollTo(element("row-#13"))
         element("row-#13").tap()
         wait(element("issue-title"))
         app.navigationBars.buttons["Share…"].tap()

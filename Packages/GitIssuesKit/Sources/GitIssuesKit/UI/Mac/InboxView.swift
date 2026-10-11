@@ -753,8 +753,9 @@ struct InboxMenuBuilder {
         archive.image = MenuIcons.symbol("archivebox")
         hint(archive, "e")
         menu.addItem(archive)
-        // A due issue is the app's own reminder, not a GitHub notification to unsubscribe from.
-        if targets.contains(where: { !$0.isDue }) {
+        // The app's own entries (an issue being due, an assignment with your own account) aren't GitHub notifications
+        // to unsubscribe from.
+        if targets.contains(where: { !$0.isAppMade }) {
             let unsubscribe = ClosureMenuItem(String(localized: .unsubscribe)) { [model] in model.unsubscribe(targets) }
             unsubscribe.image = MenuIcons.symbol("bell.slash")
             unsubscribe.keyEquivalent = "S"
