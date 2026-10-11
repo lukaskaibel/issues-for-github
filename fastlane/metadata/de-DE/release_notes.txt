@@ -1,0 +1,12 @@
+Issues spricht jetzt neun Sprachen, hat einen Eingang und erinnert dich, wenn Issues fällig sind.
+
+• Neun Sprachen: Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Russisch, Japanisch, Koreanisch und Chinesisch, passend zur Sprache deines Geräts
+• Der Eingang: deine Mitteilungen von GitHub, mit dem Issue gleich daneben. Lesen, archivieren und zurückstellen per Taste oder Wischen; github.com und deine anderen Geräte sind auf demselben Stand. Heute fällige Issues erscheinen dort auch, ebenso Issues, die dir dein eigener Account anderswo zugewiesen hat, etwa mit gh oder einem Coding-Agenten
+• Fälligkeitsdaten mit Erinnerung: Wähle einen Tag oder tippe ihn ein, etwa „in 3 Tagen“, und am Tag selbst erinnern dich Mac, iPhone und iPad
+• Sub-Issues hängen auf dem Board und in der Liste direkt unter ihrem übergeordneten Issue und lassen sich mit dem Pfeil einklappen. Erledigst du das letzte, ist auch das übergeordnete Issue erledigt
+• Sub-Issues und Blocker: vorhandene Issues als Sub-Issues hinzufügen, einem Issue ein übergeordnetes geben und festhalten, was was blockiert
+• Jedes Issue, ob auf einem Board oder nicht: deine Repositories in der Seitenleiste, die Issues auf keinem Board unter „Kein Projekt“; ein Klick bringt sie auf eines
+• Beschreibungen wie auf GitHub: Tabellen, abhakbare Checklisten, Code und Mermaid-Diagramme
+• Issues lassen sich jetzt auch in der Liste an eine andere Stelle ziehen, nicht nur auf dem Board
+• Weniger Klicks: Ein Klick auf einen Status, eine Person oder ein Label schließt die Auswahl; mehrere wählst du mit dem Kästchen am Zeilenanfang
+• Behoben: Beim Drehen eines iPad ins Querformat konnte die App abstürzen

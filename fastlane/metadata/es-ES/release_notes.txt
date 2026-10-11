@@ -1,0 +1,12 @@
+Issues ahora habla nueve idiomas, tiene una Entrada y te avisa cuando vencen tus incidencias.
+
+• Nueve idiomas: inglés, alemán, francés, español, portugués, ruso, japonés, coreano y chino, según el idioma de tu dispositivo
+• La Entrada: tus notificaciones de GitHub, con la incidencia justo al lado. Lee, archiva y pospón con una tecla o deslizando; github.com y tus otros dispositivos quedan al día. También aparecen ahí las incidencias que vencen hoy y las que tu propia cuenta te asignó en otro lugar, por ejemplo con gh o con un agente de programación
+• Fechas de vencimiento con recordatorios: elige un día o escríbelo, por ejemplo “en 3 días”, y ese día tu Mac, tu iPhone y tu iPad te lo recuerdan
+• Las subincidencias quedan justo debajo de su incidencia principal, en el tablero y en la lista, y se contraen con la flecha. Completa la última y la principal también se completa
+• Subincidencias y bloqueos: añade incidencias existentes como subincidencias, pon una incidencia bajo otra y marca qué bloquea a qué
+• Todas las incidencias, estén o no en un tablero: tus repositorios en la barra lateral, con las incidencias que no están en ningún tablero bajo “Sin proyecto”; un clic las pone en uno
+• Descripciones como en GitHub: tablas, listas de tareas que se marcan, código y diagramas Mermaid
+• Arrastra incidencias a otro lugar en la lista, no solo en el tablero
+• Menos clics: elegir un estado, una persona o una etiqueta cierra el menú; la casilla al principio de la fila permite elegir varios
+• Corregido: girar un iPad a horizontal podía cerrar la app

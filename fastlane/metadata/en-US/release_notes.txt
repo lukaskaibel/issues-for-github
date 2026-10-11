@@ -1,0 +1,12 @@
+Issues now speaks nine languages, has an Inbox and reminds you when issues are due.
+
+• Nine languages: English, German, French, Spanish, Portuguese, Russian, Japanese, Korean and Chinese, following your device's language
+• The Inbox: your GitHub notifications, with the issue right beside them. Read, archive and snooze with a key or a swipe; github.com and your other devices agree. Issues due today show up there too, and so do issues your own account assigned you to elsewhere, such as with gh or a coding agent
+• Due dates with reminders: pick a day or type it, such as "in 3 days", and on the day your Mac, iPhone and iPad remind you
+• Sub-issues hang under their parent on the board and in the list, and fold away with the arrow. Finish the last one and the parent is done too
+• Sub-issues and blockers: add existing issues as sub-issues, give an issue a parent, and mark what blocks what
+• Every issue, on a board or not: your repositories in the sidebar, with the issues on no board under "No project", one click from going onto one
+• Descriptions drawn as on GitHub: tables, checklists that tick, code and Mermaid diagrams
+• Drag issues to a new place in the list too, not only on the board
+• Fewer clicks: picking a status, person or label closes the picker; the checkbox at the start of a row picks several
+• Fixed: turning an iPad to landscape could quit the app
