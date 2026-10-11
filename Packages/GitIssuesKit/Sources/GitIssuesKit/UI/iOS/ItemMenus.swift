@@ -8,6 +8,8 @@ struct ItemMenuContent: View {
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.colorScheme) private var scheme
     var item: Item
+    /// Whether sub-issues hang under the issue where it shows, to fold them in or out.
+    var foldable = false
     /// Hidden in the issue's own screen, where it is open already.
     var showsOpen = true
     var onOpen: () -> Void = {}
@@ -16,6 +18,14 @@ struct ItemMenuContent: View {
         if showsOpen {
             Button(action: onOpen) {
                 Label(.openIssue, systemImage: "arrow.up.left.and.arrow.down.right")
+            }
+            if foldable {
+                let folded = model.isFolded(item)
+                Button {
+                    model.toggleFolded(item)
+                } label: {
+                    Label(folded ? .unfoldSubIssuesMenuItem : .foldSubIssuesMenuItem, systemImage: folded ? "chevron.down" : "chevron.right")
+                }
             }
             Divider()
         }

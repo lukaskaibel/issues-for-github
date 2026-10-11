@@ -9349,6 +9349,126 @@
         }
       }
     },
+    "completeParentFooter" : {
+      "comment" : "Settings (Mac, iPhone, iPad), under the Sub-issues section: explains the switch above it. 'Done' is the board column of finished issues.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erledigst du das letzte offene Sub-Issue eines Issues, wird auch das übergeordnete Issue erledigt, auf jedem Board, auf dem es liegt. Änderungen auf GitHub lösen das nicht aus."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish the last open sub-issue of an issue, and the parent issue moves to Done as well, on every board it's on. Changes made on GitHub don't do this."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al completar la última subincidencia abierta de una incidencia, la incidencia principal también se completa, en cada tablero donde esté. Los cambios hechos en GitHub no lo hacen."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lorsque vous terminez le dernier sous-ticket ouvert d’un ticket, le ticket parent est aussi terminé, sur chaque tableau où il figure. Les modifications faites sur GitHub ne le déclenchent pas."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最後に残ったオープンのサブIssueを完了すると、親Issueも、追加されているすべてのボードで完了になります。GitHub上での変更では、この動作は行われません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이슈의 마지막 열린 하위 이슈를 완료하면 상위 이슈도 해당 이슈가 있는 모든 보드에서 완료됩니다. GitHub에서 변경한 경우에는 적용되지 않습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ao concluir a última sub-issue aberta de uma issue, a issue principal também é concluída, em cada quadro em que estiver. Alterações feitas no GitHub não fazem isso."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Когда вы выполняете последнюю открытую подзадачу, родительская задача тоже становится выполненной — на каждой доске, где она есть. Изменения на GitHub этого не делают."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成某个议题的最后一个未完成子议题后，父议题也会在它所在的每个看板上标记为完成。在 GitHub 上所做的更改不会触发此操作。"
+          }
+        }
+      }
+    },
+    "completeParentSetting" : {
+      "comment" : "Settings (Mac, iPhone, iPad), Sub-issues section: switch. When on, finishing the last open sub-issue of an issue moves that parent issue to Done too, as Linear can.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übergeordnetes Issue erledigen, wenn alle Sub-Issues erledigt sind"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark a parent issue done when all its sub-issues are"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completar la incidencia principal cuando lo estén todas sus subincidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminer le ticket parent quand tous ses sous-tickets le sont"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのサブIssueが完了したら親Issueも完了にする"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 하위 이슈가 완료되면 상위 이슈도 완료로 표시"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Concluir a issue principal quando todas as suas sub-issues estiverem concluídas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выполнять родительскую задачу, когда выполнены все её подзадачи"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所有子议题完成后，将父议题也标记为完成"
+          }
+        }
+      }
+    },
     "conflictDescriptionEditedOnGitHub" : {
       "comment" : "iPhone and iPad, issue screen: warning banner after the user changed the issue's description while someone else changed it on GitHub. The user's version is in the description below the banner; GitHub's is shown in the banner.",
       "extractionState" : "manual",
@@ -17295,6 +17415,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "收起隐藏的仓库"
+          }
+        }
+      }
+    },
+    "foldSubIssuesMenuItem" : {
+      "comment" : "Menu item (Mac right-click menu, iPhone and iPad menus) of an issue whose sub-issues hang indented under it in the list or on the board: hides them under the issue. Title case as a Mac menu item.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-Issues einklappen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fold Sub-issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contraer subincidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replier les sous-tickets"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サブIssueを折りたたむ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하위 이슈 접기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recolher sub-issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Свернуть подзадачи"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "折叠子议题"
+          }
+        }
+      }
+    },
+    "foldSubIssuesTooltip" : {
+      "comment" : "Tooltip and VoiceOver label of the small down-pointing arrow on an issue (list row, board card) whose sub-issues hang indented under it: hides them under the issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-Issues einklappen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fold sub-issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contraer subincidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replier les sous-tickets"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サブIssueを折りたたむ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하위 이슈 접기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recolher sub-issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Свернуть подзадачи"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "折叠子议题"
           }
         }
       }
@@ -33787,6 +34027,66 @@
         }
       }
     },
+    "parentDoneWithSubIssues" : {
+      "comment" : "Notice (Mac: at the bottom of the window; iPhone and iPad: banner) after you finished the last open sub-issue of an issue, so the app moved that parent issue to Done as well (a setting). %(number)@ is the parent's number, such as '#9'; its title shows below. 'Done' as in finished.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Sub-Issues erledigt – damit ist auch %@ erledigt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All sub-issues done, so %(number)@ is done too"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas las subincidencias completadas: %@ también lo está"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous les sous-tickets sont terminés, %@ l’est donc aussi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのサブIssueが完了したため、%@も完了しました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 하위 이슈가 완료되어 %@도 완료되었습니다"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas as sub-issues concluídas, então %@ também foi concluída"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Все подзадачи выполнены, поэтому задача %@ тоже выполнена"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所有子议题已完成，因此 %@ 也已完成"
+          }
+        }
+      }
+    },
     "parentIssue" : {
       "comment" : "iPad, issue screen, column of properties on the right: label of the row naming the issue this sub-issue belongs to (its parent issue). Short.",
       "extractionState" : "manual",
@@ -50025,6 +50325,228 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "展开"
+          }
+        }
+      }
+    },
+    "unfoldSubIssuesMenuItem" : {
+      "comment" : "Menu item (Mac right-click menu, iPhone and iPad menus) of an issue whose sub-issues are folded under it in the list or on the board: shows them again. Title case as a Mac menu item.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-Issues ausklappen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unfold Sub-issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expandir subincidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déplier les sous-tickets"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サブIssueを展開"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하위 이슈 펼치기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expandir sub-issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Развернуть подзадачи"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展开子议题"
+          }
+        }
+      }
+    },
+    "unfoldSubIssuesTooltip" : {
+      "comment" : "Tooltip and VoiceOver label of the small right-pointing arrow on an issue (list row, board card) whose sub-issues are folded under it: shows them again. %(count)lld is how many.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Sub-Issue anzeigen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Sub-Issues anzeigen"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Show %(count)lld sub-issue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Show %(count)lld sub-issues"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Mostrar %lld subincidencia"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Mostrar %lld subincidencias"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Afficher %lld sous-ticket"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Afficher %lld sous-tickets"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld件のサブIssueを表示"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "하위 이슈 %lld개 보기"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Mostrar %lld sub-issue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Mostrar %lld sub-issues"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Показать %lld подзадачи"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Показать %lld подзадач"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Показать %lld подзадачу"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Показать %lld подзадачи"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "显示 %lld 个子议题"
+                }
+              }
+            }
           }
         }
       }

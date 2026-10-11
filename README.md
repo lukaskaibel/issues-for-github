@@ -64,6 +64,11 @@ GitHub in the background.
   <img alt="A card is dragged from In Progress to In Review, the cards there make room, and Esc sends it back" src="Design/screenshots/drag-light.webp">
 </picture>
 
+A sub-issue with the same status as its parent hangs right under it, indented, so a parent and the sub-issues you
+work on with it read as one instead of as separate cards in the same column. The arrow on the parent folds them in. A
+sub-issue whose parent has another status stays in its own column and says which issue it belongs to. When the last
+one is done, the parent moves to Done by itself.
+
 Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count
 and a dropdown opens right there. Type to filter, press a number to pick; the pick closes it. For several assignees or
 labels, tick their checkboxes or Shift-click them, and it stays open. Right-click a card for everything at once.
@@ -168,6 +173,7 @@ The interface uses the system's own parts.
   headers that stay pinned. Tabs for the Inbox (with its count), My Issues, Projects (with the repositories below the
   projects) and Search. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and
   hold for the same menu as the Mac's right-click, and drag after holding to give an issue a new place in its section.
+  Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
   place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams are drawn until you tap them),
   the properties are chips under the title, and the comment field stays at the bottom as in Messages.
@@ -188,7 +194,8 @@ The interface uses the system's own parts.
 - **Board and list** for every GitHub Project you can see, plus **My Issues**: everything assigned to you.
 - **Every issue of your repositories**, also those on none of your boards, which one click puts on one.
 - **Sub-issues and blockers.** Put any issue under another one, add issues that exist already as sub-issues, and mark
-  which issues block which, with a red flag on blocked cards.
+  which issues block which, with a red flag on blocked cards. Sub-issues with their parent's status hang under it on
+  the board and in the list, and a parent is done when its last sub-issue is.
 - **An Inbox** with GitHub's notifications about issues and pull requests: who did what, the issue beside it, and
   read, archive, snooze and unsubscribe in one key. Read and archived are the same on github.com. Issues your own
   account assigned you to with `gh` or a coding agent show up too, which GitHub doesn't notify you of.
@@ -229,6 +236,8 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Repositories in the sidebar | The repositories linked to your projects, and those their issues come from |
 | No project | An issue that is in none of your projects; adding it to one is GitHub's *Add to project* |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
+| Sub-issues hanging under their parent | Only how the app arranges them; GitHub's order and fields stay as they are |
+| A parent done with its last sub-issue | The parent's status moves to the done column and it is closed, as if you had moved it there |
 | Blocked by and blocking | GitHub's issue dependencies |
 | Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there. Due issues, and assignments your own account made outside the app (found in the issues' timelines), are the app's own entries, read and archived in iCloud |
 
@@ -387,6 +396,11 @@ at the start of each row, or hold Shift while you click or press Return. The sub
 whose status, priority and assignee change right there too, and the red flag of a blocked issue lists what blocks it.
 In the list, click a section header to fold it; Option-click folds them all.
 
+Sub-issues with the same status as their parent hang under it, indented; click the arrow beside the parent, or
+right-click it, to fold them in or out. A sub-issue whose parent has another status names its parent instead, and a
+click there changes the parent. When you finish the last open sub-issue, the parent moves to Done too; Settings ›
+Sub-issues turns that off.
+
 In an issue, the plus beside the sub-issues adds one: type to find an issue by title or number, or pick
 **New sub-issue…** to create one with what you typed. Right-click an issue for **Set Parent Issue…**, **Add
 Sub-issue** and **Mark As** (blocked by, blocking). These pickers find issues the same way; picking a checked one takes
@@ -396,7 +410,8 @@ shows when you point at a blocker in the issue takes it away.
 A description with a table, a checklist, code or a Mermaid diagram is drawn as on GitHub. Click a checkbox to tick it;
 click anywhere else to edit the Markdown, and `Esc` or `⌘↵` draws it again.
 
-On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. In the list, drag a
+On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. A parent takes the
+sub-issues hanging under it along within its column, and other cards land before or after them, never in between. In the list, drag a
 row up or down within its section, or into another section to change its status; My Issues mixes projects, so its
 rows stay where their boards put them. Drag a column by its
 header to reorder it, double-click its name to rename it, right-click it for its menu (rename, colour, delete), and
@@ -418,6 +433,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Gesture | Action |
 |---|---|
 | Tap a section header | Fold it in or out |
+| Tap the arrow beside an issue | Fold the sub-issues hanging under it in or out |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
 | Touch and hold an issue | Status, priority, assignee, labels and due date as submenus (Add to Project for an issue on no board); parent issue, sub-issues and blockers; copy link, share, open on GitHub, delete |

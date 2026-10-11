@@ -8,16 +8,25 @@ struct CardModel: Equatable {
     /// Repository names only matter on boards that span more than one.
     var showsRepo: Bool
     var due: DueBadge?
+    /// How many sub-issues hang under the card in its column, folded or not; nil when none do.
+    var nested: Int?
+    var folded = false
+    /// A sub-issue whose parent is in another column names the parent.
+    var showsParent = false
 }
 
 extension AppModel {
-    func cardModel(for item: Item) -> CardModel {
+    /// What a card shows; `nesting` is its column's, for the sub-issues hanging under it.
+    func cardModel(for item: Item, in nesting: Nesting? = nil) -> CardModel {
         CardModel(
             item: item,
             priority: priorityLevel(of: item),
             showsPriority: project(of: item)?.priorityFieldId != nil,
             showsRepo: repos(projectId: item.projectId).count > 1,
-            due: dueBadge(for: item)
+            due: dueBadge(for: item),
+            nested: nesting?.nestedCounts[item.id],
+            folded: nesting?.folded.contains(item.id) ?? false,
+            showsParent: item.parentNumber != nil && (nesting?.depth(of: item.id) ?? 0) == 0
         )
     }
 }
@@ -36,6 +45,8 @@ struct CardView: View, Equatable {
     var avatarVersion = 0
     /// The clickable part under the pointer, drawn with a soft highlight.
     var hoveredPart: PickerKind? = nil
+    /// Whether the pointer is on the arrow that folds the sub-issues under the card.
+    var hoveringFold = false
 
     static let padding = CGSize(width: 12, height: 10)
     #if os(macOS)
@@ -58,7 +69,10 @@ struct CardView: View, Equatable {
         }
         .frame(width: width, height: Self.height(titleHeight: titleHeight))
         .accessibilityElement()
-        .accessibilityLabel("\(card.item.displayNumber) \(card.item.title)" + (card.due.map { ", \($0.tooltip)" } ?? ""))
+        .accessibilityLabel(
+            "\(card.item.displayNumber) \(card.item.title)" + (card.due.map { ", \($0.tooltip)" } ?? "")
+                + (card.item.parentNumber.map { ", " + String(localized: .subIssueOf(number: "#\($0)")) } ?? "")
+        )
         .accessibilityAddTraits(.isButton)
     }
 
@@ -92,11 +106,20 @@ final class CardRegionStore: @unchecked Sendable {
     static let shared = CardRegionStore()
     private let lock = NSLock()
     private var regions: [String: [(kind: PickerKind, rect: CGRect)]] = [:]
+    private var folds: [String: CGRect] = [:]
 
-    func set(_ itemId: String, _ parts: [(kind: PickerKind, rect: CGRect)]) {
+    func set(_ itemId: String, _ parts: [(kind: PickerKind, rect: CGRect)], fold: CGRect? = nil) {
         lock.lock()
         regions[itemId] = parts
+        folds[itemId] = fold
         lock.unlock()
+    }
+
+    /// The arrow that folds the sub-issues under a card.
+    func fold(_ itemId: String) -> CGRect? {
+        lock.lock()
+        defer { lock.unlock() }
+        return folds[itemId]
     }
 
     func parts(_ itemId: String) -> [(kind: PickerKind, rect: CGRect)] {
@@ -116,22 +139,36 @@ private struct CardPainter {
         let item = card.item
         let padding = CardView.padding
         var parts: [(kind: PickerKind, rect: CGRect)] = []
+        var fold: CGRect?
         // Each part lights up in a shape that suits it, as in Linear: a small square behind an icon, a halo
         // around avatars, and chips in their own outline.
         func hovered(_ kind: PickerKind) -> Bool { view.hoveredPart == kind && !view.lifted }
         func part(_ kind: PickerKind, _ rect: CGRect) {
             parts.append((kind, rect))
         }
-        defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts) } }
+        defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts, fold: fold) } }
         let outline = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5), cornerRadius: 8, style: .continuous)
         let fill = view.lifted ? Theme.cardLifted : view.selected ? Theme.selectionFill : (view.highlighted ? Theme.cardHover : Theme.card)
         let border = view.lifted ? Theme.cardLiftedBorder : view.selected ? Theme.selectionBorder : (view.highlighted ? Theme.cardHoverBorder : Theme.cardBorder)
         context.fill(outline, with: .color(fill))
         context.stroke(outline, with: .color(border), lineWidth: view.selected && !view.lifted ? 1.5 : 1)
 
-        // Top line: number, repository, pull-request mark, and assignees on the right.
+        // Top line: the arrow that folds the sub-issues under the card, number, repository, pull-request mark, the
+        // parent of a sub-issue whose parent is elsewhere, and assignees on the right.
         let topY = padding.height + 9
         var x = padding.width
+        if card.nested != nil {
+            let rect = CGRect(x: x - 3, y: topY - 7, width: 14, height: 14)
+            fold = rect
+            if view.hoveringFold, !view.lifted {
+                context.fill(Path(roundedRect: rect.insetBy(dx: -2, dy: -2), cornerRadius: 5), with: .color(Theme.partHover))
+            }
+            context.stroke(
+                Self.foldArrow(folded: card.folded, center: CGPoint(x: rect.midX, y: rect.midY)),
+                with: .color(Theme.textSecondary), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
+            )
+            x = rect.maxX + 5
+        }
         let number = context.resolve(
             Text(item.displayNumber).font(.system(size: CardView.metaSize)).monospacedDigit()
                 .foregroundStyle(view.lifted ? Theme.textSecondary : Theme.textTertiary)
@@ -151,6 +188,22 @@ private struct CardPainter {
                 Text(Image(systemName: "arrow.triangle.pull")).font(.system(size: 10, weight: .medium)).foregroundStyle(Theme.textTertiary),
                 at: CGPoint(x: x, y: topY), anchor: .leading
             )
+            x += 16
+        }
+        if card.showsParent, let parentNumber = item.parentNumber {
+            let avatars = item.kind == .draft ? 0 : 18 + CGFloat(max(min(item.assignees.count, 3), 1) - 1) * 13
+            let room = size.width - padding.width - avatars - 10 - x
+            let text = context.resolve(
+                Text("\(Image(systemName: "arrow.turn.left.up")) #\(parentNumber) \(item.parentTitle ?? "")")
+                    .font(.system(size: CardView.metaSize)).foregroundStyle(Theme.textTertiary)
+            )
+            let width = min(text.measure(in: CGSize(width: 600, height: 40)).width, room - 12)
+            if width >= 48 {
+                let rect = CGRect(x: x - 2, y: topY - 9, width: width + 12, height: 18)
+                part(.parent, rect)
+                if hovered(.parent) { chip(rect, hovered: true) }
+                context.draw(text, in: CGRect(x: rect.minX + 6, y: topY - 8, width: width, height: 16))
+            }
         }
         var avatarRing = fill
         if item.kind != .draft {
@@ -266,6 +319,21 @@ private struct CardPainter {
         }
     }
 
+    /// A chevron that points down while the sub-issues show and to the right while they are folded in.
+    static func foldArrow(folded: Bool, center: CGPoint) -> Path {
+        var path = Path()
+        if folded {
+            path.move(to: CGPoint(x: center.x - 1.5, y: center.y - 3.5))
+            path.addLine(to: CGPoint(x: center.x + 2, y: center.y))
+            path.addLine(to: CGPoint(x: center.x - 1.5, y: center.y + 3.5))
+        } else {
+            path.move(to: CGPoint(x: center.x - 3.5, y: center.y - 1.5))
+            path.addLine(to: CGPoint(x: center.x, y: center.y + 2))
+            path.addLine(to: CGPoint(x: center.x + 3.5, y: center.y - 1.5))
+        }
+        return path
+    }
+
     private func chip(_ rect: CGRect, hovered: Bool = false) {
         let outline = Path(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), cornerRadius: 10)
         if hovered { context.fill(outline, with: .color(Theme.chipHover)) }
@@ -318,5 +386,70 @@ private struct CardPainter {
                 )
             }
         }
+    }
+}
+
+/// On the board, the lines from a parent card down to the sub-issue cards hanging under it: drawn in the gutter
+/// left of a nested card and up through the gap above it, to the parent card's bottom edge.
+struct CardTreeLines: View {
+    /// Sub-issue cards hang this much further in per level, down to a few levels.
+    static let indent: CGFloat = 16
+    static let deepest = 3
+
+    var place: Nesting.Place
+    /// The gap between cards, which the lines bridge.
+    var gap: CGFloat
+    /// Where the branch meets the card, from the card's top: beside its first line.
+    var branchY: CGFloat = 19
+
+    var body: some View {
+        Canvas { context, size in
+            let depth = min(place.depth, Self.deepest)
+            var path = Path()
+            for level in 0..<depth {
+                let lineX = CGFloat(level) * Self.indent + Self.indent / 2
+                let continues = place.continues.indices.contains(level) && place.continues[level]
+                if level < depth - 1 {
+                    if continues {
+                        path.move(to: CGPoint(x: lineX, y: 0))
+                        path.addLine(to: CGPoint(x: lineX, y: size.height))
+                    }
+                    continue
+                }
+                let y = gap + branchY
+                let end = CGFloat(depth) * Self.indent
+                if continues {
+                    path.move(to: CGPoint(x: lineX, y: 0))
+                    path.addLine(to: CGPoint(x: lineX, y: size.height))
+                    path.move(to: CGPoint(x: lineX, y: y))
+                    path.addLine(to: CGPoint(x: end, y: y))
+                } else {
+                    let radius: CGFloat = 5
+                    path.move(to: CGPoint(x: lineX, y: 0))
+                    path.addLine(to: CGPoint(x: lineX, y: y - radius))
+                    path.addQuadCurve(to: CGPoint(x: lineX + radius, y: y), control: CGPoint(x: lineX, y: y))
+                    path.addLine(to: CGPoint(x: end, y: y))
+                }
+            }
+            context.stroke(path, with: .color(Theme.treeLine), lineWidth: 1)
+        }
+        .padding(.top, -gap)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+/// The edge of a second card peeking out under a card whose sub-issues are folded into it, or that carries them
+/// along in a drag.
+struct CardStackEdge: View {
+    static let height: CGFloat = 5
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(Theme.card)
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.cardBorder, lineWidth: 1))
+            .padding(.horizontal, 6)
+            .offset(y: Self.height)
+            .accessibilityHidden(true)
     }
 }

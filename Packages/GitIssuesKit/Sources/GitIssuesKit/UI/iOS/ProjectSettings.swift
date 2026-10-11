@@ -176,7 +176,7 @@ struct ArrangeSectionsSheet: View {
                             StatusIcon(glyph: section.glyph, size: 16)
                             Text(section.title)
                             Spacer()
-                            Text("\(section.items.count)")
+                            Text("\(section.count)")
                                 .font(.footnote)
                                 .monospacedDigit()
                                 .foregroundStyle(Theme.textTertiary)

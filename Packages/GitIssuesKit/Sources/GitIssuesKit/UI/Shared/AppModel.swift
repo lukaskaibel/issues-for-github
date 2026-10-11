@@ -12,9 +12,13 @@ struct BoardColumn: Identifiable, Equatable {
     var id: String
     var option: FieldOption?
     var glyph: StatusGlyph
+    /// The cards as shown: sub-issues under their parent, folded ones left out.
     var items: [Item]
+    var nesting = Nesting()
 
     var title: String { option?.name ?? String(localized: .noStatus) }
+    /// Every card in the column, folded ones included.
+    var count: Int { nesting.members.count }
 }
 
 struct ListSection: Identifiable, Equatable {
@@ -22,7 +26,12 @@ struct ListSection: Identifiable, Equatable {
     var title: String
     var glyph: StatusGlyph
     var option: FieldOption?
+    /// The issues as shown: sub-issues under their parent, folded ones left out.
     var items: [Item]
+    var nesting = Nesting()
+
+    /// Every issue in the group, folded ones included.
+    var count: Int { nesting.members.count }
 }
 
 enum PaletteMode: Hashable {
@@ -147,6 +156,10 @@ public final class AppModel {
     var confirmSignOutEverywhere = false
     /// Bumped when a list section is folded in or out, so the list redraws.
     var collapseVersion = 0
+    /// Parents (node ids) whose sub-issues are folded away under them in lists and on boards. Kept on this device.
+    @ObservationIgnored var foldedParents = Set(UserDefaults.standard.stringArray(forKey: "foldedSubIssues") ?? []) {
+        didSet { UserDefaults.standard.set(Array(foldedParents), forKey: "foldedSubIssues") }
+    }
     /// A new issue that was closed before it was created, kept for the next time the dialog opens.
     @ObservationIgnored var unsentNewIssue: NewIssueDraft?
     /// A title typed into a picker before choosing to create a new issue instead, for the dialog to start with.
@@ -212,6 +225,10 @@ public final class AppModel {
         didSet { UserDefaults.standard.set(showsDockBadge, forKey: "inbox.dockBadge") }
     }
     #endif
+    /// Whether finishing the last open sub-issue of a parent marks the parent done too, as Linear can.
+    var completesParents = UserDefaults.standard.object(forKey: "subIssues.completeParent") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(completesParents, forKey: "subIssues.completeParent") }
+    }
 
     /// Comments and sub-issues of the issues on screen, one model per issue, with how many views show it.
     @ObservationIgnored private var details: [String: (model: IssueDetailModel, users: Int)] = [:]
@@ -702,12 +719,14 @@ public final class AppModel {
         var result: [BoardColumn] = []
         let unsorted = items.filter { $0.statusId == nil || !known.contains($0.statusId!) }
         if !unsorted.isEmpty {
-            result.append(BoardColumn(id: BoardColumn.noStatusId, option: nil, glyph: .none, items: unsorted))
+            let (shown, nesting) = Nesting.arrange(unsorted, folded: foldedParents)
+            result.append(BoardColumn(id: BoardColumn.noStatusId, option: nil, glyph: .none, items: shown, nesting: nesting))
         }
         for option in statuses {
+            let (shown, nesting) = Nesting.arrange(items.filter { $0.statusId == option.id }, folded: foldedParents)
             result.append(BoardColumn(
                 id: option.id, option: option, glyph: glyph(projectId: projectId, optionId: option.id),
-                items: items.filter { $0.statusId == option.id }
+                items: shown, nesting: nesting
             ))
         }
         columnCache[projectId] = result
@@ -739,7 +758,7 @@ public final class AppModel {
                 return ra == 0 ? a.offset > b.offset : a.offset < b.offset
             }.map(\.element)
             result = ordered.filter { !$0.items.isEmpty }.map {
-                ListSection(id: $0.id, title: $0.title, glyph: $0.glyph, option: $0.option, items: $0.items)
+                ListSection(id: $0.id, title: $0.title, glyph: $0.glyph, option: $0.option, items: $0.items, nesting: $0.nesting)
             }
 
         case .myIssues, .repository:
@@ -794,7 +813,8 @@ public final class AppModel {
             case .completed: ("Done", .statusGroupDone, StatusGlyph(category: .completed, progress: 1, color: Theme.accent))
             case .canceled: ("Canceled", .statusGroupCanceled, StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary))
             }
-            return ListSection(id: id, title: String(localized: title), glyph: glyph, option: nil, items: matching)
+            let (shown, nesting) = Nesting.arrange(matching, folded: foldedParents)
+            return ListSection(id: id, title: String(localized: title), glyph: glyph, option: nil, items: shown, nesting: nesting)
         }
     }
 
@@ -1001,12 +1021,20 @@ public final class AppModel {
     /// write, such as an issue only the Inbox knew that is being put on a board.
     func perform(_ mutations: [Mutation], inserting: [Item] = []) {
         guard !mutations.isEmpty else { return }
+        let completions = parentCompletions(after: mutations)
+        let mutations = mutations + completions.mutations
         do {
             try db.writer.write { db in
                 for item in inserting { try item.insert(db, onConflict: .ignore) }
                 for mutation in mutations { try Outbox.enqueue(db, mutation) }
             }
             reloadNow()
+            for parent in completions.parents {
+                status.post(Notice(
+                    title: String(localized: .parentDoneWithSubIssues(number: parent.displayNumber)), message: parent.title,
+                    action: .openItem(parent.id)
+                ))
+            }
         } catch {
             status.post(Notice(title: String(localized: .changeCouldNotBeSaved), message: error.localizedDescription, isWarning: true))
         }

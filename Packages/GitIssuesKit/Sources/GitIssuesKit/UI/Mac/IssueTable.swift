@@ -17,6 +17,13 @@ struct IssueRowModel: Equatable {
     /// row's checkbox.
     var selected = false
     var selecting = false
+    /// How the row hangs under a parent in its group.
+    var nest = Nesting.Place()
+    /// How many sub-issues hang under this one in its group, folded or not; nil when none do.
+    var nested: Int?
+    var folded = false
+    /// A sub-issue whose parent is in another group names the parent.
+    var showsParent = false
 }
 
 struct IssueSectionModel: Equatable {
@@ -351,23 +358,58 @@ struct IssueTable: NSViewRepresentable {
             entries.indices.filter { if case .header = entries[$0] { return true } else { return false } } + [entries.count]
         }
 
+        /// The issue being dragged and the sub-issues hanging under it, which come along.
+        private func moving(_ item: Item) -> Set<String> {
+            guard let projectId = item.projectId,
+                  let column = model.columns(projectId: projectId).first(where: { $0.nesting.members.contains { $0.id == item.id } })
+            else { return [item.id] }
+            return column.nesting.descendants(of: item.id).union([item.id])
+        }
+
         /// Where an issue dropped above `row` lands: the section it joins, and its place among that section's
-        /// other issues. Above a header is the end of the section before it.
-        private func landing(above row: Int, moving id: String) -> (sectionId: String, index: Int)? {
+        /// other issues, leaving out the ones it brings along. Above a header is the end of the section before it.
+        private func landing(above row: Int, moving: Set<String>) -> (sectionId: String, header: Int, index: Int)? {
             guard row > 0 else { return nil }
             guard let header = entries[..<min(row, entries.count)].lastIndex(where: {
                 if case .header = $0 { return true } else { return false }
             }), case .header(let section) = entries[header] else { return nil }
-            return (section.id, entries[(header + 1)..<row].filter { $0.id != id }.count)
+            return (section.id, header, entries[(header + 1)..<row].filter { !moving.contains($0.id) }.count)
+        }
+
+        /// The column a section of a project's list shows, which a dropped issue joins.
+        private func column(for sectionId: String, of item: Item) -> BoardColumn? {
+            guard let projectId = item.projectId else { return nil }
+            return model.columns(projectId: projectId).first { $0.id == sectionId }
         }
 
         /// Within its section the issue changes place; in another one it takes that status, as on the board.
         func dropItem(_ id: String, above row: Int) -> Bool {
-            guard let item = model.item(id: id), let projectId = item.projectId, let landing = landing(above: row, moving: id),
-                  let column = model.columns(projectId: projectId).first(where: { $0.id == landing.sectionId })
+            guard let item = model.item(id: id), let landing = landing(above: row, moving: moving(item)),
+                  let column = column(for: landing.sectionId, of: item)
             else { return false }
             model.drop(item, in: column, at: landing.index)
             return true
+        }
+
+        /// The row an issue dropped above `row` really lands above: a sub-issue among its parent's sub-issues, any
+        /// other issue in front of or after the ones that stand on their own.
+        private func snappedDropRow(_ id: String, above row: Int) -> Int {
+            guard let item = model.item(id: id) else { return row }
+            let moving = moving(item)
+            guard let landing = landing(above: row, moving: moving), let column = column(for: landing.sectionId, of: item)
+            else { return row }
+            let slot = column.landing(of: item, at: landing.index).slot
+            var seen = 0
+            var current = landing.header + 1
+            while current < entries.count {
+                if case .header = entries[current] { break }
+                if !moving.contains(entries[current].id) {
+                    if seen == slot { return current }
+                    seen += 1
+                }
+                current += 1
+            }
+            return current
         }
 
         func tableView(
@@ -375,9 +417,10 @@ struct IssueTable: NSViewRepresentable {
             proposedDropOperation dropOperation: NSTableView.DropOperation
         ) -> NSDragOperation {
             guard info.draggingSource as? NSTableView === tableView else { return [] }
-            if info.draggingPasteboard.string(forType: Self.itemType) != nil {
-                // Anywhere below the first header; in the middle of a row means just above it.
-                tableView.setDropRow(max(row, 1), dropOperation: .above)
+            if let id = info.draggingPasteboard.string(forType: Self.itemType) {
+                // Anywhere below the first header; in the middle of a row means just above it. The gap opens where
+                // the issue will land, which for a sub-issue is among its parent's sub-issues.
+                tableView.setDropRow(snappedDropRow(id, above: max(row, 1)), dropOperation: .above)
                 return .move
             }
             guard let nearest = sectionBoundaries.min(by: { abs($0 - row) < abs($1 - row) }) else { return [] }
@@ -471,6 +514,12 @@ struct IssueTable: NSViewRepresentable {
             }
             if let event = NSApp.currentEvent,
                let cell = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell,
+               cell.isOnFold(cell.convert(event.locationInWindow, from: nil)) {
+                model.toggleFolded(item)
+                return
+            }
+            if let event = NSApp.currentEvent,
+               let cell = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell,
                let part = cell.part(at: cell.convert(event.locationInWindow, from: nil)) {
                 Dropdown.show(below: part.rect, in: cell, model: model) { close in
                     ItemPicker(kind: part.kind, itemId: item.id, close: close)
@@ -485,7 +534,9 @@ struct IssueTable: NSViewRepresentable {
             guard let table else { return }
             for visible in visibleRows(in: table) {
                 guard let cell = table.view(atColumn: 0, row: visible, makeIfNecessary: false) as? IssueRowCell else { continue }
-                cell.hoveredPart = visible == row ? cell.part(at: cell.convert(point, from: table))?.kind : nil
+                let local = cell.convert(point, from: table)
+                cell.hoveredPart = visible == row ? cell.part(at: local)?.kind : nil
+                cell.hoveringFold = visible == row && cell.isOnFold(local)
             }
         }
 
@@ -605,6 +656,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     private var date = NSAttributedString()
     private var project: NSAttributedString?
     private var subCount: NSAttributedString?
+    private var parentHint: NSAttributedString?
     private var dueText: NSAttributedString?
     private var dueIcon: NSImage?
     private var labels: [(text: NSAttributedString, size: NSSize, color: NSColor)] = []
@@ -614,6 +666,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     private var dateSize = NSSize.zero
     private var projectSize = NSSize.zero
     private var subCountSize = NSSize.zero
+    private var parentHintSize = NSSize.zero
     private var dueSize = NSSize.zero
     /// Where the clickable parts were drawn last, in this cell's coordinates.
     private(set) var parts: [(kind: PickerKind, rect: NSRect)] = []
@@ -625,6 +678,22 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     func part(at point: NSPoint) -> (kind: PickerKind, rect: NSRect)? {
         parts.first { $0.rect.insetBy(dx: -3, dy: -4).contains(point) }
     }
+
+    /// The arrow that folds the sub-issues hanging under this issue in or out, where it was drawn last.
+    private(set) var foldRect: NSRect?
+    var hoveringFold = false {
+        didSet { if hoveringFold != oldValue { needsDisplay = true } }
+    }
+
+    func isOnFold(_ point: NSPoint) -> Bool {
+        foldRect?.insetBy(dx: -3, dy: -4).contains(point) ?? false
+    }
+
+    /// Sub-issues hang this much further in per level, down to a few levels.
+    static let indent: CGFloat = 20
+    static let deepestIndent = 5
+    /// Off while the row is drawn as a card being dragged.
+    private var drawsTree = true
 
     /// The start of the row, where the checkbox shows: a click there picks the issue.
     var checkboxRect: NSRect {
@@ -672,6 +741,13 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                     .paragraphStyle: truncating,
                 ])
             }
+            parentHint = row.showsParent ? item.parentNumber.map { number in
+                NSAttributedString(string: "#\(number) \(item.parentTitle ?? "")", attributes: [
+                    .font: NSFont.systemFont(ofSize: 12),
+                    .foregroundColor: NSColor(Theme.textTertiary),
+                    .paragraphStyle: truncating,
+                ])
+            } : nil
             subCount = item.subTotal > 0
                 ? NSAttributedString(string: "\(item.subCompleted)/\(item.subTotal)", attributes: [
                     .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
@@ -703,10 +779,12 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             dateSize = date.size()
             projectSize = project?.size() ?? .zero
             subCountSize = subCount?.size() ?? .zero
+            parentHintSize = parentHint?.size() ?? .zero
             dueSize = dueText?.size() ?? .zero
-            setAccessibilityLabel(row.due.map {
+            let spoken = row.due.map {
                 String(localized: .issueRowSpokenWithDue(number: item.displayNumber, title: item.title, due: $0.tooltip))
-            } ?? "\(item.displayNumber) \(item.title)")
+            } ?? "\(item.displayNumber) \(item.title)"
+            setAccessibilityLabel(item.parentNumber.map { "\(spoken), \(String(localized: .subIssueOf(number: "#\($0)")))" } ?? spoken)
             needsDisplay = true
         }
         if highlighted != self.highlighted {
@@ -725,7 +803,9 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         let wasHighlighted = highlighted, wasHovered = hoveredPart
         highlighted = false
         hoveredPart = nil
+        drawsTree = false
         cacheDisplay(in: bounds, to: content)
+        drawsTree = true
         highlighted = wasHighlighted
         hoveredPart = wasHovered
         needsDisplay = true
@@ -784,6 +864,9 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         x += 14 + 10
         number.draw(at: NSPoint(x: x, y: midY - numberSize.height / 2))
         x += 40 + 10
+        // A sub-issue hangs under its parent: status and title move in, with a line from the parent's status.
+        if drawsTree { drawTree(row, from: x, midY: midY) }
+        x += CGFloat(min(row.nest.depth, Self.deepestIndent)) * Self.indent
         if row.showsStatus {
             let rect = NSRect(x: x, y: midY - 7, width: 14, height: 14)
             parts.append((.status, rect))
@@ -791,6 +874,19 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         }
         StatusPainter.draw(row.glyph, in: CGRect(x: x, y: midY - 7, width: 14, height: 14), cg: context)
         x += 14 + 10
+        // The arrow that folds the sub-issues under this issue in or out.
+        if row.nested != nil {
+            let rect = NSRect(x: x - 4, y: midY - 7, width: 14, height: 14)
+            foldRect = rect
+            if hoveringFold {
+                NSColor(Theme.partHover).setFill()
+                NSBezierPath(roundedRect: rect.insetBy(dx: -2, dy: -2), xRadius: 5, yRadius: 5).fill()
+            }
+            Self.drawFoldArrow(folded: row.folded, center: NSPoint(x: rect.midX, y: rect.midY), color: NSColor(Theme.textSecondary))
+            x = rect.maxX + 8
+        } else {
+            foldRect = nil
+        }
 
         // Right to left: assignees, date, project, labels.
         var right = size.width - IssueTable.inset - 14
@@ -855,10 +951,16 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
         if canEditFields, let labelsRect { parts.append((.labels, labelsRect)) }
 
-        // The title takes what is left, with the sub-issue count and a flag when blocked directly after it.
+        // The title takes what is left, with the sub-issue count and a flag when blocked directly after it, and
+        // the parent of a sub-issue whose parent is elsewhere.
         let subWidth: CGFloat? = subCount == nil ? nil : subCountSize.width + 7 + 11 + 4 + 7
         let blockedWidth: CGFloat? = row.item.blockedByCount > 0 ? 26 : nil
-        let available = max(40, right - 12 - x - (subWidth.map { $0 + 10 } ?? 0) - (blockedWidth.map { $0 + 6 } ?? 0))
+        let beside = (subWidth.map { $0 + 10 } ?? 0) + (blockedWidth.map { $0 + 6 } ?? 0)
+        let hintWidth: CGFloat? = parentHint == nil ? nil : 7 + 11 + 4 + parentHintSize.width + 7
+        // The parent keeps some room as long as the title keeps more.
+        let hintRoom = hintWidth.map { min($0, 200) + 10 } ?? 0
+        let reserve = right - 12 - x - beside - hintRoom >= 200 ? hintRoom : 0
+        let available = max(40, right - 12 - x - beside - reserve)
         let titleWidth = min(titleSize.width, available)
         title.draw(
             with: NSRect(x: x, y: midY - titleSize.height / 2, width: available, height: titleSize.height),
@@ -887,8 +989,10 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             dot.stroke()
             subCount.draw(at: NSPoint(x: rect.minX + 7 + 11 + 4, y: midY - subCountSize.height / 2))
         }
+        var afterTitle = x + titleWidth + 10 + (subWidth.map { $0 + 6 } ?? 0)
         if let blockedWidth {
-            let after = x + titleWidth + 10 + (subWidth.map { $0 + 6 } ?? 0)
+            let after = afterTitle
+            afterTitle += blockedWidth + 6
             let rect = NSRect(x: after, y: midY - 10, width: blockedWidth, height: 20)
             parts.append((.blockedBy, rect))
             drawChip(rect, hovered: hoveredPart == .blockedBy)
@@ -900,17 +1004,111 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                 )
             }
         }
+        if let parentHint, let hintWidth {
+            let width = min(hintWidth, right - 12 - afterTitle)
+            if width >= 70 {
+                let rect = NSRect(x: afterTitle, y: midY - 10, width: width, height: 20)
+                parts.append((.parent, rect))
+                if hoveredPart == .parent { drawChip(rect, hovered: true) }
+                if let arrow = Self.parentArrow {
+                    let size = arrow.size
+                    arrow.draw(
+                        in: NSRect(x: rect.minX + 7, y: midY - size.height / 2, width: size.width, height: size.height),
+                        from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
+                    )
+                }
+                let textX = rect.minX + 7 + 11 + 4
+                parentHint.draw(
+                    with: NSRect(x: textX, y: midY - parentHintSize.height / 2, width: rect.maxX - 7 - textX, height: parentHintSize.height),
+                    options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
+                )
+            }
+        }
         // Tooltips follow the parts; rebuilt only when they moved.
-        if parts.map(\.rect) != self.parts.map(\.rect) || toolTipsNeedUpdate {
+        if parts.map(\.rect) != self.parts.map(\.rect) || foldRect != tooltipFoldRect || toolTipsNeedUpdate {
             toolTipsNeedUpdate = false
+            tooltipFoldRect = foldRect
             removeAllToolTips()
             for part in parts { addToolTip(part.rect.insetBy(dx: -3, dy: -4), owner: self, userData: nil) }
+            if let foldRect { addToolTip(foldRect.insetBy(dx: -3, dy: -4), owner: self, userData: nil) }
             if dateRect.width > 0 { addToolTip(dateRect, owner: self, userData: nil) }
         }
         self.parts = parts
     }
 
     private var toolTipsNeedUpdate = true
+    private var tooltipFoldRect: NSRect?
+
+    /// Lines from the parents above down to this row: a straight one through the row for each level whose
+    /// sub-issues go on below it, a branch into this row's status icon, and a line from this row's status icon
+    /// down to its own sub-issues when they show.
+    private func drawTree(_ row: IssueRowModel, from base: CGFloat, midY: CGFloat) {
+        let depth = min(row.nest.depth, Self.deepestIndent)
+        let height = bounds.height
+        let path = NSBezierPath()
+        for level in 0..<depth {
+            let lineX = base + CGFloat(level) * Self.indent + 7
+            let continues = row.nest.continues.indices.contains(level) && row.nest.continues[level]
+            if level < depth - 1 {
+                if continues {
+                    path.move(to: NSPoint(x: lineX, y: 0))
+                    path.line(to: NSPoint(x: lineX, y: height))
+                }
+                continue
+            }
+            let end = base + CGFloat(depth) * Self.indent - 3
+            if continues {
+                path.move(to: NSPoint(x: lineX, y: 0))
+                path.line(to: NSPoint(x: lineX, y: height))
+                path.move(to: NSPoint(x: lineX, y: midY))
+                path.line(to: NSPoint(x: end, y: midY))
+            } else {
+                let radius: CGFloat = 5
+                path.move(to: NSPoint(x: lineX, y: 0))
+                path.line(to: NSPoint(x: lineX, y: midY - radius))
+                path.curve(
+                    to: NSPoint(x: lineX + radius, y: midY),
+                    controlPoint1: NSPoint(x: lineX, y: midY - radius * 0.45),
+                    controlPoint2: NSPoint(x: lineX + radius * 0.45, y: midY)
+                )
+                path.line(to: NSPoint(x: end, y: midY))
+            }
+        }
+        if row.nested != nil, !row.folded {
+            let lineX = base + CGFloat(depth) * Self.indent + 7
+            path.move(to: NSPoint(x: lineX, y: midY + 10))
+            path.line(to: NSPoint(x: lineX, y: height))
+        }
+        guard !path.isEmpty else { return }
+        path.lineWidth = 1
+        NSColor(Theme.treeLine).setStroke()
+        path.stroke()
+    }
+
+    /// A chevron that points down while the sub-issues show and to the right while they are folded in.
+    static func drawFoldArrow(folded: Bool, center: NSPoint, color: NSColor) {
+        let path = NSBezierPath()
+        if folded {
+            path.move(to: NSPoint(x: center.x - 1.5, y: center.y - 3.5))
+            path.line(to: NSPoint(x: center.x + 2, y: center.y))
+            path.line(to: NSPoint(x: center.x - 1.5, y: center.y + 3.5))
+        } else {
+            path.move(to: NSPoint(x: center.x - 3.5, y: center.y - 1.5))
+            path.line(to: NSPoint(x: center.x, y: center.y + 2))
+            path.line(to: NSPoint(x: center.x + 3.5, y: center.y - 1.5))
+        }
+        path.lineWidth = 1.5
+        path.lineCapStyle = .round
+        path.lineJoinStyle = .round
+        color.setStroke()
+        path.stroke()
+    }
+
+    private static var parentArrow: NSImage? {
+        NSImage(systemSymbolName: "arrow.turn.left.up", accessibilityDescription: nil)?.withSymbolConfiguration(
+            NSImage.SymbolConfiguration(pointSize: 9, weight: .medium).applying(.init(paletteColors: [NSColor(Theme.textTertiary)]))
+        )
+    }
 
     private static var blockedFlag: NSImage? {
         NSImage(systemSymbolName: "flag.fill", accessibilityDescription: nil)?.withSymbolConfiguration(
@@ -920,6 +1118,9 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
     func view(_ view: NSView, stringForToolTip tag: NSView.ToolTipTag, point: NSPoint, userData data: UnsafeMutableRawPointer?) -> String {
         guard let row else { return "" }
+        if isOnFold(point) {
+            return String(localized: row.folded ? .unfoldSubIssuesTooltip(count: row.nested ?? 0) : .foldSubIssuesTooltip)
+        }
         if let part = part(at: point) { return model?.tooltip(part.kind, for: row.item) ?? "" }
         if dateRect.insetBy(dx: -3, dy: -4).contains(point), let updated = row.item.updatedAt {
             var lines = [String(localized: .updatedOnDateTooltip(date: updated.formatted(date: .long, time: .shortened)))]
@@ -1257,6 +1458,14 @@ struct ItemMenuBuilder {
         peek.image = MenuIcons.symbol("eye")
         hint(peek, " ")
         menu.addItem(peek)
+        if model.nesting(around: item)?.hasNested(item.id) == true {
+            let folded = model.isFolded(item)
+            let fold = ClosureMenuItem(String(localized: folded ? .unfoldSubIssuesMenuItem : .foldSubIssuesMenuItem)) { [model, item] in
+                model.toggleFolded(item)
+            }
+            fold.image = MenuIcons.symbol(folded ? "chevron.down" : "chevron.right")
+            menu.addItem(fold)
+        }
         if item.url != nil {
             let copy = ClosureMenuItem(String(localized: .copyLink)) { [model, item] in model.copyLink(item) }
             copy.image = MenuIcons.symbol("link")
