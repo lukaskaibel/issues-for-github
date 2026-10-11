@@ -277,8 +277,9 @@ public enum DemoData {
     }
 
     /// The Inbox of the sample data: what Mira, Theo and Kai did that Jordan should know about, as GitHub would
-    /// report it. Most of the issues are on the boards; #27 and a new issue on the website are on none but in their
-    /// repositories, and a pull request and an issue in a repository no board uses are only in the Inbox.
+    /// report it, and an issue Jordan's own account opened for them outside the app. Most of the issues are on the
+    /// boards; #27, #38 and a new issue on the website are on none but in their repositories, and a pull request and
+    /// an issue in a repository no board uses are only in the Inbox.
     private static func seedInbox(_ db: Database, now: Date) throws {
         func ago(_ hours: Double) -> Date { now.addingTimeInterval(-hours * 3600) }
         func entry(
@@ -389,6 +390,28 @@ public enum DemoData {
             id: "demo-comment-brand-4-0", issueId: "demo-\(brand.replacingOccurrences(of: "/", with: "-"))-4",
             authorLogin: mira.login, authorAvatarUrl: nil, body: tokensComment, createdAt: ago(96)
         ).insert(db)
+
+        // Opened and assigned with Jordan's own account by an agent on the command line: GitHub notifies nobody of
+        // that, the app finds it itself. On no board, in a repository a board uses.
+        let wake = Item(
+            id: Item.idWithoutProject(contentId(38)), projectId: nil, kind: .issue,
+            position: Item.positionWithoutProject(updatedAt: ago(0.6)),
+            contentId: contentId(38), number: 38, title: "Sync waits for the next poll after the Mac wakes",
+            body: "After the Mac wakes from sleep, the first sync starts only at the next poll, up to a minute later. "
+                + "It should start right away, as it does when the app comes to the front.",
+            state: "OPEN", url: "https://github.com/\(app.repo)/issues/38", repoId: app.repoId, repo: app.repo,
+            authorLogin: viewer.login, createdAt: ago(0.6), updatedAt: ago(0.6),
+            assignees: [viewer.person], labels: appLabels.filter { $0.name == "bug" || $0.name == "sync" }
+        )
+        try wake.insert(db)
+        try InboxEntry(selfAssignment: RemoteSelfAssignment(
+            eventId: "demo-event-38", at: ago(0.6), actor: viewer.person, repo: app.repo, number: 38,
+            issue: RemoteInboxDetail(
+                contentId: contentId(38), url: wake.url ?? "", title: wake.title, body: wake.body, state: "OPEN",
+                stateReason: nil, repoId: app.repoId, authorLogin: viewer.login, createdAt: ago(0.6),
+                assignees: wake.assignees, labels: wake.labels, activity: []
+            )
+        )).insert(db)
 
         var meta = InboxMeta()
         meta.access = .ok

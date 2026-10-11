@@ -102,7 +102,9 @@ read or done on github.com and on your other devices too. Pick one and its issue
 new on top and the new comment marked; change it right there, and press S to put one that's on none of your boards
 onto one. J and K move on, U marks read or unread, E archives and H snoozes until later. Issues of yours that are due
 join the list on the day, and the morning after if they're still open, with the reminder's buttons: Start, Mark as
-Done and Move to Tomorrow.
+Done and Move to Tomorrow. So do issues your own account assigned you to outside the app, with `gh`, a script or a
+coding agent signed in as you: GitHub never notifies you of those, so the app finds them itself, and leaves out the
+ones you assigned yourself to in the app.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/inbox-dark.webp">
@@ -188,7 +190,8 @@ The interface uses the system's own parts.
 - **Sub-issues and blockers.** Put any issue under another one, add issues that exist already as sub-issues, and mark
   which issues block which, with a red flag on blocked cards.
 - **An Inbox** with GitHub's notifications about issues and pull requests: who did what, the issue beside it, and
-  read, archive, snooze and unsubscribe in one key. Read and archived are the same on github.com.
+  read, archive, snooze and unsubscribe in one key. Read and archived are the same on github.com. Issues your own
+  account assigned you to with `gh` or a coding agent show up too, which GitHub doesn't notify you of.
 - **Instant.** Every change is written to a local database first and shows in the same frame. GitHub is updated in
   the background.
 - **Works offline.** Changes queue up and are sent when the connection returns.
@@ -227,7 +230,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | No project | An issue that is in none of your projects; adding it to one is GitHub's *Add to project* |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
 | Blocked by and blocking | GitHub's issue dependencies |
-| Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there. Due issues are the app's own entries, read and archived in iCloud |
+| Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there. Due issues, and assignments your own account made outside the app (found in the issues' timelines), are the app's own entries, read and archived in iCloud |
 
 Boards show the issues in their project; a repository shows all its open issues and those closed in the last four
 weeks, on a board or not. My Issues shows the open issues assigned to you anywhere on GitHub. The Inbox also shows
@@ -239,7 +242,8 @@ column means (backlog, in progress, done, cancelled) is inferred from its name, 
 GitHub cannot push changes to a desktop app, so the app asks for changes every 15 seconds while it is in front, and
 immediately when you return to it. Other people's changes therefore appear with a short delay. The Inbox asks for new
 notifications at the pace GitHub sets, about once a minute; when nothing changed, that costs nothing against GitHub's
-rate limit.
+rate limit. As often, it searches for issues assigned to you that changed in the last few minutes, to find the
+assignments your own account made, which GitHub sends no notification for.
 
 The dot on your avatar at the top of the sidebar shows how syncing is going: green when everything is on GitHub, the
 accent colour while your changes go out, an amber ring when you're offline, and amber when something needs you. Hover

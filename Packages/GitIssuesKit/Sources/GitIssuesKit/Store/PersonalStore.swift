@@ -1,8 +1,9 @@
 import Foundation
 import Observation
 
-/// What the Inbox keeps that GitHub has no place for: entries snoozed until later, entries marked unread again, and
-/// whether the entries the app makes itself (issues that are due) were read or archived.
+/// What the Inbox keeps that GitHub has no place for: entries snoozed until later, entries marked unread again,
+/// whether the entries the app makes itself (issues that are due, assignments made with your own account) were read
+/// or archived, and when the app assigned you to an issue, which GitHub can't tell from an assignment made with `gh`.
 /// It lives in iCloud's key-value store, so the user's Mac, iPhone and iPad agree, and is mirrored on the device for
 /// builds without iCloud (development builds without a team). The sample data keeps it in memory only.
 @MainActor
@@ -25,13 +26,16 @@ public final class PersonalStore {
         var read: Date?
         /// Archived, for an entry GitHub doesn't know: when.
         var archived: Date?
+        /// For an issue rather than an entry: when the app assigned you to it, on any of your devices.
+        var assignedHere: [Date]?
         var modified: Date
 
-        var isEmpty: Bool { snooze == nil && unreadFor == nil && read == nil && archived == nil }
+        var isEmpty: Bool { snooze == nil && unreadFor == nil && read == nil && archived == nil && assignedHere == nil }
 
         /// Equal apart from when it changed.
         func sameContent(as other: Record) -> Bool {
             snooze == other.snooze && unreadFor == other.unreadFor && read == other.read && archived == other.archived
+                && assignedHere == other.assignedHere
         }
     }
 
@@ -45,6 +49,10 @@ public final class PersonalStore {
     private static let mirrorKey = "personalStore"
     /// Records left alone this long are dropped: iCloud's store holds at most 1024 keys.
     private static let lifetime: TimeInterval = 30 * 86_400
+    /// Records of assignments the app made are needed only until their assignment has come back from GitHub.
+    private static let assignedHereLifetime: TimeInterval = InboxEntry.assignedHereAfter
+    /// Issues have a record of their own, apart from the entries about them.
+    private static let issuePrefix = "issue:"
 
     /// `persistent: false` keeps everything in memory, for the sample data and tests.
     public init(persistent: Bool) {
@@ -89,6 +97,11 @@ public final class PersonalStore {
         records[entryId]?.archived != nil
     }
 
+    /// When the app assigned you to the issue, on this device or another of yours, within the last week.
+    public func assignedHere(_ contentId: String) -> [Date] {
+        records[Self.issuePrefix + contentId]?.assignedHere ?? []
+    }
+
     /// The earliest moment a snoozed entry comes back, to look again then.
     public var nextWake: Date? {
         records.values.compactMap { $0.snooze?.until }.filter { $0 > Date() }.min()
@@ -110,6 +123,19 @@ public final class PersonalStore {
 
     public func setArchived(_ entryId: String, _ archived: Bool) {
         update(entryId) { $0.archived = archived ? $0.archived ?? Date() : nil }
+    }
+
+    /// The app assigned you to the issue at `date`. GitHub records it as an assignment by your account, as it does one
+    /// made with `gh`; this tells the Inbox on all your devices that it is no news. Noting the same moment twice
+    /// changes nothing.
+    public func noteAssignedHere(_ contentId: String, at date: Date) {
+        let cutoff = Date().addingTimeInterval(-Self.assignedHereLifetime)
+        guard date > cutoff else { return }
+        update(Self.issuePrefix + contentId) { record in
+            var dates = (record.assignedHere ?? []).filter { $0 > cutoff }
+            if !dates.contains(date) { dates.append(date) }
+            record.assignedHere = Array(dates.sorted().suffix(10))
+        }
     }
 
     /// Forgets everything about the entry: opened, archived or read again.
@@ -182,6 +208,10 @@ public final class PersonalStore {
         for (threadId, record) in records where record.modified < cutoff {
             let expired = record.snooze.map { $0.until < Date() } ?? true
             if record.isEmpty || expired { remove(threadId) }
+        }
+        let assignedCutoff = Date().addingTimeInterval(-Self.assignedHereLifetime)
+        for (key, record) in records where key.hasPrefix(Self.issuePrefix) && record.modified < assignedCutoff {
+            remove(key)
         }
     }
 }

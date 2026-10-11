@@ -29,14 +29,14 @@ struct InboxSnoozeRequest: Equatable {
 extension AppModel {
     // MARK: What shows
 
-    /// Entries in a half of the Inbox, newest first: not archived, not snoozed. Issues of yours that are due join
-    /// GitHub's notifications in For you.
+    /// Entries in a half of the Inbox, newest first: not archived, not snoozed. Issues of yours that are due, and
+    /// assignments your own account made outside the app, join GitHub's notifications in For you.
     func inbox(_ bucket: InboxBucket) -> [InboxEntry] {
         let now = inboxClock
         let shown = inboxEntries.filter { $0.bucket == bucket && isShown($0, now: now) }
-        let due = bucket == .forYou ? dueInboxEntries.filter { isShown($0, now: now) } : []
-        guard !due.isEmpty else { return shown }
-        return (shown + due).sorted { $0.updatedAt != $1.updatedAt ? $0.updatedAt > $1.updatedAt : $0.id < $1.id }
+        let own = bucket == .forYou ? (dueInboxEntries + selfAssignedInboxEntries).filter { isShown($0, now: now) } : []
+        guard !own.isEmpty else { return shown }
+        return (shown + own).sorted { $0.updatedAt != $1.updatedAt ? $0.updatedAt > $1.updatedAt : $0.id < $1.id }
     }
 
     /// Issues of yours as Inbox entries: from the reminder on the day they are due, and from the reminder the morning
@@ -60,6 +60,37 @@ extension AppModel {
             result.append(entry)
         }
         return result
+    }
+
+    /// Issues your own account assigned you to outside the app (with `gh`, a script or an agent signed in as you, or
+    /// on github.com), which GitHub doesn't notify you of. Assignments the app made, on any of your devices, look the
+    /// same to GitHub and stay out. Read and archived are kept on this side, as for issues that are due.
+    var selfAssignedInboxEntries: [InboxEntry] {
+        let own = InboxEntry.assignedInApp(selfAssignedEntries, noted: personal.assignedHere)
+        return selfAssignedEntries.compactMap { entry in
+            guard !own.contains(entry.id), !personal.isArchived(entry.id) else { return nil }
+            var entry = entry
+            entry.unread = !personal.isRead(entry.id)
+            return entry
+        }
+    }
+
+    /// Notes the assignments this app makes, as soon as they are queued: GitHub records them as made by your account,
+    /// as it does those made with `gh`, so only the app can tell the Inbox on your devices that they are no news. A new
+    /// issue counts once GitHub has given it its id.
+    func noteOwnAssignments(in outbox: [OutboxEntry]) {
+        guard let viewer else { return }
+        func isMe(_ person: Person) -> Bool { person.id == viewer.id || person.login.lowercased() == viewer.login.lowercased() }
+        for entry in outbox {
+            switch entry.mutation {
+            case .editAssignees(let m) where m.add.contains(where: isMe) && !m.contentId.hasPrefix(LocalID.prefix):
+                personal.noteAssignedHere(m.contentId, at: entry.createdAt)
+            case .createIssue(let m) where m.assignees.contains(where: isMe):
+                if let contentId = m.createdContentId { personal.noteAssignedHere(contentId, at: entry.createdAt) }
+            default:
+                break
+            }
+        }
     }
 
     /// The half on screen. Watching is offered only while it has something.
@@ -104,7 +135,7 @@ extension AppModel {
     }
 
     func inboxEntry(id: String) -> InboxEntry? {
-        inboxEntries.first { $0.id == id } ?? (id.contains(":") ? dueInboxEntries.first { $0.id == id } : nil)
+        inboxEntries.first { $0.id == id } ?? (id.contains(":") ? (dueInboxEntries + selfAssignedInboxEntries).first { $0.id == id } : nil)
     }
 
     /// What the Inbox shows of an entry: the row's line, with names as the people have set them.
@@ -141,7 +172,7 @@ extension AppModel {
         let contentId = String(id.dropFirst(Item.detachedPrefix.count))
         // Added to a board since, or read with its repository: from now on it's that one.
         if let item = localItem(contentId: contentId) { return item }
-        return inboxEntries.first { $0.contentId == contentId }.flatMap { Item(detached: $0) }
+        return (inboxEntries + selfAssignedEntries).first { $0.contentId == contentId }.flatMap { Item(detached: $0) }
     }
 
     /// Labels and people of a repository none of your boards use, read once while the app runs.
@@ -258,10 +289,11 @@ extension AppModel {
         for entry in entries {
             personal.setMarkedUnread(entry.id, nil)
             if let snooze = personal.snooze(entry.id), inboxClock >= snooze.until { personal.setSnooze(entry.id, nil) }
-            if entry.isDue {
-                // Read here and on the user's other devices; the reminder in Notification Center has done its job.
+            if entry.isAppMade {
+                // Read here and on the user's other devices; a due issue's reminder in Notification Center has done
+                // its job.
                 personal.setRead(entry.id, true)
-                if let item = inboxItem(for: entry) { notifier.clearDelivered(for: item) }
+                if entry.isDue, let item = inboxItem(for: entry) { notifier.clearDelivered(for: item) }
             } else if entry.unread {
                 mutations.append(.markThreadRead(.init(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label)))
             }
@@ -294,7 +326,7 @@ extension AppModel {
             ? String(localized: .archivedNotification(number: entries[0].displayNumber(withRepo: false)))
             : String(localized: .archivedNotifications(count: entries.count))
         change(entries, message: message, icon: "archivebox") { entry in
-            entry.isDue ? [] : [.archiveThread(.init(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label))]
+            entry.isAppMade ? [] : [.archiveThread(.init(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label))]
         }
     }
 
@@ -305,8 +337,8 @@ extension AppModel {
 
     /// ⇧S: no more notifications about it until someone mentions you or you comment, and out of the Inbox.
     func unsubscribe(_ entries: [InboxEntry]) {
-        // A due issue is no GitHub notification, so there is nothing to unsubscribe from.
-        let entries = entries.filter { !$0.isDue }
+        // The app's own entries are no GitHub notifications, so there is nothing to unsubscribe from.
+        let entries = entries.filter { !$0.isAppMade }
         guard !entries.isEmpty else { return }
         let message = entries.count == 1
             ? String(localized: .unsubscribedFromIssue(number: entries[0].displayNumber(withRepo: false)))
@@ -326,10 +358,10 @@ extension AppModel {
             records[entry.id] = personal.records[entry.id]
             unread[entry.id] = entry.unread
             personal.clear(entry.id)
-            // GitHub keeps archived notifications; the app keeps archived due issues itself.
-            if entry.isDue {
+            // GitHub keeps archived notifications; the app keeps its own entries archived itself.
+            if entry.isAppMade {
                 personal.setArchived(entry.id, true)
-                if let item = inboxItem(for: entry) { notifier.clearDelivered(for: item) }
+                if entry.isDue, let item = inboxItem(for: entry) { notifier.clearDelivered(for: item) }
             }
         }
         let lastId = outbox.last?.id ?? 0

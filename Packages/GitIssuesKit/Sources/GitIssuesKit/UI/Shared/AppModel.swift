@@ -82,6 +82,8 @@ public final class AppModel {
     private(set) var links: [LinkedIssue] = []
     /// GitHub's notifications about issues and pull requests, newest first, archived ones included.
     private(set) var inboxEntries: [InboxEntry] = []
+    /// Assignments your own account made, as kept; `selfAssignedInboxEntries` is what the Inbox shows of them.
+    private(set) var selfAssignedEntries: [InboxEntry] = []
     private(set) var inboxMeta = InboxMeta()
     /// Snoozes and "marked unread", which GitHub has no place for; shared through iCloud.
     private(set) var personal: PersonalStore
@@ -398,6 +400,7 @@ public final class AppModel {
         outbox = []
         links = []
         inboxEntries = []
+        selfAssignedEntries = []
         inboxMeta = InboxMeta()
         status.phase = .idle
         status.notices = []
@@ -470,8 +473,12 @@ public final class AppModel {
         if repos != snapshot.repos { repos = snapshot.repos }
         if allItems != snapshot.items { allItems = snapshot.items }
         outbox = snapshot.outbox
+        noteOwnAssignments(in: snapshot.outbox)
         if links != snapshot.links { links = snapshot.links }
-        if inboxEntries != snapshot.inbox { inboxEntries = snapshot.inbox }
+        let threads = snapshot.inbox.filter { !$0.isSelfAssigned }
+        let assigned = snapshot.inbox.filter(\.isSelfAssigned)
+        if inboxEntries != threads { inboxEntries = threads }
+        if selfAssignedEntries != assigned { selfAssignedEntries = assigned }
         if inboxMeta != snapshot.inboxMeta { inboxMeta = snapshot.inboxMeta }
         if scope == nil { restoreScope() }
         rebuild()

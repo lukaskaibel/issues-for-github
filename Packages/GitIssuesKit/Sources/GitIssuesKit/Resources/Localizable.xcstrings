@@ -15259,6 +15259,66 @@
         }
       }
     },
+    "eventAssignedWithYourAccount" : {
+      "comment" : "Inbox, issue beside the list: one line of what happened, after the person's avatar. The user's own GitHub account assigned them to the issue, but not in this app (with the command line, a script or an AI agent signed in as them, or on github.com). GitHub doesn't notify anyone of what their own account does, so the app shows it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dir zugewiesen, mit deinem Account außerhalb der App"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assigned to you with your account, outside the app"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se te asignó con tu cuenta, fuera de la app"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous avez été assigné avec votre compte, en dehors de l’app"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App外であなたのアカウントにより担当者に割り当てられました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "앱 밖에서 내 계정으로 나에게 할당됨"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atribuída a você com sua conta, fora do app"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вы назначены исполнителем через вашу учетную запись вне приложения"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已在 App 外通过你的账户分配给你"
+          }
+        }
+      }
+    },
     "eventAssignedYou" : {
       "comment" : "Inbox, what happened on an issue: %(name)@ is who did it, shown in bold ('Someone' when GitHub doesn't say), e.g. 'Kai assigned you' (to the issue).",
       "extractionState" : "manual",
@@ -20983,6 +21043,66 @@
         }
       }
     },
+    "inboxNewIssueAssignedToYou" : {
+      "comment" : "Inbox row (Mac, iPhone, iPad), line under the issue's title: an issue was just created with the user assigned to it, by their own GitHub account but outside the app (with the command line, a script or an AI agent signed in as them). Short; the row has little room.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neues Issue, dir zugewiesen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New issue, assigned to you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nueva incidencia asignada a ti"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouveau ticket qui vous est assigné"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規Issueの担当者に割り当てられました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 이슈가 나에게 할당됨"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nova issue atribuída a você"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Новая задача, вы назначены исполнителем"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新议题，已分配给你"
+          }
+        }
+      }
+    },
     "inboxNewSinceDate" : {
       "comment" : "Inbox, issue beside the list: heading above what happened since the user last read the issue, on an earlier day. %(date)@ is a short date, e.g. '3 Oct'.",
       "extractionState" : "manual",
@@ -22826,7 +22946,7 @@
       }
     },
     "inboxYouWereAssigned" : {
-      "comment" : "Inbox row, line under the title, before the details have been read from GitHub: GitHub notified the user because they were assigned to the issue.",
+      "comment" : "Inbox row, line under the title: the user was assigned to the issue. Shown when GitHub notified them of it before the details have been read, and when their own GitHub account assigned them outside the app (with the command line, a script or an AI agent signed in as them).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
