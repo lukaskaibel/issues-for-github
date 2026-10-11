@@ -18,7 +18,7 @@
   <img alt="Apple silicon" src="https://img.shields.io/badge/Apple%20silicon-native-111214">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-5B63D3"></a>
-  <a href="CHANGELOG.md"><img alt="Version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-5B63D3"></a>
+  <a href="CHANGELOG.md"><img alt="Version 0.3.0" src="https://img.shields.io/badge/version-0.3.0-5B63D3"></a>
 </p>
 
 <p align="center">
@@ -41,9 +41,10 @@
 > queue and actions: lists with swipes and the issue menu on iPhone, the board with drag and drop on iPad.
 > [See it below.](#iphone-and-ipad)
 
-> **Status: early.** Version 0.1.0 covers the daily work of moving, editing and creating issues on the Mac; the
-> iPhone and iPad app comes with 0.2.0. There are no downloadable builds yet; you build it from source (five minutes,
-> see below).
+> **Status: early.** Version 0.3.0 covers the daily work with issues on the Mac, iPhone and iPad: boards and lists,
+> the Inbox, due dates, sub-issues and blockers, in nine languages. The Mac app is
+> [in the App Store](https://apps.apple.com/app/id6819589759), and the iPhone and iPad app is on its way there. You can
+> also build it from source (five minutes, see below).
 
 ## Why
 
@@ -270,6 +271,9 @@ When you and someone else change the same issue:
 
 ## Getting started
 
+Issues for the Mac is [in the App Store](https://apps.apple.com/app/id6819589759), free; the iPhone and iPad app
+follows. To build it yourself instead:
+
 ### Requirements
 
 - A Mac with Apple silicon running macOS 27 or later
@@ -453,7 +457,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 ## Not there yet
 
 Cycles, roadmaps, linked pull requests, file uploads, real-time updates and notifications on screen for new Inbox
-entries are planned but not built. Also good to know in 0.1.0:
+entries are planned but not built. Also good to know in 0.3.0:
 
 - Pull requests and draft issues appear on the board and can be moved, but their text is read-only.
 - Images in descriptions of private repositories may not load.
