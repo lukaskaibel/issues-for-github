@@ -65,6 +65,24 @@ final class PadTests: AppTestCase {
         snapshot("iPad issue")
     }
 
+    func testSubIssueCardsHangUnderTheirParentAndFold() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openProject("Git Issues")
+        let parent = element("card-#9")
+        let child = element("card-#13")
+        wait(child)
+        // In the same column as its parent, the sub-issue's card hangs in under it.
+        XCTAssertGreaterThan(child.frame.minX, parent.frame.minX)
+        XCTAssertGreaterThan(child.frame.minY, parent.frame.maxY)
+        element("fold-#9").tap()
+        waitGone(element("card-#13"))
+        waitGone(element("card-#28"))
+        snapshot("Sub-issue cards folded")
+        element("fold-#9").tap()
+        wait(element("card-#13"))
+    }
+
     func testListAndIssueWithProperties() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()

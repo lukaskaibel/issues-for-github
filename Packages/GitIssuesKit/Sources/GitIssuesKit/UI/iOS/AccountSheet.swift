@@ -54,6 +54,8 @@ struct AccountSheet: View {
                     .labelsHidden()
                 }
 
+                SubIssueSettingsSection()
+
                 ReminderSettingsSection()
 
                 if UIApplication.shared.supportsAlternateIcons {

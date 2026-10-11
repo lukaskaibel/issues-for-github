@@ -74,7 +74,8 @@ struct BoardView: View {
             )
             .overlay(alignment: .topLeading) {
                 if let active = drag.active {
-                    LiftedCard(active: active, card: model.cardModel(for: active.item), avatarVersion: model.avatarVersion)
+                    let nesting = model.columns.first { $0.nesting.members.contains { $0.id == active.item.id } }?.nesting
+                    LiftedCard(active: active, card: model.cardModel(for: active.item, in: nesting), avatarVersion: model.avatarVersion)
                 }
             }
             .onChange(of: drag.tick) {
@@ -126,6 +127,8 @@ private struct LiftedCard: View {
 
     var body: some View {
         CardView(card: card, width: active.size.width, lifted: true, avatarVersion: avatarVersion)
+            // A parent carries the sub-issues hanging under it along.
+            .background(alignment: .top) { if card.nested != nil { CardStackEdge() } }
             .scaleEffect(active.lifted ? 1.03 : 1)
             .rotationEffect(.degrees(active.lifted ? 1.5 + active.tilt : 0))
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: active.tilt)
@@ -147,6 +150,7 @@ struct ColumnView: View {
     @State private var metrics = ScrollMetrics()
     @State private var hoveredId: String?
     @State private var hoveredPart: PickerKind?
+    @State private var hoveringFold = false
 
     var body: some View {
         VStack(spacing: 8) {
@@ -162,10 +166,12 @@ struct ColumnView: View {
                 LazyVStack(spacing: 8) {
                     ForEach(column.items) { item in
                         BoardCell(
-                            card: model.cardModel(for: item), width: width, drag: drag,
+                            card: model.cardModel(for: item, in: column.nesting), width: width, drag: drag,
+                            place: column.nesting.place(of: item.id),
                             highlighted: !model.isDragging && (hoveredId == item.id || model.focusedItemId == item.id),
                             selected: model.isSelected(item.id),
                             hoveredPart: hoveredId == item.id && !model.isDragging ? hoveredPart : nil,
+                            hoveringFold: hoveredId == item.id && !model.isDragging && hoveringFold,
                             avatarVersion: model.avatarVersion
                         )
                     }
@@ -182,15 +188,22 @@ struct ColumnView: View {
                         hover(card(at: point))
                         let part = drag.part(at: point, in: column.items)?.kind
                         if part != hoveredPart { hoveredPart = part }
+                        let onFold = drag.fold(at: point, in: column.items) != nil
+                        if onFold != hoveringFold { hoveringFold = onFold }
                     case .ended:
                         hover(nil)
                         hoveredPart = nil
+                        hoveringFold = false
                     }
                 }
                 .gesture(SpatialTapGesture(coordinateSpace: .named(BoardDrag.space)).onEnded { value in
                     // ⌘- and Shift-clicks pick cards. Otherwise a click on a card's priority, labels, sub-issues or
                     // assignees opens that dropdown, and anywhere else on the card opens the issue.
                     if let item = card(at: value.location), model.handleSelectionClick(on: item) {
+                        return
+                    }
+                    if let item = drag.fold(at: value.location, in: column.items) {
+                        model.toggleFolded(item)
                         return
                     }
                     if let hit = drag.part(at: value.location, in: column.items) {
@@ -220,7 +233,12 @@ struct ColumnView: View {
     }
 
     private var hoveredTooltip: String {
-        guard let hoveredPart, let item = column.items.first(where: { $0.id == hoveredId }) else { return "" }
+        guard let item = column.items.first(where: { $0.id == hoveredId }) else { return "" }
+        if hoveringFold {
+            guard column.nesting.folded.contains(item.id) else { return String(localized: .foldSubIssuesTooltip) }
+            return String(localized: .unfoldSubIssuesTooltip(count: column.nesting.nestedCounts[item.id] ?? 0))
+        }
+        guard let hoveredPart else { return "" }
         return model.tooltip(hoveredPart, for: item)
     }
 
@@ -254,21 +272,28 @@ struct ColumnView: View {
     }
 }
 
-/// One position in a column: the card, or the dashed slot while that card is being dragged.
+/// One position in a column: the card, or the dashed slot while that card is being dragged. A sub-issue card
+/// hangs in under its parent, with a line from the parent; a card with sub-issues folded into it shows the edge
+/// of a second card under it.
 private struct BoardCell: View {
     var card: CardModel
     var width: CGFloat
     var drag: BoardDrag
+    var place: Nesting.Place
     var highlighted: Bool
     var selected: Bool
     var hoveredPart: PickerKind?
+    var hoveringFold: Bool
     var avatarVersion: Int
     @State private var owner = UUID()
 
     var body: some View {
         let id = card.item.id
+        let isSlot = drag.active?.item.id == id
+        let depth = min(isSlot ? drag.target?.depth ?? 0 : place.depth, CardTreeLines.deepest)
+        let indent = CGFloat(depth) * CardTreeLines.indent
         ZStack {
-            if drag.active?.item.id == id {
+            if isSlot {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Theme.accent.opacity(0.10))
                     .overlay(
@@ -277,8 +302,12 @@ private struct BoardCell: View {
                     )
                     .frame(height: drag.active?.size.height ?? 80)
             } else {
-                CardView(card: card, width: width, highlighted: highlighted, selected: selected, avatarVersion: avatarVersion, hoveredPart: hoveredPart)
-                    .equatable()
+                CardView(
+                    card: card, width: width - indent, highlighted: highlighted, selected: selected,
+                    avatarVersion: avatarVersion, hoveredPart: hoveredPart, hoveringFold: hoveringFold
+                )
+                .equatable()
+                .background(alignment: .top) { if card.folded { CardStackEdge() } }
             }
         }
         .onGeometryChange(for: CGRect.self) { proxy in
@@ -287,6 +316,11 @@ private struct BoardCell: View {
             drag.setCardFrame(frame, for: id, owner: owner)
         }
         .onDisappear { drag.removeCardFrame(for: id, owner: owner) }
+        .padding(.bottom, card.folded && !isSlot ? CardStackEdge.height : 0)
+        .padding(.leading, indent)
+        .background(alignment: .topLeading) {
+            if !isSlot, place.depth > 0 { CardTreeLines(place: place, gap: 8) }
+        }
     }
 }
 
@@ -323,7 +357,7 @@ struct ColumnHeader: View {
                 Text(column.title).font(.uiSemibold).lineLimit(1)
                     // Double-click the name to rename the column in place.
                     .onTapGesture(count: 2) { if canEdit, column.option != nil { startRename() } }
-                Text("\(column.items.count)").foregroundStyle(Theme.textTertiary).monospacedDigit()
+                Text("\(column.count)").foregroundStyle(Theme.textTertiary).monospacedDigit()
             }
             Spacer(minLength: 0)
 
@@ -370,7 +404,7 @@ struct ColumnHeader: View {
             Button(.deleteColumn, role: .destructive) { delete() }
             Button(.cancel, role: .cancel) {}
         } message: {
-            Text(column.items.isEmpty ? .deleteEmptyColumnMessage : .deleteColumnMessage(count: column.items.count))
+            Text(column.count == 0 ? .deleteEmptyColumnMessage : .deleteColumnMessage(count: column.count))
         }
     }
 

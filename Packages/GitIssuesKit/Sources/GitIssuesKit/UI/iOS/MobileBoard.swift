@@ -83,9 +83,9 @@ struct MobileBoard: View {
         target = nil
         dragging = nil
         guard let id, let item = model.item(id: id), item.projectId == projectId else { return }
-        // The model counts the place among the column's other cards.
-        var index = slot ?? column.items.count
-        if let original = column.items.firstIndex(where: { $0.id == id }), original < index { index -= 1 }
+        // The model counts the place among the column's other cards, without the sub-issues the card brings along.
+        let others = Set(column.shown(without: item).map(\.id))
+        let index = column.items.prefix(slot ?? column.items.count).filter { others.contains($0.id) }.count
         dropped += 1
         withAnimation(Theme.spring) { model.drop(item, in: column, at: index) }
     }
@@ -96,6 +96,8 @@ struct MobileBoard: View {
 struct BoardDropTarget: Equatable {
     var columnId: String
     var slot: Int
+    /// How far in the card would hang there: under its parent, when the parent is in that column.
+    var depth = 0
 }
 
 /// Card frames inside a column, read while dropping. Kept outside view state so scrolling never redraws.
@@ -116,6 +118,7 @@ private struct MobileColumn: View {
     var onDrop: (String?, Int?) -> Void
 
     @State private var frames = CardFrames()
+    @State private var foldFeedback = 0
 
     var body: some View {
         let space = "column-\(column.id)"
@@ -127,7 +130,7 @@ private struct MobileColumn: View {
                         if gapPosition == index {
                             gap
                         }
-                        card(item, space: space)
+                        nestedCard(item, space: space)
                     }
                     if gapPosition == column.items.count {
                         gap
@@ -141,6 +144,7 @@ private struct MobileColumn: View {
             .coordinateSpace(.named(space))
             .frame(maxHeight: .infinity)
             .accessibilityIdentifier("column-\(column.title)")
+            .sensoryFeedback(.selection, trigger: foldFeedback)
             .onDrop(of: [.plainText, .url], delegate: ColumnDrop(
                 model: model, projectId: projectId, column: column, frames: frames,
                 target: $target, dragging: $dragging, onDrop: onDrop
@@ -162,14 +166,43 @@ private struct MobileColumn: View {
                     .stroke(Theme.accent.opacity(0.5), style: StrokeStyle(lineWidth: 1.2, dash: [5, 4]))
             )
             .frame(height: 76)
+            .padding(.leading, CGFloat(min(target?.depth ?? 0, CardTreeLines.deepest)) * CardTreeLines.indent)
             .transition(.opacity.combined(with: .scale(scale: 0.96)))
     }
 
-    private func card(_ item: Item, space: String) -> some View {
+    /// A card in its place: a sub-issue hangs in under its parent, with a line from the parent, and a card with
+    /// sub-issues folded into it shows the edge of a second card under it. The arrow at its top left folds them.
+    private func nestedCard(_ item: Item, space: String) -> some View {
+        let place = column.nesting.place(of: item.id)
+        let indent = CGFloat(min(place.depth, CardTreeLines.deepest)) * CardTreeLines.indent
+        let folded = column.nesting.folded.contains(item.id)
+        return card(item, space: space, width: width - indent)
+            .background(alignment: .top) { if folded { CardStackEdge() } }
+            .overlay(alignment: .topLeading) {
+                if let count = column.nesting.nestedCounts[item.id] {
+                    Button {
+                        foldFeedback += 1
+                        model.toggleFolded(item)
+                    } label: {
+                        Color.clear.frame(width: 44, height: 40).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(folded ? Text(.unfoldSubIssuesTooltip(count: count)) : Text(.foldSubIssuesTooltip))
+                    .accessibilityIdentifier("fold-\(item.displayNumber)")
+                }
+            }
+            .padding(.bottom, folded ? CardStackEdge.height : 0)
+            .padding(.leading, indent)
+            .background(alignment: .topLeading) {
+                if place.depth > 0 { CardTreeLines(place: place, gap: 8, branchY: 21) }
+            }
+    }
+
+    private func card(_ item: Item, space: String, width: CGFloat) -> some View {
         Button {
             openRoute(.issue(item.id))
         } label: {
-            CardView(card: model.cardModel(for: item), width: width, avatarVersion: model.avatarVersion)
+            CardView(card: model.cardModel(for: item, in: column.nesting), width: width, avatarVersion: model.avatarVersion)
                 .equatable()
         }
         .buttonStyle(CardPressStyle())
@@ -186,11 +219,11 @@ private struct MobileColumn: View {
             CardDragMark.lifted = item.id
             return CardDragMark.provider(id: item.id, text: dragText(item))
         } preview: {
-            CardView(card: model.cardModel(for: item), width: width, lifted: true, avatarVersion: model.avatarVersion)
+            CardView(card: model.cardModel(for: item, in: column.nesting), width: width, lifted: true, avatarVersion: model.avatarVersion)
         }
         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 8, style: .continuous))
         .contextMenu {
-            ItemMenuContent(item: item) { openRoute(.issue(item.id)) }
+            ItemMenuContent(item: item, foldable: column.nesting.hasNested(item.id)) { openRoute(.issue(item.id)) }
         } preview: {
             IssuePreview(item: item)
                 .environment(model)
@@ -267,7 +300,21 @@ private struct ColumnDrop: DropDelegate {
             guard let frame = MainActor.assumeIsolated({ frames.frames[item.id] }) else { continue }
             if frame.midY < info.location.y { slot = position + 1 }
         }
-        let next = BoardDropTarget(columnId: column.id, slot: slot)
+        var depth = 0
+        // The gap opens where the card will land: a sub-issue among its parent's sub-issues, any other card never
+        // between a parent and its sub-issues.
+        if let dragging, let item = MainActor.assumeIsolated({ model.item(id: dragging) }) {
+            let others = column.shown(without: item)
+            let kept = Set(others.map(\.id))
+            let landing = column.landing(of: item, at: column.items.prefix(slot).filter { kept.contains($0.id) }.count)
+            depth = landing.depth
+            if landing.slot < others.count, let next = column.items.firstIndex(where: { $0.id == others[landing.slot].id }) {
+                slot = next
+            } else {
+                slot = column.items.count
+            }
+        }
+        let next = BoardDropTarget(columnId: column.id, slot: slot, depth: depth)
         if next != target { target = next }
     }
 }
@@ -335,7 +382,7 @@ private struct MobileColumnHeader: View {
         HStack(spacing: 8) {
             StatusIcon(glyph: column.glyph, size: 16)
             Text(column.title).font(.subheadline.weight(.semibold)).lineLimit(1)
-            Text("\(column.items.count)").font(.subheadline).monospacedDigit().foregroundStyle(Theme.textTertiary)
+            Text("\(column.count)").font(.subheadline).monospacedDigit().foregroundStyle(Theme.textTertiary)
             Spacer(minLength: 0)
             if canEdit, let option = column.option {
                 Menu {
@@ -418,9 +465,9 @@ private struct MobileColumnHeader: View {
         .confirmationDialog(Text(.deleteStatusQuestion(name: column.title)), isPresented: $confirmDelete, titleVisibility: .visible) {
             Button(.deleteStatus, role: .destructive) { delete() }
         } message: {
-            Text(column.items.isEmpty
+            Text(column.count == 0
                  ? LocalizedStringResource.statusRemovedFromProject
-                 : .statusRemovedIssuesStay(count: column.items.count))
+                 : .statusRemovedIssuesStay(count: column.count))
         }
     }
 

@@ -113,6 +113,8 @@ struct SettingsView: View {
                 }
             }
 
+            SubIssueSettingsSection()
+
             ReminderSettingsSection()
 
             // Sample data has no login to share.

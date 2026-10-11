@@ -120,6 +120,7 @@ public enum DemoData {
             ```
             """, hoursAgo: 1, due: 0),
         IssueSpec(number: 13, title: "Cancel a drag with Escape", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 6),
+        IssueSpec(number: 28, title: "Tilt the lifted card with the pointer's speed", status: "In Progress", priority: "Low", labels: ["ui"], assignees: [mira], parent: 9, hoursAgo: 0.6),
         IssueSpec(number: 15, title: "Conflict banner when text changed on GitHub", status: "In Progress", priority: "High", labels: ["sync"], assignees: [theo], hoursAgo: 7),
         IssueSpec(number: 17, title: "Command palette with fuzzy search", status: "Todo", priority: "High", labels: ["ui"], assignees: [viewer.person], hoursAgo: 20, due: 1),
         IssueSpec(number: 14, title: "Sign in with GitHub device flow", status: "Todo", priority: "Medium", labels: ["auth"], assignees: [viewer.person, kai], hoursAgo: 22, due: 3),

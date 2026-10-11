@@ -49,6 +49,8 @@ enum Theme {
     /// An issue that waits for another one, as Linear marks it.
     static let blocked = Color(light: 0xD9473B, dark: 0xEB5B50)
     static let barOff = Color(light: 0xD5D7DC, dark: 0x3A3E46)
+    /// The line from a parent down to the sub-issues hanging under it.
+    static let treeLine = Color(light: 0xCBCDD3, dark: 0x363940)
     /// The active half of a segmented control.
     static let segmentActive = Color(light: 0xFFFFFF, dark: 0x2A2D33)
     /// Text set on top of a filled, coloured shape (avatars, the urgent badge, the done check mark).

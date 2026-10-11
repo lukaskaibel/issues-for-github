@@ -420,14 +420,14 @@ struct IssueList: View {
                         Section {
                             if !folded {
                                 ForEach(section.items) { item in
-                                    row(item)
+                                    row(item, in: section)
                                 }
                                 // Touch and hold, then drag, to give an issue a new place in its section.
                                 .onMove(perform: canMove ? { move(in: section, from: $0, to: $1) } : nil)
                             }
                         } header: {
                             SectionHeaderBand(
-                                title: section.title, glyph: section.glyph, count: section.items.count, folded: folded,
+                                title: section.title, glyph: section.glyph, count: section.count, folded: folded,
                                 onToggle: {
                                     foldFeedback += 1
                                     withAnimation(Theme.spring) { model.toggleSection(section.id, in: scope) }
@@ -450,13 +450,33 @@ struct IssueList: View {
         .sensoryFeedback(.selection, trigger: foldFeedback)
     }
 
-    private func row(_ item: Item) -> some View {
-        Button {
+    private func row(_ item: Item, in section: ListSection) -> some View {
+        let nested = section.nesting.nestedCounts[item.id]
+        let folded = section.nesting.folded.contains(item.id)
+        let depth = min(section.nesting.depth(of: item.id), IssueRow.deepestIndent)
+        return Button {
             openRoute(.issue(item.id))
         } label: {
-            IssueRow(item: item, showsProject: showsProject)
+            IssueRow(
+                item: item, showsProject: showsProject, place: section.nesting.place(of: item.id), nested: nested,
+                folded: folded, showsParent: item.parentNumber != nil && depth == 0
+            )
         }
         .buttonStyle(RowButtonStyle())
+        // The arrow left of the status icon folds the sub-issues hanging under the issue in or out.
+        .overlay(alignment: .topLeading) {
+            if let nested {
+                Button {
+                    foldFeedback += 1
+                    model.toggleFolded(item)
+                } label: {
+                    Color.clear.frame(width: 44 + CGFloat(depth) * IssueRow.indent, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(folded ? Text(.unfoldSubIssuesTooltip(count: nested)) : Text(.foldSubIssuesTooltip))
+                .accessibilityIdentifier("fold-\(item.displayNumber)")
+            }
+        }
         .listRowInsets(EdgeInsets())
         .listRowSeparator(.hidden)
         .listRowBackground(Theme.panel)
@@ -492,7 +512,7 @@ struct IssueList: View {
             }
         }
         .contextMenu {
-            ItemMenuContent(item: item) { openRoute(.issue(item.id)) }
+            ItemMenuContent(item: item, foldable: nested != nil) { openRoute(.issue(item.id)) }
         } preview: {
             IssuePreview(item: item)
                 .environment(model)
@@ -509,8 +529,11 @@ struct IssueList: View {
     private func move(in section: ListSection, from source: IndexSet, to destination: Int) {
         guard case .project(let projectId) = scope, let from = source.first, section.items.indices.contains(from),
               let column = model.columns(projectId: projectId).first(where: { $0.id == section.id }) else { return }
-        // `destination` counts the issue itself in its old place; `drop` counts the others.
-        model.drop(section.items[from], in: column, at: destination > from ? destination - 1 : destination)
+        // `destination` counts the issue itself in its old place; `drop` counts the others, without the sub-issues
+        // the issue brings along.
+        let item = section.items[from]
+        let others = Set(column.shown(without: item).map(\.id))
+        model.drop(item, in: column, at: section.items.prefix(destination).filter { others.contains($0.id) }.count)
     }
 
     /// Where rows come from several boards, each says which; an issue on none says its repository.

@@ -19,7 +19,7 @@ struct NewIssueDraft: Equatable {
 extension AppModel {
     // MARK: Status, priority, order
 
-    private func statusMutations(_ item: Item, _ option: FieldOption?) -> [Mutation] {
+    func statusMutations(_ item: Item, _ option: FieldOption?) -> [Mutation] {
         guard let projectId = item.projectId, let fieldId = project(of: item)?.statusFieldId else { return [] }
         var result: [Mutation] = []
         if item.statusId != option?.id {
@@ -98,37 +98,56 @@ extension AppModel {
         ))])
     }
 
-    /// Drops a card into a column at `index`, counted among the column's other cards.
+    /// Drops a card into a column at `index`, counted among the column's cards as shown, without the card and
+    /// what hangs under it. A sub-issue whose parent is in the column joins the parent's sub-issues; any other
+    /// card goes in front of or after the cards that stand on their own, never between a parent and its sub-issues.
     func drop(_ item: Item, in column: BoardColumn, at index: Int) {
         guard let projectId = item.projectId else { return }
+        let landing = column.landing(of: item, at: index)
         var mutations = statusMutations(item, column.option)
-        let others = column.items.filter { $0.id != item.id }
-        let target = min(max(index, 0), others.count)
-        let unchanged = column.items.firstIndex { $0.id == item.id } == target
-        if !unchanged, !others.isEmpty {
-            let afterId: String?
-            if target > 0 {
-                afterId = others[target - 1].id
-            } else {
-                // To sit above the column's first card, go right behind whatever precedes that card in the project.
-                let all = allItems.filter { $0.projectId == item.projectId && $0.id != item.id }
-                let first = all.firstIndex { $0.id == others[0].id } ?? 0
-                afterId = first > 0 ? all[first - 1].id : nil
-            }
-            mutations.append(.move(.init(itemId: item.id, projectId: projectId, afterItemId: afterId)))
+        if let move = placement(of: item, in: column, at: landing, projectId: projectId) { mutations.append(move) }
+        // A sub-issue dropped onto a folded parent would vanish into it, so the parent opens.
+        if let parentId = landing.parentId, column.nesting.folded.contains(parentId),
+           let parent = column.nesting.members.first(where: { $0.id == parentId }) {
+            setFolded(parent, false)
         }
         perform(mutations)
     }
 
-    /// Moves an issue one place up or down within its column, which is also its section of the list.
-    /// Returns false at either end of the column, or where the project can't be changed.
+    /// The move that gives a card its place among `landing.peers`, or nil when it is there already.
+    private func placement(of item: Item, in column: BoardColumn, at landing: Nesting.Landing, projectId: String) -> Mutation? {
+        let peers = landing.peers
+        guard !peers.isEmpty else { return nil }
+        if column.nesting.members.contains(where: { $0.id == item.id }),
+           peers.filter({ $0.position < item.position }).count == landing.rank {
+            return nil
+        }
+        let afterId: String?
+        if landing.rank > 0 {
+            afterId = peers[landing.rank - 1].id
+        } else {
+            // To sit above the first of them, go right behind whatever precedes it in the project.
+            let all = allItems.filter { $0.projectId == projectId && $0.id != item.id }
+            let first = all.firstIndex { $0.id == peers[0].id } ?? 0
+            afterId = first > 0 ? all[first - 1].id : nil
+        }
+        return .move(.init(itemId: item.id, projectId: projectId, afterItemId: afterId))
+    }
+
+    /// Moves an issue one place up or down within its column, which is also its section of the list: past the
+    /// next card that stands on its own, or past the next sub-issue of the same parent. Returns false at either
+    /// end, or where the project can't be changed.
     @discardableResult
     func move(_ item: Item, by delta: Int) -> Bool {
         guard let projectId = item.projectId, project(of: item)?.viewerCanUpdate == true,
               let column = columns(projectId: projectId).first(where: { $0.items.contains { $0.id == item.id } }),
-              let index = column.items.firstIndex(where: { $0.id == item.id }),
-              column.items.indices.contains(index + delta) else { return false }
-        drop(item, in: column, at: index + delta)
+              let index = column.items.firstIndex(where: { $0.id == item.id }) else { return false }
+        var landing = column.landing(of: item, at: index)
+        let rank = landing.rank + delta
+        guard rank >= 0, rank <= landing.peers.count, rank != landing.rank else { return false }
+        landing.rank = rank
+        guard let move = placement(of: item, in: column, at: landing, projectId: projectId) else { return false }
+        perform([move])
         return true
     }
 

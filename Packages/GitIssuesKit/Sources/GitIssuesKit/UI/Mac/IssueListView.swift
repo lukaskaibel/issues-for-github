@@ -17,7 +17,7 @@ struct IssueListView: View {
                     IssueSectionModel(
                         id: section.id, collapsed: model.isSectionCollapsed(section.id),
                         title: section.title, glyph: section.glyph, optionId: section.option?.id,
-                        canAdd: canAdd, count: section.items.count,
+                        canAdd: canAdd, count: section.count,
                         rows: model.isSectionCollapsed(section.id) ? [] : section.items.map { item in
                             IssueRowModel(
                                 item: item, glyph: model.glyph(of: item), priority: model.priorityLevel(of: item),
@@ -26,7 +26,11 @@ struct IssueListView: View {
                                 projectTitle: showsProject ? model.project(of: item)?.title ?? (model.scope == .myIssues ? item.repoShortName : nil) : nil,
                                 due: model.dueBadge(for: item),
                                 selected: model.isSelected(item.id),
-                                selecting: !model.selectedIds.isEmpty
+                                selecting: !model.selectedIds.isEmpty,
+                                nest: section.nesting.place(of: item.id),
+                                nested: section.nesting.nestedCounts[item.id],
+                                folded: section.nesting.folded.contains(item.id),
+                                showsParent: item.parentNumber != nil && section.nesting.depth(of: item.id) == 0
                             )
                         }
                     )

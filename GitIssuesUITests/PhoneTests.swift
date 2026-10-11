@@ -46,6 +46,49 @@ final class PhoneTests: AppTestCase {
         XCTAssertTrue(moving.label.contains("In Progress"), moving.label)
     }
 
+    func testSubIssuesHangUnderTheirParentAndFold() {
+        launch()
+        openProjectTab("Git Issues")
+        element("section-In Review").tap()
+        waitGone(element("row-#5"))
+        let parent = element("row-#9")
+        let child = element("row-#13")
+        wait(child)
+        // Both are in progress, so #13 hangs right under #9.
+        XCTAssertEqual(child.frame.minY, parent.frame.maxY, accuracy: 2)
+        XCTAssertTrue(child.label.contains("Sub-issue of #9"), child.label)
+        snapshot("Sub-issues under their parent")
+
+        element("fold-#9").tap()
+        waitGone(element("row-#13"))
+        waitGone(element("row-#28"))
+        waitForLabel(parent, containing: "Show 2 sub-issues")
+        snapshot("Sub-issues folded")
+        element("fold-#9").tap()
+        wait(element("row-#13"))
+        wait(element("row-#28"))
+    }
+
+    func testFinishingTheLastSubIssueFinishesItsParent() {
+        launch()
+        openProjectTab("Git Issues")
+        element("section-In Review").tap()
+        waitGone(element("row-#5"))
+        for number in ["#13", "#28"] {
+            let row = element("row-\(number)")
+            scrollTo(row)
+            row.swipeRight()
+            wait(button("Done"))
+            button("Done").tap()
+            waitGone(button("Done"))
+        }
+        wait(labelled("All sub-issues done, so #9 is done too"))
+        snapshot("Parent done with its sub-issues")
+        let parent = element("row-#9")
+        scrollTo(parent)
+        waitForLabel(parent, containing: "Done")
+    }
+
     func testPullToRefreshKeepsTheList() {
         launch()
         wait(element("row-#9"))

@@ -12,10 +12,23 @@ struct IssueRow: View {
     var showsProject = false
     /// Part of the title to highlight, for search results.
     var highlight: String? = nil
+    /// How the row hangs under a parent in its group.
+    var place = Nesting.Place()
+    /// How many sub-issues hang under it in its group, folded or not; nil when none do.
+    var nested: Int? = nil
+    var folded = false
+    /// A sub-issue whose parent is in another group names the parent.
+    var showsParent = false
     @ScaledMetric(relativeTo: .callout) private var glyphSize: CGFloat = 16
     @ScaledMetric(relativeTo: .callout) private var avatarSize: CGFloat = 24
 
+    /// Sub-issues hang this much further in per level, down to a few levels.
+    static let indent: CGFloat = 18
+    static let deepestIndent = 3
+    private static let leading: CGFloat = 22
+
     var body: some View {
+        let indent = CGFloat(min(place.depth, Self.deepestIndent)) * Self.indent
         HStack(alignment: .top, spacing: 12) {
             StatusIcon(glyph: model.glyph(of: item), size: glyphSize)
                 .padding(.top, 2)
@@ -34,12 +47,61 @@ struct IssueRow: View {
             }
         }
         .padding(.vertical, 10)
-        .padding(.leading, 22)
+        .padding(.leading, Self.leading + indent)
         .padding(.trailing, 18)
+        .background(alignment: .topLeading) {
+            if place.depth > 0 || nested != nil { tree }
+        }
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
         .accessibilityIdentifier("row-\(item.displayNumber)")
+    }
+
+    /// Lines from the parents above down to this row, and from this row down to its own sub-issues, with the
+    /// arrow that folds them left of the status icon.
+    private var tree: some View {
+        let depth = min(place.depth, Self.deepestIndent)
+        let midY = 12 + glyphSize / 2
+        let statusX = Self.leading + CGFloat(depth) * Self.indent
+        return Canvas { context, size in
+            var path = Path()
+            for level in 0..<depth {
+                let lineX = Self.leading + CGFloat(level) * Self.indent + glyphSize / 2
+                let continues = place.continues.indices.contains(level) && place.continues[level]
+                if level < depth - 1 {
+                    if continues {
+                        path.move(to: CGPoint(x: lineX, y: 0))
+                        path.addLine(to: CGPoint(x: lineX, y: size.height))
+                    }
+                    continue
+                }
+                if continues {
+                    path.move(to: CGPoint(x: lineX, y: 0))
+                    path.addLine(to: CGPoint(x: lineX, y: size.height))
+                    path.move(to: CGPoint(x: lineX, y: midY))
+                } else {
+                    path.move(to: CGPoint(x: lineX, y: 0))
+                    path.addLine(to: CGPoint(x: lineX, y: midY - 5))
+                    path.addQuadCurve(to: CGPoint(x: lineX + 5, y: midY), control: CGPoint(x: lineX, y: midY))
+                }
+                path.addLine(to: CGPoint(x: statusX - 4, y: midY))
+            }
+            if nested != nil, !folded {
+                let lineX = statusX + glyphSize / 2
+                path.move(to: CGPoint(x: lineX, y: midY + glyphSize / 2 + 4))
+                path.addLine(to: CGPoint(x: lineX, y: size.height))
+            }
+            context.stroke(path, with: .color(Theme.treeLine), lineWidth: 1)
+            if nested != nil {
+                context.draw(
+                    Text(Image(systemName: folded ? "chevron.right" : "chevron.down"))
+                        .font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textSecondary),
+                    at: CGPoint(x: statusX - 11, y: midY), anchor: .center
+                )
+            }
+        }
+        .accessibilityHidden(true)
     }
 
     private var title: Text {
@@ -60,6 +122,12 @@ struct IssueRow: View {
                 .monospacedDigit()
             if item.kind == .pullRequest {
                 Image(systemName: "arrow.triangle.pull")
+            }
+            if showsParent, let parent = item.parentNumber {
+                HStack(spacing: 3) {
+                    Image(systemName: "arrow.turn.left.up")
+                    Text("#\(parent)").monospacedDigit()
+                }
             }
             // Before the project and labels, so the fade at the end never hides it.
             if let due = model.dueBadge(for: item) {
@@ -110,6 +178,8 @@ struct IssueRow: View {
             ? model.statusOption(of: item)?.name ?? String(localized: .noStatus)
             : String(localized: item.isClosed ? LocalizedStringResource.stateClosed : .noProject)
         var parts = [item.displayNumber, item.title, status]
+        if let parent = item.parentNumber { parts.append(String(localized: .subIssueOf(number: "#\(parent)"))) }
+        if let nested, folded { parts.append(String(localized: .unfoldSubIssuesTooltip(count: nested))) }
         if let priority = model.priorityOption(of: item)?.name { parts.append(String(localized: .priorityLevelSpoken(priority: priority))) }
         if item.blockedByCount > 0 { parts.append(String(localized: .blockedSpoken)) }
         if !item.labels.isEmpty {

@@ -8,6 +8,18 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Sub-issues under their parent.** When an issue and some of its sub-issues have the same status, the sub-issues
+  hang indented right under it, in the list and on the board, with a line from the parent. A parent you work on
+  together with its sub-issues reads as one, instead of as separate cards side by side in the same column. A
+  sub-issue whose parent has another status stays where its status is and names its parent ("#9 Drag cards…"); a
+  click there changes the parent. The arrow beside the parent folds its sub-issues in, and a folded card shows the
+  edge of a second card under it; the right-click menu does the same, and each device remembers what is folded.
+  Other cards never land between a parent and its sub-issues, and a parent moved within its column takes them along.
+  On iPhone and iPad, tap the arrow left of the status in the list or at the card's top left on the board, or touch
+  and hold.
+- **A parent is done with its last sub-issue.** Finish the last open sub-issue of an issue and the parent moves to
+  Done as well, on every board it's on, with a notice that says so, as Linear can. It's on unless you turn it off in
+  Settings › Sub-issues. Changes made on GitHub don't do this.
 - **Nine languages.** The app speaks German, French, Spanish, Portuguese (Brazil), Russian, Japanese, Korean and
   Chinese (Simplified) as well as English, on the Mac, iPhone and iPad. It follows the device's language; to use
   another one for Issues alone, pick it under Settings › Apps › Issues on iPhone and iPad, or System Settings ›

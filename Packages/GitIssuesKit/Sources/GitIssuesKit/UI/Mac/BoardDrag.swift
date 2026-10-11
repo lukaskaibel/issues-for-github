@@ -24,8 +24,10 @@ final class BoardDrag {
 
     struct Target: Equatable {
         var columnId: String
-        /// Index among the column's cards, not counting the dragged one.
+        /// Index among the column's cards, not counting the dragged one and the sub-issues it brings along.
         var index: Int
+        /// How far in it hangs there: under its parent, when the parent is in that column.
+        var depth = 0
     }
 
     private(set) var active: Active?
@@ -53,6 +55,13 @@ final class BoardDrag {
         items.first { cardFrames[$0.id]?.contains(point) == true }
     }
 
+    /// The card whose fold arrow is under a point.
+    func fold(at point: CGPoint, in items: [Item]) -> Item? {
+        guard let item = card(at: point, in: items), let frame = cardFrames[item.id],
+              let rect = CardRegionStore.shared.fold(item.id) else { return nil }
+        return rect.offsetBy(dx: frame.minX, dy: frame.minY).insetBy(dx: -3, dy: -4).contains(point) ? item : nil
+    }
+
     /// The clickable part of a card under a point, with its frame in board coordinates.
     func part(at point: CGPoint, in items: [Item]) -> (item: Item, kind: PickerKind, rect: CGRect)? {
         guard let item = card(at: point, in: items), let frame = cardFrames[item.id] else { return nil }
@@ -74,12 +83,13 @@ final class BoardDrag {
 
     var isDragging: Bool { active != nil }
 
-    /// Columns as they should be drawn right now: the lifted card's slot sits where it would land.
+    /// Columns as they should be drawn right now: the lifted card's slot sits where it would land. The sub-issues
+    /// hanging under it go with it, so they leave their column while it is held.
     func arrange(_ columns: [BoardColumn]) -> [BoardColumn] {
         guard let active, let target else { return columns }
         return columns.map { column in
             var column = column
-            column.items.removeAll { $0.id == active.item.id }
+            if column.items.contains(where: { $0.id == active.item.id }) { column.items = column.shown(without: active.item) }
             if column.id == target.columnId {
                 column.items.insert(active.item, at: min(target.index, column.items.count))
             }
@@ -131,7 +141,7 @@ final class BoardDrag {
               let column = model.columns.first(where: { column in column.items.contains { $0.id == id } }),
               let index = column.items.firstIndex(where: { $0.id == id }) else { return false }
         let item = column.items[index]
-        origin = Target(columnId: column.id, index: index)
+        origin = Target(columnId: column.id, index: index, depth: column.nesting.depth(of: id))
         target = origin
         active = Active(
             item: item, size: frame.size,
@@ -182,7 +192,7 @@ final class BoardDrag {
         let candidates = model.columns.compactMap { column in columnFrames[column.id].map { (column, $0) } }
         guard let (column, _) = candidates.min(by: { distance(centre.x, to: $0.1) < distance(centre.x, to: $1.1) }) else { return }
 
-        let others = column.items.filter { $0.id != current.item.id }
+        let others = column.shown(without: current.item)
         var index = 0
         var firstVisible: Int?
         var anyAbove = false
@@ -195,8 +205,10 @@ final class BoardDrag {
             }
         }
         if !anyAbove { index = firstVisible ?? others.count }
+        // A sub-issue goes among its parent's sub-issues, any other card never between a parent and its sub-issues.
+        let landing = column.landing(of: current.item, at: index)
 
-        let next = Target(columnId: column.id, index: index)
+        let next = Target(columnId: column.id, index: landing.slot, depth: landing.depth)
         if next != target {
             withAnimation(Theme.spring) { target = next }
         }
