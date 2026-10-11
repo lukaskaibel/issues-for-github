@@ -62,7 +62,7 @@ shot() {
 }
 
 echo "Taking screenshots…"
-shot 1-board light 1282 680
+shot 1-board light 1282 760
 shot 2-issue dark 1282 760 "open 9"
 shot 3-list light 1282 760 "mode list" "scrolllist 0"
 shot 4-palette dark 1282 760 "focus 9" "overlay palette"

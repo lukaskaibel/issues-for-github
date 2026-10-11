@@ -1,0 +1,12 @@
+Issues parle désormais neuf langues, a une Réception et vous rappelle les tickets qui arrivent à échéance.
+
+• Neuf langues : anglais, allemand, français, espagnol, portugais, russe, japonais, coréen et chinois, selon la langue de votre appareil
+• La Réception : vos notifications GitHub, avec le ticket juste à côté. Lisez, archivez et mettez en attente d’une touche ou d’un balayage ; github.com et vos autres appareils sont à jour. Les tickets à échéance aujourd’hui y apparaissent aussi, tout comme ceux que votre propre compte vous a assignés ailleurs, par exemple avec gh ou un agent de codage
+• Échéances avec rappels : choisissez un jour ou saisissez-le, par exemple « dans 3 jours », et le jour venu, votre Mac, votre iPhone et votre iPad vous préviennent
+• Les sous-tickets se rangent juste sous leur ticket parent, sur le tableau comme dans la liste, et se replient d’un clic sur la flèche. Terminez le dernier, et le ticket parent est terminé lui aussi
+• Sous-tickets et blocages : ajoutez des tickets existants comme sous-tickets, donnez un parent à un ticket et indiquez ce qui bloque quoi
+• Tous les tickets, sur un tableau ou non : vos dépôts dans la barre latérale, et les tickets qui ne sont sur aucun tableau sous « Aucun projet » ; un clic suffit pour les placer sur un tableau
+• Descriptions affichées comme sur GitHub : tableaux, cases à cocher, code et diagrammes Mermaid
+• Déplacez aussi les tickets dans la liste en les faisant glisser, pas seulement sur le tableau
+• Moins de clics : choisir un statut, une personne ou une étiquette ferme le menu ; la case en début de ligne permet d’en choisir plusieurs
+• Corrigé : l’app pouvait se fermer inopinément lors du passage d’un iPad en mode paysage

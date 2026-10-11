@@ -6,6 +6,8 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-11
+
 ### Added
 
 - **Sub-issues under their parent.** When an issue and some of its sub-issues have the same status, the sub-issues
@@ -90,6 +92,43 @@ All notable changes to this project are recorded here. The format follows
   ⌥↑ and ⌥↓ (or ⌥K and ⌥J) move the issue under the pointer or keyboard focus one place up or down its column or
   section, on the board and in the list. On iPhone and iPad, touch and hold an issue in a project's list, then drag
   it. My Issues mixes projects, so its rows stay where their boards put them.
+
+### Changed
+
+- G then B goes to the board of the project used last from the Inbox, My Issues or a repository, and G then L from
+  the Inbox to that project's list; before, they did nothing there.
+- A single line break in a comment or a drawn description stays a line break, as on GitHub.
+- Fewer clicks: picking a value closes the dropdown, for assignees and labels too, so one change is one click. To
+  pick several people or labels, tick the checkbox at the start of their rows, or hold Shift while you click or press
+  Return; the dropdown then stays open. On iPhone and iPad a tap in the assignee and label sheets picks and closes
+  the sheet as well, and the circle at the start of a row picks several.
+- A new issue takes the keyboard focus once it's created, so Return opens it and S, A or L change it. After
+  deleting an issue the focus moves on to the next one instead of back to the top.
+- While peeking, S, P, A, L, I, J and K act on the issue in the peek, also with the pointer over the panel. Its
+  labels can be changed there, as its status, priority and assignees already could.
+- On an iPad with a keyboard, S, P, A and L open their picker with the search field ready: type and press Return.
+- The fastlane lanes turn on iCloud for the App ID before they fetch the App Store profiles, add a language that is
+  new in `fastlane/metadata` to the listing with its name and subtitle (deliver leaves those out), and stop with the
+  reason while an earlier version of either platform is still in review.
+
+### Fixed
+
+- Turning an iPad from portrait to landscape could quit the app when the sidebar appeared.
+- HTML comments such as the hints issue templates leave (`<!-- … -->`) no longer show in comments and the peek;
+  GitHub hides them too.
+- Renaming a column, adding one and the token field on the sign-in screen take the keyboard focus straight away,
+  so you can type without clicking into them first.
+- On iPad, a card dragged onto the board in another window of the app lands there. Before, that window refused it,
+  or moved the card it had last dragged itself instead. A card of one project can't be dropped on another's board.
+- Deleting issues follows GitHub's rules in organizations too: besides admin rights in the repository, it needs the
+  owners' permission for repository admins to delete issues, and Delete is unavailable without it. When your rights
+  change, the app notices at the next ⌘R or pull-to-refresh, or within half an hour, without anything on the issues
+  changing.
+
+## [0.2.0] - 2026-10-06
+
+### Added
+
 - Change several issues at once, as in Linear. Pick them with X, the checkbox at the start of a list row,
   ⌘-click or Shift-click (Shift with the arrows or J/K picks a run, ⌘A picks everything on screen). A bar at the
   bottom sets status, priority, assignee and labels for all of them; S, P, A, L, I, the command palette and the
@@ -151,10 +190,7 @@ All notable changes to this project are recorded here. The format follows
   leaves the field; ⌘↵ does too.
 - Deleting issues, from the right-click menu, the command palette, the Issue menu or with ⌘⌫. A confirmation
   explains that the issue is deleted on GitHub for everyone; Return confirms. Deleting needs admin rights in the
-  repository, and in an organization also its owners' permission for repository admins to delete issues, so the
-  action is unavailable where GitHub wouldn't allow it. When your rights change, the app notices at the next ⌘R or
-  pull-to-refresh, or within half an hour, without anything on the issues changing. Drafts are removed from the
-  board.
+  repository, so the action is unavailable where GitHub wouldn't allow it. Drafts are removed from the board.
 - Right-clicking a sub-issue opens the same menu as a card on the board (status, priority, assign to me, copy link,
   open on GitHub). Sub-issues that aren't on the board offer what applies to them: mark as done or reopen, and the
   links.
@@ -162,18 +198,6 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
-- G then B goes to the board of the project used last from the Inbox, My Issues or a repository, and G then L from
-  the Inbox to that project's list; before, they did nothing there.
-- A single line break in a comment or a drawn description stays a line break, as on GitHub.
-- Fewer clicks: picking a value closes the dropdown, for assignees and labels too, so one change is one click. To
-  pick several people or labels, tick the checkbox at the start of their rows, or hold Shift while you click or press
-  Return; the dropdown then stays open. On iPhone and iPad a tap in the assignee and label sheets picks and closes
-  the sheet as well, and the circle at the start of a row picks several.
-- A new issue takes the keyboard focus once it's created, so Return opens it and S, A or L change it. After
-  deleting an issue the focus moves on to the next one instead of back to the top.
-- While peeking, S, P, A, L, I, J and K act on the issue in the peek, also with the pointer over the panel. Its
-  labels can be changed there, as its status, priority and assignees already could.
-- On an iPad with a keyboard, S, P, A and L open their picker with the search field ready: type and press Return.
 - The sidebar is calmer, as in Linear. The account, search and New Issue share the top row, and the state of
   syncing is a dot on your avatar: green when everything is on GitHub, the accent while changes go out, amber when
   you're offline or something needs you. "Synced just now" moved into the account menu (and the avatar's tooltip).
@@ -202,11 +226,6 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
-- Turning an iPad from portrait to landscape could quit the app when the sidebar appeared.
-- HTML comments such as the hints issue templates leave (`<!-- … -->`) no longer show in comments and the peek;
-  GitHub hides them too.
-- Renaming a column, adding one and the token field on the sign-in screen take the keyboard focus straight away,
-  so you can type without clicking into them first.
 - When a saved sign-in no longer works, such as a GitHub CLI login without the CLI or a token missing from the
   keychain, the sign-in screen appears instead of an endless "Looking for your projects…".
 - The issue view's back arrow and Escape return to the issue you came from, such as the parent of a sub-issue,
@@ -221,8 +240,6 @@ All notable changes to this project are recorded here. The format follows
   appears, the title gets it back.
 - The board now shows a loading state while a project is fetched for the first time, as the list already did.
   Both say so when you are offline or the project can't be loaded, instead of loading forever.
-- On iPad, a card dragged onto the board in another window of the app lands there. Before, that window refused it,
-  or moved the card it had last dragged itself instead. A card of one project can't be dropped on another's board.
 
 ## [0.1.0] - 2026-10-01
 
@@ -244,5 +261,7 @@ First public version.
 - Light and dark appearance, or following the system, and a choice of Dock icons.
 - Sign-in with the GitHub CLI, a personal access token, or the OAuth device flow.
 
-[Unreleased]: https://github.com/lukaskaibel/issues-for-github/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/lukaskaibel/issues-for-github/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/lukaskaibel/issues-for-github/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/lukaskaibel/issues-for-github/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/lukaskaibel/issues-for-github/releases/tag/v0.1.0
