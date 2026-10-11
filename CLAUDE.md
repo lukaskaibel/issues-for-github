@@ -32,8 +32,9 @@ without being asked. Before calling such a change done, go through this list and
   needs something there to show it with.
 - **Website** (`Website/`, published by `.github/workflows/website.yml`): the home page's tagline, the support page's
   answers (sign-in, what shows up, offline, removing data) and the privacy policy, which says the same as `PRIVACY.md`
-  plus what the website does. When the app is in the App Store, the "Coming soon" note on the home page becomes
-  Apple's badge linked to it (see the comment in `Website/index.html`).
+  plus what the website does. The home page shows Apple's App Store badge in the page's language, black for the light
+  appearance and white for the dark one (`Website/images/app-store/`); a new language gets its own pair from
+  `https://toolbox.marketingtools.apple.com/api/badges/download-on-the-app-store/<black|white>/<locale>`, unchanged.
 - **App Store listing** (`fastlane/metadata`, see `Design/app-store.md`): the description when what the app does
   changes, and from the second version on the "What's New" in `release_notes.txt`. Retake the App Store screenshots
   when a change shows in them: `Tools/app-store-screenshots.sh` (iPhone, iPad) and `Tools/mac-app-store-screenshots.sh`
