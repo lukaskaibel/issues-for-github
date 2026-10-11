@@ -25,7 +25,7 @@ fastlane can't do these; set them when the app is created.
 | Apps › New App | Platforms **iOS** and **macOS**, name **Issues – Project Board** ("Issues" alone is taken; under the icon the app is still called Issues), primary language English (U.S.), bundle ID `com.lukaskbl.GitIssues`, SKU `issues`. |
 | App Privacy | **Data Not Collected.** The app talks only to GitHub with the user's own login and has no server, analytics or ads. GitHub is the service the user signs in to, not a third party the developer shares data with. |
 | Pricing and Availability | **Free**, all countries and regions. |
-| Certificates, Identifiers & Profiles › Identifiers › `com.lukaskbl.GitIssues` | **iCloud** turned on (key-value storage only, no CloudKit containers), for the Inbox's snoozes and unread marks. Xcode turns it on by itself the first time it signs a build with the team; profiles made before that are invalid afterwards, and fastlane makes new ones. |
+| Certificates, Identifiers & Profiles › Identifiers › `com.lukaskbl.GitIssues` | **iCloud** turned on (key-value storage only, no CloudKit containers), for the Inbox's snoozes and unread marks. fastlane turns it on before it fetches the App Store profiles, if it's off; profiles made before that are invalid afterwards, and fastlane makes new ones. |
 | Users and Access › Integrations | The App Store Connect API key fastlane uses (App Manager or Admin, with access to certificates, identifiers and profiles). The builds are signed with the team's Apple Distribution certificate, which has to be in the keychain of the Mac that builds them, and the Mac's package with a Mac Installer Distribution certificate, which fastlane creates there the first time. |
 
 ## Why the answers are what they are
@@ -60,3 +60,13 @@ Japanese (`ja`), Korean (`ko`) and Chinese (`zh-Hans`), the languages the app sp
 
 The first version has none. From the second version on, write it in `fastlane/metadata/en-US/release_notes.txt`, for
 users, from the changelog, and translate it into `release_notes.txt` in every other language's folder.
+
+## A new version
+
+While a version of either platform is waiting for review, in review or waiting to be released, App Store Connect keeps
+the app's name, subtitle and languages locked, as both platforms share them, and takes no new version of that
+platform. fastlane checks this first and stops with the reason; release the waiting version (or remove it from review)
+and run it again. TestFlight builds (`bundle exec fastlane beta`) can go up at any time.
+
+A language folder new in `fastlane/metadata` is added to the listing by the Fastfile itself, with its name, subtitle
+and privacy policy, because deliver adds those only when a language the app already has changes.
