@@ -140,36 +140,10 @@ a { color: inherit; }
 .button.primary:hover { background: var(--button-hover); }
 .button:active { transform: scale(0.98); }
 
-/* Until the app is out: says so, in the place the App Store badge will take. */
-.soon {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  height: 48px;
-  padding: 0 18px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--text-2);
-  font-size: 15px;
-  font-weight: 500;
-  white-space: nowrap;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-}
-
-.soon::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 4px rgba(var(--glow-violet), 0.22);
-}
-
-.soon strong { color: var(--text); font-weight: 600; }
-
-.store-badge { display: block; height: 48px; width: auto; }
+/* Apple's badge, as Apple draws it: black on the light page, white on the dark one, the height of a button. */
+.store { display: block; flex: none; border-radius: 8px; transition: transform 0.15s ease-out; }
+.store:active { transform: scale(0.98); }
+.store img { display: block; height: 48px; width: auto; }
 
 /* Footer */
 
@@ -426,14 +400,10 @@ a { color: inherit; }
   .home h1 { font-size: 44px; }
   .lead { margin-top: 10px; font-size: 19px; }
   .home .actions { margin-top: 18px; gap: 10px; }
-  .button, .soon { height: 44px; }
+  .button { height: 44px; }
+  .store img { height: 44px; }
   .facts { display: none; }
   .devices { min-height: 110px; margin-top: 20px; }
-}
-
-@media (max-width: 420px) {
-  .home .actions { flex-direction: column; align-items: stretch; width: min(100%, 300px); }
-  .button, .soon { justify-content: center; }
 }
 
 /* Too short for one screen (a phone on its side): let it scroll rather than cut off the text. */
