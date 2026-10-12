@@ -13,6 +13,15 @@
 </p>
 
 <p align="center">
+  <a href="https://apps.apple.com/app/id6819589759">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="Website/images/app-store/en-dark.svg">
+      <img alt="Download on the App Store" src="Website/images/app-store/en-light.svg" height="48">
+    </picture>
+  </a>
+</p>
+
+<p align="center">
   <img alt="Platform: macOS 27 or later" src="https://img.shields.io/badge/macOS-27%2B-111214">
   <img alt="Platform: iOS and iPadOS 27 or later" src="https://img.shields.io/badge/iOS%20%26%20iPadOS-27%2B-111214">
   <img alt="Apple silicon" src="https://img.shields.io/badge/Apple%20silicon-native-111214">
