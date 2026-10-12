@@ -36,20 +36,43 @@ public struct GitIssuesScene: Scene {
                 }
                 .keyboardShortcut("k", modifiers: .command)
                 Divider()
-                Button(.board) {
-                    model.closeDetail()
-                    withAnimation(Theme.spring) { model.viewMode = .board }
+                // On the roadmap, its own two layouts take these keys.
+                if case .roadmap = model.scope {
+                    Button(.timeline) {
+                        model.closeDetail()
+                        withAnimation(Theme.spring) { model.roadmapLayout = .timeline }
+                    }
+                    .keyboardShortcut("1", modifiers: .command)
+                    Button(.list) {
+                        model.closeDetail()
+                        withAnimation(Theme.spring) { model.roadmapLayout = .list }
+                    }
+                    .keyboardShortcut("2", modifiers: .command)
+                } else {
+                    Button(.board) {
+                        model.closeDetail()
+                        withAnimation(Theme.spring) { model.viewMode = .board }
+                    }
+                    .keyboardShortcut("1", modifiers: .command)
+                    .disabled(model.currentProjectId == nil)
+                    Button(.list) {
+                        model.closeDetail()
+                        withAnimation(Theme.spring) { model.viewMode = .list }
+                    }
+                    .keyboardShortcut("2", modifiers: .command)
+                    .disabled(model.scope == .inbox)
                 }
-                .keyboardShortcut("1", modifiers: .command)
-                .disabled(model.currentProjectId == nil)
-                Button(.list) {
-                    model.closeDetail()
-                    withAnimation(Theme.spring) { model.viewMode = .list }
-                }
-                .keyboardShortcut("2", modifiers: .command)
-                .disabled(model.scope == .inbox)
                 Button(.myIssues) { model.select(.myIssues) }
                     .keyboardShortcut("3", modifiers: .command)
+                Button(.roadmap) {
+                    if model.scopeProjectId == nil { model.selectLastProject() }
+                    if let projectId = model.scopeProjectId {
+                        model.closeDetail()
+                        model.select(.roadmap(projectId))
+                    }
+                }
+                .keyboardShortcut("4", modifiers: .command)
+                .disabled(model.openProjects.isEmpty)
                 Button(.inbox) { model.select(.inbox) }
                 Button(.switchProjectEllipsis) { model.overlay = .palette(.projects) }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
@@ -114,6 +137,8 @@ struct SettingsView: View {
             }
 
             SubIssueSettingsSection()
+
+            EpicSettingsSection()
 
             ReminderSettingsSection()
 

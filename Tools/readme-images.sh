@@ -27,7 +27,7 @@ mkdir -p "$raw"
 swiftc -O Tools/readme-images/capture.swift -o "$work/capture" 2>/dev/null
 
 # The debug app shares its settings with the real one. Note what the scenes change and put it back afterwards.
-keys=(appearance viewMode selectedProject inbox.selected inbox.bucket "NSWindow Frame main")
+keys=(appearance viewMode selectedProject inbox.selected inbox.bucket roadmap.layout roadmap.zoom "NSWindow Frame main")
 saved=()
 for key in "${keys[@]}"; do saved+=("$(defaults read "$bundle_id" "$key" 2>/dev/null || echo "<unset>")"); done
 previous=$(lsappinfo info -only bundlepath "$(lsappinfo front)" | sed -nE 's/.*"(.+)".*/\1/p')
@@ -109,6 +109,8 @@ for theme in dark light; do
   say "overlay due 9"; sleep 1.2; shot "due-$theme"
   say "overlay none" "focus" "mode list"; sleep 1.2; shot "list-$theme"
   say "select repo git-issues"; sleep 1.2; shot "repository-$theme"
+  # The roadmap's timeline: the sample's epics over the milestones 0.3, 0.4 and 1.0.
+  say "select Git Issues" "select roadmap" "roadmap timeline" "roadmap months"; sleep 1.5; shot "roadmap-$theme"
   say "select Git Issues" "mode board" "overlay new"; sleep 1
   say "key Haptic feedback when a card lands"; sleep 1; shot "new-$theme"
   say "overlay none"

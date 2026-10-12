@@ -48,6 +48,8 @@ extension AppModel {
         if openItem == nil, viewMode == .board, currentProjectId != nil {
             return columns.flatMap(\.items)
         }
+        // The timeline has no keyboard focus of its own; its epics open with a click.
+        if openItem == nil, case .roadmap = scope, roadmapLayout == .timeline { return [] }
         return sections.filter { !isSectionCollapsed($0.id) }.flatMap(\.items)
     }
 

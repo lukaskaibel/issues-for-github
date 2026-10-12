@@ -37,6 +37,7 @@ public enum DemoData {
     private static let appLabels = [
         LabelRef(id: "demo-label-auth", name: "auth", color: "E3A13B"),
         LabelRef(id: "demo-label-bug", name: "bug", color: "D73A4A"),
+        LabelRef(id: "demo-label-epic", name: "epic", color: Item.epicLabelColor),
         LabelRef(id: "demo-label-feature", name: "feature", color: "B57CF0"),
         LabelRef(id: "demo-label-release", name: "release", color: "8B949E"),
         LabelRef(id: "demo-label-sync", name: "sync", color: "3FB27F"),
@@ -79,10 +80,20 @@ public enum DemoData {
         var due: Int?
         /// Issues of the same project this one waits for.
         var blockedBy: [Int] = []
+        /// The milestone it is planned for, by title.
+        var milestone: String?
     }
 
+    /// The app's milestones: one shipped, three ahead, due this many days from today.
+    private static let appMilestones: [(number: Int, title: String, due: Int, descr: String, closed: Bool)] = [
+        (1, "0.2", -12, "The board on iPhone and iPad, sign-in with GitHub.", true),
+        (2, "0.3", 9, "Board polish: drag and drop, the offline queue and keyboard flow.", false),
+        (3, "0.4", 30, "Sign-in and sync for teams: device flow, delta sync.", false),
+        (4, "1.0", 58, "Ready for everyone: notarized builds and linked pull requests.", false),
+    ]
+
     private static let appIssues: [IssueSpec] = [
-        IssueSpec(number: 5, title: "Keyboard navigation across board and list", status: "In Review", priority: "Medium", labels: ["ui"], assignees: [viewer.person], body: "J and K move through issues, Return opens one and Escape goes back. Arrow keys switch columns on the board.", hoursAgo: 3),
+        IssueSpec(number: 5, title: "Keyboard navigation across board and list", status: "In Review", priority: "Medium", labels: ["ui"], assignees: [viewer.person], body: "J and K move through issues, Return opens one and Escape goes back. Arrow keys switch columns on the board.", hoursAgo: 3, milestone: "0.3"),
         IssueSpec(number: 16, title: "Markdown editor for descriptions and comments", status: "In Review", priority: "Low", labels: ["ui"], assignees: [viewer.person, mira], body: """
             Style Markdown while typing: headings, **bold**, _italics_, `code` and lists. A description with a table, a checklist, code or a diagram is drawn the way GitHub draws it, and a click brings up the text.
 
@@ -103,11 +114,11 @@ public enum DemoData {
                 Editor -->|Escape| Drawn
                 Drawn -->|tick a box| Saved[Saved to GitHub]
             ```
-            """, hoursAgo: 5),
-        IssueSpec(number: 6, title: "Delta sync for project items", status: "In Review", priority: "High", labels: ["sync"], assignees: [theo], body: "Only fetch items whose `updatedAt` changed since the last sweep.", hoursAgo: 8, due: 2),
-        IssueSpec(number: 24, title: "Animate the column count when a card lands", status: "Todo", priority: nil, hoursAgo: 9, blockedBy: [9]),
-        IssueSpec(number: 7, title: "Sub-issue tree in issue detail", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [mira], hoursAgo: 4),
-        IssueSpec(number: 8, title: "Offline change queue that replays on reconnect", status: "In Progress", priority: "High", labels: ["sync"], assignees: [viewer.person], body: "Every change is written locally first and queued. When the connection returns, the queue is sent in order.", hoursAgo: 2, due: 9, blockedBy: [6]),
+            """, hoursAgo: 5, milestone: "0.3"),
+        IssueSpec(number: 6, title: "Delta sync for project items", status: "In Review", priority: "High", labels: ["sync"], assignees: [theo], body: "Only fetch items whose `updatedAt` changed since the last sweep.", parent: 41, hoursAgo: 8, due: 2, milestone: "0.4"),
+        IssueSpec(number: 24, title: "Animate the column count when a card lands", status: "Todo", priority: nil, parent: 40, hoursAgo: 9, blockedBy: [9], milestone: "0.3"),
+        IssueSpec(number: 7, title: "Sub-issue tree in issue detail", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [mira], hoursAgo: 4, milestone: "0.3"),
+        IssueSpec(number: 8, title: "Offline change queue that replays on reconnect", status: "In Progress", priority: "High", labels: ["sync"], assignees: [viewer.person], body: "Every change is written locally first and queued. When the connection returns, the queue is sent in order.", parent: 41, hoursAgo: 2, due: 9, blockedBy: [6], milestone: "0.3"),
         IssueSpec(number: 9, title: "Drag cards between columns with spring physics", status: "In Progress", priority: "Urgent", labels: ["ui"], assignees: [viewer.person], body: """
             A card should lift under the pointer, tilt slightly while it moves, and settle into place with a spring. Neighbouring cards make room as the drag passes over them.
 
@@ -118,23 +129,29 @@ public enum DemoData {
             ```swift
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { drop() }
             ```
-            """, hoursAgo: 1, due: 0),
-        IssueSpec(number: 13, title: "Cancel a drag with Escape", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 6),
-        IssueSpec(number: 28, title: "Tilt the lifted card with the pointer's speed", status: "In Progress", priority: "Low", labels: ["ui"], assignees: [mira], parent: 9, hoursAgo: 0.6),
-        IssueSpec(number: 15, title: "Conflict banner when text changed on GitHub", status: "In Progress", priority: "High", labels: ["sync"], assignees: [theo], hoursAgo: 7),
-        IssueSpec(number: 17, title: "Command palette with fuzzy search", status: "Todo", priority: "High", labels: ["ui"], assignees: [viewer.person], hoursAgo: 20, due: 1),
-        IssueSpec(number: 14, title: "Sign in with GitHub device flow", status: "Todo", priority: "Medium", labels: ["auth"], assignees: [viewer.person, kai], hoursAgo: 22, due: 3),
-        IssueSpec(number: 25, title: "Crash when a label name contains an emoji", status: "Todo", priority: "Urgent", labels: ["bug"], assignees: [kai, viewer.person], body: "Steps to reproduce:\n\n1. Add a label named `🔥 hot`\n2. Open the labels picker\n3. The app quits", hoursAgo: 12, due: -2),
-        IssueSpec(number: 18, title: "Notarized builds and automatic updates", status: "Backlog", priority: "Low", labels: ["release"], hoursAgo: 70, due: 24, blockedBy: [25]),
-        IssueSpec(number: 19, title: "Show linked pull requests and CI state", status: "Backlog", priority: "Low", labels: ["feature"], hoursAgo: 80),
-        IssueSpec(number: 20, title: "Milestones as roadmap projects", status: "Backlog", priority: "Low", labels: ["feature"], hoursAgo: 90),
-        IssueSpec(number: 21, title: "Inbox from GitHub notifications", status: "Done", priority: "High", labels: ["feature"], assignees: [viewer.person], hoursAgo: 30),
-        IssueSpec(number: 22, title: "Cycles backed by the Iteration field", status: "Backlog", priority: "Low", labels: ["feature"], hoursAgo: 110),
-        IssueSpec(number: 10, title: "Lift and tilt on drag start", status: "Done", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 26),
-        IssueSpec(number: 11, title: "Neighbouring cards make room with springs", status: "Done", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 27),
-        IssueSpec(number: 12, title: "Drop placeholder in the target column", status: "Done", priority: "Low", labels: ["ui"], assignees: [mira], parent: 9, hoursAgo: 28),
-        IssueSpec(number: 23, title: "Auto-scroll the board when dragging near an edge", status: "Done", priority: "Low", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 29),
-        IssueSpec(number: 4, title: "Local database with instant edits", status: "Done", priority: "High", labels: ["sync"], assignees: [theo], hoursAgo: 120),
+            """, parent: 40, hoursAgo: 1, due: 0, milestone: "0.3"),
+        IssueSpec(number: 13, title: "Cancel a drag with Escape", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 6, milestone: "0.3"),
+        IssueSpec(number: 28, title: "Tilt the lifted card with the pointer's speed", status: "In Progress", priority: "Low", labels: ["ui"], assignees: [mira], parent: 9, hoursAgo: 0.6, milestone: "0.3"),
+        IssueSpec(number: 15, title: "Conflict banner when text changed on GitHub", status: "In Progress", priority: "High", labels: ["sync"], assignees: [theo], parent: 41, hoursAgo: 7, milestone: "0.3"),
+        IssueSpec(number: 17, title: "Command palette with fuzzy search", status: "Todo", priority: "High", labels: ["ui"], assignees: [viewer.person], hoursAgo: 20, due: 1, milestone: "0.3"),
+        IssueSpec(number: 14, title: "Sign in with GitHub device flow", status: "Todo", priority: "Medium", labels: ["auth"], assignees: [viewer.person, kai], parent: 42, hoursAgo: 22, due: 3, milestone: "0.4"),
+        IssueSpec(number: 25, title: "Crash when a label name contains an emoji", status: "Todo", priority: "Urgent", labels: ["bug"], assignees: [kai, viewer.person], body: "Steps to reproduce:\n\n1. Add a label named `🔥 hot`\n2. Open the labels picker\n3. The app quits", hoursAgo: 12, due: -2, milestone: "0.3"),
+        IssueSpec(number: 18, title: "Notarized builds and automatic updates", status: "Backlog", priority: "Low", labels: ["release"], parent: 43, hoursAgo: 70, due: 24, blockedBy: [25], milestone: "1.0"),
+        IssueSpec(number: 19, title: "Show linked pull requests and CI state", status: "Backlog", priority: "Low", labels: ["feature"], parent: 43, hoursAgo: 80, milestone: "1.0"),
+        IssueSpec(number: 20, title: "Milestones as roadmap projects", status: "Backlog", priority: "Low", labels: ["feature"], parent: 44, hoursAgo: 90),
+        IssueSpec(number: 21, title: "Inbox from GitHub notifications", status: "Done", priority: "High", labels: ["feature"], assignees: [viewer.person], hoursAgo: 30, milestone: "0.2"),
+        IssueSpec(number: 22, title: "Cycles backed by the Iteration field", status: "Backlog", priority: "Low", labels: ["feature"], parent: 44, hoursAgo: 110),
+        IssueSpec(number: 10, title: "Lift and tilt on drag start", status: "Done", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 26, milestone: "0.3"),
+        IssueSpec(number: 11, title: "Neighbouring cards make room with springs", status: "Done", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 27, milestone: "0.3"),
+        IssueSpec(number: 12, title: "Drop placeholder in the target column", status: "Done", priority: "Low", labels: ["ui"], assignees: [mira], parent: 9, hoursAgo: 28, milestone: "0.3"),
+        IssueSpec(number: 23, title: "Auto-scroll the board when dragging near an edge", status: "Done", priority: "Low", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 29, milestone: "0.3"),
+        IssueSpec(number: 4, title: "Local database with instant edits", status: "Done", priority: "High", labels: ["sync"], assignees: [theo], parent: 41, hoursAgo: 120, milestone: "0.2"),
+        // Epics: planned on the roadmap, not shown on the board.
+        IssueSpec(number: 40, title: "Drag and drop on the board", status: "In Progress", priority: "High", labels: ["epic"], body: "Cards that lift, tilt and settle like paper, and every way to move them: between columns, within one, with the keyboard.", hoursAgo: 6),
+        IssueSpec(number: 41, title: "Offline-first sync", status: "In Progress", priority: "Urgent", labels: ["epic"], assignees: [theo], body: "Every change is saved here first and sent when GitHub can be reached, and what changed on GitHub meanwhile is merged in.", hoursAgo: 12),
+        IssueSpec(number: 42, title: "Sign-in and accounts", status: "Todo", priority: "Medium", labels: ["epic"], assignees: [kai], body: "Sign in with the GitHub app's device flow on every device, and with a company's own GitHub.", hoursAgo: 40),
+        IssueSpec(number: 43, title: "Ready for 1.0", status: "Backlog", priority: "Medium", labels: ["epic"], body: "What it takes to recommend the app to everyone.", hoursAgo: 72),
+        IssueSpec(number: 44, title: "Cycles and planning", status: "Backlog", priority: "Low", labels: ["epic"], body: "Plan work in cycles, next to milestones and the roadmap.", hoursAgo: 120),
     ]
 
     private static let siteIssues: [IssueSpec] = [
@@ -148,7 +165,7 @@ public enum DemoData {
     /// Issues filed straight in the app's repository, on no board yet: they show under "No project".
     private static let appIssuesWithoutProject: [IssueSpec] = [
         IssueSpec(number: 27, title: "App quits when a project has no Status field", status: "", priority: nil, labels: ["bug"], assignees: [viewer.person], body: "Reported on 0.1.0: open a project without a Status field and the app quits right away.", hoursAgo: 4),
-        IssueSpec(number: 26, title: "Support GitHub Enterprise Server", status: "", priority: nil, labels: ["feature"], body: "Sign in to a company's own GitHub, with its own address.", hoursAgo: 50),
+        IssueSpec(number: 26, title: "Support GitHub Enterprise Server", status: "", priority: nil, labels: ["feature"], body: "Sign in to a company's own GitHub, with its own address.", parent: 42, hoursAgo: 50, milestone: "1.0"),
     ]
 
     private static let comments: [Int: [(Person, String, Double)]] = [
@@ -164,10 +181,23 @@ public enum DemoData {
 
     // MARK: Seeding
 
+    private static func milestoneId(_ title: String) -> String {
+        "demo-milestone-\(title)"
+    }
+
     private static func seed(_ db: Database) throws {
         try KV.setViewer(db, viewer)
         let now = Date()
         let today = CalendarDay.today()
+        for milestone in appMilestones {
+            try Milestone(
+                id: milestoneId(milestone.title), repoId: app.repoId, repo: app.repo, number: milestone.number,
+                title: milestone.title, descr: milestone.descr, dueOn: today.adding(days: milestone.due).string,
+                state: milestone.closed ? "CLOSED" : "OPEN",
+                closedAt: milestone.closed ? now.addingTimeInterval(TimeInterval(milestone.due + 1) * 86_400) : nil,
+                url: "https://github.com/\(app.repo)/milestone/\(milestone.number)"
+            ).insert(db)
+        }
         for (spec, issues) in [(app, appIssues), (site, siteIssues)] {
             try Project(
                 id: spec.id, ownerLogin: "acme", ownerIsOrg: true, number: spec.number, title: spec.title,
@@ -216,7 +246,8 @@ public enum DemoData {
                     labels: spec.labels.filter { issue.labels.contains($0.name) },
                     viewerCanDelete: true,
                     blockedByCount: blockers.filter { $0.status != "Done" }.count,
-                    blockingCount: blocked.filter { $0.status != "Done" }.count
+                    blockingCount: blocked.filter { $0.status != "Done" }.count,
+                    milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone
                 ).insert(db)
                 for (relation, others) in [(LinkedIssue.Relation.blockedBy, blockers), (.blocking, blocked)] {
                     for (position, other) in others.enumerated() {
@@ -233,7 +264,7 @@ public enum DemoData {
                         id: contentId(child.number), parentId: contentId(issue.number), number: child.number, title: child.title,
                         state: child.status == "Done" ? "CLOSED" : "OPEN", stateReason: child.status == "Done" ? "COMPLETED" : nil,
                         repo: spec.repo, url: "https://github.com/\(spec.repo)/issues/\(child.number)", position: position,
-                        assignees: child.assignees
+                        assignees: child.assignees, milestoneId: child.milestone.map(milestoneId), milestoneTitle: child.milestone
                     ).insert(db)
                 }
                 for (position, comment) in (comments[issue.number] ?? []).enumerated() {
@@ -247,16 +278,31 @@ public enum DemoData {
         }
         for issue in appIssuesWithoutProject {
             let date = now.addingTimeInterval(-issue.hoursAgo * 3600)
+            let parent = issue.parent.flatMap { number in appIssues.first { $0.number == number } }
             try Item(
                 id: Item.idWithoutProject(contentId(issue.number)), projectId: nil, kind: .issue,
                 position: Item.positionWithoutProject(updatedAt: date),
                 contentId: contentId(issue.number), number: issue.number, title: issue.title, body: issue.body,
                 state: "OPEN", url: "https://github.com/\(app.repo)/issues/\(issue.number)", repoId: app.repoId, repo: app.repo,
                 authorLogin: sam.login, createdAt: date, updatedAt: date,
+                parentId: parent.map { contentId($0.number) }, parentNumber: parent?.number, parentTitle: parent?.title,
                 assignees: issue.assignees,
                 labels: app.labels.filter { issue.labels.contains($0.name) },
-                viewerCanDelete: true
+                viewerCanDelete: true,
+                milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone
             ).insert(db)
+            // On no board, but the sub-issue of an epic on one: the epic lists it.
+            if let parent {
+                let siblings = appIssues.filter { $0.parent == parent.number }.count
+                try SubIssue(
+                    id: contentId(issue.number), parentId: contentId(parent.number), number: issue.number, title: issue.title,
+                    state: "OPEN", repo: app.repo, url: "https://github.com/\(app.repo)/issues/\(issue.number)", position: siblings,
+                    assignees: issue.assignees, milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone
+                ).insert(db)
+                try db.execute(
+                    sql: "UPDATE item SET subTotal = subTotal + 1 WHERE contentId = ?", arguments: [contentId(parent.number)]
+                )
+            }
         }
         try seedInbox(db, now: now)
     }

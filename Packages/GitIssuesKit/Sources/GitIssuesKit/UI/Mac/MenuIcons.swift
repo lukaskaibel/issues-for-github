@@ -87,6 +87,18 @@ enum MenuIcons {
         return NSImage(systemSymbolName: name, accessibilityDescription: nil)?.withSymbolConfiguration(configuration)
     }
 
+    static func milestone(_ mark: MilestoneMark) -> NSImage {
+        image { context, rect in
+            PlanningGlyph.drawMilestone(mark, in: rect.insetBy(dx: 1, dy: 1), cg: context)
+        }
+    }
+
+    static var epic: NSImage {
+        image { context, rect in
+            PlanningGlyph.drawEpic(in: rect.insetBy(dx: 1, dy: 1), cg: context)
+        }
+    }
+
     static var blocked: NSImage? { symbol("flag.fill", color: Theme.blocked) }
     static var blocking: NSImage? { symbol("flag", color: Theme.urgent) }
 

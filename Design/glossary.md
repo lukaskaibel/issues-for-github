@@ -53,6 +53,10 @@ Only English uses Title Case; every other language writes menus and buttons as i
 | due date | Fälligkeitsdatum (fällig am …) | échéance | fecha de vencimiento | prazo | срок | 期日 | 截止日期 | 마감일 |
 | repository | Repository (Pl. Repositories) | dépôt | repositorio | repositório | репозиторий | リポジトリ | 仓库 | 저장소 |
 | milestone | Meilenstein | jalon | hito | marco | веха | マイルストーン | 里程碑 | 마일스톤 |
+| complete (a milestone) | abschließen | terminer | completar | concluir | завершить | 完了する | 完成 | 완료 |
+| epic | Epic (das) | epic (m.) | épica | épico | эпик | エピック | 史诗 | 에픽 |
+| roadmap | Roadmap (die) | feuille de route | hoja de ruta | roteiro | дорожная карта | ロードマップ | 路线图 | 로드맵 |
+| timeline (of the roadmap) | Zeitleiste | chronologie | cronograma | linha do tempo | временная шкала | タイムライン | 时间线 | 타임라인 |
 | comment | Kommentar | commentaire | comentario | comentário | комментарий | コメント | 评论 | 댓글 |
 | description | Beschreibung | description | descripción | descrição | описание | 説明 | 描述 | 설명 |
 | closed / reopen | geschlossen / wieder öffnen | fermé / rouvrir | cerrada / reabrir | fechada / reabrir | закрыта / открыть снова | クローズ / 再オープン | 已关闭 / 重新打开 | 닫힘 / 다시 열기 |

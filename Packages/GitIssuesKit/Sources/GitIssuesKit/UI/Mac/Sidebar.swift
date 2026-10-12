@@ -107,14 +107,18 @@ struct Sidebar: View {
     }
 }
 
-/// One project in the sidebar. Right-click to hide it, copy its link or open it on GitHub.
+/// One project in the sidebar, with its next milestones and its roadmap under it when it has any, as a team in
+/// Linear's sidebar has its projects. Right-click to hide it, copy its link or open it on GitHub.
 struct ProjectRow: View {
     @Environment(AppModel.self) private var model
     var project: Project
     var hidden: Bool
+    @State private var hovering = false
 
     var body: some View {
         let active = model.scope == .project(project.id)
+        let planning = !hidden && model.hasPlanning(projectId: project.id)
+        let folded = model.foldedSidebarProjects.contains(project.id)
         Button {
             model.select(.project(project.id))
         } label: {
@@ -122,6 +126,25 @@ struct ProjectRow: View {
                 ProjectSwatch(title: project.title)
                     .opacity(hidden ? 0.5 : 1)
                 Text(project.title).lineLimit(1)
+                if planning {
+                    // Folds the milestones and roadmap under the board in or out.
+                    Button {
+                        withAnimation(Theme.spring) {
+                            if folded { model.foldedSidebarProjects.remove(project.id) } else { model.foldedSidebarProjects.insert(project.id) }
+                        }
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(Theme.textTertiary)
+                            .rotationEffect(.degrees(folded ? -90 : 0))
+                            .frame(width: 14, height: 14)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PlainPressStyle())
+                    .opacity(hovering || folded ? 1 : 0)
+                    .help(Text(folded ? .showMilestonesTooltip : .foldMilestonesTooltip))
+                    .accessibilityLabel(Text(folded ? .showMilestonesTooltip : .foldMilestonesTooltip))
+                }
                 Spacer(minLength: 0)
             }
             .font(active ? .uiMedium : .ui)
@@ -131,6 +154,7 @@ struct ProjectRow: View {
             .hoverFill(active: active)
         }
         .buttonStyle(PlainPressStyle())
+        .onHover { hovering = $0 }
         .help("\(project.ownerLogin) · \(project.title)")
         .contextMenu {
             if hidden {
@@ -138,10 +162,104 @@ struct ProjectRow: View {
             } else {
                 Button(.hideFromSidebar, systemImage: "eye.slash") { model.setHidden(project, true) }
             }
+            if project.viewerCanUpdate {
+                Divider()
+                Button(.newMilestoneEllipsis, systemImage: "plus") {
+                    model.overlay = .milestoneEditor(projectId: project.id, title: nil, assigning: [])
+                }
+            }
             Divider()
             Button(.copyLink, systemImage: "link") { model.copyLink(project.url, for: project.title) }
             Button(.openOnGitHub, systemImage: "arrow.up.right.square") {
                 if let url = URL(string: project.url) { NSWorkspace.shared.open(url) }
+            }
+        }
+        .transition(.opacity)
+        if planning, !folded {
+            ForEach(model.sidebarMilestones(projectId: project.id)) { group in
+                MilestoneRow(projectId: project.id, group: group)
+            }
+            RoadmapRow(projectId: project.id)
+        }
+    }
+}
+
+/// A milestone under its board in the sidebar: its diamond, its name and when it is due.
+struct MilestoneRow: View {
+    @Environment(AppModel.self) private var model
+    var projectId: String
+    var group: MilestoneGroup
+
+    var body: some View {
+        let active = model.scope == .milestone(projectId: projectId, title: group.title)
+        Button {
+            model.select(.milestone(projectId: projectId, title: group.title))
+        } label: {
+            HStack(spacing: 8) {
+                MilestoneIcon(mark: model.mark(of: group, projectId: projectId), size: 12)
+                    .frame(width: 14)
+                Text(group.title).lineLimit(1)
+                Spacer(minLength: 4)
+                if let due = group.due {
+                    let today = CalendarDay.today()
+                    Text(due.shortLabel(today: today))
+                        .font(.small)
+                        .monospacedDigit()
+                        .foregroundStyle(due < today ? Theme.overdue : active ? Theme.textSecondary : Theme.textTertiary)
+                }
+            }
+            .font(active ? .uiMedium : .ui)
+            .foregroundStyle(active ? Theme.text : Theme.textSecondary)
+            .padding(.leading, 28)
+            .padding(.trailing, 6)
+            .frame(height: 28)
+            .hoverFill(active: active)
+        }
+        .buttonStyle(PlainPressStyle())
+        .help(group.due.map { Text(.dueOn(date: $0.longLabel)) } ?? Text(group.title))
+        .contextMenu {
+            MilestoneMenuItems(projectId: projectId, group: group)
+        }
+        .transition(.opacity)
+    }
+}
+
+/// The roadmap under its board in the sidebar.
+struct RoadmapRow: View {
+    @Environment(AppModel.self) private var model
+    var projectId: String
+
+    var body: some View {
+        let active = model.scope == .roadmap(projectId)
+        Button {
+            model.select(.roadmap(projectId))
+        } label: {
+            HStack(spacing: 8) {
+                RoadmapIcon(size: 13)
+                    .foregroundStyle(active ? Theme.textSecondary : Theme.textTertiary)
+                    .frame(width: 14)
+                Text(.roadmap).lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .font(active ? .uiMedium : .ui)
+            .foregroundStyle(active ? Theme.text : Theme.textSecondary)
+            .padding(.leading, 28)
+            .padding(.trailing, 6)
+            .frame(height: 28)
+            .hoverFill(active: active)
+        }
+        .buttonStyle(PlainPressStyle())
+        .help(Text(.roadmapShortcutTooltip))
+        .contextMenu {
+            if model.projects.first(where: { $0.id == projectId })?.viewerCanUpdate == true {
+                Button(.newEpic, systemImage: "plus") {
+                    model.select(.roadmap(projectId))
+                    model.newIssuePlan = NewIssuePlan(isEpic: true)
+                    model.overlay = .newIssue(statusId: nil, parentItemId: nil)
+                }
+                Button(.newMilestoneEllipsis, systemImage: "plus") {
+                    model.overlay = .milestoneEditor(projectId: projectId, title: nil, assigning: [])
+                }
             }
         }
         .transition(.opacity)
@@ -648,7 +766,7 @@ struct ToastView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: notice.isWarning ? "exclamationmark.triangle" : "arrow.triangle.2.circlepath")
+            Image(systemName: notice.isWarning ? "exclamationmark.triangle" : notice.action?.isUndo == true ? "checkmark.circle" : "arrow.triangle.2.circlepath")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(notice.isWarning ? Theme.warning : Theme.accent)
                 .frame(width: 18, height: 18)
@@ -660,7 +778,14 @@ struct ToastView: View {
                         .foregroundStyle(Theme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if let label = notice.action?.adoptLabel {
+                if notice.action?.isUndo == true {
+                    Button(.undo) {
+                        if let action = notice.action { model.apply(action) }
+                        model.status.dismiss(notice.id)
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .keyboardShortcut("z", modifiers: .command)
+                } else if let label = notice.action?.adoptLabel {
                     HStack(spacing: 8) {
                         Button(.keepMineMac) { model.status.dismiss(notice.id) }
                             .buttonStyle(SecondaryButtonStyle())
@@ -685,9 +810,9 @@ struct ToastView: View {
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
         .shadow(color: Theme.shadow, radius: 18, y: 10)
         .task {
-            // Notices that ask for a decision stay until answered.
-            guard notice.action == nil else { return }
-            try? await Task.sleep(for: .seconds(notice.isWarning ? 10 : 4))
+            // Notices that ask for a decision stay until answered; one that can be undone stays a little longer.
+            guard notice.action == nil || notice.action?.isUndo == true else { return }
+            try? await Task.sleep(for: .seconds(notice.isWarning || notice.action?.isUndo == true ? 10 : 4))
             model.status.dismiss(notice.id)
         }
     }

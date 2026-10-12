@@ -8,6 +8,8 @@ import UniformTypeIdentifiers
 struct MobileBoard: View {
     @Environment(AppModel.self) private var model
     var projectId: String
+    /// A milestone of the board, whose issues it shows in the board's columns.
+    var milestone: String? = nil
 
     @State private var target: BoardDropTarget?
     /// The card a drag hovering this board carries, which may have been lifted in another window: it dims, and a
@@ -18,7 +20,7 @@ struct MobileBoard: View {
     @State private var newStatus = ""
 
     var body: some View {
-        let columns = model.columns(projectId: projectId)
+        let columns = milestone.map { model.columns(for: .milestone(projectId: projectId, title: $0)) } ?? model.columns(projectId: projectId)
         let canEdit = model.projects.first { $0.id == projectId }?.viewerCanUpdate == true
         GeometryReader { proxy in
             let width = columnWidth(available: proxy.size.width, count: columns.count, canEdit: canEdit)
@@ -26,13 +28,14 @@ struct MobileBoard: View {
                 HStack(alignment: .top, spacing: 14) {
                     ForEach(columns) { column in
                         MobileColumn(
-                            projectId: projectId, column: column, width: width,
+                            projectId: projectId, milestone: milestone, column: column, width: width,
                             target: $target, dragging: $dragging,
                             onDrop: { id, slot in move(id, to: column, at: slot) }
                         )
                         .frame(width: width)
                     }
-                    if canEdit {
+                    // A milestone's board shows the board's columns; they are changed on the board itself.
+                    if canEdit, milestone == nil {
                         Button {
                             newStatus = ""
                             addingStatus = true
@@ -111,6 +114,7 @@ private struct MobileColumn: View {
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.openRoute) private var openRoute
     var projectId: String
+    var milestone: String? = nil
     var column: BoardColumn
     var width: CGFloat
     @Binding var target: BoardDropTarget?
@@ -123,7 +127,7 @@ private struct MobileColumn: View {
     var body: some View {
         let space = "column-\(column.id)"
         VStack(spacing: 8) {
-            MobileColumnHeader(projectId: projectId, column: column)
+            MobileColumnHeader(projectId: projectId, milestone: milestone, column: column)
             ScrollView(.vertical) {
                 LazyVStack(spacing: 8) {
                     ForEach(Array(column.items.enumerated()), id: \.element.id) { index, item in
@@ -202,7 +206,7 @@ private struct MobileColumn: View {
         Button {
             openRoute(.issue(item.id))
         } label: {
-            CardView(card: model.cardModel(for: item, in: column.nesting), width: width, avatarVersion: model.avatarVersion)
+            CardView(card: model.cardModel(for: item, in: column.nesting, showsMilestone: milestone == nil), width: width, avatarVersion: model.avatarVersion)
                 .equatable()
         }
         .buttonStyle(CardPressStyle())
@@ -219,7 +223,7 @@ private struct MobileColumn: View {
             CardDragMark.lifted = item.id
             return CardDragMark.provider(id: item.id, text: dragText(item))
         } preview: {
-            CardView(card: model.cardModel(for: item, in: column.nesting), width: width, lifted: true, avatarVersion: model.avatarVersion)
+            CardView(card: model.cardModel(for: item, in: column.nesting, showsMilestone: milestone == nil), width: width, lifted: true, avatarVersion: model.avatarVersion)
         }
         .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 8, style: .continuous))
         .contextMenu {
@@ -239,7 +243,7 @@ private struct MobileColumn: View {
 
     /// For VoiceOver, which can't drag: moves the card to the neighbouring column.
     private func step(_ item: Item, by delta: Int) {
-        let columns = model.columns(projectId: projectId)
+        let columns = milestone.map { model.columns(for: .milestone(projectId: projectId, title: $0)) } ?? model.columns(projectId: projectId)
         guard let index = columns.firstIndex(where: { $0.id == column.id }),
               columns.indices.contains(index + delta) else { return }
         let next = columns[index + delta]
@@ -372,6 +376,7 @@ private struct MobileColumnHeader: View {
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.colorScheme) private var scheme
     var projectId: String
+    var milestone: String? = nil
     var column: BoardColumn
 
     @State private var renaming = false
@@ -440,7 +445,7 @@ private struct MobileColumnHeader: View {
                 .accessibilityLabel(.optionsForStatus(status: column.title))
             }
             Button {
-                navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: column.option?.id))
+                navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: column.option?.id, milestoneTitle: milestone))
             } label: {
                 Image(systemName: "plus")
                     .font(.subheadline.weight(.medium))

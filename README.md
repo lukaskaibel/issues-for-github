@@ -154,6 +154,23 @@ column, and the issue is on the board. My Issues shows everything assigned to yo
   <img alt="A repository in the sidebar, with its issues as a list: two under No project at the top, then In progress and Todo" src="Design/screenshots/repository-light.webp">
 </picture>
 
+### Milestones, epics and a roadmap
+
+Plan a board the way Linear plans releases and projects, with what GitHub has. Its next milestones sit under it in
+the sidebar; each shows the board's columns with only its issues, or a list grouped by epic, with how much is done
+and the day it is due. `⇧M` puts issues into one. An epic is an issue labelled "epic" whose sub-issues are the work:
+**Make Epic** in the right-click menu, `M` then `E` to put an issue into one. The roadmap lays the epics out over
+the milestones their unfinished issues are in, on a timeline: drag a bar onto another milestone and the epic moves
+there with everything left to do, drag a milestone's diamond to change its day. When a milestone's day has come,
+**Complete** closes it on GitHub and moves what isn't done to the next one.
+
+<!-- The roadmap's picture comes with the next shared picture run (Tools/readme-images.sh):
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/roadmap-dark.webp">
+  <img alt="The roadmap of a board: five epics as bars on a timeline over the milestones 0.3, 0.4 and 1.0, with how many of each epic's issues are done" src="Design/screenshots/roadmap-light.webp">
+</picture>
+-->
+
 ## iPhone and iPad
 
 <picture>
@@ -175,13 +192,17 @@ The interface uses the system's own parts.
   projects) and Search. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and
   hold for the same menu as the Mac's right-click, and drag after holding to give an issue a new place in its section.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
+  A board's next milestones and its roadmap are listed under it in Projects; a milestone is a list grouped by epic,
+  the roadmap a list of epics by milestone.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
   place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams are drawn until you tap them),
   the properties are chips under the title, and the comment field stays at the bottom as in Messages.
 - **iPad:** the tabs become a sidebar with every project and repository as an entry, as on the Mac. Projects open as a board or a
-  list; cards are moved with drag and drop (touch and hold, then drag). An issue shows its properties in a column
+  list; cards are moved with drag and drop (touch and hold, then drag). A board's next milestones and its roadmap
+  are entries under it: a milestone opens as the board's columns or a list, the roadmap as the timeline, whose bars
+  move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
-  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
+  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
   their picker ready to type in; Return picks the first match.
 - **Sample data:** "Explore with Sample Data" on the sign-in screen shows two sample projects without a GitHub account.
   Nothing there is sent anywhere.
@@ -197,6 +218,9 @@ The interface uses the system's own parts.
 - **Sub-issues and blockers.** Put any issue under another one, add issues that exist already as sub-issues, and mark
   which issues block which, with a red flag on blocked cards. Sub-issues with their parent's status hang under it on
   the board and in the list, and a parent is done when its last sub-issue is.
+- **Milestones, epics and a roadmap.** A board's milestones with their own board and progress, epics whose
+  sub-issues are the work, and a roadmap of the epics over the milestones, on a timeline or as a list. Completing a
+  milestone closes it on GitHub and moves what is left to the next one.
 - **An Inbox** with GitHub's notifications about issues and pull requests: who did what, the issue beside it, and
   read, archive, snooze and unsubscribe in one key. Read and archived are the same on github.com. Issues your own
   account assigned you to with `gh` or a coding agent show up too, which GitHub doesn't notify you of.
@@ -240,6 +264,11 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Sub-issues hanging under their parent | Only how the app arranges them; GitHub's order and fields stay as they are |
 | A parent done with its last sub-issue | The parent's status moves to the done column and it is closed, as if you had moved it there |
 | Blocked by and blocking | GitHub's issue dependencies |
+| Milestone | GitHub's milestones of the board's repositories; those of the same name are one, and a repository gets a copy when an issue of it goes in |
+| Completing a milestone | Closing it on GitHub; its unfinished issues get the next milestone if you choose |
+| Epic | An issue with the label *epic* (made in the repository the first time) or, in organisations, the issue type *Epic* |
+| An epic's issues | Its sub-issues |
+| Roadmap | Only how the app lays out the epics over the milestones; the stretches end on the milestones' due dates |
 | Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there. Due issues, and assignments your own account made outside the app (found in the issues' timelines), are the app's own entries, read and archived in iCloud |
 
 Boards show the issues in their project; a repository shows all its open issues and those closed in the last four
@@ -363,14 +392,16 @@ Hover an issue or move to it with the arrow keys, then:
 | `I` | Assign to me, or unassign |
 | `D` | Set the due date: type "fri", "next week", "in 3 days" or "12.10.", or pick a day |
 | `M` then `P` / `B` / `X` | Set the parent issue, mark as blocked by another issue, mark as blocking one |
+| `⇧M` | Put the issue into a milestone, or take it out of one |
+| `M` then `E` | Put the issue into an epic |
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
 | `⌥↑` `⌥↓` or `⌥K` `⌥J` | Move the issue up or down its column or list section |
 | `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
 | `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
-| `G` then `B` / `L` / `M` / `I` / `P` | Go to board, list, My Issues, the Inbox, or switch project or repository |
-| `⌘1` `⌘2` `⌘3` | Board, list, My Issues |
+| `G` then `B` / `L` / `M` / `I` / `P` / `R` | Go to board, list, My Issues, the Inbox, switch project or repository, or the roadmap |
+| `⌘1` `⌘2` `⌘3` `⌘4` | Board, list, My Issues, roadmap (on the roadmap `⌘1` and `⌘2` switch timeline and list) |
 | `⌘↵` | Save a description, send a comment, create the issue |
 | `⌘⇧C` / `⌘⇧O` | Copy the issue's GitHub link / open it on GitHub |
 | `⌘⇧.` | Copy a branch name for the issue, as GitHub suggests it |
@@ -411,6 +442,14 @@ Sub-issue** and **Mark As** (blocked by, blocking). These pickers find issues th
 it away again. The issue's sidebar has Parent, Blocked by and Blocking rows that open the same pickers, and the ✕ that
 shows when you point at a blocker in the issue takes it away.
 
+A board's next two milestones and its roadmap are listed under it in the sidebar; the arrow beside the board folds
+them away. In a milestone, click its date to change it, the text under the header to edit its name and description,
+and **Complete** (or the "…" menu) to close it: what isn't done moves to the next milestone or stays, as you choose.
+In its list, drag an issue into an epic's group to make it a sub-issue of that epic. On the roadmap's timeline, drag
+an epic's bar onto another milestone, or down to Later, and its unfinished issues go with it; drag a milestone's
+diamond sideways to change its day; Months and Quarters set how much time fits. In the roadmap's list, drag an epic
+into another milestone's group. An epic's page shows its sub-issues by milestone, with a plus for a new one in each.
+
 A description with a table, a checklist, code or a Mermaid diagram is drawn as on GitHub. Click a checkbox to tick it;
 click anywhere else to edit the Markdown, and `Esc` or `⌘↵` draws it again.
 
@@ -440,7 +479,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap the arrow beside an issue | Fold the sub-issues hanging under it in or out |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
-| Touch and hold an issue | Status, priority, assignee, labels and due date as submenus (Add to Project for an issue on no board); parent issue, sub-issues and blockers; copy link, share, open on GitHub, delete |
+| Touch and hold an issue | Status, priority, assignee, labels, due date and milestone as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
 | Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
 | Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several |
 | Tap the date chip of an issue | Pick a due date: quick choices, a calendar, or typed in the search field |
@@ -450,13 +489,15 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap the description | Edit it in place; the bar above the keyboard adds bold, italics, code, lists and links |
 | Tap a drawn description (table, checklist, code, diagram) | Show its Markdown; tap again to edit. Tap a checkbox to tick it |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
+| Tap the milestone chip of an issue | Put it into another milestone, or a new one |
+| Touch and hold an epic's bar on the roadmap, then drag (iPad) | Move the epic and its unfinished issues to another milestone, or to Later |
 | Swipe right in the Inbox | Read, or unread |
 | Swipe left in the Inbox | Archive, or snooze |
 | Touch and hold in the Inbox | Read, snooze, archive, unsubscribe, and the issue's status, priority, assignee and labels |
 
 ## Not there yet
 
-Cycles, roadmaps, linked pull requests, file uploads, real-time updates and notifications on screen for new Inbox
+Cycles, linked pull requests, file uploads, real-time updates and notifications on screen for new Inbox
 entries are planned but not built. Also good to know in 0.3.0:
 
 - Pull requests and draft issues appear on the board and can be moved, but their text is read-only.

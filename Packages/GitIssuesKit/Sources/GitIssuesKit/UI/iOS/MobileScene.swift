@@ -62,6 +62,18 @@ struct MobileRoot: View {
                 IssueDueDateSheet(itemId: itemId)
             case .picker(let itemId, let kind):
                 IssuePickerSheet(kind: kind, itemId: itemId)
+            case .milestoneEditor(let projectId, let title, let assigning):
+                MilestoneEditorSheet(projectId: projectId, title: title, assigning: assigning)
+            }
+        }
+        .modifier(CompleteMilestoneAlert())
+        // "New milestone…" in a picker sheet: the editor comes once the picker has gone.
+        .onChange(of: model.milestoneEditorRequest) { _, request in
+            guard let request else { return }
+            model.milestoneEditorRequest = nil
+            Task {
+                try? await Task.sleep(for: .milliseconds(450))
+                navigation.sheet = .milestoneEditor(projectId: request.projectId, title: request.title, assigning: request.assigning)
             }
         }
         .alert(
@@ -90,6 +102,11 @@ struct MobileRoot: View {
         .onChange(of: model.status.idRemaps) { _, remaps in
             model.follow(remaps: remaps)
             navigation.follow(remaps: remaps)
+        }
+        .onChange(of: model.milestoneMove) { _, move in
+            guard let move else { return }
+            model.milestoneMove = nil
+            navigation.follow(move)
         }
         // Initial too: without a token the first sync fails before this view is on screen.
         .onChange(of: model.status.phase, initial: true) { _, phase in
@@ -130,6 +147,7 @@ struct MainTabs: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.wideLayout) private var wide
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         @Bindable var navigation = navigation
@@ -161,6 +179,34 @@ struct MainTabs: View {
                             }
                         }
                         .customizationID("project.\(project.id)")
+                        // The board's next milestones and its roadmap right under it, as in the Mac's sidebar.
+                        ForEach(sidebarMilestones(projectId: project.id), id: \.self) { title in
+                            Tab(value: MobileTab.milestone(projectId: project.id, title: title)) {
+                                TabStack(tab: .milestone(projectId: project.id, title: title)) {
+                                    MilestoneScreen(projectId: project.id, title: title)
+                                }
+                            } label: {
+                                Label {
+                                    Text(title)
+                                } icon: {
+                                    let mark = model.milestoneGroup(projectId: project.id, title: title).map { model.mark(of: $0, projectId: project.id) }
+                                    Image(uiImage: PlanningImages.milestone(mark ?? .completed, scheme))
+                                }
+                            }
+                            .customizationID("milestone.\(project.id).\(title)")
+                        }
+                        ForEach(model.hasPlanning(projectId: project.id) ? [project.id] : [], id: \.self) { projectId in
+                            Tab(value: MobileTab.roadmap(projectId)) {
+                                TabStack(tab: .roadmap(projectId)) { RoadmapScreen(projectId: projectId) }
+                            } label: {
+                                Label {
+                                    Text(.roadmap)
+                                } icon: {
+                                    Image(uiImage: PlanningImages.roadmap(scheme))
+                                }
+                            }
+                            .customizationID("roadmap.\(projectId)")
+                        }
                     }
                 }
                 .customizationID("projectSection")
@@ -219,12 +265,36 @@ struct MainTabs: View {
             .environment(navigation)
         }
         .tabBarMinimizeBehavior(.onScrollDown)
+        // A milestone closed or a board's plans gone elsewhere: their entry leaves the sidebar, and its board shows.
+        .onChange(of: model.dataVersion) { _, _ in
+            // A milestone renamed or completed here is followed by its own move.
+            guard wide, model.milestoneMove == nil else { return }
+            switch navigation.tab {
+            case .milestone(let projectId, let title)
+                where !model.hasPlanning(projectId: projectId) || !model.sidebarMilestones(projectId: projectId).contains { $0.title == title }:
+                navigation.tab = .project(projectId)
+            case .roadmap(let projectId) where !model.hasPlanning(projectId: projectId):
+                navigation.tab = .project(projectId)
+            default:
+                break
+            }
+        }
         .onChange(of: wide, initial: true) { _, wide in
             navigation.adapt(regular: wide)
             if wide, navigation.tab == .projects {
                 navigation.tab = model.openProjects.first.map { .project($0.id) } ?? .myIssues
             }
         }
+    }
+
+    /// A board's next milestones in the sidebar, and the one on screen while it stays there: completed or renamed
+    /// here, it stays until the window has followed it on, as an entry taken away while selected would make the
+    /// sidebar choose another itself.
+    private func sidebarMilestones(projectId: String) -> [String] {
+        guard model.hasPlanning(projectId: projectId) else { return [] }
+        var titles = model.sidebarMilestones(projectId: projectId).map(\.title)
+        if case .milestone(projectId, let title) = navigation.tab, !titles.contains(title) { titles.append(title) }
+        return titles
     }
 
     /// Opens an issue a notification was about: in My Issues, where issues assigned to you are, else in its
@@ -274,6 +344,8 @@ struct RouteDestination: View {
         case .issue(let id): IssueScreen(itemId: id)
         case .inboxIssue(let entry, let item): IssueScreen(itemId: item, inboxEntryId: entry)
         case .statuses(let id): StatusEditor(projectId: id)
+        case .milestone(let projectId, let title): MilestoneScreen(projectId: projectId, title: title)
+        case .roadmap(let projectId): RoadmapScreen(projectId: projectId)
         }
     }
 }
@@ -386,11 +458,26 @@ struct SidebarSyncHint: View {
 extension MobileNavigation {
     /// The project on screen in the selected tab, so a new issue goes there.
     var currentProjectId: String? {
-        if case .project(let id) = tab { return id }
-        for route in path(for: tab).reversed() {
-            if case .project(let id) = route { return id }
-            if case .repository = route { return nil }
+        switch tab {
+        case .project(let id), .roadmap(let id): return id
+        case .milestone(let id, _): return id
+        default: break
         }
+        for route in path(for: tab).reversed() {
+            switch route {
+            case .project(let id), .roadmap(let id): return id
+            case .milestone(let id, _): return id
+            case .repository: return nil
+            default: continue
+            }
+        }
+        return nil
+    }
+
+    /// The milestone on screen in the selected tab, so a new issue goes into it.
+    var currentMilestoneTitle: String? {
+        if case .milestone(_, let title) = tab, path(for: tab).isEmpty { return title }
+        if case .milestone(_, let title)? = path(for: tab).last { return title }
         return nil
     }
 
@@ -406,7 +493,7 @@ extension MobileNavigation {
 
     /// Where the compose button starts a new issue: the project or repository on screen, or My Issues.
     var newIssueContext: NewIssueContext {
-        NewIssueContext(projectId: currentProjectId, repoId: currentRepositoryId, assignToMe: tab == .myIssues)
+        NewIssueContext(projectId: currentProjectId, repoId: currentRepositoryId, assignToMe: tab == .myIssues, milestoneTitle: currentMilestoneTitle)
     }
 }
 
@@ -469,6 +556,17 @@ struct MobileCommands: Commands {
             Button(.myIssues) { navigation?.tab = .myIssues }
                 .keyboardShortcut("3", modifiers: .command)
                 .disabled(unavailable)
+            Button(.roadmap) {
+                guard let navigation, let projectId = navigation.currentProjectId ?? model.openProjects.first?.id else { return }
+                if navigation.regular {
+                    navigation.tab = .roadmap(projectId)
+                } else {
+                    navigation.projectsPath = [.project(projectId), .roadmap(projectId)]
+                    navigation.tab = .projects
+                }
+            }
+            .keyboardShortcut("4", modifiers: .command)
+            .disabled(unavailable || model.openProjects.isEmpty)
             Button(.inbox) { navigation?.tab = .inbox }
                 .disabled(unavailable)
             Divider()

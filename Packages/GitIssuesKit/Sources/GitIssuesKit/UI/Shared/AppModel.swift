@@ -22,10 +22,23 @@ struct BoardColumn: Identifiable, Equatable {
 }
 
 struct ListSection: Identifiable, Equatable {
+    /// What a group of the list is made of.
+    enum Kind: Equatable {
+        /// Issues with a status, or a kind of status.
+        case status
+        /// The issues of an epic in a milestone, or those of none (nil).
+        case epic(contentId: String?)
+        /// The epics of a milestone on the roadmap, or those planned for none (nil).
+        case milestone(title: String?)
+    }
+
     var id: String
     var title: String
     var glyph: StatusGlyph
     var option: FieldOption?
+    var kind: Kind = .status
+    /// Shown quietly after the count, such as when a milestone is due.
+    var detail: String?
     /// The issues as shown: sub-issues under their parent, folded ones left out.
     var items: [Item]
     var nesting = Nesting()
@@ -45,17 +58,61 @@ enum PaletteMode: Hashable {
     case addSubIssue(itemId: String)
     case blockedBy(itemId: String)
     case blocking(itemId: String)
+    case milestone(itemId: String)
+    case epic(itemId: String)
     case projects
 }
 
 enum Overlay: Equatable {
     case palette(PaletteMode)
     case newIssue(statusId: String?, parentItemId: String?)
+    /// A new milestone of a board (no title), or an existing one to change. A new one goes to the issues `assigning`.
+    case milestoneEditor(projectId: String?, title: String?, assigning: [String])
 }
 
 enum ViewMode: String {
     case board
     case list
+}
+
+/// A milestone of a board, by its title.
+struct MilestoneRef: Equatable, Identifiable {
+    var projectId: String
+    var title: String
+    var id: String { "\(projectId)/\(title)" }
+}
+
+/// A new milestone of a board, or one to change, and the issues a new one goes to.
+struct MilestoneEditorRequest: Equatable {
+    var projectId: String?
+    var title: String?
+    var assigning: [String]
+}
+
+/// A milestone renamed or completed here: the screens that showed it follow it to its new name, or to the milestone
+/// its work went on to (nil: the board).
+struct MilestoneMove: Equatable {
+    var projectId: String
+    var from: String
+    var to: String?
+}
+
+enum RoadmapLayout: String {
+    case timeline
+    case list
+}
+
+enum RoadmapZoom: String, CaseIterable {
+    case months
+    case quarters
+
+    /// Points per day.
+    var scale: CGFloat {
+        switch self {
+        case .months: 5
+        case .quarters: 1.8
+        }
+    }
 }
 
 enum Scope: Hashable, Codable {
@@ -64,6 +121,19 @@ enum Scope: Hashable, Codable {
     /// Every issue of a repository, on a board or not. The id is the repository's.
     case repository(String)
     case inbox
+    /// The issues of a board in one milestone, by its title: the milestones of that name in the board's repositories.
+    case milestone(projectId: String, title: String)
+    /// A board's epics over its milestones.
+    case roadmap(String)
+
+    /// The board the scope belongs to.
+    var projectId: String? {
+        switch self {
+        case .project(let id), .roadmap(let id): id
+        case .milestone(let id, _): id
+        case .myIssues, .repository, .inbox: nil
+        }
+    }
 }
 
 /// Everything the views read, kept in step with the database, plus navigation state.
@@ -86,6 +156,8 @@ public final class AppModel {
     private(set) var allItems: [Item] = []
     private(set) var options: [FieldOption] = []
     private(set) var repos: [RepoRef] = []
+    /// Milestones of the repositories your boards use, open and closed.
+    private(set) var milestones: [Milestone] = []
     private(set) var outbox: [OutboxEntry] = []
     /// What blocks the issues whose detail was read, and what they block.
     private(set) var links: [LinkedIssue] = []
@@ -106,6 +178,8 @@ public final class AppModel {
     /// Lists and boards of every scope on screen, worked out once per change of the data.
     @ObservationIgnored private var sectionCache: [Scope: [ListSection]] = [:]
     @ObservationIgnored private var columnCache: [String: [BoardColumn]] = [:]
+    /// Milestones, epics and roadmaps worked out once per change of the data.
+    @ObservationIgnored var planningCache = PlanningCache()
 
     // Navigation.
     var signedIn: Bool
@@ -164,6 +238,26 @@ public final class AppModel {
     @ObservationIgnored var unsentNewIssue: NewIssueDraft?
     /// A title typed into a picker before choosing to create a new issue instead, for the dialog to start with.
     @ObservationIgnored var newIssueTitle: String?
+    /// The milestone and kind a new issue starts with, when it is begun from a milestone or the roadmap.
+    @ObservationIgnored var newIssuePlan: NewIssuePlan?
+    /// A milestone waiting for "Complete?" to be answered.
+    var milestoneToComplete: MilestoneRef?
+    /// On iPhone and iPad: the milestone dialog asked for from a picker, which the window shows as a sheet.
+    var milestoneEditorRequest: MilestoneEditorRequest?
+    /// On iPhone and iPad: the last milestone renamed or completed, for the window's screens to follow.
+    var milestoneMove: MilestoneMove?
+    /// Timeline or list, as last chosen for the roadmap on this device.
+    var roadmapLayout: RoadmapLayout = RoadmapLayout(rawValue: UserDefaults.standard.string(forKey: "roadmap.layout") ?? "") ?? .timeline {
+        didSet { UserDefaults.standard.set(roadmapLayout.rawValue, forKey: "roadmap.layout") }
+    }
+    /// How much time the roadmap's timeline shows at once.
+    var roadmapZoom: RoadmapZoom = RoadmapZoom(rawValue: UserDefaults.standard.string(forKey: "roadmap.zoom") ?? "") ?? .months {
+        didSet { UserDefaults.standard.set(roadmapZoom.rawValue, forKey: "roadmap.zoom") }
+    }
+    /// Boards whose milestones and roadmap are folded away in the sidebar.
+    var foldedSidebarProjects = Set(UserDefaults.standard.stringArray(forKey: "sidebar.foldedProjects") ?? []) {
+        didSet { UserDefaults.standard.set(Array(foldedSidebarProjects), forKey: "sidebar.foldedProjects") }
+    }
     /// Projects tucked away in the sidebar. They can still be found in the command palette.
     var hiddenProjectIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenProjects") ?? []) {
         didSet { UserDefaults.standard.set(Array(hiddenProjectIds), forKey: "hiddenProjects") }
@@ -228,6 +322,10 @@ public final class AppModel {
     /// Whether finishing the last open sub-issue of a parent marks the parent done too, as Linear can.
     var completesParents = UserDefaults.standard.object(forKey: "subIssues.completeParent") as? Bool ?? true {
         didSet { UserDefaults.standard.set(completesParents, forKey: "subIssues.completeParent") }
+    }
+    /// Whether starting work on an issue starts its epic too.
+    var startsEpics = UserDefaults.standard.object(forKey: "epics.startWithWork") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(startsEpics, forKey: "epics.startWithWork") }
     }
 
     /// Comments and sub-issues of the issues on screen, one model per issue, with how many views show it.
@@ -414,6 +512,7 @@ public final class AppModel {
         allItems = []
         options = []
         repos = []
+        milestones = []
         outbox = []
         links = []
         inboxEntries = []
@@ -438,6 +537,7 @@ public final class AppModel {
         var links: [LinkedIssue]
         var inbox: [InboxEntry]
         var inboxMeta: InboxMeta
+        var milestones: [Milestone]
     }
 
     private nonisolated static func fetchSnapshot(_ db: Database) throws -> Snapshot {
@@ -452,7 +552,8 @@ public final class AppModel {
             outbox: try OutboxEntry.order(Column("id")).fetchAll(db),
             links: try LinkedIssue.order(Column("position")).fetchAll(db),
             inbox: try InboxEntry.order(Column("updatedAt").desc).fetchAll(db),
-            inboxMeta: try InboxMeta.read(db)
+            inboxMeta: try InboxMeta.read(db),
+            milestones: try Milestone.order(Column("repoId"), Column("number")).fetchAll(db)
         )
     }
 
@@ -497,6 +598,7 @@ public final class AppModel {
         if inboxEntries != threads { inboxEntries = threads }
         if selfAssignedEntries != assigned { selfAssignedEntries = assigned }
         if inboxMeta != snapshot.inboxMeta { inboxMeta = snapshot.inboxMeta }
+        if milestones != snapshot.milestones { milestones = snapshot.milestones }
         if scope == nil { restoreScope() }
         rebuild()
         notifier.scheduleSoon()
@@ -542,8 +644,23 @@ public final class AppModel {
 
     // MARK: Derived data
 
+    /// The board on screen: a project, or one of its milestones, which shows the same columns.
     var currentProjectId: String? {
-        if case .project(let id) = scope { return id }
+        switch scope {
+        case .project(let id): id
+        case .milestone(let id, _): id
+        default: nil
+        }
+    }
+
+    /// The board the screen belongs to, the roadmap included.
+    var scopeProjectId: String? {
+        scope?.projectId
+    }
+
+    /// The milestone on screen, by title.
+    var currentMilestoneTitle: String? {
+        if case .milestone(_, let title) = scope { return title }
         return nil
     }
 
@@ -582,7 +699,7 @@ public final class AppModel {
 
     /// True until the open project has been fetched from GitHub once.
     var isLoadingProject: Bool {
-        currentProject.map { $0.lastSyncedAt == nil } ?? false
+        scopeProjectId.flatMap { id in projects.first { $0.id == id } }.map { $0.lastSyncedAt == nil } ?? false
     }
 
     /// True until the repository on screen has been read from GitHub once since the app started.
@@ -605,12 +722,13 @@ public final class AppModel {
     }
 
     /// Items of a scope, in board order. Issues on none of your boards come first, newest first.
+    /// Epics are planned on the roadmap, as Linear's projects are, so boards and lists leave them out.
     func items(in scope: Scope) -> [Item] {
         switch scope {
-        case .project(let id): return allItems.filter { $0.projectId == id }
+        case .project(let id): return allItems.filter { $0.projectId == id && !$0.isEpic }
         case .myIssues:
             guard let login = viewer?.login else { return [] }
-            return allItems.filter { item in item.assignees.contains { $0.login == login } }
+            return allItems.filter { item in !item.isEpic && item.assignees.contains { $0.login == login } }
         case .inbox:
             return []
         case .repository(let id):
@@ -618,10 +736,14 @@ public final class AppModel {
             let cutoff = Date().addingTimeInterval(-SyncEngine.closedIssueWindow)
             var seen = Set<String>()
             return allItems.filter { item in
-                guard item.repoId == id, item.kind == .issue else { return false }
+                guard item.repoId == id, item.kind == .issue, !item.isEpic else { return false }
                 if item.isClosed, let closed = item.closedAt, closed < cutoff { return false }
                 return seen.insert(item.contentId ?? item.id).inserted
             }
+        case .milestone(let id, let title):
+            return allItems.filter { $0.projectId == id && !$0.isEpic && milestoneTitle(of: $0) == title }
+        case .roadmap(let id):
+            return epics(projectId: id)
         }
     }
 
@@ -711,9 +833,21 @@ public final class AppModel {
 
     /// The board of a project: one column per status, plus "No status" when cards have none.
     func columns(projectId: String) -> [BoardColumn] {
+        columns(for: .project(projectId))
+    }
+
+    /// The board of a project or one of its milestones. A milestone leaves out the columns of the backlog while
+    /// they are empty: its issues are planned already.
+    func columns(for scope: Scope) -> [BoardColumn] {
         _ = dataVersion
-        if let cached = columnCache[projectId] { return cached }
-        let items = allItems.filter { $0.projectId == projectId }
+        guard let projectId = scope.projectId else { return [] }
+        let key: String
+        switch scope {
+        case .milestone(_, let title): key = "\(projectId)\u{1F}\(title)"
+        default: key = projectId
+        }
+        if let cached = columnCache[key] { return cached }
+        let items = self.items(in: scope)
         let statuses = statusOptions(projectId: projectId)
         let known = Set(statuses.map(\.id))
         var result: [BoardColumn] = []
@@ -722,14 +856,16 @@ public final class AppModel {
             let (shown, nesting) = Nesting.arrange(unsorted, folded: foldedParents)
             result.append(BoardColumn(id: BoardColumn.noStatusId, option: nil, glyph: .none, items: shown, nesting: nesting))
         }
+        let inMilestone = if case .milestone = scope { true } else { false }
         for option in statuses {
             let (shown, nesting) = Nesting.arrange(items.filter { $0.statusId == option.id }, folded: foldedParents)
+            if inMilestone, shown.isEmpty, option.statusCategory == .backlog { continue }
             result.append(BoardColumn(
                 id: option.id, option: option, glyph: glyph(projectId: projectId, optionId: option.id),
                 items: shown, nesting: nesting
             ))
         }
-        columnCache[projectId] = result
+        columnCache[key] = result
         return result
     }
 
@@ -763,6 +899,12 @@ public final class AppModel {
 
         case .myIssues, .repository:
             result = groupedByKindOfStatus(items(in: scope))
+
+        case .milestone:
+            result = groupedByEpic(items(in: scope))
+
+        case .roadmap(let projectId):
+            result = epicsByMilestone(projectId: projectId)
 
         case .inbox:
             break
@@ -828,13 +970,17 @@ public final class AppModel {
         if glyphs != map { glyphs = map }
         sectionCache = [:]
         columnCache = [:]
+        planningCache = PlanningCache()
         dataVersion &+= 1
 
         var newColumns: [BoardColumn] = []
         var newSections: [ListSection] = []
         if let scope {
             newSections = sections(for: scope)
-            if case .project(let projectId) = scope { newColumns = columns(projectId: projectId) }
+            switch scope {
+            case .project, .milestone: newColumns = columns(for: scope)
+            default: break
+            }
         }
         if columns != newColumns { columns = newColumns }
         if sections != newSections { sections = newSections }
@@ -850,6 +996,13 @@ public final class AppModel {
             return
         }
         let saved = UserDefaults.standard.string(forKey: "selectedProject")
+        // A milestone or the roadmap of that project, if that was on screen last.
+        if let data = UserDefaults.standard.data(forKey: "selectedPlanning"),
+           let planning = try? JSONDecoder().decode(Scope.self, from: data),
+           let projectId = planning.projectId, projectId == saved, projects.contains(where: { $0.id == projectId && !$0.closed }) {
+            select(planning)
+            return
+        }
         let project = projects.first { $0.id == saved }
             ?? projects.first { !$0.closed && !hiddenProjectIds.contains($0.id) }
             ?? projects.first { !$0.closed } ?? projects.first
@@ -869,9 +1022,15 @@ public final class AppModel {
         focusedItemId = nil
         clearSelection()
         peekItemId = nil
-        if case .project(let id) = newScope {
+        if let id = newScope.projectId {
             UserDefaults.standard.set(id, forKey: "selectedProject")
             setActiveProject(id)
+        }
+        switch newScope {
+        case .milestone, .roadmap:
+            UserDefaults.standard.set(try? JSONEncoder().encode(newScope), forKey: "selectedPlanning")
+        default:
+            UserDefaults.standard.removeObject(forKey: "selectedPlanning")
         }
         setActiveRepository(currentRepositoryId)
         UserDefaults.standard.set(newScope == .inbox, forKey: "inbox.selected")
@@ -1022,7 +1181,8 @@ public final class AppModel {
     func perform(_ mutations: [Mutation], inserting: [Item] = []) {
         guard !mutations.isEmpty else { return }
         let completions = parentCompletions(after: mutations)
-        let mutations = mutations + completions.mutations
+        let starts = epicStarts(after: mutations)
+        let mutations = mutations + completions.mutations + starts.mutations
         do {
             try db.writer.write { db in
                 for item in inserting { try item.insert(db, onConflict: .ignore) }
@@ -1033,6 +1193,12 @@ public final class AppModel {
                 status.post(Notice(
                     title: String(localized: .parentDoneWithSubIssues(number: parent.displayNumber)), message: parent.title,
                     action: .openItem(parent.id)
+                ))
+            }
+            for epic in starts.epics {
+                status.post(Notice(
+                    title: String(localized: .epicStartedWithIssue(number: epic.displayNumber)), message: epic.title,
+                    action: .openItem(epic.id)
                 ))
             }
         } catch {

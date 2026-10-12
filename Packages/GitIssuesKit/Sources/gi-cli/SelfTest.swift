@@ -266,7 +266,51 @@ enum SelfTest {
         try await engineB.forcePull(projectId: project.id)
         check("cards kept their status through all of that", try item(dbB, 9).statusId == (try item(dbA, 9)).statusId && (try item(dbB, 9)).statusId != nil)
 
-        print("11. Restore")
+        print("11. Milestones and epics")
+        // A milestone made here, an issue put into it before GitHub has made it, then renamed, completed and reopened.
+        let milestoneTemp = LocalID.make()
+        let milestoneTitle = "Self-test \(stamp)"
+        let dueDay = CalendarDay.today().adding(days: 30).string
+        let planned = try item(dbA, 16)
+        try enqueue(
+            .createMilestone(.init(milestoneId: milestoneTemp, repoId: repo.id, repo: repo.nameWithOwner, title: milestoneTitle, dueOn: dueDay, descr: "Made by gi-cli selftest.")),
+            .setMilestone(.init(contentId: planned.contentId!, isPullRequest: false, milestoneId: milestoneTemp, milestoneTitle: milestoneTitle, base: planned.milestoneId))
+        )
+        check("issue shows the new milestone at once", try item(dbA, 16).milestoneTitle == milestoneTitle)
+        try await engineA.pushPending()
+        let milestoneId = await MainActor.run { statusA.idRemaps[milestoneTemp] }
+        check("the milestone's temporary id was replaced", milestoneId != nil)
+        var made = try await apiB.milestones(repoId: repo.id).first { $0.title == milestoneTitle }
+        check("GitHub has the milestone, due the same day", made?.dueOn == dueDay && made?.isOpen == true)
+        try await eventually("teammate sees the issue in the milestone") { try item(dbB, 16).milestoneTitle == milestoneTitle }
+        if let milestoneId {
+            try enqueue(.updateMilestone(.init(milestoneId: milestoneId, change: .init(title: milestoneTitle + " done", state: "CLOSED"))))
+            try await engineA.pushPending()
+            made = try await apiB.milestones(repoId: repo.id).first { $0.id == milestoneId }
+            check("renamed and completed on GitHub", made?.title == milestoneTitle + " done" && made?.isOpen == false)
+            try enqueue(.updateMilestone(.init(milestoneId: milestoneId, change: .init(dueOn: "", state: "OPEN"))))
+            try await engineA.pushPending()
+            made = try await apiB.milestones(repoId: repo.id).first { $0.id == milestoneId }
+            check("reopened, without a date", made?.isOpen == true && made?.dueOn == nil)
+        }
+        try enqueue(.setMilestone(.init(contentId: planned.contentId!, isPullRequest: false, milestoneId: nil, milestoneTitle: nil, base: milestoneId)))
+        try await engineA.pushPending()
+        try await eventually("teammate sees the issue in no milestone") { try item(dbB, 16).milestoneId == nil }
+        // An epic by its label, made in the repository when it has none, and an ordinary issue again.
+        let epicLabel = LabelRef(id: LocalID.make(), name: Item.epicLabelName, color: Item.epicLabelColor)
+        try enqueue(.setEpic(.init(contentId: planned.contentId!, repoId: repo.id, repo: repo.nameWithOwner, isEpic: true, label: epicLabel)))
+        check("an epic at once", try item(dbA, 16).isEpic)
+        try await engineA.pushPending()
+        try await eventually("teammate sees it as an epic") { try item(dbB, 16).isEpic }
+        try enqueue(.setEpic(.init(contentId: planned.contentId!, repoId: repo.id, repo: repo.nameWithOwner, isEpic: false, label: epicLabel)))
+        try await engineA.pushPending()
+        try await eventually("and as an ordinary issue again") { try !item(dbB, 16).isEpic }
+        // GitHub's API makes milestones but the app never deletes them; the test cleans up after itself.
+        if let made {
+            _ = try await apiB.client.rest("DELETE", "repos/\(repo.nameWithOwner)/milestones/\(made.number)")
+        }
+
+        print("12. Restore")
         let restore = try item(dbA, 16)
         try enqueue(
             .setField(.init(itemId: restore.id, projectId: project.id, fieldId: statusField, kind: .status, optionId: originalStatus, base: restore.statusId)),

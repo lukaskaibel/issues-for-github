@@ -30,6 +30,10 @@ struct CommandPalette: View {
                 step(.blockedBy, id)
             case .blocking(let id):
                 step(.blocking, id)
+            case .milestone(let id):
+                step(.milestone, id)
+            case .epic(let id):
+                step(.epic, id)
             case .projects:
                 PickerList(
                     placeholder: String(localized: .switchProjectPlaceholder),
@@ -39,7 +43,7 @@ struct CommandPalette: View {
                             selected: model.scope == .project(project.id),
                             icon: AnyView(ProjectSwatch(title: project.title))
                         )
-                    } + model.boardRepositories.map { repo in
+                    } + planningItems + model.boardRepositories.map { repo in
                         PickerItem(
                             id: Self.repositoryPrefix + repo.id, title: repo.shortName, subtitle: repo.nameWithOwner,
                             selected: model.scope == .repository(repo.id),
@@ -50,6 +54,11 @@ struct CommandPalette: View {
                     onPick: { id in
                         if id.hasPrefix(Self.repositoryPrefix) {
                             model.select(.repository(String(id.dropFirst(Self.repositoryPrefix.count))))
+                        } else if id.hasPrefix(Self.roadmapPrefix) {
+                            model.select(.roadmap(String(id.dropFirst(Self.roadmapPrefix.count))))
+                        } else if id.hasPrefix(Self.milestonePrefix) {
+                            let parts = id.dropFirst(Self.milestonePrefix.count).split(separator: "\u{1F}", maxSplits: 1).map(String.init)
+                            if parts.count == 2 { model.select(.milestone(projectId: parts[0], title: parts[1])) }
                         } else {
                             model.select(.project(id))
                         }
@@ -66,6 +75,29 @@ struct CommandPalette: View {
     }
 
     private static let repositoryPrefix = "repository:"
+    private static let milestonePrefix = "milestone:"
+    private static let roadmapPrefix = "roadmap:"
+
+    /// Every open board's open milestones and its roadmap, to jump to.
+    private var planningItems: [PickerItem] {
+        model.openProjects.flatMap { project -> [PickerItem] in
+            guard model.hasPlanning(projectId: project.id) else { return [] }
+            let milestones = model.openMilestoneGroups(projectId: project.id).map { group in
+                PickerItem(
+                    id: Self.milestonePrefix + project.id + "\u{1F}" + group.title, title: group.title,
+                    subtitle: "\(project.title) · \(String(localized: .milestone))",
+                    selected: model.scope == .milestone(projectId: project.id, title: group.title),
+                    icon: AnyView(MilestoneIcon(mark: model.mark(of: group, projectId: project.id)))
+                )
+            }
+            let roadmap = PickerItem(
+                id: Self.roadmapPrefix + project.id, title: String(localized: .roadmap), subtitle: project.title,
+                selected: model.scope == .roadmap(project.id),
+                icon: AnyView(RoadmapIcon().foregroundStyle(Theme.textSecondary))
+            )
+            return milestones + [roadmap]
+        }
+    }
 
     @ViewBuilder
     private func step(_ kind: PickerKind, _ itemId: String) -> some View {
@@ -304,6 +336,27 @@ private struct RootPalette: View {
                     model.setDueDate(of: targets, to: nil)
                 })
             }
+            if item.kind != .draft, !model.milestoneGroups(for: item).isEmpty || item.projectId != nil {
+                list.append(PaletteCommand(id: "milestone", title: .moveToMilestoneCommand, section: section, icon: AnyView(MilestoneIcon(mark: model.milestoneMark(of: item))), keys: ["⇧", "M"]) {
+                    model.overlay = .palette(.milestone(itemId: item.id))
+                })
+                if targets.contains(where: { $0.milestoneId != nil }) {
+                    list.append(PaletteCommand(id: "milestone-remove", title: .removeFromMilestoneCommand, section: section, icon: AnyView(MilestoneIcon(mark: .none))) {
+                        model.setMilestone(of: targets, to: nil)
+                    })
+                }
+            }
+            if model.canRelate(item), !item.isEpic {
+                list.append(PaletteCommand(id: "epic", title: .addToEpicCommand, section: section, icon: AnyView(EpicIcon()), keys: ["M", "E"]) {
+                    model.overlay = .palette(.epic(itemId: item.id))
+                })
+            }
+            if model.canMakeEpic(item) {
+                let epic = targets.allSatisfy(\.isEpic)
+                list.append(PaletteCommand(id: "make-epic", title: epic ? .turnIntoIssueCommand : .makeEpicCommand, section: section, icon: AnyView(EpicIcon(color: Theme.textSecondary))) {
+                    model.setEpic(targets, !epic)
+                })
+            }
             if model.canRelate(item) {
                 let subIcon = AnyView(SubIssueGlyph().frame(width: 12, height: 12).foregroundStyle(Theme.textSecondary))
                 if !several {
@@ -404,6 +457,32 @@ private struct RootPalette: View {
                 model.closeDetail()
                 model.viewMode = .list
             })
+        }
+        if let projectId = model.scopeProjectId {
+            if model.scope != .roadmap(projectId) {
+                list.append(PaletteCommand(id: "roadmap", title: .roadmap, section: go, icon: AnyView(RoadmapIcon().foregroundStyle(Theme.textSecondary)), keys: ["G", "R"]) {
+                    model.select(.roadmap(projectId))
+                })
+            }
+            if model.projects.first(where: { $0.id == projectId })?.viewerCanUpdate == true {
+                list.append(PaletteCommand(id: "new-milestone", title: .newMilestoneEllipsis, section: go, icon: AnyView(MilestoneIcon(mark: .upcoming))) {
+                    model.overlay = .milestoneEditor(projectId: projectId, title: nil, assigning: [])
+                })
+                list.append(PaletteCommand(id: "new-epic", title: .newEpic, section: go, icon: AnyView(EpicIcon())) {
+                    model.newIssuePlan = NewIssuePlan(isEpic: true)
+                    model.overlay = .newIssue(statusId: nil, parentItemId: nil)
+                })
+            }
+            if case .milestone(_, let title) = model.scope, let group = model.milestoneGroup(projectId: projectId, title: title) {
+                list.append(PaletteCommand(id: "edit-milestone", title: .editMilestoneEllipsis, section: go, icon: symbol("pencil")) {
+                    model.overlay = .milestoneEditor(projectId: projectId, title: title, assigning: [])
+                })
+                if group.isOpen {
+                    list.append(PaletteCommand(id: "complete-milestone", title: .completeMilestoneEllipsis, section: go, icon: symbol("checkmark.circle")) {
+                        model.milestoneToComplete = MilestoneRef(projectId: projectId, title: title)
+                    })
+                }
+            }
         }
         list.append(PaletteCommand(id: "mine", title: .myIssues, section: go, icon: symbol("scope"), keys: ["G", "M"]) {
             model.select(.myIssues)

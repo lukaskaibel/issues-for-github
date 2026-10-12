@@ -34,7 +34,8 @@ struct BoardView: View {
                         .zIndex(lifted ? 1 : 0)
                     }
                     .animation(Theme.spring, value: drag.column?.to)
-                    if model.currentProject?.viewerCanUpdate == true {
+                    // A milestone's board shows the board's columns; they are changed on the board itself.
+                    if model.currentProject?.viewerCanUpdate == true, model.currentMilestoneTitle == nil {
                         AddColumnButton()
                             .frame(width: 180, alignment: .leading)
                     }
@@ -75,7 +76,7 @@ struct BoardView: View {
             .overlay(alignment: .topLeading) {
                 if let active = drag.active {
                     let nesting = model.columns.first { $0.nesting.members.contains { $0.id == active.item.id } }?.nesting
-                    LiftedCard(active: active, card: model.cardModel(for: active.item, in: nesting), avatarVersion: model.avatarVersion)
+                    LiftedCard(active: active, card: model.cardModel(for: active.item, in: nesting, showsMilestone: model.currentMilestoneTitle == nil), avatarVersion: model.avatarVersion)
                 }
             }
             .onChange(of: drag.tick) {
@@ -90,7 +91,7 @@ struct BoardView: View {
 
     private func columnWidth(available: CGFloat, count: Int) -> CGFloat {
         guard count > 0 else { return 280 }
-        let addColumn: CGFloat = model.currentProject?.viewerCanUpdate == true ? 192 : 0
+        let addColumn: CGFloat = model.currentProject?.viewerCanUpdate == true && model.currentMilestoneTitle == nil ? 192 : 0
         let fitted = (available - 32 - addColumn - CGFloat(count - 1) * 12) / CGFloat(count)
         return min(max(fitted, 248), 320)
     }
@@ -166,7 +167,7 @@ struct ColumnView: View {
                 LazyVStack(spacing: 8) {
                     ForEach(column.items) { item in
                         BoardCell(
-                            card: model.cardModel(for: item, in: column.nesting), width: width, drag: drag,
+                            card: model.cardModel(for: item, in: column.nesting, showsMilestone: model.currentMilestoneTitle == nil), width: width, drag: drag,
                             place: column.nesting.place(of: item.id),
                             highlighted: !model.isDragging && (hoveredId == item.id || model.focusedItemId == item.id),
                             selected: model.isSelected(item.id),

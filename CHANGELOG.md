@@ -6,6 +6,34 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Milestones.** A board's next two milestones are listed under it in the sidebar, the one it works towards with a
+  filled diamond that turns red once its day has passed. Each opens the board's columns with only its issues, or a
+  list of them grouped by epic, with what it is about, how much is done and the day it is due on top; click the date
+  to change it. Press `⇧M` to put the issues you point at or picked into a milestone, or use the right-click menu, the
+  command palette or the selection bar; **New Milestone…** at the end of the list makes one right there. A board's
+  milestones are GitHub's milestones of its repositories: those of the same name count as one, and a repository that
+  has none of that name yet gets it when an issue of it goes in. When the day has come or everything is done,
+  **Complete** closes the milestone on GitHub and offers to move what isn't done to the next one; the message that
+  follows undoes it. Cards and list rows name their milestone.
+- **Epics.** An epic is an issue with the label "epic" (or, in organisations that have it, the issue type Epic) whose
+  sub-issues are its work, like a project in Linear. Make one with **Make Epic** in any issue's right-click menu or
+  **New Epic** on the roadmap; the label is made in the repository the first time. `M` then `E` puts an issue into an
+  epic. Epics leave the board and the lists for the roadmap, and their issues name them by title on cards and rows.
+  An epic's page shows how far it is, in a part per milestone, and its sub-issues by milestone, each with a plus for a
+  new one there. Starting work on an issue of an epic still in the backlog starts the epic too; Settings › Epics turns
+  that off.
+- **A roadmap.** Each board with milestones or epics has a Roadmap under it in the sidebar (`G` then `R`, or `⌘4`): its
+  epics as bars over the milestones their unfinished issues are in, on a timeline of months or quarters, or as a list
+  under the milestone that comes next for each. Drag a bar onto another milestone and the epic moves there with all
+  of its unfinished issues; drag it to Later to take them out of their milestones, and a message undoes either. Drag
+  a milestone's diamond to change its day. In the list, drag an epic into another milestone's group.
+- **Planning on iPhone and iPad.** The Projects tab lists a board's next milestones and its roadmap under it, and the
+  iPad sidebar has them as entries. A milestone opens as a list grouped by epic, on a wide iPad also as the board's
+  columns; the roadmap is a list on iPhone and the timeline on iPad, where a bar is dragged with a finger. The
+  milestone is a chip on every issue, a submenu when you touch and hold one, and a choice in a new issue.
+
 ## [0.3.0] - 2026-10-11
 
 ### Added

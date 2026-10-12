@@ -117,6 +117,8 @@ extension PickerKind {
         case .addSubIssue: .addSubIssue
         case .blockedBy: .blockedBySheetTitle
         case .blocking: .blockingSheetTitle
+        case .milestone: .milestone
+        case .epic: .epic
         }
     }
 
@@ -128,7 +130,8 @@ extension PickerKind {
         case .labels: .searchLabels
         case .dueDate: .typeADate
         case .subIssues: .searchSubIssues
-        case .parent, .addSubIssue, .blockedBy, .blocking: .searchByTitleOrNumber
+        case .parent, .addSubIssue, .blockedBy, .blocking, .epic: .searchByTitleOrNumber
+        case .milestone: .searchMilestones
         }
     }
 }

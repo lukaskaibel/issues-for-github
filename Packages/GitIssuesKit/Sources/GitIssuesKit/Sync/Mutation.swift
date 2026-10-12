@@ -22,6 +22,10 @@ public enum Mutation: Codable, Sendable, Equatable {
     case addToProject(AddToProject)
     case setParent(SetParent)
     case setBlocking(SetBlocking)
+    case setMilestone(SetMilestone)
+    case createMilestone(CreateMilestone)
+    case updateMilestone(UpdateMilestone)
+    case setEpic(SetEpic)
 
     public struct SetField: Codable, Sendable, Equatable {
         public var itemId: String
@@ -126,6 +130,9 @@ public enum Mutation: Codable, Sendable, Equatable {
         public var parentContentId: String?
         public var parentNumber: Int?
         public var parentTitle: String?
+        /// The milestone it starts in; one this device is still creating is waited for.
+        public var milestoneId: String?
+        public var milestoneTitle: String?
         public var author: String?
         public var createdAt: Date
         /// Filled in once GitHub has created the issue, so a retry never creates it twice.
@@ -181,6 +188,9 @@ extension Mutation {
         case .addToProject(let m): "add:\(m.itemId)"
         case .setParent(let m): "parent:\(m.child.contentId)"
         case .setBlocking(let m): "blocking:\(m.blocked.contentId):\(m.blocker.contentId)"
+        case .setMilestone(let m): "milestone:\(m.contentId)"
+        case .updateMilestone(let m): "milestone-edit:\(m.milestoneId)"
+        case .setEpic(let m): "epic:\(m.contentId)"
         case .markThreadRead(let m): "read:\(m.threadId)"
         case .archiveThread(let m): "archive:\(m.threadId)"
         case .unsubscribeThread(let m): "unsubscribe:\(m.threadId)"
@@ -199,13 +209,17 @@ extension Mutation {
         case .editAssignees(let m): [m.contentId]
         case .editLabels(let m): [m.contentId]
         case .addComment(let m): [m.contentId]
-        case .createIssue(let m): m.parentContentId.map { [$0] } ?? []
+        case .createIssue(let m): [m.parentContentId, m.milestoneId].compactMap { $0 }
         // An issue is deleted by its own id; only a draft needs the project item.
         case .deleteItem(let m): m.isDraft ? [m.itemId] : (m.contentId.map { [$0] } ?? [m.itemId])
         case .markThreadRead, .archiveThread, .unsubscribeThread: []
         case .addToProject(let m): [m.contentId]
         case .setParent(let m): [m.child.contentId] + [m.parentId, m.base].compactMap { $0 }
         case .setBlocking(let m): [m.blocked.contentId, m.blocker.contentId]
+        case .setMilestone(let m): [m.contentId] + [m.milestoneId].compactMap { $0 }
+        case .createMilestone: []
+        case .updateMilestone(let m): [m.milestoneId]
+        case .setEpic(let m): [m.contentId]
         }
     }
 
@@ -235,6 +249,17 @@ extension Mutation {
         case .addToProject(let m): m.contentId
         case .setParent(let m): m.child.contentId
         case .setBlocking(let m): m.blocked.contentId
+        case .setMilestone(let m): m.contentId
+        case .setEpic(let m): m.contentId
+        default: nil
+        }
+    }
+
+    /// The Milestone this mutation is about.
+    var milestoneId: String? {
+        switch self {
+        case .createMilestone(let m): m.milestoneId
+        case .updateMilestone(let m): m.milestoneId
         default: nil
         }
     }
@@ -297,6 +322,7 @@ extension Mutation {
             m.itemId = r(m.itemId)
             m.contentId = r(m.contentId)
             m.parentContentId = r(m.parentContentId)
+            m.milestoneId = r(m.milestoneId)
             return .createIssue(m)
         case .deleteItem(var m):
             m.itemId = r(m.itemId)
@@ -317,6 +343,20 @@ extension Mutation {
             m.blocked.contentId = r(m.blocked.contentId)
             m.blocker.contentId = r(m.blocker.contentId)
             return .setBlocking(m)
+        case .setMilestone(var m):
+            m.contentId = r(m.contentId)
+            m.milestoneId = r(m.milestoneId)
+            m.base = r(m.base)
+            return .setMilestone(m)
+        case .createMilestone(var m):
+            m.milestoneId = r(m.milestoneId)
+            return .createMilestone(m)
+        case .updateMilestone(var m):
+            m.milestoneId = r(m.milestoneId)
+            return .updateMilestone(m)
+        case .setEpic(var m):
+            m.contentId = r(m.contentId)
+            return .setEpic(m)
         }
     }
 }
@@ -484,13 +524,16 @@ extension Mutation {
                 parentNumber: m.parentNumber,
                 parentTitle: m.parentTitle,
                 assignees: m.assignees,
-                labels: m.labels
+                labels: m.labels,
+                milestoneId: m.milestoneId,
+                milestoneTitle: m.milestoneTitle
             ).insert(db)
             if let parentId = m.parentContentId, try !SubIssue.exists(db, key: ["parentId": parentId, "id": m.contentId]) {
                 let count = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM subIssue WHERE parentId = ?", arguments: [parentId]) ?? 0
                 try SubIssue(
                     id: m.contentId, parentId: parentId, number: m.createdNumber ?? 0, title: m.title, state: "OPEN",
-                    repo: m.repo, url: m.createdUrl, position: count, assignees: m.assignees
+                    repo: m.repo, url: m.createdUrl, position: count, assignees: m.assignees,
+                    milestoneId: m.milestoneId, milestoneTitle: m.milestoneTitle
                 ).insert(db)
             }
 
@@ -507,6 +550,18 @@ extension Mutation {
             try m.apply(db)
 
         case .setBlocking(let m):
+            try m.apply(db)
+
+        case .setMilestone(let m):
+            try m.apply(db)
+
+        case .createMilestone(let m):
+            try m.apply(db)
+
+        case .updateMilestone(let m):
+            try m.apply(db)
+
+        case .setEpic(let m):
             try m.apply(db)
         }
     }
@@ -576,6 +631,20 @@ extension Mutation {
             case (false, nil): .queuedNoLongerBlockedByNewIssue
             }
             return line(try number(contentId: m.blocked.contentId), text)
+        case .setMilestone(let m):
+            return line(try number(contentId: m.contentId), m.milestoneTitle.map { .queuedMilestoneSet(milestone: $0) } ?? .queuedMilestoneRemoved)
+        case .createMilestone(let m):
+            return line("", .queuedMilestoneCreated(milestone: m.title))
+        case .updateMilestone(let m):
+            let title = try String.fetchOne(db, sql: "SELECT title FROM milestone WHERE id = ?", arguments: [m.milestoneId]) ?? ""
+            let text: LocalizedStringResource = switch m.change.state {
+            case "CLOSED": .queuedMilestoneCompleted(milestone: title)
+            case "OPEN": .queuedMilestoneReopened(milestone: title)
+            default: .queuedMilestoneChanged(milestone: title)
+            }
+            return line("", text)
+        case .setEpic(let m):
+            return line(try number(contentId: m.contentId), m.isEpic ? .queuedMadeEpic : .queuedNoLongerEpic)
         case .markThreadRead(let m): return line(leadingNumber(m.label), .queuedMarkedAsRead)
         case .archiveThread(let m): return line(leadingNumber(m.label), .queuedArchivedInInbox)
         case .unsubscribeThread(let m): return line(leadingNumber(m.label), .queuedUnsubscribed)
@@ -743,6 +812,16 @@ extension Mutation {
         case (.setBlocking(var new), .setBlocking(let old)):
             new.base = old.base
             return .setBlocking(new)
+        case (.setMilestone(var new), .setMilestone(let old)):
+            new.base = old.base
+            return .setMilestone(new)
+        case (.updateMilestone(var new), .updateMilestone(let old)):
+            // Both changes still have to be sent: what the newer one leaves alone, the older one says.
+            new.change.title = new.change.title ?? old.change.title
+            new.change.descr = new.change.descr ?? old.change.descr
+            new.change.dueOn = new.change.dueOn ?? old.change.dueOn
+            new.change.state = new.change.state ?? old.change.state
+            return .updateMilestone(new)
         default:
             return self
         }

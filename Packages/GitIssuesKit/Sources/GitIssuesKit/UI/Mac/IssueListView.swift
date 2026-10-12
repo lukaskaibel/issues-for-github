@@ -11,12 +11,19 @@ struct IssueListView: View {
             // Where rows come from several boards, each says which; an issue on none says its repository.
             let showsProject = model.scope == .myIssues
                 || model.currentRepositoryId.map { model.boards(ofRepository: $0).count > 1 } ?? false
-            let canAdd = model.currentProjectId != nil
+            let canEdit = model.scopeProjectId.flatMap { id in model.projects.first { $0.id == id } }?.viewerCanUpdate == true
+            let canAdd = model.scopeProjectId != nil && (model.currentProjectId != nil || canEdit)
+            // A milestone's list doesn't repeat its milestone on every row, nor the roadmap an epic's.
+            let showsMilestone: Bool = switch model.scope {
+            case .milestone, .roadmap: false
+            default: true
+            }
             IssueTable(
                 sections: model.sections.map { section in
                     IssueSectionModel(
                         id: section.id, collapsed: model.isSectionCollapsed(section.id),
-                        title: section.title, glyph: section.glyph, optionId: section.option?.id,
+                        title: section.title, glyph: section.glyph, icon: icon(of: section), detail: section.detail,
+                        optionId: section.option?.id, kind: section.kind,
                         canAdd: canAdd, count: section.count,
                         rows: model.isSectionCollapsed(section.id) ? [] : section.items.map { item in
                             IssueRowModel(
@@ -30,13 +37,18 @@ struct IssueListView: View {
                                 nest: section.nesting.place(of: item.id),
                                 nested: section.nesting.nestedCounts[item.id],
                                 folded: section.nesting.folded.contains(item.id),
+                                // In an epic's group, the epic goes without saying.
                                 showsParent: item.parentNumber != nil && section.nesting.depth(of: item.id) == 0
+                                    && section.kind != .epic(contentId: item.parentId),
+                                parentIsEpic: item.parentId.flatMap { model.issue(contentId: $0) }?.isEpic ?? false,
+                                milestone: showsMilestone ? model.milestoneTitle(of: item) : spanOnRoadmap(item),
+                                milestoneMark: model.milestoneMark(of: item)
                             )
                         }
                     )
                 },
                 // My Issues mixes projects, so there is no one order to put an issue into.
-                canMoveRows: model.currentProject?.viewerCanUpdate == true,
+                canMoveRows: canEdit,
                 focusedId: model.focusedItemId,
                 focusScrollToken: model.focusScrollToken,
                 avatarVersion: model.avatarVersion
@@ -48,13 +60,25 @@ struct IssueListView: View {
         }
     }
 
+    /// On the roadmap, an epic that runs over several milestones says how far: "0.3 → 0.4".
+    private func spanOnRoadmap(_ item: Item) -> String? {
+        guard case .roadmap = model.scope, let span = model.milestoneSpan(of: item), span.contains("→") else { return nil }
+        return span
+    }
+
+    private func icon(of section: ListSection) -> IssueSectionModel.Icon {
+        model.sectionIcon(section, projectId: model.scopeProjectId)
+    }
+
     private var emptyTitle: String {
+        if case .milestone(_, let title) = model.scope { return String(localized: .milestoneEmptyTitle(milestone: title)) }
         if model.scope == .myIssues { return String(localized: .nothingAssignedTitle) }
         if model.currentRepositoryId != nil { return String(localized: model.isLoadingRepository ? .lookingForIssues : .noOpenIssues) }
         return String(localized: .noIssuesYet)
     }
 
     private var emptyMessage: String {
+        if case .milestone = model.scope { return String(localized: .milestoneEmptyMessage) }
         if model.scope == .myIssues { return String(localized: .myIssuesEmptyMessage) }
         if model.currentRepositoryId != nil { return String(localized: .repositoryEmptyMessage) }
         return String(localized: .projectEmptyMessage)

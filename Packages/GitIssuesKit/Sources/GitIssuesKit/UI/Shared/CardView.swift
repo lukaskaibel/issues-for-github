@@ -13,11 +13,16 @@ struct CardModel: Equatable {
     var folded = false
     /// A sub-issue whose parent is in another column names the parent.
     var showsParent = false
+    /// Whether that parent is an epic, which it then names with the epic's icon.
+    var parentIsEpic = false
+    /// The milestone it is planned for, on boards that aren't a milestone's.
+    var milestone: String?
+    var milestoneMark: MilestoneMark = .upcoming
 }
 
 extension AppModel {
     /// What a card shows; `nesting` is its column's, for the sub-issues hanging under it.
-    func cardModel(for item: Item, in nesting: Nesting? = nil) -> CardModel {
+    func cardModel(for item: Item, in nesting: Nesting? = nil, showsMilestone: Bool = true) -> CardModel {
         CardModel(
             item: item,
             priority: priorityLevel(of: item),
@@ -26,7 +31,10 @@ extension AppModel {
             due: dueBadge(for: item),
             nested: nesting?.nestedCounts[item.id],
             folded: nesting?.folded.contains(item.id) ?? false,
-            showsParent: item.parentNumber != nil && (nesting?.depth(of: item.id) ?? 0) == 0
+            showsParent: item.parentNumber != nil && (nesting?.depth(of: item.id) ?? 0) == 0,
+            parentIsEpic: item.parentId.flatMap { issue(contentId: $0) }?.isEpic ?? false,
+            milestone: showsMilestone ? milestoneTitle(of: item) : nil,
+            milestoneMark: milestoneMark(of: item)
         )
     }
 }
@@ -71,7 +79,10 @@ struct CardView: View, Equatable {
         .accessibilityElement()
         .accessibilityLabel(
             "\(card.item.displayNumber) \(card.item.title)" + (card.due.map { ", \($0.tooltip)" } ?? "")
-                + (card.item.parentNumber.map { ", " + String(localized: .subIssueOf(number: "#\($0)")) } ?? "")
+                + (card.item.parentNumber.map { number in
+                    ", " + String(localized: card.parentIsEpic
+                        ? .epicTooltip(epic: card.item.parentTitle ?? "#\(number)") : .subIssueOf(number: "#\(number)"))
+                } ?? "")
         )
         .accessibilityAddTraits(.isButton)
     }
@@ -193,16 +204,25 @@ private struct CardPainter {
         if card.showsParent, let parentNumber = item.parentNumber {
             let avatars = item.kind == .draft ? 0 : 18 + CGFloat(max(min(item.assignees.count, 3), 1) - 1) * 13
             let room = size.width - padding.width - avatars - 10 - x
-            let text = context.resolve(
-                Text("\(Image(systemName: "arrow.turn.left.up")) #\(parentNumber) \(item.parentTitle ?? "")")
-                    .font(.system(size: CardView.metaSize)).foregroundStyle(Theme.textTertiary)
-            )
-            let width = min(text.measure(in: CGSize(width: 600, height: 40)).width, room - 12)
+            // An epic is named by its icon and title, like a project in Linear; another parent by its number.
+            let label = card.parentIsEpic
+                ? Text(item.parentTitle ?? "#\(parentNumber)")
+                : Text("\(Image(systemName: "arrow.turn.left.up")) #\(parentNumber) \(item.parentTitle ?? "")")
+            let text = context.resolve(label.font(.system(size: CardView.metaSize)).foregroundStyle(Theme.textTertiary))
+            let icon: CGFloat = card.parentIsEpic ? 15 : 0
+            let width = min(text.measure(in: CGSize(width: 600, height: 40)).width, room - 12 - icon)
             if width >= 48 {
-                let rect = CGRect(x: x - 2, y: topY - 9, width: width + 12, height: 18)
-                part(.parent, rect)
-                if hovered(.parent) { chip(rect, hovered: true) }
-                context.draw(text, in: CGRect(x: rect.minX + 6, y: topY - 8, width: width, height: 16))
+                let rect = CGRect(x: x - 2, y: topY - 9, width: width + 12 + icon, height: 18)
+                let kind: PickerKind = card.parentIsEpic ? .epic : .parent
+                part(kind, rect)
+                if hovered(kind) { chip(rect, hovered: true) }
+                if card.parentIsEpic {
+                    context.stroke(
+                        PlanningGlyph.layers(in: CGRect(x: rect.minX + 5, y: topY - 6, width: 12, height: 12)), with: .color(Theme.epic),
+                        style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round)
+                    )
+                }
+                context.draw(text, in: CGRect(x: rect.minX + 6 + icon, y: topY - 8, width: width, height: 16))
             }
         }
         var avatarRing = fill
@@ -316,6 +336,31 @@ private struct CardPainter {
             part(.dueDate, rect)
             chip(rect, hovered: hovered(.dueDate))
             context.draw(dueChip.text, at: CGPoint(x: rect.minX + 7, y: bottomY), anchor: .leading)
+            x = rect.maxX + 6
+        }
+        // The milestone last: it is the same for many cards, so it gives way to what tells them apart.
+        if let milestone = card.milestone {
+            let text = context.resolve(Text(milestone).font(.system(size: CardView.chipSize)).foregroundStyle(Theme.textSecondary))
+            let textWidth = min(text.measure(in: CGSize(width: 400, height: 40)).width, 110)
+            let width = 7 + 10 + 5 + textWidth + 7
+            if x + width <= size.width - padding.width {
+                let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
+                part(.milestone, rect)
+                chip(rect, hovered: hovered(.milestone))
+                let diamond = CGRect(x: rect.minX + 7, y: bottomY - 5, width: 10, height: 10)
+                let outline = PlanningGlyph.diamond(in: diamond, inset: 1.1)
+                let color = card.milestoneMark.color
+                switch card.milestoneMark {
+                case .completed:
+                    context.fill(outline, with: .color(color))
+                case .current, .late:
+                    context.stroke(outline, with: .color(color), lineWidth: 1.3)
+                    context.fill(PlanningGlyph.diamond(in: diamond, inset: 3.4), with: .color(color))
+                case .upcoming, .none:
+                    context.stroke(outline, with: .color(color), lineWidth: 1.3)
+                }
+                context.draw(text, in: CGRect(x: rect.minX + 7 + 10 + 5, y: bottomY - 8, width: textWidth, height: 16))
+            }
         }
     }
 

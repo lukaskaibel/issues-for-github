@@ -19,6 +19,10 @@ struct IssueRow: View {
     var folded = false
     /// A sub-issue whose parent is in another group names the parent.
     var showsParent = false
+    /// The milestone, where the list isn't a milestone's.
+    var showsMilestone = true
+    /// The epic, where the row isn't in its epic's group.
+    var showsEpic = true
     @ScaledMetric(relativeTo: .callout) private var glyphSize: CGFloat = 16
     @ScaledMetric(relativeTo: .callout) private var avatarSize: CGFloat = 24
 
@@ -123,7 +127,8 @@ struct IssueRow: View {
             if item.kind == .pullRequest {
                 Image(systemName: "arrow.triangle.pull")
             }
-            if showsParent, let parent = item.parentNumber {
+            let epicParent = item.parentId.flatMap { model.issue(contentId: $0) }.flatMap { $0.isEpic ? $0 : nil }
+            if showsParent, let parent = item.parentNumber, epicParent == nil {
                 HStack(spacing: 3) {
                     Image(systemName: "arrow.turn.left.up")
                     Text("#\(parent)").monospacedDigit()
@@ -135,6 +140,14 @@ struct IssueRow: View {
                     Image(systemName: "calendar")
                     Text(due.label)
                 }
+            }
+            if showsParent, let epic = epicParent {
+                // An epic by its icon and name, like a project in Linear; a long name gives way to what follows.
+                HStack(spacing: 4) {
+                    EpicIcon(size: 11)
+                    Text(epic.title).truncationMode(.tail)
+                }
+                .frame(maxWidth: 160, alignment: .leading)
             }
             if showsProject, let project = model.project(of: item) {
                 HStack(spacing: 5) {
@@ -157,7 +170,14 @@ struct IssueRow: View {
                     Text("\(item.subCompleted)/\(item.subTotal)").monospacedDigit()
                 }
             }
-            ForEach(item.labels.prefix(3)) { label in
+            if showsMilestone, let milestone = model.milestoneTitle(of: item) {
+                MobileChip {
+                    MilestoneIcon(mark: model.milestoneMark(of: item), size: 9)
+                    Text(milestone)
+                }
+            }
+            // An epic's own label says what the row shows already.
+            ForEach(item.labels.filter { !(item.isEpic && Item.isEpicLabel($0.name)) }.prefix(3)) { label in
                 MobileChip {
                     Circle().fill(Theme.labelColor(label.color)).frame(width: 7, height: 7)
                     Text(label.name)
@@ -168,7 +188,9 @@ struct IssueRow: View {
         .foregroundStyle(Theme.textTertiary)
         .lineLimit(1)
         .fixedSize(horizontal: true, vertical: false)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // Exactly as wide as the row, however many chips there are: without the minimum, a line of chips wider
+        // than the row would widen the row instead of fading out at its end.
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .clipped()
         .mask(LinearGradient(stops: [.init(color: .black, location: 0.86), .init(color: .clear, location: 1)], startPoint: .leading, endPoint: .trailing))
     }
@@ -178,7 +200,11 @@ struct IssueRow: View {
             ? model.statusOption(of: item)?.name ?? String(localized: .noStatus)
             : String(localized: item.isClosed ? LocalizedStringResource.stateClosed : .noProject)
         var parts = [item.displayNumber, item.title, status]
-        if let parent = item.parentNumber { parts.append(String(localized: .subIssueOf(number: "#\(parent)"))) }
+        let epic = model.epic(of: item)
+        // Right under an epic, the epic says it (or its group does).
+        if let parent = item.parentNumber, epic?.contentId != item.parentId {
+            parts.append(String(localized: .subIssueOf(number: "#\(parent)")))
+        }
         if let nested, folded { parts.append(String(localized: .unfoldSubIssuesTooltip(count: nested))) }
         if let priority = model.priorityOption(of: item)?.name { parts.append(String(localized: .priorityLevelSpoken(priority: priority))) }
         if item.blockedByCount > 0 { parts.append(String(localized: .blockedSpoken)) }
@@ -189,6 +215,10 @@ struct IssueRow: View {
             parts.append(String(localized: .assignedToSpoken(names: item.assignees.map(\.login).joined(separator: ", "))))
         }
         if let due = model.dueBadge(for: item) { parts.append(due.tooltip) }
+        if showsMilestone, let milestone = model.milestoneTitle(of: item) {
+            parts.append(String(localized: .milestoneTooltip(milestone: milestone)))
+        }
+        if showsEpic, let epic { parts.append(String(localized: .epicTooltip(epic: epic.title))) }
         if showsProject, let place = model.project(of: item)?.title ?? item.repoShortName { parts.append(place) }
         return parts.joined(separator: ", ")
     }
@@ -224,6 +254,9 @@ struct MobileChip<Content: View>: View {
 struct SectionHeaderBand: View {
     var title: String
     var glyph: StatusGlyph
+    var icon: SectionIcon? = nil
+    /// Quiet text after the count, such as when a milestone is due.
+    var detail: String? = nil
     var count: Int
     var folded: Bool
     var onToggle: () -> Void
@@ -239,9 +272,17 @@ struct SectionHeaderBand: View {
                         .foregroundStyle(Theme.textTertiary)
                         .rotationEffect(.degrees(folded ? -90 : 0))
                         .frame(width: 12)
-                    StatusIcon(glyph: glyph, size: glyphSize)
-                    Text(title).font(.uiSemibold).foregroundStyle(Theme.text)
+                    switch icon ?? .status(glyph) {
+                    case .status(let glyph): StatusIcon(glyph: glyph, size: glyphSize)
+                    case .milestone(let mark): MilestoneIcon(mark: mark, size: glyphSize)
+                    case .epic: EpicIcon(size: glyphSize)
+                    case .plain: EmptyView()
+                    }
+                    Text(title).font(.uiSemibold).foregroundStyle(icon == .plain ? Theme.textSecondary : Theme.text).lineLimit(1)
                     Text("\(count)").font(.ui).monospacedDigit().foregroundStyle(Theme.textTertiary)
+                    if let detail {
+                        Text(detail).font(.small).foregroundStyle(Theme.textTertiary).lineLimit(1)
+                    }
                     Spacer(minLength: 0)
                 }
                 .contentShape(Rectangle())
@@ -270,7 +311,7 @@ struct SectionHeaderBand: View {
         .background(
             RoundedRectangle(cornerRadius: 11, style: .continuous)
                 .fill(Theme.groupHeader)
-                .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(glyph.color.opacity(0.08)))
+                .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(icon == nil ? glyph.color.opacity(0.08) : .clear))
         )
         .padding(.horizontal, 12)
         .padding(.vertical, 3)

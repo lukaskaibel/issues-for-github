@@ -9,13 +9,20 @@ public struct Notice: Identifiable, Sendable, Equatable {
         /// Offer to adopt the due date GitHub had.
         case applyDate(Mutation.SetDate, label: String)
         case openItem(String)
+        /// Takes back what was just done, such as moving an epic to another milestone, by queuing these changes.
+        case undo([Mutation])
 
         /// The button that takes GitHub's value, for the actions that offer one.
         public var adoptLabel: String? {
             switch self {
             case .applyField(_, let label), .applyDate(_, let label): label
-            case .openItem: nil
+            case .openItem, .undo: nil
             }
+        }
+
+        public var isUndo: Bool {
+            if case .undo = self { return true }
+            return false
         }
     }
 
