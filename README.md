@@ -43,7 +43,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/hero-dark.webp">
-  <img alt="Issues showing a GitHub Project as a board, with Backlog, Todo, In Progress and In Review columns" src="Design/screenshots/hero-light.webp">
+  <img alt="Issues showing a GitHub Project as a board, with Backlog, Todo, In Progress and In Review columns; in In Progress, two sub-issues hang under their parent" src="Design/screenshots/hero-light.webp">
 </picture>
 
 > **New: Issues for iPhone and iPad.** The same app, built from the same project, with the same sync, offline
@@ -71,7 +71,7 @@ GitHub in the background.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/drag-dark.webp">
-  <img alt="A card is dragged from In Progress to In Review, the cards there make room, and Esc sends it back" src="Design/screenshots/drag-light.webp">
+  <img alt="A card is dragged from In Progress to In Review, taking the two sub-issues under it along; the cards there make room, and Esc sends it back" src="Design/screenshots/drag-light.webp">
 </picture>
 
 A sub-issue with the same status as its parent hangs right under it, indented, so a parent and the sub-issues you
@@ -106,7 +106,7 @@ priority, assignees, labels, parent and blockers are in the sidebar. Step to the
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">
-  <img alt="An issue with its description, five sub-issues of which four are done, the issue it blocks, two comments, and its properties" src="Design/screenshots/issue-light.webp">
+  <img alt="An issue with its description, six sub-issues of which four are done, the issue it blocks, two comments, and its properties" src="Design/screenshots/issue-light.webp">
 </picture>
 
 ### An inbox for what changed
@@ -160,7 +160,7 @@ column, and the issue is on the board. My Issues shows everything assigned to yo
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/repository-dark.webp">
-  <img alt="A repository in the sidebar, with its issues as a list: two under No project at the top, then In progress and Todo" src="Design/screenshots/repository-light.webp">
+  <img alt="A repository in the sidebar, with its issues as a list: three under No project at the top, then In progress with two sub-issues under their parent, and Todo" src="Design/screenshots/repository-light.webp">
 </picture>
 
 ## iPhone and iPad
