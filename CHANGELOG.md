@@ -6,6 +6,14 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- A parent, sub-issue or blocker someone else sets or removes now shows up in the app within seconds, on a board
+  and off one. Before, the app noticed only when something else about the issue changed, because GitHub doesn't
+  count these as changes of the issue or its board.
+- Someone else's new title, label or assignee no longer goes unnoticed when GitHub doesn't pass the change on to the
+  board, which it sometimes skips.
+
 ## [0.3.0] - 2026-10-11
 
 ### Added

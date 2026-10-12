@@ -259,10 +259,12 @@ column means (backlog, in progress, done, cancelled) is inferred from its name, 
 ## Offline and conflicts
 
 GitHub cannot push changes to a desktop app, so the app asks for changes every 15 seconds while it is in front, and
-immediately when you return to it. Other people's changes therefore appear with a short delay. The Inbox asks for new
-notifications at the pace GitHub sets, about once a minute; when nothing changed, that costs nothing against GitHub's
-rate limit. As often, it searches for issues assigned to you that changed in the last few minutes, to find the
-assignments your own account made, which GitHub sends no notification for.
+immediately when you return to it. Other people's changes therefore appear with a short delay. A board on GitHub
+doesn't record every change to its issues (a new parent, sub-issue or blocker never, an edit not always), so the app
+also reads each repository's issue events; when nothing happened, GitHub says so without counting it against its
+rate limit. The Inbox asks for new notifications at the pace GitHub sets, about once a minute, which is just as free
+when nothing changed. As often, it searches for issues assigned to you that changed in the last few minutes, to find
+the assignments your own account made, which GitHub sends no notification for.
 
 The dot on your avatar at the top of the sidebar shows how syncing is going: green when everything is on GitHub, the
 accent colour while your changes go out, an amber ring when you're offline, and amber when something needs you. Hover
