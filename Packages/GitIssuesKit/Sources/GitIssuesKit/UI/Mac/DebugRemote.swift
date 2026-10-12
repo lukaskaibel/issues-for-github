@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold"]
+        let readOnly: Set<String> = ["roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -70,6 +70,11 @@ enum DebugRemote {
                 $0.nameWithOwner.localizedCaseInsensitiveContains(argument.dropFirst(5))
             }) {
                 model.select(.repository(repo.id))
+            } else if argument.hasPrefix("milestone "), let projectId = model.scopeProjectId {
+                // select milestone <title>: a milestone of the board on screen.
+                model.select(.milestone(projectId: projectId, title: String(argument.dropFirst(10))))
+            } else if argument == "roadmap", let projectId = model.scopeProjectId {
+                model.select(.roadmap(projectId))
             } else if let project = model.projects.first(where: { $0.title.localizedCaseInsensitiveContains(argument) }) {
                 model.select(.project(project.id))
             }
@@ -108,7 +113,75 @@ enum DebugRemote {
             case ("blockedby", let id?): model.overlay = .palette(.blockedBy(itemId: id))
             case ("blocking", let id?): model.overlay = .palette(.blocking(itemId: id))
             case ("due", let id?): model.overlay = .palette(.dueDate(itemId: id))
+            case ("milestone", let id?): model.overlay = .palette(.milestone(itemId: id))
+            case ("epic", let id?): model.overlay = .palette(.epic(itemId: id))
+            case ("newmilestone", _): model.overlay = .milestoneEditor(projectId: model.scopeProjectId, title: nil, assigning: [])
+            case ("editmilestone", _):
+                model.overlay = .milestoneEditor(projectId: model.scopeProjectId, title: bits.dropFirst().joined(separator: " "), assigning: [])
+            case ("newepic", _):
+                model.newIssuePlan = NewIssuePlan(isEpic: true)
+                model.overlay = .newIssue(statusId: nil, parentItemId: nil)
             default: model.overlay = nil
+            }
+        case "roadmap":
+            // roadmap timeline|list|months|quarters
+            switch argument {
+            case "list": model.roadmapLayout = .list
+            case "months": model.roadmapZoom = .months
+            case "quarters": model.roadmapZoom = .quarters
+            default: model.roadmapLayout = .timeline
+            }
+        case "planningdump":
+            // The board's milestones, the sections on screen and the roadmap's rows.
+            if let projectId = model.scopeProjectId {
+                for group in model.milestoneGroups(projectId: projectId) {
+                    log("milestone \(group.title) open=\(group.isOpen) due=\(group.due?.string ?? "-") ids=\(group.milestones.map(\.id).joined(separator: ",")) mark=\(model.mark(of: group, projectId: projectId))")
+                }
+                let roadmap = model.roadmap(projectId: projectId)
+                log("windows " + roadmap.windows.map { "\($0.group.title):\($0.start.string)…\($0.end.string)" }.joined(separator: " "))
+                for row in roadmap.rows + roadmap.later {
+                    log("epic \(row.epic.displayNumber) depth=\(row.depth) runs=\(row.runs.map { "\($0.lowerBound)-\($0.upperBound)" }.joined(separator: ",")) next=\(row.next ?? "-") \(row.done)/\(row.total)")
+                }
+            }
+            log("sections " + model.sections.map { "\($0.title)[\($0.items.compactMap(\.number).map(String.init).joined(separator: ","))]" }.joined(separator: " "))
+            log("columns " + model.columns.map { "\($0.title)[\($0.items.compactMap(\.number).map(String.init).joined(separator: ","))]" }.joined(separator: " "))
+            log("scope \(String(describing: model.scope)) pending=\(model.pendingCount) notices=\(model.status.notices.map(\.title).joined(separator: " | "))")
+        case "setmilestone":
+            // setmilestone <number> <title|none>
+            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            if bits.count == 2, let item = item(bits[0], model) {
+                model.setMilestone(of: model.targets(for: item), to: bits[1] == "none" ? nil : model.milestoneGroups(for: item).first { $0.title == bits[1] })
+            }
+        case "moveepic":
+            // moveepic <number> <title|later>
+            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            if bits.count == 2, let item = item(bits[0], model), let projectId = item.projectId {
+                model.moveEpic(item, to: bits[1] == "later" ? nil : model.milestoneGroup(projectId: projectId, title: bits[1]), projectId: projectId)
+            }
+        case "makeepic", "unmakeepic":
+            if let item = item(argument, model) { model.setEpic([item], parts.first == "makeepic") }
+        case "complete?":
+            if case .milestone(let projectId, let title) = model.scope { model.milestoneToComplete = MilestoneRef(projectId: projectId, title: title) }
+        case "complete":
+            // complete move|leave: completes the milestone on screen.
+            if case .milestone(let projectId, let title) = model.scope, let group = model.milestoneGroup(projectId: projectId, title: title) {
+                model.completeMilestone(group, projectId: projectId, moveTo: argument == "move" ? model.milestone(after: group, projectId: projectId) : nil)
+            }
+        case "newmilestone":
+            // newmilestone <title> <days from today>
+            let bits = argument.split(separator: " ").map(String.init)
+            if let projectId = model.scopeProjectId, let title = bits.first {
+                model.createMilestone(projectId: projectId, title: title, due: bits.count > 1 ? Int(bits[1]).map { CalendarDay.today().adding(days: $0) } : nil, descr: "")
+            }
+        case "setdue":
+            // setdue <days from today|none>: the milestone on screen.
+            if case .milestone(let projectId, let title) = model.scope, let group = model.milestoneGroup(projectId: projectId, title: title) {
+                model.setDue(group, to: Int(argument).map { CalendarDay.today().adding(days: $0) })
+            }
+        case "undo":
+            if let notice = model.status.notices.last(where: { $0.action?.isUndo == true }), let action = notice.action {
+                model.apply(action)
+                model.status.dismiss(notice.id)
             }
         case "menudump":
             // menudump <number>: the issue's right-click menu, one entry per line, submenus indented.

@@ -66,8 +66,10 @@ struct IssueScreen: View {
                     DescriptionEditor(item: item, editing: $editingDescription)
                         .padding(.top, 18)
                     if item.kind == .issue, !item.isDetached {
-                        MobileSubIssues(item: item)
-                            .padding(.top, 28)
+                        Group {
+                            if item.isEpic { MobileEpicWork(item: item) } else { MobileSubIssues(item: item) }
+                        }
+                        .padding(.top, 28)
                         MobileRelations(item: item)
                     }
                     if item.kind != .draft {
@@ -431,17 +433,42 @@ private struct PropertyChips: View {
                 .accessibilityLabel(model.dueBadge(for: item)?.tooltip ?? String(localized: .dueDateNone))
                 .accessibilityIdentifier("chip-due")
             }
+            if model.canHaveMilestone(item) {
+                Button {
+                    picker = .milestone
+                } label: {
+                    PropertyChip(text: model.milestoneTitle(of: item) ?? String(localized: .milestone), placeholder: item.milestoneId == nil) {
+                        MilestoneIcon(mark: model.milestoneMark(of: item), size: 13)
+                    }
+                }
+                .buttonStyle(PlainPressStyle())
+                .accessibilityLabel(model.milestoneTitle(of: item).map { .milestoneTooltip(milestone: $0) } ?? .noMilestone)
+                .accessibilityIdentifier("chip-milestone")
+            }
             if let parentNumber = item.parentNumber {
                 Button {
                     if let parentId = item.parentId, let parent = model.item(contentId: parentId) {
                         openRoute(.issue(parent.id))
                     }
                 } label: {
-                    PropertyChip(text: String(localized: .subIssueOf(number: "#\(parentNumber)"))) {
-                        SubIssueGlyph().frame(width: 12, height: 12).foregroundStyle(Theme.textSecondary)
+                    if let epic = item.parentId.flatMap({ model.issue(contentId: $0) }), epic.isEpic {
+                        PropertyChip(text: epic.title) { EpicIcon(size: 13) }
+                    } else {
+                        PropertyChip(text: String(localized: .subIssueOf(number: "#\(parentNumber)"))) {
+                            SubIssueGlyph().frame(width: 12, height: 12).foregroundStyle(Theme.textSecondary)
+                        }
                     }
                 }
                 .buttonStyle(PlainPressStyle())
+                .accessibilityIdentifier("chip-parent")
+            } else if model.canRelate(item), !item.isEpic, let projectId = item.projectId, !model.epics(projectId: projectId).isEmpty {
+                Button {
+                    picker = .epic
+                } label: {
+                    PropertyChip(text: String(localized: .addToEpicPlaceholderShort), placeholder: true) { EpicIcon(size: 13, color: Theme.textTertiary) }
+                }
+                .buttonStyle(PlainPressStyle())
+                .accessibilityIdentifier("chip-epic")
             }
             if item.blockedByCount > 0, model.canRelate(item) {
                 Button {
@@ -574,12 +601,59 @@ private struct PropertiesColumn: View {
                         .accessibilityIdentifier("property-project")
                     }
                 }
+                if model.canHaveMilestone(item) {
+                    row(.milestone) {
+                        Button { picker = .milestone } label: {
+                            value {
+                                if let title = model.milestoneTitle(of: item) {
+                                    MilestoneIcon(mark: model.milestoneMark(of: item), size: 13)
+                                    Text(title).foregroundStyle(Theme.text).lineLimit(1)
+                                    if let due = model.milestoneGroup(of: item)?.due {
+                                        Text(due.shortLabel()).foregroundStyle(Theme.textTertiary).lineLimit(1)
+                                    }
+                                } else {
+                                    Text(.addToMilestone).foregroundStyle(Theme.textTertiary)
+                                }
+                            }
+                        }
+                        .buttonStyle(PlainPressStyle())
+                        .accessibilityLabel(model.milestoneTitle(of: item).map { .milestoneTooltip(milestone: $0) } ?? .noMilestone)
+                        .accessibilityIdentifier("property-milestone")
+                    }
+                    if item.isEpic, let span = model.milestoneSpan(of: item) {
+                        row(.itsIssues) {
+                            Text(span).foregroundStyle(Theme.textBody).lineLimit(1).padding(.horizontal, 8)
+                        }
+                    }
+                }
                 if let repo = item.repo {
                     row(.repository) {
                         Text(repo).foregroundStyle(Theme.textBody).lineLimit(1).truncationMode(.middle).padding(.horizontal, 8)
                     }
                 }
-                if model.canRelate(item) {
+                let epic = model.epic(of: item)
+                let parentIsEpic = epic != nil && epic?.contentId == item.parentId
+                if model.canRelate(item), !item.isEpic {
+                    row(.epic) {
+                        Button {
+                            // Under another issue, the epic comes with that parent: it opens instead.
+                            if let epic, !parentIsEpic { openRoute(.issue(epic.id)) } else { picker = .epic }
+                        } label: {
+                            value {
+                                if let epic {
+                                    EpicIcon(size: 13)
+                                    Text(epic.title).foregroundStyle(Theme.text).lineLimit(1)
+                                } else {
+                                    Text(.addToEpicPlaceholderShort).foregroundStyle(Theme.textTertiary)
+                                }
+                            }
+                        }
+                        .buttonStyle(PlainPressStyle())
+                        .accessibilityLabel(epic.map { .epicTooltip(epic: $0.title) } ?? .noEpic)
+                        .accessibilityIdentifier("property-epic")
+                    }
+                }
+                if model.canRelate(item), !parentIsEpic {
                     row(.parentIssue) {
                         Button { picker = .parent } label: {
                             value {
@@ -597,6 +671,8 @@ private struct PropertiesColumn: View {
                         } ?? String(localized: .parentNoneSpoken))
                         .accessibilityIdentifier("property-parent")
                     }
+                }
+                if model.canRelate(item) {
                     relationRow(.blockedBy)
                     relationRow(.blocking)
                 } else if let parentNumber = item.parentNumber {
@@ -857,6 +933,106 @@ private struct MobileSubIssues: View {
                         MobileSubIssueRow(sub: sub)
                         if index < subs.count - 1 {
                             Rectangle().fill(Theme.panelBorder).frame(height: 1)
+                        }
+                    }
+                }
+                .background(Theme.panel)
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .animation(Theme.spring, value: subs.map(\.id))
+            }
+        }
+    }
+}
+
+/// An epic's work, as on the Mac: how far it is, in a part per milestone, and its sub-issues by milestone.
+private struct MobileEpicWork: View {
+    @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
+    var item: Item
+
+    var body: some View {
+        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let groups = model.subIssuesByMilestone(of: item, subs)
+        let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Text(.progress).font(.headline)
+                if !subs.isEmpty {
+                    Text(.subIssuesProgress(done: done, total: subs.count))
+                        .font(.footnote)
+                        .foregroundStyle(Theme.textTertiary)
+                        .monospacedDigit()
+                }
+                Spacer()
+                Menu {
+                    Button {
+                        navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
+                    } label: {
+                        Label(.newSubIssue, systemImage: "plus")
+                    }
+                    Button {
+                        navigation.sheet = .picker(itemId: item.id, kind: .addSubIssue)
+                    } label: {
+                        Label(.addExistingIssueMenuItem, systemImage: "magnifyingglass")
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.body.weight(.medium))
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .foregroundStyle(Theme.textSecondary)
+                .accessibilityLabel(.addSubIssueButton)
+                .accessibilityIdentifier("sub-add")
+            }
+            if subs.isEmpty {
+                Text(.epicNoIssuesYet).font(.footnote).foregroundStyle(Theme.textSecondary)
+            } else {
+                SegmentedProgress(parts: groups.map { group in
+                    SegmentedProgress.Part(
+                        mark: group.group.map { model.mark(of: $0, projectId: item.projectId) } ?? .none,
+                        title: group.title ?? String(localized: .noMilestone),
+                        done: group.subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count,
+                        total: group.subs.count
+                    )
+                })
+                VStack(spacing: 0) {
+                    ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
+                        HStack(spacing: 8) {
+                            MilestoneIcon(mark: group.group.map { model.mark(of: $0, projectId: item.projectId) } ?? .none, size: 13)
+                            Text(group.title ?? String(localized: .noMilestone))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(group.title == nil ? Theme.textSecondary : Theme.text)
+                            if let due = group.group?.due {
+                                Text(due.shortLabel()).font(.footnote).foregroundStyle(Theme.textTertiary)
+                            }
+                            Text("\(group.subs.count)").font(.footnote).monospacedDigit().foregroundStyle(Theme.textTertiary)
+                            Spacer()
+                            if group.group?.isOpen ?? true {
+                                Button {
+                                    navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id, milestoneTitle: group.title))
+                                } label: {
+                                    Image(systemName: "plus")
+                                        .font(.subheadline.weight(.medium))
+                                        .foregroundStyle(Theme.textSecondary)
+                                        .frame(width: 32, height: 32)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(PlainPressStyle())
+                                .accessibilityLabel(.newSubIssueInMilestone(milestone: group.title ?? String(localized: .noMilestone)))
+                            }
+                        }
+                        .padding(.leading, 14)
+                        .padding(.trailing, 4)
+                        .frame(minHeight: 40)
+                        .background(Theme.groupHeader)
+                        .overlay(alignment: .top) {
+                            if index > 0 { Rectangle().fill(Theme.panelBorder).frame(height: 1) }
+                        }
+                        ForEach(group.subs) { sub in
+                            Rectangle().fill(Theme.panelBorder).frame(height: 1)
+                            MobileSubIssueRow(sub: sub)
                         }
                     }
                 }

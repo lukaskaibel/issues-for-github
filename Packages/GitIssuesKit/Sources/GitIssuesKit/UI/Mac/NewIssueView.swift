@@ -40,7 +40,7 @@ struct NewIssueView: View {
                     projectChip
                 }
                 Text("›").foregroundStyle(Theme.textTertiary)
-                Text(draft.parent == nil ? .newIssueHeader : .newSubIssueHeader).font(.small).foregroundStyle(Theme.textSecondary)
+                Text(draft.isEpic ? .newEpicHeader : draft.parent == nil ? .newIssueHeader : .newSubIssueHeader).font(.small).foregroundStyle(Theme.textSecondary)
                 Spacer()
                 if restored {
                     // Closing the dialog keeps what was typed, as in Linear; this starts over instead.
@@ -129,10 +129,22 @@ struct NewIssueView: View {
                         (draft.dueDate.flatMap(CalendarDay.init).map { Text($0.mediumLabel()) } ?? Text(.dueDate))
                     }
                 }
+                if draft.milestoneTitle != nil || !milestones.isEmpty {
+                    chip(.milestone) {
+                        let group = milestones.first { $0.title == draft.milestoneTitle }
+                        MilestoneIcon(mark: group.map { model.mark(of: $0, projectId: draft.projectId) } ?? .none, size: 12)
+                        (draft.milestoneTitle.map { Text($0) } ?? Text(.milestone))
+                    }
+                }
                 if let parent = draft.parent {
                     HStack(spacing: 6) {
-                        SubIssueGlyph().frame(width: 12, height: 12)
-                        Text(.subIssueOf(number: parent.displayNumber))
+                        if parent.isEpic {
+                            EpicIcon(size: 12)
+                            Text(parent.title).frame(maxWidth: 180, alignment: .leading)
+                        } else {
+                            SubIssueGlyph().frame(width: 12, height: 12)
+                            Text(.subIssueOf(number: parent.displayNumber))
+                        }
                     }
                     .font(.small)
                     .foregroundStyle(Theme.textBody)
@@ -163,7 +175,7 @@ struct NewIssueView: View {
                 .disabled(draft.parent != nil || repos.count < 2 || choosesProject)
                 Spacer()
                 Text("⌘↵").font(.tiny).foregroundStyle(Theme.textSecondary)
-                Button(.createIssueMac, action: create)
+                Button(draft.isEpic ? .createEpicButton : .createIssueMac, action: create)
                     .buttonStyle(PrimaryButtonStyle())
                     .keyboardShortcut(.return, modifiers: .command)
                     .disabled(!canCreate)
@@ -193,6 +205,11 @@ struct NewIssueView: View {
     }
 
     private var statuses: [FieldOption] { model.statusOptions(projectId: draft.projectId) }
+    /// The open milestones the issue can start in: its board's, or its repository's on no board.
+    private var milestones: [MilestoneGroup] {
+        let groups = draft.projectId.map { model.milestoneGroups(projectId: $0) } ?? model.milestoneGroups(repoId: draft.repoId)
+        return groups.filter(\.isOpen)
+    }
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
     private var repos: [RepoRef] { model.repos(forNewIssueIn: draft.projectId, repoId: draft.repoId) }
 
@@ -231,6 +248,7 @@ struct NewIssueView: View {
         draft.projectId = id
         draft.statusId = defaultStatus(projectId: id)
         draft.priorityId = nil
+        if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
         if let id { model.loadRepoMeta(projectId: id) }
     }
 
@@ -262,10 +280,16 @@ struct NewIssueView: View {
         // A title typed into the sub-issue picker starts a fresh issue rather than last time's.
         let typed = model.newIssueTitle
         model.newIssueTitle = nil
-        if typed == nil, let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id,
+        // Begun in a milestone, or from the roadmap: in that milestone, or as an epic.
+        let plan = model.newIssuePlan ?? NewIssuePlan()
+        model.newIssuePlan = nil
+        let milestone = plan.milestoneTitle ?? model.currentMilestoneTitle
+            ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
+        if typed == nil, let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id, unsent.isEpic == plan.isEpic,
            repoScope != nil ? unsent.repoId == repoScope : unsent.projectId == projectId {
             draft = unsent
             if let statusId { draft.statusId = statusId }
+            if let milestone { draft.milestoneTitle = milestone }
             restored = true
             focus = .title
             model.loadRepoMeta(projectId: draft.projectId)
@@ -277,6 +301,8 @@ struct NewIssueView: View {
         new.repoId = repoId
         new.statusId = statusId ?? defaultStatus(projectId: projectId)
         new.title = typed ?? ""
+        new.milestoneTitle = milestone
+        new.isEpic = plan.isEpic
         draft = new
         focus = .title
         model.loadRepoMeta(projectId: projectId)
@@ -357,13 +383,25 @@ struct NewIssueView: View {
                 )
             }
         case .labels:
-            return model.labels(projectId: draft.projectId, repoId: draft.repoId).map { label in
+            return model.pickableLabels(projectId: draft.projectId, repoId: draft.repoId).map { label in
                 PickerItem(
                     id: label.id, title: label.name, selected: draft.labels.contains { $0.id == label.id },
                     icon: AnyView(Circle().fill(Theme.labelColor(label.color)).frame(width: 9, height: 9))
                 )
             }
-        case .dueDate, .subIssues, .parent, .addSubIssue, .blockedBy, .blocking:
+        case .milestone:
+            return [PickerItem(
+                id: "", title: String(localized: .noMilestone), selected: draft.milestoneTitle == nil,
+                icon: AnyView(MilestoneIcon(mark: .none)), shortcut: "0"
+            )] + milestones.enumerated().map { index, group in
+                PickerItem(
+                    id: group.id, title: group.title, selected: draft.milestoneTitle == group.title,
+                    icon: AnyView(MilestoneIcon(mark: model.mark(of: group, projectId: draft.projectId))),
+                    shortcut: index < 9 ? "\(index + 1)" : nil,
+                    trailing: group.due.map { AnyView(Text($0.shortLabel()).font(.small).foregroundStyle(Theme.textTertiary)) }
+                )
+            }
+        case .dueDate, .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic:
             return []
         }
     }
@@ -383,12 +421,14 @@ struct NewIssueView: View {
         case .labels:
             if let index = draft.labels.firstIndex(where: { $0.id == id }) {
                 draft.labels.remove(at: index)
-            } else if let label = model.labels(projectId: draft.projectId, repoId: draft.repoId).first(where: { $0.id == id }) {
+            } else if let label = model.pickableLabels(projectId: draft.projectId, repoId: draft.repoId).first(where: { $0.id == id }) {
                 draft.labels.append(label)
             }
         case .dueDate:
             draft.dueDate = CalendarDay(id)?.string
-        case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking:
+        case .milestone:
+            draft.milestoneTitle = id.isEmpty ? nil : id
+        case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic:
             break
         }
     }

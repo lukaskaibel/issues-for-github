@@ -53,6 +53,12 @@ struct SelectionBar: View {
                         Image(systemName: "calendar").font(.system(size: 12))
                     }
                 }
+                if items.contains(where: model.canHaveMilestone) {
+                    let sameMilestone = Set(items.map { model.milestoneTitle(of: $0) }).count == 1
+                    BarAction(kind: .milestone, item: first, title: .milestone, key: "⇧M") {
+                        MilestoneIcon(mark: sameMilestone ? model.milestoneMark(of: first) : .none, size: 13)
+                    }
+                }
                 Button {
                     model.copyLinks(items)
                 } label: {

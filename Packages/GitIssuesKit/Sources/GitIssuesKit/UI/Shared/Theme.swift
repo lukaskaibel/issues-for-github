@@ -56,6 +56,13 @@ enum Theme {
     /// Text set on top of a filled, coloured shape (avatars, the urgent badge, the done check mark).
     static let onColor = Color(light: 0xFFFFFF, dark: 0x111214)
     static let started = Color(light: 0xD29A0A, dark: 0xF0B429)
+    /// Epics, which group issues on the roadmap: their icon and their bars.
+    static let epic = Color(light: 0x6E56CF, dark: 0xA08CF2)
+    static let epicBar = Color(light: 0xECE8FA, dark: 0x221E36)
+    static let epicBarBorder = Color(light: 0xB9AEE9, dark: 0x4C4380)
+    static let epicBarFill = Color(light: 0xB7A9EC, dark: 0x5C4FA0)
+    /// A milestone's stretch of time on the roadmap, every other one.
+    static let timelineBand = Color(light: 0xF2F3F6, dark: 0x15161A)
     static let scrim = Color(light: 0x14161A, dark: 0x000000).opacity(0.4)
     static let shadow = Color(platformColor: .dynamic { isDark in
         PlatformColor.black.withAlphaComponent(isDark ? 0.5 : 0.16)

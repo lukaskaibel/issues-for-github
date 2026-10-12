@@ -21,6 +21,8 @@ public actor SyncEngine {
     private var lastRepoPull: [String: Date] = [:]
     private var lastFullRepoPull: [String: Date] = [:]
     private var lastAssignedPull: Date?
+    /// When each repository's milestones were last read.
+    var lastMilestonePull: [String: Date] = [:]
     /// Items GitHub lists but will not show us (no access); remembered so they are not re-requested forever.
     private var unhydratable: [String: String] = [:]
     /// Repositories whose issue events GitHub won't list, so they aren't asked again.
@@ -139,6 +141,7 @@ public actor SyncEngine {
         lastRepoPull = [:]
         lastFullRepoPull = [:]
         lastAssignedPull = nil
+        lastMilestonePull = [:]
         kick()
     }
 
@@ -197,6 +200,7 @@ public actor SyncEngine {
             if Date() >= nextInboxPull { try await pullInboxInRound() }
             try await pullOneBackgroundProject()
             try await pullRepositories()
+            try await pullMilestones()
 
             wasOffline = false
             await finish(.idle, syncedAt: Date())
@@ -226,6 +230,9 @@ public actor SyncEngine {
         guard let activeProjectId else { return }
         try await pull(projectId: activeProjectId)
     }
+
+    /// The board on screen, whose milestones are read more often.
+    var activeProject: String? { activeProjectId }
 
     /// Other projects are refreshed one per cycle, at most every five minutes each, so "My Issues" stays usable.
     private func pullOneBackgroundProject() async throws {
@@ -989,8 +996,8 @@ public actor SyncEngine {
             if m.createdContentId == nil {
                 let created = try await api.createIssue(
                     repoId: m.repoId, title: m.title, body: m.body,
-                    assigneeIds: m.assignees.map(\.id), labelIds: m.labels.map(\.id),
-                    parentContentId: m.parentContentId
+                    assigneeIds: m.assignees.map(\.id), labelIds: m.labels.filter { !$0.id.hasPrefix(LocalID.prefix) }.map(\.id),
+                    parentContentId: m.parentContentId, milestoneId: m.milestoneId
                 )
                 m.createdContentId = created.contentId
                 m.createdNumber = created.number
@@ -1032,6 +1039,37 @@ public actor SyncEngine {
         case .setBlocking(let m):
             guard m.isBlocked != m.base else { break }
             try await api.setBlockedBy(issueId: m.blocked.contentId, blockerId: m.blocker.contentId, blocked: m.isBlocked)
+
+        case .setMilestone(let m):
+            guard m.milestoneId != m.base else { break }
+            try await api.setMilestone(contentId: m.contentId, isPullRequest: m.isPullRequest, milestoneId: m.milestoneId)
+
+        case .createMilestone(var m):
+            if m.createdId == nil {
+                let made = try await api.createMilestone(repoId: m.repoId, repo: m.repo, title: m.title, dueOn: m.dueOn, descr: m.descr)
+                m.createdId = made.id
+                m.createdNumber = made.number
+                m.createdUrl = made.url
+                try await store(entry, mutation: .createMilestone(m), state: .pending)
+            }
+            guard let id = m.createdId else { return .deferred }
+            return .sent([m.milestoneId: id])
+
+        case .updateMilestone(let m):
+            let known = try await db.reader.read { db in try Milestone.fetchOne(db, key: m.milestoneId) }
+            guard let known, known.number > 0 else {
+                throw APIError.graphql([GraphQLErrorItem(message: String(localized: .errorMilestoneNotFound), type: "NOT_FOUND")])
+            }
+            let saved = try await api.updateMilestone(repoId: known.repoId, repo: known.repo, number: known.number, change: m.change)
+            try await db.writer.write { db in
+                try db.execute(
+                    sql: "UPDATE milestone SET closedAt = ?, url = COALESCE(?, url) WHERE id = ?",
+                    arguments: [saved.closedAt, saved.url, saved.id]
+                )
+            }
+
+        case .setEpic(let m):
+            try await sendEpic(m)
 
         case .deleteItem(let m):
             do {
@@ -1127,6 +1165,13 @@ public actor SyncEngine {
             try db.execute(sql: "UPDATE subIssue SET parentId = ? WHERE parentId = ?", arguments: [new, old])
             try db.execute(sql: "UPDATE linkedIssue SET id = ? WHERE id = ?", arguments: [new, old])
             try db.execute(sql: "UPDATE linkedIssue SET issueId = ? WHERE issueId = ?", arguments: [new, old])
+            // A milestone made here: GitHub's copy may have been read already.
+            if try Milestone.exists(db, key: new) {
+                try db.execute(sql: "DELETE FROM milestone WHERE id = ?", arguments: [old])
+            }
+            try db.execute(sql: "UPDATE milestone SET id = ? WHERE id = ?", arguments: [new, old])
+            try db.execute(sql: "UPDATE item SET milestoneId = ? WHERE milestoneId = ?", arguments: [new, old])
+            try db.execute(sql: "UPDATE subIssue SET milestoneId = ? WHERE milestoneId = ?", arguments: [new, old])
         }
         for var entry in try Outbox.active(db) {
             let remapped = entry.mutation.remapping(remaps)
@@ -1163,6 +1208,24 @@ public actor SyncEngine {
         if case .setBlocking(var m) = entry.mutation {
             m.isBlocked = m.base
             try m.apply(db)
+        }
+        if case .setMilestone(var m) = entry.mutation {
+            m.milestoneId = m.base
+            m.milestoneTitle = try m.base.flatMap { try String.fetchOne(db, sql: "SELECT title FROM milestone WHERE id = ?", arguments: [$0]) }
+            try m.apply(db)
+        }
+        if case .createMilestone(let m) = entry.mutation, m.createdId == nil {
+            // Nothing may wait for a milestone that won't be made.
+            try db.execute(sql: "DELETE FROM milestone WHERE id = ?", arguments: [m.milestoneId])
+            try db.execute(sql: "UPDATE item SET milestoneId = NULL, milestoneTitle = NULL WHERE milestoneId = ?", arguments: [m.milestoneId])
+            for waiting in try Outbox.active(db) where waiting.mutation.referencedIds.contains(m.milestoneId) {
+                try waiting.delete(db)
+            }
+            return Notice(
+                title: String(localized: .noticeMilestoneNotCreated(milestone: m.title)),
+                message: error.localizedDescription,
+                isWarning: true
+            )
         }
         if case .deleteItem(let m) = entry.mutation {
             return Notice(title: String(localized: .noticeCouldNotDelete(issue: m.label)), message: error.localizedDescription, isWarning: true)
@@ -1324,6 +1387,17 @@ public actor SyncEngine {
                     remaps = [m.commentId: "demo-comment-\(UUID().uuidString.lowercased())"]
                 case .setDate(let m) where m.date != nil:
                     try await addDemoDueField(projectId: m.projectId)
+                case .createMilestone(var m) where m.createdId == nil:
+                    let repoId = m.repoId
+                    let number = try await db.reader.read { db in
+                        (try Int.fetchOne(db, sql: "SELECT MAX(number) FROM milestone WHERE repoId = ?", arguments: [repoId]) ?? 0) + 1
+                    }
+                    let id = "demo-milestone-\(UUID().uuidString.lowercased())"
+                    m.createdId = id
+                    m.createdNumber = number
+                    m.createdUrl = "https://github.com/\(m.repo)/milestone/\(number)"
+                    try await store(entry, mutation: .createMilestone(m), state: .pending)
+                    remaps = [m.milestoneId: id]
                 default:
                     break
                 }

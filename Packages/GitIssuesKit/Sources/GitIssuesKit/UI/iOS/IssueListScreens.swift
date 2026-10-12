@@ -63,6 +63,23 @@ struct ProjectsScreen: View {
                             NavigationLink(value: Route.project(project.id)) {
                                 ProjectRow(project: project)
                             }
+                            // Its next milestones and its roadmap right under it, as in the iPad's sidebar.
+                            if model.hasPlanning(projectId: project.id) {
+                                ForEach(model.sidebarMilestones(projectId: project.id)) { group in
+                                    NavigationLink(value: Route.milestone(projectId: project.id, title: group.title)) {
+                                        MilestoneListRow(projectId: project.id, group: group)
+                                    }
+                                }
+                                NavigationLink(value: Route.roadmap(project.id)) {
+                                    HStack(spacing: 12) {
+                                        RoadmapIcon(size: 16).foregroundStyle(Theme.textSecondary).frame(width: 18)
+                                        Text(.roadmap).foregroundStyle(Theme.text)
+                                    }
+                                    .padding(.leading, 30)
+                                    .accessibilityElement(children: .combine)
+                                }
+                                .accessibilityIdentifier("roadmap-\(project.title)")
+                            }
                         }
                     }
                     let repos = model.boardRepositories
@@ -119,6 +136,32 @@ private struct ProjectRow: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// A milestone under its board in the Projects tab: its diamond, its name and when it is due.
+private struct MilestoneListRow: View {
+    @Environment(AppModel.self) private var model
+    var projectId: String
+    var group: MilestoneGroup
+
+    var body: some View {
+        let today = CalendarDay.today()
+        HStack(spacing: 12) {
+            MilestoneIcon(mark: model.mark(of: group, projectId: projectId), size: 15)
+                .frame(width: 18)
+            Text(group.title).foregroundStyle(Theme.text)
+            Spacer(minLength: 8)
+            if let due = group.due {
+                Text(due.shortLabel(today: today))
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .foregroundStyle(due < today ? Theme.overdue : Theme.textSecondary)
+            }
+        }
+        .padding(.leading, 30)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("milestone-\(group.title)")
     }
 }
 
@@ -276,7 +319,7 @@ struct ProjectScreen: View {
 }
 
 /// A wide iPad puts the header on the leading edge, as on the Mac.
-private struct EditorRole: ViewModifier {
+struct EditorRole: ViewModifier {
     var active: Bool
 
     func body(content: Content) -> some View {
@@ -314,7 +357,7 @@ private struct ProjectSwitcher: ViewModifier {
 }
 
 /// Shown until a project has been fetched from GitHub once; afterwards the local copy shows at once.
-private struct ProjectLoading: View {
+struct ProjectLoading: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -408,6 +451,12 @@ struct IssueList: View {
                 emptyState
             } else {
                 List {
+                    if case .milestone(let projectId, let title) = scope, let group = model.milestoneGroup(projectId: projectId, title: title) {
+                        MilestoneSummaryCard(projectId: projectId, group: group)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
+                    }
                     if case .project(let id) = scope, let project = model.projects.first(where: { $0.id == id }),
                        project.priorityFieldId == nil, project.viewerCanUpdate, project.lastSyncedAt != nil {
                         PriorityFieldBanner(projectId: id)
@@ -427,7 +476,9 @@ struct IssueList: View {
                             }
                         } header: {
                             SectionHeaderBand(
-                                title: section.title, glyph: section.glyph, count: section.count, folded: folded,
+                                title: section.title, glyph: section.glyph,
+                                icon: section.kind == .status ? nil : model.sectionIcon(section, projectId: scope.projectId),
+                                detail: section.detail, count: section.count, folded: folded,
                                 onToggle: {
                                     foldFeedback += 1
                                     withAnimation(Theme.spring) { model.toggleSection(section.id, in: scope) }
@@ -459,7 +510,11 @@ struct IssueList: View {
         } label: {
             IssueRow(
                 item: item, showsProject: showsProject, place: section.nesting.place(of: item.id), nested: nested,
-                folded: folded, showsParent: item.parentNumber != nil && depth == 0
+                folded: folded,
+                // In an epic's group, the epic goes without saying.
+                showsParent: item.parentNumber != nil && depth == 0 && section.kind != .epic(contentId: item.parentId),
+                showsMilestone: showsMilestone,
+                showsEpic: section.kind != .epic(contentId: model.epic(of: item)?.contentId)
             )
         }
         .buttonStyle(RowButtonStyle())
@@ -541,14 +596,31 @@ struct IssueList: View {
         switch scope {
         case .myIssues: true
         case .repository(let id): model.boards(ofRepository: id).count > 1
-        case .project, .inbox: false
+        case .project, .inbox, .milestone, .roadmap: false
+        }
+    }
+
+    /// A milestone's list doesn't repeat its milestone on every row, nor the roadmap an epic's own.
+    private var showsMilestone: Bool {
+        switch scope {
+        case .milestone, .roadmap: false
+        default: true
         }
     }
 
     private func addAction(for section: ListSection) -> (() -> Void)? {
-        guard case .project(let projectId) = scope else { return nil }
-        return {
-            navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: section.option?.id))
+        guard let projectId = scope.projectId else { return nil }
+        let canEdit = model.projects.first { $0.id == projectId }?.viewerCanUpdate == true
+        switch (scope, section.kind) {
+        case (.project, _):
+            return { navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: section.option?.id)) }
+        case (.milestone(_, let title), .epic(let contentId)) where canEdit:
+            let parent = contentId.flatMap { model.issue(contentId: $0)?.id }
+            return { navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, parentItemId: parent, milestoneTitle: title)) }
+        case (.roadmap, .milestone(let title)) where canEdit:
+            return { navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, milestoneTitle: title, isEpic: true)) }
+        default:
+            return nil
         }
     }
 
@@ -578,6 +650,19 @@ struct IssueList: View {
             } else {
                 MobileEmptyState(title: String(localized: .loadingIssues), message: String(localized: .fetchingRepository), showsProgress: true)
             }
+        case .milestone(let projectId, let title):
+            MobileEmptyState(
+                title: String(localized: .milestoneEmptyTitle(milestone: title)),
+                message: String(localized: .milestoneEmptyMessage),
+                systemImage: "diamond"
+            ) {
+                Button(.newIssue) {
+                    navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, milestoneTitle: title))
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        case .roadmap:
+            MobileEmptyState(title: String(localized: .roadmapEmptyTitle), message: String(localized: .roadmapEmptyMessage), systemImage: "calendar.day.timeline.left")
         case .project(let projectId):
             MobileEmptyState(
                 title: String(localized: .noIssuesYet),

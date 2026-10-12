@@ -48,6 +48,9 @@ struct ItemMenuContent: View {
         if model.canHaveDueDate(item) {
             DueDateMenu(item: item)
         }
+        if model.canHaveMilestone(item) {
+            MilestoneMenu(item: item)
+        }
         if model.canRelate(item) {
             Divider()
             RelationMenuItems(item: item)
@@ -121,6 +124,20 @@ struct RelationMenuItems: View {
         } label: {
             Label(.addSubIssue, systemImage: "arrow.turn.down.right")
         }
+        if !item.isEpic {
+            Button {
+                navigation.sheet = .picker(itemId: item.id, kind: .epic)
+            } label: {
+                Label(.addToEpicCommand, systemImage: "square.stack.3d.up")
+            }
+        }
+        if model.canMakeEpic(item) {
+            Button {
+                model.setEpic([model.item(id: item.id) ?? item], !item.isEpic)
+            } label: {
+                Label(item.isEpic ? .turnIntoIssueCommand : .makeEpicCommand, systemImage: item.isEpic ? "square.stack.3d.down.right" : "square.stack.3d.up.fill")
+            }
+        }
         Menu {
             Button {
                 navigation.sheet = .picker(itemId: item.id, kind: .blockedBy)
@@ -134,6 +151,52 @@ struct RelationMenuItems: View {
             }
         } label: {
             Label(.markAsMenu, systemImage: "flag")
+        }
+    }
+}
+
+/// The milestone as a submenu: none, the open ones with the current one checked, and a new one.
+struct MilestoneMenu: View {
+    @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
+    var item: Item
+
+    var body: some View {
+        let groups = model.milestoneGroups(for: item)
+        let title = model.milestoneTitle(of: item)
+        Menu {
+            Picker(.milestone, selection: Binding(
+                get: { title },
+                set: { new in
+                    let current = model.item(id: item.id) ?? item
+                    model.setMilestone(of: [current], to: new.flatMap { name in groups.first { $0.title == name } })
+                }
+            )) {
+                Label(.noMilestone, systemImage: "diamond").tag(String?.none)
+                ForEach(groups.filter { $0.isOpen || $0.title == title }) { group in
+                    Label {
+                        Text(group.title)
+                        if let due = group.due { Text(due.mediumLabel()) }
+                    } icon: {
+                        Image(systemName: group.isOpen ? model.isCurrentMilestone(group, projectId: item.projectId) ? "diamond.inset.filled" : "diamond" : "diamond.fill")
+                    }
+                    .tag(Optional(group.title))
+                }
+            }
+            .pickerStyle(.inline)
+            if item.projectId != nil {
+                Button {
+                    navigation.sheet = .milestoneEditor(projectId: item.projectId, title: nil, assigning: [item.id])
+                } label: {
+                    Label(.newMilestoneEllipsis, systemImage: "plus")
+                }
+            }
+        } label: {
+            Label {
+                Text(title.map { String(localized: .milestoneTooltip(milestone: $0)) } ?? String(localized: .milestone))
+            } icon: {
+                Image(systemName: "diamond")
+            }
         }
     }
 }

@@ -17,7 +17,11 @@ struct IssueDetailView: View {
                         TitleField(item: item)
                         DescriptionView(item: item)
                         if item.kind == .issue {
-                            SubIssuesSection(item: item)
+                            if item.isEpic {
+                                EpicWorkSection(item: item)
+                            } else {
+                                SubIssuesSection(item: item)
+                            }
                             RelationsSection(item: item)
                         }
                         if item.kind != .draft {
@@ -55,6 +59,17 @@ struct IssueDetailView: View {
                 }
                 .buttonStyle(PlainPressStyle())
                 Text("›").foregroundStyle(Theme.textTertiary)
+                if item.isEpic, let projectId = item.projectId {
+                    // An epic's place is the roadmap, as a project's in Linear is the projects page.
+                    Button {
+                        model.closeDetail()
+                        model.select(.roadmap(projectId))
+                    } label: {
+                        Text(.roadmap).foregroundStyle(Theme.textSecondary)
+                    }
+                    .buttonStyle(PlainPressStyle())
+                    Text("›").foregroundStyle(Theme.textTertiary)
+                }
             } else if let repo = item.repoShortName {
                 // On no board, the issue's place is its repository.
                 Button {
@@ -87,6 +102,7 @@ struct IssueDetailView: View {
                 .help(parent == nil ? Text(.parentIssueNotOnBoard) : Text(.openParentIssue))
                 Text("›").foregroundStyle(Theme.textTertiary)
             }
+            if item.isEpic { EpicIcon(size: 13) }
             Text(item.displayNumber).font(.uiSemibold).monospacedDigit()
             if item.isLocalOnly {
                 Text(.notOnGitHubYet)
@@ -434,6 +450,110 @@ private struct SubIssueRow: View {
     }
 }
 
+// MARK: - An epic's work
+
+/// What an epic is made of, as Linear's project page shows it: how far it is, and its sub-issues by milestone, each
+/// group with a + for a new sub-issue in that milestone.
+struct EpicWorkSection: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+    @State private var adding = false
+
+    var body: some View {
+        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let groups = model.subIssuesByMilestone(of: item, subs)
+        let showsPriority = model.project(of: item)?.priorityFieldId != nil
+        let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Text(.progress).font(.uiSemibold)
+                if !subs.isEmpty {
+                    Text(.subIssuesProgress(done: done, total: subs.count))
+                        .font(.small)
+                        .foregroundStyle(Theme.textTertiary)
+                        .monospacedDigit()
+                    let milestones = groups.filter { $0.title != nil }.count
+                    if milestones > 0 {
+                        Text(.milestonesCount(count: milestones)).font(.small).foregroundStyle(Theme.textTertiary)
+                    }
+                }
+                Spacer()
+                if model.canRelate(item) {
+                    IconButton(systemName: "plus", label: String(localized: .addSubIssueButton), size: 22) { adding = true }
+                        .dropdown(isPresented: $adding) { close in
+                            ItemPicker(kind: .addSubIssue, itemId: item.id, close: close)
+                        }
+                }
+            }
+            .frame(height: 32)
+
+            if subs.isEmpty {
+                Text(.epicNoIssuesYet)
+                    .font(.small)
+                    .foregroundStyle(Theme.textSecondary)
+            } else {
+                // One bar, in a part per milestone as long as its share of the issues.
+                SegmentedProgress(parts: groups.map { group in
+                    SegmentedProgress.Part(
+                        mark: group.group.map { model.mark(of: $0, projectId: item.projectId) } ?? .none,
+                        title: group.title ?? String(localized: .noMilestone),
+                        done: group.subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count,
+                        total: group.subs.count
+                    )
+                })
+
+                VStack(spacing: 0) {
+                    ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
+                        EpicGroupHeader(item: item, group: group.group, title: group.title, count: group.subs.count)
+                            .overlay(alignment: .top) {
+                                if index > 0 { Rectangle().fill(Theme.panelBorder).frame(height: 1) }
+                            }
+                        ForEach(group.subs) { sub in
+                            Rectangle().fill(Theme.panelBorder).frame(height: 1)
+                            SubIssueRow(sub: sub, showsPriority: showsPriority)
+                        }
+                    }
+                }
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .animation(Theme.spring, value: subs.map(\.id))
+            }
+        }
+    }
+}
+
+/// A milestone's group among an epic's sub-issues: its diamond, name, date and count, and a + for a new one in it.
+private struct EpicGroupHeader: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+    var group: MilestoneGroup?
+    var title: String?
+    var count: Int
+
+    var body: some View {
+        HStack(spacing: 8) {
+            MilestoneIcon(mark: group.map { model.mark(of: $0, projectId: item.projectId) } ?? .none, size: 12)
+            Text(title ?? String(localized: .noMilestone)).font(.smallMedium).foregroundStyle(title == nil ? Theme.textSecondary : Theme.text)
+            if let due = group?.due {
+                Text(due.shortLabel()).font(.small).foregroundStyle(Theme.textTertiary)
+            }
+            Text("\(count)").font(.small).monospacedDigit().foregroundStyle(Theme.textTertiary)
+            Spacer()
+            // A closed milestone takes no new issues.
+            if item.kind == .issue, group?.isOpen ?? true {
+                IconButton(systemName: "plus", label: String(localized: .newSubIssueInMilestone(milestone: title ?? String(localized: .noMilestone))), size: 20) {
+                    model.newIssuePlan = NewIssuePlan(milestoneTitle: title)
+                    model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
+                }
+            }
+        }
+        .padding(.leading, 12)
+        .padding(.trailing, 7)
+        .frame(height: 30)
+        .background(Theme.groupHeader)
+    }
+}
+
 // MARK: - Relations
 
 /// What blocks the issue and what it blocks, each under its own heading, shown once there is any. Issues are added
@@ -762,12 +882,72 @@ private struct PropertiesPanel: View {
                     }
                 }
             }
+            if model.canHaveMilestone(item) {
+                row(.milestone) {
+                    PropertyButton(kind: .milestone, item: item) {
+                        if let title = model.milestoneTitle(of: item) {
+                            HStack(spacing: 7) {
+                                MilestoneIcon(mark: model.milestoneMark(of: item), size: 12)
+                                Text(title).lineLimit(1)
+                                if let due = model.milestoneGroup(of: item)?.due {
+                                    Text(due.shortLabel()).foregroundStyle(Theme.textTertiary).lineLimit(1)
+                                }
+                            }
+                        } else {
+                            Text(.addToMilestone).foregroundStyle(Theme.textTertiary)
+                        }
+                    }
+                }
+                if item.isEpic, let span = model.milestoneSpan(of: item) {
+                    row(.itsIssues) {
+                        Text(span)
+                            .foregroundStyle(Theme.textBody)
+                            .lineLimit(1)
+                            .padding(.horizontal, 8)
+                            .help(Text(.epicSpanTooltip))
+                    }
+                }
+            }
             if let repo = item.repo {
                 row(.repository) {
                     Text(repo).foregroundStyle(Theme.textBody).lineLimit(1).truncationMode(.middle).padding(.horizontal, 8)
                 }
             }
-            if model.canRelate(item) {
+            let epic = model.epic(of: item)
+            let parentIsEpic = epic != nil && epic?.contentId == item.parentId
+            if model.canRelate(item), !item.isEpic, epic == nil || parentIsEpic {
+                // An issue right under an epic, or under nothing yet: its epic is chosen here.
+                row(.epic) {
+                    PropertyButton(kind: .epic, item: item) {
+                        if let epic {
+                            HStack(spacing: 7) {
+                                EpicIcon(size: 13)
+                                Text(epic.title).lineLimit(1)
+                            }
+                        } else {
+                            Text(.addToEpicPlaceholderShort).foregroundStyle(Theme.textTertiary)
+                        }
+                    }
+                }
+            } else if let epic {
+                // Under another issue: the epic comes with that parent.
+                row(.epic) {
+                    Button {
+                        model.open(epic)
+                    } label: {
+                        HStack(spacing: 7) {
+                            EpicIcon(size: 13)
+                            Text(epic.title).lineLimit(1)
+                        }
+                        .padding(.horizontal, 8)
+                        .frame(minHeight: 28)
+                        .hoverFill()
+                    }
+                    .buttonStyle(PlainPressStyle())
+                    .help(Text(.openEpic))
+                }
+            }
+            if model.canRelate(item), !parentIsEpic {
                 // The breadcrumb above opens the parent; here it is chosen.
                 row(.parentIssue) {
                     PropertyButton(kind: .parent, item: item) {
@@ -781,6 +961,8 @@ private struct PropertiesPanel: View {
                         }
                     }
                 }
+            }
+            if model.canRelate(item) {
                 relationRow(.blockedBy)
                 relationRow(.blocking)
             } else if let parentNumber = item.parentNumber {

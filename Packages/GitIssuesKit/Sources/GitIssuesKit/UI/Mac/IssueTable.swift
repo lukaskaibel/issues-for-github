@@ -24,14 +24,25 @@ struct IssueRowModel: Equatable {
     var folded = false
     /// A sub-issue whose parent is in another group names the parent.
     var showsParent = false
+    /// Whether that parent is an epic, which it then names with the epic's icon.
+    var parentIsEpic = false
+    /// The milestone it is planned for, where the list isn't a milestone's.
+    var milestone: String?
+    var milestoneMark: MilestoneMark = .upcoming
 }
 
 struct IssueSectionModel: Equatable {
+    typealias Icon = SectionIcon
+
     var id: String
     var collapsed = false
     var title: String
     var glyph: StatusGlyph
+    var icon: Icon = .plain
+    /// Quiet text after the count, such as when a milestone is due.
+    var detail: String?
     var optionId: String?
+    var kind: ListSection.Kind = .status
     var canAdd: Bool
     var count: Int
     var rows: [IssueRowModel]
@@ -353,6 +364,14 @@ struct IssueTable: NSViewRepresentable {
             refreshHighlight(for: [id])
         }
 
+        /// The row after a section's last one.
+        private func end(of sectionId: String) -> Int {
+            guard let header = entries.firstIndex(where: { $0.id == "section:\(sectionId)" }) else { return entries.count }
+            var row = header + 1
+            while row < entries.count, case .row = entries[row] { row += 1 }
+            return row
+        }
+
         /// Rows where a section may be dropped: in front of each header, or after the last row.
         private var sectionBoundaries: [Int] {
             entries.indices.filter { if case .header = entries[$0] { return true } else { return false } } + [entries.count]
@@ -382,13 +401,24 @@ struct IssueTable: NSViewRepresentable {
             return model.columns(projectId: projectId).first { $0.id == sectionId }
         }
 
-        /// Within its section the issue changes place; in another one it takes that status, as on the board.
+        /// Within its section the issue changes place; in another one it takes that status, as on the board. In a
+        /// milestone's groups by epic it joins the epic it is dropped into; on the roadmap an epic goes into the
+        /// milestone it is dropped into.
         func dropItem(_ id: String, above row: Int) -> Bool {
-            guard let item = model.item(id: id), let landing = landing(above: row, moving: moving(item)),
-                  let column = column(for: landing.sectionId, of: item)
-            else { return false }
+            guard let item = model.item(id: id), let landing = landing(above: row, moving: moving(item)) else { return false }
+            if let section = section(landing.sectionId), section.kind != .status {
+                return model.dropPlanned(item, into: section.kind, scope: model.scope)
+            }
+            guard let column = column(for: landing.sectionId, of: item) else { return false }
             model.drop(item, in: column, at: landing.index)
             return true
+        }
+
+        private func section(_ id: String) -> IssueSectionModel? {
+            for entry in entries {
+                if case .header(let section) = entry, section.id == id { return section }
+            }
+            return nil
         }
 
         /// The row an issue dropped above `row` really lands above: a sub-issue among its parent's sub-issues, any
@@ -418,6 +448,13 @@ struct IssueTable: NSViewRepresentable {
         ) -> NSDragOperation {
             guard info.draggingSource as? NSTableView === tableView else { return [] }
             if let id = info.draggingPasteboard.string(forType: Self.itemType) {
+                // Groups by epic or by milestone take an issue in at their end; a group of its own isn't a place.
+                if let item = model.item(id: id), let landing = landing(above: max(row, 1), moving: moving(item)),
+                   let section = section(landing.sectionId), section.kind != .status {
+                    guard model.canDropPlanned(item, into: section.kind) else { return [] }
+                    tableView.setDropRow(end(of: section.id), dropOperation: .above)
+                    return .move
+                }
                 // Anywhere below the first header; in the middle of a row means just above it. The gap opens where
                 // the issue will land, which for a sub-issue is among its parent's sub-issues.
                 tableView.setDropRow(snappedDropRow(id, above: max(row, 1)), dropOperation: .above)
@@ -578,7 +615,7 @@ struct IssueTable: NSViewRepresentable {
             if section.canAdd {
                 menu.addItem(.separator())
                 let add = ClosureMenuItem(String(localized: .newIssueInGroupMenu(group: section.title))) { [model] in
-                    model.overlay = .newIssue(statusId: section.optionId, parentItemId: nil)
+                    model.addIssue(in: section.kind, optionId: section.optionId)
                 }
                 add.image = MenuIcons.symbol("plus")
                 menu.addItem(add)
@@ -657,6 +694,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     private var project: NSAttributedString?
     private var subCount: NSAttributedString?
     private var parentHint: NSAttributedString?
+    private var milestoneText: NSAttributedString?
+    private var milestoneSize = NSSize.zero
     private var dueText: NSAttributedString?
     private var dueIcon: NSImage?
     private var labels: [(text: NSAttributedString, size: NSSize, color: NSColor)] = []
@@ -742,7 +781,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                 ])
             }
             parentHint = row.showsParent ? item.parentNumber.map { number in
-                NSAttributedString(string: "#\(number) \(item.parentTitle ?? "")", attributes: [
+                NSAttributedString(string: row.parentIsEpic ? item.parentTitle ?? "#\(number)" : "#\(number) \(item.parentTitle ?? "")", attributes: [
                     .font: NSFont.systemFont(ofSize: 12),
                     .foregroundColor: NSColor(Theme.textTertiary),
                     .paragraphStyle: truncating,
@@ -767,7 +806,16 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                 dueText = nil
                 dueIcon = nil
             }
-            labels = item.labels.prefix(3).map { label in
+            milestoneText = row.milestone.map {
+                NSAttributedString(string: $0, attributes: [
+                    .font: NSFont.systemFont(ofSize: 11),
+                    .foregroundColor: NSColor(Theme.textSecondary),
+                    .paragraphStyle: truncating,
+                ])
+            }
+            milestoneSize = milestoneText?.size() ?? .zero
+            // An epic's own label says what the row shows already.
+            labels = item.labels.filter { !(item.isEpic && Item.isEpicLabel($0.name)) }.prefix(3).map { label in
                 let text = NSAttributedString(string: label.name, attributes: [
                     .font: NSFont.systemFont(ofSize: 11),
                     .foregroundColor: NSColor(Theme.textSecondary),
@@ -784,7 +832,11 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             let spoken = row.due.map {
                 String(localized: .issueRowSpokenWithDue(number: item.displayNumber, title: item.title, due: $0.tooltip))
             } ?? "\(item.displayNumber) \(item.title)"
-            setAccessibilityLabel(item.parentNumber.map { "\(spoken), \(String(localized: .subIssueOf(number: "#\($0)")))" } ?? spoken)
+            setAccessibilityLabel(item.parentNumber.map { number in
+                let parent = String(localized: row.parentIsEpic
+                    ? .epicTooltip(epic: item.parentTitle ?? "#\(number)") : .subIssueOf(number: "#\(number)"))
+                return "\(spoken), \(parent)"
+            } ?? spoken)
             needsDisplay = true
         }
         if highlighted != self.highlighted {
@@ -935,6 +987,21 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             project.draw(with: NSRect(x: right - width, y: midY - projectSize.height / 2, width: width, height: projectSize.height), options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
             right -= width + 10
         }
+        if let milestoneText {
+            let textWidth = min(milestoneSize.width, 120)
+            let width = 7 + 10 + 5 + textWidth + 7
+            let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
+            if rect.minX > x + 160 {
+                parts.append((.milestone, rect))
+                drawChip(rect, hovered: hoveredPart == .milestone)
+                PlanningGlyph.drawMilestone(row.milestoneMark, in: CGRect(x: rect.minX + 7, y: midY - 5, width: 10, height: 10), cg: context)
+                milestoneText.draw(
+                    with: NSRect(x: rect.minX + 7 + 10 + 5, y: midY - milestoneSize.height / 2, width: textWidth, height: milestoneSize.height),
+                    options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
+                )
+                right = rect.minX - 6
+            }
+        }
         var labelsRect: NSRect?
         for label in labels.reversed() {
             let textSize = label.size
@@ -1008,9 +1075,12 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             let width = min(hintWidth, right - 12 - afterTitle)
             if width >= 70 {
                 let rect = NSRect(x: afterTitle, y: midY - 10, width: width, height: 20)
-                parts.append((.parent, rect))
-                if hoveredPart == .parent { drawChip(rect, hovered: true) }
-                if let arrow = Self.parentArrow {
+                let kind: PickerKind = row.parentIsEpic ? .epic : .parent
+                parts.append((kind, rect))
+                if hoveredPart == kind { drawChip(rect, hovered: true) }
+                if row.parentIsEpic {
+                    PlanningGlyph.drawEpic(in: CGRect(x: rect.minX + 6, y: midY - 6, width: 12, height: 12), cg: context)
+                } else if let arrow = Self.parentArrow {
                     let size = arrow.size
                     arrow.draw(
                         in: NSRect(x: rect.minX + 7, y: midY - size.height / 2, width: size.width, height: size.height),
@@ -1292,7 +1362,8 @@ final class IssueHeaderCell: NSView {
     }
 
     @objc private func add() {
-        model?.overlay = .newIssue(statusId: section?.optionId, parentItemId: nil)
+        guard let section else { return }
+        model?.addIssue(in: section.kind, optionId: section.optionId)
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -1304,8 +1375,10 @@ final class IssueHeaderCell: NSView {
         NSColor(Theme.groupHeader).setFill()
         band.fill()
         // A trace of the status colour, as a hint of what the group is.
-        NSColor(section.glyph.color).withAlphaComponent(0.07).setFill()
-        band.fill()
+        if case .status(let glyph) = section.icon {
+            NSColor(glyph.color).withAlphaComponent(0.07).setFill()
+            band.fill()
+        }
         let midY = bounds.height / 2
         // The disclosure arrow: down while open, right while folded in.
         let arrow = NSBezierPath()
@@ -1323,18 +1396,37 @@ final class IssueHeaderCell: NSView {
         NSColor(Theme.textTertiary).setFill()
         arrow.fill()
         let left = IssueTable.inset + 28
-        StatusPainter.draw(section.glyph, in: CGRect(x: left, y: midY - 7, width: 14, height: 14), cg: context)
+        let iconRect = CGRect(x: left, y: midY - 7, width: 14, height: 14)
+        switch section.icon {
+        case .status(let glyph): StatusPainter.draw(glyph, in: iconRect, cg: context)
+        case .milestone(let mark): PlanningGlyph.drawMilestone(mark, in: iconRect, cg: context)
+        case .epic: PlanningGlyph.drawEpic(in: iconRect, cg: context)
+        case .plain: break
+        }
+        let titleX = section.icon == .plain ? left : left + 22
+        // Room for the count and the + button after the title.
+        let truncating = NSMutableParagraphStyle()
+        truncating.lineBreakMode = .byTruncatingTail
         let title = NSAttributedString(string: section.title, attributes: [
             .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
-            .foregroundColor: NSColor(Theme.text),
+            .foregroundColor: NSColor(section.icon == .plain ? Theme.textSecondary : Theme.text),
+            .paragraphStyle: truncating,
         ])
         let titleSize = title.size()
-        title.draw(at: NSPoint(x: left + 22, y: midY - titleSize.height / 2))
+        let titleWidth = min(titleSize.width, max(bounds.width - titleX - 140, 80))
+        title.draw(with: NSRect(x: titleX, y: midY - titleSize.height / 2, width: titleWidth, height: titleSize.height), options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
         let count = NSAttributedString(string: "\(section.count)", attributes: [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .regular),
             .foregroundColor: NSColor(Theme.textTertiary),
         ])
-        count.draw(at: NSPoint(x: left + 22 + titleSize.width + 8, y: midY - count.size().height / 2))
+        count.draw(at: NSPoint(x: titleX + titleWidth + 8, y: midY - count.size().height / 2))
+        if let detail = section.detail {
+            let text = NSAttributedString(string: detail, attributes: [
+                .font: NSFont.systemFont(ofSize: 12),
+                .foregroundColor: NSColor(Theme.textTertiary),
+            ])
+            text.draw(at: NSPoint(x: titleX + titleWidth + 8 + count.size().width + 10, y: midY - text.size().height / 2))
+        }
     }
 }
 
@@ -1639,7 +1731,43 @@ struct ItemMenuBuilder {
         if targets.contains(where: model.canHaveDueDate) {
             entries.append(submenu(String(localized: .dueDateTitle), MenuIcons.symbol("calendar"), dueDateMenu(targets)))
         }
+        if targets.contains(where: model.canHaveMilestone) {
+            entries.append(submenu(String(localized: .milestone), MenuIcons.milestone(model.milestoneMark(of: item)), milestoneMenu(targets)))
+        }
         return entries
+    }
+
+    /// No milestone, the open ones with the one they share checked, and a new one for them.
+    private func milestoneMenu(_ targets: [Item]) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let titles = Set(targets.map { model.milestoneTitle(of: $0) })
+        let none = ClosureMenuItem(String(localized: .noMilestone), checked: titles == [nil]) { [model] in
+            model.setMilestone(of: targets, to: nil)
+        }
+        none.image = MenuIcons.milestone(.none)
+        number(none, 0)
+        menu.addItem(none)
+        let today = CalendarDay.today()
+        let groups = model.milestoneGroups(for: item).filter { $0.isOpen || titles.contains($0.title) }
+        for (index, group) in groups.enumerated() {
+            let entry = ClosureMenuItem(group.title, checked: titles == [group.title]) { [model] in
+                model.setMilestone(of: targets, to: group)
+            }
+            entry.image = MenuIcons.milestone(model.mark(of: group, projectId: item.projectId, today: today))
+            entry.toolTip = group.due.map { String(localized: .dueOn(date: $0.longLabel)) }
+            number(entry, index + 1)
+            menu.addItem(entry)
+        }
+        if item.projectId != nil {
+            menu.addItem(.separator())
+            let new = ClosureMenuItem(String(localized: .newMilestoneEllipsis)) { [model, item] in
+                model.overlay = .milestoneEditor(projectId: item.projectId, title: nil, assigning: targets.map(\.id))
+            }
+            new.image = MenuIcons.symbol("plus")
+            menu.addItem(new)
+        }
+        return menu
     }
 
     /// Parent, sub-issues and blockers. Each opens its picker in the command palette, where issues are found by
@@ -1675,6 +1803,21 @@ struct ItemMenuBuilder {
             existing.image = MenuIcons.symbol("magnifyingglass")
             add.addItem(existing)
             entries.append(submenu(String(localized: .addSubIssue), MenuIcons.subIssue, add))
+        }
+        if !targets.contains(where: \.isEpic) {
+            let epic = ClosureMenuItem(String(localized: .addToEpicCommand)) { [model, item] in
+                model.overlay = .palette(.epic(itemId: item.id))
+            }
+            epic.image = MenuIcons.epic
+            entries.append(epic)
+        }
+        if targets.allSatisfy(model.canMakeEpic) {
+            let isEpic = targets.allSatisfy(\.isEpic)
+            let make = ClosureMenuItem(String(localized: isEpic ? .turnIntoIssueCommand : .makeEpicCommand)) { [model] in
+                model.setEpic(targets, !isEpic)
+            }
+            make.image = MenuIcons.symbol(isEpic ? "square.stack.3d.down.right.fill" : "square.stack.3d.up")
+            entries.append(make)
         }
         let mark = NSMenu()
         let blockedBy = ClosureMenuItem(String(localized: .blockedByMenuItem)) { [model, item] in

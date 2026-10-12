@@ -359,6 +359,7 @@ public final class GitHubAPI: Sendable {
                     var url: String?
                     var repository: RepoDTO?
                     var assignees: Nodes<PersonDTO>?
+                    var milestone: MilestoneRefDTO?
                 }
                 var title: String?
                 var body: String?
@@ -377,7 +378,8 @@ public final class GitHubAPI: Sendable {
               comments(first: 100) { nodes { id body createdAt author { login avatarUrl } } }
               subIssues(first: 100) { nodes { id number title state stateReason url
                 repository { id nameWithOwner }
-                assignees(first: 3) { nodes { id login name avatarUrl } } } }
+                assignees(first: 3) { nodes { id login name avatarUrl } }
+                milestone { id title } } }
               blockedBy(first: 50) { nodes { id number title state stateReason url repository { id nameWithOwner } } }
               blocking(first: 50) { nodes { id number title state stateReason url repository { id nameWithOwner } } }
             }
@@ -399,7 +401,8 @@ public final class GitHubAPI: Sendable {
             SubIssue(
                 id: sub.id, parentId: contentId, number: sub.number, title: sub.title, state: sub.state,
                 stateReason: sub.stateReason, repo: sub.repository?.nameWithOwner, url: sub.url, position: index,
-                assignees: (sub.assignees?.items ?? []).map(\.person)
+                assignees: (sub.assignees?.items ?? []).map(\.person),
+                milestoneId: sub.milestone?.id, milestoneTitle: sub.milestone?.title
             )
         }
         var links: [LinkedIssue] = []
@@ -619,7 +622,8 @@ public final class GitHubAPI: Sendable {
     }
 
     public func createIssue(
-        repoId: String, title: String, body: String, assigneeIds: [String], labelIds: [String], parentContentId: String?
+        repoId: String, title: String, body: String, assigneeIds: [String], labelIds: [String], parentContentId: String?,
+        milestoneId: String? = nil
     ) async throws -> CreatedIssue {
         struct Response: Decodable {
             struct Payload: Decodable {
@@ -633,15 +637,15 @@ public final class GitHubAPI: Sendable {
             var createIssue: Payload?
         }
         let query = """
-        mutation($repo: ID!, $title: String!, $body: String, $assignees: [ID!], $labels: [ID!], $parent: ID) {
-          createIssue(input: {repositoryId: $repo, title: $title, body: $body, assigneeIds: $assignees, labelIds: $labels, parentIssueId: $parent}) {
+        mutation($repo: ID!, $title: String!, $body: String, $assignees: [ID!], $labels: [ID!], $parent: ID, $milestone: ID) {
+          createIssue(input: {repositoryId: $repo, title: $title, body: $body, assigneeIds: $assignees, labelIds: $labels, parentIssueId: $parent, milestoneId: $milestone}) {
             issue { id number url }
           }
         }
         """
         let response: Response = try await client.run(query, variables: [
             "repo": repoId, "title": title, "body": body,
-            "assignees": assigneeIds, "labels": labelIds, "parent": parentContentId,
+            "assignees": assigneeIds, "labels": labelIds, "parent": parentContentId, "milestone": milestoneId,
         ])
         guard let issue = response.createIssue?.issue else {
             throw APIError.decoding("createIssue returned no issue.")
@@ -759,6 +763,8 @@ enum GQL {
       subIssuesSummary { total completed }
       issueDependenciesSummary { blockedBy blocking }
       comments { totalCount }
+      milestone { id title }
+      issueType { name }
       projectItems(first: 20) { nodes { project { id } } }
     }
     """
@@ -784,12 +790,15 @@ enum GQL {
           viewerCanDelete
           subIssuesSummary { total completed }
           issueDependenciesSummary { blockedBy blocking }
-          comments { totalCount } }
+          comments { totalCount }
+          milestone { id title }
+          issueType { name } }
         ... on PullRequest { id number title body state url createdAt updatedAt closedAt
           author { login } repository { id nameWithOwner }
           assignees(first: 10) { nodes { id login name avatarUrl } }
           labels(first: 20) { nodes { id name color } }
-          comments { totalCount } }
+          comments { totalCount }
+          milestone { id title } }
         ... on DraftIssue { id title body createdAt updatedAt
           creator { login }
           assignees(first: 10) { nodes { id login name avatarUrl } } }
@@ -835,6 +844,16 @@ struct LabelDTO: Decodable {
     var name: String
     var color: String
     var label: LabelRef { LabelRef(id: id, name: name, color: color) }
+}
+
+struct MilestoneRefDTO: Decodable {
+    var id: String
+    var title: String
+}
+
+struct IssueTypeDTO: Decodable {
+    var id: String?
+    var name: String
 }
 
 struct FieldDTO: Decodable {
@@ -910,6 +929,8 @@ struct ItemDTO: Decodable {
         var issueDependenciesSummary: DependencySummary?
         var comments: Count?
         var viewerCanDelete: Bool?
+        var milestone: MilestoneRefDTO?
+        var issueType: IssueTypeDTO?
     }
 
     // Absent when the node id did not resolve to a project item.
@@ -974,7 +995,10 @@ extension ItemDTO.Content {
             labels: (content.labels?.items ?? []).map(\.label),
             viewerCanDelete: content.viewerCanDelete ?? false,
             blockedByCount: content.issueDependenciesSummary?.blockedBy ?? 0,
-            blockingCount: content.issueDependenciesSummary?.blocking ?? 0
+            blockingCount: content.issueDependenciesSummary?.blocking ?? 0,
+            milestoneId: content.milestone?.id,
+            milestoneTitle: content.milestone?.title,
+            issueType: content.issueType?.name
         )
     }
 }

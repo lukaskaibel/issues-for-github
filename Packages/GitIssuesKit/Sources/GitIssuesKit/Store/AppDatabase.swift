@@ -238,6 +238,32 @@ public final class AppDatabase: Sendable {
             try db.execute(sql: "UPDATE item SET remoteUpdatedAt = NULL")
             try db.execute(sql: "UPDATE project SET remoteUpdatedAt = NULL")
         }
+        migrator.registerMigration("milestones") { db in
+            try db.create(table: "milestone") { t in
+                t.primaryKey("id", .text)
+                t.column("repoId", .text).notNull().indexed()
+                t.column("repo", .text).notNull()
+                t.column("number", .integer).notNull()
+                t.column("title", .text).notNull()
+                t.column("descr", .text).notNull()
+                t.column("dueOn", .text)
+                t.column("state", .text).notNull()
+                t.column("closedAt", .datetime)
+                t.column("url", .text)
+            }
+            try db.alter(table: "item") { t in
+                t.add(column: "milestoneId", .text)
+                t.add(column: "milestoneTitle", .text)
+                t.add(column: "issueType", .text)
+            }
+            try db.alter(table: "subIssue") { t in
+                t.add(column: "milestoneId", .text)
+                t.add(column: "milestoneTitle", .text)
+            }
+            // Read every issue again once, so milestones and issue types are filled in.
+            try db.execute(sql: "UPDATE item SET remoteUpdatedAt = NULL")
+            try db.execute(sql: "UPDATE project SET remoteUpdatedAt = NULL")
+        }
         return migrator
     }
 }
@@ -284,7 +310,7 @@ extension AppDatabase {
     /// Removes everything, for sign-out.
     public func wipe() throws {
         try writer.write { db in
-            for table in ["outbox", "comment", "subIssue", "linkedIssue", "repo", "item", "fieldOption", "project", "inboxEntry", "kv"] {
+            for table in ["outbox", "comment", "subIssue", "linkedIssue", "milestone", "repo", "item", "fieldOption", "project", "inboxEntry", "kv"] {
                 try db.execute(sql: "DELETE FROM \(table)")
             }
         }

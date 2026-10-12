@@ -43,6 +43,7 @@ public struct RootView: View {
                 Text(.issueDeletionMessage(title: item.title))
             }
         }
+        .modifier(CompleteMilestoneAlert())
         .confirmationDialog(Text(.signOutEverywhereQuestion), isPresented: Bindable(model).confirmSignOutEverywhere) {
             Button(.signOutEverywhere, role: .destructive) { model.signOut(everywhere: true) }
             Button(.cancel, role: .cancel) {}
@@ -109,6 +110,10 @@ struct ContentPanel: View {
                         .transition(.opacity)
                 } else {
                     ProjectHeader()
+                    if case .milestone(let projectId, let title) = model.scope,
+                       let group = model.milestoneGroup(projectId: projectId, title: title) {
+                        MilestoneSummary(projectId: projectId, group: group)
+                    }
                     if model.scope == nil {
                         EmptyState(
                             title: String(localized: model.projects.isEmpty ? .lookingForProjects : .chooseProject),
@@ -116,6 +121,18 @@ struct ContentPanel: View {
                         )
                     } else if model.isLoadingProject {
                         ProjectLoadingState()
+                            .transition(.opacity)
+                    } else if case .milestone(let projectId, let title) = model.scope,
+                              model.milestoneGroup(projectId: projectId, title: title) == nil {
+                        EmptyState(
+                            title: String(localized: .milestoneGoneTitle),
+                            message: String(localized: .milestoneGoneMessage(milestone: title))
+                        ) {
+                            Button(.showBoard) { model.select(.project(projectId)) }
+                                .buttonStyle(SecondaryButtonStyle())
+                        }
+                    } else if case .roadmap(let projectId) = model.scope {
+                        RoadmapView(projectId: projectId)
                             .transition(.opacity)
                     } else if model.viewMode == .board, model.currentProjectId != nil {
                         BoardView()
@@ -215,10 +232,14 @@ struct ProjectHeader: View {
                     Text("\(owner)\(Text(repo.shortName).font(.uiSemibold))")
                         .lineLimit(1)
                 }
+            case .milestone(let projectId, let title):
+                MilestoneHeader(projectId: projectId, title: title)
+            case .roadmap(let projectId):
+                RoadmapHeader(projectId: projectId)
             case .inbox, nil:
                 EmptyView()
             }
-            Spacer()
+            if !isPlanning { Spacer() }
             if let repo = model.currentRepository, let url = repo.url {
                 Button {
                     Platform.open(url)
@@ -231,7 +252,7 @@ struct ProjectHeader: View {
                 .buttonStyle(SecondaryButtonStyle())
                 .help(Text(.openRepositoryOnGitHubTooltip(repository: repo.nameWithOwner)))
             }
-            if let project = model.currentProject, project.priorityFieldId == nil, project.viewerCanUpdate, project.lastSyncedAt != nil {
+            if case .project = model.scope, let project = model.currentProject, project.priorityFieldId == nil, project.viewerCanUpdate, project.lastSyncedAt != nil {
                 Button(.addPriorityFieldMac) { model.addPriorityField(projectId: project.id) }
                     .buttonStyle(SecondaryButtonStyle())
                     .help(Text(.addPriorityFieldTooltip))
@@ -242,6 +263,14 @@ struct ProjectHeader: View {
         .frame(height: Theme.headerHeight)
         .overlay(alignment: .bottom) {
             Rectangle().fill(Theme.panelBorder).frame(height: 1)
+        }
+    }
+
+    /// A milestone's and the roadmap's headers place their own space.
+    private var isPlanning: Bool {
+        switch model.scope {
+        case .milestone, .roadmap: true
+        default: false
         }
     }
 }
@@ -359,6 +388,9 @@ struct OverlayHost: View {
                             .padding(.top, 120)
                     case .newIssue(let statusId, let parentItemId):
                         NewIssueView(statusId: statusId, parentItemId: parentItemId)
+                            .padding(.top, 110)
+                    case .milestoneEditor(let projectId, let title, let assigning):
+                        MilestoneEditor(projectId: projectId, title: title, assigning: assigning)
                             .padding(.top, 110)
                     }
                 }

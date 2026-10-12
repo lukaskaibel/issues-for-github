@@ -156,6 +156,9 @@ extension AppModel {
                 case "p":
                     overlay = .palette(.parent(itemId: item.id))
                     return true
+                case "e" where !item.isEpic:
+                    overlay = .palette(.epic(itemId: item.id))
+                    return true
                 default:
                     break
                 }
@@ -210,6 +213,13 @@ extension AppModel {
             case "p":
                 overlay = .palette(.projects)
                 return true
+            case "r":
+                if scopeProjectId == nil { selectLastProject() }
+                if let projectId = scopeProjectId {
+                    closeDetail()
+                    select(.roadmap(projectId))
+                }
+                return true
             default:
                 break
             }
@@ -261,6 +271,12 @@ extension AppModel {
 
         // With issues picked, these act on all of them.
         guard let item = actionItem else { return false }
+        // ⇧M: the milestone, as in Linear.
+        if key == "m", event.modifierFlags.contains(.shift) {
+            guard item.kind != .draft, !item.isDetached else { return false }
+            overlay = .palette(.milestone(itemId: item.id))
+            return true
+        }
         switch key {
         case "s":
             overlay = .palette(.status(itemId: item.id))

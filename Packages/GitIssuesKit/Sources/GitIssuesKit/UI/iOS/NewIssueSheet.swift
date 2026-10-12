@@ -64,7 +64,7 @@ struct NewIssueSheet: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 propertyBar
             }
-            .navigationTitle(draft.parent == nil ? LocalizedStringResource.newIssue : .newSubIssue)
+            .navigationTitle(draft.isEpic ? LocalizedStringResource.newEpic : draft.parent == nil ? .newIssue : .newSubIssue)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -137,8 +137,13 @@ struct NewIssueSheet: View {
                 .accessibilityLabel(project.map { .projectIs(project: $0.title) } ?? .projectNone)
             } else if let parent = draft.parent {
                 contextChip {
-                    SubIssueGlyph().frame(width: 11, height: 11)
-                    Text(.subIssueOf(number: parent.displayNumber))
+                    if parent.isEpic {
+                        EpicIcon(size: 12)
+                        Text(parent.title)
+                    } else {
+                        SubIssueGlyph().frame(width: 11, height: 11)
+                        Text(.subIssueOf(number: parent.displayNumber))
+                    }
                 }
             }
             if context.repoId != nil || (draft.projectId == nil && draft.parent != nil), let repo = repos.first {
@@ -280,6 +285,34 @@ struct NewIssueSheet: View {
                     .accessibilityLabel(draft.dueDate.flatMap(CalendarDay.init).map { .dueOn(date: $0.longLabel) } ?? .dueDateNone)
                     .accessibilityIdentifier("new-due")
                 }
+                if draft.milestoneTitle != nil || !milestones.isEmpty {
+                    Menu {
+                        Picker(.milestone, selection: $draft.milestoneTitle) {
+                            Label {
+                                Text(.noMilestone)
+                            } icon: {
+                                Image(systemName: "diamond")
+                            }
+                            .tag(String?.none)
+                            ForEach(milestones) { group in
+                                Label {
+                                    Text(group.title)
+                                } icon: {
+                                    Image(systemName: model.isCurrentMilestone(group, projectId: draft.projectId) ? "diamond.inset.filled" : "diamond")
+                                }
+                                .tag(Optional(group.title))
+                            }
+                        }
+                        .pickerStyle(.inline)
+                    } label: {
+                        let group = milestones.first { $0.title == draft.milestoneTitle }
+                        PropertyChip(text: draft.milestoneTitle ?? String(localized: .milestone), placeholder: draft.milestoneTitle == nil) {
+                            MilestoneIcon(mark: group.map { model.mark(of: $0, projectId: draft.projectId) } ?? .none, size: 14)
+                        }
+                    }
+                    .accessibilityLabel(draft.milestoneTitle.map { .milestoneTooltip(milestone: $0) } ?? .noMilestone)
+                    .accessibilityIdentifier("new-milestone")
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -294,6 +327,11 @@ struct NewIssueSheet: View {
     private var statuses: [FieldOption] { model.statusOptions(projectId: draft.projectId) }
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
     private var repos: [RepoRef] { model.repos(forNewIssueIn: draft.projectId, repoId: draft.repoId) }
+    /// The open milestones the issue can start in: its board's, or its repository's on no board.
+    private var milestones: [MilestoneGroup] {
+        let groups = draft.projectId.map { model.milestoneGroups(projectId: $0) } ?? model.milestoneGroups(repoId: draft.repoId)
+        return groups.filter(\.isOpen)
+    }
 
     /// The boards a new issue can go on: a repository's, when it was started in one, or else every open board.
     private var projectChoices: [Project] {
@@ -328,6 +366,9 @@ struct NewIssueSheet: View {
         new.repoId = parent?.repoId ?? context.repoId ?? projectId.flatMap { model.defaultRepoId(projectId: $0) }
         new.statusId = context.statusId ?? defaultStatus(projectId: projectId)
         if context.assignToMe, let viewer = model.viewer { new.assignees = [viewer.person] }
+        // Begun in a milestone, from the roadmap, or under an issue that has a milestone.
+        new.milestoneTitle = context.milestoneTitle ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
+        new.isEpic = context.isEpic
         draft = new
         model.loadRepoMeta(projectId: projectId)
         if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
@@ -346,6 +387,7 @@ struct NewIssueSheet: View {
         draft.projectId = id
         draft.statusId = defaultStatus(projectId: id)
         draft.priorityId = nil
+        if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
         model.loadRepoMeta(projectId: id)
         // In a repository, every choice keeps it, and with it the people and labels picked.
         guard context.repoId == nil, let id else { return }
@@ -404,7 +446,7 @@ private struct DraftPickerSheet: View {
                 )
             }
         case .labels:
-            return model.labels(projectId: draft.projectId, repoId: draft.repoId).map { label in
+            return model.pickableLabels(projectId: draft.projectId, repoId: draft.repoId).map { label in
                 PickerItem(
                     id: label.id, title: label.name, selected: draft.labels.contains { $0.id == label.id },
                     icon: AnyView(Circle().fill(Theme.labelColor(label.color)).frame(width: 11, height: 11))
@@ -426,7 +468,7 @@ private struct DraftPickerSheet: View {
         case .labels:
             if let index = draft.labels.firstIndex(where: { $0.id == id }) {
                 draft.labels.remove(at: index)
-            } else if let label = model.labels(projectId: draft.projectId, repoId: draft.repoId).first(where: { $0.id == id }) {
+            } else if let label = model.pickableLabels(projectId: draft.projectId, repoId: draft.repoId).first(where: { $0.id == id }) {
                 draft.labels.append(label)
             }
         default:

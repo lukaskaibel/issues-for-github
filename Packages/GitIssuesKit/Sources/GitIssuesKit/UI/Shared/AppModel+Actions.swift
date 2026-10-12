@@ -13,6 +13,16 @@ struct NewIssueDraft: Equatable {
     var assignees: [Person] = []
     var labels: [LabelRef] = []
     var parent: Item?
+    /// The milestone it starts in, by title: the board's milestone of that name.
+    var milestoneTitle: String?
+    /// Whether it starts as an epic.
+    var isEpic = false
+}
+
+/// What a new issue starts with when it is begun from a milestone, an epic's group or the roadmap.
+struct NewIssuePlan: Equatable {
+    var milestoneTitle: String?
+    var isEpic = false
 }
 
 /// What the user can do to an issue. Each action becomes one or more queued mutations.
@@ -140,7 +150,8 @@ extension AppModel {
     @discardableResult
     func move(_ item: Item, by delta: Int) -> Bool {
         guard let projectId = item.projectId, project(of: item)?.viewerCanUpdate == true,
-              let column = columns(projectId: projectId).first(where: { $0.items.contains { $0.id == item.id } }),
+              let column = (columns.contains { $0.items.contains { $0.id == item.id } } ? columns : columns(projectId: projectId))
+                .first(where: { $0.items.contains { $0.id == item.id } }),
               let index = column.items.firstIndex(where: { $0.id == item.id }) else { return false }
         var landing = column.landing(of: item, at: index)
         let rank = landing.rank + delta
@@ -204,17 +215,42 @@ extension AppModel {
         guard !title.isEmpty, draft.projectId == nil || project != nil,
               let repo = repos(forNewIssueIn: draft.projectId, repoId: draft.repoId).first(where: { $0.id == draft.repoId }) else { return nil }
         let itemId = LocalID.make()
+        let contentId = LocalID.make()
         if let project { UserDefaults.standard.set(repo.id, forKey: "lastRepo.\(project.id)") }
-        perform([.createIssue(.init(
-            itemId: itemId, contentId: LocalID.make(), projectId: project?.id, repoId: repo.id, repo: repo.nameWithOwner,
+        // The milestone of that name in the issue's repository, made there first if it has none.
+        var mutations: [Mutation] = []
+        var milestone: Milestone?
+        if let title = draft.milestoneTitle,
+           let group = (project.map { milestoneGroups(projectId: $0.id) } ?? milestoneGroups(repoId: repo.id)).first(where: { $0.title == title }) {
+            milestone = group.milestone(inRepository: repo.id)
+            if milestone == nil {
+                let made = Milestone(
+                    id: LocalID.make(), repoId: repo.id, repo: repo.nameWithOwner, number: 0, title: group.title,
+                    descr: group.descr, dueOn: group.due?.string, state: "OPEN", closedAt: nil, url: nil
+                )
+                mutations.append(.createMilestone(.init(
+                    milestoneId: made.id, repoId: repo.id, repo: repo.nameWithOwner, title: made.title, dueOn: made.dueOn, descr: made.descr
+                )))
+                milestone = made
+            }
+        }
+        mutations.append(.createIssue(.init(
+            itemId: itemId, contentId: contentId, projectId: project?.id, repoId: repo.id, repo: repo.nameWithOwner,
             title: title, body: draft.body,
             statusFieldId: project?.statusFieldId, statusId: project == nil ? nil : draft.statusId,
             priorityFieldId: project?.priorityFieldId, priorityId: project == nil ? nil : draft.priorityId,
             dueDate: project == nil ? nil : draft.dueDate,
             assignees: draft.assignees, labels: draft.labels,
             parentContentId: draft.parent?.contentId, parentNumber: draft.parent?.number, parentTitle: draft.parent?.title,
+            milestoneId: milestone?.id, milestoneTitle: milestone?.title,
             author: viewer?.login, createdAt: Date()
-        ))])
+        )))
+        if draft.isEpic {
+            mutations.append(.setEpic(.init(
+                contentId: contentId, repoId: repo.id, repo: repo.nameWithOwner, isEpic: true, label: epicLabel(repoId: repo.id)
+            )))
+        }
+        perform(mutations)
         if draft.dueDate != nil { notifier.requestPermissionIfNeeded() }
         return itemId
     }
@@ -323,6 +359,8 @@ extension AppModel {
         case .project(let id): "listOrder.\(id)"
         case .myIssues: "listOrder.mine"
         case .repository(let id): "listOrder.repository.\(id)"
+        case .milestone(let id, let title): "listOrder.milestone.\(id).\(title)"
+        case .roadmap(let id): "listOrder.roadmap.\(id)"
         case .inbox, nil: nil
         }
     }
@@ -372,6 +410,8 @@ extension AppModel {
         case .project(let id): "collapsed.\(id)"
         case .myIssues: "collapsed.mine"
         case .repository(let id): "collapsed.repository.\(id)"
+        case .milestone(let id, let title): "collapsed.milestone.\(id).\(title)"
+        case .roadmap(let id): "collapsed.roadmap.\(id)"
         case .inbox, nil: nil
         }
     }
@@ -462,6 +502,14 @@ extension AppModel {
             perform([.setDate(mutation)])
         case .openItem(let id):
             if let item = allItems.first(where: { $0.id == id }) { open(item) }
+        case .undo(let mutations):
+            // Each change starts from what GitHub has now, which is what was done.
+            let current = mutations.map { mutation -> Mutation in
+                guard case .setMilestone(var change) = mutation else { return mutation }
+                change.base = issue(contentId: change.contentId)?.milestoneId
+                return .setMilestone(change)
+            }
+            withAnimation(Theme.spring) { perform(current) }
         }
     }
 }

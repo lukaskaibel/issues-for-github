@@ -126,6 +126,11 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
     /// Open issues this one is blocked by, and open issues it blocks, as GitHub counts them.
     public var blockedByCount: Int = 0
     public var blockingCount: Int = 0
+    /// The milestone of the issue or pull request (node id), and its title for when the milestone itself isn't here.
+    public var milestoneId: String?
+    public var milestoneTitle: String?
+    /// The issue's type, in organisations that use them ("Bug", "Epic").
+    public var issueType: String?
 
     public var isLocalOnly: Bool { id.hasPrefix(LocalID.prefix) }
     public var isOnBoard: Bool { projectId != nil }
@@ -217,8 +222,37 @@ public struct SubIssue: Codable, FetchableRecord, PersistableRecord, Identifiabl
     public var url: String?
     public var position: Int
     public var assignees: [Person] = []
+    /// Its milestone (node id) and the milestone's title, so an epic can say when its sub-issues are due.
+    public var milestoneId: String?
+    public var milestoneTitle: String?
 
     public var isClosed: Bool { state != "OPEN" }
+}
+
+/// A milestone of a repository, such as a version: GitHub's way to say what ships when. It has a title, a description
+/// and the day it is due, and issues and pull requests of its repository can have it.
+public struct Milestone: Codable, FetchableRecord, PersistableRecord, Identifiable, Hashable, Sendable {
+    public static let databaseTableName = "milestone"
+
+    /// The node id; a local id until GitHub has created it.
+    public var id: String
+    public var repoId: String
+    /// "owner/name": GitHub changes milestones by repository and number.
+    public var repo: String
+    /// 0 until GitHub has created it.
+    public var number: Int
+    public var title: String
+    public var descr: String
+    /// The day it is due ("2026-10-25"). GitHub keeps no time for it.
+    public var dueOn: String?
+    /// OPEN or CLOSED.
+    public var state: String
+    public var closedAt: Date?
+    public var url: String?
+
+    public var isOpen: Bool { state == "OPEN" }
+    public var isLocalOnly: Bool { id.hasPrefix(LocalID.prefix) }
+    public var due: CalendarDay? { dueOn.flatMap(CalendarDay.init) }
 }
 
 /// An issue that blocks another one, or that the other one blocks, as the other's detail lists it.

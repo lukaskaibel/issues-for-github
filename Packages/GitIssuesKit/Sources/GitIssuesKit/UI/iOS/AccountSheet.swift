@@ -56,6 +56,8 @@ struct AccountSheet: View {
 
                 SubIssueSettingsSection()
 
+                EpicSettingsSection()
+
                 ReminderSettingsSection()
 
                 if UIApplication.shared.supportsAlternateIcons {

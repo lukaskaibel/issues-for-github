@@ -239,7 +239,7 @@ private struct NoticeBanner: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: notice.isWarning ? "exclamationmark.triangle.fill" : "arrow.triangle.2.circlepath")
+            Image(systemName: notice.isWarning ? "exclamationmark.triangle.fill" : notice.action?.isUndo == true ? "checkmark.circle" : "arrow.triangle.2.circlepath")
                 .font(.body.weight(.semibold))
                 .foregroundStyle(notice.isWarning ? Theme.warning : Theme.accent)
                 .padding(.top, 1)
@@ -251,7 +251,15 @@ private struct NoticeBanner: View {
                         .foregroundStyle(Theme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if let label = notice.action?.adoptLabel {
+                if notice.action?.isUndo == true {
+                    Button(.undo) {
+                        if let action = notice.action { model.apply(action) }
+                        model.status.dismiss(notice.id)
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.footnote.weight(.medium))
+                    .accessibilityIdentifier("notice-undo")
+                } else if let label = notice.action?.adoptLabel {
                     HStack(spacing: 8) {
                         Button(.keepMine) { model.status.dismiss(notice.id) }
                             .buttonStyle(.bordered)
@@ -282,7 +290,7 @@ private struct NoticeBanner: View {
         .contentShape(.rect(cornerRadius: 22))
         .onTapGesture {
             // A notice that only tells something goes away when tapped; one that asks waits for an answer.
-            if notice.action == nil { model.status.dismiss(notice.id) }
+            if notice.action == nil || notice.action?.isUndo == true { model.status.dismiss(notice.id) }
         }
         .offset(y: min(offset, 0))
         .gesture(
@@ -298,9 +306,9 @@ private struct NoticeBanner: View {
         )
         .accessibilityElement(children: .contain)
         .task {
-            // Notices that ask for a decision stay until answered.
-            guard notice.action == nil else { return }
-            try? await Task.sleep(for: .seconds(notice.isWarning ? 10 : 3))
+            // Notices that ask for a decision stay until answered; one that can be undone stays a little longer.
+            guard notice.action == nil || notice.action?.isUndo == true else { return }
+            try? await Task.sleep(for: .seconds(notice.isWarning || notice.action?.isUndo == true ? 10 : 3))
             model.status.dismiss(notice.id)
         }
     }

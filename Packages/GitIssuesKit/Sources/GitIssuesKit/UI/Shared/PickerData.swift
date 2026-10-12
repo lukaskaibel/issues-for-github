@@ -72,6 +72,10 @@ enum PickerKind: Equatable {
     case addSubIssue
     case blockedBy
     case blocking
+    /// The milestone it is planned for.
+    case milestone
+    /// The epic it belongs to: its parent, among the board's epics.
+    case epic
 
     var placeholder: String {
         switch self {
@@ -85,6 +89,8 @@ enum PickerKind: Equatable {
         case .addSubIssue: String(localized: .addSubIssuePlaceholder)
         case .blockedBy: String(localized: .markAsBlockedByPlaceholder)
         case .blocking: String(localized: .markAsBlockingPlaceholder)
+        case .milestone: String(localized: .moveToMilestonePlaceholder)
+        case .epic: String(localized: .addToEpicPlaceholder)
         }
     }
 
@@ -96,7 +102,8 @@ enum PickerKind: Equatable {
         case .assignees: "A"
         case .labels: "L"
         case .dueDate: "D"
-        case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking: nil
+        case .milestone: "⇧M"
+        case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic: nil
         }
     }
 
@@ -115,13 +122,15 @@ enum PickerKind: Equatable {
         case .addSubIssue: String(localized: .addSubIssueButton)
         case .blockedBy: String(localized: .blockedByHelp)
         case .blocking: String(localized: .blockingHelp)
+        case .milestone: String(localized: .changeMilestone)
+        case .epic: String(localized: .changeEpic)
         }
     }
 
     /// Pickers that list issues to choose from, which can be many.
     var picksIssues: Bool {
         switch self {
-        case .parent, .addSubIssue, .blockedBy, .blocking: true
+        case .parent, .addSubIssue, .blockedBy, .blocking, .epic: true
         default: false
         }
     }
@@ -130,7 +139,7 @@ enum PickerKind: Equatable {
     /// takes one away, they open on the first that isn't.
     var opensOnSelection: Bool { self != .blockedBy && self != .blocking }
 
-    var width: CGFloat { self == .subIssues || picksIssues ? 460 : 280 }
+    var width: CGFloat { self == .subIssues || picksIssues ? 460 : self == .milestone ? 300 : 280 }
 }
 
 extension AppModel {
@@ -251,6 +260,10 @@ extension AppModel {
             #else
             return rows
             #endif
+        case .milestone:
+            return milestoneItems(for: item, targets: targets)
+        case .epic:
+            return epicItems(for: item, targets: targets)
         case .blockedBy, .blocking:
             let ids = Set(targets.compactMap(\.contentId))
             let linked = { (candidate: Item) -> Bool in
@@ -270,6 +283,7 @@ extension AppModel {
     static let newSubIssueId = "new-sub-issue"
     static let existingSubIssueId = "existing-sub-issue"
     static let removeParentId = "remove-parent"
+    static let newMilestoneId = "new-milestone"
 
     /// An issue in a picker that picks issues: status, number and title, and its repository when it is another.
     private func issueRow(_ candidate: Item, near item: Item, selected: Bool = false) -> PickerItem {
@@ -368,6 +382,10 @@ extension AppModel {
             text = item.parentNumber.map { .subIssueOf(number: "#\($0)") } ?? .noParentIssue
         case .addSubIssue:
             text = .addSubIssueButton
+        case .milestone:
+            text = milestoneTitle(of: item).map { .milestoneTooltip(milestone: $0) } ?? .noMilestone
+        case .epic:
+            text = epic(of: item).map { .epicTooltip(epic: $0.title) } ?? .noEpic
         case .blockedBy, .blocking:
             let relation: LinkedIssue.Relation = kind == .blockedBy ? .blockedBy : .blocking
             let open = links(of: item, relation).filter { !$0.isClosed }
@@ -438,6 +456,22 @@ extension AppModel {
             if let blocker = self.item(contentId: id) { toggleBlocked(targets, by: blocker) }
         case .blocking:
             if let blocked = self.item(contentId: id) { toggleBlocking(targets, blocks: blocked) }
+        case .milestone:
+            if id == Self.newMilestoneId {
+                #if os(macOS)
+                overlay = .milestoneEditor(projectId: current.projectId, title: nil, assigning: targets.map(\.id))
+                #else
+                milestoneEditorRequest = MilestoneEditorRequest(projectId: current.projectId, title: nil, assigning: targets.map(\.id))
+                #endif
+            } else {
+                setMilestone(of: targets, to: id.isEmpty ? nil : milestoneGroups(for: current).first { $0.id == id })
+            }
+        case .epic:
+            if id == Self.removeParentId {
+                setParent(of: targets, to: nil)
+            } else if let epic = issue(contentId: id) {
+                setParent(of: targets, to: epic)
+            }
         }
     }
 
@@ -471,8 +505,14 @@ extension AppModel {
         }
     }
 
+    /// The labels to pick from for an issue. The one that makes an epic isn't among them: Make Epic sets it, and
+    /// rows and cards don't show it either.
     func labels(for item: Item) -> [LabelRef] {
-        labels(projectId: item.projectId, repoId: item.repoId)
+        pickableLabels(projectId: item.projectId, repoId: item.repoId)
+    }
+
+    func pickableLabels(projectId: String?, repoId: String?) -> [LabelRef] {
+        labels(projectId: projectId, repoId: repoId).filter { !Item.isEpicLabel($0.name) }
     }
 
     func labels(projectId: String?, repoId: String?) -> [LabelRef] {
@@ -485,5 +525,65 @@ extension AppModel {
             .flatMap(\.labels)
             .filter { seen.insert($0.id).inserted }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+}
+
+// MARK: - Milestones and epics
+
+extension AppModel {
+    /// No milestone, the board's open milestones by date with the current one marked, and a new one.
+    fileprivate func milestoneItems(for item: Item, targets: [Item]) -> [PickerItem] {
+        let groups = milestoneGroups(for: item)
+        let titles = Set(targets.map { milestoneTitle(of: $0) })
+        let today = CalendarDay.today()
+        var rows = [PickerItem(
+            id: "", title: String(localized: .noMilestone), selected: titles == [nil],
+            icon: AnyView(MilestoneIcon(mark: .none)), shortcut: "0"
+        )]
+        // A closed milestone shows only for issues that are in it.
+        let shown = groups.filter { $0.isOpen || titles.contains($0.title) }
+        for (index, group) in shown.enumerated() {
+            rows.append(PickerItem(
+                id: group.id, title: group.title, selected: titles == [group.title],
+                icon: AnyView(MilestoneIcon(mark: mark(of: group, projectId: item.projectId, today: today))),
+                shortcut: index < 9 ? "\(index + 1)" : nil,
+                trailing: group.due.map { day in
+                    AnyView(Text(day.shortLabel(today: today)).font(.small).monospacedDigit().foregroundStyle(Theme.textTertiary))
+                }
+            ))
+        }
+        // A milestone needs a board or a repository to be made in.
+        if item.projectId != nil {
+            rows.append(PickerItem(
+                id: Self.newMilestoneId, title: String(localized: .newMilestoneEllipsis),
+                icon: AnyView(Image(systemName: "plus").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)),
+                alwaysShown: true
+            ))
+        }
+        return rows
+    }
+
+    /// The board's epics, open ones first, with the one the issues are in checked.
+    fileprivate func epicItems(for item: Item, targets: [Item]) -> [PickerItem] {
+        let below = descendants(of: Set(targets.compactMap(\.contentId)))
+        let current = Set(targets.map { epic(of: $0)?.contentId })
+        let candidates = (item.projectId.map { epics(projectId: $0) } ?? relatableIssues(near: item).filter(\.isEpic))
+            .filter { !below.contains($0.contentId ?? "") }
+            .sorted { !isDone($0) && isDone($1) }
+        var rows: [PickerItem] = []
+        if targets.contains(where: { $0.parentId != nil && epic(of: $0)?.contentId == $0.parentId }) {
+            rows.append(PickerItem(
+                id: Self.removeParentId, title: String(localized: .removeFromEpic),
+                icon: AnyView(Image(systemName: "xmark").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary))
+            ))
+        }
+        rows += candidates.map { epic in
+            PickerItem(
+                id: epic.contentId ?? epic.id, title: epic.title, selected: current == [epic.contentId],
+                icon: AnyView(EpicIcon()), prefix: epic.displayNumber,
+                trailing: milestoneTitle(of: epic).map { AnyView(Text($0).font(.small).foregroundStyle(Theme.textTertiary).lineLimit(1)) }
+            )
+        }
+        return rows
     }
 }
