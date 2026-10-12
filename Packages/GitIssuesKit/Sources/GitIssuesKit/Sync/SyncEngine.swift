@@ -25,6 +25,10 @@ public actor SyncEngine {
     var lastMilestonePull: [String: Date] = [:]
     /// Items GitHub lists but will not show us (no access); remembered so they are not re-requested forever.
     private var unhydratable: [String: String] = [:]
+    /// Repositories whose issue events GitHub won't list, so they aren't asked again.
+    var eventsUnreadable: Set<String> = []
+    /// Boards last read before GitHub had caught up with their updatedAt, and since when that has been so.
+    private var readBehind: [String: Date] = [:]
     private var wasOffline = true
     /// When GitHub's notifications are asked for next, at the pace GitHub asks for (X-Poll-Interval).
     var nextInboxPull = Date.distantPast
@@ -275,6 +279,7 @@ public actor SyncEngine {
             let remoteIds = Set(projects.map(\.id))
             for id in try String.fetchAll(db, sql: "SELECT id FROM project") where !remoteIds.contains(id) {
                 try Project.deleteOne(db, key: id)
+                try IssueEventCursor.write(db, [:], projectId: id)
             }
             for remote in projects {
                 if var local = try Project.fetchOne(db, key: remote.id) {
@@ -298,16 +303,31 @@ public actor SyncEngine {
         guard !isDemo else { return }
         let meta = try await api.projectMeta(id: projectId)
 
-        let (local, dirtyIds, known) = try await db.reader.read { db -> (Project?, Set<String>, [String: String]) in
+        let (local, dirtyIds, known, issues, cursors) = try await db.reader.read { db in
             let project = try Project.fetchOne(db, key: projectId)
             let dirty = try String.fetchSet(db, sql: "SELECT id FROM item WHERE projectId = ? AND dirty = 1", arguments: [projectId])
             var known: [String: String] = [:]
-            for row in try Row.fetchAll(db, sql: "SELECT id, remoteUpdatedAt FROM item WHERE projectId = ?", arguments: [projectId]) {
+            var issues: [(id: String, contentId: String, repoId: String, repo: String)] = []
+            let rows = try Row.fetchAll(
+                db, sql: "SELECT id, remoteUpdatedAt, kind, contentId, repoId, repo FROM item WHERE projectId = ?", arguments: [projectId]
+            )
+            for row in rows {
                 known[row["id"]] = row["remoteUpdatedAt"] ?? ""
+                guard row["kind"] == ItemKind.issue.rawValue, let contentId: String = row["contentId"],
+                      let repoId: String = row["repoId"], let repo: String = row["repo"] else { continue }
+                issues.append((row["id"], contentId, repoId, repo))
             }
-            return (project, dirty, known)
+            return (project, dirty, known, issues, try IssueEventCursor.read(db, projectId: projectId))
         }
         guard let local else { return }
+
+        // Cards whose issues changed in ways the board's updatedAt doesn't always show; the events do.
+        var repos: [String: String] = [:]
+        for issue in issues { repos[issue.repoId] = issue.repo }
+        let events = try await changesFromEvents(
+            in: repos.sorted { $0.key < $1.key }.map { ($0.key, $0.value) }, since: cursors, firstLook: local.lastSyncedAt ?? Date()
+        )
+        let named = Set(issues.filter { events.contentIds.contains($0.contentId) || events.repoIds.contains($0.repoId) }.map(\.id))
 
         // A due field that appeared, was swapped or went away changes the dates of cards GitHub doesn't count as
         // changed, so every card is read again.
@@ -320,14 +340,18 @@ public actor SyncEngine {
             || !dirtyIds.isEmpty
 
         var sweep: [SweepEntry] = []
-        var hydrated: [Item] = []
+        var wanted = named.sorted()
         if changed {
             sweep = try await api.sweep(projectId: projectId)
-            let wanted = sweep.filter { entry in
-                if dirtyIds.contains(entry.id) || dueFieldChanged { return true }
+            wanted = sweep.filter { entry in
+                if dirtyIds.contains(entry.id) || dueFieldChanged || named.contains(entry.id) { return true }
                 if unhydratable[entry.id] == entry.updatedAt { return false }
                 return known[entry.id] != entry.updatedAt
             }.map(\.id)
+        }
+        // Without a change to the board, only the cards the events name are read.
+        var hydrated: [Item] = []
+        if !wanted.isEmpty {
             hydrated = try await api.hydrate(
                 itemIds: wanted, projectId: projectId,
                 statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id, dueFieldId: meta.dueField?.id
@@ -367,6 +391,18 @@ public actor SyncEngine {
                     )
                 }
             }
+        }
+
+        // GitHub at times answers with a board's new updatedAt but its cards as they were a moment before. Such a
+        // board isn't counted as read, so the next pull reads it again; for a minute at most, since some changes, such
+        // as a card taken off, leave no newer card behind.
+        var behind = false
+        if changed, Self.readLagsBehind(meta: meta, sweep: sweep, hydrated: hydrated) {
+            let since = readBehind[projectId] ?? Date()
+            readBehind[projectId] = since
+            behind = Date().timeIntervalSince(since) < 60
+        } else {
+            readBehind[projectId] = nil
         }
 
         let sweepSnapshot = sweep
@@ -414,9 +450,22 @@ public actor SyncEngine {
                 remaps = try Self.dropCopiesWithoutProject(db)
                 try Outbox.rebase(db)
                 try Outbox.clearSettledDirtyFlags(db, projectId: projectId)
-                project.remoteUpdatedAt = meta.updatedAt
+                project.remoteUpdatedAt = behind ? nil : meta.updatedAt
                 project.itemsTotal = meta.itemsTotal
+            } else if !hydratedSnapshot.isEmpty {
+                // Cards read because of events keep their places; the board's order wasn't read.
+                notices += try Self.reconcile(db, hydrated: hydratedSnapshot)
+                for var item in hydratedSnapshot {
+                    guard let position = try Double.fetchOne(
+                        db, sql: "SELECT position FROM item WHERE id = ?", arguments: [item.id]
+                    ) else { continue }
+                    item.position = position
+                    try item.save(db)
+                }
+                try Outbox.rebase(db)
+                try Outbox.clearSettledDirtyFlags(db, projectId: projectId)
             }
+            if events.cursors != cursors { try IssueEventCursor.write(db, events.cursors, projectId: projectId) }
             project.lastSyncedAt = Date()
             try project.update(db)
             return (notices, leftBoard, remaps)
@@ -428,6 +477,16 @@ public actor SyncEngine {
         if !written.leftBoard.isEmpty { lastAssignedPull = nil }
         if !written.remaps.isEmpty { await publish(remaps: written.remaps) }
         await post(written.notices)
+    }
+
+    /// Whether a board's cards were read before GitHub had caught up with the board: its newest card is as new as the
+    /// board once it has, and a card read in full is as new as the list of cards says.
+    static func readLagsBehind(meta: RemoteProjectMeta, sweep: [SweepEntry], hydrated: [Item]) -> Bool {
+        var listed: [String: String] = [:]
+        for entry in sweep { listed[entry.id] = entry.updatedAt }
+        if hydrated.contains(where: { item in listed[item.id].map { (item.remoteUpdatedAt ?? "") < $0 } ?? false }) { return true }
+        guard let newest = listed.values.max() else { return meta.itemsTotal > 0 }
+        return newest < meta.updatedAt
     }
 
     /// An issue that came onto a board is shown there and no longer as an issue on no board. Returns the old ids
@@ -678,7 +737,15 @@ public actor SyncEngine {
             let since = (lastRepoPull[repoId] ?? started).addingTimeInterval(-120)
             refs = try await api.repositoryIssueRefs(repoId: repoId, states: nil, since: since)
         }
-        try await writeIssuesWithoutProject(refs, prune: full ? .repository(repoId) : nil)
+        let (name, cursors) = try await db.reader.read { db in
+            (try String.fetchOne(db, sql: "SELECT nameWithOwner FROM repo WHERE id = ?", arguments: [repoId]),
+             try IssueEventCursor.read(db, projectId: nil))
+        }
+        var events: EventChanges?
+        if let name {
+            events = try await changesFromEvents(in: [(repoId, name)], since: cursors, firstLook: lastRepoPull[repoId] ?? started)
+        }
+        try await writeIssuesWithoutProject(refs, prune: full ? .repository(repoId) : nil, events: events)
         lastRepoPull[repoId] = started
         if full { lastFullRepoPull[repoId] = started }
         await markRead(repoId)
@@ -700,12 +767,19 @@ public actor SyncEngine {
         lastAssignedPull = started
     }
 
-    /// Reads in full what changed among the listed issues on no board, and writes them.
-    private func writeIssuesWithoutProject(_ refs: [IssueRef], prune: Prune?) async throws {
-        let wanted = try await db.reader.read { try Self.issuesToRead(in: refs, $0) }
+    /// Reads in full what changed among the listed issues on no board, and those the `events` name, and writes them.
+    private func writeIssuesWithoutProject(_ refs: [IssueRef], prune: Prune?, events: EventChanges? = nil) async throws {
+        let wanted = try await db.reader.read { db in
+            var wanted = try Self.issuesToRead(in: refs, db)
+            if let events { wanted += try Self.issuesWithoutProject(in: events, db).filter { !wanted.contains($0) } }
+            return wanted
+        }
         let fetched = try await api.issues(ids: wanted)
         let (notices, staleBoards) = try await db.writer.write { db in
-            try Self.writeIssuesWithoutProject(db, fetched, listed: refs, prune: prune)
+            if let events {
+                try IssueEventCursor.write(db, try IssueEventCursor.read(db, projectId: nil).merging(events.cursors) { $1 }, projectId: nil)
+            }
+            return try Self.writeIssuesWithoutProject(db, fetched, listed: refs, prune: prune)
         }
         refreshSoon(staleBoards)
         await post(notices)
@@ -724,6 +798,17 @@ public actor SyncEngine {
             if ref.isClosed, let closed = ref.closedAt, now.timeIntervalSince(closed) > closedIssueWindow { return false }
             return known[ref.itemId] != ref.updatedAt
         }.map(\.contentId)
+    }
+
+    /// Issues on no board the events name, or that are in a repository where too much happened to tell. Their
+    /// updatedAt shows edits, but not a new parent, sub-issue or blocker.
+    static func issuesWithoutProject(in events: EventChanges, _ db: Database) throws -> [String] {
+        try Row.fetchAll(db, sql: "SELECT contentId, repoId FROM item WHERE projectId IS NULL AND contentId IS NOT NULL").compactMap { row in
+            let contentId: String = row["contentId"]
+            let repoId: String? = row["repoId"]
+            guard events.contentIds.contains(contentId) || repoId.map(events.repoIds.contains) == true else { return nil }
+            return contentId
+        }
     }
 
     /// Boards that have an issue GitHub lists but this device doesn't have yet are read again soon.
