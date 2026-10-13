@@ -31,7 +31,7 @@ extension AppModel {
             due: dueBadge(for: item),
             nested: nesting?.nestedCounts[item.id],
             folded: nesting?.folded.contains(item.id) ?? false,
-            showsParent: item.parentNumber != nil && (nesting?.depth(of: item.id) ?? 0) == 0,
+            showsParent: nesting.map { $0.namesParent(of: item) } ?? (item.parentNumber != nil),
             parentIsEpic: item.parentId.flatMap { issue(contentId: $0) }?.isEpic ?? false,
             milestone: showsMilestone ? milestoneTitle(of: item) : nil,
             milestoneMark: milestoneMark(of: item)

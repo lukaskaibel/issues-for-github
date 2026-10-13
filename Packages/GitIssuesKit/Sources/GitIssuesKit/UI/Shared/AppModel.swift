@@ -234,6 +234,11 @@ public final class AppModel {
     @ObservationIgnored var foldedParents = Set(UserDefaults.standard.stringArray(forKey: "foldedSubIssues") ?? []) {
         didSet { UserDefaults.standard.set(Array(foldedParents), forKey: "foldedSubIssues") }
     }
+    /// Epics (node ids) whose issues are folded away under their header on boards and in their lists. Kept on
+    /// this device.
+    @ObservationIgnored var foldedEpics = Set(UserDefaults.standard.stringArray(forKey: "foldedEpicGroups") ?? []) {
+        didSet { UserDefaults.standard.set(Array(foldedEpics), forKey: "foldedEpicGroups") }
+    }
     /// A new issue that was closed before it was created, kept for the next time the dialog opens.
     @ObservationIgnored var unsentNewIssue: NewIssueDraft?
     /// A title typed into a picker before choosing to create a new issue instead, for the dialog to start with.
@@ -852,13 +857,17 @@ public final class AppModel {
         let known = Set(statuses.map(\.id))
         var result: [BoardColumn] = []
         let unsorted = items.filter { $0.statusId == nil || !known.contains($0.statusId!) }
+        // The issues of an epic stand together in each column, under a header of the epic.
+        func arranged(_ items: [Item]) -> (items: [Item], nesting: Nesting) {
+            Nesting.arrange(items, folded: foldedParents, epic: { self.epic(of: $0) }, foldedEpics: foldedEpics)
+        }
         if !unsorted.isEmpty {
-            let (shown, nesting) = Nesting.arrange(unsorted, folded: foldedParents)
+            let (shown, nesting) = arranged(unsorted)
             result.append(BoardColumn(id: BoardColumn.noStatusId, option: nil, glyph: .none, items: shown, nesting: nesting))
         }
         let inMilestone = if case .milestone = scope { true } else { false }
         for option in statuses {
-            let (shown, nesting) = Nesting.arrange(items.filter { $0.statusId == option.id }, folded: foldedParents)
+            let (shown, nesting) = arranged(items.filter { $0.statusId == option.id })
             if inMilestone, shown.isEmpty, option.statusCategory == .backlog { continue }
             result.append(BoardColumn(
                 id: option.id, option: option, glyph: glyph(projectId: projectId, optionId: option.id),

@@ -165,20 +165,25 @@ struct ColumnView: View {
 
             ScrollView(.vertical) {
                 LazyVStack(spacing: 8) {
-                    ForEach(column.items) { item in
-                        BoardCell(
-                            card: model.cardModel(for: item, in: column.nesting, showsMilestone: model.currentMilestoneTitle == nil), width: width, drag: drag,
-                            place: column.nesting.place(of: item.id),
-                            highlighted: !model.isDragging && (hoveredId == item.id || model.focusedItemId == item.id),
-                            selected: model.isSelected(item.id),
-                            hoveredPart: hoveredId == item.id && !model.isDragging ? hoveredPart : nil,
-                            hoveringFold: hoveredId == item.id && !model.isDragging && hoveringFold,
-                            avatarVersion: model.avatarVersion
-                        )
+                    ForEach(column.nesting.rows) { row in
+                        switch row {
+                        case .epic(let group):
+                            EpicGroupHeader(group: group, columnId: column.id)
+                        case .item(let item):
+                            BoardCell(
+                                card: model.cardModel(for: item, in: column.nesting, showsMilestone: model.currentMilestoneTitle == nil), width: width, drag: drag,
+                                place: column.nesting.place(of: item.id),
+                                highlighted: !model.isDragging && (hoveredId == item.id || model.focusedItemId == item.id),
+                                selected: model.isSelected(item.id),
+                                hoveredPart: hoveredId == item.id && !model.isDragging ? hoveredPart : nil,
+                                hoveringFold: hoveredId == item.id && !model.isDragging && hoveringFold,
+                                avatarVersion: model.avatarVersion
+                            )
+                        }
                     }
                 }
                 .padding(.bottom, 48)
-                .animation(Theme.spring, value: column.items.map(\.id))
+                .animation(Theme.spring, value: column.nesting.rows.map(\.id))
                 // One hover and one click handler per column instead of one per card.
                 .contentShape(Rectangle())
                 // The part under the pointer names its value, as in Linear.
@@ -270,6 +275,59 @@ struct ColumnView: View {
         guard next != metrics.offset else { return }
         scroll.scrollTo(y: next)
         drag.retarget(model: model)
+    }
+}
+
+/// Over the issues of an epic standing together in a column: the epic's name and how many of its issues are
+/// there. A click folds them away under it, or shows them again; the right-click menu also opens the epic. Its
+/// icon sits where the line down to the issues starts.
+private struct EpicGroupHeader: View {
+    @Environment(AppModel.self) private var model
+    var group: Nesting.EpicGroup
+    var columnId: String
+    @State private var hovered = false
+
+    var body: some View {
+        Button {
+            model.toggleEpicGroup(group)
+        } label: {
+            HStack(spacing: 6) {
+                EpicIcon(size: 12)
+                    .frame(width: CardTreeLines.indent)
+                Text(group.epic.title)
+                    .font(.smallMedium)
+                    .foregroundStyle(Theme.text)
+                    .lineLimit(1)
+                Text("\(group.count)")
+                    .font(.small)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.textTertiary)
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.textTertiary)
+                    .rotationEffect(.degrees(group.folded ? -90 : 0))
+                    .opacity(hovered || group.folded ? 1 : 0)
+                    .padding(.trailing, 6)
+            }
+            .frame(height: 24)
+            .background(alignment: .bottomLeading) {
+                // The start of the line down to the epic's issues.
+                if !group.folded {
+                    Rectangle().fill(Theme.treeLine).frame(width: 1, height: 5).offset(x: CardTreeLines.indent / 2 - 0.5)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainPressStyle())
+        .onHover { hovered = $0 }
+        .help(Text(group.folded ? .unfoldEpicGroupTooltip(count: group.count) : .foldEpicGroupTooltip))
+        .contextMenu {
+            Button(.openEpicCommand) { model.open(group.epic) }
+            Button(group.folded ? .showEpicIssues : .foldEpicIssues) { model.toggleEpicGroup(group) }
+        }
+        .accessibilityLabel(Text(.epicGroupSpoken(epic: group.epic.title, count: group.count)))
+        .accessibilityValue(Text(group.folded ? .sectionFolded : .sectionOpen))
     }
 }
 

@@ -30,20 +30,23 @@ final class PhoneTests: AppTestCase {
         // With In Review folded, all of In Progress is on screen without scrolling.
         element("section-In Review").tap()
         waitGone(element("row-#5"))
-        let top = element("row-#7")
+        // #8 and #15 stand together under their epic, Offline-first sync.
+        let top = element("row-#8")
         let moving = element("row-#15")
         wait(moving)
         XCTAssertTrue(moving.isHittable)
         XCTAssertGreaterThan(moving.frame.minY, top.frame.minY)
-        // Touch and hold, then drag it above #7. Moving soon after the row lifts makes it a drag; holding still
+        // Touch and hold, then drag it above #8. Moving soon after the row lifts makes it a drag; holding still
         // until the menu is fully open keeps the menu instead.
         let start = moving.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         let end = top.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2))
         start.press(forDuration: 0.6, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.6)
         let moved = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in moving.frame.minY < top.frame.minY }, object: nil)
-        XCTAssertEqual(XCTWaiter().wait(for: [moved], timeout: 4), .completed, "#15 is above #7")
-        snapshot("Moved #15 to the top of In Progress")
+        XCTAssertEqual(XCTWaiter().wait(for: [moved], timeout: 4), .completed, "#15 is above #8")
+        snapshot("Moved #15 to the top of its epic's issues")
         XCTAssertTrue(moving.label.contains("In Progress"), moving.label)
+        // Still under the epic's header.
+        XCTAssertGreaterThan(moving.frame.minY, element("epic-group-Offline-first sync").frame.maxY - 1)
     }
 
     func testSubIssuesHangUnderTheirParentAndFold() {

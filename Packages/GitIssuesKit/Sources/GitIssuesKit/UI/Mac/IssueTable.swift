@@ -45,7 +45,18 @@ struct IssueSectionModel: Equatable {
     var kind: ListSection.Kind = .status
     var canAdd: Bool
     var count: Int
-    var rows: [IssueRowModel]
+    /// The section's lines: its issues, and the headers over epics' issues standing together.
+    var lines: [IssueLine]
+
+    var rows: [IssueRowModel] {
+        lines.compactMap { if case .row(let row) = $0 { row } else { nil } }
+    }
+}
+
+/// One line of a section: an issue, or the header over the issues of an epic standing together.
+enum IssueLine: Equatable {
+    case row(IssueRowModel)
+    case epic(Nesting.EpicGroup)
 }
 
 /// The issue list. It is an AppKit table rather than a SwiftUI stack because a table recycles its rows
@@ -132,12 +143,20 @@ struct IssueTable: NSViewRepresentable {
         enum Entry: Equatable {
             case header(IssueSectionModel)
             case row(IssueRowModel)
+            /// The header over an epic's issues in a section, which is named with it: an epic can have issues in
+            /// several sections.
+            case epic(sectionId: String, group: Nesting.EpicGroup)
 
             var id: String {
                 switch self {
                 case .header(let section): "section:\(section.id)"
                 case .row(let row): row.item.id
+                case .epic(let sectionId, let group): "epic:\(sectionId):\(group.contentId)"
                 }
+            }
+
+            var isHeader: Bool {
+                if case .header = self { true } else { false }
             }
         }
 
@@ -166,9 +185,14 @@ struct IssueTable: NSViewRepresentable {
             for section in sections {
                 // Headers compare by what they show, not by their rows.
                 var header = section
-                header.rows = []
+                header.lines = []
                 next.append(.header(header))
-                next += section.rows.map(Entry.row)
+                next += section.lines.map { line in
+                    switch line {
+                    case .row(let row): .row(row)
+                    case .epic(let group): .epic(sectionId: section.id, group: group)
+                    }
+                }
             }
             let oldIds = entries.map(\.id)
             let newIds = next.map(\.id)
@@ -259,6 +283,8 @@ struct IssueTable: NSViewRepresentable {
                 cell?.model = model
                 cell?.configure(row, highlighted: row.item.id == hoveredId || row.item.id == focusedId)
                 cell?.alphaValue = row.item.id == draggedId ? 0.35 : 1
+            case .epic(_, let group):
+                (view as? EpicHeaderRowCell)?.configure(group)
             }
         }
 
@@ -308,6 +334,15 @@ struct IssueTable: NSViewRepresentable {
                 }()
                 configure(view, with: entry)
                 return view
+            case .epic:
+                let identifier = NSUserInterfaceItemIdentifier("epic-header")
+                let view = (tableView.makeView(withIdentifier: identifier, owner: nil) as? EpicHeaderRowCell) ?? {
+                    let cell = EpicHeaderRowCell()
+                    cell.identifier = identifier
+                    return cell
+                }()
+                configure(view, with: entry)
+                return view
             case .row:
                 let identifier = NSUserInterfaceItemIdentifier("issue")
                 let view = (tableView.makeView(withIdentifier: identifier, owner: nil) as? IssueRowCell) ?? {
@@ -334,6 +369,8 @@ struct IssueTable: NSViewRepresentable {
             case .row(let issue):
                 guard canMoveRows else { return nil }
                 item.setString(issue.item.id, forType: Self.itemType)
+            case .epic:
+                return nil
             }
             return item
         }
@@ -368,7 +405,7 @@ struct IssueTable: NSViewRepresentable {
         private func end(of sectionId: String) -> Int {
             guard let header = entries.firstIndex(where: { $0.id == "section:\(sectionId)" }) else { return entries.count }
             var row = header + 1
-            while row < entries.count, case .row = entries[row] { row += 1 }
+            while row < entries.count, !entries[row].isHeader { row += 1 }
             return row
         }
 
@@ -392,7 +429,10 @@ struct IssueTable: NSViewRepresentable {
             guard let header = entries[..<min(row, entries.count)].lastIndex(where: {
                 if case .header = $0 { return true } else { return false }
             }), case .header(let section) = entries[header] else { return nil }
-            return (section.id, header, entries[(header + 1)..<row].filter { !moving.contains($0.id) }.count)
+            let issues = entries[(header + 1)..<row].filter { entry in
+                if case .row(let issue) = entry { !moving.contains(issue.item.id) } else { false }
+            }
+            return (section.id, header, issues.count)
         }
 
         /// The column a section of a project's list shows, which a dropped issue joins.
@@ -428,15 +468,18 @@ struct IssueTable: NSViewRepresentable {
             let moving = moving(item)
             guard let landing = landing(above: row, moving: moving), let column = column(for: landing.sectionId, of: item)
             else { return row }
-            let slot = column.landing(of: item, at: landing.index).slot
+            // The landing counts the section's rows without the issue and what it brings along, epic headers included.
+            let slot = column.landing(of: item, at: landing.index, epic: model.epic(of: item)?.contentId).row
             var seen = 0
             var current = landing.header + 1
             while current < entries.count {
-                if case .header = entries[current] { break }
-                if !moving.contains(entries[current].id) {
-                    if seen == slot { return current }
-                    seen += 1
+                if entries[current].isHeader { break }
+                if case .row(let issue) = entries[current], moving.contains(issue.item.id) {
+                    current += 1
+                    continue
                 }
+                if seen == slot { return current }
+                seen += 1
                 current += 1
             }
             return current
@@ -526,6 +569,7 @@ struct IssueTable: NSViewRepresentable {
                 switch entry {
                 case .header(let section): "[\(section.title)\(section.collapsed ? " folded" : "")]"
                 case .row(let row): row.item.displayNumber
+                case .epic(_, let group): "<\(group.epic.title)\(group.folded ? " folded" : "") \(group.count)>"
                 }
             }
             let shown = sticky.map { !$0.isHidden } ?? false
@@ -538,6 +582,11 @@ struct IssueTable: NSViewRepresentable {
             let row = sender.clickedRow
             if row >= 0, let header = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueHeaderCell {
                 if let event = NSApp.currentEvent { header.click(at: header.convert(event.locationInWindow, from: nil)) }
+                return
+            }
+            // A click on an epic's header folds its issues away under it, or shows them again.
+            if entries.indices.contains(row), case .epic(_, let group) = entries[row] {
+                model.toggleEpicGroup(group)
                 return
             }
             guard let item = item(at: row) else { return }
@@ -597,8 +646,25 @@ struct IssueTable: NSViewRepresentable {
             if entries.indices.contains(row), case .header(let section) = entries[row] {
                 return Self.sectionMenu(section, model: model)
             }
+            if entries.indices.contains(row), case .epic(_, let group) = entries[row] {
+                return Self.epicMenu(group, model: model)
+            }
             guard let item = item(at: row) else { return nil }
             return ItemMenuBuilder(model: model, item: item).menu()
+        }
+
+        /// The menu of the header over an epic's issues: open the epic, fold its issues or show them.
+        static func epicMenu(_ group: Nesting.EpicGroup, model: AppModel) -> NSMenu {
+            let menu = NSMenu()
+            let open = ClosureMenuItem(String(localized: .openEpicCommand)) { [model] in model.open(group.epic) }
+            open.image = MenuIcons.epic
+            menu.addItem(open)
+            let fold = ClosureMenuItem(String(localized: group.folded ? .showEpicIssues : .foldEpicIssues)) { [model] in
+                model.toggleEpicGroup(group)
+            }
+            fold.image = MenuIcons.symbol(group.folded ? "chevron.down" : "chevron.right")
+            menu.addItem(fold)
+            return menu
         }
 
         /// A section header's menu: fold this one or all of them, or start an issue in it.
@@ -668,6 +734,81 @@ final class HoverTableView: NSTableView {
 }
 
 /// Row container without the system's selection and separator drawing.
+/// The header over the issues of an epic standing together in a section: the epic's icon in line with the
+/// issues' status icons, where the line down to them starts, its name, how many of its issues are there, and an
+/// arrow that says whether they are folded away.
+final class EpicHeaderRowCell: NSView {
+    private var group: Nesting.EpicGroup?
+    private var title = NSAttributedString()
+    private var count = NSAttributedString()
+
+    override var isFlipped: Bool { true }
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        layerContentsRedrawPolicy = .onSetNeedsDisplay
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Not used") }
+
+    override func viewDidChangeEffectiveAppearance() {
+        configure(group, force: true)
+    }
+
+    func configure(_ group: Nesting.EpicGroup?, force: Bool = false) {
+        guard force || group != self.group else { return }
+        self.group = group
+        let truncating = NSMutableParagraphStyle()
+        truncating.lineBreakMode = .byTruncatingTail
+        title = NSAttributedString(string: group?.epic.title ?? "", attributes: [
+            .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
+            .foregroundColor: NSColor(Theme.text),
+            .paragraphStyle: truncating,
+        ])
+        count = NSAttributedString(string: group.map { "\($0.count)" } ?? "", attributes: [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular),
+            .foregroundColor: NSColor(Theme.textTertiary),
+        ])
+        if let group {
+            setAccessibilityLabel(String(localized: .epicGroupSpoken(epic: group.epic.title, count: group.count)))
+            setAccessibilityValue(String(localized: group.folded ? .sectionFolded : .sectionOpen))
+            toolTip = String(localized: group.folded ? .unfoldEpicGroupTooltip(count: group.count) : .foldEpicGroupTooltip)
+        }
+        needsDisplay = true
+    }
+
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .button }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let group, let context = NSGraphicsContext.current?.cgContext else { return }
+        let midY = bounds.height / 2
+        // In line with the issues' status icons: after the priority and number columns.
+        var x: CGFloat = IssueTable.inset + 28 + 14 + 10 + 40 + 10
+        PlanningGlyph.drawEpic(in: CGRect(x: x, y: midY - 7, width: 14, height: 14), cg: context)
+        if !group.folded {
+            let line = NSBezierPath()
+            line.move(to: NSPoint(x: x + 7, y: midY + 9))
+            line.line(to: NSPoint(x: x + 7, y: bounds.height))
+            line.lineWidth = 1
+            NSColor(Theme.treeLine).setStroke()
+            line.stroke()
+        }
+        x += 14 + 10
+        let titleSize = title.size()
+        let countSize = count.size()
+        let room = bounds.width - x - IssueTable.inset - 14 - countSize.width - 30
+        let titleWidth = min(titleSize.width, max(room, 40))
+        title.draw(in: NSRect(x: x, y: midY - titleSize.height / 2, width: titleWidth, height: titleSize.height))
+        x += titleWidth + 8
+        count.draw(at: NSPoint(x: x, y: midY - countSize.height / 2))
+        x += countSize.width + 10
+        IssueRowCell.drawFoldArrow(folded: group.folded, center: NSPoint(x: x + 3, y: midY), color: NSColor(Theme.textTertiary))
+    }
+}
+
 final class PlainRowView: NSTableRowView {
     override var isEmphasized: Bool {
         get { false }
