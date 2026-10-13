@@ -111,10 +111,19 @@ extension AppModel {
     /// Drops a card into a column at `index`, counted among the column's cards as shown, without the card and
     /// what hangs under it. A sub-issue whose parent is in the column joins the parent's sub-issues; any other
     /// card goes in front of or after the cards that stand on their own, never between a parent and its sub-issues.
-    func drop(_ item: Item, in column: BoardColumn, at index: Int) {
+    /// Dropped between two issues of an epic's group, or right below its header (`belowEpicHeader`), it joins the epic.
+    func drop(_ item: Item, in column: BoardColumn, at index: Int, belowEpicHeader: String? = nil) {
         guard let projectId = item.projectId else { return }
-        let landing = column.landing(of: item, at: index)
+        let itemEpic = epic(of: item)?.contentId
+        let landing = column.landing(of: item, at: index, epic: itemEpic, belowHeader: belowEpicHeader)
         var mutations = statusMutations(item, column.option)
+        // Dropped among another epic's issues, it joins that epic.
+        if let joined = landing.epic, joined != itemEpic, canRelate(item), let summary = item.summary,
+           let epic = issue(contentId: joined), canRelate(epic) {
+            mutations.append(.setParent(.init(
+                child: summary, parentId: joined, parentNumber: epic.number, parentTitle: epic.title, base: item.parentId
+            )))
+        }
         if let move = placement(of: item, in: column, at: landing, projectId: projectId) { mutations.append(move) }
         // A sub-issue dropped onto a folded parent would vanish into it, so the parent opens.
         if let parentId = landing.parentId, column.nesting.folded.contains(parentId),
@@ -153,7 +162,7 @@ extension AppModel {
               let column = (columns.contains { $0.items.contains { $0.id == item.id } } ? columns : columns(projectId: projectId))
                 .first(where: { $0.items.contains { $0.id == item.id } }),
               let index = column.items.firstIndex(where: { $0.id == item.id }) else { return false }
-        var landing = column.landing(of: item, at: index)
+        var landing = column.landing(of: item, at: index, epic: epic(of: item)?.contentId)
         let rank = landing.rank + delta
         guard rank >= 0, rank <= landing.peers.count, rank != landing.rank else { return false }
         landing.rank = rank

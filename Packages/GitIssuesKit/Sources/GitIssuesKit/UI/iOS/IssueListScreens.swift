@@ -468,8 +468,17 @@ struct IssueList: View {
                         let folded = model.isSectionCollapsed(section.id, in: scope)
                         Section {
                             if !folded {
-                                ForEach(section.items) { item in
-                                    row(item, in: section)
+                                ForEach(section.nesting.rows) { line in
+                                    switch line {
+                                    case .item(let item):
+                                        row(item, in: section)
+                                    case .epic(let group):
+                                        EpicGroupRow(group: group) { openRoute(.issue(group.epic.id)) }
+                                            .listRowInsets(EdgeInsets())
+                                            .listRowSeparator(.hidden)
+                                            .listRowBackground(Theme.panel)
+                                            .moveDisabled(true)
+                                    }
                                 }
                                 // Touch and hold, then drag, to give an issue a new place in its section.
                                 .onMove(perform: canMove ? { move(in: section, from: $0, to: $1) } : nil)
@@ -492,6 +501,8 @@ struct IssueList: View {
                 }
                 .listStyle(.plain)
                 .environment(\.defaultMinListHeaderHeight, 0)
+                // An epic's header is lower than the usual row; its line runs on into the issues below it.
+                .environment(\.defaultMinListRowHeight, 0)
                 .scrollContentBackground(.hidden)
             }
         }
@@ -505,16 +516,17 @@ struct IssueList: View {
         let nested = section.nesting.nestedCounts[item.id]
         let folded = section.nesting.folded.contains(item.id)
         let depth = min(section.nesting.depth(of: item.id), IssueRow.deepestIndent)
+        let epic = model.epic(of: item)?.contentId
         return Button {
             openRoute(.issue(item.id))
         } label: {
             IssueRow(
                 item: item, showsProject: showsProject, place: section.nesting.place(of: item.id), nested: nested,
                 folded: folded,
-                // In an epic's group, the epic goes without saying.
-                showsParent: item.parentNumber != nil && depth == 0 && section.kind != .epic(contentId: item.parentId),
+                // Under its parent or its epic's header, the parent goes without saying.
+                showsParent: section.nesting.namesParent(of: item) && section.kind != .epic(contentId: item.parentId),
                 showsMilestone: showsMilestone,
-                showsEpic: section.kind != .epic(contentId: model.epic(of: item)?.contentId)
+                showsEpic: section.kind != .epic(contentId: epic) && section.nesting.groupOf[item.id] == nil
             )
         }
         .buttonStyle(RowButtonStyle())
@@ -582,13 +594,18 @@ struct IssueList: View {
     }
 
     private func move(in section: ListSection, from source: IndexSet, to destination: Int) {
-        guard case .project(let projectId) = scope, let from = source.first, section.items.indices.contains(from),
+        let rows = section.nesting.rows
+        guard case .project(let projectId) = scope, let from = source.first, rows.indices.contains(from),
+              case .item(let item) = rows[from],
               let column = model.columns(projectId: projectId).first(where: { $0.id == section.id }) else { return }
-        // `destination` counts the issue itself in its old place; `drop` counts the others, without the sub-issues
-        // the issue brings along.
-        let item = section.items[from]
+        // `destination` counts the rows, epic headers and the issue itself in its old place included; `drop`
+        // counts the other issues, without the sub-issues the issue brings along.
         let others = Set(column.shown(without: item).map(\.id))
-        model.drop(item, in: column, at: section.items.prefix(destination).filter { others.contains($0.id) }.count)
+        let index = rows.prefix(destination).compactMap(\.item).filter { others.contains($0.id) }.count
+        // Put right below an epic's header, it joins the epic, as it shows.
+        let above = rows.prefix(destination).last { row in row.item.map { others.contains($0.id) } ?? true }
+        let header: String? = if case .epic(let group)? = above { group.contentId } else { nil }
+        model.drop(item, in: column, at: index, belowEpicHeader: header)
     }
 
     /// Where rows come from several boards, each says which; an issue on none says its repository.

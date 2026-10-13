@@ -28,6 +28,19 @@ extension AppModel {
         }
     }
 
+    /// Folds the issues of an epic away under its header on boards and in lists, or shows them again. The
+    /// keyboard focus on one of them is let go.
+    func toggleEpicGroup(_ group: Nesting.EpicGroup) {
+        let folding = !foldedEpics.contains(group.contentId)
+        withAnimation(Theme.spring) {
+            if folding { foldedEpics.insert(group.contentId) } else { foldedEpics.remove(group.contentId) }
+            rebuild()
+        }
+        if let focused = focusedItemId, !orderedItems.contains(where: { $0.id == focused }) {
+            focusedItemId = nil
+        }
+    }
+
     /// The column or group an issue is shown in right now, for what hangs under it there.
     func nesting(around item: Item) -> Nesting? {
         if openItem == nil, viewMode == .board, currentProjectId != nil {

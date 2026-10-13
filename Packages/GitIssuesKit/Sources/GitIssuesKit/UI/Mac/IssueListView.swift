@@ -25,25 +25,29 @@ struct IssueListView: View {
                         title: section.title, glyph: section.glyph, icon: icon(of: section), detail: section.detail,
                         optionId: section.option?.id, kind: section.kind,
                         canAdd: canAdd, count: section.count,
-                        rows: model.isSectionCollapsed(section.id) ? [] : section.items.map { item in
-                            IssueRowModel(
-                                item: item, glyph: model.glyph(of: item), priority: model.priorityLevel(of: item),
-                                showsPriority: model.project(of: item)?.priorityFieldId != nil,
-                                showsStatus: !item.isOnBoard || model.project(of: item)?.statusFieldId != nil,
-                                projectTitle: showsProject ? model.project(of: item)?.title ?? (model.scope == .myIssues ? item.repoShortName : nil) : nil,
-                                due: model.dueBadge(for: item),
-                                selected: model.isSelected(item.id),
-                                selecting: !model.selectedIds.isEmpty,
-                                nest: section.nesting.place(of: item.id),
-                                nested: section.nesting.nestedCounts[item.id],
-                                folded: section.nesting.folded.contains(item.id),
-                                // In an epic's group, the epic goes without saying.
-                                showsParent: item.parentNumber != nil && section.nesting.depth(of: item.id) == 0
-                                    && section.kind != .epic(contentId: item.parentId),
-                                parentIsEpic: item.parentId.flatMap { model.issue(contentId: $0) }?.isEpic ?? false,
-                                milestone: showsMilestone ? model.milestoneTitle(of: item) : spanOnRoadmap(item),
-                                milestoneMark: model.milestoneMark(of: item)
-                            )
+                        lines: model.isSectionCollapsed(section.id) ? [] : section.nesting.rows.map { row -> IssueLine in
+                            switch row {
+                            case .epic(let group):
+                                return .epic(group)
+                            case .item(let item):
+                                return .row(IssueRowModel(
+                                    item: item, glyph: model.glyph(of: item), priority: model.priorityLevel(of: item),
+                                    showsPriority: model.project(of: item)?.priorityFieldId != nil,
+                                    showsStatus: !item.isOnBoard || model.project(of: item)?.statusFieldId != nil,
+                                    projectTitle: showsProject ? model.project(of: item)?.title ?? (model.scope == .myIssues ? item.repoShortName : nil) : nil,
+                                    due: model.dueBadge(for: item),
+                                    selected: model.isSelected(item.id),
+                                    selecting: !model.selectedIds.isEmpty,
+                                    nest: section.nesting.place(of: item.id),
+                                    nested: section.nesting.nestedCounts[item.id],
+                                    folded: section.nesting.folded.contains(item.id),
+                                    // Under its parent or its epic's header, the parent goes without saying.
+                                    showsParent: section.nesting.namesParent(of: item) && section.kind != .epic(contentId: item.parentId),
+                                    parentIsEpic: item.parentId.flatMap { model.issue(contentId: $0) }?.isEpic ?? false,
+                                    milestone: showsMilestone ? model.milestoneTitle(of: item) : spanOnRoadmap(item),
+                                    milestoneMark: model.milestoneMark(of: item)
+                                ))
+                            }
                         }
                     )
                 },

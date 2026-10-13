@@ -99,8 +99,11 @@ struct MobileBoard: View {
 struct BoardDropTarget: Equatable {
     var columnId: String
     var slot: Int
-    /// How far in the card would hang there: under its parent, when the parent is in that column.
+    /// How far in the card would hang there: under its parent, when the parent is in that column, or its epic's
+    /// header.
     var depth = 0
+    /// Where the gap shows among all of the column's rows, epic headers and the dragged card included.
+    var row: Int?
 }
 
 /// Card frames inside a column, read while dropping. Kept outside view state so scrolling never redraws.
@@ -130,19 +133,24 @@ private struct MobileColumn: View {
             MobileColumnHeader(projectId: projectId, milestone: milestone, column: column)
             ScrollView(.vertical) {
                 LazyVStack(spacing: 8) {
-                    ForEach(Array(column.items.enumerated()), id: \.element.id) { index, item in
+                    ForEach(Array(column.nesting.rows.enumerated()), id: \.element.id) { index, row in
                         if gapPosition == index {
                             gap
                         }
-                        nestedCard(item, space: space)
+                        switch row {
+                        case .item(let item):
+                            nestedCard(item, space: space)
+                        case .epic(let group):
+                            EpicGroupCardHeader(group: group) { openRoute(.issue(group.epic.id)) }
+                        }
                     }
-                    if gapPosition == column.items.count {
+                    if gapPosition == column.nesting.rows.count {
                         gap
                     }
                 }
                 .padding(.bottom, 80)
                 .animation(Theme.spring, value: target)
-                .animation(Theme.spring, value: column.items.map(\.id))
+                .animation(Theme.spring, value: column.nesting.rows.map(\.id))
             }
             .scrollIndicators(.hidden)
             .coordinateSpace(.named(space))
@@ -156,10 +164,13 @@ private struct MobileColumn: View {
         }
     }
 
-    /// Where the gap shows among all of the column's cards, the dragged one included.
+    /// Where the gap shows among all of the column's rows, the dragged card included.
     private var gapPosition: Int? {
         guard let target, target.columnId == column.id else { return nil }
-        return min(target.slot, column.items.count)
+        if let row = target.row { return min(row, column.nesting.rows.count) }
+        // Without knowing the card yet: in front of the card at the slot.
+        guard target.slot < column.items.count else { return column.nesting.rows.count }
+        return column.nesting.rows.firstIndex { $0.id == column.items[target.slot].id }
     }
 
     private var gap: some View {
@@ -305,20 +316,33 @@ private struct ColumnDrop: DropDelegate {
             if frame.midY < info.location.y { slot = position + 1 }
         }
         var depth = 0
+        var row: Int?
         // The gap opens where the card will land: a sub-issue among its parent's sub-issues, any other card never
-        // between a parent and its sub-issues.
+        // between a parent and its sub-issues, and among an epic's issues or outside them.
         if let dragging, let item = MainActor.assumeIsolated({ model.item(id: dragging) }) {
             let others = column.shown(without: item)
             let kept = Set(others.map(\.id))
-            let landing = column.landing(of: item, at: column.items.prefix(slot).filter { kept.contains($0.id) }.count)
+            let epic = MainActor.assumeIsolated { model.epic(of: item)?.contentId }
+            let landing = column.landing(of: item, at: column.items.prefix(slot).filter { kept.contains($0.id) }.count, epic: epic)
             depth = landing.depth
             if landing.slot < others.count, let next = column.items.firstIndex(where: { $0.id == others[landing.slot].id }) {
                 slot = next
             } else {
                 slot = column.items.count
             }
+            // The landing counts the rows without the card and what it brings along; the gap goes among all of them.
+            var seen = 0
+            row = column.nesting.rows.count
+            for (index, line) in column.nesting.rows.enumerated() {
+                if let shown = line.item, !kept.contains(shown.id) { continue }
+                if seen == landing.row {
+                    row = index
+                    break
+                }
+                seen += 1
+            }
         }
-        let next = BoardDropTarget(columnId: column.id, slot: slot, depth: depth)
+        let next = BoardDropTarget(columnId: column.id, slot: slot, depth: depth, row: row)
         if next != target { target = next }
     }
 }

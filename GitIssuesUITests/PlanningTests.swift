@@ -194,6 +194,59 @@ final class PhonePlanningTests: AppTestCase {
         wait(app.navigationBars["0.4 Teams"])
     }
 
+    func testAnEpicsIssuesStandTogetherUnderItsHeaderAndFold() {
+        launch()
+        openProjectTab("Git Issues")
+        element("section-In Review").tap()
+        waitGone(element("row-#5"))
+        let header = element("epic-group-Offline-first sync")
+        wait(header)
+        XCTAssertTrue(header.label.contains("2 issues"), header.label)
+        let first = element("row-#8")
+        let second = element("row-#15")
+        wait(second)
+        XCTAssertGreaterThan(first.frame.minY, header.frame.maxY - 1)
+        XCTAssertGreaterThan(second.frame.minY, first.frame.minY)
+        // Under the epic's header, a row doesn't name the epic again.
+        XCTAssertFalse(first.label.contains("Epic:"), first.label)
+        // A single issue of an epic stands alone and names it.
+        scrollTo(element("row-#24"))
+        XCTAssertTrue(element("row-#24").label.contains("Epic: Drag and drop on the board"), element("row-#24").label)
+        app.swipeDown()
+        snapshot("An epic's issues under its header")
+
+        header.tap()
+        waitGone(first)
+        waitGone(second)
+        waitForValue(header, equalTo: "Folded")
+        snapshot("An epic's issues folded")
+        header.tap()
+        wait(first)
+    }
+
+    func testAnIssueDroppedAmongAnEpicsIssuesJoinsTheEpic() {
+        launch()
+        openProjectTab("Git Issues")
+        element("section-In Review").tap()
+        waitGone(element("row-#5"))
+        let moving = element("row-#7")
+        let below = element("row-#15")
+        wait(below)
+        // Between #8 and #15, which stand under Offline-first sync. Once #7 is lifted, the rows below it close up
+        // by its height, so the finger aims that much higher.
+        let start = moving.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let end = app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: below.frame.midX, dy: below.frame.minY - moving.frame.height + 12))
+        start.press(forDuration: 0.6, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.6)
+        let header = element("epic-group-Offline-first sync")
+        waitForLabel(header, containing: "3 issues")
+        XCTAssertGreaterThan(moving.frame.minY, header.frame.maxY - 1)
+        snapshot("#7 joined Offline-first sync")
+        moving.tap()
+        wait(element("chip-parent"))
+        waitForLabel(element("chip-parent"), containing: "Offline-first sync")
+    }
+
     func testCompletingAMilestoneMovesWhatIsLeftAndCanBeUndone() {
         launch()
         openMilestone("0.3")
@@ -310,6 +363,48 @@ final class PadPlanningTests: AppTestCase {
         wait(element("card-#14"))
         XCTAssertFalse(element("card-#18").exists, "1.0's work isn't on 0.4's board")
         snapshot("iPad after completing 0.3")
+    }
+
+    func testAnEpicsCardsStandTogetherInTheColumn() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openSidebarEntry("Git Issues")
+        let header = element("epic-group-Offline-first sync")
+        wait(header)
+        let first = element("card-#8")
+        let second = element("card-#15")
+        wait(second)
+        // Under the header, one level in.
+        XCTAssertGreaterThan(first.frame.minY, header.frame.maxY - 1)
+        XCTAssertGreaterThan(first.frame.minX, header.frame.minX + 8)
+        XCTAssertEqual(first.frame.minX, second.frame.minX, accuracy: 1)
+        snapshot("iPad epic group")
+
+        header.tap()
+        waitGone(first)
+        waitGone(second)
+        header.tap()
+        wait(first)
+    }
+
+    func testACardDroppedAmongAnEpicsCardsJoinsTheEpic() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openSidebarEntry("Git Issues")
+        let card = element("card-#7")
+        let below = element("card-#15")
+        wait(card)
+        wait(below)
+        // Between #8 and #15, which stand under Offline-first sync. On its way the gap opens above the epic's header
+        // first and pushes the group down, so the pointer aims at the lower part of #15, which is then where the gap
+        // between #8 and #15 opens. A pointer lifts the card without its menu, which a short drag by finger can't leave.
+        let target = below.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.75))
+        card.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .click(forDuration: 0.3, thenDragTo: target, withVelocity: .slow, thenHoldForDuration: 0.5)
+        let header = element("epic-group-Offline-first sync")
+        waitForLabel(header, containing: "3 issues")
+        waitForLabel(element("card-#7"), containing: "Epic: Offline-first sync")
+        snapshot("iPad card joined an epic")
     }
 
     func testCommandFourOpensTheRoadmap() {

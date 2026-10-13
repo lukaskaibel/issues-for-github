@@ -26,8 +26,10 @@ final class BoardDrag {
         var columnId: String
         /// Index among the column's cards, not counting the dragged one and the sub-issues it brings along.
         var index: Int
-        /// How far in it hangs there: under its parent, when the parent is in that column.
+        /// How far in it hangs there: under its parent, when the parent is in that column, or its epic's header.
         var depth = 0
+        /// Where it shows among the column's rows, epic headers included, not counting the dragged card.
+        var row = 0
     }
 
     private(set) var active: Active?
@@ -89,9 +91,13 @@ final class BoardDrag {
         guard let active, let target else { return columns }
         return columns.map { column in
             var column = column
-            if column.items.contains(where: { $0.id == active.item.id }) { column.items = column.shown(without: active.item) }
+            if column.items.contains(where: { $0.id == active.item.id }) {
+                column.nesting.rows = column.rows(without: active.item)
+                column.items = column.shown(without: active.item)
+            }
             if column.id == target.columnId {
                 column.items.insert(active.item, at: min(target.index, column.items.count))
+                column.nesting.rows.insert(.item(active.item), at: min(target.row, column.nesting.rows.count))
             }
             return column
         }
@@ -141,7 +147,8 @@ final class BoardDrag {
               let column = model.columns.first(where: { column in column.items.contains { $0.id == id } }),
               let index = column.items.firstIndex(where: { $0.id == id }) else { return false }
         let item = column.items[index]
-        origin = Target(columnId: column.id, index: index, depth: column.nesting.depth(of: id))
+        let row = column.nesting.rows.firstIndex { $0.id == id } ?? 0
+        origin = Target(columnId: column.id, index: index, depth: column.nesting.depth(of: id), row: row)
         target = origin
         active = Active(
             item: item, size: frame.size,
@@ -206,9 +213,9 @@ final class BoardDrag {
         }
         if !anyAbove { index = firstVisible ?? others.count }
         // A sub-issue goes among its parent's sub-issues, any other card never between a parent and its sub-issues.
-        let landing = column.landing(of: current.item, at: index)
+        let landing = column.landing(of: current.item, at: index, epic: model.epic(of: current.item)?.contentId)
 
-        let next = Target(columnId: column.id, index: landing.slot, depth: landing.depth)
+        let next = Target(columnId: column.id, index: landing.slot, depth: landing.depth, row: landing.row)
         if next != target {
             withAnimation(Theme.spring) { target = next }
         }

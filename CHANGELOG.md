@@ -20,8 +20,11 @@ All notable changes to this project are recorded here. The format follows
 - **Epics.** An epic is an issue with the label "epic" (or, in organisations that have it, the issue type Epic) whose
   sub-issues are its work, like a project in Linear. Make one with **Make Epic** in any issue's right-click menu or
   **New Epic** on the roadmap; the label is made in the repository the first time. `M` then `E` puts an issue into an
-  epic. Epics leave the board and the lists for the roadmap, and their issues name them by title on cards and rows.
-  An epic's page shows how far it is, in a part per milestone, and its sub-issues by milestone, each with a plus for a
+  epic. Epics leave the board and the lists for the roadmap. Where two or more issues of an epic share a column, they
+  stand together under a header with the epic's name, one level in, as sub-issues hang under their parent: on the
+  board and in the list, on the Mac, iPhone and iPad. A click on the header folds them away under it; its right-click
+  menu, or touching and holding it, opens the epic. Drop a card between two issues of an epic and it joins that epic;
+  a single issue of an epic names it on its card instead. An epic's page shows how far it is, in a part per milestone, and its sub-issues by milestone, each with a plus for a
   new one there. Starting work on an issue of an epic still in the backlog starts the epic too; Settings › Epics turns
   that off.
 - **A roadmap.** Each board with milestones or epics has a Roadmap under it in the sidebar (`G` then `R`, or `⌘4`): its
