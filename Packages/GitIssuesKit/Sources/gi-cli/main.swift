@@ -9,6 +9,7 @@ import GRDB
 //   gi-cli selftest            (writes to the "Git Issues Sandbox" project only)
 //   gi-cli inbox               (reads the notifications; changes nothing)
 //   gi-cli inbox read|archive <thread id>   (only for threads of the sandbox project's repositories)
+//   gi-cli plan …              (proposes changes from a text; reads only, see PlanCommand.swift)
 
 struct CLITokens: TokenSource {
     func token() async throws -> String { try await GitHubCLI.token() }
@@ -101,6 +102,9 @@ func run() async throws {
     case "selftest":
         try await SelfTest.run()
 
+    case "plan":
+        try await PlanCommand.run(Array(args.dropFirst()))
+
     case "inbox":
         let (db, engine, _, api) = try await makeEngine()
         try await engine.refreshProjects()
@@ -137,7 +141,7 @@ func run() async throws {
         }
 
     default:
-        print("Usage: gi-cli projects | pull <project title> | selftest | inbox [read|archive <thread id>]")
+        print("Usage: gi-cli projects | pull <project title> | selftest | inbox [read|archive <thread id>] | plan --project … (see PlanCommand.swift)")
     }
 }
 

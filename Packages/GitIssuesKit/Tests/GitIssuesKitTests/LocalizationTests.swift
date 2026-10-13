@@ -121,7 +121,8 @@ struct LocalizationTests {
     /// English written straight into a view is never translated. GitHub's own words (field names, enum values)
     /// and the debugging tools stay as they are.
     @Test func noEnglishLeftInTheCode() {
-        let skipped: Set<String> = ["DebugRemote.swift", "DemoData.swift"]
+        // AssistantTexts.swift is what the app says to the language model, which no one sees.
+        let skipped: Set<String> = ["DebugRemote.swift", "DemoData.swift", "AssistantTexts.swift"]
         for (file, text) in Self.code where !skipped.contains(file) {
             for (number, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
                 let code = line.split(separator: "//", maxSplits: 1).first.map(String.init) ?? ""
@@ -149,6 +150,8 @@ struct LocalizationTests {
     static let notForTranslation: Set<String> = [
         // The brand, shown in place of the login until it is known.
         "GitHub",
+        // Names of language models, as their makers write them.
+        "Claude Opus 5.5", "Claude Sonnet 5.5", "Claude Haiku 5.5",
         // Field and option names the app looks for or creates on GitHub, where teammates see them.
         "Status", "Priority", "Due date", "Urgent", "High", "Medium", "Low",
         // GitHub's search query, HTTP headers and the Info.plist key of the OAuth app.

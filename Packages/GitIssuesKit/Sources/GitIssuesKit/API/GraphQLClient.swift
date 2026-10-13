@@ -54,9 +54,12 @@ public final class GraphQLClient: Sendable {
     private let tokenSource: any TokenSource
     private let session: URLSession
     private let endpoint = URL(string: "https://api.github.com/graphql")!
+    /// Refuses every mutation and every REST call that isn't a GET, for tools that must only read.
+    public let readOnly: Bool
 
-    public init(tokenSource: any TokenSource, session: URLSession? = nil) {
+    public init(tokenSource: any TokenSource, session: URLSession? = nil, readOnly: Bool = false) {
         self.tokenSource = tokenSource
+        self.readOnly = readOnly
         if let session {
             self.session = session
         } else {
@@ -94,6 +97,9 @@ public final class GraphQLClient: Sendable {
         #if DEBUG
         if Self.simulateOffline.withLock({ $0 }) { throw APIError.offline("Simulated for testing.") }
         #endif
+        if readOnly, query.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("mutation") {
+            throw APIError.http(0, "read-only client refused a mutation")
+        }
         let token = try await tokenSource.token()
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
@@ -169,6 +175,9 @@ public final class GraphQLClient: Sendable {
         #if DEBUG
         if Self.simulateOffline.withLock({ $0 }) { throw APIError.offline("Simulated for testing.") }
         #endif
+        if readOnly, method.uppercased() != "GET" {
+            throw APIError.http(0, "read-only client refused \(method) \(path)")
+        }
         let token = try await tokenSource.token()
         var components = URLComponents(url: restBase.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
         if !query.isEmpty { components.queryItems = query }
