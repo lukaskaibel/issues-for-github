@@ -22,9 +22,11 @@ All notable changes to this project are recorded here. The format follows
   **New Epic** on the roadmap; the label is made in the repository the first time. `M` then `E` puts an issue into an
   epic. Epics leave the board and the lists for the roadmap. Where two or more issues of an epic share a column, they
   stand together under a header with the epic's name, one level in, as sub-issues hang under their parent: on the
-  board and in the list, on the Mac, iPhone and iPad. A click on the header folds them away under it; its right-click
-  menu, or touching and holding it, opens the epic. Drop a card between two issues of an epic and it joins that epic;
-  a single issue of an epic names it on its card instead. An epic's page shows how far it is, in a part per milestone, and its sub-issues by milestone, each with a plus for a
+  board and in the list, on the Mac, iPhone and iPad. A click on the header opens the epic, and its arrow folds the
+  issues away under it; on the board a long name takes up to three lines. Drag the header to another column, or
+  another place in its column, and all of the epic's issues there go along, with a message that undoes it; **Move
+  Issues To** in its right-click menu, or when you touch and hold it, does the same without dragging. Drop a card
+  between two issues of an epic and it joins that epic; a single issue of an epic names it on its card instead. An epic's page shows how far it is, in a part per milestone, and its sub-issues by milestone, each with a plus for a
   new one there. Starting work on an issue of an epic still in the backlog starts the epic too; Settings › Epics turns
   that off.
 - **A roadmap.** Each board with milestones or epics has a Roadmap under it in the sidebar (`G` then `R`, or `⌘4`): its
@@ -44,6 +46,9 @@ All notable changes to this project are recorded here. The format follows
   count these as changes of the issue or its board.
 - Someone else's new title, label or assignee no longer goes unnoticed when GitHub doesn't pass the change on to the
   board, which it sometimes skips.
+- On the Mac board, a card that comes back to the very place it just left, such as one moved to another status and
+  back, answers clicks, the pointer and drags again at once. Before, it ignored them until something else in its
+  column moved.
 
 ## [0.3.0] - 2026-10-11
 

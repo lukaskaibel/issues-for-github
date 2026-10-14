@@ -104,11 +104,12 @@ class AppTestCase: XCTestCase {
     /// Opens a board card's menu with a long press, and stops waiting for animations until `closedCardMenu()`.
     /// A card can be dragged as well, so while its menu is open UIKit holds the drag's lift animator, paused, for
     /// the preview to be dragged out of the menu onto a column. Nothing moves or draws, but XCTest counts the paused
-    /// animator as running and would wait a minute before every step.
-    func openCardMenu(_ card: XCUIElement) {
+    /// animator as running and would wait a minute before every step. The same goes for anything else that can be
+    /// dragged and has a menu, such as an epic's header; `showing` is an item of its menu.
+    func openCardMenu(_ card: XCUIElement, showing item: String = "Status") {
         waitsForAnimations(false)
         card.press(forDuration: 1.2)
-        wait(button("Status"))
+        wait(button(item))
         // What XCTest no longer waits for: the menu springing open.
         Thread.sleep(forTimeInterval: 0.8)
     }

@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold"]
+        let readOnly: Set<String> = ["foldepic", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -257,6 +257,13 @@ enum DebugRemote {
             if bits.count == 4, let item = item(bits[0], model), let index = Int(bits[1]) {
                 drag(item, toColumn: bits[3], index: index, hold: bits[2] == "hold", model: model)
             }
+        case "dragepic":
+            // dragepic <epic number> <row index> <hold|drop> <column name>: drags the header over the epic's issues
+            // in the first column that has one.
+            let bits = argument.split(separator: " ", maxSplits: 3).map(String.init)
+            if bits.count == 4, let epic = item(bits[0], model), let index = Int(bits[1]) {
+                dragGroup(of: epic, toColumn: bits[3], index: index, hold: bits[2] == "hold", model: model)
+            }
         case "dragcolumn":
             // dragcolumn <hold|drop> <columns to move, e.g. -2> <column name>
             let bits = argument.split(separator: " ", maxSplits: 2).map(String.init)
@@ -323,6 +330,30 @@ enum DebugRemote {
                 }
                 let summary: String = find(root)?.coordinator?.listSummary ?? "no table"
                 log("list: " + summary)
+            }
+        case "listdropepic":
+            // listdropepic <epic number> <row>: drops the header over the epic's issues in the list above that row.
+            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            guard bits.count == 2, let epic = item(bits[0], model), let row = Int(bits[1]),
+                  let root = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 })?.contentView else { break }
+            func find(_ view: NSView) -> HoverTableView? {
+                if let table = view as? HoverTableView { return table }
+                for subview in view.subviews { if let found = find(subview) { return found } }
+                return nil
+            }
+            if let coordinator = find(root)?.coordinator, let epicId = epic.contentId {
+                log("listdropepic: \(coordinator.dropGroup(epic: epicId, above: row))")
+            }
+        case "retitle":
+            // retitle <number> <title>: renames an issue, as editing its title does.
+            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            if bits.count == 2, let item = item(bits[0], model) { model.rename(item, to: bits[1]) }
+        case "clickepic":
+            // clickepic <epic number> [fold]: what a click on the header over the epic's issues does, or one on its arrow.
+            let bits = argument.split(separator: " ").map(String.init)
+            if let epic = item(bits.first ?? "", model), let group = (model.columns.flatMap(\.nesting.groups) + model.sections.flatMap(\.nesting.groups))
+                .first(where: { $0.contentId == epic.contentId }) {
+                if bits.count > 1, bits[1] == "fold" { model.toggleEpicGroup(group) } else { model.open(group.epic) }
             }
         case "listdrop", "dragimage":
             // listdrop <number> <row>: drops the issue in the list above that row, as a drag would.
@@ -421,6 +452,11 @@ enum DebugRemote {
             log("active=\(drag.active.map { "\($0.item.displayNumber) loc=\($0.location) lifted=\($0.lifted) settling=\($0.settling)" } ?? "nil") target=\(String(describing: drag.target))")
             for column in model.columns {
                 log("  column \(column.title) frame=\(drag.columnFrames[column.id].map { "\($0)" } ?? "nil") cards=\(column.items.compactMap { item in drag.cardFrames[item.id].map { "\(item.displayNumber):\(Int($0.minX)),\(Int($0.minY))" } }.joined(separator: " "))")
+            }
+            for column in model.columns {
+                for group in column.nesting.groups {
+                    log("  header \(column.title)/\(group.epic.title) frame=\(drag.headerFrame(column: column.id, epic: group.contentId).map { "\(Int($0.minY))…\(Int($0.maxY))" } ?? "nil")")
+                }
             }
             log("  project=\(model.currentProject?.title ?? "-") mode=\(model.viewMode.rawValue)")
             log("  columns=\(model.columns.map(\.title).joined(separator: " | ")) sections=\(model.sections.map(\.title).joined(separator: " | ")) columnDrag=\(String(describing: drag.column))")
@@ -625,6 +661,45 @@ enum DebugRemote {
         let start = CGPoint(x: from.midX, y: from.midY)
         let end = CGPoint(x: columnFrame.midX, y: y)
         log("drag \(item.displayNumber) from \(start) to \(end) column=\(columnFrame)")
+        var step = 0
+        let steps = 36
+        var previous = start
+        dragTimer?.invalidate()
+        dragTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { timer in
+            MainActor.assumeIsolated {
+                step += 1
+                let t = min(Double(step) / Double(steps), 1)
+                let eased = t < 0.5 ? 2 * t * t : 1 - pow(-2 * t + 2, 2) / 2
+                let point = CGPoint(x: start.x + (end.x - start.x) * eased, y: start.y + (end.y - start.y) * eased)
+                let velocity = CGSize(width: (point.x - previous.x) * 60, height: (point.y - previous.y) * 60)
+                previous = point
+                drag.changed(location: point, start: start, velocity: velocity, model: model)
+                if step >= steps {
+                    timer.invalidate()
+                    if !hold { drag.ended(model: model) }
+                }
+            }
+        }
+    }
+
+    /// Moves the header over an epic's issues as `drag(_:toColumn:index:hold:model:)` moves a card.
+    private static func dragGroup(of epic: Item, toColumn name: String, index: Int, hold: Bool, model: AppModel) {
+        let drag = model.boardDrag
+        guard let source = model.columns.first(where: { column in column.nesting.groups.contains { $0.contentId == epic.contentId } }),
+              let epicId = epic.contentId, let from = drag.headerFrame(column: source.id, epic: epicId),
+              let column = model.columns.first(where: { $0.title.caseInsensitiveCompare(name) == .orderedSame }),
+              let columnFrame = drag.columnFrames[column.id] else { return }
+        let members = Set(source.nesting.members.filter { source.nesting.groupOf[$0.id] == epicId }.map(\.id))
+        let others = column.items.filter { !members.contains($0.id) }
+        var y = columnFrame.minY + 40 + from.height / 2
+        if index < others.count, let frame = drag.cardFrames[others[index].id] {
+            y = frame.minY + 6
+        } else if let last = others.last, let frame = drag.cardFrames[last.id] {
+            y = frame.maxY + from.height / 2
+        }
+        let start = CGPoint(x: from.minX + 40, y: from.midY)
+        let end = CGPoint(x: columnFrame.minX + 40, y: y)
+        log("dragepic \(epic.displayNumber) from \(start) to \(end)")
         var step = 0
         let steps = 36
         var previous = start

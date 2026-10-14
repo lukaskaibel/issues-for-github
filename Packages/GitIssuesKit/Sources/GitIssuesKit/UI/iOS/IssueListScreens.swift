@@ -473,14 +473,14 @@ struct IssueList: View {
                                     case .item(let item):
                                         row(item, in: section)
                                     case .epic(let group):
-                                        EpicGroupRow(group: group) { openRoute(.issue(group.epic.id)) }
+                                        EpicGroupRow(group: group, column: column(of: section)) { openRoute(.issue(group.epic.id)) }
                                             .listRowInsets(EdgeInsets())
                                             .listRowSeparator(.hidden)
                                             .listRowBackground(Theme.panel)
-                                            .moveDisabled(true)
                                     }
                                 }
-                                // Touch and hold, then drag, to give an issue a new place in its section.
+                                // Touch and hold, then drag, to give an issue a new place in its section, or an epic's
+                                // issues by their header.
                                 .onMove(perform: canMove ? { move(in: section, from: $0, to: $1) } : nil)
                             }
                         } header: {
@@ -593,11 +593,24 @@ struct IssueList: View {
         return model.projects.first { $0.id == id }?.viewerCanUpdate == true
     }
 
+    /// The board's column a section of a board's list shows.
+    private func column(of section: ListSection) -> BoardColumn? {
+        guard case .project(let projectId) = scope, section.kind == .status else { return nil }
+        return model.columns(projectId: projectId).first { $0.id == section.id }
+    }
+
     private func move(in section: ListSection, from source: IndexSet, to destination: Int) {
         let rows = section.nesting.rows
-        guard case .project(let projectId) = scope, let from = source.first, rows.indices.contains(from),
-              case .item(let item) = rows[from],
-              let column = model.columns(projectId: projectId).first(where: { $0.id == section.id }) else { return }
+        guard let from = source.first, rows.indices.contains(from), let column = column(of: section) else { return }
+        if case .epic(let group) = rows[from] {
+            // The epic's issues go together, to where its header was put.
+            let members = column.members(of: group)
+            let moving = Set(members.map(\.id))
+            let index = rows.prefix(destination).compactMap(\.item).filter { !moving.contains($0.id) }.count
+            model.drop(group, members: members, in: column, at: index)
+            return
+        }
+        guard case .item(let item) = rows[from] else { return }
         // `destination` counts the rows, epic headers and the issue itself in its old place included; `drop`
         // counts the other issues, without the sub-issues the issue brings along.
         let others = Set(column.shown(without: item).map(\.id))

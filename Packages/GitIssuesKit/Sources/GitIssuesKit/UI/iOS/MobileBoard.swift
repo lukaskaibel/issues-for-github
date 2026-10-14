@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 
 /// The board on the iPad: the Mac's columns and cards, moved with the system's drag and drop. Touch and
 /// hold a card to lift it (or to open its menu), then drag it to another place or column; the cards there
-/// make room. Dragged out of the app, a card is its link on GitHub.
+/// make room. The header over an epic's issues lifts them all. Dragged out of the app, a card is its link on GitHub.
 struct MobileBoard: View {
     @Environment(AppModel.self) private var model
     var projectId: String
@@ -81,10 +81,19 @@ struct MobileBoard: View {
         return min(max(fitted, 268), 330)
     }
 
-    /// Lands a card at `slot` among all of the column's cards, itself included, or at the end without one.
+    /// Lands a card at `slot` among all of the column's cards, itself included, or at the end without one. An
+    /// epic's issues lifted by their header land there together.
     private func move(_ id: String?, to column: BoardColumn, at slot: Int?) {
         target = nil
         dragging = nil
+        if let id, let lifted = DraggedGroup(id) {
+            let members = model.columns(projectId: projectId).flatMap(\.nesting.members).filter { lifted.ids.contains($0.id) }
+            guard let group = lifted.group(model: model, projectId: projectId, milestone: milestone), !members.isEmpty else { return }
+            let index = column.items.prefix(slot ?? column.items.count).filter { !lifted.ids.contains($0.id) }.count
+            dropped += 1
+            withAnimation(Theme.spring) { model.drop(group, members: members, in: column, at: index) }
+            return
+        }
         guard let id, let item = model.item(id: id), item.projectId == projectId else { return }
         // The model counts the place among the column's other cards, without the sub-issues the card brings along.
         let others = Set(column.shown(without: item).map(\.id))
@@ -104,6 +113,44 @@ struct BoardDropTarget: Equatable {
     var depth = 0
     /// Where the gap shows among all of the column's rows, epic headers and the dragged card included.
     var row: Int?
+    /// Whether an epic's issues are dragged by their header, which land as one smaller card.
+    var group = false
+}
+
+/// The issues of an epic standing together in a column, lifted by their header: what the drag carries, in place of a
+/// card's id, so that a drop in any window moves the issues that were lifted.
+struct DraggedGroup: Equatable {
+    static let prefix = "epic-group\u{1F}"
+
+    var columnId: String
+    /// The epic's node id.
+    var epic: String
+    var ids: Set<String>
+
+    init(columnId: String, epic: String, ids: Set<String>) {
+        self.columnId = columnId
+        self.epic = epic
+        self.ids = ids
+    }
+
+    init?(_ token: String) {
+        guard token.hasPrefix(Self.prefix) else { return nil }
+        let parts = token.dropFirst(Self.prefix.count).split(separator: "\u{1F}", omittingEmptySubsequences: false).map(String.init)
+        guard parts.count == 3 else { return nil }
+        self.init(columnId: parts[0], epic: parts[1], ids: Set(parts[2].split(separator: ",").map(String.init)))
+    }
+
+    var token: String {
+        Self.prefix + [columnId, epic, ids.sorted().joined(separator: ",")].joined(separator: "\u{1F}")
+    }
+
+    /// The group as the board shows it now.
+    @MainActor
+    func group(model: AppModel, projectId: String, milestone: String?) -> Nesting.EpicGroup? {
+        let columns = milestone.map { model.columns(for: .milestone(projectId: projectId, title: $0)) } ?? model.columns(projectId: projectId)
+        return (columns.first { $0.id == columnId }?.nesting.groups ?? columns.flatMap(\.nesting.groups))
+            .first { $0.contentId == epic }
+    }
 }
 
 /// Card frames inside a column, read while dropping. Kept outside view state so scrolling never redraws.
@@ -141,7 +188,7 @@ private struct MobileColumn: View {
                         case .item(let item):
                             nestedCard(item, space: space)
                         case .epic(let group):
-                            EpicGroupCardHeader(group: group) { openRoute(.issue(group.epic.id)) }
+                            groupHeader(group)
                         }
                     }
                     if gapPosition == column.nesting.rows.count {
@@ -180,9 +227,28 @@ private struct MobileColumn: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(Theme.accent.opacity(0.5), style: StrokeStyle(lineWidth: 1.2, dash: [5, 4]))
             )
-            .frame(height: 76)
+            .frame(height: target?.group == true ? 52 : 76)
             .padding(.leading, CGFloat(min(target?.depth ?? 0, CardTreeLines.deepest)) * CardTreeLines.indent)
             .transition(.opacity.combined(with: .scale(scale: 0.96)))
+    }
+
+    /// The issues an epic's header lifted, which dim while they are dragged over this board.
+    private var liftedIds: Set<String> {
+        dragging.flatMap(DraggedGroup.init)?.ids ?? []
+    }
+
+    /// The header over an epic's issues. Touch and hold, then drag, to move them all.
+    private func groupHeader(_ group: Nesting.EpicGroup) -> some View {
+        let lifted = DraggedGroup(columnId: column.id, epic: group.contentId, ids: Set(column.members(of: group).map(\.id)))
+        return EpicGroupCardHeader(group: group, column: column, open: { openRoute(.issue(group.epic.id)) }, step: { step(group, by: $0) })
+            .opacity(dragging == lifted.token && target != nil ? 0.35 : 1)
+            .onDrag {
+                CardDragMark.lifted = lifted.token
+                return CardDragMark.provider(id: lifted.token, text: group.epic.url ?? group.epic.title)
+            } preview: {
+                EpicGroupCard(group: group, width: width)
+                    .padding(.bottom, CardStackEdge.height)
+            }
     }
 
     /// A card in its place: a sub-issue hangs in under its parent, with a line from the parent, and a card with
@@ -223,7 +289,7 @@ private struct MobileColumn: View {
         .buttonStyle(CardPressStyle())
         .accessibilityIdentifier("card-\(item.displayNumber)")
         .hoverEffect(.lift)
-        .opacity(dragging == item.id && target != nil ? 0.35 : 1)
+        .opacity((dragging == item.id || liftedIds.contains(item.id)) && target != nil ? 0.35 : 1)
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .named(space))
         } action: { frame in
@@ -254,11 +320,21 @@ private struct MobileColumn: View {
 
     /// For VoiceOver, which can't drag: moves the card to the neighbouring column.
     private func step(_ item: Item, by delta: Int) {
-        let columns = milestone.map { model.columns(for: .milestone(projectId: projectId, title: $0)) } ?? model.columns(projectId: projectId)
-        guard let index = columns.firstIndex(where: { $0.id == column.id }),
-              columns.indices.contains(index + delta) else { return }
-        let next = columns[index + delta]
+        guard let next = neighbour(delta) else { return }
         withAnimation(Theme.spring) { model.drop(item, in: next, at: next.items.count) }
+    }
+
+    /// For VoiceOver: moves an epic's issues here to the neighbouring column.
+    private func step(_ group: Nesting.EpicGroup, by delta: Int) {
+        guard let next = neighbour(delta) else { return }
+        let members = column.members(of: group)
+        withAnimation(Theme.spring) { model.drop(group, members: members, in: next, at: next.items.count) }
+    }
+
+    private func neighbour(_ delta: Int) -> BoardColumn? {
+        let columns = milestone.map { model.columns(for: .milestone(projectId: projectId, title: $0)) } ?? model.columns(projectId: projectId)
+        guard let index = columns.firstIndex(where: { $0.id == column.id }), columns.indices.contains(index + delta) else { return nil }
+        return columns[index + delta]
     }
 }
 
@@ -301,7 +377,8 @@ private struct ColumnDrop: DropDelegate {
     /// A card of another project, dragged in from a window that shows that project, can't land here.
     private var fits: Bool {
         guard let dragging else { return true }
-        return MainActor.assumeIsolated { model.item(id: dragging)?.projectId == projectId }
+        let id = DraggedGroup(dragging)?.ids.first ?? dragging
+        return MainActor.assumeIsolated { model.item(id: id)?.projectId == projectId }
     }
 
     /// The position among the column's cards, from where the finger is.
@@ -317,6 +394,16 @@ private struct ColumnDrop: DropDelegate {
         }
         var depth = 0
         var row: Int?
+        // An epic's issues land together: among the epic's other issues where the column has some, or as one.
+        if let dragging, let lifted = DraggedGroup(dragging) {
+            let others = column.items.filter { !lifted.ids.contains($0.id) }
+            let landing = column.landing(ofGroup: lifted.epic, moving: lifted.ids, at: column.items.prefix(slot).filter { !lifted.ids.contains($0.id) }.count)
+            slot = landing.slot < others.count ? column.items.firstIndex { $0.id == others[landing.slot].id } ?? column.items.count : column.items.count
+            row = fullRow(landing.row, shown: column.nesting.rows(without: lifted.ids))
+            let next = BoardDropTarget(columnId: column.id, slot: slot, depth: landing.depth, row: row, group: true)
+            if next != target { target = next }
+            return
+        }
         // The gap opens where the card will land: a sub-issue among its parent's sub-issues, any other card never
         // between a parent and its sub-issues, and among an epic's issues or outside them.
         if let dragging, let item = MainActor.assumeIsolated({ model.item(id: dragging) }) {
@@ -330,20 +417,17 @@ private struct ColumnDrop: DropDelegate {
             } else {
                 slot = column.items.count
             }
-            // The landing counts the rows without the card and what it brings along; the gap goes among all of them.
-            var seen = 0
-            row = column.nesting.rows.count
-            for (index, line) in column.nesting.rows.enumerated() {
-                if let shown = line.item, !kept.contains(shown.id) { continue }
-                if seen == landing.row {
-                    row = index
-                    break
-                }
-                seen += 1
-            }
+            row = fullRow(landing.row, shown: column.rows(without: item))
         }
         let next = BoardDropTarget(columnId: column.id, slot: slot, depth: depth, row: row)
         if next != target { target = next }
+    }
+
+    /// Where row `index` of the rows `shown` while something is lifted stands among all of the column's rows: the
+    /// landing counts the rows without what is dragged, and the gap goes among all of them.
+    private func fullRow(_ index: Int, shown: [Nesting.Row]) -> Int {
+        guard shown.indices.contains(index) else { return column.nesting.rows.count }
+        return column.nesting.rows.firstIndex { $0.id == shown[index].id } ?? column.nesting.rows.count
     }
 }
 

@@ -135,22 +135,88 @@ extension AppModel {
 
     /// The move that gives a card its place among `landing.peers`, or nil when it is there already.
     private func placement(of item: Item, in column: BoardColumn, at landing: Nesting.Landing, projectId: String) -> Mutation? {
+        placements(of: [item], in: column, at: landing, projectId: projectId).first
+    }
+
+    /// The moves that give cards their place among `landing.peers`, one after the other in their board order, or
+    /// none when they are there already.
+    private func placements(of items: [Item], in column: BoardColumn, at landing: Nesting.Landing, projectId: String) -> [Mutation] {
         let peers = landing.peers
-        guard !peers.isEmpty else { return nil }
-        if column.nesting.members.contains(where: { $0.id == item.id }),
-           peers.filter({ $0.position < item.position }).count == landing.rank {
-            return nil
+        let items = items.sorted { $0.position < $1.position }
+        guard let first = items.first, !peers.isEmpty else { return [] }
+        if column.nesting.members.contains(where: { $0.id == first.id }),
+           peers.filter({ $0.position < first.position }).count == landing.rank {
+            return []
         }
-        let afterId: String?
+        var afterId: String?
         if landing.rank > 0 {
             afterId = peers[landing.rank - 1].id
         } else {
             // To sit above the first of them, go right behind whatever precedes it in the project.
-            let all = allItems.filter { $0.projectId == projectId && $0.id != item.id }
-            let first = all.firstIndex { $0.id == peers[0].id } ?? 0
-            afterId = first > 0 ? all[first - 1].id : nil
+            let moving = Set(items.map(\.id))
+            let all = allItems.filter { $0.projectId == projectId && !moving.contains($0.id) }
+            let index = all.firstIndex { $0.id == peers[0].id } ?? 0
+            afterId = index > 0 ? all[index - 1].id : nil
         }
-        return .move(.init(itemId: item.id, projectId: projectId, afterItemId: afterId))
+        return items.map { item in
+            defer { afterId = item.id }
+            return .move(.init(itemId: item.id, projectId: projectId, afterItemId: afterId))
+        }
+    }
+
+    // MARK: An epic's issues together
+
+    /// Drops `members`, the issues of an epic's group in a column, all of them together into a column at `index`,
+    /// counted among that column's issues as shown without them. They take the column's status and keep their
+    /// order, in front of or after what stands there on its own, or among the epic's issues the column has already.
+    func drop(_ group: Nesting.EpicGroup, members: [Item], in column: BoardColumn, at index: Int) {
+        guard let projectId = members.first?.projectId else { return }
+        let landing = column.landing(ofGroup: group.contentId, moving: Set(members.map(\.id)), at: index)
+        moveIssues(members, of: group, to: column.option, title: column.title,
+                   placing: placements(of: members, in: column, at: landing, projectId: projectId))
+    }
+
+    /// Gives `members`, the issues of an epic's group in a column, another status, as the group's menu does. They
+    /// keep their places on the board, as an issue does whose status changes.
+    func setStatus(of group: Nesting.EpicGroup, members: [Item], to option: FieldOption) {
+        withAnimation(Theme.spring) {
+            moveIssues(members, of: group, to: option, title: option.name, placing: [])
+        }
+    }
+
+    /// Moves an epic's issues to the column of `option`, with the `placing` moves that give them their place there.
+    /// Where their status changes, a message says how many moved, with a way to take it back.
+    private func moveIssues(_ members: [Item], of group: Nesting.EpicGroup, to option: FieldOption?, title: String, placing: [Mutation]) {
+        let changes = members.flatMap { statusMutations($0, option) }
+        guard !changes.isEmpty || !placing.isEmpty else { return }
+        // Undoing gives each issue its status, state and place back.
+        var undo: [Mutation] = []
+        for change in changes {
+            switch change {
+            case .setField(var field):
+                swap(&field.optionId, &field.base)
+                undo.append(.setField(field))
+            case .setState(let state):
+                guard let before = members.first(where: { $0.contentId == state.contentId }) else { break }
+                undo.append(.setState(.init(contentId: state.contentId, closed: before.isClosed, reason: before.isClosed ? before.stateReason : nil)))
+            default:
+                break
+            }
+        }
+        if !placing.isEmpty, let projectId = members.first?.projectId {
+            let board = allItems.filter { $0.projectId == projectId }
+            for member in members.sorted(by: { $0.position < $1.position }) {
+                let index = board.firstIndex { $0.id == member.id } ?? 0
+                undo.append(.move(.init(itemId: member.id, projectId: projectId, afterItemId: index > 0 ? board[index - 1].id : nil)))
+            }
+        }
+        perform(changes + placing)
+        guard !changes.isEmpty else { return }
+        status.post(Notice(
+            title: String(localized: .epicIssuesMovedToStatus(count: members.count, status: title)),
+            message: group.epic.title,
+            action: .undo(undo)
+        ))
     }
 
     /// Moves an issue one place up or down within its column, which is also its section of the list: past the

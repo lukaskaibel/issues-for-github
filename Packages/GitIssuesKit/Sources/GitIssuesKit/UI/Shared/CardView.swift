@@ -486,6 +486,39 @@ struct CardTreeLines: View {
 
 /// The edge of a second card peeking out under a card whose sub-issues are folded into it, or that carries them
 /// along in a drag.
+/// The issues of an epic standing together in a column, while they are dragged by their header to move them all:
+/// a card with the epic's name and how many of its issues come along, over the edge of a second card.
+struct EpicGroupCard: View {
+    var group: Nesting.EpicGroup
+    var width: CGFloat
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            EpicIcon(size: CardView.lineHeight - 2)
+                .frame(height: CardView.lineHeight)
+            Text(group.epic.title)
+                .font(.system(size: CardView.titleSize, weight: .medium))
+                .foregroundStyle(Theme.text)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, minHeight: CardView.lineHeight, alignment: .leading)
+            Text("\(group.count)")
+                .font(.system(size: CardView.metaSize))
+                .monospacedDigit()
+                .foregroundStyle(Theme.textTertiary)
+                .frame(height: CardView.lineHeight)
+        }
+        .padding(.horizontal, CardView.padding.width)
+        .padding(.vertical, CardView.padding.height)
+        .frame(width: width, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.cardLifted))
+        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.cardLiftedBorder, lineWidth: 1))
+        .background(alignment: .top) { CardStackEdge() }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(.epicGroupSpoken(epic: group.epic.title, count: group.count)))
+    }
+}
+
 struct CardStackEdge: View {
     static let height: CGFloat = 5
 
