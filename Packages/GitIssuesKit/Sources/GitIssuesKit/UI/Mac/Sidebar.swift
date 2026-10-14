@@ -465,7 +465,7 @@ struct AccountDropdown: View {
         case .hidden:
             MenuRow(title: String(localized: .hiddenProjectsCount(count: hiddenProjects.count)), systemImage: "eye.slash", submenu: true, active: isActive || hiddenOpen, action: { perform(entry) }, onHover: hover)
         case .more:
-            MenuRow(title: String(localized: .switchProjectEllipsis), systemImage: "square.stack", shortcut: "G P", active: isActive, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .switchProjectEllipsis), systemImage: "square.stack", active: isActive, action: { perform(entry) }, onHover: hover)
         case .sync:
             MenuRow(title: String(localized: .syncNow), systemImage: "arrow.triangle.2.circlepath", shortcut: "⌘R", active: isActive, action: { perform(entry) }, onHover: hover)
         case .queue:
