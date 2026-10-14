@@ -194,7 +194,7 @@ final class PhonePlanningTests: AppTestCase {
         wait(app.navigationBars["0.4 Teams"])
     }
 
-    func testAnEpicsIssuesStandTogetherUnderItsHeaderAndFold() {
+    func testAnEpicsIssuesStandTogetherUnderItsHeaderFoldAndOpenIt() {
         launch()
         openProjectTab("Git Issues")
         element("section-In Review").tap()
@@ -215,13 +215,42 @@ final class PhonePlanningTests: AppTestCase {
         app.swipeDown()
         snapshot("An epic's issues under its header")
 
-        header.tap()
+        // The arrow folds them away; the header itself opens the epic.
+        let fold = element("fold-epic-Offline-first sync")
+        fold.tap()
         waitGone(first)
         waitGone(second)
         waitForValue(header, equalTo: "Folded")
         snapshot("An epic's issues folded")
-        header.tap()
+        fold.tap()
         wait(first)
+        header.tap()
+        let title = element("issue-title")
+        wait(title)
+        XCTAssertEqual(title.value as? String, "Offline-first sync")
+    }
+
+    /// The header's menu moves all of the epic's issues in the section to another status, and the message takes it
+    /// back.
+    func testAnEpicsHeaderMovesItsIssuesToAnotherStatus() {
+        launch()
+        openProjectTab("Git Issues")
+        let header = element("epic-group-Offline-first sync")
+        wait(header)
+        openCardMenu(header, showing: "Move Issues To")
+        button("Move Issues To").tap()
+        button("In Review").tap()
+        closedCardMenu()
+        let undo = element("notice-undo")
+        wait(undo)
+        snapshot("An epic's issues moved to In Review")
+        // In Review has #6 of the epic already: the three stand together there, and In Progress has none left.
+        waitForLabel(header, containing: "3 issues")
+        XCTAssertTrue(element("row-#8").label.contains("In Review"), element("row-#8").label)
+        XCTAssertTrue(element("row-#15").label.contains("In Review"), element("row-#15").label)
+        undo.tap()
+        waitForLabel(header, containing: "2 issues")
+        XCTAssertTrue(element("row-#8").label.contains("In Progress"), element("row-#8").label)
     }
 
     func testAnIssueDroppedAmongAnEpicsIssuesJoinsTheEpic() {
@@ -380,11 +409,46 @@ final class PadPlanningTests: AppTestCase {
         XCTAssertEqual(first.frame.minX, second.frame.minX, accuracy: 1)
         snapshot("iPad epic group")
 
-        header.tap()
+        // The arrow folds them away; the header itself opens the epic.
+        let fold = element("fold-epic-Offline-first sync")
+        fold.tap()
         waitGone(first)
         waitGone(second)
-        header.tap()
+        fold.tap()
         wait(first)
+        header.tap()
+        let title = element("issue-title")
+        wait(title)
+        XCTAssertEqual(title.value as? String, "Offline-first sync")
+    }
+
+    /// Dragging the header over an epic's cards moves them all to the column it is dropped on, and the message
+    /// takes it back.
+    func testDraggingAnEpicsHeaderMovesItsCards() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openSidebarEntry("Git Issues")
+        let header = element("epic-group-Offline-first sync")
+        let first = element("card-#8")
+        let target = element("card-#16")
+        wait(header)
+        wait(first)
+        wait(target)
+        let from = first.frame
+        // Onto In Review, below #16; In Review has #6 of the epic already, which the cards join. A pointer lifts
+        // the header without its menu.
+        header.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5))
+            .click(forDuration: 0.3, thenDragTo: target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)),
+                   withVelocity: .slow, thenHoldForDuration: 0.5)
+        let undo = element("notice-undo")
+        wait(undo)
+        waitForLabel(header, containing: "3 issues")
+        XCTAssertGreaterThan(first.frame.minX, from.maxX, "#8 went to the column on the right")
+        XCTAssertEqual(element("card-#15").frame.minX, first.frame.minX, accuracy: 1)
+        snapshot("iPad epic's cards moved")
+        undo.tap()
+        waitForLabel(header, containing: "2 issues")
+        XCTAssertEqual(first.frame.minX, from.minX, accuracy: 1)
     }
 
     func testACardDroppedAmongAnEpicsCardsJoinsTheEpic() {

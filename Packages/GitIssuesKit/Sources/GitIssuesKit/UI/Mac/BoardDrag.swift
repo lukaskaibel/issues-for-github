@@ -2,16 +2,19 @@
 import Observation
 import SwiftUI
 
-/// State of a card drag on the board: which card is lifted, where it would land, and the geometry
-/// needed to work that out. One gesture on the whole board drives it, so the drag survives the card's
-/// view moving from one column to another.
+/// State of a card drag on the board: which card is lifted, or which epic's issues by their header, where it would
+/// land, and the geometry needed to work that out. One gesture on the whole board drives it, so the drag survives
+/// the card's view moving from one column to another.
 @MainActor
 @Observable
 final class BoardDrag {
     nonisolated static let space = "board"
 
     struct Active: Equatable {
+        /// The card lifted, or the epic whose issues are lifted together.
         var item: Item
+        /// The issues of an epic standing together in a column, lifted by their header to move them all.
+        var group: GroupDrag?
         var size: CGSize
         /// Pointer offset from the card's top-left corner at pick-up.
         var grab: CGSize
@@ -20,6 +23,13 @@ final class BoardDrag {
         var lifted = false
         var settling = false
         var tilt: Double = 0
+    }
+
+    struct GroupDrag: Equatable {
+        var group: Nesting.EpicGroup
+        var columnId: String
+        /// Its issues there, folded ones included.
+        var ids: Set<String>
     }
 
     struct Target: Equatable {
@@ -79,6 +89,60 @@ final class BoardDrag {
         cardFrames[id] = nil
         frameOwners[id] = nil
     }
+
+    // MARK: Epic headers
+
+    /// Where the header over an epic's issues is, and its fold arrow, in board coordinates.
+    struct HeaderFrame {
+        var columnId: String
+        var epic: String
+        var frame: CGRect
+        var fold: CGRect = .null
+    }
+
+    @ObservationIgnored private var headerFrames: [String: HeaderFrame] = [:]
+    @ObservationIgnored private var headerFolds: [String: CGRect] = [:]
+    @ObservationIgnored private var headerOwners: [String: UUID] = [:]
+
+    private static func headerKey(_ column: String, _ epic: String) -> String {
+        "\(column)\u{1F}\(epic)"
+    }
+
+    func setHeaderFrame(_ frame: CGRect, column: String, epic: String, owner: UUID) {
+        let key = Self.headerKey(column, epic)
+        headerFrames[key] = HeaderFrame(columnId: column, epic: epic, frame: frame)
+        headerOwners[key] = owner
+    }
+
+    func setHeaderFold(_ frame: CGRect, column: String, epic: String) {
+        headerFolds[Self.headerKey(column, epic)] = frame
+    }
+
+    func removeHeaderFrame(column: String, epic: String, owner: UUID) {
+        let key = Self.headerKey(column, epic)
+        guard headerOwners[key] == owner else { return }
+        headerFrames[key] = nil
+        headerFolds[key] = nil
+        headerOwners[key] = nil
+    }
+
+    /// The header over an epic's issues under a point, in one column or any.
+    func header(at point: CGPoint, in columnId: String? = nil) -> HeaderFrame? {
+        guard var found = headerFrames.values.first(where: { header in
+            (columnId == nil || header.columnId == columnId) && header.frame.contains(point)
+        }) else { return nil }
+        found.fold = headerFolds[Self.headerKey(found.columnId, found.epic)] ?? .null
+        return found
+    }
+
+    func headerFrame(column: String, epic: String) -> CGRect? {
+        headerFrames[Self.headerKey(column, epic)]?.frame
+    }
+
+    /// Whether a point is on the fold arrow of a header.
+    func isOnFold(_ point: CGPoint, of header: HeaderFrame) -> Bool {
+        !header.fold.isNull && header.fold.insetBy(dx: -4, dy: -4).contains(point)
+    }
     @ObservationIgnored private var origin: Target?
     @ObservationIgnored private var ignoringGesture = false
     @ObservationIgnored private var timer: Timer?
@@ -86,9 +150,20 @@ final class BoardDrag {
     var isDragging: Bool { active != nil }
 
     /// Columns as they should be drawn right now: the lifted card's slot sits where it would land. The sub-issues
-    /// hanging under it go with it, so they leave their column while it is held.
+    /// hanging under it go with it, so they leave their column while it is held. Lifted by their header, an epic's
+    /// issues leave too, and the column it would land in shows the slot (see `groupSlot(in:)`).
     func arrange(_ columns: [BoardColumn]) -> [BoardColumn] {
         guard let active, let target else { return columns }
+        if let group = active.group {
+            // Wherever they are: once dropped, they stand in the column they land in until the slot gives way.
+            return columns.map { column in
+                var column = column
+                guard column.nesting.members.contains(where: { group.ids.contains($0.id) }) else { return column }
+                column.nesting.rows = column.nesting.rows(without: group.ids)
+                column.items = column.items.filter { !group.ids.contains($0.id) }
+                return column
+            }
+        }
         return columns.map { column in
             var column = column
             if column.items.contains(where: { $0.id == active.item.id }) {
@@ -101,6 +176,12 @@ final class BoardDrag {
             }
             return column
         }
+    }
+
+    /// Where the slot for an epic's lifted issues shows among a column's rows as drawn, if it shows there.
+    func groupSlot(in columnId: String) -> Int? {
+        guard active?.group != nil, let target, target.columnId == columnId else { return nil }
+        return target.row
     }
 
     // MARK: Gesture
@@ -125,7 +206,12 @@ final class BoardDrag {
         defer { ignoringGesture = false }
         guard let current = active, !current.settling else { return }
         if let target, target != origin, let column = model.columns.first(where: { $0.id == target.columnId }) {
-            model.drop(current.item, in: column, at: target.index)
+            if let group = current.group {
+                let members = model.columns.flatMap(\.nesting.members).filter { group.ids.contains($0.id) }
+                model.drop(group.group, members: members, in: column, at: target.index)
+            } else {
+                model.drop(current.item, in: column, at: target.index)
+            }
         }
         settle(model: model)
     }
@@ -143,6 +229,7 @@ final class BoardDrag {
     }
 
     private func begin(at point: CGPoint, model: AppModel) -> Bool {
+        if let header = header(at: point) { return begin(header, at: point, model: model) }
         guard let (id, frame) = cardFrames.first(where: { $0.value.contains(point) }),
               let column = model.columns.first(where: { column in column.items.contains { $0.id == id } }),
               let index = column.items.firstIndex(where: { $0.id == id }) else { return false }
@@ -163,6 +250,30 @@ final class BoardDrag {
         return true
     }
 
+    /// Lifts the issues of an epic standing together in a column by their header.
+    private func begin(_ header: HeaderFrame, at point: CGPoint, model: AppModel) -> Bool {
+        guard let column = model.columns.first(where: { $0.id == header.columnId }),
+              let group = column.nesting.groups.first(where: { $0.contentId == header.epic }),
+              let row = column.nesting.rows.firstIndex(where: { $0.id == group.id }) else { return false }
+        let ids = Set(column.members(of: group).map(\.id))
+        // Where the group stands now, counted as a drop there would count it.
+        let index = column.nesting.rows[..<row].filter { line in line.item.map { !ids.contains($0.id) } ?? false }.count
+        let landing = column.landing(ofGroup: group.contentId, moving: ids, at: index)
+        origin = Target(columnId: column.id, index: landing.slot, depth: landing.depth, row: landing.row)
+        target = origin
+        active = Active(
+            item: group.epic, group: GroupDrag(group: group, columnId: column.id, ids: ids), size: header.frame.size,
+            grab: CGSize(width: point.x - header.frame.minX, height: point.y - header.frame.minY),
+            location: point
+        )
+        model.isDragging = true
+        DispatchQueue.main.async { [self] in
+            withAnimation(.spring(response: 0.24, dampingFraction: 0.62)) { active?.lifted = true }
+        }
+        startTimer()
+        return true
+    }
+
     private func settle(model: AppModel) {
         guard let current = active else { return }
         stopTimer()
@@ -173,11 +284,14 @@ final class BoardDrag {
             active?.tilt = 0
             if let slot {
                 active?.location = CGPoint(x: slot.minX + current.grab.width, y: slot.minY + current.grab.height)
+                // An epic's issues settle as wide as their slot, which may be one level in.
+                if current.group != nil { active?.size.width = slot.width }
             }
         } completion: { [self] in
-            // Removing the overlay and showing the real card must not animate: they are in the same place.
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
+            // Removing the overlay and showing the real card must not animate: they are in the same place. An
+            // epic's issues unfold from their slot.
+            var transaction = Transaction(animation: current.group == nil ? nil : Theme.spring)
+            transaction.disablesAnimations = current.group == nil
             withTransaction(transaction) {
                 active = nil
                 target = nil
@@ -199,7 +313,8 @@ final class BoardDrag {
         let candidates = model.columns.compactMap { column in columnFrames[column.id].map { (column, $0) } }
         guard let (column, _) = candidates.min(by: { distance(centre.x, to: $0.1) < distance(centre.x, to: $1.1) }) else { return }
 
-        let others = column.shown(without: current.item)
+        let others = current.group.map { group in column.items.filter { !group.ids.contains($0.id) } }
+            ?? column.shown(without: current.item)
         var index = 0
         var firstVisible: Int?
         var anyAbove = false
@@ -213,7 +328,12 @@ final class BoardDrag {
         }
         if !anyAbove { index = firstVisible ?? others.count }
         // A sub-issue goes among its parent's sub-issues, any other card never between a parent and its sub-issues.
-        let landing = column.landing(of: current.item, at: index, epic: model.epic(of: current.item)?.contentId)
+        // An epic's issues go together, among the epic's other issues where the column has some.
+        let landing = if let group = current.group {
+            column.landing(ofGroup: group.group.contentId, moving: group.ids, at: index)
+        } else {
+            column.landing(of: current.item, at: index, epic: model.epic(of: current.item)?.contentId)
+        }
 
         let next = Target(columnId: column.id, index: landing.slot, depth: landing.depth, row: landing.row)
         if next != target {

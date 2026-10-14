@@ -278,34 +278,6 @@ struct Nesting: Equatable {
         let parent = members.first { member in
             !moving.contains(member.id) && member.contentId != nil && member.contentId == item.parentId
         }
-        // Where the group's issues stand: a folded one counts as just below the parent it is folded into.
-        var index: [String: Double] = [:]
-        for (position, shownItem) in shown.enumerated() { index[shownItem.id] = Double(position) }
-        func position(of id: String) -> Double {
-            if let found = index[id] { return found }
-            var current = id
-            while let up = parents[current] {
-                if let found = index[up] { return found + 0.5 }
-                current = up
-            }
-            return Double(shown.count)
-        }
-        // Where each epic's header stands among `shown`; a folded one just above what follows it.
-        let rowsShown = rows.filter { row in row.item.map { !moving.contains($0.id) } ?? true }
-        var headerAt: [String: Double] = [:]
-        var headerRow: [String: Int] = [:]
-        var rowOf: [String: Int] = [:]
-        var seen = 0
-        for (number, row) in rowsShown.enumerated() {
-            switch row {
-            case .epic(let group):
-                headerAt[group.contentId] = Double(seen) - (group.folded ? 0.5 : 0)
-                headerRow[group.contentId] = number
-            case .item(let shownItem):
-                rowOf[shownItem.id] = number
-                seen += 1
-            }
-        }
         let clamped = min(max(slot, 0), shown.count)
 
         // The epic whose issues it stands among.
@@ -331,6 +303,66 @@ struct Nesting: Equatable {
                 area = nil
             }
         }
+        // Issues it is the parent of will hang under it.
+        return landing(moving: moving, parent: parent, area: area, at: clamped, shown: shown) { member in
+            item.contentId != nil && member.parentId == item.contentId
+        }
+    }
+
+    /// Where the issues of an epic's group land when the whole group is dropped at `slot` among `shown`, the
+    /// group's issues as shown without the ones `moving`. Where the epic has issues here already, they join them, at
+    /// the top, between them or at the end; anywhere else they go together in front of or after what stands outside
+    /// every epic's group, as a single issue of no epic does.
+    func landing(ofGroup epic: String, moving: Set<String>, at slot: Int, shown: [Item]) -> Landing {
+        let joins = members.contains { !moving.contains($0.id) && epicOf[$0.id] == epic }
+        return landing(moving: moving, parent: nil, area: joins ? epic : nil, at: min(max(slot, 0), shown.count), shown: shown) { _ in false }
+    }
+
+    /// The rows shown without the issues `moving`: an epic's header goes too when all of its issues do.
+    func rows(without moving: Set<String>) -> [Row] {
+        guard !moving.isEmpty else { return rows }
+        let staying = Set(members.filter { !moving.contains($0.id) }.compactMap { groupOf[$0.id] })
+        return rows.filter { row in
+            switch row {
+            case .item(let item): !moving.contains(item.id)
+            case .epic(let group): staying.contains(group.contentId)
+            }
+        }
+    }
+
+    /// Where issues land among their `peers`, under `parent` or among the issues of the epic `area`, at `slot` among
+    /// `shown`. `adopts` names the issues that will hang under the one moving, which aren't its peers.
+    private func landing(
+        moving: Set<String>, parent: Item?, area: String?, at clamped: Int, shown: [Item], adopts: (Item) -> Bool
+    ) -> Landing {
+        // Where the group's issues stand: a folded one counts as just below the parent it is folded into.
+        var index: [String: Double] = [:]
+        for (position, shownItem) in shown.enumerated() { index[shownItem.id] = Double(position) }
+        func position(of id: String) -> Double {
+            if let found = index[id] { return found }
+            var current = id
+            while let up = parents[current] {
+                if let found = index[up] { return found + 0.5 }
+                current = up
+            }
+            return Double(shown.count)
+        }
+        // Where each epic's header stands among `shown`; a folded one just above what follows it.
+        let rowsShown = rows(without: moving)
+        var headerAt: [String: Double] = [:]
+        var headerRow: [String: Int] = [:]
+        var rowOf: [String: Int] = [:]
+        var seen = 0
+        for (number, row) in rowsShown.enumerated() {
+            switch row {
+            case .epic(let group):
+                headerAt[group.contentId] = Double(seen) - (group.folded ? 0.5 : 0)
+                headerRow[group.contentId] = number
+            case .item(let shownItem):
+                rowOf[shownItem.id] = number
+                seen += 1
+            }
+        }
 
         // The issue of each epic's group that comes first on the board, which places the group.
         var anchors: [String: Item] = [:]
@@ -345,8 +377,7 @@ struct Nesting: Equatable {
         }
         // Issues under the one moving come along with it, and issues it is the parent of will hang under it.
         let peers = members.filter { member in
-            guard !moving.contains(member.id), member.id != parent?.id else { return false }
-            if let contentId = item.contentId, member.parentId == contentId { return false }
+            guard !moving.contains(member.id), member.id != parent?.id, !adopts(member) else { return false }
             // Outside every group, a group counts once, by the issue that places it.
             if parent == nil, area == nil, let group = groupOf[member.id] { return anchors[group]?.id == member.id }
             let memberParent = parents[member.id].flatMap { id in moving.contains(id) ? nil : id }
@@ -414,7 +445,17 @@ extension BoardColumn {
 
     /// The rows shown, without `item` and what hangs under it, epic headers included.
     func rows(without item: Item) -> [Nesting.Row] {
-        let moving = nesting.descendants(of: item.id).union([item.id])
-        return nesting.rows.filter { row in row.item.map { !moving.contains($0.id) } ?? true }
+        nesting.rows(without: nesting.descendants(of: item.id).union([item.id]))
+    }
+
+    /// The issues of an epic's group here, folded ones included, in reading order.
+    func members(of group: Nesting.EpicGroup) -> [Item] {
+        nesting.members.filter { nesting.groupOf[$0.id] == group.contentId }
+    }
+
+    /// Where the issues `moving`, an epic's group, land when the group is dropped at `index` among the column's
+    /// issues as shown without them.
+    func landing(ofGroup epic: String, moving: Set<String>, at index: Int) -> Nesting.Landing {
+        nesting.landing(ofGroup: epic, moving: moving, at: index, shown: items.filter { !moving.contains($0.id) })
     }
 }

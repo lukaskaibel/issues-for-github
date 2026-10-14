@@ -62,6 +62,11 @@ struct BoardView: View {
                 ContextMenus.shared.register(drag.menuRegion, frame: frame) { [model, drag] point in
                     guard model.openItem == nil, model.overlay == nil else { return nil }
                     let local = CGPoint(x: point.x - frame.minX, y: point.y - frame.minY)
+                    // The header over an epic's issues has the epic's menu.
+                    if let header = drag.header(at: local), let column = model.columns.first(where: { $0.id == header.columnId }),
+                       let group = column.nesting.groups.first(where: { $0.contentId == header.epic }) {
+                        return EpicGroupMenu.menu(group, in: column, model: model)
+                    }
                     guard let item = drag.card(at: local, in: model.columns.flatMap(\.items)) else { return nil }
                     return ItemMenuBuilder(model: model, item: item).menu()
                 }
@@ -75,8 +80,12 @@ struct BoardView: View {
             )
             .overlay(alignment: .topLeading) {
                 if let active = drag.active {
-                    let nesting = model.columns.first { $0.nesting.members.contains { $0.id == active.item.id } }?.nesting
-                    LiftedCard(active: active, card: model.cardModel(for: active.item, in: nesting, showsMilestone: model.currentMilestoneTitle == nil), avatarVersion: model.avatarVersion)
+                    if let group = active.group {
+                        LiftedGroup(active: active, group: group.group)
+                    } else {
+                        let nesting = model.columns.first { $0.nesting.members.contains { $0.id == active.item.id } }?.nesting
+                        LiftedCard(active: active, card: model.cardModel(for: active.item, in: nesting, showsMilestone: model.currentMilestoneTitle == nil), avatarVersion: model.avatarVersion)
+                    }
                 }
             }
             .onChange(of: drag.tick) {
@@ -114,6 +123,11 @@ struct BoardView: View {
     }
 }
 
+/// Where a view was last drawn, kept without redrawing the view when it changes.
+final class LastFrame {
+    var frame: CGRect?
+}
+
 /// A scroll view's position, readable without making the view depend on it.
 final class ScrollMetrics {
     var offset: CGFloat = 0
@@ -139,6 +153,23 @@ private struct LiftedCard: View {
     }
 }
 
+/// The issues of an epic under the pointer during a drag by their header: a card with the epic's name over the
+/// edge of a second one.
+private struct LiftedGroup: View {
+    var active: BoardDrag.Active
+    var group: Nesting.EpicGroup
+
+    var body: some View {
+        EpicGroupCard(group: group, width: active.size.width)
+            .scaleEffect(active.lifted ? 1.03 : 1)
+            .rotationEffect(.degrees(active.lifted ? 1.5 + active.tilt : 0))
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: active.tilt)
+            .shadow(color: active.lifted ? Theme.shadow : .clear, radius: active.lifted ? 22 : 0, y: active.lifted ? 16 : 0)
+            .offset(x: active.location.x - active.grab.width, y: active.location.y - active.grab.height)
+            .allowsHitTesting(false)
+    }
+}
+
 struct ColumnView: View {
     @Environment(AppModel.self) private var model
     var column: BoardColumn
@@ -152,6 +183,30 @@ struct ColumnView: View {
     @State private var hoveredId: String?
     @State private var hoveredPart: PickerKind?
     @State private var hoveringFold = false
+    /// The epic whose header is under the pointer, and whether the pointer is on its fold arrow.
+    @State private var hoveredEpic: String?
+    @State private var hoveringEpicFold = false
+
+    /// A row of the column as drawn: an issue, an epic's header, or the slot where an epic's lifted issues land.
+    private enum Line: Identifiable {
+        case row(Nesting.Row)
+        case groupSlot(BoardDrag.GroupDrag, depth: Int)
+
+        var id: String {
+            switch self {
+            case .row(let row): row.id
+            case .groupSlot: "epic-group-slot"
+            }
+        }
+    }
+
+    private var lines: [Line] {
+        var lines = column.nesting.rows.map(Line.row)
+        if let row = drag.groupSlot(in: column.id), let group = drag.active?.group {
+            lines.insert(.groupSlot(group, depth: drag.target?.depth ?? 0), at: min(row, lines.count))
+        }
+        return lines
+    }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -165,11 +220,17 @@ struct ColumnView: View {
 
             ScrollView(.vertical) {
                 LazyVStack(spacing: 8) {
-                    ForEach(column.nesting.rows) { row in
-                        switch row {
-                        case .epic(let group):
-                            EpicGroupHeader(group: group, columnId: column.id)
-                        case .item(let item):
+                    ForEach(lines) { line in
+                        switch line {
+                        case .groupSlot(let group, let depth):
+                            EpicGroupSlot(group: group.group, width: width, depth: depth, drag: drag)
+                        case .row(.epic(let group)):
+                            EpicGroupHeader(
+                                group: group, columnId: column.id, drag: drag,
+                                hovered: !model.isDragging && hoveredEpic == group.contentId,
+                                hoveringFold: !model.isDragging && hoveredEpic == group.contentId && hoveringEpicFold
+                            )
+                        case .row(.item(let item)):
                             BoardCell(
                                 card: model.cardModel(for: item, in: column.nesting, showsMilestone: model.currentMilestoneTitle == nil), width: width, drag: drag,
                                 place: column.nesting.place(of: item.id),
@@ -183,7 +244,7 @@ struct ColumnView: View {
                     }
                 }
                 .padding(.bottom, 48)
-                .animation(Theme.spring, value: column.nesting.rows.map(\.id))
+                .animation(Theme.spring, value: lines.map(\.id))
                 // One hover and one click handler per column instead of one per card.
                 .contentShape(Rectangle())
                 // The part under the pointer names its value, as in Linear.
@@ -196,13 +257,25 @@ struct ColumnView: View {
                         if part != hoveredPart { hoveredPart = part }
                         let onFold = drag.fold(at: point, in: column.items) != nil
                         if onFold != hoveringFold { hoveringFold = onFold }
+                        let header = drag.header(at: point, in: column.id)
+                        if header?.epic != hoveredEpic { hoveredEpic = header?.epic }
+                        let onEpicFold = header.map { drag.isOnFold(point, of: $0) } ?? false
+                        if onEpicFold != hoveringEpicFold { hoveringEpicFold = onEpicFold }
                     case .ended:
                         hover(nil)
                         hoveredPart = nil
                         hoveringFold = false
+                        hoveredEpic = nil
+                        hoveringEpicFold = false
                     }
                 }
                 .gesture(SpatialTapGesture(coordinateSpace: .named(BoardDrag.space)).onEnded { value in
+                    // A click on an epic's header opens the epic, one on its arrow folds its issues away or shows them.
+                    if let header = drag.header(at: value.location, in: column.id),
+                       let group = column.nesting.groups.first(where: { $0.contentId == header.epic }) {
+                        if drag.isOnFold(value.location, of: header) { model.toggleEpicGroup(group) } else { model.open(group.epic) }
+                        return
+                    }
                     // ⌘- and Shift-clicks pick cards. Otherwise a click on a card's priority, labels, sub-issues or
                     // assignees opens that dropdown, and anywhere else on the card opens the issue.
                     if let item = card(at: value.location), model.handleSelectionClick(on: item) {
@@ -239,6 +312,9 @@ struct ColumnView: View {
     }
 
     private var hoveredTooltip: String {
+        if let epic = hoveredEpic, hoveringEpicFold, let group = column.nesting.groups.first(where: { $0.contentId == epic }) {
+            return String(localized: group.folded ? .unfoldEpicGroupTooltip(count: group.count) : .foldEpicGroupTooltip)
+        }
         guard let item = column.items.first(where: { $0.id == hoveredId }) else { return "" }
         if hoveringFold {
             guard column.nesting.folded.contains(item.id) else { return String(localized: .foldSubIssuesTooltip) }
@@ -278,56 +354,110 @@ struct ColumnView: View {
     }
 }
 
-/// Over the issues of an epic standing together in a column: the epic's name and how many of its issues are
-/// there. A click folds them away under it, or shows them again; the right-click menu also opens the epic. Its
-/// icon sits where the line down to the issues starts.
+/// Over the issues of an epic standing together in a column: the epic's icon where the line down to them starts,
+/// its name on up to three lines, how many of its issues are there, and the arrow that folds them away. A click
+/// opens the epic, one on the arrow folds its issues or shows them again, and dragging it moves them all. The
+/// column handles the clicks and the board the drag, from where the header and its arrow are.
 private struct EpicGroupHeader: View {
     @Environment(AppModel.self) private var model
     var group: Nesting.EpicGroup
     var columnId: String
-    @State private var hovered = false
+    var drag: BoardDrag
+    var hovered: Bool
+    var hoveringFold: Bool
+    @State private var owner = UUID()
+    @State private var last = LastFrame()
+
+    /// The height of a line of its name, which the icon, the count and the arrow line up with.
+    private static let line: CGFloat = 16
 
     var body: some View {
-        Button {
-            model.toggleEpicGroup(group)
-        } label: {
-            HStack(spacing: 6) {
-                EpicIcon(size: 12)
-                    .frame(width: CardTreeLines.indent)
-                Text(group.epic.title)
-                    .font(.smallMedium)
-                    .foregroundStyle(Theme.text)
-                    .lineLimit(1)
-                Text("\(group.count)")
-                    .font(.small)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.textTertiary)
-                Spacer(minLength: 4)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Theme.textTertiary)
-                    .rotationEffect(.degrees(group.folded ? -90 : 0))
-                    .opacity(hovered || group.folded ? 1 : 0)
-                    .padding(.trailing, 6)
-            }
-            .frame(height: 24)
-            .background(alignment: .bottomLeading) {
-                // The start of the line down to the epic's issues.
-                if !group.folded {
-                    Rectangle().fill(Theme.treeLine).frame(width: 1, height: 5).offset(x: CardTreeLines.indent / 2 - 0.5)
+        HStack(alignment: .top, spacing: 6) {
+            EpicIcon(size: 12)
+                .frame(width: CardTreeLines.indent, height: Self.line)
+            Text(group.epic.title)
+                .font(.smallMedium)
+                .foregroundStyle(Theme.text)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(minHeight: Self.line)
+            Text("\(group.count)")
+                .font(.small)
+                .monospacedDigit()
+                .foregroundStyle(Theme.textTertiary)
+                .frame(height: Self.line)
+            Spacer(minLength: 4)
+            Image(systemName: "chevron.down")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
+                .rotationEffect(.degrees(group.folded ? -90 : 0))
+                .frame(width: 20, height: 20)
+                .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(hoveringFold ? Theme.hover : .clear))
+                .onGeometryChange(for: CGRect.self) { proxy in
+                    proxy.frame(in: .named(BoardDrag.space))
+                } action: { frame in
+                    drag.setHeaderFold(frame, column: columnId, epic: group.contentId)
                 }
+                .padding(.vertical, (Self.line - 20) / 2)
+                .opacity(hovered || group.folded ? 1 : 0)
+        }
+        .padding(.vertical, 4)
+        .padding(.trailing, 4)
+        .background(alignment: .topLeading) {
+            // The start of the line down to the epic's issues, from under its icon.
+            if !group.folded {
+                Rectangle().fill(Theme.treeLine).frame(width: 1).padding(.top, 19).offset(x: CardTreeLines.indent / 2 - 0.5)
             }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(PlainPressStyle())
-        .onHover { hovered = $0 }
-        .help(Text(group.folded ? .unfoldEpicGroupTooltip(count: group.count) : .foldEpicGroupTooltip))
-        .contextMenu {
-            Button(.openEpicCommand) { model.open(group.epic) }
-            Button(group.folded ? .showEpicIssues : .foldEpicIssues) { model.toggleEpicGroup(group) }
+        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(hovered && !hoveringFold ? Theme.hover : .clear))
+        .animation(Theme.quick, value: hovered)
+        .contentShape(Rectangle())
+        .onGeometryChange(for: CGRect.self) { proxy in
+            proxy.frame(in: .named(BoardDrag.space))
+        } action: { frame in
+            last.frame = frame
+            drag.setHeaderFrame(frame, column: columnId, epic: group.contentId, owner: owner)
         }
+        .onAppear { if let frame = last.frame { drag.setHeaderFrame(frame, column: columnId, epic: group.contentId, owner: owner) } }
+        .onDisappear { drag.removeHeaderFrame(column: columnId, epic: group.contentId, owner: owner) }
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.epicGroupSpoken(epic: group.epic.title, count: group.count)))
         .accessibilityValue(Text(group.folded ? .sectionFolded : .sectionOpen))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { model.open(group.epic) }
+        .accessibilityAction(named: Text(group.folded ? .showEpicIssues : .foldEpicIssues)) { model.toggleEpicGroup(group) }
+    }
+}
+
+/// Where the issues of an epic lifted by their header would land: a dashed card as big as the lifted one.
+private struct EpicGroupSlot: View {
+    var group: Nesting.EpicGroup
+    var width: CGFloat
+    var depth: Int
+    var drag: BoardDrag
+    @State private var owner = UUID()
+
+    var body: some View {
+        let indent = CGFloat(min(depth, CardTreeLines.deepest)) * CardTreeLines.indent
+        EpicGroupCard(group: group, width: width - indent)
+            .hidden()
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Theme.accent.opacity(0.10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(Theme.accent.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    )
+            )
+            .onGeometryChange(for: CGRect.self) { proxy in
+                proxy.frame(in: .named(BoardDrag.space))
+            } action: { frame in
+                // The lifted card settles into it.
+                drag.setCardFrame(frame, for: group.epic.id, owner: owner)
+            }
+            .onDisappear { drag.removeCardFrame(for: group.epic.id, owner: owner) }
+            .padding(.leading, indent)
+            .padding(.bottom, CardStackEdge.height)
     }
 }
 
@@ -345,6 +475,7 @@ private struct BoardCell: View {
     var hoveringFold: Bool
     var avatarVersion: Int
     @State private var owner = UUID()
+    @State private var last = LastFrame()
 
     var body: some View {
         let id = card.item.id
@@ -372,8 +503,12 @@ private struct BoardCell: View {
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .named(BoardDrag.space))
         } action: { frame in
+            last.frame = frame
             drag.setCardFrame(frame, for: id, owner: owner)
         }
+        // A card that comes back to where its view stood before, such as one dragged away and back, gets that view
+        // again, which reports no change of place.
+        .onAppear { if let frame = last.frame { drag.setCardFrame(frame, for: id, owner: owner) } }
         .onDisappear { drag.removeCardFrame(for: id, owner: owner) }
         .padding(.bottom, card.folded && !isSlot ? CardStackEdge.height : 0)
         .padding(.leading, indent)

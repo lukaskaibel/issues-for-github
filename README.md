@@ -78,7 +78,7 @@ A sub-issue with the same status as its parent hangs right under it, indented, s
 work on with it read as one instead of as separate cards in the same column. The arrow on the parent folds them in. A
 sub-issue whose parent has another status stays in its own column and says which issue it belongs to. When the last
 one is done, the parent moves to Done by itself. The issues of an epic in the same column stand together the same
-way, under the epic's name.
+way, under the epic's name; drag the name to another column and they all go.
 
 Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count
 and a dropdown opens right there. Type to filter, press a number to pick; the pick closes it. For several assignees or
@@ -171,7 +171,7 @@ the sidebar; each shows the board's columns with only its issues, or a list grou
 and the day it is due. `⇧M` puts issues into one. An epic is an issue labelled "epic" whose sub-issues are the work:
 **Make Epic** in the right-click menu, `M` then `E` to put an issue into one. On the board and in the list, the
 issues of an epic in the same column stand together under its name, so you see at a glance what belongs to what;
-drop a card among them and it joins the epic. The roadmap lays the epics out over
+drag the name and they move together, drop a card among them and it joins the epic. The roadmap lays the epics out over
 the milestones their unfinished issues are in, on a timeline: drag a bar onto another milestone and the epic moves
 there with everything left to do, drag a milestone's diamond to change its day. When a milestone's day has come,
 **Complete** closes it on GitHub and moves what isn't done to the next one.
@@ -460,8 +460,10 @@ A board's next two milestones and its roadmap are listed under it in the sidebar
 them away. In a milestone, click its date to change it, the text under the header to edit its name and description,
 and **Complete** (or the "…" menu) to close it: what isn't done moves to the next milestone or stays, as you choose.
 In its list, drag an issue into an epic's group to make it a sub-issue of that epic. On a board and in its list, two
-or more issues of an epic in the same column stand together under the epic's name; click it to fold them away, or
-right-click it to open the epic, and drop an issue among them to put it into the epic. On the roadmap's timeline, drag
+or more issues of an epic in the same column stand together under the epic's name; click it to open the epic, or its
+arrow to fold them away. Drag the name to another column, or another place in its column, and all of them go along,
+with a message that undoes it; its right-click menu moves them to another status too. Drop an issue among them to put
+it into the epic. On the roadmap's timeline, drag
 an epic's bar onto another milestone, or down to Later, and its unfinished issues go with it; drag a milestone's
 diamond sideways to change its day; Months and Quarters set how much time fits. In the roadmap's list, drag an epic
 into another milestone's group. An epic's page shows its sub-issues by milestone, with a plus for a new one in each.
@@ -493,7 +495,9 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 |---|---|
 | Tap a section header | Fold it in or out |
 | Tap the arrow beside an issue | Fold the sub-issues hanging under it in or out |
-| Tap an epic's name over its issues | Fold them in or out; touch and hold it to open the epic |
+| Tap an epic's name over its issues | Open the epic; the arrow beside its icon folds them in or out |
+| Touch and hold an epic's name over its issues | Open the epic, move all of them to another status, fold them |
+| Touch and hold an epic's name, then drag | Move all of its issues there to another column (iPad) or another place in their section |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
 | Touch and hold an issue | Status, priority, assignee, labels, due date and milestone as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |

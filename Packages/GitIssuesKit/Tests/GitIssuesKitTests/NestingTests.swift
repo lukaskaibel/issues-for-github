@@ -322,4 +322,92 @@ struct EpicGroupTests {
         #expect(landing.rank == 2)
         #expect(landing.row == 2)
     }
+    // MARK: Moving an epic's issues together
+
+    /// The ids of the issues numbered so.
+    private func ids(_ numbers: Int...) -> Set<String> {
+        Set(numbers.map { "item-\($0)" })
+    }
+
+    @Test("An epic's issues moved within their column go together, in front of or after what stands alone")
+    func movesAGroupInItsColumn() {
+        let (shown, nesting) = column
+        let moving = ids(2, 4)
+        let others = shown.filter { !moving.contains($0.id) }
+        #expect(nesting.rows(without: moving).map(\.id) == ["item-1", "item-3"])
+
+        let top = nesting.landing(ofGroup: "issue-40", moving: moving, at: 0, shown: others)
+        #expect(top.epic == nil)
+        #expect(numbers(top.peers) == [1, 3])
+        #expect(top.rank == 0)
+        #expect(top.depth == 0)
+        #expect(top.row == 0)
+
+        let end = nesting.landing(ofGroup: "issue-40", moving: moving, at: 2, shown: others)
+        #expect(end.rank == 2)
+        #expect(end.slot == 2)
+        #expect(end.row == 2)
+    }
+
+    @Test("An epic's issues dropped in the middle of another epic's group go past the whole group")
+    func passesAnotherGroup() {
+        let (shown, nesting) = Self.arrange([Self.item(5, parent: 41), Self.item(6, parent: 41), Self.item(7)])
+        #expect(rows(nesting) == ["E41×2", "5", "6", "7"])
+        let landing = nesting.landing(ofGroup: "issue-40", moving: ids(2, 4), at: 1, shown: shown)
+        #expect(landing.epic == nil)
+        // Its peers: the group of #41, by #5, and #7.
+        #expect(numbers(landing.peers) == [5, 7])
+        #expect(landing.rank == 1)
+        #expect(landing.depth == 0)
+        // Rows: header, 5, 6, [here], 7.
+        #expect(landing.row == 3)
+    }
+
+    @Test("An epic's issues dropped where the epic has an issue already join it")
+    func joinsTheEpicsIssue() {
+        let (shown, nesting) = Self.arrange([Self.item(8), Self.item(9, parent: 40), Self.item(10)])
+        let landing = nesting.landing(ofGroup: "issue-40", moving: ids(2, 4), at: 3, shown: shown)
+        #expect(landing.epic == "issue-40")
+        #expect(numbers(landing.peers) == [9])
+        #expect(landing.rank == 1)
+        // Right after #9, before #10.
+        #expect(landing.slot == 2)
+        #expect(landing.row == 2)
+    }
+
+    @Test("An epic's issues dropped on the epic's group in another column join it, one level in")
+    func joinsTheEpicsGroup() {
+        let (shown, nesting) = Self.arrange([Self.item(10), Self.item(11, parent: 40), Self.item(12, parent: 40)])
+        #expect(rows(nesting) == ["10", "E40×2", "11", "12"])
+        let landing = nesting.landing(ofGroup: "issue-40", moving: ids(2, 4), at: 0, shown: shown)
+        #expect(landing.epic == "issue-40")
+        #expect(numbers(landing.peers) == [11, 12])
+        #expect(landing.rank == 0)
+        #expect(landing.depth == 1)
+        // Under the header, in front of #11.
+        #expect(landing.row == 2)
+    }
+
+    @Test("A folded group moves as a whole, header and all")
+    func movesAFoldedGroup() {
+        let (shown, nesting) = Self.arrange(
+            [Self.item(1), Self.item(2, parent: 40), Self.item(3, parent: 40), Self.item(5)], foldedEpics: ["issue-40"]
+        )
+        let moving = ids(2, 3)
+        #expect(nesting.rows(without: moving).map(\.id) == ["item-1", "item-5"])
+        let landing = nesting.landing(ofGroup: "issue-40", moving: moving, at: 2, shown: shown)
+        #expect(landing.rank == 2)
+        #expect(landing.row == 2)
+    }
+
+    @Test("Where a dragged issue takes the last of its epic's issues along, the epic's header goes too")
+    func headerLeavesWithItsLastIssues() {
+        let (shown, nesting) = Self.arrange([Self.item(1), Self.item(9, parent: 40), Self.item(13, parent: 9)])
+        #expect(rows(nesting) == ["1", "E40×2", "9", "13"])
+        // #9 brings #13 along: nothing of the epic stays.
+        #expect(nesting.rows(without: ids(9, 13)).map(\.id) == ["item-1"])
+        let others = shown.filter { !ids(9, 13).contains($0.id) }
+        let landing = nesting.landing(of: Self.item(9, parent: 40), at: 0, shown: others)
+        #expect(landing.row == 0)
+    }
 }

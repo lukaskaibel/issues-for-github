@@ -15361,6 +15361,168 @@
         }
       }
     },
+    "epicIssuesMovedToStatus" : {
+      "comment" : "Toast title after the issues of an epic standing together in a board column were dragged to another column (or moved there with the header's menu). Arguments: how many issues, the column's (status's) name. The toast's message is the epic's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld Issue nach %2$@ verschoben"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld Issues nach %2$@ verschoben"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld issue moved to %(status)@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld issues moved to %(status)@"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld incidencia movida a %2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld incidencias movidas a %2$@"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld ticket déplacé vers %2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld tickets déplacés vers %2$@"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld件のIssueを%2$@に移動しました"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "이슈 %1$lld개가 %2$@(으)로 이동됨"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld issue movida para %2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld issues movidas para %2$@"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld задачи перенесены в «%2$@»"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld задач перенесено в «%2$@»"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld задача перенесена в «%2$@»"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld задачи перенесено в «%2$@»"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "已将 %1$lld 个议题移到“%2$@”"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "epicMovedToMilestone" : {
       "comment" : "Toast title after an epic was dragged to another milestone on the roadmap. Argument: the milestone's title.",
       "extractionState" : "manual",
@@ -19064,7 +19226,7 @@
       }
     },
     "foldEpicGroupTooltip" : {
-      "comment" : "Tooltip on the header over an epic's issues in a board column or list section (an epic is a big issue whose sub-issues are its work): a click hides them under the header.",
+      "comment" : "Tooltip on the arrow of the header over an epic's issues in a board column or list section (an epic is a big issue whose sub-issues are its work), and the VoiceOver label of that arrow on iPhone and iPad: a click hides them under the header.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -31651,6 +31813,66 @@
         }
       }
     },
+    "moveEpicIssuesTo" : {
+      "comment" : "Submenu on the header over an epic's issues in a board column or list section: lists the columns (statuses); picking one moves all of those issues there. Title case in English.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues verschieben nach"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Issues To"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mover incidencias a"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déplacer les tickets vers"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issueの移動先"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이슈 이동"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mover issues para"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перенести задачи в"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将议题移到"
+          }
+        }
+      }
+    },
     "moveLeft" : {
       "comment" : "iPad board: item in a column's '…' menu that moves the status (the column) one place to the left. Also: Mac board: item in a column's menu that moves the column one place to the left.",
       "extractionState" : "manual",
@@ -31892,7 +32114,7 @@
       }
     },
     "moveToNextStatus" : {
-      "comment" : "VoiceOver action on a card of the iPad board: moves the issue to the column on the right.",
+      "comment" : "VoiceOver action on a card of the iPad board, and on the header over an epic's issues in a column: moves the issue (or those issues) to the column on the right.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -31952,7 +32174,7 @@
       }
     },
     "moveToPreviousStatus" : {
-      "comment" : "VoiceOver action on a card of the iPad board: moves the issue to the column on the left.",
+      "comment" : "VoiceOver action on a card of the iPad board, and on the header over an epic's issues in a column: moves the issue (or those issues) to the column on the left.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -57104,7 +57326,7 @@
       }
     },
     "unfoldEpicGroupTooltip" : {
-      "comment" : "Tooltip on the folded header over an epic's issues in a board column or list section: a click shows them again.",
+      "comment" : "Tooltip on the arrow of the folded header over an epic's issues in a board column or list section, and the VoiceOver label of that arrow on iPhone and iPad: a click shows them again.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
