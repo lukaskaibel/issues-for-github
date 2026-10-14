@@ -8,15 +8,15 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
-- **Milestones.** A board's next two milestones are listed under it in the sidebar, the one it works towards with a
-  filled diamond that turns red once its day has passed. Each opens the board's columns with only its issues, or a
-  list of them grouped by epic, with what it is about, how much is done and the day it is due on top; click the date
-  to change it. Press `⇧M` to put the issues you point at or picked into a milestone, or use the right-click menu, the
-  command palette or the selection bar; **New Milestone…** at the end of the list makes one right there. A board's
-  milestones are GitHub's milestones of its repositories: those of the same name count as one, and a repository that
-  has none of that name yet gets it when an issue of it goes in. When the day has come or everything is done,
-  **Complete** closes the milestone on GitHub and offers to move what isn't done to the next one; the message that
-  follows undoes it. Cards and list rows name their milestone.
+- **Milestones.** A board's next two milestones are listed under Milestones in the sidebar, the one it works towards
+  with a filled diamond that turns red once its day has passed. Each opens the board's columns with only its issues,
+  or a list of them grouped by epic, with what it is about, how much is done and the day it is due on top; click the
+  date to change it. Press `⇧M` to put the issues you point at or picked into a milestone, or use the right-click
+  menu, the command palette or the selection bar; **New Milestone…** at the end of the list makes one right there. A
+  board's milestones are GitHub's milestones of its repositories: those of the same name count as one, and a
+  repository that has none of that name yet gets it when an issue of it goes in. When the day has come or everything
+  is done, **Complete** closes the milestone on GitHub and offers to move what isn't done to the next one; the message
+  that follows undoes it. Cards and list rows name their milestone.
 - **Epics.** An epic is an issue with the label "epic" (or, in organisations that have it, the issue type Epic) whose
   sub-issues are its work, like a project in Linear. Make one with **Make Epic** in any issue's right-click menu or
   **New Epic** on the roadmap; the label is made in the repository the first time. `M` then `E` puts an issue into an
@@ -29,15 +29,31 @@ All notable changes to this project are recorded here. The format follows
   between two issues of an epic and it joins that epic; a single issue of an epic names it on its card instead. An epic's page shows how far it is, in a part per milestone, and its sub-issues by milestone, each with a plus for a
   new one there. Starting work on an issue of an epic still in the backlog starts the epic too; Settings › Epics turns
   that off.
-- **A roadmap.** Each board with milestones or epics has a Roadmap under it in the sidebar (`G` then `R`, or `⌘4`): its
-  epics as bars over the milestones their unfinished issues are in, on a timeline of months or quarters, or as a list
-  under the milestone that comes next for each. Drag a bar onto another milestone and the epic moves there with all
-  of its unfinished issues; drag it to Later to take them out of their milestones, and a message undoes either. Drag
-  a milestone's diamond to change its day. In the list, drag an epic into another milestone's group.
+- **A roadmap.** Each board with milestones or epics has a Roadmap under its milestones in the sidebar (`G` then `R`,
+  or `⌘4`): its epics as bars over the milestones their unfinished issues are in, on a timeline of months or quarters,
+  or as a list under the milestone that comes next for each. Drag a bar onto another milestone and the epic moves
+  there with all of its unfinished issues; drag it to Later to take them out of their milestones, and a message undoes
+  either. Drag a milestone's diamond to change its day. In the list, drag an epic into another milestone's group.
 - **Planning on iPhone and iPad.** The Projects tab lists a board's next milestones and its roadmap under it, and the
   iPad sidebar has them as entries. A milestone opens as a list grouped by epic, on a wide iPad also as the board's
   columns; the roadmap is a list on iPhone and the timeline on iPad, where a bar is dragged with a finger. The
   milestone is a chip on every issue, a submenu when you touch and hold one, and a choice in a new issue.
+- **A project's views, in the sidebar.** The sidebar is about one project at a time, as Linear's is about one
+  workspace: the project sits at its top, with the sync dot on its colour, and its menu switches to another and holds
+  your account (Sync Now, appearance, settings, signing out). Under it are the views the project has on GitHub, such
+  as "This week" or a list of open bugs, then its next milestones with the roadmap, and its repositories. A view shows
+  what its filter finds, as a board or as a list grouped by the field GitHub groups it by. `⌃Tab` goes to the next
+  one, and **Go to View…** in the command palette to any view of any project. The filter is a row of chips over the
+  issues: press `F` or click **Filter** to add one for a status, an assignee, a label, a milestone, an iteration or
+  any field of the project, click a chip to change it or turn "is" into "is not", or edit the filter in GitHub's own
+  words. A changed filter is yours until you click **Save** (`⌘S`), which saves it to the view on GitHub for everyone;
+  **Reset** takes it back. **Display** (`⇧V`) switches a view between board and list, its columns, groups and order,
+  and the fields its cards show, such as the iteration; **Save for Everyone** puts board or list and the fields on
+  GitHub too. **New View** under the views makes one, starting from the one open; double-click a view to rename it,
+  and its right-click menu duplicates, deletes or opens it on GitHub. A new issue made in a view gets what its filter
+  asks for, such as this iteration. On the iPad the sidebar works the same way; on the iPhone the views are capsules
+  over the project, and the filter a line under them that opens a sheet. Everything is GitHub's own: a view looks the
+  same on github.com.
 
 ### Fixed
 

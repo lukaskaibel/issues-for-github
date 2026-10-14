@@ -110,6 +110,9 @@ struct ContentPanel: View {
                         .transition(.opacity)
                 } else {
                     ProjectHeader()
+                    if let view = model.currentView {
+                        FilterBar(view: view)
+                    }
                     if case .milestone(let projectId, let title) = model.scope,
                        let group = model.milestoneGroup(projectId: projectId, title: title) {
                         MilestoneSummary(projectId: projectId, group: group)
@@ -216,10 +219,24 @@ struct ProjectHeader: View {
             switch model.scope {
             case .project:
                 if let project = model.currentProject {
-                    ProjectSwatch(title: project.title)
-                    Text(project.title).font(.uiSemibold).lineLimit(1)
-                    ViewModeSwitch(mode: $model.viewMode)
-                        .padding(.leading, 10)
+                    if let view = model.currentView {
+                        // The view open, which the sidebar lists with the project's others, then the filter and
+                        // Display buttons, as in Linear.
+                        ViewLayoutIcon(view: view, size: 12)
+                            .foregroundStyle(Theme.textSecondary)
+                        Text(view.name).font(.uiSemibold).lineLimit(1)
+                        if model.filterChanged(view) {
+                            Circle().fill(Theme.accent).frame(width: 6, height: 6)
+                        }
+                        Spacer(minLength: 12)
+                        HeaderFilterButton(view: view)
+                        DisplayButton(view: view)
+                    } else {
+                        ProjectSwatch(title: project.title)
+                        Text(project.title).font(.uiSemibold).lineLimit(1).fixedSize()
+                        ViewModeSwitch(mode: $model.viewMode)
+                            .padding(.leading, 10)
+                    }
                 }
             case .myIssues:
                 Image(systemName: "scope").font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textSecondary)
@@ -239,7 +256,7 @@ struct ProjectHeader: View {
             case .inbox, nil:
                 EmptyView()
             }
-            if !isPlanning { Spacer() }
+            if !isPlanning, model.currentView == nil { Spacer() }
             if let repo = model.currentRepository, let url = repo.url {
                 Button {
                     Platform.open(url)

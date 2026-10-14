@@ -131,6 +131,9 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
     public var milestoneTitle: String?
     /// The issue's type, in organisations that use them ("Bug", "Epic").
     public var issueType: String?
+    /// What the item has in the project's own fields other than Status, Priority and the due date, such as an
+    /// iteration or a "Workstream", by field id.
+    public var fieldValues: [String: FieldValue] = [:]
 
     public var isLocalOnly: Bool { id.hasPrefix(LocalID.prefix) }
     public var isOnBoard: Bool { projectId != nil }

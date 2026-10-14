@@ -189,6 +189,15 @@ enum SectionIcon: Equatable {
     case milestone(MilestoneMark)
     case epic
     case plain
+    /// An option of a single-select field, in GitHub's colour (GRAY, BLUE…).
+    case dot(String)
+    /// An iteration; the one under way is marked.
+    case iteration(current: Bool)
+    case person(Person)
+    /// A parent issue, with how far its sub-issues are.
+    case progress(done: Int, total: Int)
+    case repository
+    case priority(PriorityLevel)
 }
 
 extension AppModel {
@@ -201,6 +210,7 @@ extension AppModel {
         case .milestone(let title):
             title.flatMap { title in projectId.flatMap { milestoneGroup(projectId: $0, title: title) } }
                 .map { .milestone(mark(of: $0, projectId: projectId)) } ?? .plain
+        case .group: section.groupIcon ?? .plain
         }
     }
 
@@ -260,5 +270,96 @@ struct SegmentedProgress: View {
         }
         .frame(height: 30)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// The icon of a view's group or column, for SwiftUI: an option's colour, an iteration, a person, a parent's
+/// progress, a repository or a priority. Statuses, milestones and epics have their own.
+struct GroupIcon: View {
+    var icon: SectionIcon
+    var size: CGFloat = 14
+
+    var body: some View {
+        switch icon {
+        case .status(let glyph): StatusIcon(glyph: glyph, size: size)
+        case .milestone(let mark): MilestoneIcon(mark: mark, size: size)
+        case .epic: EpicIcon(size: size)
+        case .plain: EmptyView()
+        case .dot(let color):
+            Circle()
+                .fill(Theme.optionColor(color) ?? Theme.textTertiary)
+                .frame(width: size * 0.62, height: size * 0.62)
+                .frame(width: size, height: size)
+        case .iteration(let current):
+            IterationIcon(size: size)
+                .foregroundStyle(current ? Theme.started : Theme.textSecondary)
+        case .person(let person):
+            Avatar(login: person.login, url: person.avatarUrl, size: size + 2)
+        case .progress(let done, let total):
+            ProgressRing(done: done, total: total, size: size, color: Theme.positive)
+        case .repository:
+            RepositoryIcon(size: size - 2).foregroundStyle(Theme.textSecondary)
+        case .priority(let level):
+            PriorityIcon(level: level)
+        }
+    }
+}
+
+/// GitHub's iterations, its cycles: two arrows going round.
+struct IterationIcon: View {
+    var size: CGFloat = 14
+
+    var body: some View {
+        Image(systemName: "arrow.triangle.2.circlepath")
+            .font(.system(size: size * 0.78, weight: .semibold))
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+}
+
+extension PlanningGlyph {
+    /// A parent's progress as a ring, for the Mac's painted list.
+    static func drawProgress(done: Int, total: Int, in rect: CGRect, cg context: CGContext) {
+        let fraction = total > 0 ? Double(done) / Double(total) : 0
+        context.saveGState()
+        defer { context.restoreGState() }
+        let inset = rect.insetBy(dx: rect.width * 0.14, dy: rect.height * 0.14)
+        let width = rect.width * 0.15
+        context.setLineWidth(width)
+        context.setStrokeColor(PlatformColor(Theme.barOff).cgColor)
+        context.strokeEllipse(in: inset)
+        guard fraction > 0 else { return }
+        context.setStrokeColor(PlatformColor(Theme.positive).cgColor)
+        context.setLineCap(.round)
+        let center = CGPoint(x: inset.midX, y: inset.midY)
+        let start = -CGFloat.pi / 2
+        context.addArc(center: center, radius: inset.width / 2, startAngle: start, endAngle: start + 2 * .pi * min(fraction, 1), clockwise: false)
+        context.strokePath()
+    }
+
+    /// An option's colour as a dot.
+    static func drawDot(_ color: String, in rect: CGRect, cg context: CGContext) {
+        context.saveGState()
+        defer { context.restoreGState() }
+        context.setFillColor(PlatformColor(Theme.optionColor(color) ?? Theme.textTertiary).cgColor)
+        let side = rect.width * 0.62
+        context.fillEllipse(in: CGRect(x: rect.midX - side / 2, y: rect.midY - side / 2, width: side, height: side))
+    }
+}
+
+/// The icon of a project field's chip on a row.
+struct FieldChipIcon: View {
+    var icon: FieldChip.Icon
+
+    var body: some View {
+        Group {
+            switch icon {
+            case .option(let color): Circle().fill(Theme.optionColor(color) ?? Theme.textTertiary).frame(width: 7, height: 7)
+            case .iteration: Image(systemName: "arrow.triangle.2.circlepath").font(.system(size: 8, weight: .semibold))
+            case .date: Image(systemName: "calendar").font(.system(size: 8))
+            case .text: Image(systemName: "text.alignleft").font(.system(size: 8))
+            }
+        }
+        .accessibilityHidden(true)
     }
 }

@@ -270,6 +270,8 @@ extension AppModel {
             guard item.isEpic, let projectId = scopeProjectId else { return false }
             let row = (roadmap(projectId: projectId).rows + roadmap(projectId: projectId).later).first { $0.epic.id == item.id }
             return row?.next != title
+        case .group(let key):
+            return canDrop(item, into: key)
         }
     }
 
@@ -288,6 +290,11 @@ extension AppModel {
             guard let projectId = scope?.projectId else { return false }
             moveEpic(item, to: title.flatMap { milestoneGroup(projectId: projectId, title: $0) }, projectId: projectId)
             return true
+        case .group(let key):
+            let mutations = groupMutations(item, into: key)
+            guard !mutations.isEmpty else { return false }
+            withAnimation(Theme.spring) { perform(mutations) }
+            return true
         }
     }
 
@@ -302,6 +309,8 @@ extension AppModel {
         case .milestone(let title):
             newIssuePlan = NewIssuePlan(milestoneTitle: title, isEpic: true)
             overlay = .newIssue(statusId: nil, parentItemId: nil)
+        case .group(let key):
+            addIssue(in: key)
         }
     }
 }

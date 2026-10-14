@@ -204,11 +204,39 @@ struct StatusAvatar: View {
     var style: SyncDotStyle?
 
     var body: some View {
+        AccountAvatar(size: size)
+            .modifier(SyncDotCutout(size: size, style: style ?? model.syncDotStyle))
+            // The avatar's own tooltip names only the person; the button around it says how syncing is going.
+            .allowsHitTesting(false)
+    }
+}
+
+/// A project's colour with the state of syncing as a dot cut into its corner, at the top of the sidebar, where
+/// Linear shows its workspace.
+struct StatusSwatch: View {
+    @Environment(AppModel.self) private var model
+    var title: String
+    var size: CGFloat
+
+    var body: some View {
+        ProjectSwatch(title: title, size: size)
+            .modifier(SyncDotCutout(size: size, style: model.syncDotStyle))
+            .allowsHitTesting(false)
+    }
+}
+
+/// The dot cut into the lower right corner of an avatar or a project's colour. The cut-out shows whatever is behind,
+/// so it works on any background and on hover.
+private struct SyncDotCutout: ViewModifier {
+    var size: CGFloat
+    var style: SyncDotStyle
+
+    func body(content: Content) -> some View {
         let dot = (size * 0.4).rounded()
         let gap = (size * 0.09).rounded(.up)
-        // The dot reaches a little past the avatar's edge.
+        // The dot reaches a little past the edge.
         let outset = (dot * 0.25).rounded()
-        AccountAvatar(size: size)
+        content
             .mask {
                 Rectangle()
                     .overlay(alignment: .bottomTrailing) {
@@ -220,11 +248,9 @@ struct StatusAvatar: View {
                     .compositingGroup()
             }
             .overlay(alignment: .bottomTrailing) {
-                SyncDot(style: style ?? model.syncDotStyle, size: dot)
+                SyncDot(style: style, size: dot)
                     .offset(x: outset, y: outset)
             }
-            .animation(Theme.quick, value: model.syncDotStyle)
-            // The avatar's own tooltip names only the person; the button around it says how syncing is going.
-            .allowsHitTesting(false)
+            .animation(Theme.quick, value: style)
     }
 }

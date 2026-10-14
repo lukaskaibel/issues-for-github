@@ -13,6 +13,8 @@ enum MobileTab: Hashable {
     /// A board's milestone and its roadmap, under the board in the iPad sidebar.
     case milestone(projectId: String, title: String)
     case roadmap(String)
+    /// A view of the project chosen in the iPad sidebar: the project, as the view shows it.
+    case view(projectId: String, viewId: String)
     case search
 }
 
@@ -41,6 +43,10 @@ enum MobileSheet: Identifiable, Equatable {
     case picker(itemId: String, kind: PickerKind)
     /// A new milestone of a board (no title), or one to change; a new one goes to the issues `assigning`.
     case milestoneEditor(projectId: String?, title: String?, assigning: [String])
+    /// A saved view's filter, to change and save.
+    case viewFilter(String)
+    /// A new saved view, starting from the one open or a copy of another.
+    case newView(projectId: String, sourceViewId: String?, duplicate: Bool)
 
     var id: String {
         switch self {
@@ -51,6 +57,8 @@ enum MobileSheet: Identifiable, Equatable {
         case .arrangeSections(let scope): "arrange-\(scope)"
         case .dueDate(let id): "due-\(id)"
         case .picker(let itemId, let kind): "picker-\(kind)-\(itemId)"
+        case .viewFilter(let id): "view-filter-\(id)"
+        case .newView(let projectId, let source, let duplicate): "new-view-\(projectId)-\(source ?? "-")-\(duplicate)"
         }
     }
 }
@@ -68,15 +76,27 @@ struct NewIssueContext: Equatable {
     var milestoneTitle: String?
     /// Started from the roadmap: a new epic.
     var isEpic = false
+    /// Started in a view's group or column: the values its filter asks for and the group's.
+    var preset: NewIssuePreset?
 }
 
 /// Navigation of one window: the selected tab and the stack of screens in each.
 @MainActor
 @Observable
 final class MobileNavigation {
+    /// The saved view being renamed or waiting for "Delete?" to be answered.
+    var renamingView: String?
+    var deletingView: String?
     var tab: MobileTab {
-        didSet { if tab != oldValue { Self.saveTab(tab) } }
+        didSet {
+            guard tab != oldValue else { return }
+            Self.saveTab(tab)
+            if let id = Self.projectId(of: tab) { sidebarProjectId = id }
+        }
     }
+    /// The project the iPad sidebar shows the views, milestones and repositories of: the one on screen, or the one
+    /// used last.
+    var sidebarProjectId: String? = UserDefaults.standard.string(forKey: MobileNavigation.projectKey)
     var inboxPath: [Route] = []
     /// On a wide iPad the Inbox shows the selected entry's issue beside the list; this is that issue.
     var inboxRootItemId: String?
@@ -125,7 +145,7 @@ final class MobileNavigation {
         let value: String = switch tab {
         case .inbox: "inbox"
         case .myIssues: "myIssues"
-        case .projects, .project, .repository, .milestone, .roadmap: "projects"
+        case .projects, .project, .repository, .milestone, .roadmap, .view: "projects"
         case .search: "search"
         }
         UserDefaults.standard.set(value, forKey: tabKey)
@@ -140,7 +160,17 @@ final class MobileNavigation {
         case .project(let id): projectPaths[id] ?? []
         case .repository(let id): repositoryPaths[id] ?? []
         case .milestone, .roadmap: planningPaths[Self.planningKey(tab)] ?? []
+        // A project's views share the project's stack.
+        case .view(let projectId, _): projectPaths[projectId] ?? []
         case .search: searchPath
+        }
+    }
+
+    /// The project a tab is about, if it is about one.
+    static func projectId(of tab: MobileTab) -> String? {
+        switch tab {
+        case .project(let id), .roadmap(let id), .milestone(let id, _), .view(let id, _): id
+        default: nil
         }
     }
 
@@ -160,6 +190,7 @@ final class MobileNavigation {
         case .project(let id): projectPaths[id] = path
         case .repository(let id): repositoryPaths[id] = path
         case .milestone, .roadmap: planningPaths[Self.planningKey(tab)] = path
+        case .view(let projectId, _): projectPaths[projectId] = path
         case .search: searchPath = path
         }
     }
@@ -238,6 +269,9 @@ final class MobileNavigation {
             tab = .projects
         } else if !regular, case .roadmap(let projectId) = tab {
             projectsPath = [.project(projectId), .roadmap(projectId)] + (planningPaths[Self.planningKey(tab)] ?? [])
+            tab = .projects
+        } else if !regular, case .view(let projectId, _) = tab {
+            projectsPath = [.project(projectId)] + (projectPaths[projectId] ?? [])
             tab = .projects
         }
     }

@@ -162,6 +162,33 @@ class AppTestCase: XCTestCase {
         wait(app.navigationBars[title])
     }
 
+    /// Opens a project in the iPad sidebar: its switcher lists the projects, and the project opens on its open view.
+    func openPadProject(_ title: String) {
+        let switcher = element("project-switcher")
+        wait(switcher)
+        switcher.tap()
+        let item = app.buttons[title].firstMatch
+        wait(item)
+        item.tap()
+        wait(app.navigationBars[title])
+    }
+
+    /// An entry of the iPad sidebar, by its name: a view, a milestone, the roadmap or a repository.
+    func sidebarEntry(_ title: String) -> XCUIElement {
+        app.cells.matching(NSPredicate(format: "label == %@", title)).firstMatch
+    }
+
+    /// Shows the open view of a project as a board or a list ("Board", "List"), from the Display part of the
+    /// project's menu.
+    func showLayout(_ name: String) {
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        let display = button("Display")
+        wait(display)
+        display.tap()
+        wait(button(name))
+        button(name).tap()
+    }
+
     /// Keeps a screenshot with the test results, to look at afterwards.
     func snapshot(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())

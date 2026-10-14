@@ -84,6 +84,28 @@ public enum DemoData {
         var milestone: String?
     }
 
+    /// The app's weekly cycles, as GitHub's Iteration field has them: two done, this week's and the next two.
+    private static let cycles: [(id: String, title: String, weeks: Int)] = [
+        ("demo-cycle-2", "Cycle 2", -2), ("demo-cycle-3", "Cycle 3", -1), ("demo-cycle-4", "Cycle 4", 0),
+        ("demo-cycle-5", "Cycle 5", 1), ("demo-cycle-6", "Cycle 6", 2),
+    ]
+
+    /// The cycle each of the app's issues is planned for, by number of weeks from this one.
+    private static let cycleOfIssue: [Int: Int] = [
+        9: 0, 8: 0, 13: 0, 28: 0, 15: 0, 17: 0, 25: 0, 7: 0, 6: 0,
+        14: 1, 24: 1, 16: -1, 5: -1, 10: -1, 11: -1, 12: -1, 23: -1, 21: -2,
+    ]
+
+    /// The part of the app each issue is about: a single-select field of the app's project.
+    private static let areas: [(name: String, color: String)] = [("Interface", "BLUE"), ("Sync", "GREEN"), ("Accounts", "ORANGE"), ("Release", "PURPLE")]
+    private static func area(of issue: IssueSpec) -> String? {
+        if issue.labels.contains("sync") { return "Sync" }
+        if issue.labels.contains("auth") { return "Accounts" }
+        if issue.labels.contains("release") { return "Release" }
+        if issue.labels.contains("ui") || issue.labels.contains("bug") { return "Interface" }
+        return nil
+    }
+
     /// The app's milestones: one shipped, three ahead, due this many days from today.
     private static let appMilestones: [(number: Int, title: String, due: Int, descr: String, closed: Bool)] = [
         (1, "0.2", -12, "The board on iPhone and iPad, sign-in with GitHub.", true),
@@ -222,6 +244,7 @@ public enum DemoData {
                 id: spec.repoId, nameWithOwner: spec.repo, projectId: spec.id,
                 labels: spec.labels, assignableUsers: team, metaLoadedAt: now
             ).insert(db)
+            try seedFieldsAndViews(db, spec: spec, today: today)
 
             for (index, issue) in issues.enumerated() {
                 let closed = issue.status == "Done"
@@ -247,7 +270,8 @@ public enum DemoData {
                     viewerCanDelete: true,
                     blockedByCount: blockers.filter { $0.status != "Done" }.count,
                     blockingCount: blocked.filter { $0.status != "Done" }.count,
-                    milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone
+                    milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone,
+                    fieldValues: fieldValues(of: issue, in: spec)
                 ).insert(db)
                 for (relation, others) in [(LinkedIssue.Relation.blockedBy, blockers), (.blocking, blocked)] {
                     for (position, other) in others.enumerated() {
@@ -305,6 +329,74 @@ public enum DemoData {
             }
         }
         try seedInbox(db, now: now)
+    }
+
+    // MARK: Fields and views
+
+    private static func fieldValues(of issue: IssueSpec, in spec: ProjectSpec) -> [String: FieldValue] {
+        guard spec.id == app.id else { return [:] }
+        var values: [String: FieldValue] = [:]
+        if let weeks = cycleOfIssue[issue.number], let cycle = cycles.first(where: { $0.weeks == weeks }) {
+            values["\(spec.id)-iteration"] = FieldValue(iterationId: cycle.id)
+        }
+        if let area = area(of: issue) {
+            values["\(spec.id)-area"] = FieldValue(optionId: "\(spec.id)-area-\(area.lowercased())")
+        }
+        return values
+    }
+
+    /// The fields GitHub lists for a project, and its saved views: for the app a board, this week's cycle, a list by
+    /// area, open bugs and sync work, and a release plan in GitHub's roadmap layout; for the website a board and a list.
+    private static func seedFieldsAndViews(_ db: Database, spec: ProjectSpec, today: CalendarDay) throws {
+        var fields: [ProjectField] = []
+        func add(_ suffix: String, _ name: String, _ type: String, options: [FieldChoice] = [], iterations: [IterationSpan] = []) {
+            fields.append(ProjectField(
+                id: "\(spec.id)-\(suffix)", projectId: spec.id, databaseId: 1000 + fields.count, name: name, dataType: type,
+                position: fields.count, options: options, iterations: iterations
+            ))
+        }
+        add("title", "Title", "TITLE")
+        add("assignees", "Assignees", "ASSIGNEES")
+        add("status", "Status", "SINGLE_SELECT", options: spec.statuses.map { FieldChoice(id: optionId(spec, $0.name), name: $0.name, color: $0.color) })
+        add("labels", "Labels", "LABELS")
+        add("milestone", "Milestone", "MILESTONE")
+        add("parent", "Parent issue", "PARENT_ISSUE")
+        add("progress", "Sub-issues progress", "SUB_ISSUES_PROGRESS")
+        add("updated", "Updated", "UPDATED")
+        if spec.hasPriority {
+            add("priority", "Priority", "SINGLE_SELECT", options: Defaults.priorityOptions.map { FieldChoice(id: optionId(spec, $0.name), name: $0.name, color: $0.color) })
+        }
+        if spec.hasDueField { add("due", "Due date", "DATE") }
+        let isApp = spec.id == app.id
+        if isApp {
+            // Weeks start on Monday, as GitHub's iterations do by default.
+            let monday = today.adding(days: -((today.weekday() + 5) % 7))
+            add("iteration", "Iteration", "ITERATION", iterations: cycles.map { cycle in
+                IterationSpan(
+                    id: cycle.id, title: cycle.title, startDate: monday.adding(days: cycle.weeks * 7).string, duration: 7,
+                    completed: cycle.weeks < 0
+                )
+            })
+            add("area", "Area", "SINGLE_SELECT", options: areas.map { FieldChoice(id: "\(spec.id)-area-\($0.name.lowercased())", name: $0.name, color: $0.color) })
+        }
+        for field in fields { try field.insert(db) }
+
+        func id(_ suffix: String) -> String { "\(spec.id)-\(suffix)" }
+        let shown = [id("title"), id("assignees"), id("status"), id("labels"), id("progress")]
+        var views = [
+            ProjectView(id: "\(spec.id)-view-board", projectId: spec.id, number: 1, name: "Board", layout: .board, filter: "", visibleFieldIds: shown, columnFieldId: id("status"), position: 0),
+        ]
+        if isApp {
+            views += [
+                ProjectView(id: "\(spec.id)-view-week", projectId: spec.id, number: 2, name: "This Week", layout: .board, filter: "iteration:@current", visibleFieldIds: shown, columnFieldId: id("status"), position: 1),
+                ProjectView(id: "\(spec.id)-view-area", projectId: spec.id, number: 3, name: "By Area", layout: .table, filter: "is:open", visibleFieldIds: shown + [id("iteration")], groupByFieldId: id("area"), position: 2),
+                ProjectView(id: "\(spec.id)-view-bugs", projectId: spec.id, number: 4, name: "Bugs and Sync", layout: .table, filter: "label:bug,sync is:open", visibleFieldIds: shown + [id("area")], sortBy: [ViewSort(fieldId: id("priority"), descending: false)], position: 3),
+                ProjectView(id: "\(spec.id)-view-roadmap", projectId: spec.id, number: 5, name: "Release Plan", layout: .roadmap, filter: "has:milestone", groupByFieldId: id("milestone"), position: 4),
+            ]
+        } else {
+            views.append(ProjectView(id: "\(spec.id)-view-all", projectId: spec.id, number: 2, name: "All", layout: .table, filter: "", visibleFieldIds: shown, position: 1))
+        }
+        for view in views { try view.insert(db) }
     }
 
     // MARK: Inbox

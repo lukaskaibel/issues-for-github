@@ -9,7 +9,7 @@ extension AppModel {
     /// `replacing` swaps out the current place instead, for moving to the next issue with J or K.
     func recordNavigation(replacing: Bool = false) {
         guard !isRestoringLocation, scope != nil else { return }
-        let current = Location(scope: scope, viewMode: viewMode, itemId: openItemId)
+        let current = Location(scope: scope, viewMode: viewMode, itemId: openItemId, viewId: currentView?.id)
         if historyIndex >= 0, history.indices.contains(historyIndex), history[historyIndex] == current { return }
         if replacing, history.indices.contains(historyIndex), history[historyIndex].itemId != nil {
             history[historyIndex] = current
@@ -42,6 +42,10 @@ extension AppModel {
         overlay = nil
         if let target = location.scope, target != scope {
             select(target)
+        }
+        if let id = location.viewId, let view = view(id: id), currentView?.id != id {
+            selectedViewIds[view.projectId] = id
+            rebuild()
         }
         if viewMode != location.viewMode {
             withAnimation(Theme.spring) { viewMode = location.viewMode }

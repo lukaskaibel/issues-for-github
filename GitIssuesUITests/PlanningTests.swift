@@ -397,7 +397,7 @@ final class PadPlanningTests: AppTestCase {
     func testAnEpicsCardsStandTogetherInTheColumn() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()
-        openSidebarEntry("Git Issues")
+        openPadProject("Git Issues")
         let header = element("epic-group-Offline-first sync")
         wait(header)
         let first = element("card-#8")
@@ -427,7 +427,7 @@ final class PadPlanningTests: AppTestCase {
     func testDraggingAnEpicsHeaderMovesItsCards() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()
-        openSidebarEntry("Git Issues")
+        openPadProject("Git Issues")
         let header = element("epic-group-Offline-first sync")
         let first = element("card-#8")
         let target = element("card-#16")
@@ -454,7 +454,7 @@ final class PadPlanningTests: AppTestCase {
     func testACardDroppedAmongAnEpicsCardsJoinsTheEpic() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()
-        openSidebarEntry("Git Issues")
+        openPadProject("Git Issues")
         let card = element("card-#7")
         let below = element("card-#15")
         wait(card)
@@ -474,7 +474,7 @@ final class PadPlanningTests: AppTestCase {
     func testCommandFourOpensTheRoadmap() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()
-        openSidebarEntry("Git Issues")
+        openPadProject("Git Issues")
         wait(element("card-#9"))
         app.typeKey("4", modifierFlags: .command)
         wait(app.buttons["Sign-in and accounts"])

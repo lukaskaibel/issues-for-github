@@ -155,8 +155,8 @@ board. The app follows the system appearance, or stays light or dark if you pref
 ### Every issue, on a board or not
 
 An issue someone opened straight in a repository isn't lost because nobody put it on a board. The sidebar lists the
-repositories your boards use, like the teams in Linear, and each shows all its issues, grouped by status like My
-Issues. Those on no board come first, under **No project**: click the circle with the plus (or press `S`), pick a
+repositories of the project you're in, like the teams in Linear, and each shows all its issues, grouped by status like
+My Issues. Those on no board come first, under **No project**: click the circle with the plus (or press `S`), pick a
 column, and the issue is on the board. My Issues shows everything assigned to you, on a board or not.
 
 <picture>
@@ -166,8 +166,8 @@ column, and the issue is on the board. My Issues shows everything assigned to yo
 
 ### Milestones, epics and a roadmap
 
-Plan a board the way Linear plans releases and projects, with what GitHub has. Its next milestones sit under it in
-the sidebar; each shows the board's columns with only its issues, or a list grouped by epic, with how much is done
+Plan a board the way Linear plans releases and projects, with what GitHub has. Its next milestones sit under
+Milestones in the sidebar; each shows the board's columns with only its issues, or a list grouped by epic, with how much is done
 and the day it is due. `⇧M` puts issues into one. An epic is an issue labelled "epic" whose sub-issues are the work:
 **Make Epic** in the right-click menu, `M` then `E` to put an issue into one. On the board and in the list, the
 issues of an epic in the same column stand together under its name, so you see at a glance what belongs to what;
@@ -180,6 +180,23 @@ there with everything left to do, drag a milestone's diamond to change its day. 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/roadmap-dark.webp">
   <img alt="The roadmap of a board: five epics as bars on a timeline over the milestones 0.3, 0.4 and 1.0, with how many of each epic's issues are done" src="Design/screenshots/roadmap-light.webp">
+</picture>
+-->
+
+### A project's views, in the sidebar
+
+The sidebar is about one project at a time, as Linear's is about one workspace: the project sits at its top, its
+menu switches to another, and under it are the project's views as GitHub has them, such as "This week" or open bugs by area, then its milestones and its repositories. A view
+shows what its filter finds, as a board or as a list grouped the way GitHub groups it. The filter is a row of chips
+over the issues, as in Linear: press `F` to add one for a status, a person, a label, a milestone, an iteration or any field
+of the project, click a chip to change it. A changed filter stays yours until you press `⌘S`, which saves it to the
+view for everyone; `⇧V` shows a view as board or list, by other columns or groups, or with the iteration on its cards.
+New views, renamed ones and deleted ones are GitHub's too, so a view looks the same on github.com.
+
+<!-- The views' picture comes with the next shared picture run (Tools/readme-images.sh):
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/views-dark.webp">
+  <img alt="The sidebar with the project Git Issues in its switch, its views Board, This Week, By Area, Bugs and Sync and Release Plan under it, This Week open as a board, its filter Iteration is Current as a chip over the columns" src="Design/screenshots/views-light.webp">
 </picture>
 -->
 
@@ -205,14 +222,15 @@ The interface uses the system's own parts.
   hold for the same menu as the Mac's right-click, and drag after holding to give an issue a new place in its section.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
   A board's next milestones and its roadmap are listed under it in Projects; a milestone is a list grouped by epic,
-  the roadmap a list of epics by milestone.
+  the roadmap a list of epics by milestone. A project's views are capsules over its list, with the open one's filter
+  as a line under them; tap the line to change the filter, touch and hold a view for its menu.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
   place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams are drawn until you tap them),
   the properties are chips under the title, and the comment field stays at the bottom as in Messages.
-- **iPad:** the tabs become a sidebar with every project and repository as an entry, as on the Mac. Projects open as a board or a
-  list; cards are moved with drag and drop (touch and hold, then drag). A board's next milestones and its roadmap
-  are entries under it: a milestone opens as the board's columns or a list, the roadmap as the timeline, whose bars
-  move with a finger. An issue shows its properties in a column
+- **iPad:** the tabs become a sidebar, as on the Mac: the project at the top, whose menu switches projects and opens
+  your account, then its views, its next milestones and roadmap, and its repositories, each an entry. A view opens as a board or a list; cards are moved with drag and
+  drop (touch and hold, then drag). A milestone opens as the board's columns or a list, the roadmap as the timeline,
+  whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
   work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
   their picker ready to type in; Return picks the first match.
@@ -233,6 +251,9 @@ The interface uses the system's own parts.
 - **Milestones, epics and a roadmap.** A board's milestones with their own board and progress, epics whose
   sub-issues are the work, and a roadmap of the epics over the milestones, on a timeline or as a list. Completing a
   milestone closes it on GitHub and moves what is left to the next one.
+- **A project's views** in the sidebar, one project at a time, with a filter of chips like Linear's that is GitHub's
+  own filter underneath. Change it for yourself, save it for everyone, or make, rename and delete views; GitHub shows
+  the same.
 - **An Inbox** with GitHub's notifications about issues and pull requests: who did what, the issue beside it, and
   read, archive, snooze and unsubscribe in one key. Read and archived are the same on github.com. Issues your own
   account assigned you to with `gh` or a coding agent show up too, which GitHub doesn't notify you of.
@@ -270,7 +291,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Due date | A date field of the project named **Due date**, *Due*, *Deadline* or *Target date* (the app adds one the first time you set a date) |
 | Reminders | Notifications each of your devices schedules itself from the due dates; nothing on GitHub |
 | Card order | The item's position in the project |
-| Repositories in the sidebar | The repositories linked to your projects, and those their issues come from |
+| Repositories in the sidebar | The repositories linked to the project, and those its issues come from |
 | No project | An issue that is in none of your projects; adding it to one is GitHub's *Add to project* |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
 | Sub-issues hanging under their parent | Only how the app arranges them; GitHub's order and fields stay as they are |
@@ -281,6 +302,12 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Epic | An issue with the label *epic* (made in the repository the first time) or, in organisations, the issue type *Epic* |
 | An epic's issues | Its sub-issues |
 | Roadmap | Only how the app lays out the epics over the milestones; the stretches end on the milestones' due dates |
+| A project's views in the sidebar | The project's views, in GitHub's order; board views as a board, table and roadmap views as a list |
+| A view's filter chips | The view's filter, in GitHub's own words (`label:bug,sync is:open`, `iteration:@current`) |
+| A changed filter, before Save | Kept on your device, as GitHub keeps unsaved changes in your browser |
+| Board or list and the fields shown | The view's layout and visible fields, saved with **Save for Everyone** |
+| Other columns, groups or order | Yours alone: GitHub sets a view's columns, grouping and sorting only when it is made |
+| Iteration on a card or row | The project's Iteration field, or any single-select field the view shows |
 | Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there. Due issues, and assignments your own account made outside the app (found in the issues' timelines), are the app's own entries, read and archived in iCloud |
 
 Boards show the issues in their project; a repository shows all its open issues and those closed in the last four
@@ -298,7 +325,7 @@ rate limit. The Inbox asks for new notifications at the pace GitHub sets, about 
 when nothing changed. As often, it searches for issues assigned to you that changed in the last few minutes, to find
 the assignments your own account made, which GitHub sends no notification for.
 
-The dot on your avatar at the top of the sidebar shows how syncing is going: green when everything is on GitHub, the
+The dot on the project at the top of the sidebar shows how syncing is going: green when everything is on GitHub, the
 accent colour while your changes go out, an amber ring when you're offline, and amber when something needs you. Hover
 it to see when the app last synced. When you're offline, a change needs your decision or syncing fails, a card at the
 bottom of the sidebar says so and offers the next step (show the waiting changes, open the issue, try again). The rest
@@ -414,6 +441,10 @@ Hover an issue or move to it with the arrow keys, then:
 | `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
+| `F` | Filter the view on screen: pick what to filter by, then the values |
+| `⇧V` | Display options of the view: board or list, columns, groups, order and the fields shown |
+| `⌘S` | Save the view's changed filter to GitHub, for everyone |
+| `⌃Tab` `⌃⇧Tab` | Next or previous view of the project |
 | `G` then `B` / `L` / `M` / `I` / `P` / `R` | Go to board, list, My Issues, the Inbox, switch project or repository, or the roadmap |
 | `⌘1` `⌘2` `⌘3` `⌘4` | Board, list, My Issues, roadmap (on the roadmap `⌘1` and `⌘2` switch timeline and list) |
 | `⌘↵` | Save a description, send a comment, create the issue |
@@ -456,8 +487,7 @@ Sub-issue** and **Mark As** (blocked by, blocking). These pickers find issues th
 it away again. The issue's sidebar has Parent, Blocked by and Blocking rows that open the same pickers, and the ✕ that
 shows when you point at a blocker in the issue takes it away.
 
-A board's next two milestones and its roadmap are listed under it in the sidebar; the arrow beside the board folds
-them away. In a milestone, click its date to change it, the text under the header to edit its name and description,
+A project's next two milestones and its roadmap are listed under Milestones in the sidebar. In a milestone, click its date to change it, the text under the header to edit its name and description,
 and **Complete** (or the "…" menu) to close it: what isn't done moves to the next milestone or stays, as you choose.
 In its list, drag an issue into an epic's group to make it a sub-issue of that epic. On a board and in its list, two
 or more issues of an epic in the same column stand together under the epic's name; click it to open the epic, or its
@@ -467,6 +497,14 @@ it into the epic. On the roadmap's timeline, drag
 an epic's bar onto another milestone, or down to Later, and its unfinished issues go with it; drag a milestone's
 diamond sideways to change its day; Months and Quarters set how much time fits. In the roadmap's list, drag an epic
 into another milestone's group. An epic's page shows its sub-issues by milestone, with a plus for a new one in each.
+
+Click the project at the top of the sidebar to switch to another; its views, milestones and repositories follow.
+**Go to View…** in the command palette opens any view of any project. Click a filter chip's property, comparison or
+values to change them, and its cross to remove it; **Edit Filter as Text…** at the end of the filter menu takes
+GitHub's own filter words. A dot beside a view means its filter is changed here and not saved; **Reset** takes it
+back. Double-click a view in the sidebar to rename it, and right-click it to duplicate it, delete it or open it on
+GitHub. **New View** under the views makes a new one, starting from the one open: name it, pick board or list, and its columns or groups and order, which GitHub keeps from then on. A
+new issue made in a view gets what the view's filter asks for, such as this iteration or a label.
 
 A description with a table, a checklist, code or a Mermaid diagram is drawn as on GitHub. Click a checkbox to tick it;
 click anywhere else to edit the Markdown, and `Esc` or `⌘↵` draws it again.
@@ -482,9 +520,10 @@ To change several issues at once, pick them with `X`, the checkbox at the start 
 Shift-click. A bar at the bottom then sets status, priority, assignee, labels or the due date for all of them, and so
 do the usual keys, dropdowns and right-click menu. `Esc` clears the pick.
 
-Right-click a project or repository in the sidebar to hide it; hidden ones wait, folded away, at the end of their
-list. Click your name at the top of the sidebar for the account menu: Sync Now, changes still waiting to be sent,
-appearance, settings and signing out. It works with the arrow keys like any menu.
+Right-click the project at the top of the sidebar, or a repository, to hide it; hidden projects wait under "hidden"
+in the project's menu, hidden repositories, folded away, at the end of their list. The project's menu is also where
+your account is, as in Linear: who is signed in, Sync Now, changes still waiting to be sent, appearance, settings and
+signing out. It works with the arrow keys like any menu.
 
 The app follows the language of your Mac. To use another of its languages for Issues alone, add it under System
 Settings › General › Language & Region › Applications; on iPhone and iPad it is Settings › Apps › Issues › Language.
@@ -512,6 +551,11 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
 | Tap the milestone chip of an issue | Put it into another milestone, or a new one |
 | Touch and hold an epic's bar on the roadmap, then drag (iPad) | Move the epic and its unfinished issues to another milestone, or to Later |
+| Tap a view over a project (iPhone), or in the sidebar (iPad) | Open it |
+| Touch and hold a view (iPhone) | Filter, rename, duplicate, open on GitHub, delete |
+| Tap the filter line under the views | Change the filter; **Save for Everyone** puts it on GitHub, **Reset** takes it back |
+| Tap the plus after the views (iPhone), or New View… in the project's "…" menu | A new view, starting from the one open |
+| Tap the project at the top of the sidebar (iPad) | Switch to another project, sync, or open your account and settings |
 | Swipe right in the Inbox | Read, or unread |
 | Swipe left in the Inbox | Archive, or snooze |
 | Touch and hold in the Inbox | Read, snooze, archive, unsubscribe, and the issue's status, priority, assignee and labels |
@@ -523,7 +567,8 @@ entries are planned but not built. Also good to know in 0.3.0:
 
 - Pull requests and draft issues appear on the board and can be moved, but their text is read-only.
 - Images in descriptions of private repositories may not load.
-- Filtering and saved views don't exist yet.
+- A view's order among the others, and its columns, grouping and sorting once it exists, can't be changed from the
+  app: GitHub's API doesn't take them. A roadmap view shows as a list, and board swimlanes aren't drawn.
 
 ## For contributors
 

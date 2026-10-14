@@ -64,8 +64,13 @@ struct MobileRoot: View {
                 IssuePickerSheet(kind: kind, itemId: itemId)
             case .milestoneEditor(let projectId, let title, let assigning):
                 MilestoneEditorSheet(projectId: projectId, title: title, assigning: assigning)
+            case .viewFilter(let viewId):
+                ViewFilterSheet(viewId: viewId)
+            case .newView(let projectId, let sourceViewId, let duplicate):
+                NewViewSheet(projectId: projectId, sourceViewId: sourceViewId, duplicate: duplicate)
             }
         }
+        .modifier(ViewAlerts(navigation: navigation))
         .modifier(CompleteMilestoneAlert())
         // "New milestone…" in a picker sheet: the editor comes once the picker has gone.
         .onChange(of: model.milestoneEditorRequest) { _, request in
@@ -165,65 +170,14 @@ struct MainTabs: View {
                 TabStack(tab: .myIssues) { MyIssuesScreen() }
             }
             .customizationID("myIssues")
-            if wide {
-                // On a wide iPad every project is an entry of its own, as in the Mac's sidebar.
-                TabSection(.projects) {
-                    ForEach(model.openProjects) { project in
-                        Tab(value: MobileTab.project(project.id)) {
-                            TabStack(tab: .project(project.id)) { ProjectScreen(projectId: project.id) }
-                        } label: {
-                            Label {
-                                Text(project.title)
-                            } icon: {
-                                Image(uiImage: SwatchImages.image(for: project.title))
-                            }
-                        }
-                        .customizationID("project.\(project.id)")
-                        // The board's next milestones and its roadmap right under it, as in the Mac's sidebar.
-                        ForEach(sidebarMilestones(projectId: project.id), id: \.self) { title in
-                            Tab(value: MobileTab.milestone(projectId: project.id, title: title)) {
-                                TabStack(tab: .milestone(projectId: project.id, title: title)) {
-                                    MilestoneScreen(projectId: project.id, title: title)
-                                }
-                            } label: {
-                                Label {
-                                    Text(title)
-                                } icon: {
-                                    let mark = model.milestoneGroup(projectId: project.id, title: title).map { model.mark(of: $0, projectId: project.id) }
-                                    Image(uiImage: PlanningImages.milestone(mark ?? .completed, scheme))
-                                }
-                            }
-                            .customizationID("milestone.\(project.id).\(title)")
-                        }
-                        ForEach(model.hasPlanning(projectId: project.id) ? [project.id] : [], id: \.self) { projectId in
-                            Tab(value: MobileTab.roadmap(projectId)) {
-                                TabStack(tab: .roadmap(projectId)) { RoadmapScreen(projectId: projectId) }
-                            } label: {
-                                Label {
-                                    Text(.roadmap)
-                                } icon: {
-                                    Image(uiImage: PlanningImages.roadmap(scheme))
-                                }
-                            }
-                            .customizationID("roadmap.\(projectId)")
-                        }
-                    }
+            if wide, let project = sidebarProject {
+                // One project at a time, as on the Mac: a switch to another, then its views, milestones and
+                // repositories.
+                viewSection(project)
+                if model.hasPlanning(projectId: project.id) {
+                    planningSection(project)
                 }
-                .customizationID("projectSection")
-                if !model.boardRepositories.isEmpty {
-                    // Like the teams in Linear: every issue of a repository, whether it is on a board or not.
-                    TabSection(.repositories) {
-                        ForEach(model.boardRepositories) { repo in
-                            Tab(value: MobileTab.repository(repo.id)) {
-                                TabStack(tab: .repository(repo.id)) { RepositoryScreen(repoId: repo.id) }
-                            } label: {
-                                Label(model.displayName(of: repo), systemImage: "book.closed")
-                            }
-                            .customizationID("repository.\(repo.id)")
-                        }
-                    }
-                    .customizationID("repositorySection")
-                }
+                repositorySection(project)
             } else {
                 Tab(.projects, systemImage: "square.stack", value: MobileTab.projects) {
                     TabStack(tab: .projects) { ProjectsScreen() }
@@ -275,16 +229,127 @@ struct MainTabs: View {
                 navigation.tab = .project(projectId)
             case .roadmap(let projectId) where !model.hasPlanning(projectId: projectId):
                 navigation.tab = .project(projectId)
+            case .view(let projectId, let id) where model.view(id: id) == nil:
+                navigation.tab = .project(projectId)
+            case .project(let projectId):
+                // GitHub's views came in: the project's entry gives way to its open view's.
+                if let view = model.currentView(projectId: projectId) { navigation.tab = .view(projectId: projectId, viewId: view.id) }
             default:
                 break
+            }
+        }
+        // A view's entry opens that view. A project asked for as a whole, by a link or a shortcut, opens on its
+        // open view's entry; a view chosen elsewhere lights up its own.
+        .onChange(of: navigation.tab, initial: true) { _, tab in
+            switch tab {
+            case .view(_, let id):
+                if let view = model.view(id: id) { model.show(view) }
+            case .project(let projectId) where wide:
+                if let view = model.currentView(projectId: projectId) { navigation.tab = .view(projectId: projectId, viewId: view.id) }
+            default:
+                break
+            }
+        }
+        .onChange(of: model.selectedViewIds) { _, _ in
+            if case .view(let projectId, let id) = navigation.tab, let view = model.currentView(projectId: projectId), view.id != id {
+                navigation.tab = .view(projectId: projectId, viewId: view.id)
             }
         }
         .onChange(of: wide, initial: true) { _, wide in
             navigation.adapt(regular: wide)
             if wide, navigation.tab == .projects {
-                navigation.tab = model.openProjects.first.map { .project($0.id) } ?? .myIssues
+                navigation.tab = sidebarProject.map { .project($0.id) } ?? .myIssues
             }
         }
+    }
+
+    /// The project the sidebar is about: the one on screen, or the one used last.
+    private var sidebarProject: Project? {
+        model.openProjects.first { $0.id == navigation.sidebarProjectId } ?? model.openProjects.first
+    }
+
+    /// The project's views, each an entry.
+    private func viewSection(_ project: Project) -> some TabContent<MobileTab> {
+        TabSection(.views) {
+            ForEach(model.views(projectId: project.id)) { view in
+                let tab = MobileTab.view(projectId: project.id, viewId: view.id)
+                Tab(value: tab) {
+                    TabStack(tab: tab) { ProjectScreen(projectId: project.id) }
+                } label: {
+                    Label {
+                        Text(view.name)
+                    } icon: {
+                        layoutImage(of: view)
+                    }
+                }
+                .customizationID("view.\(view.id)")
+            }
+            // Until GitHub's views have been read: the board, as before there were views.
+            ForEach(model.views(projectId: project.id).isEmpty ? [project] : []) { project in
+                Tab(value: MobileTab.project(project.id)) {
+                    TabStack(tab: .project(project.id)) { ProjectScreen(projectId: project.id) }
+                } label: {
+                    Label(.board, systemImage: "rectangle.split.3x1")
+                }
+                .customizationID("project.\(project.id)")
+            }
+        }
+        .customizationID("viewSection")
+    }
+
+    /// The project's next milestones and its roadmap.
+    private func planningSection(_ project: Project) -> some TabContent<MobileTab> {
+        TabSection(.milestones) {
+            ForEach(sidebarMilestones(projectId: project.id), id: \.self) { title in
+                Tab(value: MobileTab.milestone(projectId: project.id, title: title)) {
+                    TabStack(tab: .milestone(projectId: project.id, title: title)) {
+                        MilestoneScreen(projectId: project.id, title: title)
+                    }
+                } label: {
+                    Label {
+                        Text(title)
+                    } icon: {
+                        let mark = model.milestoneGroup(projectId: project.id, title: title).map { model.mark(of: $0, projectId: project.id) }
+                        Image(uiImage: PlanningImages.milestone(mark ?? .completed, scheme))
+                    }
+                }
+                .customizationID("milestone.\(project.id).\(title)")
+            }
+            Tab(value: MobileTab.roadmap(project.id)) {
+                TabStack(tab: .roadmap(project.id)) { RoadmapScreen(projectId: project.id) }
+            } label: {
+                Label {
+                    Text(.roadmap)
+                } icon: {
+                    Image(uiImage: PlanningImages.roadmap(scheme))
+                }
+            }
+            .customizationID("roadmap.\(project.id)")
+        }
+        .customizationID("milestoneSection")
+    }
+
+    /// Like the teams in Linear: every issue of a repository of the project, whether it is on a board or not.
+    private func repositorySection(_ project: Project) -> some TabContent<MobileTab> {
+        TabSection(.repositories) {
+            ForEach(model.boardRepositories.filter { repo in model.repos(projectId: project.id).contains { $0.id == repo.id } }) { repo in
+                Tab(value: MobileTab.repository(repo.id)) {
+                    TabStack(tab: .repository(repo.id)) { RepositoryScreen(repoId: repo.id) }
+                } label: {
+                    Label(model.displayName(of: repo), systemImage: "book.closed")
+                }
+                .customizationID("repository.\(repo.id)")
+            }
+        }
+        .customizationID("repositorySection")
+    }
+
+    /// A view's layout, as the sidebar's icons are images.
+    private func layoutImage(of view: ProjectView) -> Image {
+        if view.layout == .roadmap, model.display(of: view).layout == nil {
+            return Image(uiImage: PlanningImages.roadmap(scheme))
+        }
+        return Image(systemName: model.layout(of: view) == .board ? "rectangle.split.3x1" : "list.bullet")
     }
 
     /// A board's next milestones in the sidebar, and the one on screen while it stays there: completed or renamed
@@ -350,39 +415,20 @@ struct RouteDestination: View {
     }
 }
 
-/// The account at the top of the iPad sidebar, as at the top of the Mac's sidebar, with the state of syncing as a dot
-/// on the avatar. It lines up with the rows below: the avatar sits in their icon column, the name on their title edge,
-/// and the compose button in the column of the section's disclosure arrow.
+/// The project at the top of the iPad sidebar, as at the top of the Mac's sidebar, with the state of syncing as a dot
+/// on its colour; its menu has the account. It lines up with the rows below: the colour sits in their icon column, the
+/// name on their title edge, and the compose button in the column of the section's disclosure arrow.
 struct SidebarAccountHeader: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
 
     var body: some View {
         HStack(spacing: 0) {
-            Button {
-                navigation.sheet = .account
-            } label: {
-                HStack(spacing: 11) {
-                    StatusAvatar(size: 26)
-                    HStack(spacing: 6) {
-                        Text(model.viewer?.login ?? "GitHub")
-                            .font(.headline)
-                            .foregroundStyle(Theme.text)
-                            .lineLimit(1)
-                        Image(systemName: "chevron.down")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Theme.textTertiary)
-                    }
-                }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-                .contentShape(.hoverEffect, .rect(cornerRadius: 12).inset(by: -7))
-                .hoverEffect(.highlight)
+            if let project = model.openProjects.first(where: { $0.id == navigation.sidebarProjectId }) ?? model.openProjects.first {
+                projectMenu(project)
+            } else {
+                accountButton
             }
-            .buttonStyle(PlainPressStyle())
-            .layoutPriority(1)
-            .accessibilityLabel(.accountAndSettings)
-            .accessibilityValue(model.accountSummary())
             Spacer(minLength: 8)
             Button {
                 navigation.sheet = .newIssue(navigation.newIssueContext)
@@ -402,6 +448,89 @@ struct SidebarAccountHeader: View {
         // The sidebar's rows put their icons 1 pt in and their accessories 15 pt past the content edge.
         .padding(.leading, 1)
         .padding(.trailing, -15)
+    }
+
+    /// The project the sidebar is about, as Linear shows its workspace: a menu with the projects to switch to, Sync
+    /// Now and the account's settings.
+    private func projectMenu(_ current: Project) -> some View {
+        Menu {
+            Section(String(localized: .projects)) {
+                ForEach(model.openProjects) { project in
+                    Button {
+                        navigation.sidebarProjectId = project.id
+                        navigation.tab = model.currentView(projectId: project.id).map { .view(projectId: project.id, viewId: $0.id) } ?? .project(project.id)
+                    } label: {
+                        if project.id == current.id {
+                            Label(project.title, systemImage: "checkmark")
+                        } else {
+                            Text(project.title)
+                        }
+                    }
+                }
+            }
+            Section {
+                Button {
+                    model.refresh()
+                } label: {
+                    Label(.syncNow, systemImage: "arrow.triangle.2.circlepath")
+                }
+                Button {
+                    navigation.sheet = .account
+                } label: {
+                    Label(.settingsEllipsis, systemImage: "gearshape")
+                }
+            }
+        } label: {
+            HStack(spacing: 11) {
+                StatusSwatch(title: current.title, size: 24)
+                HStack(spacing: 6) {
+                    Text(current.title)
+                        .font(.headline)
+                        .foregroundStyle(Theme.text)
+                        .lineLimit(1)
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.textTertiary)
+                }
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+            .contentShape(.hoverEffect, .rect(cornerRadius: 12).inset(by: -7))
+            .hoverEffect(.highlight)
+        }
+        .buttonStyle(PlainPressStyle())
+        .layoutPriority(1)
+        .accessibilityLabel(.project)
+        .accessibilityValue("\(current.title), \(model.accountSummary())")
+        .accessibilityIdentifier("project-switcher")
+    }
+
+    /// Before any project is known: the account, as before.
+    private var accountButton: some View {
+        Button {
+            navigation.sheet = .account
+        } label: {
+            HStack(spacing: 11) {
+                StatusAvatar(size: 26)
+                HStack(spacing: 6) {
+                    Text(model.viewer?.login ?? "GitHub")
+                        .font(.headline)
+                        .foregroundStyle(Theme.text)
+                        .lineLimit(1)
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.textTertiary)
+                }
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+            .contentShape(.hoverEffect, .rect(cornerRadius: 12).inset(by: -7))
+            .hoverEffect(.highlight)
+        }
+        .buttonStyle(PlainPressStyle())
+        .layoutPriority(1)
+        .accessibilityLabel(.accountAndSettings)
+        .accessibilityValue(model.accountSummary())
     }
 }
 
@@ -460,7 +589,7 @@ extension MobileNavigation {
     var currentProjectId: String? {
         switch tab {
         case .project(let id), .roadmap(let id): return id
-        case .milestone(let id, _): return id
+        case .milestone(let id, _), .view(let id, _): return id
         default: break
         }
         for route in path(for: tab).reversed() {
@@ -547,10 +676,15 @@ struct MobileCommands: Commands {
             .keyboardShortcut("k", modifiers: .command)
             .disabled(unavailable)
             Divider()
-            Button(.board) { withAnimation(Theme.spring) { model.viewMode = .board } }
+            // A project's open view keeps board or list as yours; a milestone switches what is on screen.
+            let projectId: String? = switch navigation?.tab {
+            case .project(let id)?, .view(let id, _)?: id
+            default: nil
+            }
+            Button(.board) { model.showLayout(.board, projectId: projectId) }
                 .keyboardShortcut("1", modifiers: .command)
                 .disabled(noBoard)
-            Button(.list) { withAnimation(Theme.spring) { model.viewMode = .list } }
+            Button(.list) { model.showLayout(.list, projectId: projectId) }
                 .keyboardShortcut("2", modifiers: .command)
                 .disabled(noBoard)
             Button(.myIssues) { navigation?.tab = .myIssues }

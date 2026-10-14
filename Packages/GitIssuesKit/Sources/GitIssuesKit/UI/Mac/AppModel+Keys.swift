@@ -248,6 +248,18 @@ extension AppModel {
             break
         }
 
+        // F filters the view on screen, ⇧V shows how it is displayed, as in Linear.
+        if openItem == nil, currentView != nil, !event.modifierFlags.contains(.command) {
+            if key == "f", !event.modifierFlags.contains(.shift) {
+                filterMenuRequest += 1
+                return true
+            }
+            if key == "v", event.modifierFlags.contains(.shift) {
+                displayMenuRequest += 1
+                return true
+            }
+        }
+
         switch key {
         case "g":
             pendingGoTo = Date()

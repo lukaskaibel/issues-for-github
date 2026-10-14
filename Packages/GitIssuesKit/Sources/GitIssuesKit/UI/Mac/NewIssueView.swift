@@ -252,6 +252,12 @@ struct NewIssueView: View {
         if let id { model.loadRepoMeta(projectId: id) }
     }
 
+    /// What a new issue starts with in the view on screen; none for sub-issues, issues of a repository and planned ones.
+    private func viewPreset(projectId: String?, parent: Item?, repoScope: String?, planned: Bool) -> NewIssuePreset? {
+        guard parent == nil, repoScope == nil, !planned, model.currentView != nil, projectId == model.currentProjectId else { return nil }
+        return model.newIssuePreset(projectId: projectId)
+    }
+
     private func defaultStatus(projectId: String?) -> String? {
         let options = model.statusOptions(projectId: projectId)
         return options.first { $0.statusCategory == .unstarted }?.id
@@ -280,12 +286,15 @@ struct NewIssueView: View {
         // A title typed into the sub-issue picker starts a fresh issue rather than last time's.
         let typed = model.newIssueTitle
         model.newIssueTitle = nil
+        // Begun in a view's column or group: that value, so not last time's issue either.
+        let groupPreset = model.newIssuePreset
+        model.newIssuePreset = nil
         // Begun in a milestone, or from the roadmap: in that milestone, or as an epic.
         let plan = model.newIssuePlan ?? NewIssuePlan()
         model.newIssuePlan = nil
         let milestone = plan.milestoneTitle ?? model.currentMilestoneTitle
             ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
-        if typed == nil, let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id, unsent.isEpic == plan.isEpic,
+        if typed == nil, groupPreset == nil, let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id, unsent.isEpic == plan.isEpic,
            repoScope != nil ? unsent.repoId == repoScope : unsent.projectId == projectId {
             draft = unsent
             if let statusId { draft.statusId = statusId }
@@ -303,6 +312,11 @@ struct NewIssueView: View {
         new.title = typed ?? ""
         new.milestoneTitle = milestone
         new.isEpic = plan.isEpic
+        // Begun in a view: what its filter asks for, and its column's or group's value, as on GitHub.
+        if let preset = groupPreset ?? viewPreset(projectId: projectId, parent: parent, repoScope: repoScope, planned: plan != NewIssuePlan()) {
+            model.apply(preset, to: &new)
+            if let statusId { new.statusId = statusId }
+        }
         draft = new
         focus = .title
         model.loadRepoMeta(projectId: projectId)
@@ -322,6 +336,7 @@ struct NewIssueView: View {
             created = true
             model.unsentNewIssue = nil
             model.overlay = nil
+            model.noteIfHidden(id)
             // The new issue takes the keyboard focus, so Return opens it and S, A or L change it right away.
             if model.openItem == nil, model.scopedItems.contains(where: { $0.id == id }) { model.moveFocus(to: id) }
         }

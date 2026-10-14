@@ -6,6 +6,95 @@ import GRDB
 enum SelfTest {
     static let sandboxTitle = "Git Issues Sandbox"
 
+    /// Only the views part, on its own: `gi-cli selftest views`.
+    static func runViews() async throws {
+        let (dbA, engineA, _, _) = try await makeEngine()
+        let (dbB, engineB, _, _) = try await makeEngine()
+        try await engineA.refreshProjects()
+        try await engineB.refreshProjects()
+        let project = try findProject(dbA, title: sandboxTitle)
+        guard project.title == sandboxTitle else { throw CLIError("Refusing to write to \(project.title).") }
+        try await engineA.pull(projectId: project.id)
+        try await engineB.pull(projectId: project.id)
+        var failures = 0
+        try await views(project: project, dbA: dbA, engineA: engineA, dbB: dbB, engineB: engineB) { name, condition in
+            print(condition ? "  ok    \(name)" : "  FAIL  \(name)")
+            if !condition { failures += 1 }
+        }
+        print(failures == 0 ? "\nAll checks passed." : "\n\(failures) check(s) failed.")
+        if failures > 0 { exit(1) }
+    }
+
+    /// A saved view made, changed and deleted here, as a teammate sees it.
+    static func views(
+        project: Project, dbA: AppDatabase, engineA: SyncEngine, dbB: AppDatabase, engineB: SyncEngine,
+        check: (String, Bool) -> Void
+    ) async throws {
+        print("13. Views")
+        func viewB(_ id: String) throws -> ProjectView? {
+            try dbB.reader.read { try ProjectView.fetchOne($0, key: id) }
+        }
+        func eventually(_ name: String, _ predicate: () throws -> Bool) async throws {
+            for _ in 0..<24 {
+                try await engineB.forcePull(projectId: project.id)
+                if try predicate() {
+                    check(name, true)
+                    return
+                }
+                try await Task.sleep(for: .seconds(1.5))
+            }
+            check(name, false)
+        }
+        let fields = try await dbA.reader.read { try ProjectField.filter(Column("projectId") == project.id).fetchAll($0) }
+        let current = try await dbA.reader.read { try Project.fetchOne($0, key: project.id)! }
+        guard let status = current.statusFieldId, let title = fields.first(where: { $0.kind == .title }) else {
+            throw CLIError("Sandbox project needs Status and Title fields.")
+        }
+        let name = "Self-test \(Int(Date().timeIntervalSince1970))"
+        let template = ProjectView(
+            id: LocalID.make(), projectId: project.id, number: 0, name: name, layout: .board, filter: "is:open",
+            visibleFieldIds: [title.id, status], columnFieldId: status, sortBy: [ViewSort(fieldId: title.id, descending: true)], position: 0
+        )
+        guard let id = try await engineA.createView(like: template) else {
+            check("view created on GitHub", false)
+            return
+        }
+        let made = try await dbA.reader.read { try ProjectView.fetchOne($0, key: id) }
+        check("view created, with its columns and order", made?.number ?? 0 > 0 && made?.columnFieldId == status && made?.sortBy.first?.fieldId == title.id)
+        try await eventually("teammate sees the new view") { try viewB(id)?.filter == "is:open" }
+        try await engineA.updateView(id, change: .init(name: name + " renamed", filter: "is:open label:bug"))
+        let changed = try await dbA.reader.read { try ProjectView.fetchOne($0, key: id) }
+        check("filter and name changed here", changed?.filter == "is:open label:bug" && changed?.name == name + " renamed")
+        try await eventually("teammate sees the new filter and name") { try viewB(id)?.filter == "is:open label:bug" && viewB(id)?.name == name + " renamed" }
+        try await engineA.updateView(id, change: .init(layout: .table, visibleFieldIds: [title.id]))
+        try await eventually("teammate sees it as a table with one field") { try viewB(id)?.layout == .table && viewB(id)?.visibleFieldIds == [title.id] }
+        try await engineA.deleteView(id)
+        check("deleted here", try await dbA.reader.read { try ProjectView.fetchOne($0, key: id) } == nil)
+        try await eventually("and for the teammate") { try viewB(id) == nil }
+
+        // Where the sandbox has an Iteration field: an issue into an iteration and out again, as a filter finds it.
+        guard let iteration = fields.first(where: { $0.kind == .iteration }), let span = iteration.iterations.first,
+              let card = try await dbA.reader.read({ try Item.filter(Column("projectId") == project.id && Column("number") == 16).fetchOne($0) })
+        else { return }
+        func setIteration(_ value: FieldValue?, base: FieldValue?) async throws {
+            try await dbA.writer.write { db in
+                try Outbox.enqueue(db, .setProjectField(.init(
+                    itemId: card.id, projectId: project.id, fieldId: iteration.id, fieldName: iteration.name,
+                    value: value, valueName: value == nil ? nil : span.title, base: base
+                )))
+            }
+            try await engineA.pushPending()
+        }
+        func cardB() throws -> Item? { try dbB.reader.read { try Item.fetchOne($0, key: card.id) } }
+        try await setIteration(FieldValue(iterationId: span.id), base: nil)
+        try await eventually("teammate sees the issue in \(span.title)") { try cardB()?.fieldValues[iteration.id]?.iterationId == span.id }
+        let filter = ProjectFilter("\(iteration.filterKey):\"\(span.title)\"")
+        let context = FilterContext(project: current, fields: fields, options: [], viewerLogin: nil)
+        check("a filter by the iteration finds it", try cardB().map { filter.matches($0, context) } ?? false)
+        try await setIteration(nil, base: FieldValue(iterationId: span.id))
+        try await eventually("and out of it again") { try cardB()?.fieldValues[iteration.id] == nil }
+    }
+
     static func run() async throws {
         // Two independent clients: "A" makes changes like the app would, "B" stands in for a teammate.
         let (dbA, engineA, statusA, _) = try await makeEngine()
@@ -309,6 +398,8 @@ enum SelfTest {
         if let made {
             _ = try await apiB.client.rest("DELETE", "repos/\(repo.nameWithOwner)/milestones/\(made.number)")
         }
+
+        try await views(project: project, dbA: dbA, engineA: engineA, dbB: dbB, engineB: engineB, check: check)
 
         print("12. Restore")
         let restore = try item(dbA, 16)

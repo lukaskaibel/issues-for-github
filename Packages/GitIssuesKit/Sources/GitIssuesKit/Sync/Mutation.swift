@@ -26,6 +26,7 @@ public enum Mutation: Codable, Sendable, Equatable {
     case createMilestone(CreateMilestone)
     case updateMilestone(UpdateMilestone)
     case setEpic(SetEpic)
+    case setProjectField(SetProjectField)
 
     public struct SetField: Codable, Sendable, Equatable {
         public var itemId: String
@@ -133,6 +134,8 @@ public enum Mutation: Codable, Sendable, Equatable {
         /// The milestone it starts in; one this device is still creating is waited for.
         public var milestoneId: String?
         public var milestoneTitle: String?
+        /// The project's own fields it starts with, such as the iteration of the view it was made in.
+        public var fieldValues: [String: FieldValue]?
         public var author: String?
         public var createdAt: Date
         /// Filled in once GitHub has created the issue, so a retry never creates it twice.
@@ -191,6 +194,7 @@ extension Mutation {
         case .setMilestone(let m): "milestone:\(m.contentId)"
         case .updateMilestone(let m): "milestone-edit:\(m.milestoneId)"
         case .setEpic(let m): "epic:\(m.contentId)"
+        case .setProjectField(let m): "project-field:\(m.itemId):\(m.fieldId)"
         case .markThreadRead(let m): "read:\(m.threadId)"
         case .archiveThread(let m): "archive:\(m.threadId)"
         case .unsubscribeThread(let m): "unsubscribe:\(m.threadId)"
@@ -220,6 +224,7 @@ extension Mutation {
         case .createMilestone: []
         case .updateMilestone(let m): [m.milestoneId]
         case .setEpic(let m): [m.contentId]
+        case .setProjectField(let m): [m.itemId]
         }
     }
 
@@ -233,6 +238,7 @@ extension Mutation {
         case .createIssue(let m): m.itemId
         case .deleteItem(let m): m.itemId
         case .addToProject(let m): m.itemId
+        case .setProjectField(let m): m.itemId
         default: nil
         }
     }
@@ -357,6 +363,9 @@ extension Mutation {
         case .setEpic(var m):
             m.contentId = r(m.contentId)
             return .setEpic(m)
+        case .setProjectField(var m):
+            m.itemId = r(m.itemId)
+            return .setProjectField(m)
         }
     }
 }
@@ -499,7 +508,7 @@ extension Mutation {
             } else {
                 position = Item.positionWithoutProject(updatedAt: m.createdAt)
             }
-            try Item(
+            var created = Item(
                 id: m.itemId,
                 projectId: m.projectId,
                 kind: .issue,
@@ -527,7 +536,9 @@ extension Mutation {
                 labels: m.labels,
                 milestoneId: m.milestoneId,
                 milestoneTitle: m.milestoneTitle
-            ).insert(db)
+            )
+            created.apply(m.fieldValues)
+            try created.insert(db)
             if let parentId = m.parentContentId, try !SubIssue.exists(db, key: ["parentId": parentId, "id": m.contentId]) {
                 let count = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM subIssue WHERE parentId = ?", arguments: [parentId]) ?? 0
                 try SubIssue(
@@ -562,6 +573,9 @@ extension Mutation {
             try m.apply(db)
 
         case .setEpic(let m):
+            try m.apply(db)
+
+        case .setProjectField(let m):
             try m.apply(db)
         }
     }
@@ -645,6 +659,9 @@ extension Mutation {
             return line("", text)
         case .setEpic(let m):
             return line(try number(contentId: m.contentId), m.isEpic ? .queuedMadeEpic : .queuedNoLongerEpic)
+        case .setProjectField(let m):
+            let text: LocalizedStringResource = m.valueName.map { .queuedFieldSet(field: m.fieldName, value: $0) } ?? .queuedFieldCleared(field: m.fieldName)
+            return line(try number(itemId: m.itemId), text)
         case .markThreadRead(let m): return line(leadingNumber(m.label), .queuedMarkedAsRead)
         case .archiveThread(let m): return line(leadingNumber(m.label), .queuedArchivedInInbox)
         case .unsubscribeThread(let m): return line(leadingNumber(m.label), .queuedUnsubscribed)
@@ -815,6 +832,9 @@ extension Mutation {
         case (.setMilestone(var new), .setMilestone(let old)):
             new.base = old.base
             return .setMilestone(new)
+        case (.setProjectField(var new), .setProjectField(let old)):
+            new.base = old.base
+            return .setProjectField(new)
         case (.updateMilestone(var new), .updateMilestone(let old)):
             // Both changes still have to be sent: what the newer one leaves alone, the older one says.
             new.change.title = new.change.title ?? old.change.title
