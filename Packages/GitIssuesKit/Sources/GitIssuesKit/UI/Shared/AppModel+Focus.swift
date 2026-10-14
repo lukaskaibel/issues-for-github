@@ -50,7 +50,7 @@ extension AppModel {
         }
         // The timeline has no keyboard focus of its own; its epics open with a click.
         if openItem == nil, case .roadmap = scope, roadmapLayout == .timeline { return [] }
-        return sections.filter { !isSectionCollapsed($0.id) }.flatMap(\.items)
+        return sections.filter { !isFolded($0) }.flatMap(\.items)
     }
 
     func position(of item: Item) -> (index: Int, count: Int)? {

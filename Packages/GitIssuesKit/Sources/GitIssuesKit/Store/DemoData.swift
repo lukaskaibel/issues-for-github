@@ -346,7 +346,8 @@ public enum DemoData {
     }
 
     /// The fields GitHub lists for a project, and its saved views: for the app a board, this week's cycle, a list by
-    /// area, open bugs and sync work, and a release plan in GitHub's roadmap layout; for the website a board and a list.
+    /// area, open bugs and sync work, a release plan in GitHub's roadmap layout, the work by epic and by person; for
+    /// the website a board and a list.
     private static func seedFieldsAndViews(_ db: Database, spec: ProjectSpec, today: CalendarDay) throws {
         var fields: [ProjectField] = []
         func add(_ suffix: String, _ name: String, _ type: String, options: [FieldChoice] = [], iterations: [IterationSpan] = []) {
@@ -392,6 +393,8 @@ public enum DemoData {
                 ProjectView(id: "\(spec.id)-view-area", projectId: spec.id, number: 3, name: "By Area", layout: .table, filter: "is:open", visibleFieldIds: shown + [id("iteration")], groupByFieldId: id("area"), position: 2),
                 ProjectView(id: "\(spec.id)-view-bugs", projectId: spec.id, number: 4, name: "Bugs and Sync", layout: .table, filter: "label:bug,sync is:open", visibleFieldIds: shown + [id("area")], sortBy: [ViewSort(fieldId: id("priority"), descending: false)], position: 3),
                 ProjectView(id: "\(spec.id)-view-roadmap", projectId: spec.id, number: 5, name: "Release Plan", layout: .roadmap, filter: "has:milestone", groupByFieldId: id("milestone"), position: 4),
+                ProjectView(id: "\(spec.id)-view-epics", projectId: spec.id, number: 6, name: "Epics", layout: .table, filter: "has:parent-issue", visibleFieldIds: shown, groupByFieldId: id("parent"), position: 5),
+                ProjectView(id: "\(spec.id)-view-team", projectId: spec.id, number: 7, name: "Team", layout: .table, filter: "is:open", visibleFieldIds: shown, groupByFieldId: id("assignees"), position: 6),
             ]
         } else {
             views.append(ProjectView(id: "\(spec.id)-view-all", projectId: spec.id, number: 2, name: "All", layout: .table, filter: "", visibleFieldIds: shown, position: 1))

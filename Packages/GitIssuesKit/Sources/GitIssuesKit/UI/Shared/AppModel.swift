@@ -53,9 +53,38 @@ struct ListSection: Identifiable, Equatable {
     /// The issues as shown: sub-issues under their parent, folded ones left out.
     var items: [Item]
     var nesting = Nesting()
+    /// How a view's group shows: as a list, with its progress, or as a person's load.
+    var style: GroupStyle = .plain
+    /// How far the group's issues are, for groups that show it.
+    var progress: GroupProgress?
 
     /// Every issue in the group, folded ones included.
     var count: Int { nesting.members.count }
+
+    /// The number in the header: how many of all are done for a group that shows its progress, else how many.
+    var countText: String {
+        if style == .progress, let progress { progress.fraction } else { "\(count)" }
+    }
+}
+
+/// How a view's group shows in the list. Groups of something that gets finished (a parent issue, a milestone, an
+/// iteration) show how far they are; groups by person show how much each has open. Groups of a kind (a label, an
+/// option, a status) are only lists.
+enum GroupStyle: Equatable {
+    case plain
+    case progress
+    case people
+}
+
+/// How many of a group's issues are done, under way and there in all, as the view shows them.
+struct GroupProgress: Equatable {
+    var done: Int
+    var started: Int
+    var total: Int
+
+    var open: Int { total - done - started }
+    /// "4/6": done of all.
+    var fraction: String { "\(done)/\(total)" }
 }
 
 enum PaletteMode: Hashable {

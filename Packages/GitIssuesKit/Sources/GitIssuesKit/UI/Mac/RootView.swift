@@ -112,6 +112,14 @@ struct ContentPanel: View {
                     ProjectHeader()
                     if let view = model.currentView {
                         FilterBar(view: view)
+                        // A view of one iteration says which, when, and how far it is, as Linear's cycles.
+                        if let pinned = model.pinnedIteration(of: view) {
+                            CycleHeader(view: view, pinned: pinned)
+                                .padding(.leading, 18)
+                                .padding(.trailing, 12)
+                                .frame(height: 40)
+                                .overlay(alignment: .bottom) { Rectangle().fill(Theme.panelBorder).frame(height: 1) }
+                        }
                     }
                     if case .milestone(let projectId, let title) = model.scope,
                        let group = model.milestoneGroup(projectId: projectId, title: title) {
@@ -137,8 +145,14 @@ struct ContentPanel: View {
                     } else if case .roadmap(let projectId) = model.scope {
                         RoadmapView(projectId: projectId)
                             .transition(.opacity)
+                    } else if let view = model.currentView, model.showsTimeline(view) {
+                        // GitHub's roadmap layout: the view's issues on a timeline.
+                        ViewTimeline(view: view, open: { model.open($0) })
+                            .transition(.opacity)
                     } else if model.viewMode == .board, model.currentProjectId != nil {
+                        // Another view's board starts at its beginning, not where the last one was scrolled to.
                         BoardView()
+                            .id(model.currentView?.id)
                             .transition(.opacity)
                     } else {
                         IssueListView()

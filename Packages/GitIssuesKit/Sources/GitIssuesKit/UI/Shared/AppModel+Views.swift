@@ -229,8 +229,9 @@ extension AppModel {
     func changeDisplay(of view: ProjectView, _ change: (inout ViewDisplay) -> Void) {
         var display = display(of: view)
         change(&display)
-        // What is the same as the view's own isn't a choice of yours.
-        if display.layout == (view.layout == .board ? .board : .list) { display.layout = nil }
+        // What is the same as the view's own isn't a choice of yours. A roadmap's own is its timeline, so a board or a
+        // list chosen for it is.
+        if view.layout != .roadmap, display.layout == (view.layout == .board ? .board : .list) { display.layout = nil }
         if display.columnFieldId == view.columnFieldId { display.columnFieldId = nil }
         if display.groupFieldId == view.groupByFieldId { display.groupFieldId = nil }
         if display.sort == view.sortBy { display.sort = nil }
@@ -670,16 +671,54 @@ extension AppModel {
             }
             groups.append((key, noneTitle, .plain, nil, empty))
         }
+        let style = Self.groupStyle(of: field)
         return groups.map { group in
             // Grouped by parent, the parent is the group; its sub-issues don't hang under it again.
             let (shown, nesting) = field.kind == .parentIssue
                 ? (group.members, Nesting.arrange(group.members, folded: []).nesting)
                 : arranged(group.members)
+            // A group with progress counts what the view shows of it, in its bar and in its header's "4/6".
+            let progress = style == .plain ? nil : progress(of: group.members)
+            let icon: SectionIcon = if case .progress = group.icon, let progress { .progress(done: progress.done, total: progress.total) } else { group.icon }
             return ListSection(
                 id: Self.sectionId(group.key), title: group.title, glyph: .none, option: nil, kind: .group(group.key),
-                detail: group.detail, groupIcon: group.icon, items: shown, nesting: nesting
+                detail: field.kind == .parentIssue ? nil : group.detail, groupIcon: icon,
+                items: shown, nesting: nesting, style: style, progress: progress
             )
         }
+    }
+
+    /// Groups by something that gets finished show their progress; groups by person, each one's load.
+    static func groupStyle(of field: ProjectField) -> GroupStyle {
+        switch field.kind {
+        case .parentIssue, .milestone, .iteration: .progress
+        case .assignees: .people
+        default: .plain
+        }
+    }
+
+    /// How far issues are, by the kind of their status: done (or closed), under way, or not started.
+    func progress(of items: [Item]) -> GroupProgress {
+        var done = 0
+        var started = 0
+        for item in items {
+            if isDone(item) {
+                done += 1
+            } else if statusOption(of: item)?.statusCategory == .started {
+                started += 1
+            }
+        }
+        return GroupProgress(done: done, started: started, total: items.count)
+    }
+
+    /// Whether a group starts folded: a group of something that gets finished, with nothing under way in it, so a
+    /// view of work packages opens as their overview while the work in progress stays in sight.
+    func foldsByDefault(_ section: ListSection) -> Bool {
+        Self.foldsByDefault(section)
+    }
+
+    static func foldsByDefault(_ section: ListSection) -> Bool {
+        section.style == .progress && (section.progress?.started ?? 0) == 0 && section.count > 0
     }
 
     /// The same in every language and on every device, so folded groups and the order of groups are kept by it.

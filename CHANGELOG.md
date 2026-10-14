@@ -54,6 +54,15 @@ All notable changes to this project are recorded here. The format follows
   asks for, such as this iteration. On the iPad the sidebar works the same way; on the iPhone the views are capsules
   over the project, and the filter a line under them that opens a sheet. Everything is GitHub's own: a view looks the
   same on github.com.
+- **Views that show what they are for.** How a view looks follows from how it is set up on GitHub, in any project.
+  Grouped by parent issue, milestone or iteration, each group shows how far it is, as a bar and "4/6" in its header,
+  and a group with nothing under way starts folded, so a view of work packages opens as an overview of what is left.
+  Grouped by assignee, each person's bar is what they have open, the part under way in yellow. A view filtered to one
+  iteration, such as "This week" with `iteration:@current`, shows that cycle on top: its dates, the days left, how
+  much is done, and arrows to the one before and after, which change the filter until you save it. A roadmap view is a
+  timeline, grouped as the view is: each issue a bar from its start to its target date, or across its iteration, or a
+  mark on its milestone's day, with today and the milestones marked; click a name to open the issue. **Display**
+  shows it as a list or board instead. The same on iPhone and iPad, the timeline on the iPad.
 
 ### Fixed
 

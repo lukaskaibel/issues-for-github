@@ -49,6 +49,16 @@ struct IssueSectionModel: Equatable {
     var count: Int
     /// The section's lines: its issues, and the headers over epics' issues standing together.
     var lines: [IssueLine]
+    /// A view's group: as a list, with its progress as a bar, or as a person's load.
+    var style: GroupStyle = .plain
+    var progress: GroupProgress?
+    /// A person's open issues against those of the person with the most, for the length of the load bar.
+    var load: CGFloat = 0
+
+    /// The number in the header: how many of all are done for a group that shows its progress, else how many.
+    var countText: String {
+        if style == .progress, let progress { progress.fraction } else { "\(count)" }
+    }
 
     var rows: [IssueRowModel] {
         lines.compactMap { if case .row(let row) = $0 { row } else { nil } }
@@ -74,6 +84,8 @@ struct IssueTable: NSViewRepresentable {
     var focusedId: String?
     var focusScrollToken: Int
     var avatarVersion: Int
+    /// Which list this is (My Issues, a project's view, a milestone…); another one starts at its top.
+    var listKey: String
 
     func makeCoordinator() -> Coordinator {
         Coordinator(model: model)
@@ -133,6 +145,15 @@ struct IssueTable: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         context.coordinator.canMoveRows = canMoveRows
+        if context.coordinator.listKey != listKey {
+            // Not where the last list was scrolled to; before the rows change, so the focused issue can still be
+            // scrolled to.
+            if context.coordinator.listKey != nil {
+                scroll.contentView.scroll(to: .zero)
+                scroll.reflectScrolledClipView(scroll.contentView)
+            }
+            context.coordinator.listKey = listKey
+        }
         context.coordinator.apply(
             sections: sections, focusedId: focusedId, focusScrollToken: focusScrollToken, avatarVersion: avatarVersion
         )
@@ -164,6 +185,7 @@ struct IssueTable: NSViewRepresentable {
 
         let model: AppModel
         weak var table: HoverTableView?
+        var listKey: String?
         weak var scrollView: NSScrollView?
         /// The header of the section the list is scrolled into, held at the top while its own row is out of view.
         weak var sticky: IssueHeaderCell?
@@ -1659,6 +1681,7 @@ final class IssueHeaderCell: NSView {
         addButton.isHidden = !section.canAdd
         addButton.contentTintColor = NSColor(Theme.textSecondary)
         addButton.toolTip = String(localized: .newIssueInGroupTooltip(group: section.title))
+        toolTip = section.style == .progress ? section.progress.map { String(localized: .milestoneProgressTooltip(done: $0.done, total: $0.total)) } : nil
         guard section != self.section else { return }
         self.section = section
         needsDisplay = true
@@ -1726,7 +1749,7 @@ final class IssueHeaderCell: NSView {
         let titleSize = title.size()
         let titleWidth = min(titleSize.width, max(bounds.width - titleX - 140, 80))
         title.draw(with: NSRect(x: titleX, y: midY - titleSize.height / 2, width: titleWidth, height: titleSize.height), options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
-        let count = NSAttributedString(string: "\(section.count)", attributes: [
+        let count = NSAttributedString(string: section.countText, attributes: [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .regular),
             .foregroundColor: NSColor(Theme.textTertiary),
         ])
@@ -1738,6 +1761,55 @@ final class IssueHeaderCell: NSView {
             ])
             text.draw(at: NSPoint(x: titleX + titleWidth + 8 + count.size().width + 10, y: midY - text.size().height / 2))
         }
+        // How far the group is, or how much the person has open, before the + button.
+        if let progress = section.progress, section.style != .plain, bounds.width > 520 {
+            let right = section.canAdd ? addButton.frame.minX - 12 : bounds.width - IssueTable.inset - 14
+            let bar = CGRect(x: right - Self.barWidth, y: midY - 3, width: Self.barWidth, height: 6)
+            switch section.style {
+            case .progress: GroupBars.drawProgress(progress, in: bar, cg: context)
+            case .people: GroupBars.drawLoad(progress, share: section.load, in: bar, cg: context)
+            case .plain: break
+            }
+        }
+    }
+
+    static let barWidth: CGFloat = 120
+}
+
+/// The bars of a view's groups, drawn the same in the list's headers wherever they appear.
+enum GroupBars {
+    /// Done, under way and the rest, as one bar across the group.
+    static func drawProgress(_ progress: GroupProgress, in rect: CGRect, cg context: CGContext) {
+        context.saveGState()
+        defer { context.restoreGState() }
+        let track = CGPath(roundedRect: rect, cornerWidth: rect.height / 2, cornerHeight: rect.height / 2, transform: nil)
+        context.addPath(track)
+        context.clip()
+        context.setFillColor(NSColor(Theme.textTertiary).withAlphaComponent(0.22).cgColor)
+        context.fill(rect)
+        guard progress.total > 0 else { return }
+        let done = rect.width * CGFloat(progress.done) / CGFloat(progress.total)
+        let started = rect.width * CGFloat(progress.started) / CGFloat(progress.total)
+        context.setFillColor(NSColor(Theme.positive).cgColor)
+        context.fill(CGRect(x: rect.minX, y: rect.minY, width: done, height: rect.height))
+        context.setFillColor(NSColor(Theme.started).cgColor)
+        context.fill(CGRect(x: rect.minX + done, y: rect.minY, width: started, height: rect.height))
+    }
+
+    /// What a person has open, as long as their share of the most anyone has: what is under way first, then the rest.
+    static func drawLoad(_ progress: GroupProgress, share: CGFloat, in rect: CGRect, cg context: CGContext) {
+        let open = progress.total - progress.done
+        guard open > 0 else { return }
+        let width = max(rect.height, rect.width * min(max(share, 0), 1))
+        let bar = CGRect(x: rect.maxX - width, y: rect.minY, width: width, height: rect.height)
+        context.saveGState()
+        defer { context.restoreGState() }
+        context.addPath(CGPath(roundedRect: bar, cornerWidth: rect.height / 2, cornerHeight: rect.height / 2, transform: nil))
+        context.clip()
+        context.setFillColor(NSColor(Theme.textTertiary).withAlphaComponent(0.35).cgColor)
+        context.fill(bar)
+        context.setFillColor(NSColor(Theme.started).cgColor)
+        context.fill(CGRect(x: bar.minX, y: bar.minY, width: bar.width * CGFloat(progress.started) / CGFloat(open), height: bar.height))
     }
 }
 

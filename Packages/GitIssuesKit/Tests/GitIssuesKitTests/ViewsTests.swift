@@ -231,3 +231,81 @@ struct ViewsTests {
         #expect(field.iteration(offset: 1, from: CalendarDay(year: 2026, month: 10, day: 13)) == nil)
     }
 }
+
+@Suite("How a view shows: progress, people, cycles and timelines")
+@MainActor
+struct ViewTypesTests {
+    static func field(_ id: String, _ name: String, _ type: String, position: Int = 0) -> ProjectField {
+        ProjectField(id: id, projectId: "P1", databaseId: position, name: name, dataType: type, position: position)
+    }
+
+    @Test("Groups of something that gets finished show progress, groups by person their load, others are lists")
+    func groupStyles() {
+        #expect(AppModel.groupStyle(of: Self.field("F1", "Parent issue", "PARENT_ISSUE")) == .progress)
+        #expect(AppModel.groupStyle(of: Self.field("F2", "Milestone", "MILESTONE")) == .progress)
+        #expect(AppModel.groupStyle(of: Self.field("F3", "Sprint", "ITERATION")) == .progress)
+        #expect(AppModel.groupStyle(of: Self.field("F4", "Assignees", "ASSIGNEES")) == .people)
+        #expect(AppModel.groupStyle(of: Self.field("F5", "Labels", "LABELS")) == .plain)
+        #expect(AppModel.groupStyle(of: Self.field("F6", "Workstream", "SINGLE_SELECT")) == .plain)
+    }
+
+    @Test("Only groups with progress and nothing under way start folded")
+    func foldedByDefault() {
+        func section(_ style: GroupStyle, started: Int, total: Int) -> ListSection {
+            let items = (0..<total).map { ProjectFilterTests.item($0) }
+            return ListSection(
+                id: "S", title: "S", glyph: .none, option: nil, items: items, nesting: Nesting.arrange(items, folded: []).nesting,
+                style: style, progress: GroupProgress(done: 0, started: started, total: total)
+            )
+        }
+        #expect(AppModel.foldsByDefault(section(.progress, started: 0, total: 3)))
+        #expect(!AppModel.foldsByDefault(section(.progress, started: 1, total: 3)))
+        #expect(!AppModel.foldsByDefault(section(.people, started: 0, total: 3)))
+        #expect(!AppModel.foldsByDefault(section(.plain, started: 0, total: 3)))
+        #expect(!AppModel.foldsByDefault(section(.progress, started: 0, total: 0)))
+    }
+
+    @Test("Stepping through iterations keeps GitHub's words relative to the one under way")
+    func iterationTokens() {
+        #expect(AppModel.iterationToken(offset: 0) == "@current")
+        #expect(AppModel.iterationToken(offset: 1) == "@next")
+        #expect(AppModel.iterationToken(offset: -1) == "@previous")
+        #expect(AppModel.iterationToken(offset: 2) == "@current+2")
+        #expect(AppModel.iterationToken(offset: -3) == "@current-3")
+        #expect(AppModel.iterationValue(after: "@current", offset: 1, title: "Cycle 5") == "@next")
+        #expect(AppModel.iterationValue(after: "@next", offset: 2, title: "Cycle 6") == "@current+2")
+    }
+
+    @Test("Stepping from an iteration named by its title names the next one by its title")
+    func namedIterations() {
+        #expect(AppModel.iterationValue(after: "Cycle 4", offset: 1, title: "Cycle 5") == "Cycle 5")
+        let filter = ProjectFilter(#"iteration:"Cycle 4" is:open"#)
+        let stepped = filter.replacing(0, with: filter.terms[0].changed { $0.values = ["Cycle 5"] })
+        #expect(stepped.text == #"iteration:"Cycle 5" is:open"#)
+    }
+
+    @Test("A timeline finds start and end fields by name in several languages, else by their order")
+    func dateFields() {
+        let start = Self.field("S", "Start date", "DATE", position: 1)
+        let target = Self.field("T", "Target date", "DATE", position: 2)
+        let due = Self.field("D", "Due", "DATE", position: 3)
+        var picked = AppModel.timelineDateFields([due, target, start])
+        #expect(picked.start?.id == "S")
+        #expect(picked.end?.id == "T")
+
+        picked = AppModel.timelineDateFields([Self.field("B", "Beginn", "DATE"), Self.field("E", "Fällig am", "DATE")])
+        #expect(picked.start?.id == "B")
+        #expect(picked.end?.id == "E")
+
+        picked = AppModel.timelineDateFields([Self.field("A", "Kickoff", "DATE", position: 1), Self.field("Z", "Launch", "DATE", position: 2)])
+        #expect(picked.start?.id == "A")
+        #expect(picked.end?.id == "Z")
+
+        picked = AppModel.timelineDateFields([due, Self.field("X", "Title", "TITLE")])
+        #expect(picked.start == nil)
+        #expect(picked.end?.id == "D")
+
+        picked = AppModel.timelineDateFields([Self.field("X", "Title", "TITLE")])
+        #expect(picked.start == nil && picked.end == nil)
+    }
+}

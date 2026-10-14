@@ -113,8 +113,10 @@ for theme in dark light; do
   say "select repo git-issues"; sleep 1.2; shot "repository-$theme"
   # The roadmap's timeline: the sample's epics over the milestones 0.3, 0.4 and 1.0.
   say "select Git Issues" "select roadmap" "roadmap timeline" "roadmap months"; sleep 1.5; shot "roadmap-$theme"
-  # The project's views as tabs, "This Week" open with its filter under them.
+  # The project's views in the sidebar, "This Week" open with its filter and its cycle over the board.
   say "select Git Issues" "view This Week"; sleep 1.5; shot "views-$theme"
+  # A roadmap view as a timeline: the issues of each milestone between their dates, today and the milestones marked.
+  say "view Release Plan"; sleep 1.5; shot "timeline-$theme"
   say "view Board"
   say "select Git Issues" "mode board" "overlay new"; sleep 1
   say "key Haptic feedback when a card lands"; sleep 1; shot "new-$theme"

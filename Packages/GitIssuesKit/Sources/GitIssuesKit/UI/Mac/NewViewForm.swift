@@ -163,6 +163,42 @@ struct LayoutSwitch: View {
     }
 }
 
+/// Timeline, Board or List, for a view in GitHub's roadmap layout.
+struct ShapeSwitch: View {
+    @Binding var shape: ViewShape
+    @Namespace private var namespace
+
+    var body: some View {
+        HStack(spacing: 2) {
+            segment(.timeline, .timeline)
+            segment(.board, .board)
+            segment(.list, .list)
+        }
+        .padding(2)
+        .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Theme.control))
+    }
+
+    private func segment(_ title: LocalizedStringResource, _ value: ViewShape) -> some View {
+        Button {
+            withAnimation(Theme.spring) { shape = value }
+        } label: {
+            Text(title)
+                .font(.smallMedium)
+                .foregroundStyle(shape == value ? Theme.text : Theme.textSecondary)
+                .padding(.horizontal, 10)
+                .frame(height: 22)
+                .background {
+                    if shape == value {
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(Theme.segmentActive)
+                            .matchedGeometryEffect(id: "segment", in: namespace)
+                    }
+                }
+        }
+        .buttonStyle(PlainPressStyle())
+    }
+}
+
 /// A field to pick from a menu, such as what a board's columns or a list's groups are by.
 struct FieldMenu: View {
     var choices: [ProjectField]

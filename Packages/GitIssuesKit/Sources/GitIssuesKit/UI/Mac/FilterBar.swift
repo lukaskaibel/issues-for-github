@@ -475,7 +475,11 @@ struct DisplayOptions: View {
             Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
                 GridRow {
                     Text(.layout).foregroundStyle(Theme.textSecondary)
-                    LayoutSwitch(mode: Binding(get: { mode }, set: { model.viewMode = $0 }))
+                    if view.layout == .roadmap {
+                        ShapeSwitch(shape: Binding(get: { model.shape(of: view) }, set: { model.setShape($0, of: view) }))
+                    } else {
+                        LayoutSwitch(mode: Binding(get: { mode }, set: { model.viewMode = $0 }))
+                    }
                 }
                 if mode == .board {
                     GridRow {
