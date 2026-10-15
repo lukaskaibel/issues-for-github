@@ -18,14 +18,16 @@ struct IssueListView: View {
             case .milestone, .roadmap: false
             default: !model.groupsByMilestone && !model.viewPinsMilestone(projectId: model.currentProjectId)
             }
+            // The person with the most open issues sets how long the load bars are.
+            let mostOpen = model.sections.filter { $0.style == .people }.compactMap { $0.progress.map { $0.total - $0.done } }.max() ?? 0
             IssueTable(
                 sections: model.sections.map { section in
                     IssueSectionModel(
-                        id: section.id, collapsed: model.isSectionCollapsed(section.id),
+                        id: section.id, collapsed: model.isFolded(section),
                         title: section.title, glyph: section.glyph, icon: icon(of: section), detail: section.detail,
                         optionId: section.option?.id, kind: section.kind,
                         canAdd: canAdd, count: section.count,
-                        lines: model.isSectionCollapsed(section.id) ? [] : section.nesting.rows.map { row -> IssueLine in
+                        lines: model.isFolded(section) ? [] : section.nesting.rows.map { row -> IssueLine in
                             switch row {
                             case .epic(let group):
                                 return .epic(group)
@@ -50,14 +52,17 @@ struct IssueListView: View {
                                     chips: model.fieldChips(of: item, in: model.scope)
                                 ))
                             }
-                        }
+                        },
+                        style: section.style, progress: section.progress,
+                        load: mostOpen > 0 ? CGFloat(section.progress.map { $0.total - $0.done } ?? 0) / CGFloat(mostOpen) : 0
                     )
                 },
                 // My Issues mixes projects, so there is no one order to put an issue into.
                 canMoveRows: canEdit,
                 focusedId: model.focusedItemId,
                 focusScrollToken: model.focusScrollToken,
-                avatarVersion: model.avatarVersion
+                avatarVersion: model.avatarVersion,
+                listKey: "\(model.scope) \(model.currentView?.id ?? "")"
             )
             // A different project starts at the top again.
             .id(model.scope)

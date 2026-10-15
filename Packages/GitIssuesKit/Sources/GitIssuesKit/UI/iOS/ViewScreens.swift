@@ -56,6 +56,11 @@ struct ViewBar: View {
             }
             if let current {
                 ViewFilterLine(view: current)
+                // A view of one iteration says which, when, and how far it is, as Linear's cycles.
+                if let pinned = model.pinnedIteration(of: current) {
+                    CycleHeader(view: current, pinned: pinned, compact: !wide)
+                        .padding(.horizontal, 16)
+                }
             }
         }
         .padding(.vertical, 8)
@@ -582,9 +587,17 @@ struct ViewDisplayMenu: View {
     var body: some View {
         Menu {
             if wide {
-                Picker(.layout, selection: Binding(get: { model.layout(of: view) }, set: { model.showLayout($0, projectId: view.projectId) })) {
-                    Label(.board, systemImage: "rectangle.split.3x1").tag(ViewMode.board)
-                    Label(.list, systemImage: "list.bullet").tag(ViewMode.list)
+                if view.layout == .roadmap {
+                    Picker(.layout, selection: Binding(get: { model.shape(of: view) }, set: { model.setShape($0, of: view) })) {
+                        Label(.timeline, systemImage: "chart.bar.xaxis").tag(ViewShape.timeline)
+                        Label(.board, systemImage: "rectangle.split.3x1").tag(ViewShape.board)
+                        Label(.list, systemImage: "list.bullet").tag(ViewShape.list)
+                    }
+                } else {
+                    Picker(.layout, selection: Binding(get: { model.layout(of: view) }, set: { model.showLayout($0, projectId: view.projectId) })) {
+                        Label(.board, systemImage: "rectangle.split.3x1").tag(ViewMode.board)
+                        Label(.list, systemImage: "list.bullet").tag(ViewMode.list)
+                    }
                 }
             }
             if wide, model.layout(of: view) == .board {

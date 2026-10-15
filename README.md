@@ -196,7 +196,20 @@ New views, renamed ones and deleted ones are GitHub's too, so a view looks the s
 <!-- The views' picture comes with the next shared picture run (Tools/readme-images.sh):
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/views-dark.webp">
-  <img alt="The sidebar with the project Git Issues in its switch, its views Board, This Week, By Area, Bugs and Sync and Release Plan under it, This Week open as a board, its filter Iteration is Current as a chip over the columns" src="Design/screenshots/views-light.webp">
+  <img alt="The sidebar with the project Git Issues at its top and its views Board, This Week, By Area, Bugs and Sync, Release Plan, Epics and Team under it; This Week open as a board, its filter Iteration is Current as a chip, and over the columns Cycle 4 with its dates, the days left, its progress and arrows to Cycle 3 and Cycle 5" src="Design/screenshots/views-light.webp">
+</picture>
+-->
+
+What a view is for decides how it looks, read from how it is set up on GitHub. Grouped by parent issue, milestone or
+iteration, its groups show how far each is, and those with nothing under way start folded: a view of work packages
+opens as an overview. Grouped by assignee, each person's bar is what they have open. A view of one iteration shows
+that cycle on top, with the days left and arrows to the one before and after. A roadmap view is a timeline of the
+issues' start and target dates, their iterations or their milestones.
+
+<!-- The timeline's picture comes with the next shared picture run (Tools/readme-images.sh):
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/timeline-dark.webp">
+  <img alt="The view Release Plan as a timeline: its issues grouped by milestone, 0.3 with 4 of 15 done and a bar of its progress, each issue a bar across its cycle in the colour of its status, today as a line and the days of 0.3, 0.4 and 1.0 as diamonds over the months" src="Design/screenshots/timeline-light.webp">
 </picture>
 -->
 
@@ -223,12 +236,13 @@ The interface uses the system's own parts.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
   A board's next milestones and its roadmap are listed under it in Projects; a milestone is a list grouped by epic,
   the roadmap a list of epics by milestone. A project's views are capsules over its list, with the open one's filter
-  as a line under them; tap the line to change the filter, touch and hold a view for its menu.
+  as a line under them; tap the line to change the filter, touch and hold a view for its menu. A view's groups show
+  their progress or each person's load, and a view of one iteration has the cycle on top, as on the Mac.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
   place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams are drawn until you tap them),
   the properties are chips under the title, and the comment field stays at the bottom as in Messages.
 - **iPad:** the tabs become a sidebar, as on the Mac: the project at the top, whose menu switches projects and opens
-  your account, then its views, its next milestones and roadmap, and its repositories, each an entry. A view opens as a board or a list; cards are moved with drag and
+  your account, then its views, its next milestones and roadmap, and its repositories, each an entry. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
   drop (touch and hold, then drag). A milestone opens as the board's columns or a list, the roadmap as the timeline,
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
@@ -253,7 +267,8 @@ The interface uses the system's own parts.
   milestone closes it on GitHub and moves what is left to the next one.
 - **A project's views** in the sidebar, one project at a time, with a filter of chips like Linear's that is GitHub's
   own filter underneath. Change it for yourself, save it for everyone, or make, rename and delete views; GitHub shows
-  the same.
+  the same. Each view shows what it is for: work packages with their progress, a team with each person's load, a cycle
+  with its days left, a roadmap as a timeline.
 - **An Inbox** with GitHub's notifications about issues and pull requests: who did what, the issue beside it, and
   read, archive, snooze and unsubscribe in one key. Read and archived are the same on github.com. Issues your own
   account assigned you to with `gh` or a coding agent show up too, which GitHub doesn't notify you of.
@@ -302,12 +317,16 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Epic | An issue with the label *epic* (made in the repository the first time) or, in organisations, the issue type *Epic* |
 | An epic's issues | Its sub-issues |
 | Roadmap | Only how the app lays out the epics over the milestones; the stretches end on the milestones' due dates |
-| A project's views in the sidebar | The project's views, in GitHub's order; board views as a board, table and roadmap views as a list |
+| A project's views in the sidebar | The project's views, in GitHub's order; board views as a board, table views as a list, roadmap views as a timeline |
 | A view's filter chips | The view's filter, in GitHub's own words (`label:bug,sync is:open`, `iteration:@current`) |
 | A changed filter, before Save | Kept on your device, as GitHub keeps unsaved changes in your browser |
 | Board or list and the fields shown | The view's layout and visible fields, saved with **Save for Everyone** |
 | Other columns, groups or order | Yours alone: GitHub sets a view's columns, grouping and sorting only when it is made |
 | Iteration on a card or row | The project's Iteration field, or any single-select field the view shows |
+| A group's progress ("4/6") | The view's issues in it that are done, of all; a view grouped by parent issue, milestone or iteration |
+| A person's load | Their open issues in the view, the ones with a started status in yellow; a view grouped by assignee |
+| The cycle over a view and its arrows | The iteration the view's filter names (`@current`, `@next`, `@current+2` or its title); an arrow changes the filter, in the same kind of words, until **Save** |
+| Bars on a roadmap view's timeline | Date fields named like a start and an end (Start date, Target date), else the iteration, else the milestone's day; GitHub doesn't say which fields its roadmap uses |
 | Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there. Due issues, and assignments your own account made outside the app (found in the issues' timelines), are the app's own entries, read and archived in iCloud |
 
 Boards show the issues in their project; a repository shows all its open issues and those closed in the last four
@@ -506,6 +525,10 @@ back. Double-click a view in the sidebar to rename it, and right-click it to dup
 GitHub. **New View** under the views makes a new one, starting from the one open: name it, pick board or list, and its columns or groups and order, which GitHub keeps from then on. A
 new issue made in a view gets what the view's filter asks for, such as this iteration or a label.
 
+A view of one iteration has the cycle over its issues; the arrows beside it show the one before or after, a changed
+filter until you save it. On a roadmap view's timeline, click a group to fold it and an issue's name to open it;
+**Display** switches between timeline, board and list.
+
 A description with a table, a checklist, code or a Mermaid diagram is drawn as on GitHub. Click a checkbox to tick it;
 click anywhere else to edit the Markdown, and `Esc` or `⌘↵` draws it again.
 
@@ -554,6 +577,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap a view over a project (iPhone), or in the sidebar (iPad) | Open it |
 | Touch and hold a view (iPhone) | Filter, rename, duplicate, open on GitHub, delete |
 | Tap the filter line under the views | Change the filter; **Save for Everyone** puts it on GitHub, **Reset** takes it back |
+| Tap ‹ or › beside a view's cycle | The cycle before or after, until you save it |
 | Tap the plus after the views (iPhone), or New View… in the project's "…" menu | A new view, starting from the one open |
 | Tap the project at the top of the sidebar (iPad) | Switch to another project, sync, or open your account and settings |
 | Swipe right in the Inbox | Read, or unread |
@@ -562,13 +586,14 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 
 ## Not there yet
 
-Cycles, linked pull requests, file uploads, real-time updates and notifications on screen for new Inbox
-entries are planned but not built. Also good to know in 0.3.0:
+Cycles of their own beyond a view of one iteration, linked pull requests, file uploads, real-time updates and
+notifications on screen for new Inbox entries are planned but not built. Also good to know in 0.3.0:
 
 - Pull requests and draft issues appear on the board and can be moved, but their text is read-only.
 - Images in descriptions of private repositories may not load.
 - A view's order among the others, and its columns, grouping and sorting once it exists, can't be changed from the
-  app: GitHub's API doesn't take them. A roadmap view shows as a list, and board swimlanes aren't drawn.
+  app: GitHub's API doesn't take them. A roadmap view's bars can't be dragged to other dates yet, the iPhone shows a
+  roadmap view as a list, and board swimlanes aren't drawn.
 
 ## For contributors
 

@@ -45,12 +45,15 @@ extension AppModel {
     /// Issues in the order they read on screen, for stepping with J/K and the arrow buttons. Folded list
     /// sections are skipped, since their issues aren't on screen.
     var orderedItems: [Item] {
+        // The timelines have no keyboard focus of their own; their epics and issues open with a click.
+        if openItem == nil, case .roadmap = scope, roadmapLayout == .timeline { return [] }
+        #if os(macOS)
+        if openItem == nil, let view = currentView, showsTimeline(view) { return [] }
+        #endif
         if openItem == nil, viewMode == .board, currentProjectId != nil {
             return columns.flatMap(\.items)
         }
-        // The timeline has no keyboard focus of its own; its epics open with a click.
-        if openItem == nil, case .roadmap = scope, roadmapLayout == .timeline { return [] }
-        return sections.filter { !isSectionCollapsed($0.id) }.flatMap(\.items)
+        return sections.filter { !isFolded($0) }.flatMap(\.items)
     }
 
     func position(of item: Item) -> (index: Int, count: Int)? {

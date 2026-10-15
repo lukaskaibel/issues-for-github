@@ -19,8 +19,8 @@ extension AppModel {
         let display = display(of: view)
         var change = GitHubAPI.ViewChange()
         if let layout = display.layout {
-            // A roadmap shown as a list stays a roadmap on GitHub; a board becomes a table there.
-            if layout == .board { change.layout = .board } else if view.layout == .board { change.layout = .table }
+            // A board or a list chosen for a roadmap, or a list for a board, becomes GitHub's board or table.
+            if layout == .board { change.layout = .board } else if view.layout != .table { change.layout = .table }
         }
         if let fields = display.visibleFieldIds { change.visibleFieldIds = fields }
         guard !change.isEmpty || display.layout != nil else { return }

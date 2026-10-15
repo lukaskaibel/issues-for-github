@@ -463,10 +463,22 @@ struct SectionHeaderBand: View {
     /// Quiet text after the count, such as when a milestone is due.
     var detail: String? = nil
     var count: Int
+    /// What the header shows for the count, such as "4/6" for a group with its progress.
+    var countText: String? = nil
     var folded: Bool
+    /// A view's group with its progress, or a person's load, as a bar before the "+".
+    var bar: (style: GroupStyle, progress: GroupProgress, share: CGFloat)? = nil
     var onToggle: () -> Void
     var onAdd: (() -> Void)?
     @ScaledMetric(relativeTo: .callout) private var glyphSize: CGFloat = 15
+    @Environment(\.wideLayout) private var wide
+
+    /// Folded or open, and for a group with its progress how far it is, which its bar shows.
+    private var spokenValue: Text {
+        let state = Text(folded ? LocalizedStringResource.sectionFolded : .sectionOpen)
+        guard let bar, bar.style == .progress else { return state }
+        return state + Text(verbatim: ", ") + Text(.milestoneProgressTooltip(done: bar.progress.done, total: bar.progress.total))
+    }
 
     var body: some View {
         HStack(spacing: 9) {
@@ -479,18 +491,21 @@ struct SectionHeaderBand: View {
                         .frame(width: 12)
                     GroupIcon(icon: icon ?? .status(glyph), size: glyphSize)
                     Text(title).font(.uiSemibold).foregroundStyle(icon == .plain ? Theme.textSecondary : Theme.text).lineLimit(1)
-                    Text("\(count)").font(.ui).monospacedDigit().foregroundStyle(Theme.textTertiary)
+                    Text(countText ?? "\(count)").font(.ui).monospacedDigit().foregroundStyle(Theme.textTertiary)
                     if let detail {
                         Text(detail).font(.small).foregroundStyle(Theme.textTertiary).lineLimit(1)
                     }
                     Spacer(minLength: 0)
+                    if let bar, bar.style != .plain {
+                        GroupBar(style: bar.style, progress: bar.progress, share: bar.share, width: wide ? 120 : 56)
+                    }
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(PlainPressStyle())
             .accessibilityIdentifier("section-\(title)")
             .accessibilityLabel(.sectionIssueCount(title: title, count: count))
-            .accessibilityValue(folded ? LocalizedStringResource.sectionFolded : .sectionOpen)
+            .accessibilityValue(spokenValue)
             .accessibilityHint(folded ? LocalizedStringResource.showsSectionIssues : .hidesSectionIssues)
             if let onAdd {
                 Button(action: onAdd) {

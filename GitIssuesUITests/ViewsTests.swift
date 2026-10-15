@@ -1,7 +1,8 @@
 import XCTest
 
 /// A project's saved views on the iPhone, on the sample data: the board "Git Issues" has the views Board, This Week
-/// (this cycle's issues), By Area (open issues grouped by the Area field), Bugs and Sync, and Release Plan.
+/// (this cycle's issues), By Area (open issues grouped by the Area field), Bugs and Sync, Release Plan (a roadmap by
+/// milestone), Epics (sub-issues grouped by their parent) and Team (open issues grouped by assignee).
 final class PhoneViewsTests: AppTestCase {
     override func setUpWithError() throws {
         try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad, "iPhone layout")
@@ -10,6 +11,13 @@ final class PhoneViewsTests: AppTestCase {
     private func openView(_ name: String) {
         let pill = element("view-\(name)")
         wait(pill)
+        // The capsules scroll sideways; the later ones are off screen at first.
+        let screen = app.windows.firstMatch.frame
+        var swipes = 0
+        while pill.frame.maxX > screen.maxX - 8 && swipes < 4 {
+            app.scrollViews.containing(.button, identifier: "view-Board").firstMatch.swipeLeft()
+            swipes += 1
+        }
         pill.tap()
         XCTAssertTrue(pill.isSelected, "\(name) isn't the open view")
     }
@@ -46,6 +54,61 @@ final class PhoneViewsTests: AppTestCase {
         wait(element("section-Release"))
         // Only open issues, and none of them done.
         XCTAssertFalse(element("section-Done").exists)
+    }
+
+    func testGroupsOfWorkShowHowFarTheyAre() {
+        launch()
+        openProjectTab("Git Issues")
+        openView("Epics")
+        let drag = element("section-#9 · Drag cards between columns with spring physics")
+        wait(drag)
+        waitForValue(drag, equalTo: "Open, 4 of 6 issues done")
+        wait(element("row-#13"))
+        snapshot("Epics")
+
+        // Nothing under way in it yet, so it starts folded, and the view opens as an overview of what is left.
+        let signIn = element("section-#42 · Sign-in and accounts")
+        scrollTo(signIn)
+        waitForValue(signIn, equalTo: "Folded, 0 of 1 issues done")
+        XCTAssertFalse(element("row-#14").exists)
+        signIn.tap()
+        waitForValue(signIn, equalTo: "Open, 0 of 1 issues done")
+        scrollTo(element("row-#14"))
+        wait(element("row-#14"))
+
+        // Grouped by person, a group is someone's load.
+        openView("Team")
+        wait(element("section-jordan"))
+        wait(element("row-#8"))
+        snapshot("Team")
+    }
+
+    func testACycleViewStepsThroughTheCycles() {
+        launch()
+        openProjectTab("Git Issues")
+        openView("This Week")
+        let cycle = element("cycle")
+        wait(cycle)
+        wait(cycle.staticTexts["Cycle 4"])
+        wait(element("row-#9"))
+        snapshot("Cycle header")
+
+        element("cycle-next").tap()
+        waitForValue(element("view-filter"), equalTo: "Iteration is Next")
+        wait(cycle.staticTexts["Cycle 5"])
+        // Planned for the next cycle.
+        wait(element("row-#14"))
+        waitGone(element("row-#9"))
+        // Another cycle is a changed filter, as on GitHub, until it is saved.
+        waitForValue(element("view-This Week"), equalTo: "Filter changed")
+
+        // Back to the one under way: the view as saved again.
+        element("cycle-previous").tap()
+        waitForValue(element("view-filter"), equalTo: "Iteration is Current")
+        wait(cycle.staticTexts["Cycle 4"])
+        wait(element("row-#9"))
+        waitForValue(element("view-This Week"), notEqualTo: "Filter changed")
+        XCTAssertFalse(button("Save").exists)
     }
 
     func testAChangedFilterStaysUntilSavedOrReset() {
@@ -178,6 +241,38 @@ final class PadViewsTests: AppTestCase {
         snapshot("iPad Website")
         sidebarEntry("All").tap()
         wait(element("row-#31"))
+    }
+
+    func testARoadmapViewIsATimeline() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openPadProject("Git Issues")
+        sidebarEntry("Release Plan").tap()
+        let release = element("timeline-section-0.3")
+        wait(release)
+        wait(element("timeline-row-#9"))
+        // A milestone that's all done starts folded.
+        wait(element("timeline-section-0.2"))
+        XCTAssertFalse(element("timeline-row-#4").exists)
+        snapshot("iPad Release Plan")
+
+        release.tap()
+        waitGone(element("timeline-row-#9"))
+        release.tap()
+        wait(element("timeline-row-#9"))
+
+        // The same view as a list, from the Display menu, and back.
+        showLayout("List")
+        wait(element("section-0.3"))
+        waitGone(release)
+        showLayout("Timeline")
+        wait(release)
+
+        // An issue opens from its name.
+        element("timeline-row-#9").tap()
+        let title = element("issue-title")
+        wait(title)
+        XCTAssertEqual(title.value as? String, "Drag cards between columns with spring physics")
     }
 
     func testTheFilterSheetOnTheIPad() {

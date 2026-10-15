@@ -257,6 +257,7 @@ struct RepositoryScreen: View {
 struct ProjectScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
+    @Environment(\.openRoute) private var openRoute
     @Environment(\.wideLayout) private var wide
     @Environment(\.windowWidth) private var windowWidth
     var projectId: String
@@ -271,10 +272,16 @@ struct ProjectScreen: View {
                 MobileEmptyState(title: String(localized: .projectGoneTitle), message: String(localized: .projectGoneMessage), systemImage: "questionmark.square.dashed")
             } else if model.isLoading(projectId: projectId) {
                 ProjectLoading()
+            } else if wide, let view = model.currentView(projectId: projectId), model.showsTimeline(view) {
+                // GitHub's roadmap layout: the view's issues on a timeline, where there is room for one.
+                ViewTimeline(view: view, scope: .project(projectId), nameWidth: 280) { openRoute(.issue($0.id)) }
             } else if wide, mode == .board {
                 MobileBoard(projectId: projectId)
+                    .id(model.currentView(projectId: projectId)?.id)
             } else {
+                // Another view starts at its top, not where the last one was scrolled to.
                 IssueList(scope: .project(projectId))
+                    .id(model.currentView(projectId: projectId)?.id)
             }
         }
         // The project's saved views, and the open one's filter, over its list or board.
@@ -501,8 +508,10 @@ struct IssueList: View {
                             .listRowBackground(Color.clear)
                             .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
                     }
+                    // The person with the most open issues sets how long the load bars are.
+                    let mostOpen = sections.filter { $0.style == .people }.compactMap { $0.progress.map { $0.total - $0.done } }.max() ?? 0
                     ForEach(sections) { section in
-                        let folded = model.isSectionCollapsed(section.id, in: scope)
+                        let folded = model.isFolded(section, in: scope)
                         Section {
                             if !folded {
                                 ForEach(section.nesting.rows) { line in
@@ -524,7 +533,11 @@ struct IssueList: View {
                             SectionHeaderBand(
                                 title: section.title, glyph: section.glyph,
                                 icon: section.kind == .status ? nil : model.sectionIcon(section, projectId: scope.projectId),
-                                detail: section.detail, count: section.count, folded: folded,
+                                detail: section.detail,
+                                count: section.count, countText: section.countText, folded: folded,
+                                bar: section.progress.map { progress in
+                                    (section.style, progress, mostOpen > 0 ? CGFloat(progress.total - progress.done) / CGFloat(mostOpen) : 0)
+                                },
                                 onToggle: {
                                     foldFeedback += 1
                                     withAnimation(Theme.spring) { model.toggleSection(section.id, in: scope) }

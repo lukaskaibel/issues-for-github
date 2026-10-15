@@ -537,25 +537,45 @@ extension AppModel {
     }
 
     /// Sections folded in, in the list. Kept per project on this device.
-    func isSectionCollapsed(_ id: String, in scope: Scope? = nil) -> Bool {
+    /// Whether a section is folded: as you left it, or else as its kind starts out (`byDefault`).
+    func isSectionCollapsed(_ id: String, in scope: Scope? = nil, byDefault: Bool = false) -> Bool {
         _ = collapseVersion
         guard let key = collapsedKey(scope) else { return false }
-        return UserDefaults.standard.stringArray(forKey: key)?.contains(id) ?? false
+        if UserDefaults.standard.stringArray(forKey: key)?.contains(id) ?? false { return true }
+        return byDefault && !(UserDefaults.standard.stringArray(forKey: "expanded." + key)?.contains(id) ?? false)
+    }
+
+    /// Whether a section of the list is folded, with its kind's start: see `foldsByDefault`.
+    func isFolded(_ section: ListSection, in scope: Scope? = nil) -> Bool {
+        isSectionCollapsed(section.id, in: scope, byDefault: foldsByDefault(section))
     }
 
     func toggleSection(_ id: String, in scope: Scope? = nil) {
         guard let key = collapsedKey(scope) else { return }
+        let list = scope.map { $0 == self.scope ? sections : sections(for: $0) } ?? sections
+        let byDefault = list.first { $0.id == id }.map(foldsByDefault) ?? false
+        let wasFolded = isSectionCollapsed(id, in: scope, byDefault: byDefault)
         var folded = Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
-        if folded.contains(id) { folded.remove(id) } else { folded.insert(id) }
+        var unfolded = Set(UserDefaults.standard.stringArray(forKey: "expanded." + key) ?? [])
+        if wasFolded {
+            folded.remove(id)
+            // Remembered only where it differs from how the section starts out.
+            if byDefault { unfolded.insert(id) }
+        } else {
+            folded.insert(id)
+            unfolded.remove(id)
+        }
         UserDefaults.standard.set(Array(folded), forKey: key)
+        UserDefaults.standard.set(Array(unfolded), forKey: "expanded." + key)
         collapseVersion += 1
     }
 
     /// Option-click on a header, as in Finder: folds every section in or out, following the one clicked.
     func toggleAllSections(like id: String) {
         guard let key = collapsedKey(nil) else { return }
-        let fold = !isSectionCollapsed(id)
+        let fold = !(sections.first { $0.id == id }.map { isFolded($0) } ?? isSectionCollapsed(id))
         UserDefaults.standard.set(fold ? sections.map(\.id) : [], forKey: key)
+        UserDefaults.standard.set(fold ? [] : sections.map(\.id), forKey: "expanded." + key)
         collapseVersion += 1
     }
 

@@ -349,3 +349,80 @@ extension AppModel {
         }
     }
 }
+
+// MARK: - The iteration a view is about
+
+/// The one iteration a view's filter asks for, such as `iteration:@current`: what the cycle header shows, and where
+/// its arrows step from.
+struct PinnedIteration: Equatable {
+    var field: ProjectField
+    var iteration: IterationSpan
+    /// Iterations from the one under way: 0 for it, -1 for the one before.
+    var offset: Int
+    /// The term of the filter that names it.
+    var termIndex: Int
+    var previous: IterationSpan?
+    var next: IterationSpan?
+}
+
+extension AppModel {
+    /// The iteration a view's filter pins down: one value of an iteration field, not turned around, not a range.
+    func pinnedIteration(of view: ProjectView) -> PinnedIteration? {
+        guard let context = filterContext(projectId: view.projectId) else { return nil }
+        for (index, term) in filter(of: view).terms.enumerated() where !term.negated && term.values.count == 1 {
+            guard let key = term.key, let field = context.fieldsByKey[key], field.kind == .iteration else { continue }
+            let value = term.values[0]
+            guard !value.contains(".."), !value.hasPrefix("<"), !value.hasPrefix(">") else { continue }
+            let ordered = field.orderedIterations
+            guard let at = IterationBound.index(value, field: field, today: context.today), ordered.indices.contains(at) else { continue }
+            let today = context.today
+            let current = ordered.firstIndex { $0.contains(today) } ?? ordered.firstIndex { ($0.start ?? today) > today } ?? ordered.count
+            return PinnedIteration(
+                field: field, iteration: ordered[at], offset: at - current, termIndex: index,
+                previous: at > 0 ? ordered[at - 1] : nil, next: at + 1 < ordered.count ? ordered[at + 1] : nil
+            )
+        }
+        return nil
+    }
+
+    /// Changes the view's filter to the iteration before or after (`delta` -1 or 1).
+    func stepIteration(of view: ProjectView, by delta: Int) {
+        guard let pinned = pinnedIteration(of: view), let target = delta < 0 ? pinned.previous : pinned.next else { return }
+        let filter = filter(of: view)
+        let term = filter.terms[pinned.termIndex]
+        let value = Self.iterationValue(after: term.values.first ?? "", offset: pinned.offset + delta, title: target.title)
+        setFilter(filter.replacing(pinned.termIndex, with: term.changed { $0.values = [value] }), of: view)
+    }
+
+    /// Another iteration in a filter, said as the filter said the last one: relative to the one under way, so it keeps
+    /// moving with the calendar (`@previous`, `@current`, `@next`, `@current+2`), or by its title.
+    static func iterationValue(after value: String, offset: Int, title: String) -> String {
+        value.hasPrefix("@") ? iterationToken(offset: offset) : title
+    }
+
+    /// An iteration in GitHub's words, counted from the one under way.
+    static func iterationToken(offset: Int) -> String {
+        switch offset {
+        case 0: "@current"
+        case 1: "@next"
+        case -1: "@previous"
+        default: offset > 0 ? "@current+\(offset)" : "@current\(offset)"
+        }
+    }
+
+    /// "Oct 12 – 18".
+    func iterationRange(_ iteration: IterationSpan) -> String? {
+        guard let start = iteration.start, let end = iteration.end else { return nil }
+        let first = start.date().formatted(.dateTime.day().month(.abbreviated))
+        let last = start.month == end.month ? end.date().formatted(.dateTime.day()) : end.date().formatted(.dateTime.day().month(.abbreviated))
+        return "\(first) – \(last)"
+    }
+
+    /// "4 days left", "Starts in 3 days" or "Ended", from today.
+    func iterationTiming(_ iteration: IterationSpan, today: CalendarDay = .today()) -> String? {
+        guard let start = iteration.start, let end = iteration.end else { return nil }
+        if today > end { return String(localized: .iterationEnded) }
+        if today < start { return String(localized: .iterationStartsIn(days: start.days(from: today))) }
+        return String(localized: .iterationDaysLeft(days: end.days(from: today) + 1))
+    }
+}
