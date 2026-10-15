@@ -35,7 +35,7 @@ struct BoardView: View {
                     }
                     .animation(Theme.spring, value: drag.column?.to)
                     // A milestone's board shows the board's columns; they are changed on the board itself.
-                    if model.currentProject?.viewerCanUpdate == true, model.currentMilestoneTitle == nil {
+                    if model.currentProject?.viewerCanUpdate == true, model.currentMilestoneTitle == nil, columns.allSatisfy({ $0.value == nil }) {
                         AddColumnButton()
                             .frame(width: 180, alignment: .leading)
                     }
@@ -532,7 +532,18 @@ struct ColumnHeader: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            StatusIcon(glyph: column.glyph)
+            if let value = column.value {
+                // A column of another field: its option's colour, or an iteration.
+                if let dot = column.dot {
+                    GroupIcon(icon: .dot(dot))
+                } else if value.value?.iterationId != nil {
+                    GroupIcon(icon: .iteration(current: column.detail == String(localized: .currentIteration)))
+                } else {
+                    StatusIcon(glyph: column.glyph)
+                }
+            } else {
+                StatusIcon(glyph: column.glyph)
+            }
             if renaming {
                 TextField(.columnNamePlaceholder, text: $name)
                     .textFieldStyle(.plain)
@@ -552,6 +563,9 @@ struct ColumnHeader: View {
                     // Double-click the name to rename the column in place.
                     .onTapGesture(count: 2) { if canEdit, column.option != nil { startRename() } }
                 Text("\(column.count)").foregroundStyle(Theme.textTertiary).monospacedDigit()
+                if let detail = column.detail {
+                    Text(detail).font(.small).foregroundStyle(Theme.textTertiary).lineLimit(1)
+                }
             }
             Spacer(minLength: 0)
 
@@ -572,7 +586,7 @@ struct ColumnHeader: View {
             }
 
             IconButton(systemName: "plus", label: String(localized: .newIssueInColumnTooltip(column: column.title)), size: 22) {
-                model.overlay = .newIssue(statusId: column.option?.id, parentItemId: nil)
+                newIssue()
             }
             .opacity(hovering ? 1 : 0.55)
         }
@@ -588,7 +602,7 @@ struct ColumnHeader: View {
                 Divider()
             }
             Button(.newIssueInColumnMenuItem(column: column.title)) {
-                model.overlay = .newIssue(statusId: column.option?.id, parentItemId: nil)
+                newIssue()
             }
         }
         .confirmationDialog(
@@ -603,6 +617,16 @@ struct ColumnHeader: View {
     }
 
     private var canEdit: Bool { model.currentProject?.viewerCanUpdate == true }
+
+    /// A new issue in this column: with its status or its value, and what the view's filter asks for.
+    private func newIssue() {
+        if let value = column.value {
+            model.newIssuePreset = model.newIssuePreset(projectId: model.currentProjectId, column: value)
+        } else if model.currentView != nil {
+            model.newIssuePreset = model.newIssuePreset(projectId: model.currentProjectId)
+        }
+        model.overlay = .newIssue(statusId: column.option?.id, parentItemId: nil)
+    }
 
     private var statuses: [FieldOption] {
         model.currentProjectId.map { model.statusOptions(projectId: $0) } ?? []

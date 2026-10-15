@@ -82,9 +82,7 @@ final class ScreenshotTests: AppTestCase {
         try XCTSkipUnless(isPad, "iPad screenshots")
         XCUIDevice.shared.orientation = .landscapeLeft
         launchForScreenshots()
-        let project = app.cells.matching(NSPredicate(format: "label == %@", "Git Issues")).firstMatch
-        wait(project)
-        project.tap()
+        openPadProject("Git Issues")
         wait(element("card-#9"))
         shot("1-board")
 
@@ -99,10 +97,10 @@ final class ScreenshotTests: AppTestCase {
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.95)).tap()
         closedCardMenu()
 
-        app.segmentedControls.buttons["List"].tap()
+        showLayout("List")
         wait(element("row-#9"))
         shot("4-list")
-        app.segmentedControls.buttons["Board"].tap()
+        showLayout("Board")
     }
 
     func testPadInbox() throws {
@@ -119,9 +117,7 @@ final class ScreenshotTests: AppTestCase {
         try XCTSkipUnless(isPad, "iPad screenshots")
         XCUIDevice.shared.orientation = .landscapeLeft
         launchForScreenshots(["-appearance", "dark"])
-        let project = app.cells.matching(NSPredicate(format: "label == %@", "Git Issues")).firstMatch
-        wait(project)
-        project.tap()
+        openPadProject("Git Issues")
         wait(element("card-#9"))
         shot("5-board-dark")
     }

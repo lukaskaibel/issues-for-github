@@ -34,6 +34,10 @@ public actor SyncEngine {
     var nextInboxPull = Date.distantPast
     /// When assignments made with your own account were last looked for.
     var selfAssignedChecked: Date?
+    /// Views changed or created here moments ago, which a read lagging behind GitHub mustn't undo, and views
+    /// deleted here, which such a read mustn't bring back.
+    var viewsChangedHere: [String: Date] = [:]
+    var viewsDeletedHere: [String: Date] = [:]
 
     private var loop: Task<Void, Never>?
     private var sleeper: Task<Void, Never>?
@@ -339,6 +343,8 @@ public actor SyncEngine {
             || local.itemsTotal != meta.itemsTotal
             || !dirtyIds.isEmpty
 
+        // The project's own fields other than Status, Priority and the due date, whose values cards keep.
+        let valueFieldIds = Set(meta.fields.filter(\.kind.isProjectValue).map(\.id))
         var sweep: [SweepEntry] = []
         var wanted = named.sorted()
         if changed {
@@ -354,7 +360,8 @@ public actor SyncEngine {
         if !wanted.isEmpty {
             hydrated = try await api.hydrate(
                 itemIds: wanted, projectId: projectId,
-                statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id, dueFieldId: meta.dueField?.id
+                statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id, dueFieldId: meta.dueField?.id,
+                valueFieldIds: valueFieldIds
             )
             let got = Set(hydrated.map(\.id))
             for entry in sweep where wanted.contains(entry.id) && !got.contains(entry.id) {
@@ -373,7 +380,8 @@ public actor SyncEngine {
                 if !parents.isEmpty {
                     hydrated += try await api.hydrate(
                         itemIds: parents, projectId: projectId,
-                        statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id, dueFieldId: meta.dueField?.id
+                        statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id, dueFieldId: meta.dueField?.id,
+                        valueFieldIds: valueFieldIds
                     )
                 }
             }
@@ -387,7 +395,8 @@ public actor SyncEngine {
                 if !blocked.isEmpty {
                     hydrated += try await api.hydrate(
                         itemIds: blocked, projectId: projectId,
-                        statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id, dueFieldId: meta.dueField?.id
+                        statusFieldId: meta.statusField?.id, priorityFieldId: meta.priorityField?.id, dueFieldId: meta.dueField?.id,
+                        valueFieldIds: valueFieldIds
                     )
                 }
             }
@@ -407,6 +416,8 @@ public actor SyncEngine {
 
         let sweepSnapshot = sweep
         let hydratedSnapshot = hydrated
+        let protectedViews = recentViewChanges()
+        let deletedViews = recentViewDeletions()
         let written = try await db.writer.write { db -> (notices: [Notice], leftBoard: Set<String>, remaps: [String: String]) in
             guard var project = try Project.fetchOne(db, key: projectId) else { return ([], [], [:]) }
             project.title = meta.title
@@ -416,6 +427,8 @@ public actor SyncEngine {
             project.priorityFieldId = meta.priorityField?.id
             project.dueFieldId = meta.dueField?.id
             try Self.writeOptions(db, projectId: projectId, meta: meta)
+            try Self.writeFields(db, projectId: projectId, fields: meta.fields)
+            try Self.writeViews(db, projectId: projectId, views: meta.views, protected: protectedViews, deleted: deletedViews)
 
             var repos = meta.repos
             for item in hydratedSnapshot {
@@ -472,6 +485,8 @@ public actor SyncEngine {
         }
         forceSweep.remove(projectId)
         lastPull[projectId] = Date()
+        // Views whose filters only GitHub can answer are asked again when the board changed.
+        try await refreshViewMatches(projectId: projectId, force: changed)
         // An issue taken off the board may now be on none; its repository says so at the next full read.
         for repoId in written.leftBoard { lastFullRepoPull[repoId] = nil }
         if !written.leftBoard.isEmpty { lastAssignedPull = nil }
@@ -1018,6 +1033,9 @@ public actor SyncEngine {
             if let date = m.dueDate, let fieldId = try await dueFieldId(projectId: projectId, create: true) {
                 try await api.setDateValue(projectId: projectId, itemId: itemId, fieldId: fieldId, date: date)
             }
+            for (fieldId, value) in (m.fieldValues ?? [:]).sorted(by: { $0.key < $1.key }) {
+                try await sendFieldValue(value, projectId: projectId, itemId: itemId, fieldId: fieldId)
+            }
             return .sent([m.itemId: itemId, m.contentId: contentId])
 
         case .addToProject(let m):
@@ -1071,6 +1089,10 @@ public actor SyncEngine {
         case .setEpic(let m):
             try await sendEpic(m)
 
+        case .setProjectField(let m):
+            guard m.value != m.base else { break }
+            try await sendFieldValue(m.value, projectId: m.projectId, itemId: m.itemId, fieldId: m.fieldId)
+
         case .deleteItem(let m):
             do {
                 if m.isDraft, let projectId = m.projectId {
@@ -1117,6 +1139,15 @@ public actor SyncEngine {
         }
         if found != nil { forceSweep.insert(projectId) }
         return id
+    }
+
+    /// Sets one of a project's own fields to an option or an iteration, or clears it.
+    private func sendFieldValue(_ value: FieldValue?, projectId: String, itemId: String, fieldId: String) async throws {
+        if let iterationId = value?.iterationId {
+            try await api.setIterationValue(projectId: projectId, itemId: itemId, fieldId: fieldId, iterationId: iterationId)
+        } else {
+            try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: value?.optionId)
+        }
     }
 
     /// A notification that is gone already needs nothing more.

@@ -10,6 +10,8 @@ struct Location: Equatable {
     var scope: Scope?
     var viewMode: ViewMode
     var itemId: String?
+    /// The view open in the project, when the place is a project's.
+    var viewId: String? = nil
 }
 
 enum AppearanceSetting: String, CaseIterable, Identifiable {

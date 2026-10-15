@@ -26,6 +26,13 @@ final class FakeGitHub: @unchecked Sendable {
     private var events: [[String: Any]] = []
     private var eventClock = Date()
     private var log: [String] = []
+    /// The board's saved views and fields besides Status, as GraphQL lists them, for tests of views.
+    var views: [[String: Any]] = []
+    var extraFields: [[String: Any]] = []
+    /// Field values of cards besides Status, by card id.
+    var cardValues: [String: [[String: Any]]] = [:]
+    /// Which cards a filter matches, as GitHub would say.
+    var matching: (String) -> [String] = { _ in [] }
     let token = UUID().uuidString
 
     init(_ issues: [Issue]) {
@@ -115,6 +122,28 @@ final class FakeGitHub: @unchecked Sendable {
             if query.contains("items { totalCount }") {
                 log.append("meta")
                 data = ["node": meta()]
+            } else if query.contains("query: $q") {
+                let filter = variables["q"] as? String ?? ""
+                log.append("matching: \(filter)")
+                data = ["node": ["items": [
+                    "pageInfo": ["hasNextPage": false, "endCursor": NSNull()],
+                    "nodes": matching(filter).map { ["id": $0] },
+                ]]]
+            } else if query.contains("updateProjectV2View(") {
+                let input = variables["input"] as? [String: Any] ?? [:]
+                let id = input["viewId"] as? String ?? ""
+                log.append("update view \(id)")
+                guard let index = views.firstIndex(where: { $0["id"] as? String == id }) else { return (200, [:], Data("{\"data\":null,\"errors\":[{\"message\":\"Not found\",\"type\":\"NOT_FOUND\"}]}".utf8)) }
+                if let name = input["name"] { views[index]["name"] = name }
+                if let filter = input["filter"] { views[index]["filter"] = filter }
+                if let layout = input["layout"] { views[index]["layout"] = layout }
+                views[index]["updatedAt"] = "2026-10-02T10:00:00Z"
+                data = ["updateProjectV2View": ["projectV2View": views[index]]]
+            } else if query.contains("deleteProjectV2View(") {
+                let id = variables["id"] as? String ?? ""
+                log.append("delete view \(id)")
+                views.removeAll { $0["id"] as? String == id }
+                data = ["deleteProjectV2View": ["clientMutationId": NSNull()]]
             } else if query.contains("orderBy: {field: POSITION") {
                 log.append("sweep")
                 let listed = onBoard.filter { !listedLate.contains($0.itemId!) }
@@ -155,10 +184,12 @@ final class FakeGitHub: @unchecked Sendable {
             "id": Self.projectId, "title": "Board", "updatedAt": projectUpdatedAt, "closed": false, "viewerCanUpdate": true,
             "items": ["totalCount": onBoard.count],
             "fields": ["nodes": [[
-                "__typename": "ProjectV2SingleSelectField", "id": "F-status", "name": "Status",
+                "__typename": "ProjectV2SingleSelectField", "id": "F-status", "name": "Status", "dataType": "SINGLE_SELECT",
+                "databaseId": 1,
                 "options": [["id": "todo", "name": "Todo", "color": "GRAY", "description": ""]],
-            ]]],
+            ]] + extraFields],
             "repositories": ["nodes": [["id": Self.repoId, "nameWithOwner": Self.repo]]],
+            "views": ["nodes": views],
         ]
     }
 
@@ -181,7 +212,7 @@ final class FakeGitHub: @unchecked Sendable {
     private func card(_ issue: Issue) -> [String: Any] {
         [
             "id": issue.itemId!, "updatedAt": issue.updatedAt, "type": "ISSUE",
-            "fieldValues": ["nodes": [["optionId": "todo", "field": ["id": "F-status"]]]],
+            "fieldValues": ["nodes": [["optionId": "todo", "field": ["id": "F-status"]]] + (cardValues[issue.itemId!] ?? [])],
             "content": content(issue),
         ]
     }

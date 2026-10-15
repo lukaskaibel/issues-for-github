@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold"]
+        let readOnly: Set<String> = ["foldepic", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -91,6 +91,47 @@ enum DebugRemote {
                 log("inbox \(entry.displayNumber(withRepo: true)) \(entry.bucket.rawValue) unread=\(model.isUnread(entry)) archived=\(entry.isArchived) \(summary.sign.rawValue): \(summary.lead) \(summary.excerpt ?? "")")
             }
             log("inbox unread=\(model.inboxUnreadCount) selected=\(model.inboxSelected?.displayNumber(withRepo: true) ?? "-") picked=\(model.inboxPicked.count) undo=\(model.inboxUndo?.message ?? "-") pending=\(model.pendingCount)")
+        case "view":
+            // view <name>: opens a view of the project on screen.
+            if let projectId = model.scopeProjectId,
+               let view = model.views(projectId: projectId).first(where: { $0.name.localizedCaseInsensitiveContains(argument) }) {
+                model.show(view)
+            }
+        case "viewdump":
+            for view in model.views(projectId: model.scopeProjectId) {
+                let mark = view.id == model.currentView?.id ? "*" : " "
+                log("view\(mark) \(view.number) \(view.name) \(view.layout.rawValue) filter=\"\(model.filterText(of: view))\" changed=\(model.filterChanged(view)) items=\(model.items(of: view).count) layout=\(model.layout(of: view).rawValue)")
+            }
+            for column in model.columns { log("column \(column.title) \(column.count)") }
+            for section in model.sections { log("section \(section.title) \(section.count) \(section.detail ?? "")") }
+        case "filter":
+            // filter <text>: changes the filter of the view on screen, here only.
+            if let view = model.currentView { model.setFilter(ProjectFilter(argument), of: view) }
+        case "display":
+            // display group|columns <field name>, display sort <field name> [desc], display reset.
+            guard let view = model.currentView else { break }
+            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            let field = bits.count > 1 ? model.fields(projectId: view.projectId).first { bits[1].hasPrefix($0.name) } : nil
+            switch bits.first {
+            case "group": model.setGroupField(field?.id, of: view)
+            case "columns": model.setColumnField(field?.id, of: view)
+            case "sort": model.setSort(field.map { [ViewSort(fieldId: $0.id, descending: bits[1].hasSuffix(" desc"))] } ?? [], of: view)
+            case "reset": model.resetDisplay(of: view)
+            default: break
+            }
+        case "menu":
+            // menu filter|display|newview: opens that dropdown, as F, ⇧V or the plus do.
+            switch argument {
+            case "filter": model.filterMenuRequest += 1
+            case let other where other.hasPrefix("filter "):
+                model.filterMenuStart = String(other.dropFirst(7))
+                model.filterMenuRequest += 1
+            case "display": model.displayMenuRequest += 1
+            case "newview": model.newViewRequest += 1
+            default: Dropdown.close()
+            }
+        case "savefilter":
+            if let view = model.currentView { model.saveFilter(of: view) }
         case "mode":
             model.closeDetail()
             withAnimation(Theme.spring) { model.viewMode = argument == "list" ? .list : .board }
@@ -423,6 +464,30 @@ enum DebugRemote {
                     }
                 }
             }
+        case "snapshotmenu":
+            // snapshotmenu <path>: the dropdowns that are open, side by side, as one PNG; they open beside an
+            // off-screen window, where the window's snapshot can't show them.
+            let panels = NSApp.windows.filter { $0 is DropdownPanel && $0.isVisible }
+            guard !panels.isEmpty else { log("no menu open"); break }
+            let scale = panels[0].backingScaleFactor
+            let width = panels.reduce(0) { $0 + $1.frame.width + 12 }
+            let height = panels.map(\.frame.height).max() ?? 0
+            if let context = CGContext(data: nil, width: Int(width * scale), height: Int(height * scale), bitsPerComponent: 8, bytesPerRow: 0,
+                                       space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) {
+                context.scaleBy(x: scale, y: scale)
+                var x: CGFloat = 0
+                for panel in panels {
+                    guard let layer = (panel.contentView?.superview ?? panel.contentView)?.layer else { continue }
+                    context.saveGState()
+                    context.translateBy(x: x, y: height - panel.frame.height)
+                    layer.render(in: context)
+                    context.restoreGState()
+                    x += panel.frame.width + 12
+                }
+                if let image = context.makeImage() {
+                    try? NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: argument))
+                }
+            }
         case "window":
             // window <width> <height>: sizes the window in points for screenshots and moves it off the screen, where
             // the pointer can't put hover states into the picture and the window is out of the way.
@@ -520,7 +585,7 @@ enum DebugRemote {
                     .environment(model)
                     .environment(\.colorScheme, dark ? .dark : .light)))),
                 ("sync-menu", ImageRenderer(content: AnyView(HStack(alignment: .top, spacing: 12) {
-                    AccountDropdown(close: {})
+                    AccountDropdown(project: model.sidebarProject, close: {})
                         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.popover))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
                     AppearanceDropdown(close: {})
@@ -571,17 +636,13 @@ enum DebugRemote {
         case "rendersidebar":
             // rendersidebar <name>: the sidebar as it is now, written next to the command file.
             guard let base = UserDefaults.standard.string(forKey: "debugCommandFile") else { break }
-            // Scroll views draw empty in an image renderer, so the project list is drawn on its own below.
-            let open = model.projects.filter { !$0.closed }
+            // Scroll views draw empty in an image renderer, so the project's part is drawn on its own below.
             let renderer = ImageRenderer(
                 content: VStack(alignment: .leading, spacing: 2) {
-                    let hidden = open.filter { model.hiddenProjectIds.contains($0.id) }
-                    ForEach(open.filter { !model.hiddenProjectIds.contains($0.id) }) { ProjectRow(project: $0, hidden: false) }
-                    HiddenGroup(count: hidden.count, noun: "projects") { EmptyView() }
-                    HiddenGroup(count: hidden.count, noun: "projects", rows: {
-                        ForEach(hidden) { ProjectRow(project: $0, hidden: true) }
-                    }, expanded: true)
-                    ForEach(model.boardRepositories.filter { !model.hiddenRepositoryIds.contains($0.id) }) { RepositoryRow(repo: $0, hidden: false) }
+                    if let project = model.sidebarProject {
+                        ProjectMenuButton(project: project)
+                        SidebarProject(project: project)
+                    }
                 }
                     .padding(10)
                     .environment(model)

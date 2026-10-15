@@ -19,10 +19,14 @@ struct Sidebar: View {
             }
             .frame(height: 44)
 
-            // The account, with the state of syncing as a dot on the avatar, then search and a new issue, as in
-            // Linear's workspace header.
+            // The project, with the state of syncing as a dot on its colour, then search and a new issue, as in
+            // Linear's workspace header. Its menu has the other projects and the account.
             HStack(spacing: 2) {
-                AccountMenuButton()
+                if let project = model.sidebarProject {
+                    ProjectMenuButton(project: project)
+                } else {
+                    AccountMenuButton()
+                }
                 Spacer(minLength: 4)
                 SidebarIconButton(systemName: "magnifyingglass", label: .search, help: .searchShortcutTooltip) {
                     model.overlay = .palette(.root)
@@ -53,46 +57,15 @@ struct Sidebar: View {
                 model.select(.myIssues)
             }
 
-            Text(.projects)
-                .font(.tinySemibold)
-                .foregroundStyle(Theme.textTertiary)
-                .padding(.horizontal, 6)
-                .padding(.top, 14)
-                .padding(.bottom, 4)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 2) {
-                    let open = model.projects.filter { !$0.closed }
-                    ForEach(open.filter { !model.hiddenProjectIds.contains($0.id) }) { project in
-                        ProjectRow(project: project, hidden: false)
-                    }
-                    HiddenGroup(count: open.filter { model.hiddenProjectIds.contains($0.id) }.count, noun: "projects") {
-                        ForEach(open.filter { model.hiddenProjectIds.contains($0.id) }) { project in
-                            ProjectRow(project: project, hidden: true)
-                        }
-                    }
-
-                    // Like the teams in Linear: every issue of a repository, whether it is on a board or not.
-                    let repos = model.boardRepositories
-                    if !repos.isEmpty {
-                        Text(.repositories)
-                            .font(.tinySemibold)
-                            .foregroundStyle(Theme.textTertiary)
-                            .padding(.horizontal, 6)
-                            .padding(.top, 14)
-                            .padding(.bottom, 4)
-                        ForEach(repos.filter { !model.hiddenRepositoryIds.contains($0.id) }) { repo in
-                            RepositoryRow(repo: repo, hidden: false)
-                        }
-                        HiddenGroup(count: repos.filter { model.hiddenRepositoryIds.contains($0.id) }.count, noun: "repositories") {
-                            ForEach(repos.filter { model.hiddenRepositoryIds.contains($0.id) }) { repo in
-                                RepositoryRow(repo: repo, hidden: true)
-                            }
-                        }
-                    }
+            // One project at a time, as Linear shows one workspace: its views, milestones and repositories.
+            if let project = model.sidebarProject {
+                ScrollView {
+                    SidebarProject(project: project)
                 }
+                .scrollIndicators(.never)
+            } else {
+                Spacer()
             }
-            .scrollIndicators(.never)
 
             // Nothing while everything is on GitHub; a card when you're offline or something needs you.
             if let attention = model.syncAttention {
@@ -107,84 +80,7 @@ struct Sidebar: View {
     }
 }
 
-/// One project in the sidebar, with its next milestones and its roadmap under it when it has any, as a team in
-/// Linear's sidebar has its projects. Right-click to hide it, copy its link or open it on GitHub.
-struct ProjectRow: View {
-    @Environment(AppModel.self) private var model
-    var project: Project
-    var hidden: Bool
-    @State private var hovering = false
-
-    var body: some View {
-        let active = model.scope == .project(project.id)
-        let planning = !hidden && model.hasPlanning(projectId: project.id)
-        let folded = model.foldedSidebarProjects.contains(project.id)
-        Button {
-            model.select(.project(project.id))
-        } label: {
-            HStack(spacing: 8) {
-                ProjectSwatch(title: project.title)
-                    .opacity(hidden ? 0.5 : 1)
-                Text(project.title).lineLimit(1)
-                if planning {
-                    // Folds the milestones and roadmap under the board in or out.
-                    Button {
-                        withAnimation(Theme.spring) {
-                            if folded { model.foldedSidebarProjects.remove(project.id) } else { model.foldedSidebarProjects.insert(project.id) }
-                        }
-                    } label: {
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(Theme.textTertiary)
-                            .rotationEffect(.degrees(folded ? -90 : 0))
-                            .frame(width: 14, height: 14)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(PlainPressStyle())
-                    .opacity(hovering || folded ? 1 : 0)
-                    .help(Text(folded ? .showMilestonesTooltip : .foldMilestonesTooltip))
-                    .accessibilityLabel(Text(folded ? .showMilestonesTooltip : .foldMilestonesTooltip))
-                }
-                Spacer(minLength: 0)
-            }
-            .font(active ? .uiMedium : .ui)
-            .foregroundStyle(active ? Theme.text : hidden ? Theme.textTertiary : Theme.textSecondary)
-            .padding(.horizontal, 6)
-            .frame(height: 28)
-            .hoverFill(active: active)
-        }
-        .buttonStyle(PlainPressStyle())
-        .onHover { hovering = $0 }
-        .help("\(project.ownerLogin) · \(project.title)")
-        .contextMenu {
-            if hidden {
-                Button(.showInSidebar, systemImage: "eye") { model.setHidden(project, false) }
-            } else {
-                Button(.hideFromSidebar, systemImage: "eye.slash") { model.setHidden(project, true) }
-            }
-            if project.viewerCanUpdate {
-                Divider()
-                Button(.newMilestoneEllipsis, systemImage: "plus") {
-                    model.overlay = .milestoneEditor(projectId: project.id, title: nil, assigning: [])
-                }
-            }
-            Divider()
-            Button(.copyLink, systemImage: "link") { model.copyLink(project.url, for: project.title) }
-            Button(.openOnGitHub, systemImage: "arrow.up.right.square") {
-                if let url = URL(string: project.url) { NSWorkspace.shared.open(url) }
-            }
-        }
-        .transition(.opacity)
-        if planning, !folded {
-            ForEach(model.sidebarMilestones(projectId: project.id)) { group in
-                MilestoneRow(projectId: project.id, group: group)
-            }
-            RoadmapRow(projectId: project.id)
-        }
-    }
-}
-
-/// A milestone under its board in the sidebar: its diamond, its name and when it is due.
+/// A milestone of the sidebar's project: its diamond, its name and when it is due.
 struct MilestoneRow: View {
     @Environment(AppModel.self) private var model
     var projectId: String
@@ -210,8 +106,7 @@ struct MilestoneRow: View {
             }
             .font(active ? .uiMedium : .ui)
             .foregroundStyle(active ? Theme.text : Theme.textSecondary)
-            .padding(.leading, 28)
-            .padding(.trailing, 6)
+            .padding(.horizontal, 6)
             .frame(height: 28)
             .hoverFill(active: active)
         }
@@ -224,7 +119,7 @@ struct MilestoneRow: View {
     }
 }
 
-/// The roadmap under its board in the sidebar.
+/// The roadmap of the sidebar's project.
 struct RoadmapRow: View {
     @Environment(AppModel.self) private var model
     var projectId: String
@@ -243,8 +138,7 @@ struct RoadmapRow: View {
             }
             .font(active ? .uiMedium : .ui)
             .foregroundStyle(active ? Theme.text : Theme.textSecondary)
-            .padding(.leading, 28)
-            .padding(.trailing, 6)
+            .padding(.horizontal, 6)
             .frame(height: 28)
             .hoverFill(active: active)
         }
@@ -410,24 +304,55 @@ struct SidebarIconButton: View {
     }
 }
 
-/// The account menu: who is signed in and how syncing is going, then Sync Now, the queue, appearance, settings and
-/// signing out. It opens as a dropdown like the pickers; the arrow keys move, Return picks, → opens a submenu.
+/// The menu of the project at the top of the sidebar, as Linear's workspace menu: who is signed in and how syncing is
+/// going, the projects to switch to, then Sync Now, the queue, appearance, settings and signing out. It opens as a
+/// dropdown like the pickers; the arrow keys move, Return picks, → opens a submenu.
 struct AccountDropdown: View {
     @Environment(AppModel.self) private var model
+    /// The project the sidebar is about; the menu lists the others to switch to.
+    var project: Project?
     var close: () -> Void
 
     @State private var active: Entry?
     @State private var queueOpen = false
     @State private var appearanceOpen = false
+    @State private var hiddenOpen = false
 
     enum Entry: Hashable {
-        case sync, queue, appearance, settings, signOut, signOutEverywhere
+        case project(String), hidden, more, sync, queue, appearance, settings, signOut, signOutEverywhere
     }
+
+    /// Up to this many projects are listed; with more, the command palette finds them by name.
+    private static let listed = 8
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             MenuDivider()
+            if project != nil {
+                Text(.projects)
+                    .font(.tinySemibold)
+                    .foregroundStyle(Theme.textTertiary)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 2)
+                    .padding(.bottom, 4)
+                ForEach(listedProjects) { project in
+                    row(.project(project.id))
+                }
+                if !hiddenProjects.isEmpty {
+                    row(.hidden)
+                        .dropdown(isPresented: $hiddenOpen, placement: .trailing) { close in
+                            HiddenProjectsMenu(projects: hiddenProjects, close: {
+                                close()
+                                self.close()
+                            })
+                        }
+                }
+                if shownProjects.count > Self.listed {
+                    row(.more)
+                }
+                MenuDivider()
+            }
             row(.sync)
             if waiting > 0 {
                 row(.queue)
@@ -456,7 +381,7 @@ struct AccountDropdown: View {
                 active = index.map { list[$0] }
             },
             onActivate: { if let active { perform(active) } },
-            onOpen: { if active == .queue || active == .appearance, let active { perform(active) } }
+            onOpen: { if active == .queue || active == .appearance || active == .hidden, let active { perform(active) } }
         ))
     }
 
@@ -494,8 +419,32 @@ struct AccountDropdown: View {
         model.outbox.filter { $0.state != .sent }.count
     }
 
+    private var shownProjects: [Project] {
+        model.openProjects.filter { !model.hiddenProjectIds.contains($0.id) }
+    }
+
+    /// The projects in the menu: the first few, and the one the sidebar is about wherever it comes.
+    private var listedProjects: [Project] {
+        var list = Array(shownProjects.prefix(Self.listed))
+        if let project, !list.contains(where: { $0.id == project.id }) {
+            if list.count == Self.listed { list.removeLast() }
+            list.append(project)
+        }
+        return list
+    }
+
+    private var hiddenProjects: [Project] {
+        model.openProjects.filter { model.hiddenProjectIds.contains($0.id) }
+    }
+
     private var entries: [Entry] {
-        var list: [Entry] = [.sync]
+        var list: [Entry] = []
+        if project != nil {
+            list += listedProjects.map { .project($0.id) }
+            if !hiddenProjects.isEmpty { list.append(.hidden) }
+            if shownProjects.count > Self.listed { list.append(.more) }
+        }
+        list.append(.sync)
         if waiting > 0 { list.append(.queue) }
         list += [.appearance, .settings, .signOut]
         if model.loginIsShared { list.append(.signOutEverywhere) }
@@ -509,6 +458,14 @@ struct AccountDropdown: View {
             if inside { active = entry } else if active == entry { active = nil }
         }
         switch entry {
+        case .project(let id):
+            if let other = model.openProjects.first(where: { $0.id == id }) {
+                ProjectMenuRow(project: other, checked: other.id == project?.id, active: isActive, action: { perform(entry) }, onHover: hover)
+            }
+        case .hidden:
+            MenuRow(title: String(localized: .hiddenProjectsCount(count: hiddenProjects.count)), systemImage: "eye.slash", submenu: true, active: isActive || hiddenOpen, action: { perform(entry) }, onHover: hover)
+        case .more:
+            MenuRow(title: String(localized: .switchProjectEllipsis), systemImage: "square.stack", active: isActive, action: { perform(entry) }, onHover: hover)
         case .sync:
             MenuRow(title: String(localized: .syncNow), systemImage: "arrow.triangle.2.circlepath", shortcut: "⌘R", active: isActive, action: { perform(entry) }, onHover: hover)
         case .queue:
@@ -526,6 +483,14 @@ struct AccountDropdown: View {
 
     private func perform(_ entry: Entry) {
         switch entry {
+        case .project(let id):
+            close()
+            model.select(.project(id))
+        case .hidden:
+            hiddenOpen = true
+        case .more:
+            close()
+            model.overlay = .palette(.projects)
         case .sync:
             close()
             model.refresh()

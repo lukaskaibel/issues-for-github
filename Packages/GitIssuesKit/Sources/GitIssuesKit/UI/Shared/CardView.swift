@@ -18,12 +18,17 @@ struct CardModel: Equatable {
     /// The milestone it is planned for, on boards that aren't a milestone's.
     var milestone: String?
     var milestoneMark: MilestoneMark = .upcoming
+    /// The project's own fields the view shows, such as an iteration or a "Workstream".
+    var chips: [FieldChip] = []
+    /// The chips as VoiceOver reads them, with their fields' names.
+    var spokenChips: [String] = []
 }
 
 extension AppModel {
     /// What a card shows; `nesting` is its column's, for the sub-issues hanging under it.
     func cardModel(for item: Item, in nesting: Nesting? = nil, showsMilestone: Bool = true) -> CardModel {
-        CardModel(
+        let chips = showsMilestone ? fieldChips(of: item, in: item.projectId.map { .project($0) }) : []
+        return CardModel(
             item: item,
             priority: priorityLevel(of: item),
             showsPriority: project(of: item)?.priorityFieldId != nil,
@@ -33,8 +38,10 @@ extension AppModel {
             folded: nesting?.folded.contains(item.id) ?? false,
             showsParent: nesting.map { $0.namesParent(of: item) } ?? (item.parentNumber != nil),
             parentIsEpic: item.parentId.flatMap { issue(contentId: $0) }?.isEpic ?? false,
-            milestone: showsMilestone ? milestoneTitle(of: item) : nil,
-            milestoneMark: milestoneMark(of: item)
+            milestone: showsMilestone && !viewPinsMilestone(projectId: item.projectId) ? milestoneTitle(of: item) : nil,
+            milestoneMark: milestoneMark(of: item),
+            chips: chips,
+            spokenChips: chips.map(spokenChip)
         )
     }
 }
@@ -83,6 +90,7 @@ struct CardView: View, Equatable {
                     ", " + String(localized: card.parentIsEpic
                         ? .epicTooltip(epic: card.item.parentTitle ?? "#\(number)") : .subIssueOf(number: "#\(number)"))
                 } ?? "")
+                + card.spokenChips.map { ", \($0)" }.joined()
         )
         .accessibilityAddTraits(.isButton)
     }
@@ -360,7 +368,39 @@ private struct CardPainter {
                     context.stroke(outline, with: .color(color), lineWidth: 1.3)
                 }
                 context.draw(text, in: CGRect(x: rect.minX + 7 + 10 + 5, y: bottomY - 8, width: textWidth, height: 16))
+                x = rect.maxX + 6
             }
+        }
+        // The project's own fields the view shows, after everything else, as far as there is room.
+        for field in card.chips {
+            let text = context.resolve(Text(field.text).font(.system(size: CardView.chipSize)).foregroundStyle(Theme.textSecondary))
+            let textWidth = min(text.measure(in: CGSize(width: 400, height: 40)).width, 110)
+            let width = 7 + 10 + 5 + textWidth + 7
+            guard x + width <= size.width - padding.width else { break }
+            let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
+            chip(rect)
+            let icon = CGRect(x: rect.minX + 7, y: bottomY - 5, width: 10, height: 10)
+            switch field.icon {
+            case .option(let color):
+                context.fill(Path(ellipseIn: icon.insetBy(dx: 1.5, dy: 1.5)), with: .color(Theme.optionColor(color) ?? Theme.textTertiary))
+            case .iteration:
+                context.draw(
+                    Text(Image(systemName: "arrow.triangle.2.circlepath")).font(.system(size: CardView.chipSize - 3, weight: .semibold)).foregroundStyle(Theme.textTertiary),
+                    at: CGPoint(x: icon.midX, y: icon.midY), anchor: .center
+                )
+            case .date:
+                context.draw(
+                    Text(Image(systemName: "calendar")).font(.system(size: CardView.chipSize - 2)).foregroundStyle(Theme.textTertiary),
+                    at: CGPoint(x: icon.midX, y: icon.midY), anchor: .center
+                )
+            case .text:
+                context.draw(
+                    Text(Image(systemName: "text.alignleft")).font(.system(size: CardView.chipSize - 3)).foregroundStyle(Theme.textTertiary),
+                    at: CGPoint(x: icon.midX, y: icon.midY), anchor: .center
+                )
+            }
+            context.draw(text, in: CGRect(x: rect.minX + 7 + 10 + 5, y: bottomY - 8, width: textWidth, height: 16))
+            x = rect.maxX + 6
         }
     }
 

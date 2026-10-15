@@ -29,6 +29,8 @@ struct IssueRowModel: Equatable {
     /// The milestone it is planned for, where the list isn't a milestone's.
     var milestone: String?
     var milestoneMark: MilestoneMark = .upcoming
+    /// The project's own fields the view shows, such as an iteration or a "Workstream".
+    var chips: [FieldChip] = []
 }
 
 struct IssueSectionModel: Equatable {
@@ -431,7 +433,7 @@ struct IssueTable: NSViewRepresentable {
         /// The issue being dragged and the sub-issues hanging under it, which come along.
         private func moving(_ item: Item) -> Set<String> {
             guard let projectId = item.projectId,
-                  let column = model.columns(projectId: projectId).first(where: { $0.nesting.members.contains { $0.id == item.id } })
+                  let column = model.listColumns(projectId: projectId).first(where: { $0.nesting.members.contains { $0.id == item.id } })
             else { return [item.id] }
             return column.nesting.descendants(of: item.id).union([item.id])
         }
@@ -452,7 +454,7 @@ struct IssueTable: NSViewRepresentable {
         /// The column a section of a project's list shows, which a dropped issue joins.
         private func column(for sectionId: String, of item: Item) -> BoardColumn? {
             guard let projectId = item.projectId else { return nil }
-            return model.columns(projectId: projectId).first { $0.id == sectionId }
+            return model.listColumns(projectId: projectId).first { $0.id == sectionId }
         }
 
         /// Within its section the issue changes place; in another one it takes that status, as on the board. In a
@@ -1279,6 +1281,30 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                 right = rect.minX - 6
             }
         }
+        // The project's own fields the view shows, as far as there is room.
+        for field in row.chips.reversed() {
+            let text = NSAttributedString(string: field.text, attributes: [
+                .font: NSFont.systemFont(ofSize: 11.5), .foregroundColor: NSColor(Theme.textSecondary),
+            ])
+            let textSize = text.size()
+            let textWidth = min(textSize.width, 120)
+            let width = 7 + 10 + 5 + textWidth + 7
+            let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
+            guard rect.minX > x + 160 else { break }
+            drawChip(rect, hovered: false)
+            let icon = CGRect(x: rect.minX + 7, y: midY - 5, width: 10, height: 10)
+            switch field.icon {
+            case .option(let color): PlanningGlyph.drawDot(color, in: icon.insetBy(dx: -1, dy: -1), cg: context)
+            case .iteration: MenuIcons.symbol("arrow.triangle.2.circlepath", color: Theme.textTertiary)?.draw(in: icon)
+            case .date: MenuIcons.symbol("calendar", color: Theme.textTertiary)?.draw(in: icon)
+            case .text: MenuIcons.symbol("text.alignleft", color: Theme.textTertiary)?.draw(in: icon)
+            }
+            text.draw(
+                with: NSRect(x: rect.minX + 7 + 10 + 5, y: midY - textSize.height / 2, width: textWidth, height: textSize.height),
+                options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
+            )
+            right = rect.minX - 6
+        }
         var labelsRect: NSRect?
         for label in labels.reversed() {
             let textSize = label.size
@@ -1679,6 +1705,14 @@ final class IssueHeaderCell: NSView {
         case .milestone(let mark): PlanningGlyph.drawMilestone(mark, in: iconRect, cg: context)
         case .epic: PlanningGlyph.drawEpic(in: iconRect, cg: context)
         case .plain: break
+        case .dot(let color): PlanningGlyph.drawDot(color, in: iconRect, cg: context)
+        case .progress(let done, let total): PlanningGlyph.drawProgress(done: done, total: total, in: iconRect, cg: context)
+        case .iteration(let current):
+            MenuIcons.symbol("arrow.triangle.2.circlepath", color: current ? Theme.started : Theme.textSecondary)?
+                .draw(in: iconRect.insetBy(dx: 0.5, dy: 0.5))
+        case .person(let person): MenuIcons.avatar(person).draw(in: iconRect.insetBy(dx: -1, dy: -1))
+        case .repository: MenuIcons.symbol("book.closed", color: Theme.textSecondary)?.draw(in: iconRect)
+        case .priority(let level): MenuIcons.priority(level).draw(in: iconRect)
         }
         let titleX = section.icon == .plain ? left : left + 22
         // Room for the count and the + button after the title.

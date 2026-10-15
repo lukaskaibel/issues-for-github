@@ -6,6 +6,7 @@ import GRDB
 // Uses the GitHub CLI's login. Usage:
 //   gi-cli projects
 //   gi-cli pull <project title>
+//   gi-cli views <project title>   (reads only: what each saved view shows here, next to what GitHub says)
 //   gi-cli selftest            (writes to the "Git Issues Sandbox" project only)
 //   gi-cli inbox               (reads the notifications; changes nothing)
 //   gi-cli inbox read|archive <thread id>   (only for threads of the sandbox project's repositories)
@@ -86,6 +87,55 @@ func run() async throws {
         try await engine.pull(projectId: project.id)
         print("Second pull (nothing changed) took \(String(format: "%.2f", Date().timeIntervalSince(again)))s")
 
+    case "views":
+        // Each saved view's filter checked here and by GitHub, to see that both find the same items. Reads only.
+        guard args.count > 1 else { throw CLIError("Usage: gi-cli views <project title>") }
+        let (db, engine, _, api) = try await makeEngine()
+        try await engine.refreshProjects()
+        let project = try findProject(db, title: args[1])
+        try await engine.pull(projectId: project.id)
+        let (views, fields, options, items, viewer) = try await db.reader.read { db in
+            (
+                try ProjectView.filter(Column("projectId") == project.id).order(Column("position")).fetchAll(db),
+                try ProjectField.filter(Column("projectId") == project.id).fetchAll(db),
+                try FieldOption.filter(Column("projectId") == project.id).fetchAll(db),
+                try Item.filter(Column("projectId") == project.id).fetchAll(db),
+                try KV.viewer(db)
+            )
+        }
+        let current = try await db.reader.read { try Project.fetchOne($0, key: project.id) } ?? project
+        let byContent = Dictionary(items.compactMap { item in item.contentId.map { ($0, item) } }, uniquingKeysWith: { a, _ in a })
+        let context = FilterContext(project: current, fields: fields, options: options, viewerLogin: viewer?.login, parentReference: { item in
+            guard let number = item.parentNumber else { return nil }
+            return "\(item.parentId.flatMap { byContent[$0]?.repo } ?? item.repo ?? "")#\(number)"
+        })
+        print("\(project.title): \(items.count) items, \(fields.count) fields, \(views.count) views")
+        for field in fields where field.kind == .iteration {
+            print("  iteration field \(field.name): \(field.iterations.count) iterations, current \(field.iteration(offset: 0, from: .today())?.title ?? "-")")
+        }
+        var mismatches = 0
+        // Filters given after the project's title are checked instead of its views.
+        let checked = args.count > 2
+            ? args.dropFirst(2).enumerated().map { ProjectView(id: "check-\($0)", projectId: project.id, number: $0, name: "check", layout: .table, filter: $1, position: $0) }
+            : views
+        for view in checked {
+            let filter = ProjectFilter(view.filter)
+            let local = Set(items.filter { filter.matches($0, context) }.map(\.id))
+            let remote = Set(try await api.matchingItemIds(projectId: project.id, filter: view.filter))
+            let needs = filter.needsServer(context)
+            let same = local == remote
+            if !same, !needs { mismatches += 1 }
+            print("  \(view.number) \(view.name) [\(view.layout.rawValue)] \"\(view.filter)\": here \(local.count), GitHub \(remote.count)\(needs ? " (asks GitHub)" : "")\(same ? "" : "  DIFFERENT")")
+            if !same {
+                func numbers(_ ids: Set<String>) -> String {
+                    ids.compactMap { id in items.first { $0.id == id }?.displayNumber ?? id }.sorted().prefix(12).joined(separator: " ")
+                }
+                print("      only here: \(numbers(local.subtracting(remote)))")
+                print("      only on GitHub: \(numbers(remote.subtracting(local)))")
+            }
+        }
+        print(mismatches == 0 ? "Every filter the app reads itself found what GitHub found." : "\(mismatches) filters differ.")
+
     case "inspect":
         // Opens a database file (running any pending migrations) and reports what is in it.
         guard args.count > 1 else { throw CLIError("Usage: gi-cli inspect <db path>") }
@@ -99,7 +149,7 @@ func run() async throws {
         }
 
     case "selftest":
-        try await SelfTest.run()
+        if args.count > 1, args[1] == "views" { try await SelfTest.runViews() } else { try await SelfTest.run() }
 
     case "inbox":
         let (db, engine, _, api) = try await makeEngine()

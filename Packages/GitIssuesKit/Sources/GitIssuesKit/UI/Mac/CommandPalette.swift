@@ -34,6 +34,24 @@ struct CommandPalette: View {
                 step(.milestone, id)
             case .epic(let id):
                 step(.epic, id)
+            case .views:
+                PickerList(
+                    placeholder: String(localized: .goToViewPlaceholder),
+                    items: model.openProjects.flatMap { project in
+                        model.views(projectId: project.id).map { view in
+                            PickerItem(
+                                id: view.id, title: view.name, subtitle: project.title,
+                                selected: model.currentView?.id == view.id,
+                                icon: AnyView(ViewLayoutIcon(view: view).foregroundStyle(Theme.textSecondary))
+                            )
+                        }
+                    },
+                    width: 640, maxRows: 10, fieldFont: .system(size: 15),
+                    onPick: { id in
+                        if let view = model.view(id: id) { model.show(view) }
+                    },
+                    onClose: { model.overlay = nil }
+                )
             case .projects:
                 PickerList(
                     placeholder: String(localized: .switchProjectPlaceholder),
@@ -456,6 +474,32 @@ private struct RootPalette: View {
             list.append(PaletteCommand(id: "list", title: .list, section: go, icon: symbol("list.bullet"), keys: ["G", "L"]) {
                 model.closeDetail()
                 model.viewMode = .list
+            })
+        }
+        if let view = model.currentView {
+            list.append(PaletteCommand(id: "filter", title: .filterEllipsis, section: go, icon: symbol("line.3.horizontal.decrease"), keys: ["F"]) {
+                model.overlay = nil
+                model.filterMenuRequest += 1
+            })
+            list.append(PaletteCommand(id: "display", title: .displayOptions, section: go, icon: symbol("slider.horizontal.3"), keys: ["⇧", "V"]) {
+                model.overlay = nil
+                model.displayMenuRequest += 1
+            })
+            if model.filterChanged(view), model.canEditViews(projectId: view.projectId) {
+                list.append(PaletteCommand(id: "save-view", title: .saveViewMenu, section: go, icon: symbol("square.and.arrow.down"), keys: ["⌘", "S"]) {
+                    model.saveFilter(of: view)
+                })
+            }
+            if model.canEditViews(projectId: view.projectId) {
+                list.append(PaletteCommand(id: "new-view", title: .newViewEllipsis, section: go, icon: symbol("plus.rectangle.on.rectangle")) {
+                    model.overlay = nil
+                    model.newViewRequest += 1
+                })
+            }
+        }
+        if !model.views.isEmpty {
+            list.append(PaletteCommand(id: "views", title: .goToViewEllipsis, section: go, icon: symbol("rectangle.stack")) {
+                model.overlay = .palette(.views)
             })
         }
         if let projectId = model.scopeProjectId {

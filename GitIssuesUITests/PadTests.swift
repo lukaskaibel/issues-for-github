@@ -15,10 +15,7 @@ final class PadTests: AppTestCase {
     }
 
     private func openProject(_ title: String) {
-        let entry = app.cells.matching(NSPredicate(format: "label == %@", title)).firstMatch
-        wait(entry)
-        entry.tap()
-        wait(app.navigationBars[title])
+        openPadProject(title)
     }
 
     /// Turning the iPad brings in the sidebar, whose header reads the model; that once quit the app.
@@ -87,7 +84,7 @@ final class PadTests: AppTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()
         openProject("Git Issues")
-        app.segmentedControls.buttons["List"].tap()
+        showLayout("List")
         wait(element("row-#9"))
         snapshot("iPad list")
         element("row-#9").tap()
@@ -271,7 +268,9 @@ final class PadTests: AppTestCase {
         XCTAssertTrue(labelled("Project: Website", type: .button).exists)
         button("Cancel").tap()
 
-        app.buttons["Account and settings"].tap()
+        // The account is in the menu of the project at the top of the sidebar, as in Linear.
+        element("project-switcher").tap()
+        button("Settings…").tap()
         wait(app.navigationBars["Account"])
         snapshot("iPad account")
         button("Done").tap()

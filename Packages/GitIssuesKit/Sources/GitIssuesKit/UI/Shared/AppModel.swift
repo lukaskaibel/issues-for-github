@@ -15,8 +15,15 @@ struct BoardColumn: Identifiable, Equatable {
     /// The cards as shown: sub-issues under their parent, folded ones left out.
     var items: [Item]
     var nesting = Nesting()
+    /// For a board whose columns are another field than Status: the field and the value its cards share.
+    var value: ColumnValue? = nil
+    /// The name of such a column, and what it says quietly after its count, such as an iteration's days.
+    var label: String? = nil
+    var detail: String? = nil
+    /// GitHub's colour of an option, shown as a dot before the name.
+    var dot: String? = nil
 
-    var title: String { option?.name ?? String(localized: .noStatus) }
+    var title: String { option?.name ?? label ?? String(localized: .noStatus) }
     /// Every card in the column, folded ones included.
     var count: Int { nesting.members.count }
 }
@@ -30,6 +37,8 @@ struct ListSection: Identifiable, Equatable {
         case epic(contentId: String?)
         /// The epics of a milestone on the roadmap, or those planned for none (nil).
         case milestone(title: String?)
+        /// The issues of a view's group: the value of the field it groups by that they share.
+        case group(GroupKey)
     }
 
     var id: String
@@ -39,6 +48,8 @@ struct ListSection: Identifiable, Equatable {
     var kind: Kind = .status
     /// Shown quietly after the count, such as when a milestone is due.
     var detail: String?
+    /// The icon of a view's group, such as a person's avatar or an option's colour.
+    var groupIcon: SectionIcon? = nil
     /// The issues as shown: sub-issues under their parent, folded ones left out.
     var items: [Item]
     var nesting = Nesting()
@@ -61,6 +72,8 @@ enum PaletteMode: Hashable {
     case milestone(itemId: String)
     case epic(itemId: String)
     case projects
+    /// Every saved view of the open projects, to go to.
+    case views
 }
 
 enum Overlay: Equatable {
@@ -70,7 +83,7 @@ enum Overlay: Equatable {
     case milestoneEditor(projectId: String?, title: String?, assigning: [String])
 }
 
-enum ViewMode: String {
+enum ViewMode: String, Codable {
     case board
     case list
 }
@@ -158,6 +171,10 @@ public final class AppModel {
     private(set) var repos: [RepoRef] = []
     /// Milestones of the repositories your boards use, open and closed.
     private(set) var milestones: [Milestone] = []
+    /// The saved views of every project, in the order of their tabs.
+    private(set) var views: [ProjectView] = []
+    /// The fields of every project, their own and GitHub's.
+    private(set) var fields: [ProjectField] = []
     private(set) var outbox: [OutboxEntry] = []
     /// What blocks the issues whose detail was read, and what they block.
     private(set) var links: [LinkedIssue] = []
@@ -187,9 +204,18 @@ public final class AppModel {
     var viewMode: ViewMode {
         didSet {
             UserDefaults.standard.set(viewMode.rawValue, forKey: "viewMode")
+            #if os(macOS)
+            // Board or list is part of how a view shows, which you may change for yourself. iPhone and iPad have a
+            // project on screen per window and say which (`showLayout`).
+            if !isFollowingView, oldValue != viewMode, let view = currentView {
+                setLayout(viewMode, of: view)
+            }
+            #endif
             recordNavigation()
         }
     }
+    /// Set while `viewMode` follows the view that was opened, which isn't a choice to remember.
+    @ObservationIgnored var isFollowingView = false
     private(set) var openItemId: String?
     /// The issue the keyboard focus is on. The issue under the pointer is tracked separately and is not
     /// observed, so moving the mouse over a long list does not redraw it.
@@ -245,6 +271,8 @@ public final class AppModel {
     @ObservationIgnored var newIssueTitle: String?
     /// The milestone and kind a new issue starts with, when it is begun from a milestone or the roadmap.
     @ObservationIgnored var newIssuePlan: NewIssuePlan?
+    /// What a new issue starts with when it is begun in a view's column or group.
+    @ObservationIgnored var newIssuePreset: NewIssuePreset?
     /// A milestone waiting for "Complete?" to be answered.
     var milestoneToComplete: MilestoneRef?
     /// On iPhone and iPad: the milestone dialog asked for from a picker, which the window shows as a sheet.
@@ -259,10 +287,32 @@ public final class AppModel {
     var roadmapZoom: RoadmapZoom = RoadmapZoom(rawValue: UserDefaults.standard.string(forKey: "roadmap.zoom") ?? "") ?? .months {
         didSet { UserDefaults.standard.set(roadmapZoom.rawValue, forKey: "roadmap.zoom") }
     }
-    /// Boards whose milestones and roadmap are folded away in the sidebar.
-    var foldedSidebarProjects = Set(UserDefaults.standard.stringArray(forKey: "sidebar.foldedProjects") ?? []) {
-        didSet { UserDefaults.standard.set(Array(foldedSidebarProjects), forKey: "sidebar.foldedProjects") }
+    /// The project opened last, which the sidebar shows while the Inbox, My Issues or a repository is on screen.
+    var lastProjectId: String? = UserDefaults.standard.string(forKey: "selectedProject")
+    /// The view open in each project, by project id.
+    var selectedViewIds: [String: String] = UserDefaults.standard.dictionary(forKey: "views.selected") as? [String: String] ?? [:] {
+        didSet { UserDefaults.standard.set(selectedViewIds, forKey: "views.selected") }
     }
+    /// How you chose to see a view, where it differs from the view on GitHub, by view id.
+    var viewDisplays: [String: ViewDisplay] = AppModel.decoded("views.display") ?? [:] {
+        didSet { AppModel.store(viewDisplays, "views.display") }
+    }
+    /// Filters changed here and not saved to GitHub yet, by view id, as GitHub keeps unsaved changes to a view.
+    var draftFilters: [String: String] = UserDefaults.standard.dictionary(forKey: "views.drafts") as? [String: String] ?? [:] {
+        didSet { UserDefaults.standard.set(draftFilters, forKey: "views.drafts") }
+    }
+    /// What GitHub said an unsaved filter matches, for filters with parts only GitHub understands, by view id.
+    var draftMatches: [String: (filter: String, ids: Set<String>)] = [:]
+    /// Views being saved to GitHub right now.
+    var savingViewIds: Set<String> = []
+    /// Bumped to open the filter menu, the Display options or a new view from a key or the command palette.
+    var filterMenuRequest = 0
+    /// The property the next filter menu opens on, for the debug remote and a chip's values.
+    @ObservationIgnored var filterMenuStart: String?
+    var displayMenuRequest = 0
+    var newViewRequest = 0
+    /// Filter contexts of projects, worked out once per change of the data.
+    @ObservationIgnored var filterContexts: [String: FilterContext] = [:]
     /// Projects tucked away in the sidebar. They can still be found in the command palette.
     var hiddenProjectIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenProjects") ?? []) {
         didSet { UserDefaults.standard.set(Array(hiddenProjectIds), forKey: "hiddenProjects") }
@@ -347,7 +397,16 @@ public final class AppModel {
 
     /// The one model of the app. Shared so a notification's button can act even when the app was launched in
     /// the background for it, before any window exists.
-    public static let shared = AppModel()
+    public static let shared: AppModel = {
+        #if DEBUG
+        // UI tests start from a clean slate: no remembered tab, folded sections or recent issues. Before the model
+        // exists, since its properties start from what was remembered.
+        if UserDefaults.standard.bool(forKey: "uiTestReset"), let domain = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: domain)
+        }
+        #endif
+        return AppModel()
+    }()
 
     /// Reminders of due issues, scheduled on this device.
     var notifier: Notifier { Notifier.shared }
@@ -357,12 +416,6 @@ public final class AppModel {
     var revealItemId: String?
 
     private init() {
-        #if DEBUG
-        // UI tests start from a clean slate: no remembered tab, folded sections or recent issues.
-        if UserDefaults.standard.bool(forKey: "uiTestReset"), let domain = Bundle.main.bundleIdentifier {
-            UserDefaults.standard.removePersistentDomain(forName: domain)
-        }
-        #endif
         let demo = UserDefaults.standard.bool(forKey: Self.demoKey)
         let database: AppDatabase
         do {
@@ -518,6 +571,8 @@ public final class AppModel {
         options = []
         repos = []
         milestones = []
+        views = []
+        fields = []
         outbox = []
         links = []
         inboxEntries = []
@@ -543,6 +598,8 @@ public final class AppModel {
         var inbox: [InboxEntry]
         var inboxMeta: InboxMeta
         var milestones: [Milestone]
+        var views: [ProjectView]
+        var fields: [ProjectField]
     }
 
     private nonisolated static func fetchSnapshot(_ db: Database) throws -> Snapshot {
@@ -558,7 +615,9 @@ public final class AppModel {
             links: try LinkedIssue.order(Column("position")).fetchAll(db),
             inbox: try InboxEntry.order(Column("updatedAt").desc).fetchAll(db),
             inboxMeta: try InboxMeta.read(db),
-            milestones: try Milestone.order(Column("repoId"), Column("number")).fetchAll(db)
+            milestones: try Milestone.order(Column("repoId"), Column("number")).fetchAll(db),
+            views: try ProjectView.order(Column("projectId"), Column("position")).fetchAll(db),
+            fields: try ProjectField.order(Column("projectId"), Column("position")).fetchAll(db)
         )
     }
 
@@ -604,6 +663,8 @@ public final class AppModel {
         if selfAssignedEntries != assigned { selfAssignedEntries = assigned }
         if inboxMeta != snapshot.inboxMeta { inboxMeta = snapshot.inboxMeta }
         if milestones != snapshot.milestones { milestones = snapshot.milestones }
+        if views != snapshot.views { views = snapshot.views }
+        if fields != snapshot.fields { fields = snapshot.fields }
         if scope == nil { restoreScope() }
         rebuild()
         notifier.scheduleSoon()
@@ -721,6 +782,13 @@ public final class AppModel {
         openItemId.flatMap { id in allItems.first { $0.id == id } }
     }
 
+    /// The project the sidebar is about: the one on screen, or the one used last.
+    var sidebarProject: Project? {
+        let id = scope?.projectId ?? lastProjectId
+        return openProjects.first { $0.id == id }
+            ?? openProjects.first { !hiddenProjectIds.contains($0.id) } ?? openProjects.first
+    }
+
     /// Projects shown in lists and the sidebar: the open ones.
     var openProjects: [Project] {
         projects.filter { !$0.closed }
@@ -730,7 +798,10 @@ public final class AppModel {
     /// Epics are planned on the roadmap, as Linear's projects are, so boards and lists leave them out.
     func items(in scope: Scope) -> [Item] {
         switch scope {
-        case .project(let id): return allItems.filter { $0.projectId == id && !$0.isEpic }
+        case .project(let id):
+            // A project shows the view open in it, filtered as on GitHub.
+            if let view = currentView(projectId: id) { return items(of: view) }
+            return allItems.filter { $0.projectId == id && !$0.isEpic }
         case .myIssues:
             guard let login = viewer?.login else { return [] }
             return allItems.filter { item in !item.isEpic && item.assignees.contains { $0.login == login } }
@@ -847,12 +918,30 @@ public final class AppModel {
         _ = dataVersion
         guard let projectId = scope.projectId else { return [] }
         let key: String
+        var view: ProjectView?
         switch scope {
         case .milestone(_, let title): key = "\(projectId)\u{1F}\(title)"
+        case .project:
+            view = currentView(projectId: projectId)
+            key = view.map { "\(projectId)\u{1F}view\u{1F}\($0.id)" } ?? projectId
         default: key = projectId
         }
         if let cached = columnCache[key] { return cached }
         let items = self.items(in: scope)
+        if let view, let field = columnField(of: view), field.id != currentStatusFieldId(projectId: projectId) {
+            let result = valueColumns(items, field: field, view: view)
+            columnCache[key] = result
+            return result
+        }
+        let inMilestone = if case .milestone = scope { true } else { false }
+        let result = statusColumns(projectId: projectId, items: items, inMilestone: inMilestone)
+        columnCache[key] = result
+        return result
+    }
+
+    /// One column per status, plus "No status" when cards have none. A milestone leaves out the columns of the
+    /// backlog while they are empty.
+    func statusColumns(projectId: String, items: [Item], inMilestone: Bool = false) -> [BoardColumn] {
         let statuses = statusOptions(projectId: projectId)
         let known = Set(statuses.map(\.id))
         var result: [BoardColumn] = []
@@ -865,7 +954,6 @@ public final class AppModel {
             let (shown, nesting) = arranged(unsorted)
             result.append(BoardColumn(id: BoardColumn.noStatusId, option: nil, glyph: .none, items: shown, nesting: nesting))
         }
-        let inMilestone = if case .milestone = scope { true } else { false }
         for option in statuses {
             let (shown, nesting) = arranged(items.filter { $0.statusId == option.id })
             if inMilestone, shown.isEmpty, option.statusCategory == .backlog { continue }
@@ -874,7 +962,6 @@ public final class AppModel {
                 items: shown, nesting: nesting
             ))
         }
-        columnCache[key] = result
         return result
     }
 
@@ -896,7 +983,15 @@ public final class AppModel {
                 case .canceled: return 5
                 }
             }
-            let ordered = columns(projectId: projectId).enumerated().sorted { a, b in
+            if let view = currentView(projectId: projectId), let grouped = groupedSections(of: view) {
+                result = grouped
+                break
+            }
+            // A view whose board has columns other than its statuses still lists its issues by status.
+            let statusBoard = currentView(projectId: projectId) == nil
+                ? columns(projectId: projectId)
+                : statusColumns(projectId: projectId, items: items(in: scope))
+            let ordered = statusBoard.enumerated().sorted { a, b in
                 let ra = rank(a.element), rb = rank(b.element)
                 if ra != rb { return ra < rb }
                 // Within "started", later columns (closer to done) come first.
@@ -979,6 +1074,7 @@ public final class AppModel {
         if glyphs != map { glyphs = map }
         sectionCache = [:]
         columnCache = [:]
+        filterContexts = [:]
         planningCache = PlanningCache()
         dataVersion &+= 1
 
@@ -1033,6 +1129,7 @@ public final class AppModel {
         peekItemId = nil
         if let id = newScope.projectId {
             UserDefaults.standard.set(id, forKey: "selectedProject")
+            lastProjectId = id
             setActiveProject(id)
         }
         switch newScope {
@@ -1045,6 +1142,8 @@ public final class AppModel {
         UserDefaults.standard.set(newScope == .inbox, forKey: "inbox.selected")
         if newScope == .inbox { inboxAppeared() }
         rebuild()
+        // A project's view shows as board or list as it was last seen.
+        if !isRestoringLocation { followCurrentView() }
         recordNavigation()
     }
 

@@ -123,7 +123,7 @@ private struct ProjectRow: View {
     var project: Project
 
     var body: some View {
-        let items = model.items(in: .project(project.id))
+        let items = model.allItems.filter { $0.projectId == project.id && !$0.isEpic }
         let open = items.filter { !(model.statusOption(of: $0)?.statusCategory.isClosed ?? $0.isClosed) }.count
         HStack(spacing: 12) {
             ProjectSwatch(title: project.title, size: 18)
@@ -263,15 +263,24 @@ struct ProjectScreen: View {
 
     var body: some View {
         let project = model.projects.first { $0.id == projectId }
+        // Board or list as this project's open view has it. A project the iPad keeps ready in another sidebar entry
+        // mustn't follow a switch made in this one.
+        let mode = model.currentView(projectId: projectId).map { model.layout(of: $0) } ?? model.viewMode
         Group {
             if project == nil {
                 MobileEmptyState(title: String(localized: .projectGoneTitle), message: String(localized: .projectGoneMessage), systemImage: "questionmark.square.dashed")
             } else if model.isLoading(projectId: projectId) {
                 ProjectLoading()
-            } else if wide, model.viewMode == .board {
+            } else if wide, mode == .board {
                 MobileBoard(projectId: projectId)
             } else {
                 IssueList(scope: .project(projectId))
+            }
+        }
+        // The project's saved views, and the open one's filter, over its list or board.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if project != nil, !model.views(projectId: projectId).isEmpty, !model.isLoading(projectId: projectId) {
+                ViewBar(projectId: projectId)
             }
         }
         .background(Theme.panel)
@@ -285,11 +294,22 @@ struct ProjectScreen: View {
                 // The Mac's header: the project's swatch and name, then Board and List.
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 10) {
-                        ProjectSwatch(title: project.title, size: 14)
-                        Text(project.title)
-                            .font(.headline)
-                            .lineLimit(1)
-                        if roomy {
+                        // The view open, which the sidebar lists under the project; the project itself before
+                        // GitHub's views are read.
+                        if let view = model.currentView(projectId: project.id) {
+                            ViewLayoutGlyph(view: view)
+                                .foregroundStyle(Theme.textSecondary)
+                            Text(view.name)
+                                .font(.headline)
+                                .lineLimit(1)
+                        } else {
+                            ProjectSwatch(title: project.title, size: 14)
+                            Text(project.title)
+                                .font(.headline)
+                                .lineLimit(1)
+                        }
+                        // With saved views, board or list belongs to the view and is in its Display menu.
+                        if roomy, model.views(projectId: project.id).isEmpty {
                             Picker(.viewModePicker, selection: Bindable(model).viewMode) {
                                 // Named for VoiceOver and the pointer, which would otherwise read the symbols' own names.
                                 Image(systemName: "rectangle.split.3x1").accessibilityLabel(.board).help(Text(.board)).tag(ViewMode.board)
@@ -313,6 +333,7 @@ struct ProjectScreen: View {
         .onAppear {
             model.setActiveProject(projectId)
             navigation.rememberProject(projectId)
+            if let view = model.currentView(projectId: projectId) { model.followLayout(of: view) }
         }
         .task(id: model.dataVersion) { await model.preloadAvatars(for: .project(projectId)) }
     }
@@ -386,7 +407,23 @@ private struct ProjectOptionsMenu: View {
 
     var body: some View {
         Menu {
-            if showsViewMode {
+            if let view = model.currentView(projectId: project.id) {
+                // The open view: how it shows, its filter, a new one, and its own menu.
+                ViewDisplayMenu(view: view)
+                Menu {
+                    ViewMenuItems(view: view)
+                } label: {
+                    Label(view.name, systemImage: "rectangle.stack")
+                }
+                if model.canEditViews(projectId: project.id) {
+                    Button {
+                        navigation.sheet = .newView(projectId: project.id, sourceViewId: view.id, duplicate: false)
+                    } label: {
+                        Label(.newViewEllipsis, systemImage: "plus.rectangle.on.rectangle")
+                    }
+                }
+                Divider()
+            } else if showsViewMode {
                 Picker(.viewModePicker, selection: Bindable(model).viewMode) {
                     Label(.board, systemImage: "rectangle.split.3x1").tag(ViewMode.board)
                     Label(.list, systemImage: "list.bullet").tag(ViewMode.list)
@@ -524,9 +561,11 @@ struct IssueList: View {
                 item: item, showsProject: showsProject, place: section.nesting.place(of: item.id), nested: nested,
                 folded: folded,
                 // Under its parent or its epic's header, the parent goes without saying.
-                showsParent: section.nesting.namesParent(of: item) && section.kind != .epic(contentId: item.parentId),
+                showsParent: section.nesting.namesParent(of: item) && section.kind != .epic(contentId: item.parentId)
+                    && section.kind != .group(.parent(contentId: item.parentId)),
                 showsMilestone: showsMilestone,
-                showsEpic: section.kind != .epic(contentId: epic) && section.nesting.groupOf[item.id] == nil
+                showsEpic: section.kind != .epic(contentId: epic) && section.nesting.groupOf[item.id] == nil,
+                chips: model.fieldChips(of: item, in: scope)
             )
         }
         .buttonStyle(RowButtonStyle())
@@ -589,14 +628,14 @@ struct IssueList: View {
     /// Issues keep their place on the board, so they can be moved in a project you can edit. My Issues mixes
     /// projects and has no such order.
     private var canMove: Bool {
-        guard case .project(let id) = scope else { return false }
+        guard case .project(let id) = scope, !model.isOrdered(projectId: id) else { return false }
         return model.projects.first { $0.id == id }?.viewerCanUpdate == true
     }
 
     /// The board's column a section of a board's list shows.
     private func column(of section: ListSection) -> BoardColumn? {
         guard case .project(let projectId) = scope, section.kind == .status else { return nil }
-        return model.columns(projectId: projectId).first { $0.id == section.id }
+        return model.listColumns(projectId: projectId).first { $0.id == section.id }
     }
 
     private func move(in section: ListSection, from source: IndexSet, to destination: Int) {
@@ -634,6 +673,10 @@ struct IssueList: View {
     private var showsMilestone: Bool {
         switch scope {
         case .milestone, .roadmap: false
+        case .project(let id):
+            // A view grouped by milestone says it in its groups.
+            !(model.currentView(projectId: id).map { model.layout(of: $0) == .list && model.groupField(of: $0)?.kind == .milestone } ?? false)
+                && !model.viewPinsMilestone(projectId: id)
         default: true
         }
     }
@@ -642,6 +685,12 @@ struct IssueList: View {
         guard let projectId = scope.projectId else { return nil }
         let canEdit = model.projects.first { $0.id == projectId }?.viewerCanUpdate == true
         switch (scope, section.kind) {
+        case (.project, .group(let key)):
+            let parent: String? = if case .parent(let contentId) = key { contentId.flatMap { model.issue(contentId: $0)?.id } } else { nil }
+            return {
+                let preset = model.newIssuePreset(projectId: projectId, group: key)
+                navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: preset?.statusId, parentItemId: parent, preset: preset))
+            }
         case (.project, _):
             return { navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: section.option?.id)) }
         case (.milestone(_, let title), .epic(let contentId)) where canEdit:

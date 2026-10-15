@@ -89,6 +89,8 @@ for theme in dark light; do
   echo "Scenes in ${theme}…"
   launch "$theme"
   forward
+  # The project's first view, as GitHub has it: the view and how it shows are remembered from the last run.
+  say "view Board" "display reset"
   # Switching views lays the board out afresh, so the debug remote knows where every card is.
   say "mode list"; sleep 0.8; say "mode board" "focus"; sleep 1.5
 
@@ -111,6 +113,9 @@ for theme in dark light; do
   say "select repo git-issues"; sleep 1.2; shot "repository-$theme"
   # The roadmap's timeline: the sample's epics over the milestones 0.3, 0.4 and 1.0.
   say "select Git Issues" "select roadmap" "roadmap timeline" "roadmap months"; sleep 1.5; shot "roadmap-$theme"
+  # The project's views as tabs, "This Week" open with its filter under them.
+  say "select Git Issues" "view This Week"; sleep 1.5; shot "views-$theme"
+  say "view Board"
   say "select Git Issues" "mode board" "overlay new"; sleep 1
   say "key Haptic feedback when a card lands"; sleep 1; shot "new-$theme"
   say "overlay none"

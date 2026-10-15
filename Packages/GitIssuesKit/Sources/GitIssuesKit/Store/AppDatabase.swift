@@ -264,6 +264,42 @@ public final class AppDatabase: Sendable {
             try db.execute(sql: "UPDATE item SET remoteUpdatedAt = NULL")
             try db.execute(sql: "UPDATE project SET remoteUpdatedAt = NULL")
         }
+        migrator.registerMigration("views") { db in
+            try db.create(table: "projectField") { t in
+                t.primaryKey("id", .text)
+                t.column("projectId", .text).notNull().indexed()
+                    .references("project", onDelete: .cascade)
+                t.column("databaseId", .integer)
+                t.column("name", .text).notNull()
+                t.column("dataType", .text).notNull()
+                t.column("position", .integer).notNull()
+                t.column("options", .text).notNull()
+                t.column("iterations", .text).notNull()
+            }
+            try db.create(table: "projectView") { t in
+                t.primaryKey("id", .text)
+                t.column("projectId", .text).notNull().indexed()
+                    .references("project", onDelete: .cascade)
+                t.column("number", .integer).notNull()
+                t.column("name", .text).notNull()
+                t.column("layout", .text).notNull()
+                t.column("filter", .text).notNull()
+                t.column("visibleFieldIds", .text).notNull()
+                t.column("groupByFieldId", .text)
+                t.column("columnFieldId", .text)
+                t.column("sortBy", .text).notNull()
+                t.column("position", .integer).notNull()
+                t.column("updatedAt", .text)
+                t.column("matches", .text)
+                t.column("matchesFilter", .text)
+            }
+            try db.alter(table: "item") { t in
+                t.add(column: "fieldValues", .text).notNull().defaults(to: "{}")
+            }
+            // Read every card again once, so iterations and the project's other fields are filled in.
+            try db.execute(sql: "UPDATE item SET remoteUpdatedAt = NULL")
+            try db.execute(sql: "UPDATE project SET remoteUpdatedAt = NULL")
+        }
         return migrator
     }
 }
@@ -310,7 +346,7 @@ extension AppDatabase {
     /// Removes everything, for sign-out.
     public func wipe() throws {
         try writer.write { db in
-            for table in ["outbox", "comment", "subIssue", "linkedIssue", "milestone", "repo", "item", "fieldOption", "project", "inboxEntry", "kv"] {
+            for table in ["outbox", "comment", "subIssue", "linkedIssue", "milestone", "repo", "item", "fieldOption", "projectField", "projectView", "project", "inboxEntry", "kv"] {
                 try db.execute(sql: "DELETE FROM \(table)")
             }
         }

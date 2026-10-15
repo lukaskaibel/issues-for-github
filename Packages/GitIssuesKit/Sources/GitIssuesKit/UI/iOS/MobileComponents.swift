@@ -23,6 +23,8 @@ struct IssueRow: View {
     var showsMilestone = true
     /// The epic, where the row isn't in its epic's group.
     var showsEpic = true
+    /// The project's own fields the view shows, such as an iteration.
+    var chips: [FieldChip] = []
     @ScaledMetric(relativeTo: .callout) private var glyphSize: CGFloat = 16
     @ScaledMetric(relativeTo: .callout) private var avatarSize: CGFloat = 24
 
@@ -176,6 +178,12 @@ struct IssueRow: View {
                     Text(milestone)
                 }
             }
+            ForEach(chips, id: \.self) { chip in
+                MobileChip {
+                    FieldChipIcon(icon: chip.icon)
+                    Text(chip.text)
+                }
+            }
             // An epic's own label says what the row shows already.
             ForEach(item.labels.filter { !(item.isEpic && Item.isEpicLabel($0.name)) }.prefix(3)) { label in
                 MobileChip {
@@ -219,6 +227,7 @@ struct IssueRow: View {
             parts.append(String(localized: .milestoneTooltip(milestone: milestone)))
         }
         if showsEpic, let epic { parts.append(String(localized: .epicTooltip(epic: epic.title))) }
+        parts += chips.map(model.spokenChip)
         if showsProject, let place = model.project(of: item)?.title ?? item.repoShortName { parts.append(place) }
         return parts.joined(separator: ", ")
     }
@@ -468,12 +477,7 @@ struct SectionHeaderBand: View {
                         .foregroundStyle(Theme.textTertiary)
                         .rotationEffect(.degrees(folded ? -90 : 0))
                         .frame(width: 12)
-                    switch icon ?? .status(glyph) {
-                    case .status(let glyph): StatusIcon(glyph: glyph, size: glyphSize)
-                    case .milestone(let mark): MilestoneIcon(mark: mark, size: glyphSize)
-                    case .epic: EpicIcon(size: glyphSize)
-                    case .plain: EmptyView()
-                    }
+                    GroupIcon(icon: icon ?? .status(glyph), size: glyphSize)
                     Text(title).font(.uiSemibold).foregroundStyle(icon == .plain ? Theme.textSecondary : Theme.text).lineLimit(1)
                     Text("\(count)").font(.ui).monospacedDigit().foregroundStyle(Theme.textTertiary)
                     if let detail {

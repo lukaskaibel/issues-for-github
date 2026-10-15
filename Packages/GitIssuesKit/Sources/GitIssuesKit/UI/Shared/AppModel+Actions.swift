@@ -17,6 +17,8 @@ struct NewIssueDraft: Equatable {
     var milestoneTitle: String?
     /// Whether it starts as an epic.
     var isEpic = false
+    /// The project's own fields it starts with, such as the iteration of the view it is made in.
+    var fieldValues: [String: FieldValue] = [:]
 }
 
 /// What a new issue starts with when it is begun from a milestone, an epic's group or the roadmap.
@@ -116,7 +118,7 @@ extension AppModel {
         guard let projectId = item.projectId else { return }
         let itemEpic = epic(of: item)?.contentId
         let landing = column.landing(of: item, at: index, epic: itemEpic, belowHeader: belowEpicHeader)
-        var mutations = statusMutations(item, column.option)
+        var mutations = columnMutations(item, column)
         // Dropped among another epic's issues, it joins that epic.
         if let joined = landing.epic, joined != itemEpic, canRelate(item), let summary = item.summary,
            let epic = issue(contentId: joined), canRelate(epic) {
@@ -124,13 +126,30 @@ extension AppModel {
                 child: summary, parentId: joined, parentNumber: epic.number, parentTitle: epic.title, base: item.parentId
             )))
         }
-        if let move = placement(of: item, in: column, at: landing, projectId: projectId) { mutations.append(move) }
+        // A view in an order of its own keeps it; only an unordered board has places to drop into, as on GitHub.
+        if !isOrdered(projectId: projectId), let move = placement(of: item, in: column, at: landing, projectId: projectId) {
+            mutations.append(move)
+        }
         // A sub-issue dropped onto a folded parent would vanish into it, so the parent opens.
         if let parentId = landing.parentId, column.nesting.folded.contains(parentId),
            let parent = column.nesting.members.first(where: { $0.id == parentId }) {
             setFolded(parent, false)
         }
         perform(mutations)
+    }
+
+    /// What dropping a card into a column changes: its status, or the value of the field the columns are by.
+    func columnMutations(_ item: Item, _ column: BoardColumn) -> [Mutation] {
+        if let value = column.value, let field = field(id: value.fieldId) {
+            return valueMutations(item, field: field, value: value.value)
+        }
+        return statusMutations(item, column.option)
+    }
+
+    /// Whether the view open in a project has an order of its own, which dragging can't change.
+    func isOrdered(projectId: String?) -> Bool {
+        guard let view = currentView(projectId: projectId) else { return false }
+        return !sort(of: view).isEmpty
     }
 
     /// The move that gives a card its place among `landing.peers`, or nil when it is there already.
@@ -172,8 +191,12 @@ extension AppModel {
     func drop(_ group: Nesting.EpicGroup, members: [Item], in column: BoardColumn, at index: Int) {
         guard let projectId = members.first?.projectId else { return }
         let landing = column.landing(ofGroup: group.contentId, moving: Set(members.map(\.id)), at: index)
-        moveIssues(members, of: group, to: column.option, title: column.title,
-                   placing: placements(of: members, in: column, at: landing, projectId: projectId))
+        let placing = isOrdered(projectId: projectId) ? [] : placements(of: members, in: column, at: landing, projectId: projectId)
+        if column.value != nil {
+            withAnimation(Theme.spring) { perform(members.flatMap { columnMutations($0, column) } + placing) }
+            return
+        }
+        moveIssues(members, of: group, to: column.option, title: column.title, placing: placing)
     }
 
     /// Gives `members`, the issues of an epic's group in a column, another status, as the group's menu does. They
@@ -224,7 +247,7 @@ extension AppModel {
     /// end, or where the project can't be changed.
     @discardableResult
     func move(_ item: Item, by delta: Int) -> Bool {
-        guard let projectId = item.projectId, project(of: item)?.viewerCanUpdate == true,
+        guard let projectId = item.projectId, project(of: item)?.viewerCanUpdate == true, !isOrdered(projectId: projectId),
               let column = (columns.contains { $0.items.contains { $0.id == item.id } } ? columns : columns(projectId: projectId))
                 .first(where: { $0.items.contains { $0.id == item.id } }),
               let index = column.items.firstIndex(where: { $0.id == item.id }) else { return false }
@@ -318,6 +341,7 @@ extension AppModel {
             assignees: draft.assignees, labels: draft.labels,
             parentContentId: draft.parent?.contentId, parentNumber: draft.parent?.number, parentTitle: draft.parent?.title,
             milestoneId: milestone?.id, milestoneTitle: milestone?.title,
+            fieldValues: project == nil || draft.fieldValues.isEmpty ? nil : draft.fieldValues,
             author: viewer?.login, createdAt: Date()
         )))
         if draft.isEpic {

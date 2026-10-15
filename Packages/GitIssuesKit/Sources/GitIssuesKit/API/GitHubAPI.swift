@@ -40,6 +40,10 @@ public struct RemoteProjectMeta: Sendable {
     /// The Date field that says when an issue is due, picked by its name (see `dueFieldNames`).
     public var dueField: RemoteField?
     public var repos: [(id: String, nameWithOwner: String)]
+    /// Every field of the project, its own and GitHub's, in GitHub's order. `projectId` is filled in.
+    public var fields: [ProjectField] = []
+    /// The project's saved views, in the order of their tabs.
+    public var views: [ProjectView] = []
 
     /// Names of Date fields that mean "due", in order of preference. "Start date" never does.
     public static let dueFieldNames = ["due date", "due", "deadline", "target date", "due on", "end date"]
@@ -146,6 +150,7 @@ public final class GitHubAPI: Sendable {
                 var items: Count
                 var fields: Nodes<FieldDTO>
                 var repositories: Nodes<RepoDTO>?
+                var views: Nodes<ViewDTO>?
             }
             var node: Node?
         }
@@ -154,12 +159,13 @@ public final class GitHubAPI: Sendable {
           node(id: $id) { ... on ProjectV2 {
             id title updatedAt closed viewerCanUpdate
             items { totalCount }
-            fields(first: 50) { nodes { __typename
-              ... on ProjectV2SingleSelectField { id name options { id name color description } }
-              ... on ProjectV2Field { id name dataType } } }
+            fields(first: 50) { nodes { ...FieldFields } }
             repositories(first: 50) { nodes { id nameWithOwner } }
+            views(first: 50, orderBy: {field: POSITION, direction: ASC}) { nodes { ...ViewFields } }
           } }
         }
+        \(GQL.fieldFields)
+        \(GQL.viewFields)
         """
         let response: Response = try await client.run(query, variables: ["id": id], allowPartial: true)
         guard let node = response.node else {
@@ -189,7 +195,9 @@ public final class GitHubAPI: Sendable {
             statusField: field(named: "Status"),
             priorityField: field(named: "Priority"),
             dueField: dueField,
-            repos: (node.repositories?.items ?? []).map { ($0.id, $0.nameWithOwner) }
+            repos: (node.repositories?.items ?? []).map { ($0.id, $0.nameWithOwner) },
+            fields: node.fields.items.enumerated().compactMap { $1.field(projectId: node.id, position: $0) },
+            views: (node.views?.items ?? []).enumerated().compactMap { $1.view(projectId: node.id, position: $0) }
         )
     }
 
@@ -236,7 +244,8 @@ public final class GitHubAPI: Sendable {
 
     /// Full card data for the given project items. `position` is left at 0 for the caller to fill in.
     public func hydrate(
-        itemIds: [String], projectId: String, statusFieldId: String?, priorityFieldId: String?, dueFieldId: String?
+        itemIds: [String], projectId: String, statusFieldId: String?, priorityFieldId: String?, dueFieldId: String?,
+        valueFieldIds: Set<String> = []
     ) async throws -> [Item] {
         struct Response: Decodable {
             var nodes: [ItemDTO?]
@@ -251,7 +260,10 @@ public final class GitHubAPI: Sendable {
         for chunk in itemIds.chunked(into: 40) {
             let response: Response = try await client.run(query, variables: ["ids": chunk], allowPartial: true)
             result += response.nodes.compactMap { $0 }.compactMap {
-                $0.item(projectId: projectId, statusFieldId: statusFieldId, priorityFieldId: priorityFieldId, dueFieldId: dueFieldId)
+                $0.item(
+                    projectId: projectId, statusFieldId: statusFieldId, priorityFieldId: priorityFieldId, dueFieldId: dueFieldId,
+                    valueFieldIds: valueFieldIds
+                )
             }
         }
         return result
@@ -751,6 +763,29 @@ extension GitHubAPI {
 // MARK: - Wire types
 
 enum GQL {
+    /// A project field with what the app keeps of it.
+    static let fieldFields = """
+    fragment FieldFields on ProjectV2FieldConfiguration {
+      __typename
+      ... on ProjectV2FieldCommon { id databaseId name dataType }
+      ... on ProjectV2SingleSelectField { options { id name color description } }
+      ... on ProjectV2IterationField { configuration {
+        iterations { id title startDate duration }
+        completedIterations { id title startDate duration } } }
+    }
+    """
+
+    /// A saved view of a project.
+    static let viewFields = """
+    fragment ViewFields on ProjectV2View {
+      id number name layout filter updatedAt
+      fields(first: 50) { nodes { ... on ProjectV2FieldCommon { id } } }
+      groupByFields(first: 1) { nodes { ... on ProjectV2FieldCommon { id } } }
+      verticalGroupByFields(first: 1) { nodes { ... on ProjectV2FieldCommon { id } } }
+      sortByFields(first: 10) { nodes { direction field { ... on ProjectV2FieldCommon { id } } } }
+    }
+    """
+
     /// An issue on its own, with the boards it is on, for issues read from a repository or a search.
     static let issueFields = """
     fragment IssueFields on Issue {
@@ -779,8 +814,11 @@ enum GQL {
     fragment ItemFields on ProjectV2Item {
       id updatedAt type
       fieldValues(first: 30) { nodes { __typename
-        ... on ProjectV2ItemFieldSingleSelectValue { optionId field { ... on ProjectV2SingleSelectField { id } } }
-        ... on ProjectV2ItemFieldDateValue { date field { ... on ProjectV2Field { id } } } } }
+        ... on ProjectV2ItemFieldSingleSelectValue { optionId field { ... on ProjectV2FieldCommon { id } } }
+        ... on ProjectV2ItemFieldDateValue { date field { ... on ProjectV2FieldCommon { id } } }
+        ... on ProjectV2ItemFieldIterationValue { iterationId field { ... on ProjectV2FieldCommon { id } } }
+        ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2FieldCommon { id } } }
+        ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { id } } } } }
       content { __typename
         ... on Issue { id number title body state stateReason url createdAt updatedAt closedAt
           author { login } repository { id nameWithOwner }
@@ -863,11 +901,72 @@ struct FieldDTO: Decodable {
         var color: String
         var description: String?
     }
+    struct IterationDTO: Decodable {
+        var id: String
+        var title: String
+        var startDate: String
+        var duration: Int
+    }
+    struct Configuration: Decodable {
+        var iterations: [IterationDTO]?
+        var completedIterations: [IterationDTO]?
+    }
     var id: String?
+    var databaseId: Int?
     var name: String?
     var options: [OptionDTO]?
-    /// DATE, TEXT, NUMBER and so on, for fields that are not single selects.
+    /// SINGLE_SELECT, DATE, TEXT, NUMBER, ITERATION, ASSIGNEES and so on.
     var dataType: String?
+    var configuration: Configuration?
+
+    func field(projectId: String, position: Int) -> ProjectField? {
+        guard let id, let name, let dataType else { return nil }
+        let current = (configuration?.iterations ?? []).map {
+            IterationSpan(id: $0.id, title: $0.title, startDate: $0.startDate, duration: $0.duration, completed: false)
+        }
+        let done = (configuration?.completedIterations ?? []).map {
+            IterationSpan(id: $0.id, title: $0.title, startDate: $0.startDate, duration: $0.duration, completed: true)
+        }
+        return ProjectField(
+            id: id, projectId: projectId, databaseId: databaseId, name: name, dataType: dataType, position: position,
+            options: (options ?? []).map { FieldChoice(id: $0.id, name: $0.name, color: $0.color, descr: $0.description ?? "") },
+            iterations: (done + current).sorted { $0.startDate < $1.startDate }
+        )
+    }
+}
+
+/// A project's saved view, as GraphQL lists it.
+struct ViewDTO: Decodable {
+    struct FieldRef: Decodable { var id: String? }
+    struct Sort: Decodable {
+        var direction: String
+        var field: FieldRef?
+    }
+    var id: String
+    var number: Int
+    var name: String
+    var layout: String
+    var filter: String?
+    var updatedAt: String?
+    var fields: Nodes<FieldRef>?
+    var groupByFields: Nodes<FieldRef>?
+    var verticalGroupByFields: Nodes<FieldRef>?
+    var sortByFields: Nodes<Sort>?
+
+    func view(projectId: String, position: Int) -> ProjectView? {
+        guard let layout = ViewLayout(rawValue: layout) else { return nil }
+        return ProjectView(
+            id: id, projectId: projectId, number: number, name: name, layout: layout, filter: filter ?? "",
+            visibleFieldIds: (fields?.items ?? []).compactMap(\.id),
+            groupByFieldId: groupByFields?.items.first?.id,
+            columnFieldId: verticalGroupByFields?.items.first?.id,
+            sortBy: (sortByFields?.items ?? []).compactMap { sort in
+                sort.field?.id.map { ViewSort(fieldId: $0, descending: sort.direction == "DESC") }
+            },
+            position: position,
+            updatedAt: updatedAt
+        )
+    }
 }
 
 struct ProjectDTO: Decodable {
@@ -887,11 +986,14 @@ struct ProjectDTO: Decodable {
 }
 
 struct ItemDTO: Decodable {
-    struct FieldValue: Decodable {
+    struct FieldValueDTO: Decodable {
         struct FieldRef: Decodable { var id: String? }
         var optionId: String?
         /// "2026-10-09", for a Date field.
         var date: String?
+        var iterationId: String?
+        var text: String?
+        var number: Double?
         var field: FieldRef?
     }
     struct Content: Decodable {
@@ -937,10 +1039,12 @@ struct ItemDTO: Decodable {
     var id: String?
     var updatedAt: String?
     var type: String?
-    var fieldValues: Nodes<FieldValue>?
+    var fieldValues: Nodes<FieldValueDTO>?
     var content: Content?
 
-    func item(projectId: String, statusFieldId: String?, priorityFieldId: String?, dueFieldId: String?) -> Item? {
+    func item(
+        projectId: String, statusFieldId: String?, priorityFieldId: String?, dueFieldId: String?, valueFieldIds: Set<String> = []
+    ) -> Item? {
         guard let id, let type, let kind = ItemKind(rawValue: type), kind != .redacted, let content else { return nil }
         func option(for fieldId: String?) -> String? {
             guard let fieldId else { return nil }
@@ -949,10 +1053,21 @@ struct ItemDTO: Decodable {
         let dueDate = dueFieldId.flatMap { fieldId in
             fieldValues?.items.first { $0.field?.id == fieldId }?.date.flatMap(CalendarDay.init)?.string
         }
-        return content.item(
+        var item = content.item(
             id: id, projectId: projectId, kind: kind, position: 0, remoteUpdatedAt: updatedAt,
             statusId: option(for: statusFieldId), priorityId: option(for: priorityFieldId), dueDate: dueDate
         )
+        // The project's other fields; Status, Priority and the due date have places of their own.
+        let own: Set<String?> = [statusFieldId, priorityFieldId, dueFieldId]
+        for entry in fieldValues?.items ?? [] {
+            guard let fieldId = entry.field?.id, valueFieldIds.contains(fieldId), !own.contains(fieldId) else { continue }
+            let value = FieldValue(
+                optionId: entry.optionId, iterationId: entry.iterationId, text: entry.text, number: entry.number,
+                date: entry.date.flatMap(CalendarDay.init)?.string
+            )
+            if !value.isEmpty { item.fieldValues[fieldId] = value }
+        }
+        return item
     }
 }
 

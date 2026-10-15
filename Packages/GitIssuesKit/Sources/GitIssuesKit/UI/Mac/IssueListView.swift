@@ -16,7 +16,7 @@ struct IssueListView: View {
             // A milestone's list doesn't repeat its milestone on every row, nor the roadmap an epic's.
             let showsMilestone: Bool = switch model.scope {
             case .milestone, .roadmap: false
-            default: true
+            default: !model.groupsByMilestone && !model.viewPinsMilestone(projectId: model.currentProjectId)
             }
             IssueTable(
                 sections: model.sections.map { section in
@@ -42,10 +42,12 @@ struct IssueListView: View {
                                     nested: section.nesting.nestedCounts[item.id],
                                     folded: section.nesting.folded.contains(item.id),
                                     // Under its parent or its epic's header, the parent goes without saying.
-                                    showsParent: section.nesting.namesParent(of: item) && section.kind != .epic(contentId: item.parentId),
+                                    showsParent: section.nesting.namesParent(of: item) && section.kind != .epic(contentId: item.parentId)
+                                        && section.kind != .group(.parent(contentId: item.parentId)),
                                     parentIsEpic: item.parentId.flatMap { model.issue(contentId: $0) }?.isEpic ?? false,
                                     milestone: showsMilestone ? model.milestoneTitle(of: item) : spanOnRoadmap(item),
-                                    milestoneMark: model.milestoneMark(of: item)
+                                    milestoneMark: model.milestoneMark(of: item),
+                                    chips: model.fieldChips(of: item, in: model.scope)
                                 ))
                             }
                         }

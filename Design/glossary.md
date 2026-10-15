@@ -57,6 +57,10 @@ Only English uses Title Case; every other language writes menus and buttons as i
 | epic | Epic (das) | epic (m.) | épica | épico | эпик | エピック | 史诗 | 에픽 |
 | roadmap | Roadmap (die) | feuille de route | hoja de ruta | roteiro | дорожная карта | ロードマップ | 路线图 | 로드맵 |
 | timeline (of the roadmap) | Zeitleiste | chronologie | cronograma | linha do tempo | временная шкала | タイムライン | 时间线 | 타임라인 |
+| view (a project's saved view) | Ansicht | vue | vista | visualização | представление | ビュー | 视图 | 보기 |
+| filter | Filter | filtre | filtro | filtro | фильтр | フィルタ | 筛选 | 필터 |
+| display (how a view shows) | Darstellung | affichage | visualización | exibição | отображение | 表示 | 显示 | 표시 |
+| iteration | Iteration | itération | iteración | iteração | итерация | イテレーション | 迭代 | 이터레이션 |
 | comment | Kommentar | commentaire | comentario | comentário | комментарий | コメント | 评论 | 댓글 |
 | description | Beschreibung | description | descripción | descrição | описание | 説明 | 描述 | 설명 |
 | closed / reopen | geschlossen / wieder öffnen | fermé / rouvrir | cerrada / reabrir | fechada / reabrir | закрыта / открыть снова | クローズ / 再オープン | 已关闭 / 重新打开 | 닫힘 / 다시 열기 |

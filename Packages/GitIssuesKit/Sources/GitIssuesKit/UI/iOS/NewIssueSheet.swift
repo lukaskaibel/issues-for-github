@@ -369,6 +369,13 @@ struct NewIssueSheet: View {
         // Begun in a milestone, from the roadmap, or under an issue that has a milestone.
         new.milestoneTitle = context.milestoneTitle ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
         new.isEpic = context.isEpic
+        // Begun in a view, its group or its column: what the view's filter asks for, and the group's value.
+        let preset = context.preset ?? (parent == nil && context.repoId == nil && context.milestoneTitle == nil && !context.isEpic
+            ? model.newIssuePreset(projectId: projectId) : nil)
+        if let preset {
+            model.apply(preset, to: &new)
+            if let statusId = context.statusId { new.statusId = statusId }
+        }
         draft = new
         model.loadRepoMeta(projectId: projectId)
         if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
@@ -405,9 +412,10 @@ struct NewIssueSheet: View {
 
     private func create() {
         guard canCreate else { return }
-        if model.createIssue(draft) != nil {
+        if let id = model.createIssue(draft) {
             created += 1
             dismiss()
+            model.noteIfHidden(id)
         }
     }
 }

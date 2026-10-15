@@ -77,6 +77,21 @@ public struct GitIssuesScene: Scene {
                 Button(.switchProjectEllipsis) { model.overlay = .palette(.projects) }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
                 Divider()
+                // A project's saved views, as tabs: the next and previous, and saving a changed filter.
+                Button(.nextView) { model.showView(by: 1) }
+                    .keyboardShortcut(.tab, modifiers: .control)
+                    .disabled(model.currentView == nil)
+                Button(.previousView) { model.showView(by: -1) }
+                    .keyboardShortcut(.tab, modifiers: [.control, .shift])
+                    .disabled(model.currentView == nil)
+                Button(.goToViewEllipsis) { model.overlay = .palette(.views) }
+                    .disabled(model.views.isEmpty)
+                Button(.saveViewMenu) {
+                    if let view = model.currentView { model.saveFilter(of: view) }
+                }
+                .keyboardShortcut("s", modifiers: .command)
+                .disabled(model.currentView.map { !model.filterChanged($0) || !model.canEditViews(projectId: $0.projectId) } ?? true)
+                Divider()
                 Button(.syncWithGitHubNow) { model.refresh() }
                     .keyboardShortcut("r", modifiers: .command)
             }
