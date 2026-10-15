@@ -587,6 +587,46 @@ final class PhoneTests: AppTestCase {
         snapshot("Statuses")
     }
 
+    func testProjectIconFromTheProjectMenu() {
+        launch()
+        openProjectTab("Git Issues")
+        app.navigationBars.buttons["Options"].tap()
+        button("Change Icon…").tap()
+        wait(app.navigationBars["Project Icon"])
+        // The sample's blue laptop; the laptop is further down, among the devices.
+        XCTAssertTrue(button("Blue").isSelected)
+        snapshot("Project icon")
+
+        // A colour keeps the sheet open, so a glyph can follow; the glyph, found by its name, closes it.
+        button("Orange").tap()
+        wait(app.buttons.matching(NSPredicate(format: "label == 'Orange' AND selected == true")).firstMatch)
+        XCTAssertTrue(app.navigationBars["Project Icon"].exists)
+        let search = app.searchFields.firstMatch
+        search.tap()
+        search.typeText("flask")
+        wait(button("Flask"))
+        snapshot("Project icon, searching")
+        // A lone match's button reaches across its row for VoiceOver; the glyph itself is at the start of it.
+        button("Flask").images.firstMatch.tap()
+        waitGone(app.navigationBars["Project Icon"])
+
+        // A long press on the project in the Projects tab opens it too, and the choice is kept.
+        app.tabBars.buttons["Projects"].tap()
+        labelled("Git Issues", type: .button).press(forDuration: 1)
+        button("Change Icon…").tap()
+        wait(app.navigationBars["Project Icon"])
+        XCTAssertTrue(button("Orange").isSelected)
+        snapshot("Project icon, changed")
+        app.searchFields.firstMatch.tap()
+        app.searchFields.firstMatch.typeText("flask")
+        wait(button("Flask"))
+        XCTAssertTrue(button("Flask").isSelected)
+        // Done closes it while searching too, keeping the icon.
+        button("Done").tap()
+        waitGone(app.navigationBars["Project Icon"])
+        snapshot("Projects with the changed icon")
+    }
+
     func testNewIssueInASectionWithEveryProperty() {
         launch()
         openProjectTab("Git Issues")

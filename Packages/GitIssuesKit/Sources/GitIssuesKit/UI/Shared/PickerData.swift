@@ -307,7 +307,7 @@ extension AppModel {
             guard !statuses.isEmpty else {
                 return [PickerItem(
                     id: "\(project.id)/", title: project.title,
-                    icon: AnyView(ProjectSwatch(title: project.title, size: 12))
+                    icon: AnyView(ProjectIcon(projectId: project.id, size: 12))
                 )]
             }
             return statuses.map { option in

@@ -124,7 +124,7 @@ struct PeekPanel: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 if let project = model.project(of: item) {
-                    ProjectSwatch(title: project.title, size: 10)
+                    ProjectIcon(projectId: project.id, size: 10)
                 }
                 Text(item.displayNumber).font(.small).monospacedDigit().foregroundStyle(Theme.textSecondary)
                 if let repo = item.repoShortName {

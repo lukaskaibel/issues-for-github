@@ -297,25 +297,33 @@ struct Keycap: View {
     }
 }
 
-struct ProjectSwatch: View {
-    var title: String
+/// A project's glyph in its colour, wherever the project is named: the sidebar, headers, menus and pickers. Until the
+/// user picks another, it is GitHub's table in grey.
+struct ProjectIcon: View {
+    @Environment(AppModel.self) private var model
+    var projectId: String
     var size: CGFloat = 14
 
     var body: some View {
-        RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-            .fill(color)
-            .frame(width: size, height: size)
-            .accessibilityHidden(true)
-    }
-
-    private var color: Color {
-        let hash = title.unicodeScalars.reduce(0) { ($0 &* 31 &+ Int($1.value)) & 0xFFFF }
-        return Theme.avatarPalette[hash % Theme.avatarPalette.count]
+        ProjectGlyphImage(look: model.projectLooks.look(projectId), size: size)
     }
 }
 
-/// A repository, in the sidebar and headers. Projects have a coloured square; repositories a quiet book, as on
-/// GitHub.
+/// A look's glyph, drawn in a square of `size` like the other icons beside names.
+struct ProjectGlyphImage: View {
+    var look: ProjectLook
+    var size: CGFloat = 14
+
+    var body: some View {
+        Image(systemName: look.glyph.systemName)
+            .font(.system(size: (size * 0.86).rounded(), weight: .medium))
+            .foregroundStyle(Theme.projectColor(look.color))
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+}
+
+/// A repository, in the sidebar and headers: a quiet book, as on GitHub, where a project has its own glyph.
 struct RepositoryIcon: View {
     var size: CGFloat = 12
 

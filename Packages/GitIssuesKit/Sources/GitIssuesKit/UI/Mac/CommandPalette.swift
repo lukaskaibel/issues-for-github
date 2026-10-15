@@ -59,7 +59,7 @@ struct CommandPalette: View {
                         PickerItem(
                             id: project.id, title: project.title, subtitle: project.ownerLogin,
                             selected: model.scope == .project(project.id),
-                            icon: AnyView(ProjectSwatch(title: project.title))
+                            icon: AnyView(ProjectIcon(projectId: project.id))
                         )
                     } + planningItems + model.boardRepositories.map { repo in
                         PickerItem(
@@ -503,6 +503,13 @@ private struct RootPalette: View {
             })
         }
         if let projectId = model.scopeProjectId {
+            if model.sidebarProject?.id == projectId {
+                // Opens under the project at the top of the sidebar.
+                list.append(PaletteCommand(id: "project-icon", title: .changeProjectIconEllipsis, section: go, icon: AnyView(ProjectIcon(projectId: projectId))) {
+                    model.overlay = nil
+                    model.projectIconRequest += 1
+                })
+            }
             if model.scope != .roadmap(projectId) {
                 list.append(PaletteCommand(id: "roadmap", title: .roadmap, section: go, icon: AnyView(RoadmapIcon().foregroundStyle(Theme.textSecondary)), keys: ["G", "R"]) {
                     model.select(.roadmap(projectId))

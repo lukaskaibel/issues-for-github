@@ -185,8 +185,8 @@ there with everything left to do, drag a milestone's diamond to change its day. 
 
 ### A project's views, in the sidebar
 
-The sidebar is about one project at a time, as Linear's is about one workspace: the project sits at its top, its
-menu switches to another, and under it are the project's views as GitHub has them, such as "This week" or open bugs by area, then its milestones and its repositories. A view
+The sidebar is about one project at a time, as Linear's is about one workspace: the project sits at its top with an
+icon you pick, its menu switches to another, and under it are the project's views as GitHub has them, such as "This week" or open bugs by area, then its milestones and its repositories. A view
 shows what its filter finds, as a board or as a list grouped the way GitHub groups it. The filter is a row of chips
 over the issues, as in Linear: press `F` to add one for a status, a person, a label, a milestone, an iteration or any field
 of the project, click a chip to change it. A changed filter stays yours until you press `⌘S`, which saves it to the
@@ -241,8 +241,8 @@ The interface uses the system's own parts.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
   place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams are drawn until you tap them),
   the properties are chips under the title, and the comment field stays at the bottom as in Messages.
-- **iPad:** the tabs become a sidebar, as on the Mac: the project at the top, whose menu switches projects and opens
-  your account, then its views, its next milestones and roadmap, and its repositories, each an entry. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
+- **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
+  projects, changes the icon and opens your account, then its views, its next milestones and roadmap, and its repositories, each an entry. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
   drop (touch and hold, then drag). A milestone opens as the board's columns or a list, the roadmap as the timeline,
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
@@ -327,6 +327,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | A person's load | Their open issues in the view, the ones with a started status in yellow; a view grouped by assignee |
 | The cycle over a view and its arrows | The iteration the view's filter names (`@current`, `@next`, `@current+2` or its title); an arrow changes the filter, in the same kind of words, until **Save** |
 | Bars on a roadmap view's timeline | Date fields named like a start and an end (Start date, Target date), else the iteration, else the milestone's day; GitHub doesn't say which fields its roadmap uses |
+| A project's icon | Nothing on GitHub, which has no icons for projects: the glyph and colour you pick are kept in iCloud, for you alone |
 | Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there. Due issues, and assignments your own account made outside the app (found in the issues' timelines), are the app's own entries, read and archived in iCloud |
 
 Boards show the issues in their project; a repository shows all its open issues and those closed in the last four
@@ -543,6 +544,13 @@ To change several issues at once, pick them with `X`, the checkbox at the start 
 Shift-click. A bar at the bottom then sets status, priority, assignee, labels or the due date for all of them, and so
 do the usual keys, dropdowns and right-click menu. `Esc` clears the pick.
 
+Right-click the project at the top of the sidebar and choose **Change Icon…** to give it one of 257 glyphs in one of
+GitHub's eight colours; until then it is GitHub's table in grey. The glyphs come in groups such as Work, Code,
+Devices, Travel, Nature and Sports and Leisure, and typing finds them by name, in your language or in English, or by
+group ("sport"). A colour keeps the picker open, a glyph closes it, and the arrow keys and Return work while you type.
+**Change Project Icon…** in the command palette opens it as well. GitHub has no icons for projects, so the icon is kept in iCloud: your Mac, iPhone and iPad show the
+same one, and nobody else sees it.
+
 Right-click the project at the top of the sidebar, or a repository, to hide it; hidden projects wait under "hidden"
 in the project's menu, hidden repositories, folded away, at the end of their list. The project's menu is also where
 your account is, as in Linear: who is signed in, Sync Now, changes still waiting to be sent, appearance, settings and
@@ -579,7 +587,8 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap the filter line under the views | Change the filter; **Save for Everyone** puts it on GitHub, **Reset** takes it back |
 | Tap ‹ or › beside a view's cycle | The cycle before or after, until you save it |
 | Tap the plus after the views (iPhone), or New View… in the project's "…" menu | A new view, starting from the one open |
-| Tap the project at the top of the sidebar (iPad) | Switch to another project, sync, or open your account and settings |
+| Tap the project at the top of the sidebar (iPad) | Switch to another project, change its icon, sync, or open your account and settings |
+| Change Icon… in a project's "…" menu, or touch and hold it in Projects (iPhone) | Its glyph and colour: 257 glyphs in groups, with a search field; a colour keeps the sheet open, a glyph closes it |
 | Swipe right in the Inbox | Read, or unread |
 | Swipe left in the Inbox | Archive, or snooze |
 | Touch and hold in the Inbox | Read, snooze, archive, unsubscribe, and the issue's status, priority, assignee and labels |

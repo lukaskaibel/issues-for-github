@@ -15,6 +15,9 @@ collects nothing about you.
   for them. They hold the notification's number on GitHub (or the issue's id, the day it was due or the assignment's
   id on GitHub) and dates, nothing else, and are removed after 30 days, the assignments made in the app after a week.
   Only you and your devices can read them.
+- **The icons you pick for projects**, a glyph and a colour, are kept in the same iCloud storage, so your devices show
+  the same ones; GitHub has no icons for projects. They hold the project's id on GitHub and the names of the glyph and
+  the colour, nothing else. Only you and your devices can read them.
 - **Preferences** such as the appearance, the app icon, the order of list sections and the time of reminders stay on
   your device.
 - **Reminders** of issues that are due are notifications your device schedules itself from the due dates it has
@@ -24,7 +27,8 @@ collects nothing about you.
 
 - The app talks to **GitHub** only: `api.github.com` to read and change your projects, issues and notifications,
   `github.com` while you sign in, and GitHub's image servers for avatars and pictures in issue descriptions.
-- Snoozed and unread Inbox entries go to **your iCloud account**, through Apple, as described above.
+- Snoozed and unread Inbox entries, and the icons you pick for projects, go to **your iCloud account**, through Apple,
+  as described above.
 - Your login is sent to nobody but GitHub. What GitHub does with your data is described in
   [GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
 - Nothing is sent to the developer of the app or to any other party.

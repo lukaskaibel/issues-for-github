@@ -246,7 +246,7 @@ struct ProjectHeader: View {
                         HeaderFilterButton(view: view)
                         DisplayButton(view: view)
                     } else {
-                        ProjectSwatch(title: project.title)
+                        ProjectIcon(projectId: project.id)
                         Text(project.title).font(.uiSemibold).lineLimit(1).fixedSize()
                         ViewModeSwitch(mode: $model.viewMode)
                             .padding(.leading, 10)

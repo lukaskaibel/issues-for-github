@@ -124,7 +124,7 @@ struct NewIssueSheet: View {
                 } label: {
                     contextChip {
                         if let project {
-                            ProjectSwatch(title: project.title, size: 11)
+                            ProjectIcon(projectId: project.id, size: 11)
                             Text(project.title)
                         } else if context.repoId != nil {
                             Text(.noProject)

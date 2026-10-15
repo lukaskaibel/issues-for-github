@@ -27,7 +27,7 @@ struct MilestoneEditor: View {
             HStack(spacing: 8) {
                 if let project {
                     HStack(spacing: 6) {
-                        ProjectSwatch(title: project.title, size: 10)
+                        ProjectIcon(projectId: project.id, size: 10)
                         Text(project.title)
                     }
                     .font(.small)

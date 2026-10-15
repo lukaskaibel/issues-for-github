@@ -429,7 +429,7 @@ struct IssuePreview: View {
                 StatusIcon(glyph: model.glyph(of: item), size: 15)
                 Text(item.displayNumber).monospacedDigit()
                 if let project = model.project(of: item) {
-                    ProjectSwatch(title: project.title, size: 10)
+                    ProjectIcon(projectId: project.id, size: 10)
                     Text(project.title).lineLimit(1)
                 } else if let repo = item.repoShortName {
                     RepositoryIcon(size: 9)

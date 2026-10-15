@@ -53,7 +53,7 @@ struct IssueDetailView: View {
                     model.closeDetail()
                 } label: {
                     HStack(spacing: 8) {
-                        ProjectSwatch(title: project.title)
+                        ProjectIcon(projectId: project.id)
                         Text(project.title).foregroundStyle(Theme.textSecondary)
                     }
                 }
@@ -870,7 +870,7 @@ private struct PropertiesPanel: View {
             if let project = model.project(of: item) {
                 row(.project) {
                     HStack(spacing: 8) {
-                        ProjectSwatch(title: project.title)
+                        ProjectIcon(projectId: project.id)
                         Text(project.title).lineLimit(1)
                     }
                     .padding(.horizontal, 8)

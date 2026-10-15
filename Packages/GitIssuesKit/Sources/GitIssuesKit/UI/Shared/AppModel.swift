@@ -214,6 +214,8 @@ public final class AppModel {
     private(set) var inboxMeta = InboxMeta()
     /// Snoozes and "marked unread", which GitHub has no place for; shared through iCloud.
     private(set) var personal: PersonalStore
+    /// Each project's glyph and colour, which GitHub has no place for either; shared through iCloud.
+    private(set) var projectLooks: ProjectLooks
 
     // Derived from the above for the current scope.
     private(set) var columns: [BoardColumn] = []
@@ -340,6 +342,8 @@ public final class AppModel {
     @ObservationIgnored var filterMenuStart: String?
     var displayMenuRequest = 0
     var newViewRequest = 0
+    /// Bumped to open the icon picker of the project at the top of the sidebar, from the command palette.
+    var projectIconRequest = 0
     /// Filter contexts of projects, worked out once per change of the data.
     @ObservationIgnored var filterContexts: [String: FilterContext] = [:]
     /// Projects tucked away in the sidebar. They can still be found in the command palette.
@@ -454,6 +458,7 @@ public final class AppModel {
         }
         db = database
         personal = PersonalStore(persistent: !demo)
+        projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
         auth = AuthStore()
         // Logins saved by earlier versions move to iCloud Keychain, and a login shared by another device is used.
         if auth.method == .keychain { KeychainTokenStore.migrateToShared() }
@@ -593,6 +598,7 @@ public final class AppModel {
         engine = SyncEngine(db: database, api: Self.api(auth), status: status, demo: demo)
         isDemo = demo
         personal = PersonalStore(persistent: !demo)
+        projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
         resetNavigation()
         viewer = nil
         projects = []

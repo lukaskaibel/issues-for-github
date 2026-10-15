@@ -19,7 +19,7 @@ struct Sidebar: View {
             }
             .frame(height: 44)
 
-            // The project, with the state of syncing as a dot on its colour, then search and a new issue, as in
+            // The project, with the state of syncing as a dot on its icon, then search and a new issue, as in
             // Linear's workspace header. Its menu has the other projects and the account.
             HStack(spacing: 2) {
                 if let project = model.sidebarProject {

@@ -211,21 +211,21 @@ struct StatusAvatar: View {
     }
 }
 
-/// A project's colour with the state of syncing as a dot cut into its corner, at the top of the sidebar, where
+/// A project's icon with the state of syncing as a dot cut into its corner, at the top of the sidebar, where
 /// Linear shows its workspace.
-struct StatusSwatch: View {
+struct StatusProjectIcon: View {
     @Environment(AppModel.self) private var model
-    var title: String
+    var projectId: String
     var size: CGFloat
 
     var body: some View {
-        ProjectSwatch(title: title, size: size)
+        ProjectIcon(projectId: projectId, size: size)
             .modifier(SyncDotCutout(size: size, style: model.syncDotStyle))
             .allowsHitTesting(false)
     }
 }
 
-/// The dot cut into the lower right corner of an avatar or a project's colour. The cut-out shows whatever is behind,
+/// The dot cut into the lower right corner of an avatar or a project's icon. The cut-out shows whatever is behind,
 /// so it works on any background and on hover.
 private struct SyncDotCutout: ViewModifier {
     var size: CGFloat

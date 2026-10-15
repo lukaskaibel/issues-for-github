@@ -47,6 +47,8 @@ enum MobileSheet: Identifiable, Equatable {
     case viewFilter(String)
     /// A new saved view, starting from the one open or a copy of another.
     case newView(projectId: String, sourceViewId: String?, duplicate: Bool)
+    /// The glyph and colour a project shows with.
+    case projectIcon(String)
 
     var id: String {
         switch self {
@@ -59,6 +61,7 @@ enum MobileSheet: Identifiable, Equatable {
         case .picker(let itemId, let kind): "picker-\(kind)-\(itemId)"
         case .viewFilter(let id): "view-filter-\(id)"
         case .newView(let projectId, let source, let duplicate): "new-view-\(projectId)-\(source ?? "-")-\(duplicate)"
+        case .projectIcon(let id): "project-icon-\(id)"
         }
     }
 }

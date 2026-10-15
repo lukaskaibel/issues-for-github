@@ -120,7 +120,7 @@ enum DebugRemote {
             default: break
             }
         case "menu":
-            // menu filter|display|newview: opens that dropdown, as F, ⇧V or the plus do.
+            // menu filter|display|newview|projecticon: opens that dropdown, as F, ⇧V, the plus or Change Icon… do.
             switch argument {
             case "filter": model.filterMenuRequest += 1
             case let other where other.hasPrefix("filter "):
@@ -128,6 +128,7 @@ enum DebugRemote {
                 model.filterMenuRequest += 1
             case "display": model.displayMenuRequest += 1
             case "newview": model.newViewRequest += 1
+            case "projecticon": model.projectIconRequest += 1
             default: Dropdown.close()
             }
         case "savefilter":
@@ -874,14 +875,16 @@ enum DebugRemote {
     }
 
     private static func sendKey(characters: String, code: UInt16, modifiers: NSEvent.ModifierFlags = []) {
-        // To the key window, as a real key press would go: a dropdown if one is open.
-        guard let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }) else { return }
+        // To the key window, as a real key press would go: a dropdown if one is open. A copy opened in the background
+        // has no key window, and the app hands key presses only to that, so an open dropdown gets them itself.
+        let dropdown = NSApp.keyWindow == nil ? NSApp.windows.last(where: { $0 is DropdownPanel && $0.isVisible }) : nil
+        guard let window = dropdown ?? NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }) else { return }
         if let event = NSEvent.keyEvent(
             with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: ProcessInfo.processInfo.systemUptime,
             windowNumber: window.windowNumber, context: nil, characters: characters,
             charactersIgnoringModifiers: characters, isARepeat: false, keyCode: code
         ) {
-            NSApp.sendEvent(event)
+            if let dropdown { dropdown.sendEvent(event) } else { NSApp.sendEvent(event) }
         }
     }
 }

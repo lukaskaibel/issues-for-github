@@ -284,6 +284,26 @@ final class PadTests: AppTestCase {
         wait(element("card-#9"))
     }
 
+    func testProjectIconFromTheSidebar() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openProject("Git Issues")
+        wait(element("card-#9"))
+        element("project-switcher").tap()
+        button("Change Icon…").tap()
+        wait(app.navigationBars["Project Icon"])
+        XCTAssertTrue(button("Blue").isSelected)
+        snapshot("iPad project icon")
+        button("Purple").tap()
+        app.searchFields.firstMatch.tap()
+        app.searchFields.firstMatch.typeText("spark")
+        wait(button("Sparkles"))
+        snapshot("iPad project icon, searching")
+        button("Sparkles").images.firstMatch.tap()
+        waitGone(app.navigationBars["Project Icon"])
+        snapshot("iPad sidebar with the changed icon")
+    }
+
     func testDarkBoardAndSearch() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch(["-appearance", "dark"])

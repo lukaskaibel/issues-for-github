@@ -119,7 +119,7 @@ struct SearchScreen: View {
     @ViewBuilder
     private func projectRow(_ project: Project) -> some View {
         let label = HStack(spacing: 12) {
-            ProjectSwatch(title: project.title, size: 16)
+            ProjectIcon(projectId: project.id, size: 16)
             Text(project.title).foregroundStyle(Theme.text)
             Spacer()
             Text(project.ownerLogin).font(.footnote).foregroundStyle(Theme.textTertiary)

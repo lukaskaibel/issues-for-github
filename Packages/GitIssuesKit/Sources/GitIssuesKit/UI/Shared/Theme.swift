@@ -92,6 +92,11 @@ enum Theme {
         }
     }
 
+    /// A project's glyph in one of GitHub's option colours; grey is the grey of secondary text, like other icons.
+    static func projectColor(_ name: String) -> Color {
+        optionColor(name) ?? textSecondary
+    }
+
     static func statusColor(_ option: FieldOption?) -> Color {
         guard let option else { return textTertiary }
         if let color = optionColor(option.color) { return color }

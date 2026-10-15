@@ -42,7 +42,7 @@ struct MilestoneScreen: View {
             if wide, let project = model.projects.first(where: { $0.id == projectId }) {
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 10) {
-                        ProjectSwatch(title: project.title, size: 14)
+                        ProjectIcon(projectId: project.id, size: 14)
                         Text(project.title).font(.headline).foregroundStyle(Theme.textSecondary).lineLimit(1)
                         Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Theme.textTertiary)
                         MilestoneIcon(mark: group.map { model.mark(of: $0, projectId: projectId) } ?? .none, size: 15)
@@ -237,7 +237,7 @@ struct RoadmapScreen: View {
             if wide, let project = model.projects.first(where: { $0.id == projectId }) {
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 10) {
-                        ProjectSwatch(title: project.title, size: 14)
+                        ProjectIcon(projectId: project.id, size: 14)
                         Text(project.title).font(.headline).foregroundStyle(Theme.textSecondary).lineLimit(1)
                         Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(Theme.textTertiary)
                         Text(.roadmap).font(.headline)

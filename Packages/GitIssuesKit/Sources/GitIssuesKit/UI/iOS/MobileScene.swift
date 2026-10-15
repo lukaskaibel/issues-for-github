@@ -68,6 +68,8 @@ struct MobileRoot: View {
                 ViewFilterSheet(viewId: viewId)
             case .newView(let projectId, let sourceViewId, let duplicate):
                 NewViewSheet(projectId: projectId, sourceViewId: sourceViewId, duplicate: duplicate)
+            case .projectIcon(let projectId):
+                ProjectIconSheet(projectId: projectId)
             }
         }
         .modifier(ViewAlerts(navigation: navigation))
@@ -416,7 +418,7 @@ struct RouteDestination: View {
 }
 
 /// The project at the top of the iPad sidebar, as at the top of the Mac's sidebar, with the state of syncing as a dot
-/// on its colour; its menu has the account. It lines up with the rows below: the colour sits in their icon column, the
+/// on its icon; its menu has the account. It lines up with the rows below: the icon sits in their icon column, the
 /// name on their title edge, and the compose button in the column of the section's disclosure arrow.
 struct SidebarAccountHeader: View {
     @Environment(AppModel.self) private var model
@@ -450,8 +452,8 @@ struct SidebarAccountHeader: View {
         .padding(.trailing, -15)
     }
 
-    /// The project the sidebar is about, as Linear shows its workspace: a menu with the projects to switch to, Sync
-    /// Now and the account's settings.
+    /// The project the sidebar is about, as Linear shows its workspace: a menu with the projects to switch to, its
+    /// icon, Sync Now and the account's settings.
     private func projectMenu(_ current: Project) -> some View {
         Menu {
             Section(String(localized: .projects)) {
@@ -470,6 +472,13 @@ struct SidebarAccountHeader: View {
             }
             Section {
                 Button {
+                    navigation.sheet = .projectIcon(current.id)
+                } label: {
+                    Label(.changeIconEllipsis, systemImage: "paintpalette")
+                }
+            }
+            Section {
+                Button {
                     model.refresh()
                 } label: {
                     Label(.syncNow, systemImage: "arrow.triangle.2.circlepath")
@@ -482,7 +491,7 @@ struct SidebarAccountHeader: View {
             }
         } label: {
             HStack(spacing: 11) {
-                StatusSwatch(title: current.title, size: 24)
+                StatusProjectIcon(projectId: current.id, size: 24)
                 HStack(spacing: 6) {
                     Text(current.title)
                         .font(.headline)
@@ -623,22 +632,6 @@ extension MobileNavigation {
     /// Where the compose button starts a new issue: the project or repository on screen, or My Issues.
     var newIssueContext: NewIssueContext {
         NewIssueContext(projectId: currentProjectId, repoId: currentRepositoryId, assignToMe: tab == .myIssues, milestoneTitle: currentMilestoneTitle)
-    }
-}
-
-/// Coloured project squares as images, for the sidebar where entries need an image.
-@MainActor
-enum SwatchImages {
-    private static var cache: [String: UIImage] = [:]
-
-    static func image(for title: String) -> UIImage {
-        if let cached = cache[title] { return cached }
-        // As wide as the sidebar's symbol column, so project names line up with "My Issues" and "Search".
-        let renderer = ImageRenderer(content: ProjectSwatch(title: title, size: 16).frame(width: 28, height: 28))
-        renderer.scale = 3
-        let image = renderer.uiImage?.withRenderingMode(.alwaysOriginal) ?? UIImage()
-        cache[title] = image
-        return image
     }
 }
 

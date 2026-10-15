@@ -153,7 +153,7 @@ struct IssueRow: View {
             }
             if showsProject, let project = model.project(of: item) {
                 HStack(spacing: 5) {
-                    ProjectSwatch(title: project.title, size: 10)
+                    ProjectIcon(projectId: project.id, size: 10)
                     Text(project.title)
                 }
             } else if showsProject, !item.isOnBoard, let repo = item.repoShortName {

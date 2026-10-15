@@ -44,6 +44,7 @@ struct MyIssuesScreen: View {
 /// The Projects tab on the iPhone: every project, the one used last opened on top of it.
 struct ProjectsScreen: View {
     @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
 
     var body: some View {
         let open = model.openProjects
@@ -62,6 +63,13 @@ struct ProjectsScreen: View {
                         ForEach(open) { project in
                             NavigationLink(value: Route.project(project.id)) {
                                 ProjectRow(project: project)
+                            }
+                            .contextMenu {
+                                Button {
+                                    navigation.sheet = .projectIcon(project.id)
+                                } label: {
+                                    Label(.changeIconEllipsis, systemImage: "paintpalette")
+                                }
                             }
                             // Its next milestones and its roadmap right under it, as in the iPad's sidebar.
                             if model.hasPlanning(projectId: project.id) {
@@ -126,7 +134,7 @@ private struct ProjectRow: View {
         let items = model.allItems.filter { $0.projectId == project.id && !$0.isEpic }
         let open = items.filter { !(model.statusOption(of: $0)?.statusCategory.isClosed ?? $0.isClosed) }.count
         HStack(spacing: 12) {
-            ProjectSwatch(title: project.title, size: 18)
+            ProjectIcon(projectId: project.id, size: 18)
             VStack(alignment: .leading, spacing: 2) {
                 Text(project.title).font(.body.weight(.medium)).foregroundStyle(Theme.text)
                 Text(project.lastSyncedAt == nil ? project.ownerLogin : String(localized: .ownerOpenIssueCount(owner: project.ownerLogin, count: open)))
@@ -298,7 +306,7 @@ struct ProjectScreen: View {
             // A window narrower than this has the tab bar floating in the middle of the bar, next to the header.
             let roomy = windowWidth >= 950
             if wide, let project {
-                // The Mac's header: the project's swatch and name, then Board and List.
+                // The Mac's header: the project's icon and name, then Board and List.
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 10) {
                         // The view open, which the sidebar lists under the project; the project itself before
@@ -310,7 +318,7 @@ struct ProjectScreen: View {
                                 .font(.headline)
                                 .lineLimit(1)
                         } else {
-                            ProjectSwatch(title: project.title, size: 14)
+                            ProjectIcon(projectId: project.id, size: 14)
                             Text(project.title)
                                 .font(.headline)
                                 .lineLimit(1)
@@ -442,6 +450,11 @@ private struct ProjectOptionsMenu: View {
                 navigation.sheet = .arrangeSections(.project(project.id))
             } label: {
                 Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
+            }
+            Button {
+                navigation.sheet = .projectIcon(project.id)
+            } label: {
+                Label(.changeIconEllipsis, systemImage: "paintpalette")
             }
             if project.viewerCanUpdate, project.statusFieldId != nil {
                 Button {
