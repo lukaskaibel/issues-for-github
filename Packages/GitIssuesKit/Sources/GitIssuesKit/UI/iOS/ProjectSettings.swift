@@ -213,6 +213,147 @@ struct ArrangeSectionsSheet: View {
     }
 }
 
+/// A project's icon, as Reminders picks a list's: the icon large over the project's name, GitHub's colours, then the
+/// glyphs in their groups, with a search field that finds them by name. A colour keeps the sheet open so a glyph can
+/// follow; a glyph closes it.
+struct ProjectIconSheet: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    var projectId: String
+
+    @State private var query = ""
+    @State private var searching = false
+
+    /// As many columns as GitHub has colours, so the colours sit over the glyphs' columns.
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: Defaults.optionColors.count)
+
+    var body: some View {
+        let look = model.projectLooks.look(projectId)
+        let hasQuery = !query.trimmingCharacters(in: .whitespaces).isEmpty
+        let found = hasQuery ? ProjectGlyph.matching(query) : []
+        NavigationStack {
+            List {
+                if hasQuery {
+                    if !found.isEmpty {
+                        Section { grid(found, look: look) }
+                    }
+                } else {
+                    Section {
+                        VStack(spacing: 10) {
+                            ProjectGlyphImage(look: look, size: 40)
+                                .frame(width: 80, height: 80)
+                                .background(Circle().fill(Theme.projectColor(look.color).opacity(0.14)))
+                            if let project = model.projects.first(where: { $0.id == projectId }) {
+                                Text(project.title)
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(Theme.text)
+                                    .multilineTextAlignment(.center)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .accessibilityElement(children: .combine)
+                    }
+                    Section {
+                        LazyVGrid(columns: columns, spacing: 0) {
+                            ForEach(Defaults.optionColors, id: \.self) { color in
+                                colorButton(color, look: look)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    } footer: {
+                        Text(.projectIconNote)
+                    }
+                    ForEach(ProjectGlyphGroup.allCases, id: \.self) { group in
+                        Section {
+                            grid(group.glyphs, look: look)
+                        } header: {
+                            Text(group.title)
+                        }
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .listSectionSpacing(16)
+            .overlay {
+                if hasQuery, found.isEmpty { ContentUnavailableView.search(text: query) }
+            }
+            .searchable(text: $query, isPresented: $searching, placement: .navigationBarDrawer(displayMode: .always), prompt: Text(.searchIcons))
+            .onSubmit(of: .search) {
+                if let first = found.first { pick(first, look: look) }
+            }
+            .searchPresentationToolbarBehavior(.avoidHidingContent)
+            .navigationTitle(.projectIcon)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(.done, systemImage: "checkmark") {
+                        searching = false
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .sensoryFeedback(.selection, trigger: look)
+    }
+
+    private func grid(_ glyphs: [ProjectGlyph], look: ProjectLook) -> some View {
+        LazyVGrid(columns: columns, spacing: 0) {
+            ForEach(glyphs) { glyph in
+                glyphButton(glyph, look: look)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func colorButton(_ color: String, look: ProjectLook) -> some View {
+        let selected = look.color == color
+        return Button {
+            model.projectLooks.set(ProjectLook(glyph: look.glyph, color: color), for: projectId)
+        } label: {
+            Circle()
+                .fill(Theme.projectColor(color))
+                .frame(width: 26, height: 26)
+                .overlay {
+                    if selected {
+                        Circle().stroke(Theme.projectColor(color), lineWidth: 2).frame(width: 34, height: 34)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel(Defaults.colourName(color))
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    /// A glyph closes the sheet, from the search too, which is let go of first.
+    private func pick(_ glyph: ProjectGlyph, look: ProjectLook) {
+        model.projectLooks.set(ProjectLook(glyph: glyph, color: look.color), for: projectId)
+        searching = false
+        dismiss()
+    }
+
+    private func glyphButton(_ glyph: ProjectGlyph, look: ProjectLook) -> some View {
+        let selected = look.glyph == glyph
+        return Button {
+            pick(glyph, look: look)
+        } label: {
+            // Every glyph in the colour picked, so the choice shows before it is made.
+            ProjectGlyphImage(look: ProjectLook(glyph: glyph, color: look.color), size: 22)
+                .frame(width: 38, height: 38)
+                .background(Circle().fill(selected ? Theme.projectColor(look.color).opacity(0.16) : .clear))
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel(Text(glyph.name))
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
 /// Changes made elsewhere and changes that couldn't be saved, as banners at the top of the window. They hang
 /// just below the navigation bar, so its buttons stay within reach while one shows.
 struct NoticeBanners: View {

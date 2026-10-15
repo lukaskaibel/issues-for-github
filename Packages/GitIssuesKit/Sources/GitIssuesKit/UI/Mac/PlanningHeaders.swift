@@ -144,7 +144,7 @@ struct BoardCrumb: View {
                 model.select(.project(projectId))
             } label: {
                 HStack(spacing: 8) {
-                    ProjectSwatch(title: project.title)
+                    ProjectIcon(projectId: project.id)
                     Text(project.title).foregroundStyle(Theme.textSecondary).lineLimit(1)
                 }
             }

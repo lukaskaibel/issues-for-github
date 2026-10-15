@@ -64,6 +64,12 @@ public enum DemoData {
         hasDueField: false
     )
 
+    /// The projects' glyphs and colours, which the app keeps itself: the Mac app on a laptop, the website on a globe.
+    static let looks: [String: ProjectLook] = [
+        app.id: ProjectLook(glyph: ProjectGlyph(key: "laptop") ?? .table, color: "BLUE"),
+        site.id: ProjectLook(glyph: ProjectGlyph(key: "globe") ?? .table, color: "GREEN"),
+    ]
+
     // MARK: Issues
 
     private struct IssueSpec {

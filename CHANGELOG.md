@@ -8,6 +8,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **An icon for each project.** A project shows a glyph instead of a coloured square: GitHub's table in grey until
+  you pick another. Right-click the project at the top of the sidebar and choose **Change Icon…** (or **Change Project
+  Icon…** in the command palette) for one of 257 glyphs in one of GitHub's eight colours; on iPhone and iPad it is in a
+  project's "…" menu, in the menu of the project at the top of the iPad sidebar, and on a long press in Projects. The
+  glyphs come in twelve groups, from Work and Code to Animals and Sports and Leisure, and a search field finds them by
+  name in your language or in English. A colour keeps the picker open, a glyph closes it. GitHub has no icons for
+  projects, so the icon is kept in iCloud: your Mac, iPhone and iPad show the same one, and nobody else sees it.
 - **Milestones.** A board's next two milestones are listed under Milestones in the sidebar, the one it works towards
   with a filled diamond that turns red once its day has passed. Each opens the board's columns with only its issues,
   or a list of them grouped by epic, with what it is about, how much is done and the day it is due on top; click the

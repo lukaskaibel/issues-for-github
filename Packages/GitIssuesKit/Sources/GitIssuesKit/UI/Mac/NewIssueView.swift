@@ -226,7 +226,7 @@ struct NewIssueView: View {
     private var projectChip: some View {
         HStack(spacing: 6) {
             if let project = model.projects.first(where: { $0.id == draft.projectId }) {
-                ProjectSwatch(title: project.title, size: 10)
+                ProjectIcon(projectId: project.id, size: 10)
                 Text(project.title)
             } else {
                 RepositoryIcon(size: 10)

@@ -75,6 +75,7 @@ Only English uses Title Case; every other language writes menus and buttons as i
 | sync | synchronisieren | synchroniser | sincronizar | sincronizar | синхронизировать | 同期 | 同步 | 동기화 |
 | sign in / sign out | anmelden / abmelden | se connecter / se déconnecter | iniciar sesión / cerrar sesión | iniciar sessão / encerrar sessão | войти / выйти | サインイン / サインアウト | 登录 / 退出登录 | 로그인 / 로그아웃 |
 | settings | Einstellungen | Réglages | Ajustes | Ajustes | Настройки | 設定 | 设置 | 설정 |
+| icon (the app's, a project's) | Symbol | icône | icono | ícone | значок | アイコン | 图标 | 아이콘 |
 | command palette | Befehlspalette | palette de commandes | paleta de comandos | paleta de comandos | палитра команд | コマンドパレット | 命令面板 | 명령 팔레트 |
 | sample data | Beispieldaten | données d'exemple | datos de ejemplo | dados de exemplo | демонстрационные данные | サンプルデータ | 示例数据 | 샘플 데이터 |
 | queued (change waiting to be sent) | wartet | en attente | en cola | na fila | в очереди | 送信待ち | 待发送 | 전송 대기 |

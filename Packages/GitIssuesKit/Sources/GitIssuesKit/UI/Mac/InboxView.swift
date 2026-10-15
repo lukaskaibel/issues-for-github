@@ -444,7 +444,7 @@ private struct InboxEntryPane: View {
     private func header(_ item: Item?) -> some View {
         HStack(spacing: 8) {
             if let item, let project = model.project(of: item) {
-                ProjectSwatch(title: project.title)
+                ProjectIcon(projectId: project.id)
                 Text(project.title).foregroundStyle(Theme.textSecondary).lineLimit(1)
             } else {
                 Text(entry.repo).foregroundStyle(Theme.textSecondary).lineLimit(1).truncationMode(.middle)

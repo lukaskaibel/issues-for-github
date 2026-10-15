@@ -51,13 +51,14 @@ struct SidebarHeading: View {
 
 // MARK: - The project's menu
 
-/// The project the sidebar is about, at its top, as Linear shows its workspace: its colour with the state of syncing
-/// as a dot, and its name. A click opens its menu with the other projects and the account; right-click it to hide
-/// it, copy its link or open it on GitHub.
+/// The project the sidebar is about, at its top, as Linear shows its workspace: its icon with the state of syncing
+/// as a dot, and its name. A click opens its menu with the other projects and the account; right-click it to change
+/// its icon, hide it, copy its link or open it on GitHub.
 struct ProjectMenuButton: View {
     @Environment(AppModel.self) private var model
     var project: Project
     @State private var open = false
+    @State private var iconOpen = false
 
     var body: some View {
         let hidden = model.hiddenProjectIds.contains(project.id)
@@ -66,7 +67,7 @@ struct ProjectMenuButton: View {
                 open = true
             } label: {
                 HStack(spacing: 8) {
-                    StatusSwatch(title: project.title, size: 18)
+                    StatusProjectIcon(projectId: project.id, size: 18)
                     Text(project.title)
                         .font(.uiSemibold)
                         .lineLimit(1)
@@ -88,7 +89,13 @@ struct ProjectMenuButton: View {
             .dropdown(isPresented: $open) { close in
                 AccountDropdown(project: project, close: close)
             }
+            .dropdown(isPresented: $iconOpen) { close in
+                ProjectIconPicker(projectId: project.id, close: close)
+            }
+            .onChange(of: model.projectIconRequest) { iconOpen = true }
             .contextMenu {
+                Button(.changeIconEllipsis, systemImage: "paintpalette") { iconOpen = true }
+                Divider()
                 if hidden {
                     Button(.showInSidebar, systemImage: "eye") { model.setHidden(project, false) }
                 } else {
@@ -110,7 +117,7 @@ struct ProjectMenuButton: View {
     }
 }
 
-/// A project in the project's menu: its colour, its name, and a check on the one the sidebar is about.
+/// A project in the project's menu: its icon, its name, and a check on the one the sidebar is about.
 struct ProjectMenuRow: View {
     var project: Project
     var checked: Bool
@@ -122,7 +129,7 @@ struct ProjectMenuRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                ProjectSwatch(title: project.title, size: 12)
+                ProjectIcon(projectId: project.id, size: 12)
                     .opacity(dimmed ? 0.5 : 1)
                     .frame(width: 16, height: 16)
                 Text(project.title)
