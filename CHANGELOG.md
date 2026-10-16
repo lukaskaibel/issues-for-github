@@ -82,6 +82,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- On iPhone and iPad, tapping the status circle of a sub-issue on an issue's page opens a menu of its board's
+  statuses, as the status chip does, with the current one checked. Before, the tap marked it done at once, and the
+  circle had no way back. A sub-issue on none of your boards offers Open and Closed.
 - A parent, sub-issue or blocker someone else sets or removes now shows up in the app within seconds, on a board
   and off one. Before, the app noticed only when something else about the issue changed, because GitHub doesn't
   count these as changes of the issue or its board.

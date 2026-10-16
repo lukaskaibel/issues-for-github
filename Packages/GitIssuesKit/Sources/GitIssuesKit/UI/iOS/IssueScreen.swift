@@ -1048,24 +1048,23 @@ private struct MobileEpicWork: View {
 private struct MobileSubIssueRow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openRoute) private var openRoute
+    @Environment(\.colorScheme) private var scheme
     var sub: SubIssue
-    @State private var toggled = 0
 
     var body: some View {
         let boardItem = model.item(contentId: sub.id)
         HStack(spacing: 10) {
-            Button {
-                toggled += 1
-                withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
+            // A tap shows the statuses to pick from, as the status chip does, so another pick takes a wrong one back.
+            Menu {
+                statusMenu(boardItem)
             } label: {
                 StatusIcon(glyph: glyph(boardItem), size: 17)
                     .frame(width: 32, height: 44)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(PlainPressStyle())
-            .accessibilityLabel(sub.isClosed ? .reopenIssueNumber(number: sub.number) : .markIssueNumberAsDone(number: sub.number))
-            .accessibilityIdentifier("sub-toggle-#\(sub.number)")
-            .sensoryFeedback(.success, trigger: toggled)
+            .accessibilityLabel(.subIssueStatusLabel(number: sub.number, status: statusText(boardItem)))
+            .accessibilityIdentifier("sub-status-#\(sub.number)")
+            .sensoryFeedback(.selection, trigger: statusText(boardItem))
             Button {
                 if let boardItem {
                     openRoute(.issue(boardItem.id))
@@ -1132,6 +1131,49 @@ private struct MobileSubIssueRow: View {
                 }
             }
         }
+    }
+
+    /// On a board, its columns with the current one checked. Elsewhere it is only open or closed, and an issue the
+    /// app knows can go onto one of your boards too.
+    @ViewBuilder
+    private func statusMenu(_ boardItem: Item?) -> some View {
+        if let card = card(boardItem) {
+            StatusMenuItems(item: card)
+        } else {
+            Picker(.status, selection: Binding(
+                get: { sub.isClosed },
+                set: { closed in withAnimation(Theme.spring) { model.setClosed(sub, closed) } }
+            )) {
+                Label {
+                    Text(.stateOpen)
+                } icon: {
+                    MenuImages.status(.openOrClosed("OPEN", reason: nil), scheme)
+                }
+                .tag(false)
+                Label {
+                    Text(.stateClosed)
+                } icon: {
+                    MenuImages.status(.openOrClosed("CLOSED", reason: "COMPLETED"), scheme)
+                }
+                .tag(true)
+            }
+            .pickerStyle(.inline)
+            if let boardItem, !model.boards(toAdd: boardItem).isEmpty {
+                Divider()
+                AddToProjectMenuItems(item: boardItem)
+            }
+        }
+    }
+
+    private func statusText(_ boardItem: Item?) -> String {
+        if let card = card(boardItem) { return model.statusText(of: card) }
+        return String(localized: sub.isClosed ? .stateClosed : .stateOpen)
+    }
+
+    /// The sub-issue as a card on a board with columns to pick from.
+    private func card(_ boardItem: Item?) -> Item? {
+        guard let boardItem, boardItem.isOnBoard, !model.statusOptions(projectId: boardItem.projectId).isEmpty else { return nil }
+        return boardItem
     }
 
     private func glyph(_ boardItem: Item?) -> StatusGlyph {

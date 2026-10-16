@@ -580,6 +580,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap the date chip of an issue | Pick a due date: quick choices, a calendar, or typed in the search field |
 | Touch and hold a reminder | Start the issue, mark it done or move it to tomorrow, without opening the app |
 | Tap the plus beside an issue's sub-issues | A new sub-issue, or an issue that exists already |
+| Tap the status circle of a sub-issue | Pick its status; Open or Closed for one on none of your boards |
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place; the bar above the keyboard adds bold, italics, code, lists and links |
 | Tap a drawn description (table, checklist, code, diagram) | Show its Markdown; tap again to edit. Tap a checkbox to tick it |
