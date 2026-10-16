@@ -271,12 +271,19 @@ final class PhoneTests: AppTestCase {
         wait(element("issue-title"))
         snapshot("Issue #9 with sub-issues")
 
-        // Ticking a sub-issue moves it to done.
-        let toggle = element("sub-toggle-#13")
-        scrollTo(toggle)
-        wait(toggle)
-        toggle.tap()
-        waitForLabel(element("sub-toggle-#13"), containing: "Reopen")
+        // A sub-issue's status circle shows its board's columns; picking one moves it, and another moves it back.
+        let status = element("sub-status-#13")
+        scrollTo(status)
+        wait(status)
+        status.tap()
+        wait(button("Done"))
+        snapshot("Sub-issue status menu")
+        button("Done").tap()
+        waitForLabel(element("sub-status-#13"), containing: "Done")
+        element("sub-status-#13").tap()
+        wait(button("In Progress"))
+        button("In Progress").tap()
+        waitForLabel(element("sub-status-#13"), containing: "In Progress")
 
         let field = element("comment-field")
         wait(field)
@@ -412,7 +419,7 @@ final class PhoneTests: AppTestCase {
         waitForLabel(element("chip-status"), containing: "Done")
         snapshot("Sub-issue")
         parent.tap()
-        wait(element("sub-toggle-#10"))
+        wait(element("sub-status-#10"))
 
         // A sub-issue's own menu, from a long press.
         let row = element("sub-#11")
@@ -422,7 +429,7 @@ final class PhoneTests: AppTestCase {
         snapshot("Sub-issue menu")
         button("Status").tap()
         button("In Progress").tap()
-        waitForLabel(element("sub-toggle-#11"), containing: "Mark #11 as done")
+        waitForLabel(element("sub-status-#11"), containing: "In Progress")
     }
 
     // MARK: Gestures

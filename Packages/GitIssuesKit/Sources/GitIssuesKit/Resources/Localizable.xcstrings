@@ -33343,66 +33343,6 @@
         }
       }
     },
-    "markIssueNumberAsDone" : {
-      "comment" : "iPhone and iPad, issue screen: VoiceOver label of the status circle of an open sub-issue; a tap closes it as completed. %(number)lld is its issue number, shown after #.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "#%lld als erledigt markieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mark #%(number)lld as done"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marcar #%lld como completada"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marquer #%lld comme terminé"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "#%lldを完了にする"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "#%lld 완료로 표시"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marcar #%lld como concluída"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Отметить #%lld как выполненную"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将 #%lld 标记为完成"
-          }
-        }
-      }
-    },
     "markRead" : {
       "comment" : "iPhone and iPad Inbox: swipe action (a verb) that marks a notification as read. Short.",
       "extractionState" : "manual",
@@ -67249,66 +67189,6 @@
         }
       }
     },
-    "reopenIssueNumber" : {
-      "comment" : "iPhone and iPad, issue screen: VoiceOver label of the status circle of a closed sub-issue; a tap reopens it. %(number)lld is its issue number, shown after #.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "#%lld wieder öffnen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reopen #%(number)lld"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reabrir #%lld"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rouvrir #%lld"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "#%lldを再オープン"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "#%lld 다시 열기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reabrir #%lld"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Открыть #%lld снова"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新打开 #%lld"
-          }
-        }
-      }
-    },
     "reopenMilestone" : {
       "comment" : "Menu command: open a completed (closed) milestone again.",
       "extractionState" : "manual",
@@ -75181,6 +75061,66 @@
         }
       }
     },
+    "stateOpen" : {
+      "comment" : "iPhone and iPad, issue screen: in the menu of a sub-issue's status circle, the state of a sub-issue that is on none of your project boards and open; the other choice is 'Closed'. Also: VoiceOver, the same circle's state. An adjective about one issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abierta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvert"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オープン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "열림"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aberta"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыта"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未关闭"
+          }
+        }
+      }
+    },
     "status" : {
       "comment" : "An issue's status: the column it is in on the project board. Used as a label, picker title and menu item.",
       "extractionState" : "manual",
@@ -76299,6 +76239,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "不在此看板上；将在 GitHub 上打开"
+          }
+        }
+      }
+    },
+    "subIssueStatusLabel" : {
+      "comment" : "iPhone and iPad, issue screen, list of sub-issues: VoiceOver label of a sub-issue's status circle; activating it shows a menu to change the status. %(number)lld is the sub-issue's number, shown after #. %(status)@ is its status, such as “In Progress”, “Open” or “Closed”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status von #%1$lld: %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status of #%(number)lld: %(status)@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estado de #%1$lld: %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Statut de #%1$lld : %2$@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "#%1$lldのステータス：%2$@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "#%1$lld 상태: %2$@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status de #%1$lld: %2$@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Статус #%1$lld: %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "#%1$lld 的状态：%2$@"
           }
         }
       }
