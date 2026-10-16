@@ -1,6 +1,6 @@
 #!/bin/bash
-# Renders the Icon Composer documents into the PNGs the app offers in Settings and the README shows.
-#   swift Tools/make-card-icon.swift && Tools/render-icons.sh
+# Renders the Icon Composer documents into the PNGs the app offers in its icon pickers and the README shows.
+#   python3 Tools/make-board-icon.py && Tools/render-icons.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ictool="$(xcode-select -p)/../Applications/Icon Composer.app/Contents/Executables/ictool"
@@ -15,14 +15,20 @@ render() {
   swift Tools/pad-icon.swift "$work/full.png" "$3"
 }
 
-render GitIssues/AppIcon.icon Default "$work/light.png"
-render GitIssues/AppIcon.icon Dark "$work/dark.png"
-render Design/AppIcon-Violet.icon Default "$work/violet.png"
-swift Tools/pad-icon.swift --split "$work/light.png" "$work/dark.png" "$work/auto.png"
-
-for name in light dark violet auto; do
-  sips -z 512 512 "$work/$name.png" --out "$resources/icon-A-$name.png" >/dev/null
+# Each board, light and dark, under the name AppIconChoice uses: AppIcon.icon is the pinboard, AppIcon-Cork.icon the cork.
+rm -f "$resources"/icon-*.png
+for document in GitIssues/AppIcon*.icon; do
+  name=$(basename "$document" .icon)
+  name=${name#AppIcon}
+  name=${name#-}
+  name=$(echo "${name:-pinboard}" | tr '[:upper:]' '[:lower:]')
+  render "$document" Default "$work/$name-light.png"
+  render "$document" Dark "$work/$name-dark.png"
+  for look in light dark; do
+    sips -z 512 512 "$work/$name-$look.png" --out "$resources/icon-$name-$look.png" >/dev/null
+  done
 done
-sips -z 256 256 "$work/light.png" --out Design/icon.png >/dev/null
-sips -z 256 256 "$work/dark.png" --out Design/icon-dark.png >/dev/null
-echo "Rendered the card icons into $resources and Design/."
+
+sips -z 256 256 "$work/pinboard-light.png" --out Design/icon.png >/dev/null
+sips -z 256 256 "$work/pinboard-dark.png" --out Design/icon-dark.png >/dev/null
+echo "Rendered the board icons into $resources and Design/."

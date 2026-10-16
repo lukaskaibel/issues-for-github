@@ -24,7 +24,7 @@ INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphone*] = YES
 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone[sdk=iphone*] = UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad[sdk=iphone*] = UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
 INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO
-ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES[sdk=iphone*] = AppIcon-Light AppIcon-Dark AppIcon-Violet
+ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES[sdk=iphone*] = AppIcon-Cork AppIcon-Metal AppIcon-Whiteboard AppIcon-Slate AppIcon-Navy AppIcon-Sage
 ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS[sdk=iphone*] = YES
 
 // The login is shared between the Mac, iPhone and iPad through iCloud Keychain, which needs a keychain

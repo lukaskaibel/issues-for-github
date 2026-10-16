@@ -2401,842 +2401,122 @@
         }
       }
     },
-    "appIconAutomatic" : {
-      "comment" : "iPhone and iPad account sheet: app icon choice that turns light or dark with the system. Short, under a small picture of the icon.",
+    "appIconCork" : {
+      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a planning board with three notes joined by string; the names are the board's material or colour. Short: about 10 characters fit. A cork board.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Automatisch"
+            "value" : "Kork"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Automatic"
+            "value" : "Cork"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Automático"
+            "value" : "Corcho"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Automatique"
+            "value" : "Liège"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "自動"
+            "value" : "コルク"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "자동"
+            "value" : "코르크"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Automático"
+            "value" : "Cortiça"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Авто"
+            "value" : "Пробка"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "自动"
-          }
-        }
-      }
-    },
-    "appIconBoard" : {
-      "comment" : "Mac Settings: name of an app icon that shows a kanban board, on a light plate. A noun, the picture's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Board"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Board"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tablero"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tableau"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ボード"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "보드"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quadro"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Доска"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "看板"
-          }
-        }
-      }
-    },
-    "appIconBoardDark" : {
-      "comment" : "Mac Settings: name of an app icon that shows a kanban board, on a dark plate.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Board, dunkel"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Board, dark"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tablero, oscuro"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tableau, sombre"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ボード（ダーク）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "보드, 다크"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quadro, escuro"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Доска, темный вариант"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "看板，深色"
-          }
-        }
-      }
-    },
-    "appIconBoardOnColour" : {
-      "comment" : "Mac Settings: name of an app icon that shows a kanban board on a coloured plate.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Board, farbig"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Board on colour"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tablero sobre fondo de color"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tableau sur fond coloré"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ボード（カラー）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "컬러 배경 보드"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quadro em fundo colorido"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Доска на цветном фоне"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "彩色底看板"
-          }
-        }
-      }
-    },
-    "appIconBoardOnColourDark" : {
-      "comment" : "Mac Settings: name of an app icon that shows a kanban board on a coloured plate, dark version.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Board, farbig, dunkel"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Board on colour, dark"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tablero sobre fondo de color, oscuro"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tableau sur fond coloré, sombre"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ボード（カラー、ダーク）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "컬러 배경 보드, 다크"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quadro em fundo colorido, escuro"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Доска на цветном фоне, темный вариант"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "彩色底看板，深色"
-          }
-        }
-      }
-    },
-    "appIconCardAuto" : {
-      "comment" : "Mac Settings: name of an app icon (a card drawn on a plate) that turns light or dark with the system's appearance.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Karte, hell oder dunkel wie das System"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Card, light or dark with the system"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tarjeta, clara u oscura según el sistema"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Carte, claire ou sombre selon le système"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "カード（システムに合わせてライト／ダーク）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "카드, 시스템에 따라 라이트 또는 다크"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cartão, claro ou escuro conforme o sistema"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Карточка, светлая или темная, как в системе"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "卡片，随系统切换浅色或深色"
-          }
-        }
-      }
-    },
-    "appIconCardDark" : {
-      "comment" : "Mac Settings: name of an app icon, a card on a dark plate.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Karte, dunkel"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Card, dark"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tarjeta, oscura"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Carte, sombre"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "カード（ダーク）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "카드, 다크"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cartão, escuro"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Карточка, темный вариант"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "卡片，深色"
-          }
-        }
-      }
-    },
-    "appIconCardLight" : {
-      "comment" : "Mac Settings: name of an app icon, a card on a light plate.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Karte, hell"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Card, light"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tarjeta, clara"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Carte, claire"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "カード（ライト）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "카드, 라이트"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cartão, claro"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Карточка, светлый вариант"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "卡片，浅色"
-          }
-        }
-      }
-    },
-    "appIconCardViolet" : {
-      "comment" : "Mac Settings: name of an app icon, a card on a violet plate.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Karte, violett"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Card on violet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tarjeta sobre fondo violeta"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Carte sur fond violet"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "カード（バイオレット）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "보라색 배경 카드"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cartão em fundo violeta"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Карточка на фиолетовом фоне"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "紫罗兰色底卡片"
-          }
-        }
-      }
-    },
-    "appIconChecklist" : {
-      "comment" : "Mac Settings: name of an app icon that shows a checklist, on a light plate.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Checkliste"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Checklist"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lista de tareas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Liste de tâches"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "チェックリスト"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "체크리스트"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Checklist"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Чек-лист"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "清单"
-          }
-        }
-      }
-    },
-    "appIconChecklistDark" : {
-      "comment" : "Mac Settings: name of an app icon that shows a checklist, on a dark plate.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Checkliste, dunkel"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Checklist, dark"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lista de tareas, oscura"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Liste de tâches, sombre"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "チェックリスト（ダーク）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "체크리스트, 다크"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Checklist, escuro"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Чек-лист, темный вариант"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "清单，深色"
-          }
-        }
-      }
-    },
-    "appIconDark" : {
-      "comment" : "iPhone and iPad account sheet: app icon choice, the icon on a dark plate. Short, under a small picture of the icon.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dunkel"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dark"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Oscuro"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sombre"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ダーク"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "다크"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Escuro"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Темный"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "深色"
+            "value" : "软木"
           }
         }
       }
     },
     "appIconFootnote" : {
-      "comment" : "Mac Settings: note under the choice of app icons.",
+      "comment" : "Mac Settings: note under the choice of app icons. 'The first' is the pinboard, the app's own icon.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Das erste passt sich dem hellen und dunklen Erscheinungsbild an. Die anderen erscheinen im Dock, solange die App geöffnet ist."
+            "value" : "Alle passen sich dem hellen und dunklen Erscheinungsbild an. Das erste ist das eigene Symbol der App, die anderen erscheinen im Dock, solange die App geöffnet ist."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The first one follows light and dark mode. Others show in the Dock while the app is open."
+            "value" : "All follow light and dark mode. The first is the app's own icon; the others show in the Dock while the app is open."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El primero sigue el modo claro u oscuro. Los demás se muestran en el Dock mientras la app está abierta."
+            "value" : "Todos siguen el modo claro u oscuro. El primero es el icono propio de la app; los demás se muestran en el Dock mientras la app está abierta."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La première suit le mode clair ou sombre. Les autres s’affichent dans le Dock tant que l’app est ouverte."
+            "value" : "Toutes suivent le mode clair ou sombre. La première est l’icône propre à l’app ; les autres s’affichent dans le Dock tant que l’app est ouverte."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "最初のアイコンはライトモードとダークモードに合わせて切り替わります。その他のアイコンは、Appが開いている間Dockに表示されます。"
+            "value" : "すべてのアイコンはライトモードとダークモードに合わせて切り替わります。最初のアイコンはApp本来のアイコンで、その他のアイコンはAppが開いている間Dockに表示されます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "첫 번째 아이콘은 라이트 및 다크 모드를 따릅니다. 다른 아이콘은 앱이 열려 있는 동안 Dock에 표시됩니다."
+            "value" : "모든 아이콘은 라이트 및 다크 모드를 따릅니다. 첫 번째 아이콘은 앱의 기본 아이콘이며, 다른 아이콘은 앱이 열려 있는 동안 Dock에 표시됩니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "O primeiro acompanha o modo claro e escuro. Os outros aparecem no Dock enquanto o app está aberto."
+            "value" : "Todos acompanham o modo claro e escuro. O primeiro é o ícone próprio do app; os outros aparecem no Dock enquanto o app está aberto."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Первый значок меняется вместе со светлым и темным оформлением. Остальные видны в Dock, пока приложение открыто."
+            "value" : "Все значки меняются вместе со светлым и темным оформлением. Первый — собственный значок приложения, остальные видны в Dock, пока приложение открыто."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "第一个图标会随浅色和深色模式切换。其他图标会在 App 打开时显示在程序坞中。"
-          }
-        }
-      }
-    },
-    "appIconLight" : {
-      "comment" : "iPhone and iPad account sheet: app icon choice, the icon on a light plate. Short, under a small picture of the icon.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hell"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Light"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claro"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Clair"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ライト"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "라이트"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Claro"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Светлый"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "浅色"
+            "value" : "所有图标都会随浅色和深色模式切换。第一个是 App 自带的图标；其他图标会在 App 打开时显示在程序坞中。"
           }
         }
       }
@@ -3301,182 +2581,362 @@
         }
       }
     },
-    "appIconThreeBars" : {
-      "comment" : "Mac Settings: name of an app icon that shows three bars, on a light plate.",
+    "appIconMetal" : {
+      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a planning board with three notes joined by string; the names are the board's material or colour. Short: about 10 characters fit. A metal board with magnets instead of pins.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Drei Balken"
+            "value" : "Metall"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Three bars"
+            "value" : "Metal"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tres barras"
+            "value" : "Metal"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trois barres"
+            "value" : "Métal"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "3本のバー"
+            "value" : "メタル"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "막대 세 개"
+            "value" : "메탈"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Três barras"
+            "value" : "Metal"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Три полосы"
+            "value" : "Металл"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "三条杠"
+            "value" : "金属"
           }
         }
       }
     },
-    "appIconThreeBarsDark" : {
-      "comment" : "Mac Settings: name of an app icon that shows three bars, on a dark plate.",
+    "appIconNavy" : {
+      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a planning board with three notes joined by string; the names are the board's material or colour. Short: about 10 characters fit. A navy blue fabric board; the colour.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Drei Balken, dunkel"
+            "value" : "Marine"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Three bars, dark"
+            "value" : "Navy"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tres barras, oscuras"
+            "value" : "Azul marino"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trois barres, sombre"
+            "value" : "Marine"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "3本のバー（ダーク）"
+            "value" : "ネイビー"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "막대 세 개, 다크"
+            "value" : "네이비"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Três barras, escuro"
+            "value" : "Azul-marinho"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Три полосы, темный вариант"
+            "value" : "Темно-синий"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "三条杠，深色"
+            "value" : "藏青"
           }
         }
       }
     },
-    "appIconViolet" : {
-      "comment" : "iPhone and iPad account sheet: app icon choice, the icon on a violet plate. Short, under a small picture of the icon.",
+    "appIconPinboard" : {
+      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a planning board with three notes joined by string; the names are the board's material or colour. Short: about 10 characters fit. This one, the app's own icon, is a warm grey fabric notice board with pins.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Violett"
+            "value" : "Pinnwand"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Violet"
+            "value" : "Pinboard"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Violeta"
+            "value" : "Tablón"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Violet"
+            "value" : "Panneau"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "バイオレット"
+            "value" : "ピンボード"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "보라색"
+            "value" : "핀보드"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Violeta"
+            "value" : "Mural"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Фиолетовый"
+            "value" : "Доска"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "紫罗兰色"
+            "value" : "图钉板"
+          }
+        }
+      }
+    },
+    "appIconSage" : {
+      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a planning board with three notes joined by string; the names are the board's material or colour. Short: about 10 characters fit. A sage green fabric board; the colour, not the herb.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salbei"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sage"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salvia"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sauge"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セージ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세이지"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sálvia"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шалфей"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "鼠尾草绿"
+          }
+        }
+      }
+    },
+    "appIconSlate" : {
+      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a planning board with three notes joined by string; the names are the board's material or colour. Short: about 10 characters fit. A blue-grey fabric board; the colour slate, not the stone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schiefer"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gris pizarra"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ardoise"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スレート"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "슬레이트"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ardósia"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сланец"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "石板灰"
+          }
+        }
+      }
+    },
+    "appIconWhiteboard" : {
+      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a planning board with three notes joined by string; the names are the board's material or colour. Short: about 10 characters fit. A whiteboard with magnets.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whiteboard"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whiteboard"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pizarra blanca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tableau blanc"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホワイトボード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "화이트보드"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quadro branco"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Белая доска"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "白板"
           }
         }
       }

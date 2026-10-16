@@ -62,12 +62,11 @@ struct AccountSheet: View {
 
                 if UIApplication.shared.supportsAlternateIcons {
                     Section(.appIcon) {
-                        HStack(spacing: 0) {
-                            ForEach(AppIconChoice.mobile) { choice in
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 4), spacing: 14) {
+                            ForEach(AppIconChoice.allCases) { choice in
                                 AppIconButton(choice: choice, selected: model.appIcon == choice) {
                                     model.appIcon = choice
                                 }
-                                .frame(maxWidth: .infinity)
                             }
                         }
                         .padding(.vertical, 6)
@@ -139,9 +138,11 @@ private struct AppIconButton: View {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(selected ? Theme.accent : .clear, lineWidth: 2.5)
                 )
-                Text(choice.shortTitle)
+                Text(choice.title)
                     .font(.caption)
                     .foregroundStyle(selected ? Theme.text : Theme.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
         }
         .buttonStyle(.plain)
@@ -204,12 +205,13 @@ struct QueueScreen: View {
 
 /// An app icon the way the Home Screen shows it: filling a rounded square.
 struct AppIconImage: View {
+    @Environment(\.colorScheme) private var scheme
     var choice: AppIconChoice
     var size: CGFloat
 
     var body: some View {
         Group {
-            if let image = choice.image {
+            if let image = choice.image(dark: scheme == .dark) {
                 // The images carry the Mac Dock's margin around the icon; here the icon fills the square.
                 Image(uiImage: image)
                     .resizable()
