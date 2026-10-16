@@ -67,80 +67,52 @@ enum AppearanceSetting: String, CaseIterable, Identifiable {
     }
 }
 
-/// The icons the app can wear in the Dock: four designs, each on a light and on a dark plate.
-/// The first one is also the icon of the app bundle.
+/// The icons the app can wear: a planning board in seven materials, each with a light and a dark look that
+/// follows the system. The pinboard is the app bundle's own icon.
 enum AppIconChoice: String, CaseIterable, Identifiable {
-    /// The app's own icon, which follows the system's light or dark appearance.
-    case card = "a"
-    case cardLight = "a-light"
-    case cardDark = "a-dark"
-    case cardViolet = "a-violet"
-    case boardLight = "e"
-    case colourLight = "g"
-    case barsLight = "i"
-    case checklistLight = "j"
-    case boardDark = "f"
-    case colourDark = "g-dark"
-    case barsDark = "i-dark"
-    case checklistDark = "j-dark"
+    case pinboard
+    case cork
+    case metal
+    case whiteboard
+    case slate
+    case navy
+    case sage
 
-    static let cards: [AppIconChoice] = [.card, .cardLight, .cardDark, .cardViolet]
-    static let light: [AppIconChoice] = [.boardLight, .colourLight, .barsLight, .checklistLight]
-    static let dark: [AppIconChoice] = [.boardDark, .colourDark, .barsDark, .checklistDark]
-    static let standard = AppIconChoice.card
-    /// A new key with the card icon, so everyone starts from it once rather than keeping an older pick.
+    static let standard = AppIconChoice.pinboard
+    /// Picks stored under the earlier designs ("a", "e" and so on) no longer read, so everyone starts from the pinboard.
     static let defaultsKey = "dockIcon"
 
     var id: String { rawValue }
 
     var title: String {
         let name: LocalizedStringResource = switch self {
-        case .card: .appIconCardAuto
-        case .cardLight: .appIconCardLight
-        case .cardDark: .appIconCardDark
-        case .cardViolet: .appIconCardViolet
-        case .boardLight: .appIconBoard
-        case .boardDark: .appIconBoardDark
-        case .colourLight: .appIconBoardOnColour
-        case .colourDark: .appIconBoardOnColourDark
-        case .barsLight: .appIconThreeBars
-        case .barsDark: .appIconThreeBarsDark
-        case .checklistLight: .appIconChecklist
-        case .checklistDark: .appIconChecklistDark
+        case .pinboard: .appIconPinboard
+        case .cork: .appIconCork
+        case .metal: .appIconMetal
+        case .whiteboard: .appIconWhiteboard
+        case .slate: .appIconSlate
+        case .navy: .appIconNavy
+        case .sage: .appIconSage
         }
         return String(localized: name)
     }
 
-    private var resource: String {
-        switch self {
-        case .card: "icon-A-auto"
-        case .cardLight: "icon-A-light"
-        case .cardDark: "icon-A-dark"
-        case .cardViolet: "icon-A-violet"
-        case .boardLight: "icon-E"
-        case .boardDark: "icon-F"
-        case .colourLight: "icon-G"
-        case .colourDark: "icon-G-dark"
-        case .barsLight: "icon-I"
-        case .barsDark: "icon-I-dark"
-        case .checklistLight: "icon-J"
-        case .checklistDark: "icon-J-dark"
-        }
-    }
-
-    var image: PlatformImage? {
+    /// The icon as the Dock or Home Screen shows it, in the light or the dark look.
+    func image(dark: Bool) -> PlatformImage? {
+        let resource = "icon-\(rawValue)-\(dark ? "dark" : "light")"
         #if os(macOS)
-        Bundle.module.image(forResource: resource)
+        return Bundle.module.image(forResource: resource)
         #else
-        UIImage(named: resource, in: .module, with: nil)
+        return UIImage(named: resource, in: .module, with: nil)
         #endif
     }
 
     @MainActor
     func apply() {
         #if os(macOS)
-        // The standard icon is the bundle's own; setting nil hands the Dock back to it.
-        NSApplication.shared.applicationIconImage = self == Self.standard ? nil : image
+        // The standard icon is the bundle's own and follows light and dark by itself; nil hands the Dock back to it.
+        // The others are pictures, so they are set again whenever the system's appearance changes.
+        NSApplication.shared.applicationIconImage = self == Self.standard ? nil : image(dark: Self.systemIsDark)
         #else
         // iOS shows an alert of its own whenever the icon changes, so only ask when it really differs.
         guard UIApplication.shared.supportsAlternateIcons,
@@ -149,27 +121,23 @@ enum AppIconChoice: String, CaseIterable, Identifiable {
         #endif
     }
 
-    /// The icons offered on iPhone and iPad: the card in its four looks.
-    static let mobile: [AppIconChoice] = [.card, .cardLight, .cardDark, .cardViolet]
+    #if os(macOS)
+    /// The system's appearance rather than the app's: the Dock follows the system, even when the app is set to light or dark.
+    static var systemIsDark: Bool {
+        UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark"
+    }
+    #endif
 
     /// Name of the alternate icon in the app bundle; nil is the app's own icon.
     var alternateIconName: String? {
         switch self {
-        case .cardLight: "AppIcon-Light"
-        case .cardDark: "AppIcon-Dark"
-        case .cardViolet: "AppIcon-Violet"
-        default: nil
-        }
-    }
-
-    /// Short names for the iOS picker.
-    var shortTitle: String {
-        switch self {
-        case .card: String(localized: .appIconAutomatic)
-        case .cardLight: String(localized: .appIconLight)
-        case .cardDark: String(localized: .appIconDark)
-        case .cardViolet: String(localized: .appIconViolet)
-        default: title
+        case .pinboard: nil
+        case .cork: "AppIcon-Cork"
+        case .metal: "AppIcon-Metal"
+        case .whiteboard: "AppIcon-Whiteboard"
+        case .slate: "AppIcon-Slate"
+        case .navy: "AppIcon-Navy"
+        case .sage: "AppIcon-Sage"
         }
     }
 
@@ -177,8 +145,7 @@ enum AppIconChoice: String, CaseIterable, Identifiable {
     /// The icon the system currently shows.
     @MainActor
     static var current: AppIconChoice {
-        mobile.first { $0.alternateIconName == UIApplication.shared.alternateIconName } ?? .card
+        allCases.first { $0.alternateIconName == UIApplication.shared.alternateIconName } ?? .standard
     }
     #endif
 }
-

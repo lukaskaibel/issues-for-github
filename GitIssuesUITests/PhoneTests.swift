@@ -803,15 +803,15 @@ final class PhoneTests: AppTestCase {
         launch()
         element("account-button").tap()
         wait(app.navigationBars["Account"])
-        let dark = button("Card, dark")
-        scrollTo(dark, in: app.collectionViews.firstMatch)
-        wait(dark)
-        dark.tap()
+        let cork = button("Cork")
+        scrollTo(cork, in: app.collectionViews.firstMatch)
+        wait(cork)
+        cork.tap()
         confirmIconChange()
-        XCTAssertTrue(dark.isSelected)
-        button("Card, light or dark with the system").tap()
+        XCTAssertTrue(cork.isSelected)
+        button("Pinboard").tap()
         confirmIconChange()
-        XCTAssertTrue(button("Card, light or dark with the system").isSelected)
+        XCTAssertTrue(button("Pinboard").isSelected)
     }
 
     func testLeavingSampleDataShowsSignIn() {

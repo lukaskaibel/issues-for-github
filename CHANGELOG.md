@@ -71,6 +71,15 @@ All notable changes to this project are recorded here. The format follows
   mark on its milestone's day, with today and the milestones marked; click a name to open the issue. **Display**
   shows it as a list or board instead. The same on iPhone and iPad, the timeline on the iPad.
 
+### Changed
+
+- **A new app icon: a planning board.** An index card, a screenshot of code and a sticky note, pinned to a warm grey
+  fabric board and joined with string; it follows light and dark mode. Settings on the Mac, and your account on
+  iPhone and iPad, offer the board in six more materials: cork, metal with magnets, a whiteboard, and slate, navy or
+  sage fabric. The Mac shows the one you pick in the Dock while the app is open, switching with the system's light
+  and dark mode; iPhone and iPad put it on the Home Screen. The card icons are gone, so everyone starts from the
+  pinboard.
+
 ### Fixed
 
 - A parent, sub-issue or blocker someone else sets or removes now shows up in the app within seconds, on a board

@@ -7,7 +7,6 @@ import UIKit
 /// shared from the Mac through iCloud Keychain, or without an account on sample data.
 struct SignInScreen: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.colorScheme) private var scheme
     @Environment(\.scenePhase) private var scenePhase
     @State private var flow = DeviceSignIn()
     @State private var showToken = false
@@ -21,7 +20,7 @@ struct SignInScreen: View {
             VStack(spacing: 0) {
                 Spacer(minLength: 40)
                 VStack(spacing: 22) {
-                    AppIconImage(choice: scheme == .dark ? .cardDark : .cardLight, size: 108)
+                    AppIconImage(choice: .standard, size: 108)
                         .shadow(color: Theme.shadow, radius: 18, y: 10)
                         .accessibilityHidden(true)
                     VStack(spacing: 10) {

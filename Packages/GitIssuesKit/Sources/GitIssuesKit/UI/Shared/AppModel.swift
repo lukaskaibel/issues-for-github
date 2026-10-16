@@ -479,6 +479,12 @@ public final class AppModel {
         appearance.apply()
         #if os(macOS)
         appIcon.apply()
+        // A picture in the Dock doesn't follow light and dark by itself, so it is set again when the system switches.
+        _ = DistributedNotificationCenter.default().addObserver(
+            forName: Notification.Name("AppleInterfaceThemeChangedNotification"), object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.appIcon.apply() }
+        }
         #endif
         startObserving()
         restoreScope()

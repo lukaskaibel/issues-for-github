@@ -129,6 +129,7 @@ public struct GitIssuesScene: Scene {
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         @Bindable var model = model
@@ -142,12 +143,11 @@ struct SettingsView: View {
 
             LabeledContent(.appIconMac) {
                 VStack(alignment: .trailing, spacing: 8) {
-                    iconRow(AppIconChoice.cards)
-                    iconRow(AppIconChoice.light)
-                    iconRow(AppIconChoice.dark)
+                    iconGrid
                     Text(.appIconFootnote)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.trailing)
                 }
             }
 
@@ -191,32 +191,43 @@ struct SettingsView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private func iconRow(_ choices: [AppIconChoice]) -> some View {
-        HStack(spacing: 10) {
-            ForEach(choices) { choice in
+    /// The board in each material, four to a row, named underneath.
+    private var iconGrid: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.fixed(62), spacing: 8), count: 4), alignment: .leading, spacing: 10) {
+            ForEach(AppIconChoice.allCases) { choice in
                 Button {
                     model.appIcon = choice
                 } label: {
-                    Group {
-                        if let image = choice.image {
-                            Image(nsImage: image).resizable().interpolation(.high)
-                        } else {
-                            Color.gray.opacity(0.2)
+                    VStack(spacing: 3) {
+                        Group {
+                            if let image = choice.image(dark: colorScheme == .dark) {
+                                Image(nsImage: image).resizable().interpolation(.high)
+                            } else {
+                                Color.gray.opacity(0.2)
+                            }
                         }
+                        .frame(width: 48, height: 48)
+                        .padding(3)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(model.appIcon == choice ? Color.accentColor : .clear, lineWidth: 2)
+                        )
+                        Text(choice.title)
+                            .font(.caption)
+                            .foregroundStyle(model.appIcon == choice ? .primary : .secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
-                    .frame(width: 48, height: 48)
-                    .padding(3)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(model.appIcon == choice ? Color.accentColor : .clear, lineWidth: 2)
-                    )
+                    .frame(width: 62)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help(choice.title)
+                .accessibilityElement(children: .ignore)
                 .accessibilityLabel(choice.title)
                 .accessibilityAddTraits(model.appIcon == choice ? .isSelected : [])
             }
         }
+        .frame(width: 4 * 62 + 3 * 8)
     }
 }
 #endif

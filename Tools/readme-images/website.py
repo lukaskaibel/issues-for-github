@@ -27,7 +27,7 @@ for theme, pad_shot, phone_shot in [("light", "ipad/1-board", "iphone/1-my-issue
     save(scaled(device(f"{store}/{phone_shot}.png", "iphone"), 0.46), f"iphone-{theme}.webp", quality=86, method=6)
 
 for theme in ["light", "dark"]:
-    icon = Image.open(f"{icons}/icon-A-{theme}.png").convert("RGBA")
+    icon = Image.open(f"{icons}/icon-pinboard-{theme}.png").convert("RGBA")
     save(icon.resize((288, 288), Image.LANCZOS), f"icon-{theme}.png", optimize=True)
     save(icon.resize((64, 64), Image.LANCZOS), f"favicon-{theme}.png", optimize=True)
 
