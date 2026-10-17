@@ -77,7 +77,10 @@ struct MarkdownEditor: NSViewRepresentable {
 
     func sizeThatFits(_ proposal: ProposedViewSize, nsView view: MarkdownTextView, context: Context) -> CGSize? {
         var width = proposal.width ?? view.bounds.width
-        if !width.isFinite || width <= 0 { width = view.bounds.width > 0 ? view.bounds.width : 600 }
+        if !width.isFinite || (proposal.width == nil && width <= 0) { width = view.bounds.width > 0 ? view.bounds.width : 600 }
+        // Asked how narrow it can be (a proposal of zero, as the window's columns ask), the text wraps: answering
+        // with the width it has now would keep the page from ever getting narrower than it is.
+        width = max(width, 40)
         return CGSize(width: width, height: view.height(forWidth: width))
     }
 

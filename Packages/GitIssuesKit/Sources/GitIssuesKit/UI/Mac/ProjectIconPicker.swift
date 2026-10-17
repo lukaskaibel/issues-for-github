@@ -156,7 +156,7 @@ struct ProjectIconPicker: View {
                     }
                 }
                 .frame(width: Self.cell, height: Self.cell)
-                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(active == .color(index) ? Theme.popoverSelected : .clear))
+                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(active == .color(index) ? Theme.menuHighlight : .clear))
                 .contentShape(Rectangle())
         }
         .buttonStyle(PlainPressStyle())
@@ -176,7 +176,7 @@ struct ProjectIconPicker: View {
                 .frame(width: Self.cell, height: Self.cell)
                 .background {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(selected ? Theme.projectColor(look.color).opacity(0.16) : active == .glyph(glyph.key) ? Theme.popoverSelected : .clear)
+                        .fill(selected ? Theme.projectColor(look.color).opacity(0.16) : active == .glyph(glyph.key) ? Theme.menuHighlight : .clear)
                 }
                 .contentShape(Rectangle())
         }

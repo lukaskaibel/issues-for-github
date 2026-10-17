@@ -2,7 +2,9 @@
 # Takes the Mac App Store screenshots from the sample data, 2880 x 1800, into Design/screenshots/app-store/mac.
 #   Tools/mac-app-store-screenshots.sh
 # Builds a debug copy with its own bundle identifier, so it shares no settings with an Issues you have running,
-# opens it in the background, drives it through the debug remote and frames each window with Tools/store-frame.swift.
+# drives it through the debug remote, takes each window as it is on screen with Tools/readme-images/capture.swift (the
+# sidebar and the glass of the toolbar don't show in the app's own snapshots) and frames it with
+# Tools/store-frame.swift. Needs an unlocked screen: the app comes to the front for each picture, about a minute in all.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -17,13 +19,15 @@ finish() {
   defaults delete "$bundle_id" 2>/dev/null || true
   rm -rf "$work" "${HOME:?}/Library/Application Support/${bundle_id:?}"
 }
-trap finish EXIT
+previous=$(lsappinfo info -only bundlepath "$(lsappinfo front)" | sed -nE 's/.*"(.+)".*/\1/p')
+trap 'finish; [ -n "$previous" ] && open -a "$previous" 2>/dev/null || true' EXIT
 
 echo "Building…"
 xcodebuild build -project GitIssues.xcodeproj -scheme GitIssues -configuration Debug \
   -destination 'platform=macOS,arch=arm64' -derivedDataPath build/mac-screenshots \
   PRODUCT_BUNDLE_IDENTIFIER="$bundle_id" DEVELOPMENT_TEAM= CODE_SIGN_IDENTITY=- \
   CODE_SIGN_STYLE=Manual GI_MAC_ENTITLEMENTS= -quiet
+swiftc -O Tools/readme-images/capture.swift -o "$work/capture"
 
 : > "$commands"
 open -g -n "$app" --args -demo.active YES -screenshotMode YES -appearance light \
@@ -45,19 +49,28 @@ done
 [ -s "$commands.log" ] || { echo "The debug remote didn't answer." >&2; exit 1; }
 
 # shot <name> <appearance> <width> <height> <command>…: sets the scene up, lets it settle and takes the window.
+# front: brings the app to the front, so its window is drawn as the active one, with coloured traffic lights.
+front() {
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    [ "$(lsappinfo info -only pid "$(lsappinfo front)" | sed -nE 's/.*pid ?= ?([0-9]+).*/\1/p')" = "$pid" ] && return 0
+    open "$app"
+    sleep 0.5
+  done
+  echo "The app doesn't come to the front. Is the screen locked?" >&2
+  exit 1
+}
+
 shot() {
   local name=$1 appearance=$2 width=$3 height=$4
   shift 4
-  send "overlay none" "appearance $appearance" "window $width $height" "select Git Issues" "mode board"
+  send "overlay none" "appearance $appearance" "window $width $height onscreen" "select Git Issues" "mode board"
   sleep 1
   for command in "$@"; do send "$command"; sleep 0.6; done
+  front
   sleep 1.2
-  send "snapshot $work/$name.png"
-  for _ in $(seq 50); do [ -s "$work/$name.png" ] && break; sleep 0.1; done
-  sleep 0.3
-  [ -s "$work/$name.png" ] || { echo "No snapshot of $name." >&2; exit 1; }
+  "$work/capture" shot "$pid" "$work/$name.png" || { echo "No picture of $name. Is the screen locked?" >&2; exit 1; }
   mkdir -p "$out"
-  swift Tools/store-frame.swift "$work/$name.png" "$out/$name.png" "$appearance"
+  swift Tools/store-frame.swift "$work/$name.png" "$out/$name.png" "$appearance" live
   echo "$out/$name.png"
 }
 

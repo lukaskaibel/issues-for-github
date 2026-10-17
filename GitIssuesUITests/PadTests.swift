@@ -142,10 +142,12 @@ final class PadTests: AppTestCase {
         confirm.tap()
         waitGone(element("column-Up Next"))
 
-        // A new column at the end of the board.
+        // A new column at the end of the board. Its button may start off screen, where asking whether it is
+        // hittable fails instead of answering no, so the board is swiped until the button is inside the window.
         let add = app.buttons["Add Status"]
+        let window = app.windows.firstMatch.frame
         var swipes = 0
-        while !add.isHittable && swipes < 4 {
+        while !window.contains(add.frame) && swipes < 4 {
             element("column-In Review").swipeLeft()
             swipes += 1
         }

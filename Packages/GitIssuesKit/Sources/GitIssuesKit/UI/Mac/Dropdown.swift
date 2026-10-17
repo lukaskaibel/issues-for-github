@@ -13,6 +13,18 @@ enum Dropdown {
 
     static var isOpen: Bool { !panels.isEmpty }
 
+    /// As round as the system's menus.
+    static let cornerRadius: CGFloat = 14
+
+    /// Glass, unless a debug run asks for a solid ground, which the app's own snapshots can draw.
+    static var glassMaterial: Bool {
+        #if DEBUG
+        !Theme.solidGlass
+        #else
+        true
+        #endif
+    }
+
     #if DEBUG
     /// Set by the debug remote to follow what dropdowns do.
     static var trace: ((String) -> Void)?
@@ -37,11 +49,13 @@ enum Dropdown {
         }
         let handle = PanelHandle()
         let close: () -> Void = { if let panel = handle.panel { Dropdown.close(panel) } }
+        let radius = Self.cornerRadius
+        let inGlass = Self.glassMaterial
         let root = content(close)
             .environment(model)
-            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.popover))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background { if !inGlass { RoundedRectangle(cornerRadius: radius, style: .continuous).fill(Theme.popover) } }
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(Theme.popoverBorder.opacity(inGlass ? 0.35 : 1), lineWidth: 0.5))
+            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .fixedSize()
         let hosting = ResizingHostingView(rootView: root)
         let size = hosting.fittingSize
@@ -74,7 +88,15 @@ enum Dropdown {
             frame.size = fitting
             panel.setFrame(frame, display: true)
         }
-        panel.contentView = hosting
+        if inGlass {
+            // Liquid Glass, as the system's own menus are drawn now.
+            let glass = NSGlassEffectView()
+            glass.cornerRadius = radius
+            glass.contentView = hosting
+            panel.contentView = glass
+        } else {
+            panel.contentView = hosting
+        }
         panel.appearance = window.effectiveAppearance
         panel.onClose = onClose
         window.addChildWindow(panel, ordered: .above)
@@ -255,6 +277,9 @@ final class ContextMenus {
     func remove(_ id: UUID) {
         regions[id] = nil
     }
+
+    /// Where the areas are, for the debug remote.
+    var frames: [CGRect] { regions.values.map(\.frame) }
 
     /// The menu of the smallest registered area containing the point, if it offers one there.
     func menu(at point: CGPoint) -> NSMenu? {

@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu"]
+        let readOnly: Set<String> = ["foldepic", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -281,7 +281,9 @@ enum DebugRemote {
                 if bits.contains("cmd") { modifiers.insert(.command) }
                 if bits.contains("shift") { modifiers.insert(.shift) }
                 if bits.contains("opt") { modifiers.insert(.option) }
-                let characters = [36: "\r", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a"][code] ?? ""
+                let arrows: [UInt16: String] = [125: "\u{F701}", 126: "\u{F700}", 123: "\u{F702}", 124: "\u{F703}"]
+                if arrows[code] != nil { modifiers.formUnion([.numericPad, .function]) }
+                let characters = arrows[code] ?? [36: "\r", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a"][code] ?? ""
                 sendKey(characters: modifiers.contains(.shift) ? characters.uppercased() : characters, code: code, modifiers: modifiers)
             }
         case "status":
@@ -434,9 +436,17 @@ enum DebugRemote {
         case "scrolltest":
             scrollTest(label: argument)
         case "snapshot":
-            // snapshot <path>: the window as a PNG, drawn by the app itself, so it works while the screen is locked
-            // (materials and vibrancy come out flat).
-            if let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
+            // snapshot <path> [window title]: the window as a PNG, drawn by the app itself, so it works while the screen
+            // is locked (materials and vibrancy come out flat). Without a title, the main window.
+            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            let path = bits.first ?? argument
+            let titled = bits.count > 1 ? bits[1] : nil
+            let window = NSApp.windows.first { window in
+                guard window.isVisible else { return false }
+                if let titled { return window.title.localizedCaseInsensitiveContains(titled) }
+                return window.frame.width > 600
+            }
+            if let window,
                let view = window.contentView?.superview ?? window.contentView, let layer = view.layer {
                 let scale = window.backingScaleFactor
                 let size = CGSize(width: view.bounds.width * scale, height: view.bounds.height * scale)
@@ -461,9 +471,84 @@ enum DebugRemote {
                     drawChildren(of: window)
                     if let image = context.makeImage() {
                         let rep = NSBitmapImageRep(cgImage: image)
-                        try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: argument))
+                        try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
                     }
                 }
+            }
+        case "windows":
+            // windows: every visible window and panel with its frame on screen, and the screen it is on.
+            for window in NSApp.windows where window.isVisible {
+                log("window \(type(of: window)) \"\(window.title)\" frame=\(window.frame) screen=\(window.screen.map { "\($0.frame)" } ?? "nil") level=\(window.level.rawValue)")
+            }
+        case "regions":
+            // regions: the areas that have a right-click menu, in window points from the top left.
+            log("regions: " + ContextMenus.shared.frames.map { "\(Int($0.minX)),\(Int($0.minY)) \(Int($0.width))x\(Int($0.height))" }.sorted().joined(separator: " | "))
+        case "inspector":
+            // inspector on|off: shows or hides the inspector beside an open issue, as its toolbar button does.
+            UserDefaults.standard.set(argument == "on", forKey: "showsIssueInspector")
+        case "splits":
+            // splits: the window's split views and their columns, such as the sidebar, the page and the inspector.
+            func walk(_ view: NSView) {
+                if let split = view as? NSSplitView {
+                    log("split \(type(of: split)) vertical=\(split.isVertical) columns=\(split.arrangedSubviews.map { "\(type(of: $0))\($0.isHidden ? "(hidden)" : "") \(Int($0.frame.minX))+\(Int($0.frame.width))" }.joined(separator: " | "))")
+                    if let controller = split.delegate as? NSSplitViewController {
+                        for item in controller.splitViewItems {
+                            log("  item behavior=\(item.behavior.rawValue) collapsed=\(item.isCollapsed) canCollapse=\(item.canCollapse) min=\(item.minimumThickness) max=\(item.maximumThickness) preferred=\(item.preferredThicknessFraction) holding=\(item.holdingPriority.rawValue) view=\(Int(item.viewController.view.frame.width))")
+                        }
+                    }
+                }
+                view.subviews.forEach(walk)
+            }
+            if let root = model.mainWindow?.contentView?.superview { walk(root) }
+            if let controller = model.mainWindow?.contentViewController as? NSSplitViewController {
+                log("controller items: \(controller.splitViewItems.map { "\($0.behavior.rawValue) collapsed=\($0.isCollapsed)" })")
+            }
+        case "toolbar":
+            // toolbar: the toolbar's items, left to right, with where they are, for checking its layout without a
+            // picture of the glass.
+            if let window = model.mainWindow, let toolbar = window.toolbar {
+                for item in toolbar.items {
+                    let frame = item.view.map { $0.convert($0.bounds, to: nil) }
+                    log("toolbar item \(item.itemIdentifier.rawValue) label=\(item.label) visible=\(item.isVisible) frame=\(frame.map { "\($0)" } ?? "-")")
+                }
+            }
+            func walk(_ view: NSView, depth: Int) {
+                guard depth < 14 else { return }
+                if let button = view as? NSButton, let window = view.window, window === model.mainWindow {
+                    let frame = button.convert(button.bounds, to: nil)
+                    if frame.minY > (window.contentView?.bounds.height ?? 0) - 60 {
+                        log("toolbar button \(button.accessibilityLabel() ?? button.title) frame=\(frame)")
+                    }
+                }
+                view.subviews.forEach { walk($0, depth: depth + 1) }
+            }
+            if let root = model.mainWindow?.contentView?.superview { walk(root, depth: 0) }
+        case "tables":
+            // tables: every table in the window (the sidebar's list, the issue list) with its rows' text, for checking
+            // what a snapshot can't draw, such as the glass sidebar.
+            if let window = model.mainWindow, let root = window.contentView?.superview ?? window.contentView {
+                func walk(_ view: NSView) {
+                    if let table = view as? NSTableView {
+                        let rows = (0..<min(table.numberOfRows, 40)).map { row -> String in
+                            guard let cell = table.view(atColumn: 0, row: row, makeIfNecessary: true) else { return "?" }
+                            func texts(_ view: NSView) -> [String] {
+                                var found: [String] = []
+                                if let label = view.accessibilityLabel(), !label.isEmpty { found.append(label) }
+                                if let value = view.accessibilityValue() as? String, !value.isEmpty { found.append(value) }
+                                for child in view.accessibilityChildren() ?? [] {
+                                    if let element = child as? NSAccessibilityElementProtocol & NSObjectProtocol,
+                                       let label = (element as? NSAccessibilityProtocol)?.accessibilityLabel(), !label.isEmpty { found.append(label) }
+                                }
+                                for sub in view.subviews { found += texts(sub) }
+                                return found
+                            }
+                            return texts(cell).joined(separator: "/")
+                        }
+                        log("table \(type(of: table)) frame=\(table.convert(table.bounds, to: nil)) rows=\(table.numberOfRows) selected=\(table.selectedRow): \(rows.joined(separator: " | "))")
+                    }
+                    view.subviews.forEach(walk)
+                }
+                walk(root)
             }
         case "snapshotmenu":
             // snapshotmenu <path>: the dropdowns that are open, side by side, as one PNG; they open beside an
@@ -490,13 +575,19 @@ enum DebugRemote {
                 }
             }
         case "window":
-            // window <width> <height>: sizes the window in points for screenshots and moves it off the screen, where
-            // the pointer can't put hover states into the picture and the window is out of the way.
+            // window <width> <height> [onscreen]: sizes the window in points for screenshots and moves it off the
+            // screen, where the window is out of the way. With "onscreen", at the top left of the main screen
+            // instead, where a capture of the screen sees it and dropdowns open beside it as they do for people.
+            // Either way the pointer goes through it, so it can't put hover states into the picture.
             let size = argument.split(separator: " ").compactMap { Double($0) }
             if size.count == 2, let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }) {
-                let screens = NSScreen.screens.map(\.frame).reduce(CGRect.null) { $0.union($1) }
                 window.ignoresMouseEvents = true
-                window.setFrame(CGRect(x: screens.minX - size[0] - 400, y: screens.minY, width: size[0], height: size[1]), display: true)
+                if argument.hasSuffix("onscreen"), let screen = NSScreen.main?.visibleFrame {
+                    window.setFrame(CGRect(x: screen.minX, y: screen.maxY - size[1], width: size[0], height: size[1]), display: true)
+                } else {
+                    let screens = NSScreen.screens.map(\.frame).reduce(CGRect.null) { $0.union($1) }
+                    window.setFrame(CGRect(x: screens.minX - size[0] - 400, y: screens.minY, width: size[0], height: size[1]), display: true)
+                }
                 log("window: \(window.frame)")
             }
         case "demo":

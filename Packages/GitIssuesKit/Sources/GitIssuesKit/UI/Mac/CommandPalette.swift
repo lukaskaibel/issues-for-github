@@ -46,7 +46,7 @@ struct CommandPalette: View {
                             )
                         }
                     },
-                    width: 640, maxRows: 10, fieldFont: .system(size: 15),
+                    width: 640, maxRows: 10, fieldFont: .system(size: 17), large: true,
                     onPick: { id in
                         if let view = model.view(id: id) { model.show(view) }
                     },
@@ -68,7 +68,7 @@ struct CommandPalette: View {
                             icon: AnyView(RepositoryIcon().foregroundStyle(Theme.textSecondary))
                         )
                     },
-                    width: 640, maxRows: 10, fieldFont: .system(size: 15),
+                    width: 640, maxRows: 10, fieldFont: .system(size: 17), large: true,
                     onPick: { id in
                         if id.hasPrefix(Self.repositoryPrefix) {
                             model.select(.repository(String(id.dropFirst(Self.repositoryPrefix.count))))
@@ -86,10 +86,8 @@ struct CommandPalette: View {
             }
         }
         .frame(width: 640)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.popover))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .shadow(color: Theme.shadow, radius: 40, y: 24)
+        // Like Spotlight: a glass panel over the window.
+        .glassPanel(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private static let repositoryPrefix = "repository:"
@@ -122,7 +120,7 @@ struct CommandPalette: View {
         if let item = model.item(id: itemId) {
             ContextChip(item: item, count: model.targets(for: item).count)
             // A pick can open something else, such as the new-issue dialog; that stays.
-            ItemPicker(kind: kind, itemId: itemId, width: 640, fieldFont: .system(size: 15)) { [mode] in
+            ItemPicker(kind: kind, itemId: itemId, width: 640, fieldFont: .system(size: 17), large: true) { [mode] in
                 if model.overlay == .palette(mode) { model.overlay = nil }
             }
         }
@@ -145,12 +143,12 @@ private struct ContextChip: View {
         }
         .font(.small)
         .foregroundStyle(Theme.textBody)
-        .padding(.horizontal, 8)
-        .frame(height: 22)
-        .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Theme.controlActive))
+        .padding(.horizontal, 10)
+        .frame(height: 24)
+        .background(Capsule().fill(Theme.field))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.top, 12)
+        .padding(.horizontal, 14)
+        .padding(.top, 14)
     }
 }
 
@@ -186,13 +184,18 @@ private struct RootPalette: View {
             if let target = model.actionItem {
                 ContextChip(item: target, count: model.targets(for: target).count)
             }
-            TextField(.commandPalettePlaceholder, text: $query)
-                .textFieldStyle(.plain)
-                .font(.system(size: 15))
-                .focused($focused)
-                .focusOnAppear()
-                .padding(.horizontal, 16)
-                .frame(height: 48)
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(Theme.textTertiary)
+                TextField(.commandPalettePlaceholder, text: $query)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 19))
+                    .focused($focused)
+                    .focusOnAppear()
+            }
+                .padding(.horizontal, 18)
+                .frame(height: 56)
                 .onKeyPress(.downArrow) {
                     index = min(index + 1, max(rows.count - 1, 0))
                     return .handled
@@ -217,8 +220,8 @@ private struct RootPalette: View {
                             if position == 0 || rows[position - 1].section != command.section {
                                 Text(command.section)
                                     .font(.tinySemibold)
-                                    .foregroundStyle(Theme.textSecondary)
-                                    .padding(.horizontal, 16)
+                                    .foregroundStyle(Theme.textTertiary)
+                                    .padding(.horizontal, 20)
                                     .padding(.top, 10)
                                     .padding(.bottom, 4)
                             }
@@ -230,10 +233,11 @@ private struct RootPalette: View {
                                     ForEach(command.keys, id: \.self) { Keycap($0, emphasized: position == index) }
                                 }
                             }
-                            .padding(.horizontal, 10)
-                            .frame(height: 36)
-                            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(position == index ? Theme.popoverSelected : .clear))
-                            .padding(.horizontal, 6)
+                            .font(.system(size: 14))
+                            .padding(.horizontal, 12)
+                            .frame(height: 38)
+                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(position == index ? Theme.menuHighlight : .clear))
+                            .padding(.horizontal, 8)
                             .contentShape(Rectangle())
                             .id(command.id)
                             .onTapGesture { run(command) }

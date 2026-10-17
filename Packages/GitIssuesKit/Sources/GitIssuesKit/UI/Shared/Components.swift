@@ -293,7 +293,7 @@ struct Keycap: View {
             .foregroundStyle(emphasized ? Theme.textBody : Theme.textSecondary)
             .padding(.horizontal, 5)
             .frame(minWidth: 20, minHeight: 20)
-            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).stroke(Theme.keycapBorder, lineWidth: 1))
+            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.field))
     }
 }
 
@@ -318,6 +318,26 @@ struct ProjectGlyphImage: View {
         Image(systemName: look.glyph.systemName)
             .font(.system(size: (size * 0.86).rounded(), weight: .medium))
             .foregroundStyle(Theme.projectColor(look.color))
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+}
+
+/// A project's glyph in white on a rounded tile of its colour, at the top of the sidebar.
+struct ProjectTile: View {
+    @Environment(AppModel.self) private var model
+    var projectId: String
+    var size: CGFloat = 24
+
+    var body: some View {
+        let look = model.projectLooks.look(projectId)
+        RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+            .fill(Theme.projectColor(look.color).gradient)
+            .overlay {
+                Image(systemName: look.glyph.systemName)
+                    .font(.system(size: (size * 0.52).rounded(), weight: .semibold))
+                    .foregroundStyle(.white)
+            }
             .frame(width: size, height: size)
             .accessibilityHidden(true)
     }
@@ -363,9 +383,9 @@ struct PrimaryButtonStyle: ButtonStyle {
         configuration.label
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(.white)
-            .padding(.horizontal, 12)
-            .frame(height: 26)
-            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.accentFill))
+            .padding(.horizontal, 14)
+            .frame(height: 28)
+            .background(Capsule().fill(Theme.accentFill))
             .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.4)
     }
 }
@@ -375,11 +395,10 @@ struct SecondaryButtonStyle: ButtonStyle {
         configuration.label
             .font(.small)
             .foregroundStyle(Theme.textBody)
-            .padding(.horizontal, 9)
-            .frame(height: 24)
-            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(configuration.isPressed ? Theme.controlActive : .clear))
-            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Theme.keycapBorder, lineWidth: 1))
-            .contentShape(Rectangle())
+            .padding(.horizontal, 12)
+            .frame(height: 26)
+            .background(Capsule().fill(configuration.isPressed ? Theme.controlActive : Theme.control))
+            .contentShape(Capsule())
     }
 }
 

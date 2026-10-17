@@ -34,8 +34,8 @@ struct MenuRow: View {
                 }
                 if checked {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Theme.textBody)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Theme.accent)
                 }
                 if submenu {
                     Image(systemName: "chevron.right")
@@ -43,13 +43,13 @@ struct MenuRow: View {
                         .foregroundStyle(Theme.textTertiary)
                 }
             }
-            .padding(.horizontal, 8)
-            .frame(height: 30)
-            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(active ? Theme.popoverSelected : .clear))
+            .padding(.horizontal, 9)
+            .frame(height: PickerRow.height)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(active ? Theme.menuHighlight : .clear))
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainPressStyle())
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 6)
         .onHover(perform: onHover)
     }
 }
@@ -57,7 +57,7 @@ struct MenuRow: View {
 /// The line between groups of menu rows.
 struct MenuDivider: View {
     var body: some View {
-        Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.vertical, 4)
+        Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, 15).padding(.vertical, 5)
     }
 }
 

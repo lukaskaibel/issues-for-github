@@ -11,6 +11,7 @@ struct DueDatePicker: View {
     var addsField: Bool
     var width: CGFloat = 280
     var fieldFont: Font = .ui
+    var large = false
     var onPick: (CalendarDay?) -> Void
     var onClose: () -> Void
 
@@ -23,11 +24,12 @@ struct DueDatePicker: View {
                 width: width,
                 maxRows: 7,
                 fieldFont: fieldFont,
+                large: large,
                 search: { model.dueDateSearch($0, current: current) },
                 onPick: { onPick(CalendarDay($0)) },
                 onClose: onClose
             )
-            Rectangle().fill(Theme.popoverBorder).frame(height: 1)
+            MenuDivider()
             MonthGrid(selected: current.count == 1 ? current.first?.flatMap(CalendarDay.init) : nil) { day in
                 onPick(day)
                 onClose()
@@ -35,7 +37,7 @@ struct DueDatePicker: View {
             .frame(width: min(width, 280))
             .padding(.vertical, 6)
             if addsField {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1)
+                MenuDivider()
                 Text(.addsDueDateFieldNote)
                     .font(.tiny)
                     .foregroundStyle(Theme.textTertiary)
@@ -119,7 +121,7 @@ struct MonthGrid: View {
                 .frame(height: 26)
                 .background(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(isSelected ? Theme.accentFill : hovered == day ? Theme.popoverSelected : .clear)
+                        .fill(isSelected ? Theme.accentFill : hovered == day ? Theme.menuHighlight : .clear)
                 )
                 .contentShape(Rectangle())
         }

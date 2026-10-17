@@ -10291,6 +10291,66 @@
         }
       }
     },
+    "contextMenuSearchPlaceholder" : {
+      "comment" : "Mac, right-click menu of an issue (and other right-click menus): placeholder of the search field at the top of the menu; typing finds any entry of the menu, also inside its submenus (Status, Priority …).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tippen zum Suchen …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type to find…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escribe para buscar…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tapez pour trouver…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "入力して検索…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "입력하여 찾기…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Digite para buscar…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Введите для поиска…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入以查找…"
+          }
+        }
+      }
+    },
     "copyBranchName" : {
       "comment" : "Menu item that copies a git branch name made from the issue's number and title, for starting work on it.",
       "extractionState" : "manual",
@@ -22645,66 +22705,6 @@
         }
       }
     },
-    "foldHiddenProjectsAway" : {
-      "comment" : "Mac sidebar: tooltip of the line that folds the hidden GitHub projects back in, while they are shown.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ausgeblendete Projekte einklappen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fold hidden projects away"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Contraer los proyectos ocultos"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Replier les projets masqués"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "非表示のプロジェクトを折りたたむ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "가려진 프로젝트 접기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recolher projetos ocultos"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Свернуть скрытые проекты"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "收起隐藏的项目"
-          }
-        }
-      }
-    },
     "foldHiddenRepositoriesAway" : {
       "comment" : "Mac sidebar: tooltip of the line that folds the hidden GitHub repositories back in, while they are shown.",
       "extractionState" : "manual",
@@ -24165,6 +24165,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "从边栏中隐藏"
+          }
+        }
+      }
+    },
+    "hideInspector" : {
+      "comment" : "Mac, open issue: name of the toolbar button (the sidebar.right symbol) that hides the column with the issue's properties beside it, as Apple's apps name it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informationen ausblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide Inspector"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar inspector"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer l’inspecteur"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "インスペクタを非表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인스펙터 가리기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar Inspetor"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скрыть инспектор"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐藏检查器"
+          }
+        }
+      }
+    },
+    "hideInspectorTooltip" : {
+      "comment" : "Mac, open issue: tooltip of the toolbar button that hides the column with the issue's status, priority, assignees and other properties. ⌃⌘I is its keyboard shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigenschaften des Issues ausblenden (⌃⌘I)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide the issue's properties (⌃⌘I)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar las propiedades de la incidencia (⌃⌘I)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer les propriétés du ticket (⌃⌘I)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issueのプロパティを非表示（⌃⌘I）"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이슈 속성 가리기(⌃⌘I)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar as propriedades da issue (⌃⌘I)"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скрыть свойства задачи (⌃⌘I)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐藏议题的属性（⌃⌘I）"
           }
         }
       }
@@ -29067,6 +29187,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "“%@”及其评论将在 GitHub 上被删除，所有人都将无法再看到。此操作无法撤销。"
+          }
+        }
+      }
+    },
+    "issueDetailsHeading" : {
+      "comment" : "Mac, open issue: small heading at the top of the inspector column that lists the issue's properties (status, priority, assignee …), as Apple's apps head their inspectors.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detalles"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Détails"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詳細"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세부사항"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detalhes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Подробности"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "详细信息"
           }
         }
       }
@@ -71899,66 +72079,6 @@
         }
       }
     },
-    "showBoardTooltip" : {
-      "comment" : "Tooltip on the project name at the start of a milestone's or the roadmap's header. Argument: project name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Board von %@ anzeigen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show the board of %(project)@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar el tablero de %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Afficher le tableau de %@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@のボードを表示"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ 보드 보기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar o quadro de %@"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Показать доску «%@»"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示“%@”的看板"
-          }
-        }
-      }
-    },
     "showChanges" : {
       "comment" : "Button on the 'Offline' card: shows the list of changes waiting to be sent to GitHub.",
       "extractionState" : "manual",
@@ -72199,66 +72319,6 @@
         }
       }
     },
-    "showHiddenProjects" : {
-      "comment" : "Mac sidebar: tooltip of the line that folds out the GitHub projects the user hid.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ausgeblendete Projekte anzeigen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show hidden projects"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar proyectos ocultos"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Afficher les projets masqués"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "非表示のプロジェクトを表示"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "가려진 프로젝트 보기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar projetos ocultos"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Показать скрытые проекты"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示隐藏的项目"
-          }
-        }
-      }
-    },
     "showHiddenRepositories" : {
       "comment" : "Mac sidebar: tooltip of the line that folds out the GitHub repositories the user hid.",
       "extractionState" : "manual",
@@ -72375,6 +72435,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在边栏中显示"
+          }
+        }
+      }
+    },
+    "showInspector" : {
+      "comment" : "Mac, open issue: name of the toolbar button (the sidebar.right symbol) that shows the column with the issue's properties beside it, as Apple's apps name it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informationen einblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Inspector"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar inspector"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher l’inspecteur"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "インスペクタを表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인스펙터 보기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar Inspetor"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показать инспектор"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示检查器"
+          }
+        }
+      }
+    },
+    "showInspectorTooltip" : {
+      "comment" : "Mac, open issue: tooltip of the toolbar button that shows the column with the issue's status, priority, assignees and other properties. ⌃⌘I is its keyboard shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigenschaften des Issues einblenden (⌃⌘I)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the issue's properties (⌃⌘I)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar las propiedades de la incidencia (⌃⌘I)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher les propriétés du ticket (⌃⌘I)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issueのプロパティを表示（⌃⌘I）"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이슈 속성 보기(⌃⌘I)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar as propriedades da issue (⌃⌘I)"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показать свойства задачи (⌃⌘I)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示议题的属性（⌃⌘I）"
           }
         }
       }

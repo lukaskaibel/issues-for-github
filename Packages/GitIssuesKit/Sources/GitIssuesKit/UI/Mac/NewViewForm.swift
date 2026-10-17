@@ -154,48 +154,38 @@ struct NewViewForm: View {
     }
 }
 
-/// Board or List, as the header's switch shows them.
+/// Board or List, as the toolbar's switch shows them.
 struct LayoutSwitch: View {
     @Binding var mode: ViewMode
 
     var body: some View {
-        ViewModeSwitch(mode: $mode)
+        Picker(selection: Binding(get: { mode }, set: { new in withAnimation(Theme.spring) { mode = new } })) {
+            Text(.board).tag(ViewMode.board)
+            Text(.list).tag(ViewMode.list)
+        } label: {
+            Text(.layout)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .fixedSize()
     }
 }
 
 /// Timeline, Board or List, for a view in GitHub's roadmap layout.
 struct ShapeSwitch: View {
     @Binding var shape: ViewShape
-    @Namespace private var namespace
 
     var body: some View {
-        HStack(spacing: 2) {
-            segment(.timeline, .timeline)
-            segment(.board, .board)
-            segment(.list, .list)
-        }
-        .padding(2)
-        .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Theme.control))
-    }
-
-    private func segment(_ title: LocalizedStringResource, _ value: ViewShape) -> some View {
-        Button {
-            withAnimation(Theme.spring) { shape = value }
+        Picker(selection: Binding(get: { shape }, set: { new in withAnimation(Theme.spring) { shape = new } })) {
+            Text(.timeline).tag(ViewShape.timeline)
+            Text(.board).tag(ViewShape.board)
+            Text(.list).tag(ViewShape.list)
         } label: {
-            Text(title)
-                .font(.smallMedium)
-                .foregroundStyle(shape == value ? Theme.text : Theme.textSecondary)
-                .padding(.horizontal, 10)
-                .frame(height: 22)
-                .background {
-                    if shape == value {
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .fill(Theme.segmentActive)
-                            .matchedGeometryEffect(id: "segment", in: namespace)
-                    }
-                }
+            Text(.layout)
         }
-        .buttonStyle(PlainPressStyle())
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .fixedSize()
     }
 }
 

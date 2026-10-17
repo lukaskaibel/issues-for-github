@@ -14,6 +14,8 @@ struct PickerList: View {
     var width: CGFloat = 260
     var maxRows = 9
     var fieldFont: Font = .ui
+    /// In the command palette: a field as large as Spotlight's.
+    var large = false
     /// Rows for what is typed, in place of filtering `items`, for pickers that read the text (dates).
     var search: ((String) -> [PickerItem])? = nil
     /// Single-choice pickers open on the current value; others on the first row that isn't checked.
@@ -31,16 +33,24 @@ struct PickerList: View {
     var body: some View {
         let visible = filtered
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
+            // A search field on top, as Spotlight has one; the key that opens the picker at its end.
+            HStack(spacing: large ? 10 : 7) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: large ? 16 : 12, weight: .medium))
+                    .foregroundStyle(Theme.textTertiary)
                 TextField(placeholder, text: $query)
                     .textFieldStyle(.plain)
                     .font(fieldFont)
                     .focused($focused)
                     .focusOnAppear()
-                if let hint { Keycap(hint) }
+                if let hint {
+                    Text(hint).font(.small).foregroundStyle(Theme.textTertiary)
+                }
             }
-                .padding(.horizontal, 12)
-                .frame(height: 40)
+                .padding(.horizontal, large ? 14 : 10)
+                .frame(height: large ? 46 : 32)
+                .background(RoundedRectangle(cornerRadius: large ? 13 : 9, style: .continuous).fill(Theme.field))
+                .padding([.horizontal, .top], large ? 10 : 6)
                 .onKeyPress(.downArrow) {
                     index = min(index + 1, max(visible.count - 1, 0))
                     return .handled
@@ -69,8 +79,6 @@ struct PickerList: View {
                 .onSubmit {
                     if visible.indices.contains(index) { pick(visible[index]) }
                 }
-            Rectangle().fill(Theme.popoverBorder).frame(height: 1)
-
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 0) {
@@ -86,14 +94,14 @@ struct PickerList: View {
                             Text(.noMatches)
                                 .foregroundStyle(Theme.textSecondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 12)
-                                .frame(height: 32)
+                                .padding(.horizontal, 15)
+                                .frame(height: PickerRow.height)
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 6)
                 }
                 .scrollIndicators(.never)
-                .frame(height: min(CGFloat(max(visible.count, 1)), CGFloat(maxRows)) * 32 + 8)
+                .frame(height: min(CGFloat(max(visible.count, 1)), CGFloat(maxRows)) * PickerRow.height + 12)
                 .onChange(of: index) {
                     if visible.indices.contains(index) { proxy.scrollTo(visible[index].id) }
                 }
@@ -135,6 +143,9 @@ struct PickerList: View {
 }
 
 struct PickerRow: View {
+    /// Taller than a menu's rows, so they are easy to hit, as in Linear.
+    static let height: CGFloat = 30
+
     var item: PickerItem
     var active: Bool
     /// In pickers that take several values: picks the row without closing, from a checkbox at its start.
@@ -146,7 +157,7 @@ struct PickerRow: View {
                 // Ticked when picked; on the row under the pointer or keyboard an empty box offers it.
                 PickerCheckbox(checked: item.selected)
                     .opacity(item.selected || active ? 1 : 0)
-                    .frame(width: 22, height: 32)
+                    .frame(width: 22, height: Self.height)
                     .contentShape(Rectangle())
                     .onTapGesture(perform: onCheck)
                     .help(Text(.pickAndKeepOpenTooltip))
@@ -166,20 +177,21 @@ struct PickerRow: View {
             if let trailing = item.trailing { trailing }
             if item.selected, onCheck == nil {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Theme.textBody)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Theme.accent)
             }
             if let shortcut = item.shortcut {
                 Text(shortcut)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.system(size: 12))
+                    .monospacedDigit()
                     .foregroundStyle(active ? Theme.textSecondary : Theme.textTertiary)
                     .frame(minWidth: 12, alignment: .trailing)
             }
         }
-        .padding(.horizontal, 8)
-        .frame(height: 32)
-        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(active ? Theme.popoverSelected : .clear))
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 9)
+        .frame(height: Self.height)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(active ? Theme.menuHighlight : .clear))
+        .padding(.horizontal, 6)
         .contentShape(Rectangle())
     }
 }
@@ -189,9 +201,9 @@ private struct PickerCheckbox: View {
     var checked: Bool
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 4, style: .continuous)
+        RoundedRectangle(cornerRadius: 4.5, style: .continuous)
             .fill(checked ? Theme.accentFill : .clear)
-            .strokeBorder(checked ? .clear : Theme.textTertiary, lineWidth: 1.2)
+            .strokeBorder(checked ? .clear : Theme.textTertiary.opacity(0.7), lineWidth: 1.2)
             .frame(width: 14, height: 14)
             .overlay {
                 if checked {
@@ -210,6 +222,7 @@ struct ItemPicker: View {
     var itemId: String
     var width: CGFloat?
     var fieldFont: Font = .ui
+    var large = false
     var close: () -> Void
     @State private var query = ""
 
@@ -220,6 +233,7 @@ struct ItemPicker: View {
                 addsField: model.addsDueField(for: item),
                 width: width ?? kind.width,
                 fieldFont: fieldFont,
+                large: large,
                 onPick: { model.setDueDate(of: model.targets(for: model.item(id: item.id) ?? item), to: $0) },
                 onClose: close
             )
@@ -232,6 +246,7 @@ struct ItemPicker: View {
                 width: width ?? kind.width,
                 maxRows: 10,
                 fieldFont: fieldFont,
+                large: large,
                 opensOnSelection: kind.opensOnSelection,
                 limit: kind.picksIssues ? 60 : .max,
                 onQueryChange: { query = $0 },
@@ -268,7 +283,7 @@ struct PropertyButton<Label: View>: View {
             label
                 .padding(.horizontal, 8)
                 .frame(minHeight: 28)
-                .hoverFill(active: open)
+                .hoverFill(active: open, radius: 8)
         }
         .buttonStyle(PlainPressStyle())
         .dropdown(isPresented: $open) { close in

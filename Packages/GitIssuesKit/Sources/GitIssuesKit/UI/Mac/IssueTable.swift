@@ -823,7 +823,13 @@ final class HoverTableView: NSTableView {
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
-        coordinator?.menu(forRow: row(at: convert(event.locationInWindow, from: nil)))
+        let menu = coordinator?.menu(forRow: row(at: convert(event.locationInWindow, from: nil)))
+        // A click shows the menu in glass, like the pickers; VoiceOver's Show Menu still gets the AppKit menu.
+        if let menu, ContextMenus.isContextClick(event), let model = coordinator?.model {
+            GlassMenu.show(menu, at: event, in: self, model: model)
+            return nil
+        }
+        return menu
     }
 }
 
@@ -1059,43 +1065,48 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         if row != self.row {
             self.row = row
             let item = row.item
+            // Picked rows are filled with the accent colour, as a Mac list shows its selection, and read in white.
+            let onAccent = row.selected
+            let primary = onAccent ? NSColor.white : NSColor(Theme.text)
+            let secondary = onAccent ? NSColor.white.withAlphaComponent(0.88) : NSColor(Theme.textSecondary)
+            let tertiary = onAccent ? NSColor.white.withAlphaComponent(0.8) : NSColor(Theme.textTertiary)
             let truncating = NSMutableParagraphStyle()
             truncating.lineBreakMode = .byTruncatingTail
             number = NSAttributedString(string: item.displayNumber, attributes: [
                 .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular),
-                .foregroundColor: NSColor(Theme.textTertiary),
+                .foregroundColor: tertiary,
             ])
             title = NSAttributedString(string: item.title, attributes: [
                 .font: NSFont.systemFont(ofSize: 13, weight: .medium),
-                .foregroundColor: NSColor(Theme.text),
+                .foregroundColor: primary,
                 .paragraphStyle: truncating,
             ])
             date = NSAttributedString(string: relativeDate(item.updatedAt), attributes: [
                 .font: NSFont.systemFont(ofSize: 12),
-                .foregroundColor: NSColor(Theme.textTertiary),
+                .foregroundColor: tertiary,
             ])
             project = row.projectTitle.map {
                 NSAttributedString(string: $0, attributes: [
                     .font: NSFont.systemFont(ofSize: 12),
-                    .foregroundColor: NSColor(Theme.textTertiary),
+                    .foregroundColor: tertiary,
                     .paragraphStyle: truncating,
                 ])
             }
             parentHint = row.showsParent ? item.parentNumber.map { number in
                 NSAttributedString(string: row.parentIsEpic ? item.parentTitle ?? "#\(number)" : "#\(number) \(item.parentTitle ?? "")", attributes: [
                     .font: NSFont.systemFont(ofSize: 12),
-                    .foregroundColor: NSColor(Theme.textTertiary),
+                    .foregroundColor: tertiary,
                     .paragraphStyle: truncating,
                 ])
             } : nil
             subCount = item.subTotal > 0
                 ? NSAttributedString(string: "\(item.subCompleted)/\(item.subTotal)", attributes: [
                     .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
-                    .foregroundColor: NSColor(Theme.textSecondary),
+                    .foregroundColor: secondary,
                 ])
                 : nil
             if let due = row.due {
-                let color = NSColor(due.tone.color)
+                let color = onAccent ? NSColor.white : NSColor(due.tone.color)
                 dueText = NSAttributedString(string: due.label, attributes: [
                     .font: NSFont.systemFont(ofSize: 11),
                     .foregroundColor: color,
@@ -1110,7 +1121,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             milestoneText = row.milestone.map {
                 NSAttributedString(string: $0, attributes: [
                     .font: NSFont.systemFont(ofSize: 11),
-                    .foregroundColor: NSColor(Theme.textSecondary),
+                    .foregroundColor: secondary,
                     .paragraphStyle: truncating,
                 ])
             }
@@ -1118,8 +1129,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             // An epic's own label says what the row shows already.
             labels = item.labels.filter { !(item.isEpic && Item.isEpicLabel($0.name)) }.prefix(3).map { label in
                 let text = NSAttributedString(string: label.name, attributes: [
-                    .font: NSFont.systemFont(ofSize: 11),
-                    .foregroundColor: NSColor(Theme.textSecondary),
+                    .font: NSFont.systemFont(ofSize: 11, weight: .medium),
+                    .foregroundColor: onAccent ? NSColor.white : NSColor(Theme.textBody),
                 ])
                 return (text, text.size(), NSColor(Theme.labelColor(label.color)))
             }
@@ -1185,22 +1196,24 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         let size = bounds.size
         let midY = size.height / 2
 
+        let onAccent = row.selected
         if row.selected {
-            NSColor(Theme.selectionFill).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 7, yRadius: 7).fill()
+            NSColor(Theme.accentFill).setFill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
         } else if highlighted {
             NSColor(Theme.selected).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 7, yRadius: 7).fill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
         }
         // The checkbox sits under the section headers' fold arrow; it shows on hover and while picking.
         if row.selected || row.selecting || highlighted {
             drawCheckbox(checked: row.selected, center: NSPoint(x: IssueTable.inset + 15, y: midY))
         }
         // Each part lights up in a shape that suits it, as in Linear: a small square behind an icon, a halo
-        // around avatars, and chips in their own outline.
+        // around avatars, and chips in their own shape.
+        let partHover = onAccent ? NSColor.white.withAlphaComponent(0.22) : NSColor(Theme.partHover)
         func iconHover(_ kind: PickerKind, _ rect: NSRect) {
             guard hoveredPart == kind else { return }
-            NSColor(Theme.partHover).setFill()
+            partHover.setFill()
             NSBezierPath(roundedRect: rect.insetBy(dx: -4, dy: -4), xRadius: 5, yRadius: 5).fill()
         }
         var parts: [(kind: PickerKind, rect: NSRect)] = []
@@ -1213,7 +1226,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             parts.append((.priority, rect))
             iconHover(.priority, rect)
         }
-        drawPriority(row.priority, x: x, midY: midY)
+        drawPriority(row.priority, x: x, midY: midY, onAccent: onAccent)
         x += 14 + 10
         number.draw(at: NSPoint(x: x, y: midY - numberSize.height / 2))
         x += 40 + 10
@@ -1225,17 +1238,19 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             parts.append((.status, rect))
             iconHover(.status, rect)
         }
-        StatusPainter.draw(row.glyph, in: CGRect(x: x, y: midY - 7, width: 14, height: 14), cg: context)
+        var glyph = row.glyph
+        if onAccent, glyph.category != .completed, glyph.category != .canceled { glyph.color = .white }
+        StatusPainter.draw(glyph, in: CGRect(x: x, y: midY - 7, width: 14, height: 14), cg: context)
         x += 14 + 10
         // The arrow that folds the sub-issues under this issue in or out.
         if row.nested != nil {
             let rect = NSRect(x: x - 4, y: midY - 7, width: 14, height: 14)
             foldRect = rect
             if hoveringFold {
-                NSColor(Theme.partHover).setFill()
+                partHover.setFill()
                 NSBezierPath(roundedRect: rect.insetBy(dx: -2, dy: -2), xRadius: 5, yRadius: 5).fill()
             }
-            Self.drawFoldArrow(folded: row.folded, center: NSPoint(x: rect.midX, y: rect.midY), color: NSColor(Theme.textSecondary))
+            Self.drawFoldArrow(folded: row.folded, center: NSPoint(x: rect.midX, y: rect.midY), color: onAccent ? .white : NSColor(Theme.textSecondary))
             x = rect.maxX + 8
         } else {
             foldRect = nil
@@ -1243,7 +1258,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
         // Right to left: assignees, date, project, labels.
         var right = size.width - IssueTable.inset - 14
-        var avatarRing = NSColor(row.selected ? Theme.selectionFill : highlighted ? Theme.selected : Theme.panel)
+        var avatarRing = NSColor(row.selected ? Theme.accentFill : highlighted ? Theme.selected : Theme.panel)
         if canEditFields {
             let count = CGFloat(max(min(row.item.assignees.count, 3), 1))
             let width = 18 + (count - 1) * 13
@@ -1251,7 +1266,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             parts.append((.assignees, rect))
             if hoveredPart == .assignees {
                 let halo = rect.insetBy(dx: -3, dy: -3)
-                avatarRing = NSColor(Theme.partHover)
+                avatarRing = partHover
                 avatarRing.setFill()
                 NSBezierPath(roundedRect: halo, xRadius: halo.height / 2, yRadius: halo.height / 2).fill()
                 if row.item.assignees.isEmpty {
@@ -1334,7 +1349,10 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
             guard rect.minX > x + 120 else { break }
             labelsRect = labelsRect.map { $0.union(rect) } ?? rect
-            drawChip(rect, hovered: canEditFields && hoveredPart == .labels)
+            let tint = onAccent ? NSColor.white.withAlphaComponent(canEditFields && hoveredPart == .labels ? 0.3 : 0.2)
+                : label.color.withAlphaComponent(canEditFields && hoveredPart == .labels ? 0.24 : 0.14)
+            tint.setFill()
+            NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2).fill()
             label.color.setFill()
             NSBezierPath(ovalIn: NSRect(x: rect.minX + 7, y: midY - 3.5, width: 7, height: 7)).fill()
             label.text.draw(at: NSPoint(x: rect.minX + 19, y: midY - textSize.height / 2))
@@ -1374,7 +1392,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             glyph.line(to: NSPoint(x: origin.x + 6, y: origin.y + 7.3))
             glyph.lineWidth = 1.2
             glyph.lineCapStyle = .round
-            NSColor(Theme.textSecondary).setStroke()
+            (onAccent ? NSColor.white : NSColor(Theme.textSecondary)).setStroke()
             glyph.stroke()
             let dot = NSBezierPath(ovalIn: NSRect(x: origin.x + 6.2, y: origin.y + 5.8, width: 3.1, height: 3.1))
             dot.lineWidth = 1.2
@@ -1531,7 +1549,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         let box = NSRect(x: center.x - 7, y: center.y - 7, width: 14, height: 14)
         let shape = NSBezierPath(roundedRect: box.insetBy(dx: checked ? 0 : 0.6, dy: checked ? 0 : 0.6), xRadius: 4, yRadius: 4)
         if checked {
-            NSColor(Theme.accentFill).setFill()
+            // On the accent-filled row the box is white with the mark in the accent colour.
+            NSColor.white.setFill()
             shape.fill()
             let mark = NSBezierPath()
             mark.move(to: NSPoint(x: box.minX + 3.6, y: box.midY + 0.2))
@@ -1540,7 +1559,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             mark.lineWidth = 1.7
             mark.lineCapStyle = .round
             mark.lineJoinStyle = .round
-            NSColor.white.setStroke()
+            NSColor(Theme.accentFill).setStroke()
             mark.stroke()
         } else {
             shape.lineWidth = 1.2
@@ -1549,18 +1568,15 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         }
     }
 
+    /// The quiet parts of a row (due date, sub-issues, milestone, fields) are text with a symbol, as Mail and
+    /// Reminders write them; under the pointer they light up as the button they are.
     private func drawChip(_ rect: NSRect, hovered: Bool) {
-        let outline = NSBezierPath(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), xRadius: 9.5, yRadius: 9.5)
-        if hovered {
-            NSColor(Theme.chipHover).setFill()
-            outline.fill()
-        }
-        NSColor(hovered ? Theme.chipHoverBorder : Theme.chipBorder).setStroke()
-        outline.lineWidth = 1
-        outline.stroke()
+        guard hovered else { return }
+        (row?.selected == true ? NSColor.white.withAlphaComponent(0.22) : NSColor(Theme.partHover)).setFill()
+        NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2).fill()
     }
 
-    private func drawPriority(_ level: PriorityLevel, x: CGFloat, midY: CGFloat) {
+    private func drawPriority(_ level: PriorityLevel, x: CGFloat, midY: CGFloat, onAccent: Bool = false) {
         if level == .urgent {
             let rect = NSRect(x: x + 1, y: midY - 6, width: 12, height: 12)
             NSColor(Theme.urgent).setFill()
@@ -1575,7 +1591,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         }
         let bars: [(CGFloat, Bool)] = [(4, level >= .low), (7, level >= .medium), (10, level >= .high)]
         for (index, bar) in bars.enumerated() {
-            NSColor(bar.1 ? Theme.textBody : Theme.barOff).setFill()
+            (onAccent ? NSColor.white.withAlphaComponent(bar.1 ? 1 : 0.35) : NSColor(bar.1 ? Theme.textBody : Theme.barOff)).setFill()
             NSBezierPath(
                 roundedRect: NSRect(x: x + CGFloat(index) * 5, y: midY + 6 - bar.0, width: 3, height: bar.0),
                 xRadius: 1, yRadius: 1
@@ -1655,7 +1671,12 @@ final class IssueHeaderCell: NSView {
     override func menu(for event: NSEvent) -> NSMenu? {
         // Inside the table the table builds the menu; the pinned copy builds its own.
         guard handlesClicks, let section, let model else { return super.menu(for: event) }
-        return IssueTable.Coordinator.sectionMenu(section, model: model)
+        let menu = IssueTable.Coordinator.sectionMenu(section, model: model)
+        if ContextMenus.isContextClick(event) {
+            GlassMenu.show(menu, at: event, in: self, model: model)
+            return nil
+        }
+        return menu
     }
 
     override func mouseUp(with event: NSEvent) {
@@ -1694,33 +1715,31 @@ final class IssueHeaderCell: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         guard let section, let context = NSGraphicsContext.current?.cgContext else { return }
-        // Opaque behind the band, so rows do not show around its corners while it is pinned.
+        // Opaque, so rows do not show through while it is pinned; a plain heading, as Mail and Reminders head a
+        // group, with a hairline under it.
         NSColor(Theme.panel).setFill()
         bounds.fill()
-        let band = NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 2), xRadius: 8, yRadius: 8)
-        NSColor(Theme.groupHeader).setFill()
-        band.fill()
-        // A trace of the status colour, as a hint of what the group is.
-        if case .status(let glyph) = section.icon {
-            NSColor(glyph.color).withAlphaComponent(0.07).setFill()
-            band.fill()
-        }
-        let midY = bounds.height / 2
+        NSColor(Theme.rowSeparator).setFill()
+        NSRect(x: IssueTable.inset + 10, y: bounds.height - 1, width: bounds.width - 2 * IssueTable.inset - 20, height: 1).fill()
+        let midY = bounds.height / 2 + 1
         // The disclosure arrow: down while open, right while folded in.
         let arrow = NSBezierPath()
         let center = NSPoint(x: IssueTable.inset + 15, y: midY)
+        // A chevron, as the system draws its disclosure arrows now.
         if section.collapsed {
-            arrow.move(to: NSPoint(x: center.x - 2, y: center.y - 3.5))
+            arrow.move(to: NSPoint(x: center.x - 1.5, y: center.y - 4))
             arrow.line(to: NSPoint(x: center.x + 2.5, y: center.y))
-            arrow.line(to: NSPoint(x: center.x - 2, y: center.y + 3.5))
+            arrow.line(to: NSPoint(x: center.x - 1.5, y: center.y + 4))
         } else {
-            arrow.move(to: NSPoint(x: center.x - 3.5, y: center.y - 2))
+            arrow.move(to: NSPoint(x: center.x - 4, y: center.y - 1.5))
             arrow.line(to: NSPoint(x: center.x, y: center.y + 2.5))
-            arrow.line(to: NSPoint(x: center.x + 3.5, y: center.y - 2))
+            arrow.line(to: NSPoint(x: center.x + 4, y: center.y - 1.5))
         }
-        arrow.close()
-        NSColor(Theme.textTertiary).setFill()
-        arrow.fill()
+        arrow.lineWidth = 1.6
+        arrow.lineCapStyle = .round
+        arrow.lineJoinStyle = .round
+        NSColor(Theme.textTertiary).setStroke()
+        arrow.stroke()
         let left = IssueTable.inset + 28
         let iconRect = CGRect(x: left, y: midY - 7, width: 14, height: 14)
         switch section.icon {
@@ -2087,7 +2106,7 @@ struct ItemMenuBuilder {
                 number(entry, index + 1)
                 status.addItem(entry)
             }
-            entries.append(submenu(String(localized: .status), MenuIcons.status(model.glyph(of: item)), status))
+            entries.append(submenu(String(localized: .status), MenuIcons.status(model.glyph(of: item)), status, picker: .status))
         }
 
         let priorities = model.priorityOptions(projectId: item.projectId)
@@ -2108,7 +2127,7 @@ struct ItemMenuBuilder {
                 number(entry, index + 1)
                 priority.addItem(entry)
             }
-            entries.append(submenu(String(localized: .priority), MenuIcons.priority(model.priorityLevel(of: item)), priority))
+            entries.append(submenu(String(localized: .priority), MenuIcons.priority(model.priorityLevel(of: item)), priority, picker: .priority))
         }
 
         if item.kind != .draft {
@@ -2123,7 +2142,7 @@ struct ItemMenuBuilder {
                 people.addItem(entry)
             }
             let icon = item.assignees.first.map(MenuIcons.avatar) ?? MenuIcons.symbol("person.crop.circle")
-            entries.append(submenu(String(localized: .assignee), icon, people))
+            entries.append(submenu(String(localized: .assignee), icon, people, picker: .assignees))
 
             let labels = NSMenu()
             for label in model.labels(for: item) {
@@ -2139,7 +2158,7 @@ struct ItemMenuBuilder {
                 empty.isEnabled = false
                 labels.addItem(empty)
             }
-            entries.append(submenu(String(localized: .labels), MenuIcons.symbol("tag"), labels))
+            entries.append(submenu(String(localized: .labels), MenuIcons.symbol("tag"), labels, picker: .labels))
 
             if let viewer = model.viewer {
                 let mine = targets.allSatisfy { target in target.assignees.contains { $0.id == viewer.id } }
@@ -2152,10 +2171,10 @@ struct ItemMenuBuilder {
             }
         }
         if targets.contains(where: model.canHaveDueDate) {
-            entries.append(submenu(String(localized: .dueDateTitle), MenuIcons.symbol("calendar"), dueDateMenu(targets)))
+            entries.append(submenu(String(localized: .dueDateTitle), MenuIcons.symbol("calendar"), dueDateMenu(targets), picker: .dueDate))
         }
         if targets.contains(where: model.canHaveMilestone) {
-            entries.append(submenu(String(localized: .milestone), MenuIcons.milestone(model.milestoneMark(of: item)), milestoneMenu(targets)))
+            entries.append(submenu(String(localized: .milestone), MenuIcons.milestone(model.milestoneMark(of: item)), milestoneMenu(targets), picker: .milestone))
         }
         return entries
     }
@@ -2265,11 +2284,13 @@ struct ItemMenuBuilder {
         }
     }
 
-    private func submenu(_ title: String, _ image: NSImage?, _ menu: NSMenu) -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-        item.image = image
-        item.submenu = menu
-        return item
+    /// A submenu; one for a property of the issue names its picker, which the glass menu opens in its place.
+    private func submenu(_ title: String, _ image: NSImage?, _ menu: NSMenu, picker: PickerKind? = nil) -> NSMenuItem {
+        let entry = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        entry.image = image
+        entry.submenu = menu
+        if let picker { entry.representedObject = PickerMenuTarget(kind: picker, itemId: item.id) }
+        return entry
     }
 
     /// Shows the number that picks this entry in the dropdowns; typing it while the submenu is open picks it too.

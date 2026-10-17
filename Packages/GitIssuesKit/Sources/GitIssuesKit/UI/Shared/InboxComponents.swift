@@ -69,6 +69,8 @@ struct InboxAvatar: View {
     var summary: InboxSummary
     var size: CGFloat = 24
     var ground: Color = Theme.panel
+    /// The sign's colour when the ground is a colour too, such as white on the accent of the selected row.
+    var signTint: Color?
 
     var body: some View {
         let badge = (size * 0.62).rounded()
@@ -92,7 +94,7 @@ struct InboxAvatar: View {
             if !summary.sign.isDue {
                 Image(systemName: summary.sign.systemImage)
                     .font(.system(size: badge * 0.56, weight: .bold))
-                    .foregroundStyle(summary.sign.color)
+                    .foregroundStyle(signTint ?? summary.sign.color)
                     .frame(width: badge, height: badge)
                     .background(Circle().fill(ground))
                     .offset(x: badge * 0.3, y: badge * 0.3)
@@ -108,18 +110,27 @@ struct InboxSubjectIcon: View {
     @Environment(AppModel.self) private var model
     var entry: InboxEntry
     var item: Item?
+    /// One colour for the whole icon, such as white on the accent of the selected row.
+    var tint: Color?
 
     var body: some View {
         if let item, item.isOnBoard, item.statusId != nil {
-            StatusIcon(glyph: model.glyph(of: item))
+            StatusIcon(glyph: tinted(model.glyph(of: item)))
         } else if entry.isPullRequest {
             Image(systemName: entry.state == "MERGED" ? "arrow.triangle.merge" : "arrow.triangle.pull")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(entry.state == "MERGED" ? Theme.accent : entry.state == "CLOSED" ? Theme.textTertiary : Theme.positive)
+                .foregroundStyle(tint ?? (entry.state == "MERGED" ? Theme.accent : entry.state == "CLOSED" ? Theme.textTertiary : Theme.positive))
                 .frame(width: 14, height: 14)
         } else {
-            StatusIcon(glyph: openClosedGlyph)
+            StatusIcon(glyph: tinted(openClosedGlyph))
         }
+    }
+
+    private func tinted(_ glyph: StatusGlyph) -> StatusGlyph {
+        guard let tint else { return glyph }
+        var glyph = glyph
+        glyph.color = tint
+        return glyph
     }
 
     /// As a sub-issue that isn't on the board shows it: open, done or not planned.

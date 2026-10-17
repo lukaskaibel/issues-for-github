@@ -2,42 +2,58 @@ import SwiftUI
 
 /// Design tokens. Every colour in the app comes from here and has a light and a dark value.
 enum Theme {
-    static let window = Color(light: 0xF1F2F4, dark: 0x0B0C0E)
-    static let panel = Color(light: 0xFBFBFC, dark: 0x111214)
-    static let panelBorder = Color(light: 0xE3E4E8, dark: 0x1F2126)
-    static let groupHeader = Color(light: 0xF5F6F8, dark: 0x191B1F)
-    static let rowSeparator = Color(light: 0xEDEEF1, dark: 0x191B1F)
+    // Apple's own greys, as in Notes, Mail and Reminders: white pages, a neutral grey dark appearance.
+    static let window = Color(light: 0xF3F3F5, dark: 0x1A1A1C)
+    static let panel = Color(light: 0xFFFFFF, dark: 0x1E1E20)
+    static let panelBorder = Color(light: 0xE5E5EA, dark: 0x2E2E31)
+    static let groupHeader = Color(light: 0xF4F4F6, dark: 0x252527)
+    static let rowSeparator = Color(light: 0xEDEDF0, dark: 0x2A2A2D)
+    /// Behind a board column, as Reminders sets its columns apart: a soft lane instead of lines.
+    static let lane = Color(light: 0xF4F4F6, dark: 0x242427)
 
-    static let card = Color(light: 0xFFFFFF, dark: 0x17181B)
-    static let cardBorder = Color(light: 0xE6E7EB, dark: 0x212327)
-    static let cardHover = Color(light: 0xF8F8FA, dark: 0x1B1D21)
-    static let cardHoverBorder = Color(light: 0xC9CBD2, dark: 0x30333A)
-    static let cardLifted = Color(light: 0xFFFFFF, dark: 0x1E2024)
-    static let cardLiftedBorder = Color(light: 0xC4C6CE, dark: 0x3A3E46)
+    static let card = Color(light: 0xFFFFFF, dark: 0x2C2C2F)
+    static let cardBorder = Color(light: 0xE4E4E9, dark: 0x37373B)
+    static let cardHover = Color(light: 0xFCFCFD, dark: 0x313135)
+    static let cardHoverBorder = Color(light: 0xD1D1D6, dark: 0x48484D)
+    static let cardLifted = Color(light: 0xFFFFFF, dark: 0x343438)
+    static let cardLiftedBorder = Color(light: 0xC7C7CC, dark: 0x4A4A4F)
+    /// The soft shadow a card stands on, in place of a border.
+    static let cardShadow = Color(platformColor: .dynamic { isDark in
+        PlatformColor.black.withAlphaComponent(isDark ? 0.4 : 0.07)
+    })
 
-    static let hover = Color(light: 0xE8E9ED, dark: 0x1A1C20)
-    static let selected = Color(light: 0xECEDF1, dark: 0x1C1E23)
-    static let control = Color(light: 0xE7E8EC, dark: 0x191B1F)
-    static let controlActive = Color(light: 0xE4E5E9, dark: 0x2A2D33)
-    static let chipBorder = Color(light: 0xDCDDE2, dark: 0x2A2D33)
+    static let hover = Color(light: 0xEDEDF0, dark: 0x2C2C2F)
+    static let selected = Color(light: 0xEBEBEF, dark: 0x2F2F33)
+    static let control = Color(light: 0xE9E9ED, dark: 0x2C2C2F)
+    static let controlActive = Color(light: 0xE1E1E6, dark: 0x3A3A3E)
+    static let chipBorder = Color(light: 0xDCDCE1, dark: 0x3A3A3E)
     /// A chip under the pointer lights up in its own shape rather than getting a box behind it.
-    static let chipHover = Color(light: 0xEFF0F3, dark: 0x22252A)
-    static let chipHoverBorder = Color(light: 0xC4C6CE, dark: 0x3A3E46)
+    static let chipHover = Color(light: 0xEFEFF3, dark: 0x343438)
+    static let chipHoverBorder = Color(light: 0xC7C7CC, dark: 0x4A4A4F)
     /// A picked issue: a tint of the accent behind it and the accent around it.
-    static let selectionFill = Color(light: 0xEDEEFC, dark: 0x1D1F33)
-    static let selectionBorder = Color(light: 0x8D93E6, dark: 0x5C63C9)
+    static let selectionFill = Color(light: 0xEDEEFC, dark: 0x2A2C47)
+    static let selectionBorder = Color(light: 0x8D93E6, dark: 0x6E75D8)
     /// Behind a small icon or avatar under the pointer.
-    static let partHover = Color(light: 0xE4E5E9, dark: 0x2A2D33)
+    static let partHover = Color(light: 0xE5E5EA, dark: 0x3A3A3E)
 
-    static let popover = Color(light: 0xFFFFFF, dark: 0x1B1D21)
-    static let popoverBorder = Color(light: 0xDDDEE3, dark: 0x2C2F36)
-    static let popoverSelected = Color(light: 0xEEEFF2, dark: 0x2A2D33)
-    static let keycapBorder = Color(light: 0xD0D2D8, dark: 0x3A3E46)
+    static let popover = Color(light: 0xFFFFFF, dark: 0x2A2A2D)
+    static let popoverBorder = Color(light: 0xDEDEE3, dark: 0x3A3A3E)
+    static let popoverSelected = Color(light: 0xEEEEF2, dark: 0x3A3A3E)
+    /// The row under the pointer or the arrow keys in a dropdown: a soft tint of the accent, which keeps the
+    /// indigo Done circle visible where a full accent fill would swallow it.
+    static let menuHighlight = Color(platformColor: .dynamic { isDark in
+        PlatformColor(hex: isDark ? 0x8F96F2 : 0x5B63D3).withAlphaComponent(isDark ? 0.24 : 0.14)
+    })
+    /// The search field at the top of a dropdown and other fields drawn on glass.
+    static let field = Color(platformColor: .dynamic { isDark in
+        isDark ? PlatformColor.white.withAlphaComponent(0.08) : PlatformColor.black.withAlphaComponent(0.05)
+    })
+    static let keycapBorder = Color(light: 0xD1D1D6, dark: 0x48484D)
 
-    static let text = Color(light: 0x1A1B1E, dark: 0xE8E9EB)
-    static let textSecondary = Color(light: 0x5F636B, dark: 0x9A9FA8)
-    static let textTertiary = Color(light: 0x696D76, dark: 0x7C818A)
-    static let textBody = Color(light: 0x2E3035, dark: 0xC9CCD1)
+    static let text = Color(light: 0x1D1D1F, dark: 0xF2F2F4)
+    static let textSecondary = Color(light: 0x5E5E63, dark: 0xAEAEB4)
+    static let textTertiary = Color(light: 0x6E6E73, dark: 0x8E8E95)
+    static let textBody = Color(light: 0x2C2C2E, dark: 0xD8D8DC)
 
     static let accent = Color(light: 0x5B63D3, dark: 0x8F96F2)
     static let accentFill = Color(light: 0x5B63D3, dark: 0x5B63D3)
@@ -48,22 +64,22 @@ enum Theme {
     static let overdue = Color(light: 0xD64545, dark: 0xEB6A6A)
     /// An issue that waits for another one, as Linear marks it.
     static let blocked = Color(light: 0xD9473B, dark: 0xEB5B50)
-    static let barOff = Color(light: 0xD5D7DC, dark: 0x3A3E46)
+    static let barOff = Color(light: 0xD1D1D6, dark: 0x48484D)
     /// The line from a parent down to the sub-issues hanging under it.
-    static let treeLine = Color(light: 0xCBCDD3, dark: 0x363940)
+    static let treeLine = Color(light: 0xD1D1D6, dark: 0x3F3F43)
     /// The active half of a segmented control.
-    static let segmentActive = Color(light: 0xFFFFFF, dark: 0x2A2D33)
+    static let segmentActive = Color(light: 0xFFFFFF, dark: 0x3A3A3E)
     /// Text set on top of a filled, coloured shape (avatars, the urgent badge, the done check mark).
-    static let onColor = Color(light: 0xFFFFFF, dark: 0x111214)
+    static let onColor = Color(light: 0xFFFFFF, dark: 0x1C1C1E)
     static let started = Color(light: 0xD29A0A, dark: 0xF0B429)
     /// Epics, which group issues on the roadmap: their icon and their bars.
     static let epic = Color(light: 0x6E56CF, dark: 0xA08CF2)
-    static let epicBar = Color(light: 0xECE8FA, dark: 0x221E36)
+    static let epicBar = Color(light: 0xECE8FA, dark: 0x2B2640)
     static let epicBarBorder = Color(light: 0xB9AEE9, dark: 0x4C4380)
     static let epicBarFill = Color(light: 0xB7A9EC, dark: 0x5C4FA0)
     /// A milestone's stretch of time on the roadmap, every other one.
-    static let timelineBand = Color(light: 0xF2F3F6, dark: 0x15161A)
-    static let scrim = Color(light: 0x14161A, dark: 0x000000).opacity(0.4)
+    static let timelineBand = Color(light: 0xF5F5F7, dark: 0x232326)
+    static let scrim = Color(light: 0x1C1C1E, dark: 0x000000).opacity(0.25)
     static let shadow = Color(platformColor: .dynamic { isDark in
         PlatformColor.black.withAlphaComponent(isDark ? 0.5 : 0.16)
     })
@@ -157,6 +173,8 @@ extension Font {
     static let smallMedium = Font.system(size: 12, weight: .medium)
     static let tiny = Font.system(size: 11)
     static let tinySemibold = Font.system(size: 11, weight: .semibold)
+    /// A heading inside a page, such as Sub-issues or Activity.
+    static let sectionTitle = Font.system(size: 16, weight: .bold)
     #else
     // On iPhone and iPad the same roles follow the reader's text size.
     static let ui = Font.callout
@@ -166,7 +184,31 @@ extension Font {
     static let smallMedium = Font.footnote.weight(.medium)
     static let tiny = Font.caption
     static let tinySemibold = Font.caption.weight(.semibold)
+    static let sectionTitle = Font.title3.weight(.bold)
     #endif
+}
+
+extension View {
+    /// Liquid Glass, as the system draws what floats over the content: bars, panels, the comment field. Debug runs
+    /// can ask for a solid ground instead (`-debugSolidGlass YES`), since the app's own snapshots can't draw glass.
+    @ViewBuilder
+    func glassPanel<S: Shape>(in shape: S) -> some View {
+        if Theme.solidGlass {
+            background(shape.fill(Theme.popover)).overlay(shape.stroke(Theme.popoverBorder, lineWidth: 0.5))
+        } else {
+            glassEffect(.regular, in: shape)
+        }
+    }
+}
+
+extension Theme {
+    static var solidGlass: Bool {
+        #if DEBUG
+        UserDefaults.standard.bool(forKey: "debugSolidGlass")
+        #else
+        false
+        #endif
+    }
 }
 
 /// A button that looks like plain content and dims slightly while pressed.

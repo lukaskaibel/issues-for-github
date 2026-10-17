@@ -2,7 +2,8 @@
 import AppKit
 import SwiftUI
 
-/// The Inbox on the Mac, as in Linear: the notifications on the left, the issue of the selected one on the right.
+/// The Inbox on the Mac, as in Mail: the notifications on the left, the issue of the selected one on the right, and
+/// what can be done to it in the toolbar.
 struct InboxView: View {
     @Environment(AppModel.self) private var model
 
@@ -11,9 +12,72 @@ struct InboxView: View {
             InboxList()
                 .frame(width: Theme.inboxListWidth)
             Rectangle().fill(Theme.panelBorder).frame(width: 1)
+                .ignoresSafeArea(edges: .top)
             InboxPane()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+    }
+}
+
+/// The Inbox's part of the toolbar: For You and Watching in the middle, then for the notification on screen snooze,
+/// archive, read, its link, the issue and GitHub, and everything at once under ⋯.
+struct InboxToolbarItems: ToolbarContent {
+    let model: AppModel
+
+    var body: some ToolbarContent {
+        if !model.inbox(.watching).isEmpty {
+            ToolbarItem(placement: .principal) {
+                BucketSwitch()
+            }
+        }
+        if model.inboxPicked.count <= 1, let entry = model.inboxSelected {
+            ToolbarItem {
+                InboxEntryActions(entry: entry)
+            }
+        }
+        ToolbarItem {
+            InboxMoreButton()
+        }
+    }
+}
+
+/// Snooze, archive, read or unread, the link, the issue full size and GitHub, in one piece of glass as Mail groups
+/// them. Icons only, so they fit beside the search field with For You and Watching in the middle.
+private struct InboxEntryActions: View {
+    @Environment(AppModel.self) private var model
+    var entry: InboxEntry
+
+    var body: some View {
+        let item = model.inboxItem(for: entry)
+        let unread = model.isUnread(entry)
+        HStack(spacing: 0) {
+            SnoozeButton(entries: [entry])
+            ToolbarIconButton(systemImage: "archivebox", label: .archiveWithShortcut) { model.archive([entry]) }
+            ToolbarIconButton(systemImage: unread ? "envelope.open" : "envelope.badge", label: unread ? .markAsReadWithShortcut : .markAsUnreadWithShortcut) {
+                model.toggleRead([entry])
+            }
+            ToolbarIconButton(systemImage: "link", label: .copyLinkWithShortcut) {
+                if let url = entry.webURL { model.copyLink(url.absoluteString, for: entry.label) }
+            }
+            if let item, !item.isDetached {
+                ToolbarIconButton(systemImage: "arrow.up.left.and.arrow.down.right", label: .openIssueWithShortcut) { model.open(item) }
+            }
+            if let url = entry.webURL {
+                ToolbarIconButton(systemImage: "arrow.up.right.square", label: .openOnGitHub) { NSWorkspace.shared.open(url) }
+            }
+        }
+    }
+}
+
+/// ⋯: everything at once, and GitHub's own Inbox.
+private struct InboxMoreButton: View {
+    @State private var open = false
+
+    var body: some View {
+        ToolbarIconButton(systemImage: "ellipsis", label: .inboxActionsMac) { open = true }
+            .dropdown(isPresented: $open) { close in
+                InboxActionsMenu(close: close)
+            }
     }
 }
 
@@ -24,7 +88,6 @@ private struct InboxList: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            InboxHeader()
             content
         }
         .overlay(alignment: .bottom) {
@@ -61,7 +124,7 @@ private struct InboxList: View {
         } else {
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 1) {
+                    LazyVStack(spacing: 0) {
                         ForEach(entries) { entry in
                             InboxRow(entry: entry)
                                 .id(entry.id)
@@ -84,75 +147,29 @@ private struct InboxList: View {
     }
 }
 
-private struct InboxHeader: View {
-    @Environment(AppModel.self) private var model
-    @State private var menuOpen = false
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Text(.inbox).font(.uiSemibold)
-            // Watching is offered only while it has something.
-            if !model.inbox(.watching).isEmpty {
-                BucketSwitch()
-            }
-            Spacer()
-            IconButton(systemName: "ellipsis", label: String(localized: .inboxActionsMac)) { menuOpen = true }
-                .dropdown(isPresented: $menuOpen) { close in
-                    InboxActionsMenu(close: close)
-                }
-        }
-        .padding(.leading, 16)
-        .padding(.trailing, 10)
-        .frame(height: Theme.headerHeight)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Theme.panelBorder).frame(height: 1)
-        }
-    }
-}
-
-/// For you and Watching, with what's unread in each.
+/// For you and Watching, with what's unread in each, as a segmented control in the toolbar.
 private struct BucketSwitch: View {
     @Environment(AppModel.self) private var model
-    @Namespace private var namespace
 
     var body: some View {
-        HStack(spacing: 2) {
-            segment(.forYou)
-            segment(.watching)
-        }
-        .padding(2)
-        .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Theme.control))
-    }
-
-    private func segment(_ bucket: InboxBucket) -> some View {
-        let on = model.currentInboxBucket == bucket
-        let unread = model.inbox(bucket).filter(model.isUnread).count
-        return Button {
-            withAnimation(Theme.spring) {
-                model.inboxBucket = bucket
-                model.inboxPicked = []
+        Picker(selection: Binding(
+            get: { model.currentInboxBucket },
+            set: { bucket in
+                withAnimation(Theme.spring) {
+                    model.inboxBucket = bucket
+                    model.inboxPicked = []
+                }
+            }
+        )) {
+            ForEach([InboxBucket.forYou, .watching], id: \.self) { bucket in
+                let unread = model.inbox(bucket).filter(model.isUnread).count
+                Text(unread > 0 ? "\(bucket.title) \(unread)" : bucket.title).tag(bucket)
             }
         } label: {
-            HStack(spacing: 5) {
-                Text(bucket.title)
-                if unread > 0 {
-                    Text("\(unread)").monospacedDigit().foregroundStyle(Theme.textTertiary)
-                }
-            }
-            .font(.smallMedium)
-            .foregroundStyle(on ? Theme.text : Theme.textSecondary)
-            .padding(.horizontal, 9)
-            .frame(height: 22)
-            .background {
-                if on {
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(Theme.segmentActive)
-                        .matchedGeometryEffect(id: "bucket", in: namespace)
-                }
-            }
+            Text(.inbox)
         }
-        .buttonStyle(PlainPressStyle())
-        .accessibilityAddTraits(on ? .isSelected : [])
+        .pickerStyle(.segmented)
+        .fixedSize()
     }
 }
 
@@ -207,6 +224,7 @@ private struct InboxRow: View {
     var entry: InboxEntry
     @State private var hovering = false
     @State private var menuRegion = UUID()
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         let item = model.inboxItem(for: entry)
@@ -214,35 +232,50 @@ private struct InboxRow: View {
         let unread = model.isUnread(entry)
         let picked = model.inboxPicked.contains(entry.id)
         let selected = model.inboxSelectedId == entry.id && model.inboxPicked.isEmpty
-        let ground = picked ? Theme.selectionFill : selected ? Theme.selected : hovering ? Theme.hover : Theme.panel
+        // As in Mail: the one on screen in the accent colour, picked ones tinted, the one under the pointer lit.
+        let ground = selected ? Theme.accentFill : picked ? Theme.selectionFill : hovering ? Theme.hover : Theme.panel
+        let onAccent = selected
         HStack(alignment: .top, spacing: 10) {
             Circle()
-                .fill(unread ? Theme.accent : .clear)
-                .frame(width: 6, height: 6)
-                .padding(.top, 10)
-            InboxAvatar(summary: summary, size: 24, ground: ground)
-                .padding(.top, 3)
-            VStack(alignment: .leading, spacing: 5) {
+                .fill(unread ? (onAccent ? Color.white : Theme.accent) : .clear)
+                .frame(width: 8, height: 8)
+                .padding(.top, 13)
+            InboxAvatar(summary: summary, size: 30, ground: ground, signTint: onAccent ? .white : nil)
+                .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    line(summary)
+                        .font(unread ? .uiSemibold : .ui)
+                        .foregroundStyle(onAccent ? Color.white : Theme.text)
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    if !hovering {
+                        Text(inboxTime(entry.updatedAt, now: model.inboxClock))
+                            .font(.small)
+                            .monospacedDigit()
+                            .foregroundStyle(onAccent ? Color.white.opacity(0.8) : Theme.textTertiary)
+                    }
+                }
                 HStack(spacing: 6) {
-                    InboxSubjectIcon(entry: entry, item: item)
+                    InboxSubjectIcon(entry: entry, item: item, tint: onAccent ? .white : nil)
                     Text(model.inboxNumber(entry, item: item))
                         .font(.small)
                         .monospacedDigit()
-                        .foregroundStyle(Theme.textTertiary)
+                        .foregroundStyle(onAccent ? Color.white.opacity(0.8) : Theme.textTertiary)
                         .lineLimit(1)
                         .layoutPriority(1)
                     Text(entry.title)
-                        .font(unread ? .uiSemibold : .ui)
-                        .foregroundStyle(unread ? Theme.text : Theme.textBody)
+                        .font(.ui)
+                        .foregroundStyle(onAccent ? Color.white.opacity(0.92) : unread ? Theme.text : Theme.textBody)
                         .lineLimit(1)
                 }
-                line(summary)
-                    .font(.small)
-                    .foregroundStyle(unread ? Theme.textSecondary : Theme.textTertiary)
-                    .lineLimit(1)
-                    .padding(.leading, 20)
+                if let excerpt = summary.excerpt {
+                    Text(excerpt)
+                        .font(.small)
+                        .foregroundStyle(onAccent ? Color.white.opacity(0.8) : Theme.textTertiary)
+                        .lineLimit(1)
+                }
             }
-            Spacer(minLength: 4)
             if hovering {
                 HStack(spacing: 2) {
                     IconButton(systemName: unread ? "circle.inset.filled" : "circle", label: String(localized: unread ? .markAsReadWithShortcut : .markAsUnreadWithShortcut), size: 24) {
@@ -252,23 +285,19 @@ private struct InboxRow: View {
                         model.archive(model.inboxTargets(for: entry))
                     }
                 }
-                .padding(.top, 4)
+                .environment(\.colorScheme, onAccent ? .dark : colorScheme)
+                .padding(.top, 2)
                 .transition(.opacity)
-            } else {
-                Text(inboxTime(entry.updatedAt, now: model.inboxClock))
-                    .font(.small)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.textTertiary)
-                    .padding(.top, 8)
             }
         }
-        .padding(.leading, 8)
+        .padding(.leading, 4)
         .padding(.trailing, 10)
-        .frame(height: 58)
-        .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(ground))
-        .overlay {
-            if picked {
-                RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Theme.selectionBorder, lineWidth: 1)
+        .padding(.vertical, 9)
+        .frame(minHeight: 58)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(ground))
+        .overlay(alignment: .bottom) {
+            if !selected, !picked, !hovering {
+                Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 56).padding(.trailing, 6)
             }
         }
         .padding(.horizontal, 6)
@@ -292,10 +321,11 @@ private struct InboxRow: View {
         .accessibilityAction(named: Text(.archive)) { model.archive([entry]) }
     }
 
-    /// "Mira Patel: The settle feels good now…", the lead set apart from the comment.
+    /// Who did what, such as "Mira Patel mentioned you"; what they wrote is the line under the issue, so the colon
+    /// that led into it goes.
     private func line(_ summary: InboxSummary) -> Text {
-        guard let excerpt = summary.excerpt else { return Text(summary.lead) }
-        return Text("\(Text(summary.lead).fontWeight(.medium)) \(excerpt)")
+        guard summary.excerpt != nil else { return Text(summary.lead) }
+        return Text(summary.lead.trimmingCharacters(in: CharacterSet(charactersIn: ":：").union(.whitespaces)))
     }
 
     /// A click shows the issue; with ⌘ or Shift it picks entries to act on together, as in the list.
@@ -375,12 +405,10 @@ private struct InboxUndoToast: View {
             .buttonStyle(SecondaryButtonStyle())
         }
         .font(.ui)
-        .padding(.leading, 14)
+        .padding(.leading, 16)
         .padding(.trailing, 8)
         .padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.popover))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
-        .shadow(color: Theme.shadow, radius: 14, y: 6)
+        .glassPanel(in: Capsule())
     }
 }
 
@@ -397,14 +425,10 @@ private struct InboxPane: View {
                 .id(entry.id)
                 .transition(.opacity)
         } else {
-            VStack(spacing: 0) {
-                Color.clear.frame(height: Theme.headerHeight)
-                    .overlay(alignment: .bottom) { Rectangle().fill(Theme.panelBorder).frame(height: 1) }
-                EmptyState(
-                    title: model.visibleInbox.isEmpty ? "" : String(localized: .noNotificationSelected),
-                    message: model.visibleInbox.isEmpty ? "" : String(localized: .pickNotificationHint)
-                )
-            }
+            EmptyState(
+                title: model.visibleInbox.isEmpty ? "" : String(localized: .noNotificationSelected),
+                message: model.visibleInbox.isEmpty ? "" : String(localized: .pickNotificationHint)
+            )
         }
     }
 }
@@ -416,7 +440,6 @@ private struct InboxEntryPane: View {
     var body: some View {
         let item = model.inboxItem(for: entry)
         VStack(spacing: 0) {
-            header(item)
             if entry.missing {
                 EmptyState(
                     title: String(localized: .issueNotAvailable),
@@ -438,42 +461,6 @@ private struct InboxEntryPane: View {
                     showsProgress: true
                 )
             }
-        }
-    }
-
-    private func header(_ item: Item?) -> some View {
-        HStack(spacing: 8) {
-            if let item, let project = model.project(of: item) {
-                ProjectIcon(projectId: project.id)
-                Text(project.title).foregroundStyle(Theme.textSecondary).lineLimit(1)
-            } else {
-                Text(entry.repo).foregroundStyle(Theme.textSecondary).lineLimit(1).truncationMode(.middle)
-            }
-            Text("›").foregroundStyle(Theme.textTertiary)
-            Text(entry.displayNumber(withRepo: false)).font(.uiSemibold).monospacedDigit()
-            Spacer(minLength: 8)
-            SnoozeButton(entries: [entry])
-            IconButton(systemName: "archivebox", label: String(localized: .archiveWithShortcut)) { model.archive([entry]) }
-            IconButton(systemName: "link", label: String(localized: .copyLinkWithShortcut)) {
-                if let url = entry.webURL { model.copyLink(url.absoluteString, for: entry.label) }
-            }
-            if let item, !item.isDetached {
-                IconButton(systemName: "arrow.up.left.and.arrow.down.right", label: String(localized: .openIssueWithShortcut)) { model.open(item) }
-            }
-            Button(action: openOnGitHub) {
-                HStack(spacing: 6) {
-                    Text(.openOnGitHub)
-                    Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .medium))
-                }
-            }
-            .buttonStyle(SecondaryButtonStyle())
-            .padding(.leading, 4)
-        }
-        .padding(.leading, 18)
-        .padding(.trailing, 12)
-        .frame(height: Theme.headerHeight)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Theme.panelBorder).frame(height: 1)
         }
     }
 
@@ -514,12 +501,21 @@ private struct InboxIssue: View {
                     }
                 }
                 .frame(maxWidth: 680, alignment: .leading)
-                .padding(.horizontal, 26)
+                .padding(.horizontal, 32)
                 .padding(.top, 20)
-                .padding(.bottom, 48)
+                .padding(.bottom, 40)
                 .frame(maxWidth: .infinity)
             }
             .scrollIndicators(.never)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if item.kind != .draft {
+                    CommentComposer(item: item)
+                        .frame(maxWidth: 680)
+                        .padding(.horizontal, 32)
+                        .padding(.bottom, 16)
+                        .frame(maxWidth: .infinity)
+                }
+            }
         }
         .onAppear { model.detailAppeared(item) }
         .onDisappear { model.detailDisappeared(item) }
@@ -571,9 +567,9 @@ private struct InboxNews: View {
             }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(entry.activityIsNew ? Theme.selectionFill : Theme.groupHeader))
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(entry.activityIsNew ? Theme.selectionFill : Theme.lane))
     }
 }
 
@@ -584,8 +580,6 @@ private struct InboxPickedSummary: View {
     var body: some View {
         let entries = model.visibleInbox.filter { model.inboxPicked.contains($0.id) }
         VStack(spacing: 0) {
-            Color.clear.frame(height: Theme.headerHeight)
-                .overlay(alignment: .bottom) { Rectangle().fill(Theme.panelBorder).frame(height: 1) }
             VStack(spacing: 12) {
                 Text(.notificationsPicked(count: entries.count)).font(.uiSemibold)
                 HStack(spacing: 8) {

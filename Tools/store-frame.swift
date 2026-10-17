@@ -1,14 +1,29 @@
-// Frames a window snapshot for the Mac App Store: the window with rounded corners, a shadow and the coloured
+// Frames a picture of a window for the Mac App Store: the window with rounded corners, a shadow and the coloured
 // traffic lights of an active window, on the violet backdrop of the README pictures, 2880 x 1800 without alpha.
-//   swift Tools/store-frame.swift <window.png> <out.png> light|dark
-// The snapshot comes from the debug remote's `snapshot` command at 2x; see Tools/mac-app-store-screenshots.sh.
+//   swift Tools/store-frame.swift <window.png> <out.png> light|dark [live]
+// Without "live" the picture is the debug remote's `snapshot` at 2x, whose traffic lights are grey and are painted
+// over. With "live" it is a capture of the window on screen (Tools/readme-images/capture.swift), which has the real
+// ones and its own rounded corners; see Tools/mac-app-store-screenshots.sh.
 import AppKit
 
 let arguments = CommandLine.arguments
-guard arguments.count == 4, let dark = ["light": false, "dark": true][arguments[3]],
+guard arguments.count == 4 || arguments.count == 5 && arguments[4] == "live",
+      let dark = ["light": false, "dark": true][arguments[3]],
       let window = NSImage(contentsOfFile: arguments[1])?.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-    print("usage: swift Tools/store-frame.swift <window.png> <out.png> light|dark")
+    print("usage: swift Tools/store-frame.swift <window.png> <out.png> light|dark [live]")
     exit(1)
+}
+let live = arguments.count == 5
+
+/// The window's corner radius in pixels: a live capture has transparent corners, so it is where the diagonal from the
+/// top-left corner turns opaque (d = r(1 - 1/√2)); a snapshot is square and gets the radius of a window of macOS 15.
+func cornerRadius(of image: CGImage) -> CGFloat {
+    guard live else { return 36 }
+    let bitmap = NSBitmapImageRep(cgImage: image)
+    for d in 0..<min(200, image.width, image.height) where (bitmap.colorAt(x: d, y: d)?.alphaComponent ?? 1) > 0.5 {
+        return d == 0 ? 36 : (CGFloat(d) / (1 - 1 / 2.squareRoot())).rounded()
+    }
+    return 36
 }
 
 let width = 2880, height = 1800
@@ -59,7 +74,8 @@ for index in 0..<(width * height) {
 
 // The window, centred, with the two shadows of a macOS window.
 let frame = CGRect(x: (width - window.width) / 2, y: (height - window.height) / 2, width: window.width, height: window.height)
-let shape = CGPath(roundedRect: frame, cornerWidth: 36, cornerHeight: 36, transform: nil)
+let radius = cornerRadius(of: window)
+let shape = CGPath(roundedRect: frame, cornerWidth: radius, cornerHeight: radius, transform: nil)
 let shadowStrength: CGFloat = dark ? 0.70 : 0.24
 for (blur, opacity, drop) in [(CGFloat(120), 0.9, CGFloat(40)), (28, 0.6, 8)] {
     // The shape itself is drawn far off the canvas, so only its shadow lands on it.
@@ -86,7 +102,7 @@ let lights: [(fill: (Int, Int, Int), ring: (Int, Int, Int))] = dark
     ? [((243, 90, 80), (247, 123, 114)), ((252, 190, 7), (249, 207, 35)), ((33, 191, 12), (79, 211, 53))]
     : [((248, 122, 114), (232, 93, 86)), ((253, 199, 51), (223, 158, 36)), ((126, 213, 85), (94, 178, 59))]
 let behind = NSBitmapImageRep(cgImage: window).colorAt(x: 165, y: 40)?.usingColorSpace(.sRGB)?.cgColor ?? rgb(128, 128, 128)
-for (index, light) in lights.enumerated() {
+for (index, light) in lights.enumerated() where !live {
     let center = CGPoint(x: frame.minX + 31.5 + CGFloat(index) * 46, y: frame.minY + 31.5)
     context.setFillColor(behind)
     context.fillEllipse(in: CGRect(x: center.x - 15.5, y: center.y - 15.5, width: 31, height: 31))
@@ -98,7 +114,7 @@ for (index, light) in lights.enumerated() {
 }
 
 // The hairline macOS draws around windows, so the window stands off the backdrop.
-context.addPath(CGPath(roundedRect: frame.insetBy(dx: -0.5, dy: -0.5), cornerWidth: 36.5, cornerHeight: 36.5, transform: nil))
+context.addPath(CGPath(roundedRect: frame.insetBy(dx: -0.5, dy: -0.5), cornerWidth: radius + 0.5, cornerHeight: radius + 0.5, transform: nil))
 context.setStrokeColor(dark ? rgb(255, 255, 255, 34.0 / 255) : rgb(0, 0, 0, 30.0 / 255))
 context.setLineWidth(1)
 context.strokePath()

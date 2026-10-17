@@ -2,81 +2,132 @@
 import GRDB
 import SwiftUI
 
+/// What the sidebar can select: a place, a view of the project, one of its milestones, its roadmap or a repository.
+enum SidebarSelection: Hashable {
+    case inbox
+    case myIssues
+    /// A project before its views have been read: its board.
+    case board(String)
+    case view(projectId: String, viewId: String)
+    case milestone(projectId: String, title: String)
+    case roadmap(String)
+    case repository(String)
+}
+
+/// The system's sidebar, as in Notes and Mail: the project at the top with its menu, the Inbox and My Issues, then the
+/// project's views, its next milestones with the roadmap, and its repositories. One project at a time, as Linear shows
+/// one workspace.
 struct Sidebar: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            // Room for the window's traffic lights, with back and forward on the right.
-            HStack(spacing: 2) {
-                Spacer()
-                IconButton(systemName: "chevron.left", label: String(localized: .backShortcutTooltip)) { model.goBack() }
-                    .disabled(!model.canGoBack)
-                    .opacity(model.canGoBack ? 1 : 0.35)
-                IconButton(systemName: "chevron.right", label: String(localized: .forwardShortcutTooltip)) { model.goForward() }
-                    .disabled(!model.canGoForward)
-                    .opacity(model.canGoForward ? 1 : 0.35)
+        List(selection: selection) {
+            Section {
+                SidebarProjectHeader()
+                    .selectionDisabled()
+                Label { Text(.inbox) } icon: { Image(systemName: "tray") }
+                    .badge(model.inboxUnreadCount)
+                    .tag(SidebarSelection.inbox)
+                    .help(Text(.inboxShortcutTooltip))
+                    .accessibilityValue(model.inboxUnreadCount > 0 ? String(localized: .unreadCount(count: model.inboxUnreadCount)) : "")
+                    .sidebarReselect(.inbox, current: current)
+                Label { Text(.myIssues) } icon: { Image(systemName: "scope") }
+                    .tag(SidebarSelection.myIssues)
+                    .sidebarReselect(.myIssues, current: current)
             }
-            .frame(height: 44)
-
-            // The project, with the state of syncing as a dot on its icon, then search and a new issue, as in
-            // Linear's workspace header. Its menu has the other projects and the account.
-            HStack(spacing: 2) {
-                if let project = model.sidebarProject {
-                    ProjectMenuButton(project: project)
-                } else {
-                    AccountMenuButton()
-                }
-                Spacer(minLength: 4)
-                SidebarIconButton(systemName: "magnifyingglass", label: .search, help: .searchShortcutTooltip) {
-                    model.overlay = .palette(.root)
-                }
-                Button {
-                    model.overlay = .newIssue(statusId: nil, parentItemId: nil)
-                } label: {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Theme.textBody)
-                        .frame(width: 26, height: 26)
-                        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.hover))
-                }
-                .buttonStyle(PlainPressStyle())
-                .help(Text(.newIssueShortcutTooltip))
-                .accessibilityLabel(.newIssueAction)
-                .disabled(model.currentProjectId == nil && model.currentRepositoryId == nil)
-            }
-            .padding(.trailing, 6)
-            .frame(height: 32)
-            .padding(.bottom, 8)
-
-            SidebarRow(title: .inbox, systemImage: "tray", active: model.scope == .inbox, count: model.inboxUnreadCount) {
-                model.select(.inbox)
-            }
-            .help(Text(.inboxShortcutTooltip))
-            SidebarRow(title: .myIssues, systemImage: "scope", active: model.scope == .myIssues) {
-                model.select(.myIssues)
-            }
-
-            // One project at a time, as Linear shows one workspace: its views, milestones and repositories.
             if let project = model.sidebarProject {
-                ScrollView {
-                    SidebarProject(project: project)
-                }
-                .scrollIndicators(.never)
-            } else {
-                Spacer()
+                SidebarProject(project: project, current: current)
             }
-
-            // Nothing while everything is on GitHub; a card when you're offline or something needs you.
+        }
+        .listStyle(.sidebar)
+        // Nothing while everything is on GitHub; a card when you're offline or something needs you.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             if let attention = model.syncAttention {
                 SyncHintCard(attention: attention)
-                    .padding(.top, 8)
+                    .padding(10)
                     .transition(.opacity.combined(with: .offset(y: 8)))
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.bottom, 10)
         .animation(Theme.overlay, value: model.syncAttention)
+        .toolbar {
+            ToolbarItem {
+                Button {
+                    model.overlay = .newIssue(statusId: nil, parentItemId: nil)
+                } label: {
+                    Label(String(localized: .newIssueAction), systemImage: "square.and.pencil")
+                }
+                .help(Text(.newIssueShortcutTooltip))
+                .disabled(model.currentProjectId == nil && model.currentRepositoryId == nil && model.projects.isEmpty)
+            }
+        }
+    }
+
+    /// The row for what is on screen.
+    private var current: SidebarSelection? {
+        switch model.scope {
+        case .inbox: .inbox
+        case .myIssues: .myIssues
+        case .project(let id):
+            if let view = model.currentView { .view(projectId: id, viewId: view.id) } else { .board(id) }
+        case .milestone(let projectId, let title): .milestone(projectId: projectId, title: title)
+        case .roadmap(let id): .roadmap(id)
+        case .repository(let id): .repository(id)
+        case nil: nil
+        }
+    }
+
+    private var selection: Binding<SidebarSelection?> {
+        Binding {
+            current
+        } set: { selection in
+            guard let selection, selection != current else { return }
+            switch selection {
+            case .inbox: model.select(.inbox)
+            case .myIssues: model.select(.myIssues)
+            case .board(let id): model.select(.project(id))
+            case .view(_, let viewId): if let view = model.view(id: viewId) { model.show(view) }
+            case .milestone(let projectId, let title): model.select(.milestone(projectId: projectId, title: title))
+            case .roadmap(let id): model.select(.roadmap(id))
+            case .repository(let id): model.select(.repository(id))
+            }
+        }
+    }
+}
+
+extension View {
+    /// A click on the row of what is on screen while an issue is open goes back to it, as the row always did; the
+    /// list itself only reports clicks that change what is selected.
+    func sidebarReselect(_ row: SidebarSelection, current: SidebarSelection?) -> some View {
+        modifier(SidebarReselect(row: row, current: current))
+    }
+}
+
+private struct SidebarReselect: ViewModifier {
+    @Environment(AppModel.self) private var model
+    var row: SidebarSelection
+    var current: SidebarSelection?
+
+    func body(content: Content) -> some View {
+        content.simultaneousGesture(TapGesture().onEnded {
+            if row == current, model.openItem != nil { model.closeDetail() }
+        })
+    }
+}
+
+/// The project the sidebar is about, at its top, as Linear shows its workspace and Mail its accounts: its icon with
+/// the state of syncing as a dot, its name, and its menu.
+private struct SidebarProjectHeader: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Group {
+            if let project = model.sidebarProject {
+                ProjectMenuButton(project: project)
+            } else {
+                AccountMenuButton()
+            }
+        }
+        .padding(.bottom, 4)
     }
 }
 
@@ -85,37 +136,27 @@ struct MilestoneRow: View {
     @Environment(AppModel.self) private var model
     var projectId: String
     var group: MilestoneGroup
+    var current: SidebarSelection?
 
     var body: some View {
-        let active = model.scope == .milestone(projectId: projectId, title: group.title)
-        Button {
-            model.select(.milestone(projectId: projectId, title: group.title))
-        } label: {
-            HStack(spacing: 8) {
-                MilestoneIcon(mark: model.mark(of: group, projectId: projectId), size: 12)
-                    .frame(width: 14)
-                Text(group.title).lineLimit(1)
-                Spacer(minLength: 4)
-                if let due = group.due {
-                    let today = CalendarDay.today()
-                    Text(due.shortLabel(today: today))
-                        .font(.small)
-                        .monospacedDigit()
-                        .foregroundStyle(due < today ? Theme.overdue : active ? Theme.textSecondary : Theme.textTertiary)
-                }
-            }
-            .font(active ? .uiMedium : .ui)
-            .foregroundStyle(active ? Theme.text : Theme.textSecondary)
-            .padding(.horizontal, 6)
-            .frame(height: 28)
-            .hoverFill(active: active)
+        let row = SidebarSelection.milestone(projectId: projectId, title: group.title)
+        Label {
+            Text(group.title).lineLimit(1)
+        } icon: {
+            MilestoneIcon(mark: model.mark(of: group, projectId: projectId), size: 13)
         }
-        .buttonStyle(PlainPressStyle())
+        .badge(dueBadge)
+        .tag(row)
         .help(group.due.map { Text(.dueOn(date: $0.longLabel)) } ?? Text(group.title))
-        .contextMenu {
-            MilestoneMenuItems(projectId: projectId, group: group)
-        }
-        .transition(.opacity)
+        .glassSidebarMenu { [model, projectId, group] in MilestoneMenuItems.menu(projectId: projectId, group: group, model: model) }
+        .sidebarReselect(row, current: current)
+    }
+
+    private var dueBadge: Text? {
+        guard let due = group.due else { return nil }
+        let today = CalendarDay.today()
+        let text = Text(due.shortLabel(today: today)).monospacedDigit()
+        return due < today ? text.foregroundStyle(Theme.overdue) : text
     }
 }
 
@@ -123,40 +164,31 @@ struct MilestoneRow: View {
 struct RoadmapRow: View {
     @Environment(AppModel.self) private var model
     var projectId: String
+    var current: SidebarSelection?
 
     var body: some View {
-        let active = model.scope == .roadmap(projectId)
-        Button {
-            model.select(.roadmap(projectId))
-        } label: {
-            HStack(spacing: 8) {
-                RoadmapIcon(size: 13)
-                    .foregroundStyle(active ? Theme.textSecondary : Theme.textTertiary)
-                    .frame(width: 14)
-                Text(.roadmap).lineLimit(1)
-                Spacer(minLength: 0)
-            }
-            .font(active ? .uiMedium : .ui)
-            .foregroundStyle(active ? Theme.text : Theme.textSecondary)
-            .padding(.horizontal, 6)
-            .frame(height: 28)
-            .hoverFill(active: active)
+        let row = SidebarSelection.roadmap(projectId)
+        Label {
+            Text(.roadmap).lineLimit(1)
+        } icon: {
+            RoadmapIcon(size: 14)
         }
-        .buttonStyle(PlainPressStyle())
+        .tag(row)
         .help(Text(.roadmapShortcutTooltip))
-        .contextMenu {
-            if model.projects.first(where: { $0.id == projectId })?.viewerCanUpdate == true {
-                Button(.newEpic, systemImage: "plus") {
-                    model.select(.roadmap(projectId))
-                    model.newIssuePlan = NewIssuePlan(isEpic: true)
-                    model.overlay = .newIssue(statusId: nil, parentItemId: nil)
-                }
-                Button(.newMilestoneEllipsis, systemImage: "plus") {
-                    model.overlay = .milestoneEditor(projectId: projectId, title: nil, assigning: [])
-                }
+        .glassSidebarMenu { [model, projectId] in
+            guard model.projects.first(where: { $0.id == projectId })?.viewerCanUpdate == true else { return nil }
+            let menu = MenuBuilder()
+            menu.item(.newEpic, "plus") {
+                model.select(.roadmap(projectId))
+                model.newIssuePlan = NewIssuePlan(isEpic: true)
+                model.overlay = .newIssue(statusId: nil, parentItemId: nil)
             }
+            menu.item(.newMilestoneEllipsis, "plus") {
+                model.overlay = .milestoneEditor(projectId: projectId, title: nil, assigning: [])
+            }
+            return menu.build()
         }
-        .transition(.opacity)
+        .sidebarReselect(row, current: current)
     }
 }
 
@@ -165,88 +197,60 @@ struct RepositoryRow: View {
     @Environment(AppModel.self) private var model
     var repo: RepoRef
     var hidden: Bool
+    var current: SidebarSelection?
 
     var body: some View {
-        let active = model.scope == .repository(repo.id)
-        Button {
-            model.select(.repository(repo.id))
-        } label: {
-            HStack(spacing: 8) {
-                RepositoryIcon()
-                    .foregroundStyle(active ? Theme.textSecondary : Theme.textTertiary)
-                    .opacity(hidden ? 0.5 : 1)
-                Text(model.displayName(of: repo)).lineLimit(1)
-                Spacer(minLength: 0)
-            }
-            .font(active ? .uiMedium : .ui)
-            .foregroundStyle(active ? Theme.text : hidden ? Theme.textTertiary : Theme.textSecondary)
-            .padding(.horizontal, 6)
-            .frame(height: 28)
-            .hoverFill(active: active)
+        let row = SidebarSelection.repository(repo.id)
+        Label {
+            Text(model.displayName(of: repo)).lineLimit(1)
+                .foregroundStyle(hidden ? Theme.textTertiary : Theme.text)
+        } icon: {
+            Image(systemName: "book.closed").opacity(hidden ? 0.5 : 1)
         }
-        .buttonStyle(PlainPressStyle())
+        .tag(row)
         .help(repo.nameWithOwner)
-        .contextMenu {
+        .glassSidebarMenu { [model, repo, hidden] in
+            let menu = MenuBuilder()
             if hidden {
-                Button(.showInSidebar, systemImage: "eye") { model.setHidden(repo, false) }
+                menu.item(.showInSidebar, "eye") { model.setHidden(repo, false) }
             } else {
-                Button(.hideFromSidebar, systemImage: "eye.slash") { model.setHidden(repo, true) }
+                menu.item(.hideFromSidebar, "eye.slash") { model.setHidden(repo, true) }
             }
-            Divider()
             if let url = repo.url {
-                Button(.copyLink, systemImage: "link") { model.copyLink(url.absoluteString, for: repo.nameWithOwner) }
-                Button(.openOnGitHub, systemImage: "arrow.up.right.square") { NSWorkspace.shared.open(url) }
+                menu.divider()
+                menu.item(.copyLink, "link") { model.copyLink(url.absoluteString, for: repo.nameWithOwner) }
+                menu.item(.openOnGitHub, "arrow.up.right.square") { NSWorkspace.shared.open(url) }
             }
+            return menu.build()
         }
-        .transition(.opacity)
+        .sidebarReselect(row, current: current)
     }
 }
 
-/// Hidden projects or repositories fold away under one quiet line at the end of their list.
-struct HiddenGroup<Rows: View>: View {
-    var count: Int
-    /// "projects" or "repositories", which picks the texts.
-    var noun: String
-    @ViewBuilder var rows: Rows
-    @State var expanded = false
+/// Hidden repositories fold away under one quiet row at the end of their list.
+struct HiddenRepositories: View {
+    var repos: [RepoRef]
+    var current: SidebarSelection?
+    @State private var expanded = false
 
     var body: some View {
-        if count > 0 {
-            Button {
-                withAnimation(Theme.spring) { expanded.toggle() }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .semibold))
-                        .rotationEffect(.degrees(expanded ? 90 : 0))
-                        .frame(width: 14)
-                    Text(isProjects ? .hiddenProjectsCount(count: count) : .hiddenRepositoriesCount(count: count))
-                    Spacer(minLength: 0)
+        if !repos.isEmpty {
+            DisclosureGroup(isExpanded: $expanded) {
+                ForEach(repos) { repo in
+                    RepositoryRow(repo: repo, hidden: true, current: current)
                 }
-                .font(.small)
-                .foregroundStyle(Theme.textTertiary)
-                .padding(.horizontal, 6)
-                .frame(height: 26)
-                .hoverFill()
+            } label: {
+                Text(.hiddenRepositoriesCount(count: repos.count))
+                    .foregroundStyle(Theme.textTertiary)
+                    .help(Text(expanded ? .foldHiddenRepositoriesAway : .showHiddenRepositories))
             }
-            .buttonStyle(PlainPressStyle())
-            .help(Text(tooltip))
-            if expanded {
-                rows
-            }
+            .selectionDisabled()
         }
-    }
-
-    private var isProjects: Bool { noun == "projects" }
-
-    private var tooltip: LocalizedStringResource {
-        if isProjects { return expanded ? .foldHiddenProjectsAway : .showHiddenProjects }
-        return expanded ? .foldHiddenRepositoriesAway : .showHiddenRepositories
     }
 }
 
-/// The account at the top of the sidebar: the avatar with the state of syncing as a dot, and the login. Clicking it
-/// opens the account menu; the tooltip says when the app last synced.
+/// The account at the top of the sidebar while there is no project: the avatar with the state of syncing as a dot,
+/// and the login. Clicking it opens the account menu; the tooltip says when the app last synced.
 struct AccountMenuButton: View {
     @Environment(AppModel.self) private var model
     @State private var open = false
@@ -256,23 +260,22 @@ struct AccountMenuButton: View {
             Button {
                 open = true
             } label: {
-                HStack(spacing: 8) {
-                    StatusAvatar(size: 20)
+                HStack(spacing: 9) {
+                    StatusAvatar(size: 24)
                     Text(model.viewer?.login ?? "GitHub")
-                        .font(.uiSemibold)
+                        .font(.system(size: 14, weight: .semibold))
                         .lineLimit(1)
                         .truncationMode(.tail)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 8, weight: .bold))
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(Theme.textTertiary)
+                    Spacer(minLength: 0)
                 }
                 .foregroundStyle(Theme.text)
-                .padding(.horizontal, 6)
-                .frame(height: 28)
-                .hoverFill(active: open)
+                .frame(height: 34)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(PlainPressStyle())
+            .buttonStyle(.plain)
             .help(model.accountSummary(at: context.date))
             .accessibilityLabel(.account)
             .accessibilityValue(model.accountSummary(at: context.date))
@@ -280,27 +283,6 @@ struct AccountMenuButton: View {
                 AccountDropdown(close: close)
             }
         }
-    }
-}
-
-/// A small icon button in the sidebar's header that lights up under the pointer.
-struct SidebarIconButton: View {
-    var systemName: String
-    var label: LocalizedStringResource
-    var help: LocalizedStringResource
-    var action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Theme.textBody)
-                .frame(width: 26, height: 26)
-                .hoverFill()
-        }
-        .buttonStyle(PlainPressStyle())
-        .help(Text(help))
-        .accessibilityLabel(label)
     }
 }
 
@@ -548,41 +530,6 @@ struct AppearanceDropdown: View {
     }
 }
 
-struct SidebarRow: View {
-    var title: LocalizedStringResource
-    var systemImage: String
-    var active = false
-    /// Shown on the right when there is something: the Inbox's unread entries.
-    var count = 0
-    var action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 12, weight: .medium))
-                    .frame(width: 14)
-                Text(title)
-                Spacer(minLength: 0)
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.small)
-                        .monospacedDigit()
-                        .foregroundStyle(active ? Theme.text : Theme.textSecondary)
-                        .contentTransition(.numericText())
-                }
-            }
-            .foregroundStyle(active ? Theme.text : Theme.textSecondary)
-            .padding(.horizontal, 6)
-            .frame(height: 28)
-            .hoverFill(active: active)
-            .animation(Theme.quick, value: count)
-        }
-        .buttonStyle(PlainPressStyle())
-        .accessibilityValue(count > 0 ? String(localized: .unreadCount(count: count)) : "")
-    }
-}
-
 // MARK: - Syncing
 
 /// What needs your attention about syncing, at the bottom of the sidebar: being offline, a change to decide on,
@@ -712,7 +659,7 @@ struct ToastStack: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 10) {
+        VStack(spacing: 10) {
             ForEach(model.status.notices) { notice in
                 ToastView(notice: notice)
                     .transition(.asymmetric(
@@ -768,12 +715,11 @@ struct ToastView: View {
             }
         }
         .padding(.vertical, 12)
-        .padding(.leading, 14)
+        .padding(.leading, 16)
         .padding(.trailing, 10)
-        .frame(width: 360, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.popover))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
-        .shadow(color: Theme.shadow, radius: 18, y: 10)
+        .frame(width: 380, alignment: .leading)
+        // Glass at the bottom of the window, as iOS shows what just happened with its Undo.
+        .glassPanel(in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .task {
             // Notices that ask for a decision stay until answered; one that can be undone stays a little longer.
             guard notice.action == nil || notice.action?.isUndo == true else { return }
