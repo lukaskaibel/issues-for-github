@@ -25,8 +25,8 @@ struct IssueRow: View {
     var showsEpic = true
     /// The project's own fields the view shows, such as an iteration.
     var chips: [FieldChip] = []
-    @ScaledMetric(relativeTo: .callout) private var glyphSize: CGFloat = 16
-    @ScaledMetric(relativeTo: .callout) private var avatarSize: CGFloat = 24
+    @ScaledMetric(relativeTo: .body) private var glyphSize: CGFloat = 20
+    @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 26
 
     /// Sub-issues hang this much further in per level, down to a few levels.
     static let indent: CGFloat = 18
@@ -38,9 +38,9 @@ struct IssueRow: View {
         HStack(alignment: .top, spacing: 12) {
             StatusIcon(glyph: model.glyph(of: item), size: glyphSize)
                 .padding(.top, 2)
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 4) {
                 title
-                    .font(.uiMedium)
+                    .font(.body)
                     .foregroundStyle(Theme.text)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
@@ -52,11 +52,15 @@ struct IssueRow: View {
                     .padding(.top, 1)
             }
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 11)
         .padding(.leading, Self.leading + indent)
         .padding(.trailing, 18)
         .background(alignment: .topLeading) {
             if place.depth > 0 || nested != nil { tree }
+        }
+        // A hairline from where the title starts, as between Reminders' rows.
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, Self.leading + indent + glyphSize + 12)
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
@@ -68,7 +72,7 @@ struct IssueRow: View {
     /// arrow that folds them left of the status icon.
     private var tree: some View {
         let depth = min(place.depth, Self.deepestIndent)
-        let midY = 12 + glyphSize / 2
+        let midY = 13 + glyphSize / 2
         let statusX = Self.leading + CGFloat(depth) * Self.indent
         return Canvas { context, size in
             var path = Path()
@@ -186,13 +190,13 @@ struct IssueRow: View {
             }
             // An epic's own label says what the row shows already.
             ForEach(item.labels.filter { !(item.isEpic && Item.isEpicLabel($0.name)) }.prefix(3)) { label in
-                MobileChip {
+                MobileChip(tint: Theme.textBody, fill: Theme.labelColor(label.color).opacity(0.14)) {
                     Circle().fill(Theme.labelColor(label.color)).frame(width: 7, height: 7)
                     Text(label.name)
                 }
             }
         }
-        .font(.small)
+        .font(.footnote)
         .foregroundStyle(Theme.textTertiary)
         .lineLimit(1)
         .fixedSize(horizontal: true, vertical: false)
@@ -243,19 +247,21 @@ struct RowButtonStyle: ButtonStyle {
     }
 }
 
-/// A small outlined capsule, for labels and sub-issue progress in rows.
+/// A small part of a row's line of details: a symbol and text, as Reminders writes a date; a label in a capsule
+/// tinted with its colour.
 struct MobileChip<Content: View>: View {
     var tint = Theme.textSecondary
+    var fill: Color? = nil
     @ViewBuilder var content: Content
 
     var body: some View {
-        HStack(spacing: 5) { content }
-            .font(.tiny)
+        HStack(spacing: 4) { content }
+            .font(.caption.weight(fill == nil ? .regular : .medium))
             .foregroundStyle(tint)
-            .padding(.horizontal, 7)
+            .padding(.horizontal, fill == nil ? 0 : 8)
             .padding(.vertical, 2)
             .frame(minHeight: 20)
-            .overlay(Capsule().stroke(Theme.chipBorder, lineWidth: 1))
+            .background { if let fill { Capsule().fill(fill) } }
     }
 }
 
@@ -470,7 +476,7 @@ struct SectionHeaderBand: View {
     var bar: (style: GroupStyle, progress: GroupProgress, share: CGFloat)? = nil
     var onToggle: () -> Void
     var onAdd: (() -> Void)?
-    @ScaledMetric(relativeTo: .callout) private var glyphSize: CGFloat = 15
+    @ScaledMetric(relativeTo: .title3) private var glyphSize: CGFloat = 18
     @Environment(\.wideLayout) private var wide
 
     /// Folded or open, and for a group with its progress how far it is, which its bar shows.
@@ -490,8 +496,8 @@ struct SectionHeaderBand: View {
                         .rotationEffect(.degrees(folded ? -90 : 0))
                         .frame(width: 12)
                     GroupIcon(icon: icon ?? .status(glyph), size: glyphSize)
-                    Text(title).font(.uiSemibold).foregroundStyle(icon == .plain ? Theme.textSecondary : Theme.text).lineLimit(1)
-                    Text(countText ?? "\(count)").font(.ui).monospacedDigit().foregroundStyle(Theme.textTertiary)
+                    Text(title).font(.title3.weight(.bold)).foregroundStyle(icon == .plain ? Theme.textSecondary : Theme.text).lineLimit(1)
+                    Text(countText ?? "\(count)").font(.body).monospacedDigit().foregroundStyle(Theme.textTertiary)
                     if let detail {
                         Text(detail).font(.small).foregroundStyle(Theme.textTertiary).lineLimit(1)
                     }
@@ -520,16 +526,14 @@ struct SectionHeaderBand: View {
                 .accessibilityLabel(.newIssueInStatus(status: title))
             }
         }
-        .padding(.leading, 12)
-        .padding(.trailing, onAdd == nil ? 12 : 4)
-        .frame(minHeight: 40)
-        .background(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .fill(Theme.groupHeader)
-                .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(icon == nil ? glyph.color.opacity(0.08) : .clear))
-        )
-        .padding(.horizontal, 12)
-        .padding(.vertical, 3)
+        // A plain heading, as Reminders heads the parts of a list; opaque, so rows don't show through it while it is
+        // pinned.
+        .padding(.leading, 10)
+        .padding(.trailing, onAdd == nil ? 20 : 10)
+        .padding(.top, 14)
+        .padding(.bottom, 4)
+        .frame(minHeight: 44)
+        .background(Theme.panel)
         .animation(Theme.quick, value: folded)
     }
 }
@@ -589,11 +593,11 @@ struct PropertyChip<Icon: View>: View {
                 .lineLimit(1)
         }
         .font(.subheadline.weight(.medium))
-        .padding(.horizontal, 11)
+        .padding(.horizontal, 12)
         .frame(minHeight: 34)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.card))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.chipBorder, lineWidth: 1))
-        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        // A glass capsule, as iOS draws buttons that float over a page.
+        .glassPanel(in: Capsule())
+        .contentShape(Capsule())
     }
 }
 

@@ -36,7 +36,8 @@ extension AppModel {
                       let content = window.contentView else { return false }
                 let point = CGPoint(x: event.locationInWindow.x, y: content.bounds.height - event.locationInWindow.y)
                 guard let menu = ContextMenus.shared.menu(at: point) else { return false }
-                NSMenu.popUpContextMenu(menu, with: event, for: content)
+                // In glass, at the pickers' size, as every right-click menu of the app.
+                GlassMenu.show(menu, at: event, in: content, model: self)
                 return true
             }
             return handled ? nil : event

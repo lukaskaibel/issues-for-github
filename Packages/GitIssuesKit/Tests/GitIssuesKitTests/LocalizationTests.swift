@@ -147,8 +147,9 @@ struct LocalizationTests {
 
     /// English that isn't shown as UI text.
     static let notForTranslation: Set<String> = [
-        // The brand, shown in place of the login until it is known.
-        "GitHub",
+        // The brand, shown in place of the login until it is known, and the app's name, in the window's title when
+        // nothing else names what is on screen.
+        "GitHub", "RootView.swift: Issues",
         // Field and option names the app looks for or creates on GitHub, where teammates see them.
         "Status", "Priority", "Due date", "Urgent", "High", "Medium", "Low",
         // GitHub's search query, HTTP headers and the Info.plist key of the OAuth app.

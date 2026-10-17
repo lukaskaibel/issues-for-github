@@ -134,9 +134,8 @@ struct MilestoneEditor: View {
         .frame(width: 560)
         .font(.ui)
         .foregroundStyle(Theme.text)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.popover))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
-        .shadow(color: Theme.shadow, radius: 40, y: 24)
+        // A glass panel over the window, as the command palette.
+        .glassPanel(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .onAppear(perform: prepare)
         .onExitCommand { model.overlay = nil }
     }

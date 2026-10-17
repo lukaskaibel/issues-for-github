@@ -101,20 +101,23 @@ enum PlanningGlyph {
 struct MilestoneIcon: View {
     var mark: MilestoneMark
     var size: CGFloat = 14
+    /// One colour instead of the mark's, such as white on a selected row of the sidebar.
+    var tint: Color?
 
     var body: some View {
+        let color = tint ?? mark.color
         Canvas { context, canvas in
             let rect = CGRect(origin: .zero, size: canvas)
             let outline = PlanningGlyph.diamond(in: rect, inset: rect.width * 0.114)
             let line = StrokeStyle(lineWidth: 1.5 * canvas.width / 14, lineJoin: .round, dash: mark == .none ? [2, 2] : [])
             switch mark {
             case .completed:
-                context.fill(outline, with: .color(mark.color))
+                context.fill(outline, with: .color(color))
             case .current, .late:
-                context.stroke(outline, with: .color(mark.color), style: line)
-                context.fill(PlanningGlyph.diamond(in: rect, inset: rect.width * 0.34), with: .color(mark.color))
+                context.stroke(outline, with: .color(color), style: line)
+                context.fill(PlanningGlyph.diamond(in: rect, inset: rect.width * 0.34), with: .color(color))
             case .upcoming, .none:
-                context.stroke(outline, with: .color(mark.color), style: line)
+                context.stroke(outline, with: .color(color), style: line)
             }
         }
         .frame(width: size, height: size)

@@ -23,17 +23,17 @@ struct NewIssueView: View {
             HStack(spacing: 8) {
                 if choosesProject {
                     // In a repository, the issue can go on any of its boards or on none, like Linear's project chip.
-                    Menu {
-                        ForEach(boards) { project in
-                            Button(project.title) { selectProject(project.id) }
+                    GlassMenuPicker {
+                        let menu = MenuBuilder()
+                        for project in boards {
+                            menu.item(project.title, checked: draft.projectId == project.id) { selectProject(project.id) }
                         }
-                        Divider()
-                        Button(.noProject) { selectProject(nil) }
+                        menu.divider()
+                        menu.item(.noProject, checked: draft.projectId == nil) { selectProject(nil) }
+                        return menu.build()
                     } label: {
                         projectChip
                     }
-                    .menuStyle(.button)
-                    .buttonStyle(PlainPressStyle())
                     .fixedSize()
                     .help(Text(.newIssueBoardTooltip))
                 } else {
@@ -63,7 +63,7 @@ struct NewIssueView: View {
             VStack(alignment: .leading, spacing: 8) {
                 TextField(.issueTitlePlaceholder, text: $draft.title)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 21, weight: .semibold))
                     .focused($focus, equals: .title)
                     .focusOnAppear()
                     .onSubmit { focus = .body }
@@ -148,9 +148,9 @@ struct NewIssueView: View {
                     }
                     .font(.small)
                     .foregroundStyle(Theme.textBody)
-                    .padding(.horizontal, 9)
-                    .frame(height: 26)
-                    .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
+                    .padding(.horizontal, 11)
+                    .frame(height: 28)
+                    .background(Capsule().fill(Theme.field))
                 }
                 Spacer(minLength: 0)
             }
@@ -161,16 +161,22 @@ struct NewIssueView: View {
 
             HStack(spacing: 10) {
                 Text(.repository).font(.small).foregroundStyle(Theme.textSecondary)
-                Menu {
-                    ForEach(repos) { repo in
-                        Button(repo.nameWithOwner) { selectRepo(repo.id) }
+                GlassMenuPicker {
+                    let menu = MenuBuilder()
+                    for repo in repos {
+                        menu.item(repo.nameWithOwner, "book.closed", checked: draft.repoId == repo.id) { selectRepo(repo.id) }
                     }
+                    return menu.build()
                 } label: {
-                    (repos.first { $0.id == draft.repoId }.map { Text($0.nameWithOwner) } ?? Text(.chooseRepositoryPlaceholder))
-                        .font(.small)
+                    HStack(spacing: 4) {
+                        (repos.first { $0.id == draft.repoId }.map { Text($0.nameWithOwner) } ?? Text(.chooseRepositoryPlaceholder))
+                        if !(draft.parent != nil || repos.count < 2 || choosesProject) {
+                            Image(systemName: "chevron.up.chevron.down").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.textTertiary)
+                        }
+                    }
+                    .font(.small)
+                    .foregroundStyle(Theme.textBody)
                 }
-                .menuStyle(.borderlessButton)
-                .tint(Theme.textBody)
                 .fixedSize()
                 .disabled(draft.parent != nil || repos.count < 2 || choosesProject)
                 Spacer()
@@ -187,9 +193,8 @@ struct NewIssueView: View {
         .frame(width: 720)
         .font(.ui)
         .foregroundStyle(Theme.text)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.popover))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
-        .shadow(color: Theme.shadow, radius: 40, y: 24)
+        // A glass panel over the window, as the command palette.
+        .glassPanel(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .onAppear(perform: prepare)
         .onDisappear {
             guard !created else { return }
@@ -346,14 +351,14 @@ struct NewIssueView: View {
         Button {
             openPicker = kind
         } label: {
+            // Capsules in a row, as Reminders offers what can be set while you type.
             HStack(spacing: 6) { content() }
                 .font(.small)
                 .foregroundStyle(Theme.textBody)
                 .lineLimit(1)
-                .padding(.horizontal, 9)
-                .frame(height: 26)
-                .hoverFill(active: openPicker == kind, fill: Theme.controlActive)
-                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
+                .padding(.horizontal, 11)
+                .frame(height: 28)
+                .background(Capsule().fill(openPicker == kind ? Theme.controlActive : Theme.field))
         }
         .buttonStyle(PlainPressStyle())
         .dropdown(isPresented: Binding(get: { openPicker == kind }, set: { if !$0 { openPicker = nil } })) { close in

@@ -13,7 +13,7 @@ public struct GitIssuesScene: Scene {
             RootView()
                 .environment(model)
         }
-        .windowStyle(.hiddenTitleBar)
+        .windowToolbarStyle(.unified)
         .defaultSize(width: 1280, height: 820)
         .commands {
             CommandGroup(replacing: .newItem) {

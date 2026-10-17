@@ -24,10 +24,9 @@ struct BoardView: View {
                         .frame(width: width)
                         .background {
                             if lifted {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Theme.panel)
+                                RoundedRectangle(cornerRadius: ColumnView.laneRadius, style: .continuous)
+                                    .fill(Theme.lane)
                                     .shadow(color: Theme.shadow, radius: 20, y: 10)
-                                    .padding(-8)
                             }
                         }
                         .offset(x: drag.columnOffset(index, step: width + 12))
@@ -41,7 +40,8 @@ struct BoardView: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 16)
                 .frame(height: proxy.size.height, alignment: .top)
             }
             .scrollIndicators(.never)
@@ -188,6 +188,10 @@ struct ColumnView: View {
     @State private var hoveringEpicFold = false
 
     /// A row of the column as drawn: an issue, an epic's header, or the slot where an epic's lifted issues land.
+    /// Each column stands in a soft lane, as Reminders sets its columns apart, with the cards inset in it.
+    static let laneRadius: CGFloat = 18
+    static let laneInset: CGFloat = 8
+
     private enum Line: Identifiable {
         case row(Nesting.Row)
         case groupSlot(BoardDrag.GroupDrag, depth: Int)
@@ -209,7 +213,8 @@ struct ColumnView: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
+        let width = width - 2 * Self.laneInset
+        VStack(spacing: 6) {
             ColumnHeader(column: column)
                 // Drag the header sideways to move the whole column.
                 .gesture(
@@ -243,7 +248,7 @@ struct ColumnView: View {
                         }
                     }
                 }
-                .padding(.bottom, 48)
+                .padding(.bottom, 40)
                 .animation(Theme.spring, value: lines.map(\.id))
                 // One hover and one click handler per column instead of one per card.
                 .contentShape(Rectangle())
@@ -301,7 +306,12 @@ struct ColumnView: View {
                 metrics.offset = new[0]
                 metrics.maxOffset = new[1]
             }
+            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: Self.laneRadius - Self.laneInset, bottomTrailingRadius: Self.laneRadius - Self.laneInset, style: .continuous))
         }
+        .padding(.horizontal, Self.laneInset)
+        .padding(.top, 4)
+        .padding(.bottom, Self.laneInset)
+        .background(RoundedRectangle(cornerRadius: Self.laneRadius, style: .continuous).fill(Theme.lane))
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .named(BoardDrag.space))
         } action: { frame in
@@ -442,10 +452,10 @@ private struct EpicGroupSlot: View {
         EpicGroupCard(group: group, width: width - indent)
             .hidden()
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Theme.accent.opacity(0.10))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .stroke(Theme.accent.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                     )
             )
@@ -484,10 +494,10 @@ private struct BoardCell: View {
         let indent = CGFloat(depth) * CardTreeLines.indent
         ZStack {
             if isSlot {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Theme.accent.opacity(0.10))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .stroke(Theme.accent.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                     )
                     .frame(height: drag.active?.size.height ?? 80)
@@ -570,19 +580,10 @@ struct ColumnHeader: View {
             Spacer(minLength: 0)
 
             if canEdit, column.option != nil {
-                Menu {
-                    columnMenu
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Theme.textTertiary)
-                        .frame(width: 22, height: 22)
+                GlassMenuButton(label: .columnOptions, size: CGSize(width: 22, height: 22)) {
+                    columnMenu(includingNewIssue: false)
                 }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .fixedSize()
                 .opacity(hovering ? 1 : 0)
-                .accessibilityLabel(.columnOptions)
             }
 
             IconButton(systemName: "plus", label: String(localized: .newIssueInColumnTooltip(column: column.title)), size: 22) {
@@ -590,21 +591,14 @@ struct ColumnHeader: View {
             }
             .opacity(hovering ? 1 : 0.55)
         }
-        .padding(.horizontal, 4)
-        .frame(height: 32)
+        .padding(.leading, 6)
+        .padding(.trailing, 2)
+        .frame(height: 34)
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
         .animation(Theme.quick, value: hovering)
         // The same options on a right-click, as anywhere else in the app.
-        .contextMenu {
-            if canEdit, column.option != nil {
-                columnMenu
-                Divider()
-            }
-            Button(.newIssueInColumnMenuItem(column: column.title)) {
-                newIssue()
-            }
-        }
+        .glassContextMenu { columnMenu(includingNewIssue: true) }
         .confirmationDialog(
             Text(.deleteColumnQuestion(column: column.title)),
             isPresented: $confirmDelete
@@ -677,27 +671,31 @@ struct ColumnHeader: View {
 }
 
 extension ColumnHeader {
-    @ViewBuilder var columnMenu: some View {
-        Button(.renameEllipsis) { startRename() }
-        Menu(.colour) {
-            ForEach(Defaults.optionColors, id: \.self) { color in
-                Button {
-                    edit { $0.color = color }
-                } label: {
-                    if column.option?.color == color {
-                        Label(Defaults.colourName(color), systemImage: "checkmark")
-                    } else {
-                        Text(Defaults.colourName(color))
-                    }
+    /// Rename, colour, move and delete the column, and a new issue in it, as a menu in glass.
+    func columnMenu(includingNewIssue: Bool) -> NSMenu {
+        let menu = MenuBuilder()
+        if canEdit, column.option != nil {
+            menu.item(.renameEllipsis, "pencil") { startRename() }
+            menu.submenu(.colour, "paintpalette") { colours in
+                for color in Defaults.optionColors {
+                    colours.item(
+                        Defaults.colourName(color),
+                        image: MenuIcons.symbol("circle.fill", color: Theme.optionColor(color) ?? Theme.textTertiary),
+                        checked: column.option?.color == color
+                    ) { edit { $0.color = color } }
                 }
             }
+            menu.divider()
+            menu.item(.moveLeft, "arrow.left", enabled: position != 0) { move(-1) }
+            menu.item(.moveRight, "arrow.right", enabled: position != statuses.count - 1) { move(1) }
+            menu.divider()
+            menu.item(.deleteColumnEllipsis, "trash", enabled: statuses.count > 1, destructive: true) { confirmDelete = true }
         }
-        Divider()
-        Button(.moveLeft) { move(-1) }.disabled(position == 0)
-        Button(.moveRight) { move(1) }.disabled(position == statuses.count - 1)
-        Divider()
-        Button(.deleteColumnEllipsis, role: .destructive) { confirmDelete = true }
-            .disabled(statuses.count <= 1)
+        if includingNewIssue {
+            menu.divider()
+            menu.item(String(localized: .newIssueInColumnMenuItem(column: column.title)), "plus") { newIssue() }
+        }
+        return menu.build()
     }
 
     /// GitHub's name for a colour ("GRAY") as the menu shows it.

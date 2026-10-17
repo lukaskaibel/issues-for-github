@@ -176,7 +176,7 @@ private struct MobileColumn: View {
 
     var body: some View {
         let space = "column-\(column.id)"
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             MobileColumnHeader(projectId: projectId, milestone: milestone, column: column)
             ScrollView(.vertical) {
                 LazyVStack(spacing: 8) {
@@ -202,6 +202,7 @@ private struct MobileColumn: View {
             .scrollIndicators(.hidden)
             .coordinateSpace(.named(space))
             .frame(maxHeight: .infinity)
+            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 10, bottomTrailingRadius: 10, style: .continuous))
             .accessibilityIdentifier("column-\(column.title)")
             .sensoryFeedback(.selection, trigger: foldFeedback)
             .onDrop(of: [.plainText, .url], delegate: ColumnDrop(
@@ -209,7 +210,15 @@ private struct MobileColumn: View {
                 target: $target, dragging: $dragging, onDrop: onDrop
             ))
         }
+        // Each column stands in a soft lane, as Reminders sets its columns apart, with the cards inset in it.
+        .padding(.horizontal, 8)
+        .padding(.top, 4)
+        .padding(.bottom, 8)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Theme.lane))
     }
+
+    /// The cards' width inside the lane.
+    private var inner: CGFloat { width - 16 }
 
     /// Where the gap shows among all of the column's rows, the dragged card included.
     private var gapPosition: Int? {
@@ -221,10 +230,10 @@ private struct MobileColumn: View {
     }
 
     private var gap: some View {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
+        RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous)
             .fill(Theme.accent.opacity(0.08))
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous)
                     .stroke(Theme.accent.opacity(0.5), style: StrokeStyle(lineWidth: 1.2, dash: [5, 4]))
             )
             .frame(height: target?.group == true ? 52 : 76)
@@ -246,7 +255,7 @@ private struct MobileColumn: View {
                 CardDragMark.lifted = lifted.token
                 return CardDragMark.provider(id: lifted.token, text: group.epic.url ?? group.epic.title)
             } preview: {
-                EpicGroupCard(group: group, width: width)
+                EpicGroupCard(group: group, width: inner)
                     .padding(.bottom, CardStackEdge.height)
             }
     }
@@ -257,7 +266,7 @@ private struct MobileColumn: View {
         let place = column.nesting.place(of: item.id)
         let indent = CGFloat(min(place.depth, CardTreeLines.deepest)) * CardTreeLines.indent
         let folded = column.nesting.folded.contains(item.id)
-        return card(item, space: space, width: width - indent)
+        return card(item, space: space, width: inner - indent)
             .background(alignment: .top) { if folded { CardStackEdge() } }
             .overlay(alignment: .topLeading) {
                 if let count = column.nesting.nestedCounts[item.id] {
@@ -302,7 +311,7 @@ private struct MobileColumn: View {
         } preview: {
             CardView(card: model.cardModel(for: item, in: column.nesting, showsMilestone: milestone == nil), width: width, lifted: true, avatarVersion: model.avatarVersion)
         }
-        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous))
         .contextMenu {
             ItemMenuContent(item: item, foldable: column.nesting.hasNested(item.id)) { openRoute(.issue(item.id)) }
         } preview: {

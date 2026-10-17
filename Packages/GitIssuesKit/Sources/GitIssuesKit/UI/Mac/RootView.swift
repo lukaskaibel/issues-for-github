@@ -9,16 +9,18 @@ public struct RootView: View {
 
     public var body: some View {
         ZStack {
-            Theme.window.ignoresSafeArea()
             if model.signedIn {
                 MainLayout()
                     .transition(.opacity)
             } else {
                 SignInView()
+                    .toolbar(removing: .title)
+                    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+                    .background(Theme.window.ignoresSafeArea())
                     .transition(.opacity)
             }
         }
-        .frame(minWidth: 980, minHeight: 600)
+        .frame(minWidth: 900, minHeight: 600)
         .font(.ui)
         .foregroundStyle(Theme.text)
         .tint(Theme.accent)
@@ -78,30 +80,38 @@ public struct RootView: View {
     }
 }
 
+/// The window, built like Notes, Mail and the other apps on the Mac: the sidebar, the page with a glass toolbar over
+/// it, and beside an open issue an inspector with its properties.
 struct MainLayout: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        HStack(spacing: 0) {
+        NavigationSplitView {
             Sidebar()
-                .frame(width: Theme.sidebarWidth)
+                .navigationSplitViewColumnWidth(min: 210, ideal: 240, max: 340)
+        } detail: {
             ContentPanel()
         }
-        .ignoresSafeArea()
         .overlay {
             OverlayHost()
         }
-        .overlay(alignment: .bottomTrailing) {
+        .overlay(alignment: .bottom) {
+            // Above the selection bar while issues are picked.
             ToastStack()
-                .padding(20)
+                .padding(.bottom, model.selectedIds.isEmpty ? 20 : 76)
+                .animation(Theme.overlay, value: model.selectedIds.isEmpty)
         }
     }
 }
 
 struct ContentPanel: View {
     @Environment(AppModel.self) private var model
+    @AppStorage("showsIssueInspector") private var showsInspector = true
+    /// Ticks so the subtitle's "Synced 2 min ago" stays true.
+    @State private var clock = Date()
 
     var body: some View {
+        let openItem = model.openItem
         ZStack {
             // The board stays mounted underneath an open issue so it is exactly as you left it on return.
             VStack(spacing: 0) {
@@ -109,7 +119,6 @@ struct ContentPanel: View {
                     InboxView()
                         .transition(.opacity)
                 } else {
-                    ProjectHeader()
                     if let view = model.currentView {
                         FilterBar(view: view)
                         // A view of one iteration says which, when, and how far it is, as Linear's cycles.
@@ -118,7 +127,6 @@ struct ContentPanel: View {
                                 .padding(.leading, 18)
                                 .padding(.trailing, 12)
                                 .frame(height: 40)
-                                .overlay(alignment: .bottom) { Rectangle().fill(Theme.panelBorder).frame(height: 1) }
                         }
                     }
                     if case .milestone(let projectId, let title) = model.scope,
@@ -171,16 +179,16 @@ struct ContentPanel: View {
             .overlay(alignment: .trailing) {
                 if let item = model.peekItem {
                     PeekPanel(item: item)
-                        .padding(EdgeInsets(top: 52, leading: 0, bottom: 10, trailing: 10))
+                        .padding(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 10))
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
             .animation(Theme.overlay, value: model.selectedIds.isEmpty)
             .animation(Theme.overlay, value: model.peekItemId == nil)
-            .opacity(model.openItem == nil ? 1 : 0)
-            .allowsHitTesting(model.openItem == nil)
+            .opacity(openItem == nil ? 1 : 0)
+            .allowsHitTesting(openItem == nil)
 
-            if let item = model.openItem {
+            if let item = openItem {
                 IssueDetailView(item: item)
                     .id(item.id)
                     .transition(.asymmetric(
@@ -190,12 +198,80 @@ struct ContentPanel: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.panel)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
+        .background(Theme.panel.ignoresSafeArea())
         .overlay { SwipeIndicator() }
-        .padding(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 8))
         .animation(Theme.overlay, value: model.openItemId)
+        .navigationTitle(title(openItem))
+        .navigationSubtitle(subtitle(openItem))
+        .toolbar {
+            MainToolbar(model: model, openItem: openItem, showsInspector: $showsInspector)
+        }
+        .inspector(isPresented: Binding(
+            get: { openItem != nil && showsInspector },
+            set: { shown in if openItem != nil { showsInspector = shown } }
+        )) {
+            Group {
+                if let item = openItem {
+                    IssueProperties(item: item)
+                        .id(item.id)
+                } else {
+                    Color.clear
+                }
+            }
+            .inspectorColumnWidth(min: 250, ideal: 290, max: 380)
+        }
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(20))
+                clock = Date()
+            }
+        }
+    }
+
+    /// The window's title, as Mail names the mailbox: the view, the issue or the place on screen.
+    private func title(_ openItem: Item?) -> String {
+        if let openItem { return openItem.displayNumber }
+        switch model.scope {
+        case .project:
+            if let view = model.currentView { return view.name }
+            return model.currentProject?.title ?? "Issues"
+        case .myIssues:
+            return String(localized: .myIssues)
+        case .inbox:
+            return String(localized: .inbox)
+        case .repository:
+            return model.currentRepository?.shortName ?? "Issues"
+        case .milestone(_, let title):
+            return title
+        case .roadmap:
+            return String(localized: .roadmap)
+        case nil:
+            return "Issues"
+        }
+    }
+
+    /// Under the title: where it belongs and how syncing is going, as Mail writes "Updated Just Now".
+    private func subtitle(_ openItem: Item?) -> String {
+        let sync = model.syncLine(at: clock)
+        if let openItem {
+            if let project = model.project(of: openItem) { return project.title }
+            return openItem.repo ?? ""
+        }
+        switch model.scope {
+        case .project:
+            guard model.currentView != nil, let project = model.currentProject else { return sync }
+            return "\(project.title) · \(sync)"
+        case .milestone(let projectId, _), .roadmap(let projectId):
+            return model.projects.first { $0.id == projectId }?.title ?? sync
+        case .repository:
+            guard let repo = model.currentRepository else { return sync }
+            return "\(repo.nameWithOwner.dropLast(repo.shortName.count + 1)) · \(sync)"
+        case .inbox:
+            let unread = model.inboxUnreadCount
+            return unread > 0 ? String(localized: .unreadCount(count: unread)) : sync
+        case .myIssues, nil:
+            return sync
+        }
     }
 }
 
@@ -221,122 +297,6 @@ struct SwipeIndicator: View {
         }
         .opacity(amount == 0 ? 0 : 1)
         .allowsHitTesting(false)
-    }
-}
-
-struct ProjectHeader: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        @Bindable var model = model
-        HStack(spacing: 8) {
-            switch model.scope {
-            case .project:
-                if let project = model.currentProject {
-                    if let view = model.currentView {
-                        // The view open, which the sidebar lists with the project's others, then the filter and
-                        // Display buttons, as in Linear.
-                        ViewLayoutIcon(view: view, size: 12)
-                            .foregroundStyle(Theme.textSecondary)
-                        Text(view.name).font(.uiSemibold).lineLimit(1)
-                        if model.filterChanged(view) {
-                            Circle().fill(Theme.accent).frame(width: 6, height: 6)
-                        }
-                        Spacer(minLength: 12)
-                        HeaderFilterButton(view: view)
-                        DisplayButton(view: view)
-                    } else {
-                        ProjectIcon(projectId: project.id)
-                        Text(project.title).font(.uiSemibold).lineLimit(1).fixedSize()
-                        ViewModeSwitch(mode: $model.viewMode)
-                            .padding(.leading, 10)
-                    }
-                }
-            case .myIssues:
-                Image(systemName: "scope").font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textSecondary)
-                Text(.myIssues).font(.uiSemibold)
-            case .repository:
-                if let repo = model.currentRepository {
-                    RepositoryIcon()
-                    // Owner and name as GitHub writes them; there is no board, so no switch between board and list.
-                    let owner = Text(repo.nameWithOwner.dropLast(repo.shortName.count)).foregroundStyle(Theme.textSecondary)
-                    Text("\(owner)\(Text(repo.shortName).font(.uiSemibold))")
-                        .lineLimit(1)
-                }
-            case .milestone(let projectId, let title):
-                MilestoneHeader(projectId: projectId, title: title)
-            case .roadmap(let projectId):
-                RoadmapHeader(projectId: projectId)
-            case .inbox, nil:
-                EmptyView()
-            }
-            if !isPlanning, model.currentView == nil { Spacer() }
-            if let repo = model.currentRepository, let url = repo.url {
-                Button {
-                    Platform.open(url)
-                } label: {
-                    HStack(spacing: 5) {
-                        Text(.openOnGitHub)
-                        Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .semibold))
-                    }
-                }
-                .buttonStyle(SecondaryButtonStyle())
-                .help(Text(.openRepositoryOnGitHubTooltip(repository: repo.nameWithOwner)))
-            }
-            if case .project = model.scope, let project = model.currentProject, project.priorityFieldId == nil, project.viewerCanUpdate, project.lastSyncedAt != nil {
-                Button(.addPriorityFieldMac) { model.addPriorityField(projectId: project.id) }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .help(Text(.addPriorityFieldTooltip))
-            }
-        }
-        .padding(.leading, 16)
-        .padding(.trailing, 12)
-        .frame(height: Theme.headerHeight)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Theme.panelBorder).frame(height: 1)
-        }
-    }
-
-    /// A milestone's and the roadmap's headers place their own space.
-    private var isPlanning: Bool {
-        switch model.scope {
-        case .milestone, .roadmap: true
-        default: false
-        }
-    }
-}
-
-struct ViewModeSwitch: View {
-    @Binding var mode: ViewMode
-    @Namespace private var namespace
-
-    var body: some View {
-        HStack(spacing: 2) {
-            segment(.board, .board)
-            segment(.list, .list)
-        }
-        .padding(2)
-        .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Theme.control))
-    }
-
-    private func segment(_ title: LocalizedStringResource, _ value: ViewMode) -> some View {
-        Button {
-            withAnimation(Theme.spring) { mode = value }
-        } label: {
-            Text(title)
-                .font(.smallMedium)
-                .foregroundStyle(mode == value ? Theme.text : Theme.textSecondary)
-                .padding(.horizontal, 10)
-                .frame(height: 22)
-                .background {
-                    if mode == value {
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .fill(Theme.segmentActive)
-                            .matchedGeometryEffect(id: "segment", in: namespace)
-                    }
-                }
-        }
-        .buttonStyle(PlainPressStyle())
     }
 }
 

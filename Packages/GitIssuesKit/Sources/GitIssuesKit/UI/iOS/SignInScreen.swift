@@ -142,7 +142,7 @@ struct SignInScreen: View {
         }
         .padding(22)
         .frame(maxWidth: .infinity)
-        .glassEffect(.regular, in: .rect(cornerRadius: 26))
+        .glassPanel(in: .rect(cornerRadius: 26))
     }
 
     private func startDeviceFlow() {

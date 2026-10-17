@@ -8,7 +8,7 @@
 <h1 align="center">Issues</h1>
 
 <p align="center">
-  <b>A fast, native app for GitHub Issues on Mac, iPhone and iPad</b>, with the board, keyboard flow and polish of Linear.<br>
+  <b>A fast, native app for GitHub Issues on Mac, iPhone and iPad</b>: built like Mail and Notes, with the board, pickers and keys of Linear.<br>
   Everything stays in GitHub, so teammates who don't use the app notice nothing.
 </p>
 
@@ -63,6 +63,10 @@ GitHub Projects, issues, sub-issues, labels, assignees and comments, and stores 
 
 ## A quick tour
 
+The window is built the way Mail and Notes are: a sidebar, a toolbar with the page's title and its buttons, the
+details of an issue in an inspector beside it, and Liquid Glass. What you click works the way Linear does: a status,
+an assignee or a label opens its picker right where you clicked, ready to type in, and closes when you pick.
+
 ### A board you can pick up
 
 Drag a card and it lifts off the board, tilts with the motion and settles with a spring, while its neighbours make
@@ -80,9 +84,12 @@ sub-issue whose parent has another status stays in its own column and says which
 one is done, the parent moves to Done by itself. The issues of an epic in the same column stand together the same
 way, under the epic's name; drag the name to another column and they all go.
 
-Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count
-and a dropdown opens right there. Type to filter, press a number to pick; the pick closes it. For several assignees or
-labels, tick their checkboxes or Shift-click them, and it stays open. Right-click a card for everything at once.
+Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count and
+a dropdown opens right there. Type to filter, press a number to pick; the pick closes it, and so does another click on
+what opened it. For several assignees or labels, tick their checkboxes or Shift-click them, and it stays open.
+Right-click a card for everything at once: the menu has rows as big as the pickers' and a search field, so typing
+"rev" finds Status › In Review, and Status, Priority, Assignee, Labels, Due Date and Milestone open the same pickers
+as a click on the card.
 
 ### Due dates that remind you
 
@@ -102,8 +109,9 @@ so your team sees it there; GitHub's dates have no time of day, and the reminder
 Descriptions are Markdown, edited in place: click and type. One with a table, a checklist, code or a Mermaid diagram
 is drawn the way GitHub draws it, with checkboxes that tick; a click on the text brings up the Markdown. Sub-issues come
 with a progress bar, and the plus beside them adds a new one or an issue that exists already. What blocks the issue and
-what it blocks are listed below; a blocked issue carries a red flag on its card. Comments sit below, and status,
-priority, assignees, labels, parent and blockers are in the sidebar. Step to the next issue with the arrows at the top.
+what it blocks are listed below; a blocked issue carries a red flag on its card. Comments sit below, with the field
+for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
+inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arrows in the toolbar.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">
@@ -114,13 +122,14 @@ priority, assignees, labels, parent and blockers are in the sidebar. Step to the
 
 The Inbox shows what happened that concerns you, as Linear's does: who assigned you, mentioned you, commented, asked
 for your review or closed an issue you follow. It is GitHub's own notifications, so what you read or archive here is
-read or done on github.com and on your other devices too. Pick one and its issue opens beside the list, with what's
-new on top and the new comment marked; change it right there, and press S to put one that's on none of your boards
-onto one. J and K move on, U marks read or unread, E archives and H snoozes until later. Issues of yours that are due
-join the list on the day, and the morning after if they're still open, with the reminder's buttons: Start, Mark as
-Done and Move to Tomorrow. So do issues your own account assigned you to outside the app, with `gh`, a script or a
-coding agent signed in as you: GitHub never notifies you of those, so the app finds them itself, and leaves out the
-ones you assigned yourself to in the app.
+read or done on github.com and on your other devices too. It reads like Mail: each entry with the person's picture,
+what they did and the start of their comment, and archive, snooze and read in the toolbar. Pick one and its issue
+opens beside the list, with what's new on top and the new comment marked; change it right there, and press S to put
+one that's on none of your boards onto one. J and K move on, U marks read or unread, E archives and H snoozes until
+later. Issues of yours that are due join the list on the day, and the morning after if they're still open, with the
+reminder's buttons: Start, Mark as Done and Move to Tomorrow. So do issues your own account assigned you to outside
+the app, with `gh`, a script or a coding agent signed in as you: GitHub never notifies you of those, so the app finds
+them itself, and leaves out the ones you assigned yourself to in the app.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/inbox-dark.webp">
@@ -129,8 +138,9 @@ ones you assigned yourself to in the app.
 
 ### Keyboard first
 
-⌘K opens the command palette: every action, and a search across your issues. Single keys act on the issue you
-hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `L` labels, `D` due date, `I` assign to me.
+⌘K, or the magnifying glass in the toolbar, opens the command palette: every action, and a search across your issues.
+Single keys act on the issue you hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `L`
+labels, `D` due date, `I` assign to me.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/palette-dark.webp">
@@ -244,7 +254,9 @@ The interface uses the system's own parts.
   their progress or each person's load, and a view of one iteration has the cycle on top, as on the Mac.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
   place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams are drawn until you tap them),
-  the properties are chips under the title, and the comment field stays at the bottom as in Messages.
+  the properties are glass chips under the title, the sub-issues a checklist, the comments a conversation, and the
+  comment field stays at the bottom as in Messages. A project's board on iPad stands its columns on soft grey lanes,
+  as on the Mac.
 - **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
   projects, changes the icon and opens your account, then its views, its next milestones and roadmap, and its repositories, each an entry. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
   drop (touch and hold, then drag). A milestone opens as the board's columns or a list, the roadmap as the timeline,
@@ -293,7 +305,9 @@ The interface uses the system's own parts.
 - **In nine languages.** English, German, French, Spanish, Portuguese (Brazil), Russian, Japanese, Korean and Chinese
   (Simplified), following your device's language. Column and priority names are understood in each of them (an
   "Erledigt" column closes issues as "Done" does), and so are due dates typed in them ("morgen", "来週の金曜").
-- **Native.** Swift and SwiftUI, with AppKit where it matters for smoothness. Apple silicon only.
+- **Native.** Swift and SwiftUI, with AppKit where it matters for smoothness. Apple silicon only. The window has a
+  sidebar, a toolbar and an inspector as Mail and Notes do, in Liquid Glass; the right-click menus are glass too, but
+  as big as the pickers and with a search field.
 - **On iPhone and iPad too.** One app for all three: the same sync, offline queue and actions, with an interface
   built from the system's own parts (see above).
 
@@ -465,6 +479,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
+| `⌃⌘I` | Show or hide the details of the open issue, in the inspector beside it |
 | `F` | Filter the view on screen: pick what to filter by, then the values |
 | `⇧V` | Display options of the view: board or list, columns, groups, order and the fields shown |
 | `⌘S` | Save the view's changed filter to GitHub, for everyone |
@@ -495,10 +510,12 @@ In the Inbox:
 everything at once.
 
 Click an issue's priority, status, labels, assignees, due date or sub-issue count to change it in place, or
-right-click it for everything at once. A pick closes the dropdown; for several assignees or labels, tick the checkbox
-at the start of each row, or hold Shift while you click or press Return. The sub-issue count lists the sub-issues,
-whose status, priority and assignee change right there too, and the red flag of a blocked issue lists what blocks it.
-In the list, click a section header to fold it; Option-click folds them all.
+right-click it for everything at once. The right-click menu takes the keys at once: type to find an entry, also one
+inside a submenu, `↑` `↓` to move, `→` to open a submenu or picker, `Return` to pick and `Esc` to close. A pick closes
+the dropdown, and so does a second click on what opened it; for several assignees or labels, tick the checkbox at the
+start of each row, or hold Shift while you click or press Return. The sub-issue count lists the sub-issues, whose
+status, priority and assignee change right there too, and the red flag of a blocked issue lists what blocks it. In the
+list, click a section header to fold it; Option-click folds them all.
 
 Sub-issues with the same status as their parent hang under it, indented; click the arrow beside the parent, or
 right-click it, to fold them in or out. A sub-issue whose parent has another status names its parent instead, and a
@@ -508,7 +525,7 @@ Sub-issues turns that off.
 In an issue, the plus beside the sub-issues adds one: type to find an issue by title or number, or pick
 **New sub-issue…** to create one with what you typed. Right-click an issue for **Set Parent Issue…**, **Add
 Sub-issue** and **Mark As** (blocked by, blocking). These pickers find issues the same way; picking a checked one takes
-it away again. The issue's sidebar has Parent, Blocked by and Blocking rows that open the same pickers, and the ✕ that
+it away again. The issue's inspector has Parent, Blocked by and Blocking rows that open the same pickers, and the ✕ that
 shows when you point at a blocker in the issue takes it away.
 
 A project's next two milestones and its roadmap are listed under Milestones in the sidebar. In a milestone, click its date to change it, the text under the header to edit its name and description,

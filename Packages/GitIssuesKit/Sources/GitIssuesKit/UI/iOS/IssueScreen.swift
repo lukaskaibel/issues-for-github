@@ -580,7 +580,7 @@ private struct PropertiesColumn: View {
                         .accessibilityIdentifier("property-due")
                     }
                 }
-                Rectangle().fill(Theme.panelBorder).frame(height: 1).padding(.vertical, 12)
+                Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32).padding(.vertical, 12)
                 if let project = model.project(of: item) {
                     row(.project) {
                         HStack(spacing: 8) {
@@ -893,7 +893,7 @@ private struct MobileSubIssues: View {
         let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text(.subIssues).font(.headline)
+                Text(.subIssues).font(.sectionTitle)
                 if !subs.isEmpty {
                     let done = subs.filter(\.isClosed).count
                     Text(.subIssuesProgress(done: done, total: subs.count))
@@ -932,13 +932,10 @@ private struct MobileSubIssues: View {
                     ForEach(Array(subs.enumerated()), id: \.element.id) { index, sub in
                         MobileSubIssueRow(sub: sub)
                         if index < subs.count - 1 {
-                            Rectangle().fill(Theme.panelBorder).frame(height: 1)
+                            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32)
                         }
                     }
                 }
-                .background(Theme.panel)
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .animation(Theme.spring, value: subs.map(\.id))
             }
         }
@@ -957,7 +954,7 @@ private struct MobileEpicWork: View {
         let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                Text(.progress).font(.headline)
+                Text(.progress).font(.sectionTitle)
                 if !subs.isEmpty {
                     Text(.subIssuesProgress(done: done, total: subs.count))
                         .font(.footnote)
@@ -1028,17 +1025,14 @@ private struct MobileEpicWork: View {
                         .frame(minHeight: 40)
                         .background(Theme.groupHeader)
                         .overlay(alignment: .top) {
-                            if index > 0 { Rectangle().fill(Theme.panelBorder).frame(height: 1) }
+                            if index > 0 { Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32) }
                         }
                         ForEach(group.subs) { sub in
-                            Rectangle().fill(Theme.panelBorder).frame(height: 1)
+                            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32)
                             MobileSubIssueRow(sub: sub)
                         }
                     }
                 }
-                .background(Theme.panel)
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .animation(Theme.spring, value: subs.map(\.id))
             }
         }
@@ -1098,8 +1092,9 @@ private struct MobileSubIssueRow: View {
             .buttonStyle(PlainPressStyle())
             .accessibilityIdentifier("sub-#\(sub.number)")
         }
-        .padding(.leading, 4)
-        .padding(.trailing, 12)
+        // The status circle stands where a checklist's box does, in line with the text above.
+        .padding(.leading, -7)
+        .padding(.trailing, 2)
         .contextMenu {
             if let boardItem {
                 ItemMenuContent(item: boardItem) { openRoute(.issue(boardItem.id)) }
@@ -1201,7 +1196,7 @@ private struct MobileRelations: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         if relation == .blockedBy { BlockedIcon(size: 13) } else { BlockingIcon(size: 13) }
-                        Text(relation == .blockedBy ? LocalizedStringResource.blockedByHelp : .blockingHelp).font(.headline)
+                        Text(relation == .blockedBy ? LocalizedStringResource.blockedByHelp : .blockingHelp).font(.sectionTitle)
                         Text("\(links.count)").font(.footnote).foregroundStyle(Theme.textTertiary).monospacedDigit()
                         Spacer()
                         Button {
@@ -1220,13 +1215,10 @@ private struct MobileRelations: View {
                         ForEach(Array(links.enumerated()), id: \.element.key) { index, link in
                             MobileLinkedIssueRow(item: item, link: link)
                             if index < links.count - 1 {
-                                Rectangle().fill(Theme.panelBorder).frame(height: 1)
+                                Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32)
                             }
                         }
                     }
-                    .background(Theme.panel)
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .animation(Theme.spring, value: links.map(\.key))
                 }
                 .padding(.top, 28)
@@ -1308,7 +1300,7 @@ private struct MobileActivity: View {
     var body: some View {
         let comments = item.contentId.map { model.detail(for: $0).comments } ?? []
         VStack(alignment: .leading, spacing: 12) {
-            Text(.activity).font(.headline)
+            Text(.activity).font(.sectionTitle)
             if comments.isEmpty {
                 Text(.noCommentsYet)
                     .font(.subheadline)
@@ -1316,24 +1308,32 @@ private struct MobileActivity: View {
             }
             ForEach(comments) { comment in
                 let new = highlighted.contains(comment.id)
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Avatar(login: comment.authorLogin ?? "ghost", url: comment.authorAvatarUrl, size: 20)
-                        Text(comment.authorLogin ?? "ghost").font(.footnote.weight(.semibold))
-                        Text(comment.isLocalOnly ? String(localized: .sendingComment) : relativeDate(comment.createdAt))
-                            .font(.footnote)
-                            .foregroundStyle(Theme.textTertiary)
-                        if new {
-                            Spacer(minLength: 8)
-                            Text(.newCommentBadge).font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
+                // As a conversation reads: the face, then who and when, then what they wrote.
+                HStack(alignment: .top, spacing: 10) {
+                    Avatar(login: comment.authorLogin ?? "ghost", url: comment.authorAvatarUrl, size: 30)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 7) {
+                            Text(comment.authorLogin ?? "ghost").font(.subheadline.weight(.semibold))
+                            Text(comment.isLocalOnly ? String(localized: .sendingComment) : relativeDate(comment.createdAt))
+                                .font(.footnote)
+                                .foregroundStyle(Theme.textTertiary)
+                            if new {
+                                Spacer(minLength: 8)
+                                Text(.newCommentBadge)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Theme.accent)
+                                    .padding(.horizontal, 7)
+                                    .frame(minHeight: 18)
+                                    .background(Capsule().fill(Theme.menuHighlight))
+                            }
                         }
+                        MarkdownText(text: comment.body)
                     }
-                    MarkdownText(text: comment.body)
                 }
-                .padding(12)
+                .padding(.vertical, new ? 10 : 2)
+                .padding(.horizontal, new ? 12 : 0)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.groupHeader))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(new ? Theme.selectionBorder : Theme.panelBorder, lineWidth: 1))
+                .background { if new { RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Theme.selectionFill) } }
                 .accessibilityElement(children: .combine)
                 .accessibilityHint(new ? String(localized: .newCommentBadge) : "")
                 .transition(.opacity.combined(with: .offset(y: 6)))

@@ -1,147 +1,113 @@
 #if os(macOS)
 import SwiftUI
 
+/// An open issue as a page, as Notes and Mail show what is open: the title with a line about it, the description,
+/// sub-issues as a checklist, what blocks it, and the conversation, with the comment field at the bottom. Its
+/// properties are in the inspector beside it, and the toolbar has the way back, the issues before and after, and
+/// GitHub.
 struct IssueDetailView: View {
     @Environment(AppModel.self) private var model
     var item: Item
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            HStack(spacing: 0) {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 22) {
-                        ForEach(model.conflict(for: item)) { entry in
-                            ConflictBanner(entry: entry)
-                        }
-                        TitleField(item: item)
-                        DescriptionView(item: item)
-                        if item.kind == .issue {
-                            if item.isEpic {
-                                EpicWorkSection(item: item)
-                            } else {
-                                SubIssuesSection(item: item)
-                            }
-                            RelationsSection(item: item)
-                        }
-                        if item.kind != .draft {
-                            ActivitySection(item: item)
-                        }
-                    }
-                    .frame(maxWidth: 720, alignment: .leading)
-                    .padding(.horizontal, 32)
-                    .padding(.top, 32)
-                    .padding(.bottom, 60)
-                    .frame(maxWidth: .infinity)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                ForEach(model.conflict(for: item)) { entry in
+                    ConflictBanner(entry: entry)
                 }
-                .scrollIndicators(.never)
-                Rectangle().fill(Theme.panelBorder).frame(width: 1)
-                PropertiesPanel(item: item)
-                    .frame(width: 280)
+                VStack(alignment: .leading, spacing: 6) {
+                    ParentLink(item: item)
+                    TitleField(item: item)
+                    IssueSubline(item: item)
+                }
+                DescriptionView(item: item)
+                if item.kind == .issue {
+                    if item.isEpic {
+                        EpicWorkSection(item: item)
+                    } else {
+                        SubIssuesSection(item: item)
+                    }
+                    RelationsSection(item: item)
+                }
+                if item.kind != .draft {
+                    ActivitySection(item: item)
+                }
+            }
+            .frame(maxWidth: 720, alignment: .leading)
+            .padding(.horizontal, 44)
+            .padding(.top, 26)
+            .padding(.bottom, 40)
+            .frame(maxWidth: .infinity)
+        }
+        .scrollIndicators(.never)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if item.kind != .draft {
+                CommentComposer(item: item)
+                    .frame(maxWidth: 720)
+                    .padding(.horizontal, 44)
+                    .padding(.bottom, 16)
+                    .frame(maxWidth: .infinity)
             }
         }
         .background(Theme.panel)
         .onAppear { model.detailAppeared(item) }
         .onDisappear { model.detailDisappeared(item) }
     }
+}
 
-    private var header: some View {
-        HStack(spacing: 8) {
-            IconButton(systemName: "chevron.left", label: String(localized: .backWithEscShortcut)) { model.leaveIssue() }
-            if let project = model.project(of: item) {
-                Button {
-                    model.closeDetail()
-                } label: {
-                    HStack(spacing: 8) {
-                        ProjectIcon(projectId: project.id)
-                        Text(project.title).foregroundStyle(Theme.textSecondary)
+/// Over a sub-issue's title, as Linear shows it: the parent, a click away.
+private struct ParentLink: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+
+    var body: some View {
+        if let parentNumber = item.parentNumber {
+            let parent = item.parentId.flatMap { model.item(contentId: $0) }
+            Button {
+                if let parent { model.open(parent) }
+            } label: {
+                HStack(spacing: 6) {
+                    if parent?.isEpic == true {
+                        EpicIcon(size: 12)
+                    } else {
+                        Image(systemName: "arrow.turn.left.up").font(.system(size: 10, weight: .semibold))
+                    }
+                    Text("#\(parentNumber)").monospacedDigit()
+                    if let title = item.parentTitle {
+                        Text(title).lineLimit(1).truncationMode(.tail)
                     }
                 }
-                .buttonStyle(PlainPressStyle())
-                Text("›").foregroundStyle(Theme.textTertiary)
-                if item.isEpic, let projectId = item.projectId {
-                    // An epic's place is the roadmap, as a project's in Linear is the projects page.
-                    Button {
-                        model.closeDetail()
-                        model.select(.roadmap(projectId))
-                    } label: {
-                        Text(.roadmap).foregroundStyle(Theme.textSecondary)
-                    }
-                    .buttonStyle(PlainPressStyle())
-                    Text("›").foregroundStyle(Theme.textTertiary)
-                }
-            } else if let repo = item.repoShortName {
-                // On no board, the issue's place is its repository.
-                Button {
-                    model.closeDetail()
-                } label: {
-                    HStack(spacing: 7) {
-                        RepositoryIcon().foregroundStyle(Theme.textTertiary)
-                        Text(repo).foregroundStyle(Theme.textSecondary)
-                    }
-                }
-                .buttonStyle(PlainPressStyle())
-                Text("›").foregroundStyle(Theme.textTertiary)
+                .font(.small)
+                .foregroundStyle(Theme.textSecondary)
+                .contentShape(Rectangle())
             }
-            if let parentNumber = item.parentNumber {
-                // A sub-issue shows its parent on the way, as in Linear; clicking it goes up.
-                let parent = item.parentId.flatMap { model.item(contentId: $0) }
-                Button {
-                    if let parent { model.open(parent) }
-                } label: {
-                    HStack(spacing: 6) {
-                        Text("#\(parentNumber)").monospacedDigit().foregroundStyle(Theme.textTertiary)
-                        if let title = item.parentTitle {
-                            Text(title).foregroundStyle(Theme.textSecondary).lineLimit(1).truncationMode(.tail)
-                        }
-                    }
-                    .frame(maxWidth: 260, alignment: .leading)
-                }
-                .buttonStyle(PlainPressStyle())
-                .disabled(parent == nil)
-                .help(parent == nil ? Text(.parentIssueNotOnBoard) : Text(.openParentIssue))
-                Text("›").foregroundStyle(Theme.textTertiary)
-            }
-            if item.isEpic { EpicIcon(size: 13) }
-            Text(item.displayNumber).font(.uiSemibold).monospacedDigit()
-            if item.isLocalOnly {
-                Text(.notOnGitHubYet)
-                    .font(.small)
-                    .foregroundStyle(Theme.textTertiary)
-            }
-            Spacer()
-            if let position = model.position(of: item) {
-                Text("\(position.index + 1) / \(position.count)")
-                    .font(.small)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.textTertiary)
-                IconButton(systemName: "chevron.up", label: String(localized: .previousIssueWithShortcut)) { model.step(-1) }
-                IconButton(systemName: "chevron.down", label: String(localized: .nextIssueWithShortcut)) { model.step(1) }
-            }
-            if item.url != nil {
-                // As in Linear's issue header: the link and the branch name, a click away.
-                IconButton(systemName: "link", label: String(localized: .copyLinkWithShortcut)) { model.copyLink(item) }
-                    .padding(.leading, 6)
-                if item.number != nil {
-                    IconButton(systemName: "arrow.triangle.branch", label: String(localized: .copyBranchNameWithShortcut)) { model.copyBranchName(item) }
-                }
-                Button {
-                    model.openOnGitHub(item)
-                } label: {
-                    HStack(spacing: 6) {
-                        Text(.openOnGitHub)
-                        Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .medium))
-                    }
-                }
-                .buttonStyle(SecondaryButtonStyle())
-                .padding(.leading, 6)
-            }
+            .buttonStyle(PlainPressStyle())
+            .disabled(parent == nil)
+            .help(parent == nil ? Text(.parentIssueNotOnBoard) : Text(.openParentIssue))
         }
-        .padding(.leading, 10)
-        .padding(.trailing, 12)
-        .frame(height: Theme.headerHeight)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Theme.panelBorder).frame(height: 1)
+    }
+}
+
+/// Under the title: the issue's number, who opened it and when, and its repository.
+private struct IssueSubline: View {
+    var item: Item
+
+    var body: some View {
+        let created = item.createdAt.map { created in
+            item.authorLogin.map { String(localized: .createdDateByAuthor(date: relativeDate(created), author: $0)) } ?? relativeDate(created)
+        }
+        let parts = [item.number != nil ? item.displayNumber : nil, created, item.repo].compactMap { $0 }
+        if !parts.isEmpty || item.isLocalOnly {
+            HStack(spacing: 6) {
+                if item.isEpic { EpicIcon(size: 12) }
+                Text(parts.joined(separator: " · "))
+                if item.isLocalOnly {
+                    Text(.notOnGitHubYet)
+                }
+            }
+            .font(.ui)
+            .foregroundStyle(Theme.textTertiary)
+            .lineLimit(1)
         }
     }
 }
@@ -160,7 +126,7 @@ struct TitleField: View {
         } else {
             // Read-only (a pull request, or an issue on no board): plain text, not a dimmed field.
             Text(item.title)
-                .font(.system(size: 22, weight: .semibold))
+                .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(Theme.text)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
@@ -170,7 +136,7 @@ struct TitleField: View {
     private var field: some View {
         TextField(.issueTitlePlaceholder, text: $title, axis: .vertical)
             .textFieldStyle(.plain)
-            .font(.system(size: 22, weight: .semibold))
+            .font(.system(size: 26, weight: .bold))
             .focused($focused)
             .onAppear { title = item.title }
             .onChange(of: item.title) { _, new in
@@ -286,7 +252,7 @@ struct SubIssuesSection: View {
         let showsPriority = model.project(of: item)?.priorityFieldId != nil
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 10) {
-                Text(.subIssues).font(.uiSemibold)
+                Text(.subIssues).font(.sectionTitle)
                 if !subs.isEmpty {
                     let done = subs.filter(\.isClosed).count
                     Text(.subIssuesProgress(done: done, total: subs.count))
@@ -314,15 +280,10 @@ struct SubIssuesSection: View {
 
             if !subs.isEmpty {
                 VStack(spacing: 0) {
-                    ForEach(Array(subs.enumerated()), id: \.element.id) { index, sub in
+                    ForEach(subs) { sub in
                         SubIssueRow(sub: sub, showsPriority: showsPriority)
-                        if index < subs.count - 1 {
-                            Rectangle().fill(Theme.panelBorder).frame(height: 1)
-                        }
                     }
                 }
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .animation(Theme.spring, value: subs.map(\.id))
             }
         }
@@ -338,37 +299,19 @@ private struct SubIssueRow: View {
 
     var body: some View {
         let boardItem = model.item(contentId: sub.id)
-        // Same order as a list row: priority, number, status, title.
+        // A checklist, as in Reminders: the status where the checkbox is, the title, then the rest on the right.
         HStack(spacing: 10) {
-            if showsPriority {
-                Group {
-                    if let boardItem {
-                        PartButton(kind: .priority, itemId: boardItem.id) {
-                            PriorityIcon(level: model.priorityLevel(of: boardItem))
-                        }
-                    } else {
-                        // Priority is a field of the project, so a sub-issue that isn't on the board has none.
-                        Color.clear
-                    }
-                }
-                .frame(width: 14, height: 12)
-            }
-            (sub.number > 0 ? Text("#\(sub.number)") : Text(.unsentIssueNumber))
-                .font(.small)
-                .monospacedDigit()
-                .foregroundStyle(Theme.textTertiary)
-                .frame(width: 36, alignment: .leading)
             if let boardItem {
                 // On the board it has a status column; pick one, as on its card.
                 PartButton(kind: .status, itemId: boardItem.id) {
-                    StatusIcon(glyph: glyph(boardItem))
+                    StatusIcon(glyph: glyph(boardItem), size: 16)
                 }
             } else {
                 // Elsewhere it is only open or closed.
                 Button {
                     withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
                 } label: {
-                    StatusIcon(glyph: glyph(boardItem))
+                    StatusIcon(glyph: glyph(boardItem), size: 16)
                 }
                 .buttonStyle(PlainPressStyle())
                 .help(sub.isClosed ? Text(.reopen) : Text(.markAsDoneTooltip))
@@ -376,9 +319,20 @@ private struct SubIssueRow: View {
             }
 
             Text(sub.title)
+                .font(.system(size: 14))
                 .foregroundStyle(sub.isClosed ? Theme.textSecondary : Theme.text)
                 .lineLimit(1)
             Spacer(minLength: 8)
+            if showsPriority, let boardItem {
+                PartButton(kind: .priority, itemId: boardItem.id) {
+                    PriorityIcon(level: model.priorityLevel(of: boardItem))
+                }
+                .frame(width: 14, height: 12)
+            }
+            (sub.number > 0 ? Text("#\(sub.number)") : Text(.unsentIssueNumber))
+                .font(.small)
+                .monospacedDigit()
+                .foregroundStyle(Theme.textTertiary)
             if boardItem == nil, sub.url != nil {
                 Image(systemName: "arrow.up.right")
                     .font(.system(size: 10, weight: .medium))
@@ -400,9 +354,13 @@ private struct SubIssueRow: View {
                 AvatarStack(people: sub.assignees)
             }
         }
-        .padding(.horizontal, 12)
-        .frame(height: 34)
-        .background(hovering ? Theme.hover : .clear)
+        .padding(.horizontal, 8)
+        .frame(height: 38)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hovering ? Theme.hover : .clear))
+        .overlay(alignment: .bottom) {
+            // A hairline from where the title starts, as between a checklist's lines.
+            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 34).opacity(hovering ? 0 : 1)
+        }
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
         .onTapGesture {
@@ -423,20 +381,22 @@ private struct SubIssueRow: View {
             }
         }
         .onDisappear { ContextMenus.shared.remove(menuRegion) }
-        .contextMenu {
-            if boardItem == nil {
-                Button(sub.isClosed ? .reopen : .markAsDone) {
-                    withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
-                }
-                Button(.removeFromParentMenuItem) { model.removeFromParent(sub) }
-                if let url = sub.url {
-                    Divider()
-                    Button(.copyLink) { model.copyLink(url, for: "#\(sub.number) \(sub.title)") }
-                    Button(.openOnGitHub) {
-                        if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
-                    }
+        // On no board, it has only its own menu; one on a board has its card's (registered above).
+        .glassContextMenu { [model, sub] in
+            guard model.item(contentId: sub.id) == nil else { return nil }
+            let menu = MenuBuilder()
+            menu.item(sub.isClosed ? .reopen : .markAsDone, sub.isClosed ? "arrow.uturn.backward" : "checkmark.circle") {
+                withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
+            }
+            menu.item(.removeFromParentMenuItem, "arrow.uturn.left") { model.removeFromParent(sub) }
+            if let url = sub.url {
+                menu.divider()
+                menu.item(.copyLink, "link") { model.copyLink(url, for: "#\(sub.number) \(sub.title)") }
+                menu.item(.openOnGitHub, "arrow.up.right.square") {
+                    if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
                 }
             }
+            return menu.build()
         }
     }
 
@@ -466,7 +426,7 @@ struct EpicWorkSection: View {
         let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                Text(.progress).font(.uiSemibold)
+                Text(.progress).font(.sectionTitle)
                 if !subs.isEmpty {
                     Text(.subIssuesProgress(done: done, total: subs.count))
                         .font(.small)
@@ -503,19 +463,13 @@ struct EpicWorkSection: View {
                 })
 
                 VStack(spacing: 0) {
-                    ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
+                    ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
                         EpicGroupHeader(item: item, group: group.group, title: group.title, count: group.subs.count)
-                            .overlay(alignment: .top) {
-                                if index > 0 { Rectangle().fill(Theme.panelBorder).frame(height: 1) }
-                            }
                         ForEach(group.subs) { sub in
-                            Rectangle().fill(Theme.panelBorder).frame(height: 1)
                             SubIssueRow(sub: sub, showsPriority: showsPriority)
                         }
                     }
                 }
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .animation(Theme.spring, value: subs.map(\.id))
             }
         }
@@ -547,10 +501,10 @@ private struct EpicGroupHeader: View {
                 }
             }
         }
-        .padding(.leading, 12)
+        .padding(.leading, 8)
         .padding(.trailing, 7)
-        .frame(height: 30)
-        .background(Theme.groupHeader)
+        .frame(height: 32)
+        .padding(.top, 6)
     }
 }
 
@@ -585,7 +539,7 @@ private struct RelationGroup: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 if relation == .blockedBy { BlockedIcon() } else { BlockingIcon() }
-                Text(relation == .blockedBy ? LocalizedStringResource.blockedByHelp : .blockingHelp).font(.uiSemibold)
+                Text(relation == .blockedBy ? LocalizedStringResource.blockedByHelp : .blockingHelp).font(.sectionTitle)
                 Text("\(links.count)").font(.small).foregroundStyle(Theme.textTertiary).monospacedDigit()
                 Spacer()
                 IconButton(
@@ -600,15 +554,10 @@ private struct RelationGroup: View {
             }
             .frame(height: 32)
             VStack(spacing: 0) {
-                ForEach(Array(links.enumerated()), id: \.element.key) { index, link in
+                ForEach(links, id: \.key) { link in
                     LinkedIssueRow(item: item, link: link)
-                    if index < links.count - 1 {
-                        Rectangle().fill(Theme.panelBorder).frame(height: 1)
-                    }
                 }
             }
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Theme.panelBorder, lineWidth: 1))
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .animation(Theme.spring, value: links.map(\.key))
         }
     }
@@ -623,17 +572,23 @@ private struct LinkedIssueRow: View {
 
     var body: some View {
         let boardItem = model.item(contentId: link.id)
-        // Laid out like a sub-issue row, so the two lists line up: priority, number, status, title.
+        // Laid out like a sub-issue row, so the two lists line up: status, title, then the rest on the right.
         HStack(spacing: 10) {
-            if model.project(of: item)?.priorityFieldId != nil {
-                Group {
-                    if let boardItem, boardItem.projectId == item.projectId {
-                        PartButton(kind: .priority, itemId: boardItem.id) {
-                            PriorityIcon(level: model.priorityLevel(of: boardItem))
-                        }
-                    } else {
-                        Color.clear
-                    }
+            if let boardItem {
+                PartButton(kind: .status, itemId: boardItem.id) {
+                    StatusIcon(glyph: model.glyph(of: boardItem), size: 16)
+                }
+            } else {
+                StatusIcon(glyph: .openOrClosed(link.state, reason: link.stateReason), size: 16)
+            }
+            Text(link.title)
+                .font(.system(size: 14))
+                .foregroundStyle(link.isClosed ? Theme.textSecondary : Theme.text)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            if model.project(of: item)?.priorityFieldId != nil, let boardItem, boardItem.projectId == item.projectId {
+                PartButton(kind: .priority, itemId: boardItem.id) {
+                    PriorityIcon(level: model.priorityLevel(of: boardItem))
                 }
                 .frame(width: 14, height: 12)
             }
@@ -641,18 +596,6 @@ private struct LinkedIssueRow: View {
                 .font(.small)
                 .monospacedDigit()
                 .foregroundStyle(Theme.textTertiary)
-                .frame(width: 36, alignment: .leading)
-            if let boardItem {
-                PartButton(kind: .status, itemId: boardItem.id) {
-                    StatusIcon(glyph: model.glyph(of: boardItem))
-                }
-            } else {
-                StatusIcon(glyph: .openOrClosed(link.state, reason: link.stateReason))
-            }
-            Text(link.title)
-                .foregroundStyle(link.isClosed ? Theme.textSecondary : Theme.text)
-                .lineLimit(1)
-            Spacer(minLength: 8)
             if boardItem == nil, link.url != nil {
                 Image(systemName: "arrow.up.right")
                     .font(.system(size: 10, weight: .medium))
@@ -667,10 +610,13 @@ private struct LinkedIssueRow: View {
             }
             .opacity(hovering ? 1 : 0)
         }
-        .padding(.leading, 12)
-        .padding(.trailing, 7)
-        .frame(height: 34)
-        .background(hovering ? Theme.hover : .clear)
+        .padding(.leading, 8)
+        .padding(.trailing, 4)
+        .frame(height: 38)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hovering ? Theme.hover : .clear))
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 34).opacity(hovering ? 0 : 1)
+        }
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
         .onTapGesture {
@@ -691,17 +637,18 @@ private struct LinkedIssueRow: View {
             }
         }
         .onDisappear { ContextMenus.shared.remove(menuRegion) }
-        .contextMenu {
-            if boardItem == nil {
-                Button(.removeRelationMenuItem) { model.removeLink(link, of: item) }
-                if let url = link.url {
-                    Divider()
-                    Button(.copyLink) { model.copyLink(url, for: "\(link.displayNumber) \(link.title)") }
-                    Button(.openOnGitHub) {
-                        if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
-                    }
+        .glassContextMenu { [model, link, item] in
+            guard model.item(contentId: link.id) == nil else { return nil }
+            let menu = MenuBuilder()
+            menu.item(.removeRelationMenuItem, "xmark") { model.removeLink(link, of: item) }
+            if let url = link.url {
+                menu.divider()
+                menu.item(.copyLink, "link") { model.copyLink(url, for: "\(link.displayNumber) \(link.title)") }
+                menu.item(.openOnGitHub, "arrow.up.right.square") {
+                    if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
                 }
             }
+            return menu.build()
         }
     }
 }
@@ -714,80 +661,112 @@ struct ActivitySection: View {
     /// Comments that are new since you last read the issue, from the Inbox; they are marked.
     var highlighted: Set<String> = []
 
-    @State private var draft = ""
-    @FocusState private var focused: Bool
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(.activity).font(.uiSemibold)
-
-            ForEach(comments) { comment in
-                let new = highlighted.contains(comment.id)
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Avatar(login: comment.authorLogin ?? "ghost", url: comment.authorAvatarUrl, size: 18)
-                        Text(comment.authorLogin ?? "ghost").font(.system(size: 12, weight: .semibold))
-                        (comment.isLocalOnly ? Text(.sendingComment) : Text(relativeDate(comment.createdAt)))
-                            .font(.small)
-                            .foregroundStyle(Theme.textTertiary)
-                        if new {
-                            Spacer(minLength: 8)
-                            Text(.newCommentBadge).font(.tinySemibold).foregroundStyle(Theme.accent)
+        let comments = comments
+        if !comments.isEmpty {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(.activity).font(.sectionTitle).padding(.bottom, 6)
+                ForEach(comments) { comment in
+                    let new = highlighted.contains(comment.id)
+                    HStack(alignment: .top, spacing: 11) {
+                        Avatar(login: comment.authorLogin ?? "ghost", url: comment.authorAvatarUrl, size: 28)
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 7) {
+                                Text(comment.authorLogin ?? "ghost").font(.system(size: 13, weight: .semibold))
+                                (comment.isLocalOnly ? Text(.sendingComment) : Text(relativeDate(comment.createdAt)))
+                                    .font(.small)
+                                    .foregroundStyle(Theme.textTertiary)
+                                if new {
+                                    Spacer(minLength: 8)
+                                    Text(.newCommentBadge)
+                                        .font(.tinySemibold)
+                                        .foregroundStyle(Theme.accent)
+                                        .padding(.horizontal, 7)
+                                        .frame(height: 18)
+                                        .background(Capsule().fill(Theme.menuHighlight))
+                                }
+                            }
+                            MarkdownText(text: comment.body)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    MarkdownText(text: comment.body)
-                }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.groupHeader))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(new ? Theme.selectionBorder : Theme.panelBorder, lineWidth: 1))
-                .id(comment.id)
-                .transition(.opacity.combined(with: .offset(y: 6)))
-            }
-
-            VStack(alignment: .trailing, spacing: 8) {
-                ZStack(alignment: .topLeading) {
-                    if draft.isEmpty {
-                        Text(.leaveCommentPlaceholder)
-                            .font(.system(size: 14))
-                            .foregroundStyle(Theme.textTertiary)
-                            .padding(.leading, 5)
-                            .allowsHitTesting(false)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, new ? 12 : 0)
+                    .background {
+                        if new { RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.selectionFill) }
                     }
-                    TextEditor(text: $draft)
-                        .font(.system(size: 14))
-                        .scrollContentBackground(.hidden)
-                        .scrollIndicators(.never)
-                        .focused($focused)
-                        .frame(minHeight: 44, maxHeight: 220)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .onKeyPress(.escape) {
-                            focused = false
-                            return .handled
-                        }
-                }
-                HStack(spacing: 10) {
-                    Text("⌘↵").font(.tiny).foregroundStyle(Theme.textTertiary)
-                    Button(.postComment, action: send)
-                        .buttonStyle(PrimaryButtonStyle())
-                        .keyboardShortcut(.return, modifiers: .command)
-                        .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .id(comment.id)
+                    .transition(.opacity.combined(with: .offset(y: 6)))
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.groupHeader))
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(focused ? Theme.keycapBorder : Theme.chipBorder, lineWidth: 1))
+            .animation(Theme.spring, value: comments.map(\.id))
         }
-        .animation(Theme.spring, value: comments.map(\.id))
     }
 
     private var comments: [Comment] {
         item.contentId.map { model.detail(for: $0).comments } ?? []
     }
+}
+
+/// The field for a new comment, at the bottom of an issue as in Messages: it grows as you write, and the round
+/// button or ⌘↵ sends it.
+struct CommentComposer: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+
+    @State private var draft = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 8) {
+            ZStack(alignment: .topLeading) {
+                if draft.isEmpty {
+                    Text(.leaveCommentPlaceholder)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Theme.textTertiary)
+                        .padding(.leading, 5)
+                        .allowsHitTesting(false)
+                }
+                TextEditor(text: $draft)
+                    .font(.system(size: 14))
+                    .scrollContentBackground(.hidden)
+                    .scrollIndicators(.never)
+                    .focused($focused)
+                    .frame(minHeight: 18, maxHeight: 220)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .onKeyPress(.escape) {
+                        focused = false
+                        return .handled
+                    }
+            }
+            .padding(.vertical, 11)
+            Button(action: send) {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(canSend ? Color.white : Theme.textTertiary)
+                    .frame(width: 28, height: 28)
+                    .background(Circle().fill(canSend ? Theme.accentFill : Theme.field))
+            }
+            .buttonStyle(PlainPressStyle())
+            .keyboardShortcut(.return, modifiers: .command)
+            .disabled(!canSend)
+            .help(Text(.titleWithShortcutKey(title: String(localized: .postComment), key: "⌘↵")))
+            .accessibilityLabel(Text(.sendCommentButton))
+            .padding(.bottom, 7)
+        }
+        .padding(.leading, 14)
+        .padding(.trailing, 7)
+        .contentShape(Rectangle())
+        .onTapGesture { focused = true }
+        .glassPanel(in: RoundedRectangle(cornerRadius: 21, style: .continuous))
+    }
+
+    private var canSend: Bool {
+        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     private func send() {
-        guard !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard canSend else { return }
         model.addComment(to: item, body: draft)
         draft = ""
     }
@@ -795,14 +774,27 @@ struct ActivitySection: View {
 
 // MARK: - Properties
 
-private struct PropertiesPanel: View {
+/// An issue's properties, in the inspector beside it as Notes and Mail show details: each value opens its picker
+/// right there, as on a card.
+struct IssueProperties: View {
     @Environment(AppModel.self) private var model
     var item: Item
     /// As wide as the longest label in this language needs, and never narrower than in English.
     @State private var labelWidth: CGFloat = 84
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        ScrollView {
+            properties
+        }
+        .scrollIndicators(.never)
+    }
+
+    private var properties: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(.issueDetailsHeading)
+                .font(.tinySemibold)
+                .foregroundStyle(Theme.textTertiary)
+                .padding(.bottom, 6)
             row(.status) {
                 PropertyButton(kind: .status, item: item) {
                     HStack(spacing: 8) {
@@ -865,7 +857,7 @@ private struct PropertiesPanel: View {
                 }
             }
 
-            Rectangle().fill(Theme.panelBorder).frame(height: 1).padding(.vertical, 10)
+            Divider().padding(.vertical, 10)
 
             if let project = model.project(of: item) {
                 row(.project) {
@@ -990,11 +982,11 @@ private struct PropertiesPanel: View {
                         .padding(.horizontal, 8)
                 }
             }
-            Spacer(minLength: 0)
         }
-        .padding(.top, 20)
+        .padding(.top, 14)
         .padding(.leading, 16)
         .padding(.trailing, 12)
+        .padding(.bottom, 20)
         .onAppear { model.loadRepoMeta(for: item) }
     }
 
@@ -1002,14 +994,14 @@ private struct PropertiesPanel: View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             Text(title)
                 .font(.small)
-                .foregroundStyle(Theme.textTertiary)
+                .foregroundStyle(Theme.textSecondary)
                 .fixedSize()
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { labelWidth = max(labelWidth, $0 + 14) }
                 .frame(width: labelWidth, alignment: .leading)
             content()
             Spacer(minLength: 0)
         }
-        .frame(minHeight: 32)
+        .frame(minHeight: 30)
     }
 
     /// Blocked by or blocking: the issues' numbers, listed in full beside the description.

@@ -116,7 +116,7 @@ struct InboxScreen: View {
     @ViewBuilder
     private func row(_ entry: InboxEntry) -> some View {
         let unread = model.isUnread(entry)
-        // Beside the issue, the selected row is marked quietly, as on the Mac, so its text stays readable.
+        // Beside the issue, the selected row is marked quietly, as a list on iPad marks the row on screen.
         let selected = selecting && model.inboxSelectedId == entry.id
         Button {
             if selecting { model.selectInboxEntry(entry) } else { open(entry) }

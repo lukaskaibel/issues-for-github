@@ -40,12 +40,9 @@ struct FilterBar: View {
                     }
                 }
             }
-            .padding(.leading, 14)
-            .padding(.trailing, 12)
+            .padding(.leading, 16)
+            .padding(.trailing, 14)
             .frame(height: 40)
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(Theme.panelBorder).frame(height: 1)
-            }
             .transition(.opacity)
         }
     }
@@ -179,15 +176,15 @@ struct FilterChipView: View {
             .buttonStyle(PlainPressStyle())
             .help(Text(.removeFilterTooltip))
         }
-        .frame(height: 24)
-        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.card))
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Theme.chipBorder, lineWidth: 1))
+        .frame(height: 26)
+        // Tinted, as Finder and Mail draw their search tokens.
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.menuHighlight))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .fixedSize()
     }
 
     private var divider: some View {
-        Rectangle().fill(Theme.chipBorder).frame(width: 1)
+        Rectangle().fill(Theme.accent.opacity(0.18)).frame(width: 1).padding(.vertical, 5)
     }
 
     private func property(for term: ProjectFilter.Term) -> FilterProperty? {
@@ -408,10 +405,10 @@ struct HeaderFilterButton: View {
             open = true
         } label: {
             Image(systemName: "line.3.horizontal.decrease")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Theme.textSecondary)
-                .frame(width: 28, height: 26)
-                .hoverFill(active: open)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Theme.textBody)
+                .frame(width: 32, height: 30)
+                .contentShape(Rectangle())
         }
         .buttonStyle(PlainPressStyle())
         .help(Text(.filterTooltip))
@@ -437,18 +434,16 @@ struct DisplayButton: View {
             open = true
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: "slider.horizontal.3").font(.system(size: 11, weight: .medium))
+                Image(systemName: "slider.horizontal.3").font(.system(size: 12, weight: .medium))
                 Text(.display)
                 if model.displayDiffers(view) {
                     Circle().fill(Theme.accent).frame(width: 5, height: 5)
                 }
             }
-            .font(.smallMedium)
+            .font(.ui)
             .foregroundStyle(Theme.textBody)
-            .padding(.horizontal, 9)
-            .frame(height: 26)
-            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(open ? Theme.controlActive : .clear))
-            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Theme.keycapBorder, lineWidth: 1))
+            .padding(.horizontal, 10)
+            .frame(height: 30)
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainPressStyle())

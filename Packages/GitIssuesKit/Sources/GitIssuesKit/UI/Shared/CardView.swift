@@ -64,6 +64,8 @@ struct CardView: View, Equatable {
     var hoveringFold = false
 
     static let padding = CGSize(width: 12, height: 10)
+    /// Rounder than a button, as Reminders' cards and Apple's grouped rows are.
+    static let cornerRadius: CGFloat = 12
     #if os(macOS)
     static let titleSize: CGFloat = 13
     static let lineHeight: CGFloat = 16
@@ -166,7 +168,7 @@ private struct CardPainter {
             parts.append((kind, rect))
         }
         defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts, fold: fold) } }
-        let outline = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5), cornerRadius: 8, style: .continuous)
+        let outline = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5), cornerRadius: CardView.cornerRadius, style: .continuous)
         let fill = view.lifted ? Theme.cardLifted : view.selected ? Theme.selectionFill : (view.highlighted ? Theme.cardHover : Theme.card)
         let border = view.lifted ? Theme.cardLiftedBorder : view.selected ? Theme.selectionBorder : (view.highlighted ? Theme.cardHoverBorder : Theme.cardBorder)
         context.fill(outline, with: .color(fill))
@@ -289,7 +291,7 @@ private struct CardPainter {
         var labelLayout: [(label: LabelRef, text: GraphicsContext.ResolvedText, rect: CGRect)] = []
         var labelX = x
         for label in item.labels.prefix(2) {
-            let text = context.resolve(Text(label.name).font(.system(size: CardView.chipSize)).foregroundStyle(Theme.textSecondary))
+            let text = context.resolve(Text(label.name).font(.system(size: CardView.chipSize, weight: .medium)).foregroundStyle(Theme.textBody))
             let width = text.measure(in: CGSize(width: 400, height: 40)).width + 7 + 7 + 5 + 7
             guard labelX + width <= limit else { break }
             labelLayout.append((label, text, CGRect(x: labelX, y: bottomY - 10, width: width, height: 20)))
@@ -299,8 +301,10 @@ private struct CardPainter {
             part(.labels, first.rect.union(last.rect))
         }
         for (label, text, rect) in labelLayout {
-            chip(rect, hovered: hovered(.labels))
-            context.fill(Path(ellipseIn: CGRect(x: rect.minX + 7, y: bottomY - 3.5, width: 7, height: 7)), with: .color(Theme.labelColor(label.color)))
+            let color = Theme.labelColor(label.color)
+            let capsule = Path(roundedRect: rect, cornerRadius: rect.height / 2)
+            context.fill(capsule, with: .color(color.opacity(hovered(.labels) ? 0.24 : 0.14)))
+            context.fill(Path(ellipseIn: CGRect(x: rect.minX + 7, y: bottomY - 3.5, width: 7, height: 7)), with: .color(color))
             context.draw(text, at: CGPoint(x: rect.minX + 19, y: bottomY), anchor: .leading)
             x = rect.maxX + 6
             shown += 1
@@ -419,10 +423,11 @@ private struct CardPainter {
         return path
     }
 
+    /// The quiet parts of a card (due date, sub-issues, milestone, fields) are text with a symbol, as Reminders
+    /// writes them; under the pointer they light up as the button they are.
     private func chip(_ rect: CGRect, hovered: Bool = false) {
-        let outline = Path(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), cornerRadius: 10)
-        if hovered { context.fill(outline, with: .color(Theme.chipHover)) }
-        context.stroke(outline, with: .color(hovered ? Theme.chipHoverBorder : Theme.chipBorder), lineWidth: 1)
+        guard hovered else { return }
+        context.fill(Path(roundedRect: rect, cornerRadius: rect.height / 2), with: .color(Theme.partHover))
     }
 
     /// Where an avatar would be: a dashed circle, shown when pointing at an unassigned issue's avatar spot.
@@ -551,8 +556,8 @@ struct EpicGroupCard: View {
         .padding(.horizontal, CardView.padding.width)
         .padding(.vertical, CardView.padding.height)
         .frame(width: width, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.cardLifted))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.cardLiftedBorder, lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous).fill(Theme.cardLifted))
+        .overlay(RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous).strokeBorder(Theme.cardLiftedBorder, lineWidth: 1))
         .background(alignment: .top) { CardStackEdge() }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.epicGroupSpoken(epic: group.epic.title, count: group.count)))
@@ -563,9 +568,9 @@ struct CardStackEdge: View {
     static let height: CGFloat = 5
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
+        RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous)
             .fill(Theme.card)
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.cardBorder, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous).strokeBorder(Theme.cardBorder, lineWidth: 1))
             .padding(.horizontal, 6)
             .offset(y: Self.height)
             .accessibilityHidden(true)

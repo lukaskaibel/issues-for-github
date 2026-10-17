@@ -27,7 +27,7 @@ struct SelectionBar: View {
                 .padding(.leading, 12)
                 .padding(.trailing, 6)
 
-                Rectangle().fill(Theme.popoverBorder).frame(width: 1, height: 18)
+                Rectangle().fill(Theme.popoverBorder).frame(width: 1, height: 20)
 
                 // The icons show the picked issues' value when they share one.
                 let sameStatus = Set(items.map { model.statusOption(of: $0)?.name ?? "" }).count == 1
@@ -63,19 +63,19 @@ struct SelectionBar: View {
                     model.copyLinks(items)
                 } label: {
                     Image(systemName: "link")
-                        .font(.system(size: 12, weight: .medium))
-                        .frame(width: 30, height: 30)
-                        .hoverFill(radius: 7)
+                        .font(.system(size: 13, weight: .medium))
+                        .frame(width: 34, height: 34)
+                        .hoverFill(radius: 17)
                 }
                 .buttonStyle(PlainPressStyle())
                 .help(Text(.copyLinksWithShortcut))
                 .padding(.trailing, 4)
             }
             .foregroundStyle(Theme.textBody)
-            .frame(height: 40)
-            .background(Capsule().fill(Theme.popover))
-            .overlay(Capsule().stroke(Theme.popoverBorder, lineWidth: 1))
-            .shadow(color: Theme.shadow, radius: 24, y: 10)
+            .frame(height: 44)
+            .padding(.horizontal, 2)
+            // A Liquid Glass bar, as Photos shows what can be done to a selection.
+            .glassPanel(in: Capsule())
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -99,10 +99,10 @@ private struct BarAction<Icon: View>: View {
                 icon.frame(width: 14, height: 14)
                 Text(title)
             }
-            .font(.small)
-            .padding(.horizontal, 9)
-            .frame(height: 30)
-            .hoverFill(active: open, radius: 7)
+            .font(.ui)
+            .padding(.horizontal, 10)
+            .frame(height: 34)
+            .hoverFill(active: open, radius: 17)
         }
         .buttonStyle(PlainPressStyle())
         .help(Text(.titleWithShortcutKey(title: String(localized: title), key: key)))
@@ -177,9 +177,10 @@ struct PeekPanel: View {
         }
         .frame(width: 460)
         .frame(maxHeight: .infinity)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.popover))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        // Like a Quick Look window: a page of its own, floating over the board.
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Theme.panel))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Theme.popoverBorder, lineWidth: 0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: Theme.shadow, radius: 30, y: 12)
     }
 

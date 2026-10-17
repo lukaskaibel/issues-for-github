@@ -427,7 +427,7 @@ private struct NoticeBanner: View {
             .accessibilityLabel(.dismiss)
         }
         .padding(14)
-        .glassEffect(.regular, in: .rect(cornerRadius: 22))
+        .glassPanel(in: .rect(cornerRadius: 22))
         .contentShape(.rect(cornerRadius: 22))
         .onTapGesture {
             // A notice that only tells something goes away when tapped; one that asks waits for an answer.

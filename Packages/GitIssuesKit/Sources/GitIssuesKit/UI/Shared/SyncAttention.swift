@@ -217,11 +217,19 @@ struct StatusProjectIcon: View {
     @Environment(AppModel.self) private var model
     var projectId: String
     var size: CGFloat
+    /// The glyph in white on a tile of its colour, as apps show their icon at the top of a sidebar.
+    var tile = false
 
     var body: some View {
-        ProjectIcon(projectId: projectId, size: size)
-            .modifier(SyncDotCutout(size: size, style: model.syncDotStyle))
-            .allowsHitTesting(false)
+        Group {
+            if tile {
+                ProjectTile(projectId: projectId, size: size)
+            } else {
+                ProjectIcon(projectId: projectId, size: size)
+            }
+        }
+        .modifier(SyncDotCutout(size: size, style: model.syncDotStyle))
+        .allowsHitTesting(false)
     }
 }
 
