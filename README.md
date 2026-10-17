@@ -438,6 +438,13 @@ Sandbox, as the Mac App Store requires, and leaves out the GitHub CLI sign-in, w
 Archive** in Xcode makes the same build. Without an API key, `Tools/testflight.sh` and `Tools/testflight-mac.sh` upload
 a build with the Apple ID under Xcode › Settings › Accounts.
 
+Every change to the app on `main` also goes to TestFlight by itself, for the iPhone and iPad:
+[`.github/workflows/testflight.yml`](.github/workflows/testflight.yml) runs `bundle exec fastlane ios beta` on GitHub,
+signed with certificates made for it (the workflow lists the secrets it needs). A TestFlight build carries the version
+it's on its way to and the date and time in Germany: once `v0.3.0` is tagged, `0.4.0 (2026.1017.1047)` is the build of
+17 October 2026 at 10:47. Its "What to Test" names the commit. So a release goes: set its version in
+`Config/Shared.xcconfig`, let the builds of it reach TestFlight, `submit`, and tag it after.
+
 ### Signing in
 
 The sign-in screen offers up to three ways to sign in, depending on your setup, and sample data:
