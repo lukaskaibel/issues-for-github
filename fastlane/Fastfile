@@ -14,6 +14,10 @@
 # `bundle exec fastlane ios <lane>` and `bundle exec fastlane mac <lane>` do one platform. The texts are in
 # fastlane/metadata and the screenshots in Design/screenshots/app-store. Design/app-store.md lists what has to be set
 # once in App Store Connect itself.
+#
+# .github/workflows/testflight.yml runs `ios beta` on GitHub for every change to the app on main. TestFlight builds are
+# numbered as beta_version and build_number below say: 0.4.0 (2026.1017.1047), the next version once v0.3.0 is tagged.
+# So a release goes: set its version in Config/Shared.xcconfig, let `beta` build it, `submit`, and tag it after.
 
 require "fileutils"
 require "plist"
@@ -148,17 +152,44 @@ def version
   File.read(File.join(ROOT, "Config", "Shared.xcconfig"))[/^MARKETING_VERSION = (.+)$/, 1].strip
 end
 
-# Every upload needs a higher build number. It comes from the date and time (2026.1005.2130), as in
-# Tools/testflight.sh, and is the same for both platforms of one release.
+def git(*arguments)
+  sh(["git", "-C", ROOT, *arguments].shelljoin, log: false).strip
+end
+
+# The version a TestFlight build is on its way to. Config/Shared.xcconfig holds the version of the latest release,
+# which gets a v tag when it ships, so once v0.3.0 is tagged, the builds after it are the next minor version, 0.4.0.
+# Before that they are 0.3.0 itself. (A version that is out is closed in App Store Connect: it takes no more builds.)
+def beta_version
+  @beta_version ||= if git("tag", "--list", "v#{version}").empty?
+                      version
+                    else
+                      major, minor = version.split(".").map(&:to_i)
+                      "#{major}.#{minor + 1}.0"
+                    end
+end
+
+# Every upload needs a higher build number. It is the date and time in Germany, year first so that it sorts:
+# 2026.1017.1047 is 17 October 2026 at 10:47. The same on this Mac and on GitHub, and for both platforms of one run.
 def build_number
   @build_number ||= begin
-    now = Time.now
+    zone = ENV["TZ"]
+    ENV["TZ"] = "Europe/Berlin"
+    now = Time.now.localtime
+    ENV["TZ"] = zone
     "#{now.year}.#{now.month * 100 + now.day}.#{now.hour * 100 + now.min}"
   end
 end
 
-# Archives one platform for the App Store and returns the .ipa or .pkg.
-def archive_for_store(platform, token_only: false)
+# "What to Test" in TestFlight: the commit the build is made of, which the version and build number can't hold.
+def what_to_test
+  commit = git("rev-parse", "HEAD")
+  text = "#{git('log', '-1', '--format=%s')}\n\n#{commit[0, 7]}"
+  text += " with changes that aren't committed" unless git("status", "--porcelain", "--untracked-files=no").empty?
+  "#{text}\nhttps://github.com/lukaskaibel/issues-for-github/commit/#{commit}"
+end
+
+# Archives one platform for the App Store and returns the .ipa or .pkg. TestFlight builds take beta_version.
+def archive_for_store(platform, token_only: false, marketing_version: version)
   config = PLATFORMS.fetch(platform)
   team = build_setting(platform, "DEVELOPMENT_TEAM")
   UI.user_error!("No team set. Copy Config/Local.xcconfig.example to Config/Local.xcconfig and fill in your team ID.") if team.empty?
@@ -169,7 +200,7 @@ def archive_for_store(platform, token_only: false)
   end
 
   folder = File.join(OUTPUT, platform.to_s)
-  UI.header("#{config[:name]}: Issues #{version} (#{build_number})")
+  UI.header("#{config[:name]}: Issues #{marketing_version} (#{build_number})")
   export_options = store_signing(platform, team)
   package = build_app(
     project: PROJECT,
@@ -186,7 +217,7 @@ def archive_for_store(platform, token_only: false)
     export_options: export_options,
     skip_profile_detection: true,
     # gym hands these to the export as well, so the signing arguments mustn't go into export_xcargs a second time.
-    xcargs: "#{signing_arguments} CURRENT_PROJECT_VERSION=#{build_number}"
+    xcargs: "#{signing_arguments} MARKETING_VERSION=#{marketing_version} CURRENT_PROJECT_VERSION=#{build_number}"
   )
   check_sandbox(File.join(folder, "Issues.xcarchive")) if platform == :mac
   package
@@ -200,14 +231,22 @@ def check_sandbox(archive)
   UI.user_error!("The archived Mac app is not sandboxed; not uploading it.") unless sandboxed == true
 end
 
+# Uploads a build and waits until App Store Connect has processed it, which "What to Test" needs. The internal testers
+# get every build by themselves.
 def upload_beta(platform, package)
   config = PLATFORMS.fetch(platform)
   upload_to_testflight(
     api_key: api_key,
     app_platform: config[:store],
     config[:package] => package,
-    skip_waiting_for_build_processing: true
+    # In the app's primary language, which a new app's builds don't have yet, and in any the builds have.
+    localized_build_info: { "default" => { whats_new: what_to_test }, "en-US" => { whats_new: what_to_test } },
+    distribute_external: false
   )
+end
+
+def upload_to_beta(platform, options)
+  upload_beta(platform, archive_for_store(platform, token_only: flag(options[:token_only]), marketing_version: beta_version))
 end
 
 # deliver wants one folder per language and tells the devices apart by the size of each picture. The prefix keeps
@@ -339,7 +378,7 @@ end
 desc "Builds the Mac, iPhone and iPad apps and uploads them to TestFlight"
 desc "token_only:true builds them without GITHUB_CLIENT_ID"
 lane :beta do |options|
-  PLATFORMS.each_key { |platform| upload_beta(platform, archive_for_store(platform, token_only: flag(options[:token_only]))) }
+  PLATFORMS.each_key { |platform| upload_to_beta(platform, options) }
 end
 
 desc "Submits the newest uploaded builds of the Mac, iPhone and iPad apps for review, with texts and screenshots"
@@ -365,7 +404,7 @@ platform :ios do
   lane(:build) { |options| archive_for_store(:ios, token_only: flag(options[:token_only])) }
 
   desc "Builds the iPhone and iPad app and uploads it to TestFlight"
-  lane(:beta) { |options| upload_beta(:ios, archive_for_store(:ios, token_only: flag(options[:token_only]))) }
+  lane(:beta) { |options| upload_to_beta(:ios, options) }
 
   desc "Submits the newest uploaded build of the iPhone and iPad app for review, with texts and screenshots"
   lane(:submit) { |options| store_upload(:ios, submit: true, automatic_release: flag(options[:automatic_release])) }
@@ -385,7 +424,7 @@ platform :mac do
   lane(:build) { |options| archive_for_store(:mac, token_only: flag(options[:token_only])) }
 
   desc "Builds the Mac app and uploads it to TestFlight"
-  lane(:beta) { |options| upload_beta(:mac, archive_for_store(:mac, token_only: flag(options[:token_only]))) }
+  lane(:beta) { |options| upload_to_beta(:mac, options) }
 
   desc "Submits the newest uploaded build of the Mac app for review, with texts and screenshots"
   lane(:submit) { |options| store_upload(:mac, submit: true, automatic_release: flag(options[:automatic_release])) }
