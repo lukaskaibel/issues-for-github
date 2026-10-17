@@ -76,14 +76,15 @@ All notable changes to this project are recorded here. The format follows
 - **A Mac app like Mail and Notes, with Linear's pickers kept.** The window has the system's sidebar and a toolbar in
   Liquid Glass: back and forward, the title of the page with its project and when it last synced, Board and List in
   the middle (`⌘1`, `⌘2`), the page's own buttons such as Filter and Display, a milestone's progress and date or the
-  roadmap's Months and Quarters, and a search field that opens the command palette (`⌘K`). An open issue is a page of
-  its own, with the field for a new comment at the bottom, and its properties in an inspector on the right that
+  roadmap's Months and Quarters, and a magnifying glass that opens the command palette (`⌘K`). An open issue is a page
+  of its own, with the field for a new comment at the bottom, and its properties in an inspector on the right that
   `⌃⌘I` or the toolbar button hides; its sub-issues are a checklist. The Inbox reads like Mail: the person's picture,
   what they did and the start of their comment on each entry, the selected one in the accent colour, For You and
   Watching in the middle of the toolbar and archive, snooze and read beside them. Board columns stand on soft grey
   lanes, labels are tinted capsules, and picked rows in the list are filled with the accent colour. The pickers,
   command palette, new issue and the bar for several issues are glass, and a picker's highlighted row a soft tint of
-  the accent colour; they still open where you click, take what you type at once and close when you pick.
+  the accent colour; they still open where you click, take what you type at once and close when you pick, or when you
+  click what opened them again. The sidebar's selected row is the accent colour with white text.
 - **Right-click menus as big as the pickers, with a search field.** Every right-click menu, on a card, a list row, a
   column, an epic's name or a sidebar entry, is a glass list with rows as big as a picker's instead of the system's
   small menu. Type to find any entry, also inside a submenu ("rev" finds Status › In Review), move with the arrow keys

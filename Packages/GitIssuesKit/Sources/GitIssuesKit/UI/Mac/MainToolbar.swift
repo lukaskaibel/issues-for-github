@@ -3,6 +3,8 @@ import SwiftUI
 
 /// The window's toolbar, as in Mail and Notes: back and forward, the title of what is on screen (set by the page),
 /// its own buttons in glass, and search. What it holds follows the page: a board or a list, an open issue, the Inbox.
+/// It has the same items on every page and only their contents change, so moving around adds or removes no item,
+/// which the toolbar would animate each time.
 struct MainToolbar: ToolbarContent {
     let model: AppModel
     let openItem: Item?
@@ -10,25 +12,17 @@ struct MainToolbar: ToolbarContent {
 
     var body: some ToolbarContent {
         BackForwardButtons(model: model)
-        if let item = openItem {
-            IssueToolbarItems(item: item)
-        } else if model.scope == .inbox {
-            InboxToolbarItems(model: model)
-        } else {
-            ScopeToolbarItems(model: model)
+        ToolbarItem(placement: .principal) {
+            PrincipalControl(openItem: openItem)
         }
+        .sharedBackgroundVisibility(model.hasPrincipalControl(openItem: openItem) ? .automatic : .hidden)
+        ToolbarItem {
+            PageControls(openItem: openItem, showsInspector: $showsInspector)
+        }
+        .sharedBackgroundVisibility(model.hasPageControls(openItem: openItem) ? .automatic : .hidden)
         ToolbarSpacer(.fixed)
-        SearchToolbarItem()
-        if openItem != nil {
-            ToolbarItem {
-                Button {
-                    withAnimation(Theme.spring) { showsInspector.toggle() }
-                } label: {
-                    Label(String(localized: showsInspector ? .hideInspector : .showInspector), systemImage: "sidebar.right")
-                }
-                .help(Text(showsInspector ? .hideInspectorTooltip : .showInspectorTooltip))
-                .keyboardShortcut("i", modifiers: [.command, .control])
-            }
+        ToolbarItem {
+            SearchButton()
         }
     }
 }
@@ -58,63 +52,134 @@ private struct BackForwardButtons: ToolbarContent {
     }
 }
 
-/// Search, where Notes and Mail have their search field: it opens the command palette, which finds issues and
-/// everything there is to do.
-struct SearchToolbarItem: ToolbarContent {
-    var body: some ToolbarContent {
-        ToolbarItem {
-            SearchFieldButton()
+/// In the middle: Board and List, the roadmap's Timeline and List, or the Inbox's For You and Watching.
+private struct PrincipalControl: View {
+    @Environment(AppModel.self) private var model
+    let openItem: Item?
+
+    var body: some View {
+        // In one container: the toolbar names an item after a picker it holds directly, and a new name is a new item.
+        HStack(spacing: 0) {
+            if openItem == nil, model.scope == .inbox, model.showsInboxBuckets {
+                InboxBuckets()
+            } else if openItem == nil, model.showsLayoutSwitch {
+                LayoutPicker()
+            } else if openItem == nil, model.roadmapScopeProjectId != nil {
+                RoadmapLayoutPicker()
+            }
         }
     }
 }
 
-private struct SearchFieldButton: View {
+/// The page's own buttons, in one piece of glass: an issue's arrows, link and GitHub; what to do with a
+/// notification; a view's filter and display; a milestone's progress and date; the roadmap's zoom.
+private struct PageControls: View {
+    @Environment(AppModel.self) private var model
+    let openItem: Item?
+    @Binding var showsInspector: Bool
+
+    var body: some View {
+        HStack(spacing: 0) {
+            if let item = openItem {
+                IssueStepper(item: item)
+                if item.url != nil {
+                    IssueLinkButtons(item: item)
+                    OpenOnGitHubButton(item: item)
+                }
+                ToolbarIconButton(
+                    systemImage: "sidebar.right", label: showsInspector ? .hideInspector : .showInspector,
+                    help: showsInspector ? .hideInspectorTooltip : .showInspectorTooltip
+                ) {
+                    withAnimation(Theme.spring) { showsInspector.toggle() }
+                }
+                .keyboardShortcut("i", modifiers: [.command, .control])
+            } else if model.scope == .inbox {
+                InboxToolbarControls()
+            } else {
+                if let projectId = model.roadmapScopeProjectId {
+                    RoadmapToolbarControls(projectId: projectId)
+                }
+                if let milestone = model.milestoneScope {
+                    MilestoneToolbarStatus(projectId: milestone.projectId, title: milestone.title)
+                }
+                if let view = model.currentView {
+                    ViewToolbarButtons(view: view)
+                }
+                if let repo = model.currentRepository, repo.url != nil {
+                    RepositoryGitHubButton(repo: repo)
+                }
+                if model.showsPriorityFieldButton, let project = model.currentProject {
+                    Button {
+                        model.addPriorityField(projectId: project.id)
+                    } label: {
+                        Text(.addPriorityFieldMac).padding(.horizontal, 10).frame(height: 30).contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .help(Text(.addPriorityFieldTooltip))
+                }
+            }
+        }
+        .fixedSize()
+    }
+}
+
+/// Search, where Mail has it: a magnifying glass that opens the command palette, which finds issues and everything
+/// there is to do. Typing happens there, so the toolbar has no field of its own.
+private struct SearchButton: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        // A plain view: the toolbar draws a button with a label of its own as an icon only.
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-            Text(.search).foregroundStyle(.secondary)
-            Spacer(minLength: 8)
-            Text(verbatim: "⌘K").font(.small).foregroundStyle(.tertiary)
+        ToolbarIconButton(systemImage: "magnifyingglass", label: .search, help: .searchShortcutTooltip) {
+            model.overlay = model.overlay == .palette(.root) ? nil : .palette(.root)
         }
-        .padding(.horizontal, 12)
-        .frame(width: 180, height: 34)
-        .contentShape(Capsule())
-        .onTapGesture(perform: toggle)
-        .help(Text(.searchShortcutTooltip))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(.search))
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { toggle() }
+    }
+}
+
+/// What the toolbar shows for the page on screen.
+extension AppModel {
+    /// Board and List, where both can show: a project's view (not a timeline) and a milestone.
+    fileprivate var showsLayoutSwitch: Bool {
+        switch scope {
+        case .project:
+            guard currentProjectId != nil else { return false }
+            if let view = currentView { return view.layout != .roadmap && !showsTimeline(view) }
+            return true
+        case .milestone:
+            return true
+        default:
+            return false
+        }
     }
 
-    private func toggle() {
-        model.overlay = model.overlay == .palette(.root) ? nil : .palette(.root)
+    fileprivate var roadmapScopeProjectId: String? {
+        if case .roadmap(let projectId) = scope { return projectId }
+        return nil
+    }
+
+    fileprivate var milestoneScope: MilestoneRef? {
+        if case .milestone(let projectId, let title) = scope { return MilestoneRef(projectId: projectId, title: title) }
+        return nil
+    }
+
+    fileprivate var showsPriorityFieldButton: Bool {
+        guard case .project = scope, let project = currentProject else { return false }
+        return project.priorityFieldId == nil && project.viewerCanUpdate && project.lastSyncedAt != nil
+    }
+
+    fileprivate func hasPrincipalControl(openItem: Item?) -> Bool {
+        guard openItem == nil else { return false }
+        if scope == .inbox { return showsInboxBuckets }
+        return showsLayoutSwitch || roadmapScopeProjectId != nil
+    }
+
+    fileprivate func hasPageControls(openItem: Item?) -> Bool {
+        if openItem != nil || scope == .inbox { return true }
+        return roadmapScopeProjectId != nil || milestoneScope != nil || currentView != nil
+            || currentRepository?.url != nil || showsPriorityFieldButton
     }
 }
 
 // MARK: - An open issue
-
-/// Over an open issue: the arrows to the issue before and after, its link and branch, and GitHub.
-private struct IssueToolbarItems: ToolbarContent {
-    let item: Item
-
-    var body: some ToolbarContent {
-        ToolbarItem {
-            IssueStepper(item: item)
-        }
-        if item.url != nil {
-            ToolbarItem {
-                IssueLinkButtons(item: item)
-            }
-            ToolbarItem {
-                OpenOnGitHubButton(item: item)
-            }
-        }
-    }
-}
 
 /// "6 / 23" between the arrows to the issue before and after, as Mail steps through messages.
 private struct IssueStepper: View {
@@ -176,6 +241,8 @@ private struct OpenOnGitHubButton: View {
 struct ToolbarIconButton: View {
     var systemImage: String
     var label: LocalizedStringResource
+    /// The tooltip, when it says more than the label, such as the shortcut.
+    var help: LocalizedStringResource?
     var active = false
     var action: () -> Void
 
@@ -188,87 +255,12 @@ struct ToolbarIconButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help(Text(label))
+        .help(Text(help ?? label))
         .accessibilityLabel(Text(label))
     }
 }
 
 // MARK: - A board, a list, a milestone, the roadmap
-
-private struct ScopeToolbarItems: ToolbarContent {
-    let model: AppModel
-
-    var body: some ToolbarContent {
-        if showsLayoutSwitch {
-            ToolbarItem(placement: .principal) {
-                LayoutPicker()
-            }
-        }
-        if let projectId = roadmapProjectId {
-            ToolbarItem(placement: .principal) {
-                RoadmapLayoutPicker()
-            }
-            ToolbarItem {
-                RoadmapToolbarControls(projectId: projectId)
-            }
-        }
-        if let milestone = milestone {
-            ToolbarItem {
-                MilestoneToolbarStatus(projectId: milestone.projectId, title: milestone.title)
-            }
-        }
-        if let view = model.currentView {
-            ToolbarItem {
-                ViewToolbarButtons(view: view)
-            }
-        }
-        if let repo = model.currentRepository, repo.url != nil {
-            ToolbarItem {
-                RepositoryGitHubButton(repo: repo)
-            }
-        }
-        if showsPriorityField, let project = model.currentProject {
-            ToolbarItem {
-                Button {
-                    model.addPriorityField(projectId: project.id)
-                } label: {
-                    Text(.addPriorityFieldMac).padding(.horizontal, 10).frame(height: 30).contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .help(Text(.addPriorityFieldTooltip))
-            }
-        }
-    }
-
-    /// Board and List, where both can show: a project's view (not a timeline) and a milestone.
-    private var showsLayoutSwitch: Bool {
-        switch model.scope {
-        case .project:
-            guard model.currentProjectId != nil else { return false }
-            if let view = model.currentView { return view.layout != .roadmap && !model.showsTimeline(view) }
-            return true
-        case .milestone:
-            return true
-        default:
-            return false
-        }
-    }
-
-    private var roadmapProjectId: String? {
-        if case .roadmap(let projectId) = model.scope { return projectId }
-        return nil
-    }
-
-    private var milestone: MilestoneRef? {
-        if case .milestone(let projectId, let title) = model.scope { return MilestoneRef(projectId: projectId, title: title) }
-        return nil
-    }
-
-    private var showsPriorityField: Bool {
-        guard case .project = model.scope, let project = model.currentProject else { return false }
-        return project.priorityFieldId == nil && project.viewerCanUpdate && project.lastSyncedAt != nil
-    }
-}
 
 /// Board or List, as a segmented control in the middle of the toolbar (⌘1, ⌘2).
 private struct LayoutPicker: View {

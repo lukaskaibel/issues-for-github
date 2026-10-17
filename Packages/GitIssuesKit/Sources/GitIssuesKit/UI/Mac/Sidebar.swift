@@ -40,6 +40,8 @@ struct Sidebar: View {
             }
         }
         .listStyle(.sidebar)
+        // The system's own text colour instead of the window's, so a selected row turns it white on the accent.
+        .foregroundStyle(.primary)
         // Nothing while everything is on GitHub; a card when you're offline or something needs you.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if let attention = model.syncAttention {
@@ -134,6 +136,8 @@ private struct SidebarProjectHeader: View {
 /// A milestone of the sidebar's project: its diamond, its name and when it is due.
 struct MilestoneRow: View {
     @Environment(AppModel.self) private var model
+    /// Increased on the selected row, which is filled with the accent colour.
+    @Environment(\.backgroundProminence) private var prominence
     var projectId: String
     var group: MilestoneGroup
     var current: SidebarSelection?
@@ -143,20 +147,21 @@ struct MilestoneRow: View {
         Label {
             Text(group.title).lineLimit(1)
         } icon: {
-            MilestoneIcon(mark: model.mark(of: group, projectId: projectId), size: 13)
+            MilestoneIcon(mark: model.mark(of: group, projectId: projectId), size: 13, tint: prominence == .increased ? .white : nil)
         }
         .badge(dueBadge)
-        .tag(row)
         .help(group.due.map { Text(.dueOn(date: $0.longLabel)) } ?? Text(group.title))
         .glassSidebarMenu { [model, projectId, group] in MilestoneMenuItems.menu(projectId: projectId, group: group, model: model) }
         .sidebarReselect(row, current: current)
+        // Last, so the list sees it: under the menu's modifier it can't, and the row can't be selected.
+        .tag(row)
     }
 
     private var dueBadge: Text? {
         guard let due = group.due else { return nil }
         let today = CalendarDay.today()
         let text = Text(due.shortLabel(today: today)).monospacedDigit()
-        return due < today ? text.foregroundStyle(Theme.overdue) : text
+        return due < today && prominence != .increased ? text.foregroundStyle(Theme.overdue) : text
     }
 }
 
@@ -173,7 +178,6 @@ struct RoadmapRow: View {
         } icon: {
             RoadmapIcon(size: 14)
         }
-        .tag(row)
         .help(Text(.roadmapShortcutTooltip))
         .glassSidebarMenu { [model, projectId] in
             guard model.projects.first(where: { $0.id == projectId })?.viewerCanUpdate == true else { return nil }
@@ -189,6 +193,7 @@ struct RoadmapRow: View {
             return menu.build()
         }
         .sidebarReselect(row, current: current)
+        .tag(row)
     }
 }
 
@@ -203,11 +208,10 @@ struct RepositoryRow: View {
         let row = SidebarSelection.repository(repo.id)
         Label {
             Text(model.displayName(of: repo)).lineLimit(1)
-                .foregroundStyle(hidden ? Theme.textTertiary : Theme.text)
+                .foregroundStyle(hidden ? .tertiary : .primary)
         } icon: {
             Image(systemName: "book.closed").opacity(hidden ? 0.5 : 1)
         }
-        .tag(row)
         .help(repo.nameWithOwner)
         .glassSidebarMenu { [model, repo, hidden] in
             let menu = MenuBuilder()
@@ -224,6 +228,7 @@ struct RepositoryRow: View {
             return menu.build()
         }
         .sidebarReselect(row, current: current)
+        .tag(row)
     }
 }
 

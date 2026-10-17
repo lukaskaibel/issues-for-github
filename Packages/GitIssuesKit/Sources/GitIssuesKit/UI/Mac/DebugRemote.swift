@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows"]
+        let readOnly: Set<String> = ["foldepic", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -542,7 +542,10 @@ enum DebugRemote {
                                 for sub in view.subviews { found += texts(sub) }
                                 return found
                             }
-                            return texts(cell).joined(separator: "/")
+                            // Where the row is, in window points from the top left, for `click`.
+                            let rect = table.convert(table.rect(ofRow: row), to: nil)
+                            let top = (window.contentView?.bounds.height ?? 0) - rect.maxY
+                            return texts(cell).joined(separator: "/") + " @\(Int(rect.midX)),\(Int(top + rect.height / 2))"
                         }
                         log("table \(type(of: table)) frame=\(table.convert(table.bounds, to: nil)) rows=\(table.numberOfRows) selected=\(table.selectedRow): \(rows.joined(separator: " | "))")
                     }
@@ -595,6 +598,23 @@ enum DebugRemote {
             if argument == "off" { model.leaveDemo() } else { model.enterDemo() }
         case "trace":
             Dropdown.trace = { log("dropdown: " + $0) }
+        case "sidebarrow":
+            // sidebarrow <row>: selects that row of the sidebar's list as a click does, through the list's own
+            // selection, and logs what is on screen afterwards.
+            if let row = Int(argument), let root = model.mainWindow?.contentView?.superview {
+                func outline(in view: NSView) -> NSOutlineView? {
+                    if let found = view as? NSOutlineView { return found }
+                    for sub in view.subviews { if let found = outline(in: sub) { return found } }
+                    return nil
+                }
+                if let list = outline(in: root), row < list.numberOfRows {
+                    let allowed = list.delegate?.outlineView?(list, shouldSelectItem: list.item(atRow: row) as Any) ?? true
+                    list.selectRowIndexes([row], byExtendingSelection: false)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        log("sidebarrow \(row): allowed=\(allowed) selected=\(list.selectedRow) scope=\(model.scope.map { String(describing: $0) } ?? "nil")")
+                    }
+                }
+            }
         case "nav":
             // Where the app is and the history behind it, oldest first; * marks the current place.
             let places = model.history.enumerated().map { index, place in
@@ -953,10 +973,11 @@ enum DebugRemote {
             )
         }
         guard events.count == 2 else { return }
-        // AppKit controls track the mouse in a loop that reads the queue until the button comes up,
-        // so the release waits in the queue before the press is sent.
+        if !right { Dropdown.debugClick(at: onScreen) }
+        // Both through the queue, as a real click comes: the press is then the current event while it is handled,
+        // and a control tracking the mouse reads the release from the queue.
+        NSApp.postEvent(events[0], atStart: false)
         NSApp.postEvent(events[1], atStart: false)
-        NSApp.sendEvent(events[0])
     }
 
     private static func sendKeys(_ text: String) {

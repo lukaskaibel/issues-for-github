@@ -19,30 +19,34 @@ struct InboxView: View {
     }
 }
 
-/// The Inbox's part of the toolbar: For You and Watching in the middle, then for the notification on screen snooze,
-/// archive, read, its link, the issue and GitHub, and everything at once under ⋯.
-struct InboxToolbarItems: ToolbarContent {
-    let model: AppModel
+/// The Inbox's buttons in the toolbar: for the notification on screen snooze, archive, read, its link, the issue and
+/// GitHub, and everything at once under ⋯.
+struct InboxToolbarControls: View {
+    @Environment(AppModel.self) private var model
 
-    var body: some ToolbarContent {
-        if !model.inbox(.watching).isEmpty {
-            ToolbarItem(placement: .principal) {
-                BucketSwitch()
-            }
-        }
-        if model.inboxPicked.count <= 1, let entry = model.inboxSelected {
-            ToolbarItem {
+    var body: some View {
+        HStack(spacing: 0) {
+            if model.inboxPicked.count <= 1, let entry = model.inboxSelected {
                 InboxEntryActions(entry: entry)
             }
-        }
-        ToolbarItem {
             InboxMoreButton()
         }
     }
 }
 
+/// For You and Watching, in the middle of the toolbar once something is watched.
+struct InboxBuckets: View {
+    var body: some View {
+        BucketSwitch()
+    }
+}
+
+extension AppModel {
+    var showsInboxBuckets: Bool { !inbox(.watching).isEmpty }
+}
+
 /// Snooze, archive, read or unread, the link, the issue full size and GitHub, in one piece of glass as Mail groups
-/// them. Icons only, so they fit beside the search field with For You and Watching in the middle.
+/// them. Icons only, so they fit beside search with For You and Watching in the middle.
 private struct InboxEntryActions: View {
     @Environment(AppModel.self) private var model
     var entry: InboxEntry

@@ -11,6 +11,11 @@ enum Dropdown {
     /// Open dropdowns, the first opened from a window and each further one from the one before.
     private static var panels: [DropdownPanel] = []
 
+    /// The click that last closed dropdowns from outside: where it was, on screen, and what those dropdowns were
+    /// opened from. The same click then reaches what is under it; when that is what opened one of them, it stays
+    /// closed, so a second click on a button closes its dropdown as it does a menu.
+    private static var dismissal: (click: NSPoint, anchors: [NSRect], time: TimeInterval)?
+
     static var isOpen: Bool { !panels.isEmpty }
 
     /// As round as the system's menus.
@@ -42,6 +47,12 @@ enum Dropdown {
         @ViewBuilder content: (_ close: @escaping () -> Void) -> Content
     ) -> DropdownPanel? {
         guard let window = view.window else { return nil }
+        let anchor = window.convertToScreen(view.convert(rect, to: nil))
+        if isSecondClick(on: anchor, from: window) {
+            trace?("show: a second click on what opened it; it closes")
+            DispatchQueue.main.async(execute: onClose)
+            return nil
+        }
         if let host = window as? DropdownPanel, let index = panels.firstIndex(where: { $0 === host }) {
             close(from: index + 1)
         } else {
@@ -60,7 +71,6 @@ enum Dropdown {
         let hosting = ResizingHostingView(rootView: root)
         let size = hosting.fittingSize
 
-        let anchor = window.convertToScreen(view.convert(rect, to: nil))
         let screen = window.screen?.visibleFrame ?? .infinite
         var origin: NSPoint
         switch placement {
@@ -78,6 +88,7 @@ enum Dropdown {
         origin.x = min(max(origin.x, screen.minX + 8), screen.maxX - size.width - 8)
 
         let panel = DropdownPanel(contentRect: NSRect(origin: origin, size: size))
+        panel.anchor = anchor
         handle.panel = panel
         let opensUpward = origin.y > anchor.minY
         hosting.onFittingSizeChange = { [weak panel] fitting in
@@ -106,6 +117,53 @@ enum Dropdown {
         return panel
     }
 
+    /// Whether this click is on what the open dropdown, or the one a click just closed, was opened from: then it
+    /// closes it, as a second click on a menu's button does, instead of opening it again.
+    private static func isSecondClick(on anchor: NSRect, from window: NSWindow) -> Bool {
+        func same(_ other: NSRect) -> Bool {
+            abs(other.minX - anchor.minX) < 1 && abs(other.minY - anchor.minY) < 1 && abs(other.width - anchor.width) < 1
+        }
+        guard let event = NSApp.currentEvent, [.leftMouseDown, .leftMouseUp].contains(event.type),
+              anchor.insetBy(dx: -1, dy: -1).contains(screenLocation(of: event)) else { return false }
+        // Opened on mouse down, as the list's cells do: the dropdown is still open.
+        if !(window is DropdownPanel), let open = panels.first, same(open.anchor) {
+            close()
+            return true
+        }
+        // Opened on mouse up, as buttons do: the press already closed it.
+        if let dismissal, ProcessInfo.processInfo.systemUptime - dismissal.time < 0.8,
+           anchor.insetBy(dx: -1, dy: -1).contains(dismissal.click), dismissal.anchors.contains(where: same) {
+            Self.dismissal = nil
+            return true
+        }
+        return false
+    }
+
+    private static func noteDismissal(by click: NSPoint, closing: [DropdownPanel]) {
+        guard !closing.isEmpty else { return }
+        dismissal = (click, closing.map(\.anchor), ProcessInfo.processInfo.systemUptime)
+    }
+
+    #if DEBUG
+    /// The debug remote's clicks reach the app in the background, where AppKit never takes the keyboard away from an
+    /// open dropdown; this does to the dropdowns what that would for a click at `point` on screen.
+    static func debugClick(at point: NSPoint) {
+        guard !NSApp.isActive, !panels.isEmpty else { return }
+        if let index = panels.lastIndex(where: { $0.frame.contains(point) }) {
+            guard index < panels.count - 1 else { return }
+            noteDismissal(by: point, closing: Array(panels[(index + 1)...]))
+            close(from: index + 1)
+        } else {
+            noteDismissal(by: point, closing: panels)
+            close()
+        }
+    }
+    #endif
+
+    private static func screenLocation(of event: NSEvent) -> NSPoint {
+        event.window.map { $0.convertPoint(toScreen: event.locationInWindow) } ?? event.locationInWindow
+    }
+
     /// Closes every open dropdown.
     static func close() {
         close(from: 0)
@@ -132,11 +190,17 @@ enum Dropdown {
     }
 
     fileprivate static func panelDidResignKey(_ resigned: DropdownPanel) {
+        // A click elsewhere takes the keyboard away while its button is still down.
+        let click = NSApp.currentEvent.flatMap { event in
+            [.leftMouseDown, .rightMouseDown, .otherMouseDown].contains(event.type) ? screenLocation(of: event) : nil
+        } ?? (NSEvent.pressedMouseButtons != 0 ? NSEvent.mouseLocation : nil)
         // The new key window is known only once AppKit has finished switching.
         DispatchQueue.main.async {
             guard let index = panels.firstIndex(where: { $0 === resigned }) else { return }
             let key = NSApp.keyWindow
             trace?("resigned \(index); key is \(key.map { String(describing: type(of: $0)) } ?? "nil") at \(panels.firstIndex(where: { $0 === key }).map(String.init) ?? "-")")
+            let closing = panels.firstIndex(where: { $0 === key }).map { keyIndex in keyIndex < index ? Array(panels[(keyIndex + 1)...]) : [] } ?? panels
+            if let click { noteDismissal(by: click, closing: closing) }
             if let keyIndex = panels.firstIndex(where: { $0 === key }) {
                 // A click back in a dropdown further down closes the ones on top of it.
                 if keyIndex < index { close(from: keyIndex + 1) }
@@ -178,6 +242,8 @@ final class ResizingHostingView<Content: View>: NSHostingView<Content> {
 
 final class DropdownPanel: NSPanel {
     var onClose: () -> Void = {}
+    /// What it was opened from, on screen.
+    var anchor: NSRect = .zero
 
     init(contentRect: NSRect) {
         super.init(contentRect: contentRect, styleMask: [.borderless], backing: .buffered, defer: false)

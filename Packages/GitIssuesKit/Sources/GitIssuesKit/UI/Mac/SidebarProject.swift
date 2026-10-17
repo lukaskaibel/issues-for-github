@@ -244,6 +244,8 @@ private struct SidebarViews: View {
 /// One view in the sidebar: its layout, its name, and a dot while its filter is changed here and not saved.
 private struct SidebarViewRow: View {
     @Environment(AppModel.self) private var model
+    /// Increased on the selected row, which is filled with the accent colour.
+    @Environment(\.backgroundProminence) private var prominence
     var view: ProjectView
     var current: SidebarSelection?
     @Binding var renaming: String?
@@ -278,7 +280,7 @@ private struct SidebarViewRow: View {
                         Text(view.name).lineLimit(1)
                         Spacer(minLength: 4)
                         if model.filterChanged(view) {
-                            Circle().fill(Theme.accent).frame(width: 6, height: 6)
+                            Circle().fill(prominence == .increased ? Color.white : Theme.accent).frame(width: 6, height: 6)
                         }
                     }
                 } icon: {

@@ -84,11 +84,12 @@ sub-issue whose parent has another status stays in its own column and says which
 one is done, the parent moves to Done by itself. The issues of an epic in the same column stand together the same
 way, under the epic's name; drag the name to another column and they all go.
 
-Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count
-and a dropdown opens right there. Type to filter, press a number to pick; the pick closes it. For several assignees or
-labels, tick their checkboxes or Shift-click them, and it stays open. Right-click a card for everything at once:
-the menu has rows as big as the pickers' and a search field, so typing "rev" finds Status › In Review, and Status,
-Priority, Assignee, Labels, Due Date and Milestone open the same pickers as a click on the card.
+Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count and
+a dropdown opens right there. Type to filter, press a number to pick; the pick closes it, and so does another click on
+what opened it. For several assignees or labels, tick their checkboxes or Shift-click them, and it stays open.
+Right-click a card for everything at once: the menu has rows as big as the pickers' and a search field, so typing
+"rev" finds Status › In Review, and Status, Priority, Assignee, Labels, Due Date and Milestone open the same pickers
+as a click on the card.
 
 ### Due dates that remind you
 
@@ -137,7 +138,7 @@ them itself, and leaves out the ones you assigned yourself to in the app.
 
 ### Keyboard first
 
-⌘K, or the search field in the toolbar, opens the command palette: every action, and a search across your issues.
+⌘K, or the magnifying glass in the toolbar, opens the command palette: every action, and a search across your issues.
 Single keys act on the issue you hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `L`
 labels, `D` due date, `I` assign to me.
 
@@ -511,10 +512,10 @@ everything at once.
 Click an issue's priority, status, labels, assignees, due date or sub-issue count to change it in place, or
 right-click it for everything at once. The right-click menu takes the keys at once: type to find an entry, also one
 inside a submenu, `↑` `↓` to move, `→` to open a submenu or picker, `Return` to pick and `Esc` to close. A pick closes
-the dropdown; for several assignees or labels, tick the checkbox
-at the start of each row, or hold Shift while you click or press Return. The sub-issue count lists the sub-issues,
-whose status, priority and assignee change right there too, and the red flag of a blocked issue lists what blocks it.
-In the list, click a section header to fold it; Option-click folds them all.
+the dropdown, and so does a second click on what opened it; for several assignees or labels, tick the checkbox at the
+start of each row, or hold Shift while you click or press Return. The sub-issue count lists the sub-issues, whose
+status, priority and assignee change right there too, and the red flag of a blocked issue lists what blocks it. In the
+list, click a section header to fold it; Option-click folds them all.
 
 Sub-issues with the same status as their parent hang under it, indented; click the arrow beside the parent, or
 right-click it, to fold them in or out. A sub-issue whose parent has another status names its parent instead, and a
