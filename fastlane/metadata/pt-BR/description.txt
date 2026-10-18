@@ -24,7 +24,7 @@ NO IPHONE E NO IPAD
 • No iPhone, abas para a Entrada, Minhas issues, seus projetos e a busca; no iPad, uma barra lateral e o quadro com arrastar e soltar
 • Deslize para a direita para concluir uma issue, e para a esquerda para atribuí-la a você ou apagá-la
 • Toque e segure uma issue para alterar status, prioridade, responsável, etiquetas, marco, issue principal ou bloqueios, ou arraste-a para outro lugar
-• Os marcos e o roteiro: uma lista no iPhone, a linha do tempo no iPad
+• Os marcos e o roteiro, que no iPad aparece como linha do tempo
 • No iPad com teclado, os mesmos atalhos de teclado do Mac
 
 PRAZOS QUE LEMBRAM VOCÊ
