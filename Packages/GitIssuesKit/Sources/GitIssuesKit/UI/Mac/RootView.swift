@@ -275,28 +275,37 @@ struct ContentPanel: View {
     }
 }
 
-/// The arrow that slides in from the edge while a two-finger swipe is deciding whether to go back or forward.
+/// The arrow that grows at the side of the page while a two-finger swipe goes back or forward, filled once letting
+/// go will go. It stays inside the page, clear of the sidebar and the inspector floating at its edges.
 struct SwipeIndicator: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let progress = model.swipeProgress
-        let amount = min(abs(progress), 1)
+        // One arrow on each side, so the one that fades out stays where it was.
+        let progress = model.swipeProgress / AppModel.swipeThreshold
         HStack {
-            if progress < 0 { Spacer() }
-            Image(systemName: progress > 0 ? "chevron.left" : "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(amount >= 0.5 ? Color.white : Theme.textSecondary)
-                .frame(width: 34, height: 34)
-                .background(Circle().fill(amount >= 0.5 ? Theme.accentFill : Theme.popover))
-                .overlay(Circle().stroke(Theme.popoverBorder, lineWidth: amount >= 0.5 ? 0 : 1))
-                .shadow(color: Theme.shadow, radius: 10, y: 4)
-                .scaleEffect(0.7 + 0.3 * amount)
-                .offset(x: (progress > 0 ? 1 : -1) * (-40 + 56 * amount))
-            if progress > 0 { Spacer() }
+            arrow(back: true, reach: min(max(progress, 0), 1))
+            Spacer()
+            arrow(back: false, reach: min(max(-progress, 0), 1))
         }
-        .opacity(amount == 0 ? 0 : 1)
+        .padding(.horizontal, 16)
         .allowsHitTesting(false)
+    }
+
+    private func arrow(back: Bool, reach: Double) -> some View {
+        let full = reach >= 1
+        return Image(systemName: back ? "chevron.left" : "chevron.right")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(full ? Color.white : Theme.textSecondary)
+            .frame(width: 34, height: 34)
+            .background {
+                if full { Circle().fill(Theme.accentFill) }
+            }
+            .glassPanel(in: Circle())
+            .scaleEffect(0.6 + 0.4 * reach)
+            .offset(x: (back ? 12 : -12) * (reach - 1))
+            .opacity(min(reach * 3, 1))
+            .animation(Theme.quick, value: full)
     }
 }
 
