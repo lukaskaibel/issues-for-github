@@ -4,8 +4,8 @@ Das bisher größte Update: Plane mit Meilensteinen, Epics und einer Roadmap, ö
 • Epics: Issues, deren Arbeit in ihren Sub-Issues steckt. Auf dem Board stehen die Issues eines Epics unter seinem Namen beisammen; ziehst du den Namen, ziehen alle mit
 • Eine Roadmap: deine Epics als Balken über den Meilensteinen, nach Monaten oder Quartalen. Zieh einen Balken auf einen anderen Meilenstein, und das Epic kommt samt seinen Issues dorthin
 • Die Ansichten deines Projekts von GitHub in der Seitenleiste, als Board oder Liste, mit Filtern, die du mit einem Klick änderst. Nach Meilenstein oder übergeordnetem Issue gruppiert, zeigt eine Ansicht den Fortschritt jeder Gruppe, die der aktuellen Iteration ihre restlichen Tage; eine Roadmap-Ansicht ist eine Zeitleiste
-• Auch auf iPhone und iPad: Meilensteine, Ansichten und die Roadmap, als Liste auf dem iPhone und als Zeitleiste auf dem iPad
-• Neues Design: das Fenster von Mail und Notizen in Liquid Glass, die Informationen zum Issue gleich daneben und Kontextmenüs mit Suchfeld. Auf iPhone und iPad zeigen Issues ihre Eigenschaften als Chips aus Glas und die Kommentare als Unterhaltung
+• Meilensteine, Ansichten und die Roadmap auch auf iPhone und iPad; die Roadmap ist auf dem iPhone eine Liste, auf dem iPad eine Zeitleiste
+• Neues Design: auf dem Mac das Fenster von Mail und Notizen in Liquid Glass, die Informationen zum Issue gleich daneben und Kontextmenüs mit Suchfeld. Auf iPhone und iPad zeigen Issues ihre Eigenschaften als Chips aus Glas und die Kommentare als Unterhaltung
 • Ein neues App-Symbol, eine Pinnwand in sieben Materialien zur Wahl, und ein eigenes Symbol für jedes Projekt
 • Neun Sprachen: Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Russisch, Japanisch, Koreanisch und Chinesisch, passend zur Sprache deines Geräts
 • Der Eingang: deine Mitteilungen von GitHub, mit dem Issue gleich daneben. Lesen, archivieren und zurückstellen per Taste oder Wischen; github.com und deine anderen Geräte sind auf demselben Stand
