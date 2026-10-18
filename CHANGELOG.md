@@ -6,6 +6,11 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-18
+
+Issues now plans the work as well as tracking it, in a window built like Mail and Notes. In the App Store this version
+follows 0.2.0: 0.3.0 went to TestFlight only, so its changes reach the App Store with this one.
+
 ### Added
 
 - **An icon for each project.** A project shows a glyph instead of a coloured square: GitHub's table in grey until
