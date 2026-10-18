@@ -27,17 +27,29 @@ mkdir -p "$raw"
 swiftc -O Tools/readme-images/capture.swift -o "$work/capture" 2>/dev/null
 
 # The debug app shares its settings with the real one. Note what the scenes change and put it back afterwards.
-keys=(appearance viewMode selectedProject inbox.selected inbox.bucket roadmap.layout roadmap.zoom "NSWindow Frame main")
+keys=(appearance viewMode selectedProject inbox.selected inbox.bucket roadmap.layout roadmap.zoom showsIssueInspector
+  "NSWindow Frame main")
 saved=()
-for key in "${keys[@]}"; do saved+=("$(defaults read "$bundle_id" "$key" 2>/dev/null || echo "<unset>")"); done
+types=()
+for key in "${keys[@]}"; do
+  saved+=("$(defaults read "$bundle_id" "$key" 2>/dev/null || echo "<unset>")")
+  # "Type is boolean", "Type is string"…: written back as what it was.
+  types+=("$( (defaults read-type "$bundle_id" "$key" 2>/dev/null || true) | awk '{ print $3 }')")
+done
 previous=$(lsappinfo info -only bundlepath "$(lsappinfo front)" | sed -nE 's/.*"(.+)".*/\1/p')
 pid=""
 
 finish() {
   [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
   for i in "${!keys[@]}"; do
-    if [ "${saved[$i]}" = "<unset>" ]; then defaults delete "$bundle_id" "${keys[$i]}" 2>/dev/null || true
-    else defaults write "$bundle_id" "${keys[$i]}" -string "${saved[$i]}"; fi
+    if [ "${saved[$i]}" = "<unset>" ]; then defaults delete "$bundle_id" "${keys[$i]}" 2>/dev/null || true; continue; fi
+    case ${types[$i]} in
+      boolean) type=-bool ;;
+      integer) type=-int ;;
+      float) type=-float ;;
+      *) type=-string ;;
+    esac
+    defaults write "$bundle_id" "${keys[$i]}" "$type" "${saved[$i]}"
   done
   [ -n "$previous" ] && open -a "$previous" 2>/dev/null || true
 }
@@ -59,9 +71,17 @@ forward() {
 }
 
 shot() {
-  forward
-  sleep 0.3
-  "$work/capture" shot "$pid" "$raw/$1.png"
+  local code
+  for _ in 1 2 3 4; do
+    forward
+    sleep 0.3
+    if "$work/capture" shot "$pid" "$raw/$1.png"; then return 0; else code=$?; fi
+    # 3: the window was drawn inactive, as when another app came to the front meanwhile.
+    [ "$code" = 3 ] || exit "$code"
+    sleep 0.5
+  done
+  echo "The window stayed inactive for $1." >&2
+  exit 1
 }
 
 launch() {
@@ -89,6 +109,9 @@ for theme in dark light; do
   echo "Scenes in ${theme}…"
   launch "$theme"
   forward
+  # The same size, at the top left of the screen, and letting the pointer through, so wherever it rests it puts no
+  # hover into the pictures.
+  say "window 1280 820 onscreen"
   # The project's first view, as GitHub has it: the view and how it shows are remembered from the last run.
   say "view Board" "display reset"
   # Switching views lays the board out afresh, so the debug remote knows where every card is.
@@ -106,8 +129,10 @@ for theme in dark light; do
   sleep 0.8
 
   shot "board-$theme"
-  say "open 9"; sleep 1.5; shot "issue-$theme"
-  say "close" "focus 9" "overlay palette"; sleep 1.2; shot "palette-$theme"
+  # The issue with its properties in the inspector beside it, whether or not the inspector was last left open.
+  say "inspector on" "open 9"; sleep 1.5; shot "issue-$theme"
+  # The board takes the focus back once the issue and its inspector are gone; focus #9 only after that.
+  say "close"; sleep 1; say "focus 9" "overlay palette"; sleep 1.2; shot "palette-$theme"
   say "overlay due 9"; sleep 1.2; shot "due-$theme"
   say "overlay none" "focus" "mode list"; sleep 1.2; shot "list-$theme"
   say "select repo git-issues"; sleep 1.2; shot "repository-$theme"
