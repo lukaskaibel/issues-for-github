@@ -1,12 +1,17 @@
-Issues now speaks nine languages, has an Inbox and reminds you when issues are due.
+The biggest update yet: plan with milestones, epics and a roadmap, open your project's views from GitHub, and use Issues in nine languages, in a new look built like Mail and Notes.
 
+• Milestones: a board's next ones in the sidebar, each with its issues, how much is done and the day it's due. Complete one and move what's left to the next
+• Epics: issues whose sub-issues are their work. On the board an epic's issues stand together under its name; drag the name to move them all
+• A roadmap: your epics as bars over the milestones, by month or quarter. Drag a bar to move an epic and its issues to another milestone
+• Your project's views from GitHub in the sidebar, as a board or a list, with filters as chips. Grouped by milestone or parent, a view shows how far each group is; a view of the current iteration shows its days left; a roadmap view is a timeline
+• On iPhone and iPad too: milestones, views and the roadmap, as a list on iPhone and a timeline on iPad
+• A new look: the window of Mail and Notes in Liquid Glass, an inspector beside the issue, and right-click menus with a search field. On iPhone and iPad, issues with glass chips and comments as a conversation
+• A new app icon, a planning board in seven materials, and an icon of your choice for each project
 • Nine languages: English, German, French, Spanish, Portuguese, Russian, Japanese, Korean and Chinese, following your device's language
-• The Inbox: your GitHub notifications, with the issue right beside them. Read, archive and snooze with a key or a swipe; github.com and your other devices agree. Issues due today show up there too, and so do issues your own account assigned you to elsewhere, such as with gh or a coding agent
+• The Inbox: your GitHub notifications, with the issue right beside them. Read, archive and snooze with a key or a swipe; github.com and your other devices agree
 • Due dates with reminders: pick a day or type it, such as "in 3 days", and on the day your Mac, iPhone and iPad remind you
-• Sub-issues hang under their parent on the board and in the list, and fold away with the arrow. Finish the last one and the parent is done too
-• Sub-issues and blockers: add existing issues as sub-issues, give an issue a parent, and mark what blocks what
-• Every issue, on a board or not: your repositories in the sidebar, with the issues on no board under "No project", one click from going onto one
+• Sub-issues hang under their parent; finish the last one and the parent is done too. Mark what blocks what
+• Every issue, on a board or not: your repositories in the sidebar, with the issues on no board one click from going onto one
 • Descriptions drawn as on GitHub: tables, checklists that tick, code and Mermaid diagrams
-• Drag issues to a new place in the list too, not only on the board
-• Fewer clicks: picking a status, person or label closes the picker; the checkbox at the start of a row picks several
-• Fixed: turning an iPad to landscape could quit the app
+• Fewer clicks: picking a status, person or label closes the picker
+• Fixed: turning an iPad to landscape could quit the app, and on the Mac a two-finger swipe no longer goes back by accident
