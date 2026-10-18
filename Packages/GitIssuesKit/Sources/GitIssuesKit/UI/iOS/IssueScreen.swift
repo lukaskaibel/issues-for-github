@@ -84,7 +84,7 @@ struct IssueScreen: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            .pageFootBar {
                 // While the description is edited, the keyboard bar is the only thing above the keyboard.
                 if item.kind != .draft, !editingDescription {
                     CommentComposer(item: item)

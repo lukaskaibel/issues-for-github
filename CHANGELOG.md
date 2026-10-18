@@ -103,6 +103,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- The end of an issue reads cleanly above the field for a new comment, on the Mac, iPhone and iPad and in the Mac's
+  Inbox: the page fades out just above the field, as it does under the toolbar. Before, the text behind showed through
+  the field's glass, over "Leave a comment…", and peeked out in the strip below it.
 - On iPhone and iPad, tapping the status circle of a sub-issue on an issue's page opens a menu of its board's
   statuses, as the status chip does, with the current one checked. Before, the tap marked it done at once, and the
   circle had no way back. A sub-issue on none of your boards offers Open and Closed.
