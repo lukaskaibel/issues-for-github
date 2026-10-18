@@ -1343,38 +1343,45 @@ private struct MobileActivity: View {
     }
 }
 
-/// The comment field at the bottom of an issue, as in Messages: it grows while typing and sends with the arrow.
+/// The comment field at the bottom of an issue, as in Messages: it grows while typing and sends with the arrow
+/// inside it, which fills with the accent colour once there is something to send.
 private struct CommentComposer: View {
     @Environment(AppModel.self) private var model
     var item: Item
     @State private var draft = ""
     @State private var sent = 0
     @FocusState private var focused: Bool
+    /// The round send button, 6 points inside the field's corner, as on the Mac.
+    @ScaledMetric(relativeTo: .body) private var buttonSize: CGFloat = 32
 
     var body: some View {
         let empty = draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        HStack(alignment: .bottom, spacing: 10) {
+        HStack(alignment: .bottom, spacing: 0) {
             TextField(.leaveCommentPlaceholder, text: $draft, axis: .vertical)
                 .lineLimit(1...6)
                 .focused($focused)
                 // ⌘↵ sends, as on the Mac; Return alone starts a new line.
                 .screenKey(.sendComment, "\r", modifiers: .command, isActive: focused) { send() }
                 .accessibilityIdentifier("comment-field")
-                .padding(.horizontal, 16)
+                .padding(.leading, 16)
                 .padding(.vertical, 11)
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22))
             Button(action: send) {
                 Image(systemName: "arrow.up")
-                    .font(.body.weight(.semibold))
-                    .frame(width: 44, height: 44)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(empty ? Theme.textTertiary : Color.white)
+                    .frame(width: buttonSize, height: buttonSize)
+                    .background(Circle().fill(empty ? Theme.field : Theme.accentFill))
+                    // The whole corner of the field takes the tap, not just the circle.
+                    .frame(width: buttonSize + 12, height: buttonSize + 12)
+                    .contentShape(Rectangle())
             }
-            .buttonStyle(.glassProminent)
-            .buttonBorderShape(.circle)
+            .buttonStyle(PlainPressStyle())
             .disabled(empty)
             .keyboardShortcut(.return, modifiers: .command)
             .accessibilityLabel(.sendCommentButton)
             .accessibilityIdentifier("comment-send")
         }
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22))
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 8)
