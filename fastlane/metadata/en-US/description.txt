@@ -24,7 +24,7 @@ ON IPHONE AND IPAD
 • On iPhone, the Inbox, My Issues, your projects and search as tabs; on iPad, a sidebar and the board with drag and drop
 • Swipe right to mark an issue done, swipe left to assign it to yourself or delete it
 • Touch and hold an issue to change its status, priority, assignee, labels, milestone, parent or blockers, or drag it to a new place
-• Milestones and the roadmap: a list on iPhone, the timeline on iPad
+• Milestones and the roadmap, which is a timeline on iPad
 • On iPad with a keyboard, the Mac's keyboard shortcuts
 
 DUE DATES THAT REMIND YOU

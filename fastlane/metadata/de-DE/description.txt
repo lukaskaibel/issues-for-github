@@ -24,7 +24,7 @@ AUF IPHONE UND IPAD
 • Auf dem iPhone der Eingang, „Meine Issues“, deine Projekte und die Suche als Tabs; auf dem iPad eine Seitenleiste und das Board mit Drag & Drop
 • Nach rechts wischen markiert ein Issue als erledigt, nach links weist du es dir zu oder löschst es
 • Issue gedrückt halten: Status, Priorität, Zuständige, Labels, Meilenstein, übergeordnetes Issue oder Blocker ändern oder es verschieben
-• Meilensteine und Roadmap: als Liste auf dem iPhone, als Zeitleiste auf dem iPad
+• Meilensteine und die Roadmap, auf dem iPad als Zeitleiste
 • Auf dem iPad mit Tastatur die Tastenkürzel des Mac
 
 FÄLLIGKEITSDATEN, DIE DICH ERINNERN
