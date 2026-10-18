@@ -25,7 +25,7 @@ AUF IPHONE UND IPAD
 • Nach rechts wischen markiert ein Issue als erledigt, nach links weist du es dir zu oder löschst es
 • Issue gedrückt halten: Status, Priorität, Zuständige, Labels, Meilenstein, übergeordnetes Issue oder Blocker ändern oder es verschieben
 • Meilensteine und die Roadmap: als Liste auf dem iPhone, als Zeitleiste auf dem iPad
-• Auf dem iPad mit Tastatur die Tasten des Mac
+• Auf dem iPad mit Tastatur die Tastenkürzel des Mac
 
 FÄLLIGKEITSDATEN, DIE DICH ERINNERN
 • Gib einem Issue ein Fälligkeitsdatum: morgen, Freitag, einen Tag im Kalender oder getippt als „in 3 Tagen“

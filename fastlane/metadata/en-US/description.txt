@@ -25,7 +25,7 @@ ON IPHONE AND IPAD
 • Swipe right to mark an issue done, swipe left to assign it to yourself or delete it
 • Touch and hold an issue to change its status, priority, assignee, labels, milestone, parent or blockers, or drag it to a new place
 • Milestones and the roadmap: a list on iPhone, the timeline on iPad
-• On iPad with a keyboard, the Mac's keys
+• On iPad with a keyboard, the Mac's keyboard shortcuts
 
 DUE DATES THAT REMIND YOU
 • Give an issue the day it is due: tomorrow, Friday, a day in the calendar, or typed as "in 3 days"
