@@ -10951,6 +10951,66 @@
         }
       }
     },
+    "createLabelNamed" : {
+      "comment" : "Row in the label picker (Mac: dropdowns, command palette, right-click menus; iPhone, iPad: the Labels sheet) when what was typed is no label of the issue's repository: makes a label of that name in the repository and adds it to the issue. The placeholder is the typed name. 'Label' is a GitHub term (tags such as 'bug').",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Label „%@“ erstellen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create label “%(name)@”"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear etiqueta «%@»"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Créer l’étiquette « %@ »"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ラベル「%@」を作成"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‘%@’ 레이블 생성"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Criar etiqueta “%@”"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Создать метку «%@»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建标签“%@”"
+          }
+        }
+      }
+    },
     "createMilestoneButton" : {
       "comment" : "Primary button of the new-milestone dialog.",
       "extractionState" : "manual",
@@ -40957,6 +41017,66 @@
         }
       }
     },
+    "noticeLabelNotCreated" : {
+      "comment" : "Toast title when GitHub refused to make a label typed into the label picker; the message below gives GitHub's reason. The label comes off the issues it was added to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Label %@ konnte nicht erstellt werden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Label %(label)@ couldn't be created"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo crear la etiqueta %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de créer l’étiquette %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ラベル「%@」を作成できませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 레이블을 생성할 수 없음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível criar a etiqueta %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось создать метку «%@»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法创建标签“%@”"
+          }
+        }
+      }
+    },
     "noticeMilestoneNotCreated" : {
       "comment" : "Toast title when GitHub refused to create a new milestone; the message below gives GitHub's reason.",
       "extractionState" : "manual",
@@ -64065,6 +64185,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已创建议题：%@"
+          }
+        }
+      }
+    },
+    "queuedLabelCreated" : {
+      "comment" : "Queued changes list: a new GitHub label with this name was made in a repository, from the label picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Label %@ erstellt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Label %(label)@ created"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etiqueta %@ creada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Étiquette %@ créée"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ラベル「%@」を作成"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 레이블 생성됨"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etiqueta %@ criada"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Метка «%@» создана"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已创建标签“%@”"
           }
         }
       }

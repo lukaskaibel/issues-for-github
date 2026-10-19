@@ -6,6 +6,14 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **New labels from the picker.** Type a label the repository doesn't have and the picker offers **Create label
+  “…”**: the label is made in the repository, in one of GitHub's colours, and goes on the issue, or on every issue you
+  picked. It works in every label picker on the Mac (a card, the inspector, ⌘K, the right-click menu and the new-issue
+  dialog) and in the Labels sheet on iPhone and iPad. A name that differs only in case picks the label that is there,
+  and offline the new label waits with your other changes.
+
 ### Changed
 
 - **A new app icon: a board.** Three columns divided only by two thin lines, as the lines in Notes divide a page,

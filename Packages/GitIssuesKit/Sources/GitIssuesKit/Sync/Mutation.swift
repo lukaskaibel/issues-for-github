@@ -27,6 +27,7 @@ public enum Mutation: Codable, Sendable, Equatable {
     case updateMilestone(UpdateMilestone)
     case setEpic(SetEpic)
     case setProjectField(SetProjectField)
+    case createLabel(CreateLabel)
 
     public struct SetField: Codable, Sendable, Equatable {
         public var itemId: String
@@ -225,6 +226,7 @@ extension Mutation {
         case .updateMilestone(let m): [m.milestoneId]
         case .setEpic(let m): [m.contentId]
         case .setProjectField(let m): [m.itemId]
+        case .createLabel: []
         }
     }
 
@@ -292,6 +294,7 @@ extension Mutation {
         guard !ids.isEmpty else { return self }
         func r(_ id: String) -> String { ids[id] ?? id }
         func r(_ id: String?) -> String? { id.map { ids[$0] ?? $0 } }
+        func r(_ labels: [LabelRef]) -> [LabelRef] { labels.map { LabelRef(id: r($0.id), name: $0.name, color: $0.color) } }
         switch self {
         case .setField(var m):
             m.itemId = r(m.itemId)
@@ -319,6 +322,8 @@ extension Mutation {
             return .editAssignees(m)
         case .editLabels(var m):
             m.contentId = r(m.contentId)
+            m.add = r(m.add)
+            m.remove = r(m.remove)
             return .editLabels(m)
         case .addComment(var m):
             m.contentId = r(m.contentId)
@@ -329,6 +334,7 @@ extension Mutation {
             m.contentId = r(m.contentId)
             m.parentContentId = r(m.parentContentId)
             m.milestoneId = r(m.milestoneId)
+            m.labels = r(m.labels)
             return .createIssue(m)
         case .deleteItem(var m):
             m.itemId = r(m.itemId)
@@ -366,6 +372,9 @@ extension Mutation {
         case .setProjectField(var m):
             m.itemId = r(m.itemId)
             return .setProjectField(m)
+        case .createLabel(var m):
+            m.labelId = r(m.labelId)
+            return .createLabel(m)
         }
     }
 }
@@ -577,6 +586,9 @@ extension Mutation {
 
         case .setProjectField(let m):
             try m.apply(db)
+
+        case .createLabel(let m):
+            try m.apply(db)
         }
     }
 
@@ -649,6 +661,8 @@ extension Mutation {
             return line(try number(contentId: m.contentId), m.milestoneTitle.map { .queuedMilestoneSet(milestone: $0) } ?? .queuedMilestoneRemoved)
         case .createMilestone(let m):
             return line("", .queuedMilestoneCreated(milestone: m.title))
+        case .createLabel(let m):
+            return line("", .queuedLabelCreated(label: m.name))
         case .updateMilestone(let m):
             let title = try String.fetchOne(db, sql: "SELECT title FROM milestone WHERE id = ?", arguments: [m.milestoneId]) ?? ""
             let text: LocalizedStringResource = switch m.change.state {

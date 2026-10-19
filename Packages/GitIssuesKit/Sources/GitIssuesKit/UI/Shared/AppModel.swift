@@ -1277,6 +1277,10 @@ public final class AppModel {
             guard let entry = details.removeValue(forKey: old) else { continue }
             details[new] = (IssueDetailModel(contentId: new, db: db), entry.users)
         }
+        // A label made in a repository none of your boards use.
+        for (repoId, meta) in otherRepoMeta where meta.labels.contains(where: { remaps[$0.id] != nil }) {
+            otherRepoMeta[repoId]?.labels = meta.labels.map { LabelRef(id: remaps[$0.id] ?? $0.id, name: $0.name, color: $0.color) }
+        }
     }
 
     /// Fetches the avatars of everyone assigned to something in view, once.
