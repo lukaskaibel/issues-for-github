@@ -1,41 +1,34 @@
-O Issues é um app rápido e nativo para GitHub Issues e GitHub Projects, no Mac, iPhone e iPad. Tem um visual tranquilo e é rápido de usar, e tudo fica no GitHub: colegas que não usam o app veem as mesmas issues e os mesmos quadros em github.com.
+O Issues é um app rápido e nativo para GitHub Issues e GitHub Projects, no Mac, iPhone e iPad. Segue o estilo do Mail e do Notas, é ágil pelo teclado, e tudo fica no GitHub: colegas que não usam o app veem as mesmas issues e os mesmos quadros em github.com.
+
+PLANEJE O QUE VEM PELA FRENTE
+• Marcos: os próximos de um quadro, na barra lateral, cada um com suas issues, quanto já está pronto e o dia em que vence
+• Épicos: issues cujo trabalho se divide em sub-issues. No quadro, as issues de um épico ficam juntas sob o nome dele; arraste o nome para mover todas
+• Um roteiro: seus épicos como barras sobre os marcos, por mês ou trimestre. Arraste uma barra para mover um épico e suas issues para outro marco
+• As visualizações do seu projeto no GitHub, como “Esta semana” ou bugs abertos, em quadro ou lista, com filtros que você muda com um clique
+• Agrupada por marco ou por issue principal, uma visualização mostra quanto cada grupo já avançou; a da iteração atual mostra quantos dias faltam; uma visualização de roteiro aparece como linha do tempo
 
 A ENTRADA
 • O que mudou para você, a partir das notificações do GitHub: quem atribuiu algo a você, mencionou você, comentou, pediu sua revisão ou fechou uma issue que você acompanha
-• Abra uma e a issue está logo ali, com as novidades no topo e o comentário novo destacado
-• Suas issues com prazo aparecem no dia, com Começar, Concluir e Mover para amanhã
-• Leia, arquive e adie com uma tecla ou deslizando o dedo; o que está lido e arquivado fica igual em github.com
-• As adiadas e as não lidas ficam em sincronia em todos os seus dispositivos pelo iCloud
+• Abra uma e a issue está logo ali, com as novidades no topo
+• Leia, arquive e adie com uma tecla ou deslizando o dedo; github.com e todos os seus dispositivos ficam em sincronia
 
 NO MAC
-• Cada projeto como quadro ou lista, além de Minhas issues, com tudo o que está atribuído a você
-• Todas as issues dos seus repositórios, inclusive as que não estão em nenhum quadro, que um clique coloca em um
-• Arraste issues para outro lugar, no quadro ou na lista, e organize as colunas: adicione, renomeie, mude a cor e reordene
+• Cada projeto como quadro ou lista, Minhas issues, com tudo o que está atribuído a você, e todas as issues dos seus repositórios, inclusive as que não estão em nenhum quadro
+• Arraste issues para outro lugar e organize as colunas: adicione, renomeie, mude a cor e reordene
 • Teclado em primeiro lugar: J e K navegam entre issues, S, P, A e L alteram status, prioridade, responsável e etiquetas, D define o prazo, e ⌘K abre uma paleta de comandos para todo o resto
-• Selecione várias issues e altere todas de uma vez
-• Espie uma issue com a barra de espaço ou abra-a ao lado das propriedades, sub-issues e comentários
-• Sub-issues e bloqueios: coloque qualquer issue sob outra, adicione issues existentes como sub-issues e marque o que bloqueia o quê
+• Selecione várias issues e altere todas de uma vez, ou espie uma com a barra de espaço
+• Sub-issues e bloqueios: coloque qualquer issue sob outra e marque o que bloqueia o quê
 • Descrições exibidas como no GitHub, com tabelas, checklists que você pode marcar e diagramas Mermaid
-• Voltar e avançar funcionam como em um navegador
 
-NO IPHONE
-• A Entrada como primeira aba, com o número de notificações não lidas
-• Minhas issues, com tudo o que está atribuído a você, agrupado por status
-• Cada projeto e repositório como lista, com seções que se recolhem
+NO IPHONE E NO IPAD
+• No iPhone, abas para a Entrada, Minhas issues, seus projetos e a busca; no iPad, uma barra lateral e o quadro com arrastar e soltar
 • Deslize para a direita para concluir uma issue, e para a esquerda para atribuí-la a você ou apagá-la
-• Toque e segure uma issue para alterar status, prioridade, responsável, etiquetas, issue principal ou bloqueios, ou arraste-a para outro lugar
-• Busque em todos os projetos por título ou número
-• Tabelas, checklists e diagramas Mermaid nas descrições, exibidos como no GitHub
-
-NO IPAD
-• Uma barra lateral com todos os seus projetos e repositórios, e o quadro com arrastar e soltar
-• A Entrada com a issue ao lado, como no Mail
-• As issues abrem ao lado das propriedades, como no Mac
-• Com teclado: J e K para navegar, S, P, A e L para alterar uma issue, ⌘N para criar uma nova
+• Toque e segure uma issue para alterar status, prioridade, responsável, etiquetas, marco, issue principal ou bloqueios, ou arraste-a para outro lugar
+• Os marcos e o roteiro, que no iPad aparece como linha do tempo
+• No iPad com teclado, os mesmos atalhos de teclado do Mac
 
 PRAZOS QUE LEMBRAM VOCÊ
-• Defina o dia em que uma issue vence: amanhã, sexta-feira, próxima semana, um dia no calendário ou digitando “em 3 dias”
-• Cartões e listas mostram o prazo, em laranja no dia e em vermelho depois que ele passa
+• Defina o dia em que uma issue vence: amanhã, sexta-feira, um dia no calendário ou digitando “em 3 dias”
 • No dia, seu Mac, iPhone e iPad lembram você, com botões para começar a issue, marcá-la como concluída ou movê-la para amanhã
 • A data é o campo Due date do projeto no GitHub, então sua equipe também a vê
 

@@ -1,41 +1,34 @@
-Issues ist eine schnelle, native App für GitHub Issues und GitHub Projects auf Mac, iPhone und iPad. Ruhig fürs Auge, schnell bedient, und alles bleibt in GitHub: Wer im Team die App nicht nutzt, sieht dieselben Issues und Boards auf github.com.
+Issues ist eine schnelle, native App für GitHub Issues und GitHub Projects auf Mac, iPhone und iPad. Gebaut wie Mail und Notizen, schnell per Tastatur bedient, und alles bleibt in GitHub: Wer im Team die App nicht nutzt, sieht dieselben Issues und Boards auf github.com.
+
+PLANEN
+• Meilensteine: die nächsten eines Boards in der Seitenleiste, jeweils mit ihren Issues, dem Fortschritt und dem Fälligkeitstag
+• Epics: Issues, deren Arbeit in ihren Sub-Issues steckt. Auf dem Board stehen die Issues eines Epics unter seinem Namen beisammen; ziehst du den Namen, ziehen alle mit
+• Eine Roadmap: deine Epics als Balken über den Meilensteinen, nach Monaten oder Quartalen. Zieh einen Balken auf einen anderen Meilenstein, und das Epic kommt samt seinen Issues dorthin
+• Die Ansichten deines Projekts von GitHub, etwa „Diese Woche“ oder offene Bugs, als Board oder Liste, mit Filtern, die du mit einem Klick änderst
+• Nach Meilenstein oder übergeordnetem Issue gruppiert, zeigt eine Ansicht den Fortschritt jeder Gruppe, die der aktuellen Iteration ihre restlichen Tage; eine Roadmap-Ansicht ist eine Zeitleiste
 
 DER EINGANG
 • Was sich für dich geändert hat, aus GitHubs Mitteilungen: wer dir etwas zugewiesen, dich erwähnt, kommentiert, dich um ein Review gebeten oder ein Issue geschlossen hat, dem du folgst
-• Eine Mitteilung öffnet gleich das Issue, Neues steht oben, der neue Kommentar ist markiert
-• Deine fälligen Issues erscheinen am Tag selbst, mit „Beginnen“, „Als erledigt markieren“ und „Auf morgen verschieben“
-• Lesen, archivieren und zurückstellen per Taste oder Wischen; was du liest oder archivierst, gilt auch auf github.com
-• Zurückgestellte und ungelesene bleiben über iCloud auf all deinen Geräten gleich
+• Eine Mitteilung öffnet gleich das Issue, Neues steht oben
+• Lesen, archivieren und zurückstellen per Taste oder Wischen; github.com und all deine Geräte sind auf demselben Stand
 
 AUF DEM MAC
-• Jedes Projekt als Board oder Liste, dazu „Meine Issues“ mit allem, was dir zugewiesen ist
-• Jedes Issue deiner Repositories, auch die auf keinem Board; ein Klick bringt sie auf eines
-• Issues verschieben, auf dem Board oder in der Liste, und Spalten gestalten: hinzufügen, umbenennen, umfärben, neu anordnen
+• Jedes Projekt als Board oder Liste, „Meine Issues“ mit allem, was dir zugewiesen ist, und jedes Issue deiner Repositories, auch die auf keinem Board
+• Issues verschieben und Spalten gestalten: hinzufügen, umbenennen, umfärben, neu anordnen
 • Per Tastatur: J und K wechseln das Issue, S, P, A und L ändern Status, Priorität, Zuständige und Labels, D setzt das Fälligkeitsdatum, und ⌘K öffnet eine Befehlspalette für alles andere
-• Mehrere Issues auswählen und gemeinsam ändern
-• Issues mit der Leertaste kurz ansehen oder neben Eigenschaften, Sub-Issues und Kommentaren öffnen
-• Sub-Issues und Blocker: Issues anderen unterordnen, vorhandene als Sub-Issues hinzufügen und festhalten, was was blockiert
+• Mehrere Issues gemeinsam ändern oder eines mit der Leertaste kurz ansehen
+• Sub-Issues und Blocker: Issues anderen unterordnen und festhalten, was was blockiert
 • Beschreibungen wie auf GitHub, mit Tabellen, abhakbaren Checklisten und Mermaid-Diagrammen
-• Zurück und Vorwärts wie im Browser
 
-AUF DEM IPHONE
-• Der Eingang als erster Tab, mit der Zahl der ungelesenen Mitteilungen
-• „Meine Issues“ mit allem, was dir zugewiesen ist, nach Status gruppiert
-• Jedes Projekt und Repository als Liste, mit einklappbaren Abschnitten
+AUF IPHONE UND IPAD
+• Auf dem iPhone der Eingang, „Meine Issues“, deine Projekte und die Suche als Tabs; auf dem iPad eine Seitenleiste und das Board mit Drag & Drop
 • Nach rechts wischen markiert ein Issue als erledigt, nach links weist du es dir zu oder löschst es
-• Issue gedrückt halten: Status, Priorität, Zuständige, Labels, übergeordnetes Issue oder Blocker ändern oder es verschieben
-• Alle Projekte nach Titel oder Nummer durchsuchen
-• Tabellen, Checklisten und Mermaid-Diagramme in Beschreibungen, dargestellt wie auf GitHub
-
-AUF DEM IPAD
-• Seitenleiste mit allen Projekten und Repositories, das Board mit Drag & Drop
-• Der Eingang mit dem Issue daneben, wie in Mail
-• Issues öffnen sich neben ihren Eigenschaften, wie auf dem Mac
-• Mit Tastatur: J und K zum Wechseln, S, P, A und L zum Ändern eines Issues, ⌘N für ein neues
+• Issue gedrückt halten: Status, Priorität, Zuständige, Labels, Meilenstein, übergeordnetes Issue oder Blocker ändern oder es verschieben
+• Meilensteine und die Roadmap, auf dem iPad als Zeitleiste
+• Auf dem iPad mit Tastatur die Tastenkürzel des Mac
 
 FÄLLIGKEITSDATEN, DIE DICH ERINNERN
-• Gib einem Issue ein Fälligkeitsdatum: morgen, Freitag, nächste Woche, einen Tag im Kalender oder getippt als „in 3 Tagen“
-• Karten und Listen zeigen es, am Tag selbst orange, danach rot
+• Gib einem Issue ein Fälligkeitsdatum: morgen, Freitag, einen Tag im Kalender oder getippt als „in 3 Tagen“
 • Am Tag erinnern dich Mac, iPhone und iPad, mit Tasten zum Beginnen, Erledigen oder Verschieben auf morgen
 • Das Datum ist das Feld „Due date“ des Projekts auf GitHub, also sieht dein Team es auch
 

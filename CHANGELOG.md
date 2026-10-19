@@ -6,6 +6,11 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-19
+
+Issues now plans the work as well as tracking it, in a window built like Mail and Notes. In the App Store this version
+follows 0.2.0: 0.3.0 went to TestFlight only, so its changes reach the App Store with this one.
+
 ### Added
 
 - **Writing Markdown as in a notes app.** Bold, italics, code and strikethrough turn on and off: Bold again inside

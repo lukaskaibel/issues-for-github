@@ -6,6 +6,6 @@ To review without a GitHub account, choose "Explore with Sample Data" on the fir
 
 The Mac app runs in the App Sandbox and connects only to GitHub. On iPhone and iPad, background refresh updates the issues now and then while the app is closed.
 
-The Inbox shows the user's GitHub notifications; the sample data has its own. Snoozed and unread Inbox entries, and the issues the app itself assigned the user to, are kept in iCloud's key-value store of the user's own Apple account, so the user's devices agree; nothing goes to the developer.
+The Inbox shows the user's GitHub notifications; the sample data has its own. Snoozed and unread Inbox entries, the issues the app itself assigned the user to, and the icons the user picks for projects are kept in iCloud's key-value store of the user's own Apple account, so the user's devices agree; nothing goes to the developer.
 
 Due dates: on the day an issue assigned to the user is due, the app reminds them with a local notification scheduled on the device. It asks for permission the first time there is something to remind of. The sample data never asks by itself; Settings › Reminders has a button for it.

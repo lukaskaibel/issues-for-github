@@ -27,7 +27,7 @@
   <img alt="Apple silicon" src="https://img.shields.io/badge/Apple%20silicon-native-111214">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-5B63D3"></a>
-  <a href="CHANGELOG.md"><img alt="Version 0.3.0" src="https://img.shields.io/badge/version-0.3.0-5B63D3"></a>
+  <a href="CHANGELOG.md"><img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-5B63D3"></a>
 </p>
 
 <p align="center">
@@ -46,14 +46,13 @@
   <img alt="Issues showing a GitHub Project as a board, with Backlog, Todo, In Progress and In Review columns; in In Progress, two sub-issues hang under their parent" src="Design/screenshots/hero-light.webp">
 </picture>
 
-> **New: Issues for iPhone and iPad.** The same app, built from the same project, with the same sync, offline
-> queue and actions: lists with swipes and the issue menu on iPhone, the board with drag and drop on iPad.
-> [See it below.](#iphone-and-ipad)
+> **New in 1.0: planning.** Milestones, epics and a roadmap, your project's views from GitHub, and a window built
+> like Mail and Notes. [See them below.](#milestones-epics-and-a-roadmap)
 
-> **Status: early.** Version 0.3.0 covers the daily work with issues on the Mac, iPhone and iPad: boards and lists,
-> the Inbox, due dates, sub-issues and blockers, in nine languages. The Mac app is
-> [in the App Store](https://apps.apple.com/app/id6819589759), and the iPhone and iPad app is on its way there. You can
-> also build it from source (five minutes, see below).
+> **Version 1.0** covers the daily work with issues and the planning around it, on the Mac, iPhone and iPad: boards,
+> lists and views, the Inbox, due dates, sub-issues and blockers, milestones, epics and a roadmap, in nine languages.
+> It is [in the App Store](https://apps.apple.com/app/id6819589759) for all three, free. You can also build it from
+> source (five minutes, see below).
 
 ## Why
 
@@ -101,7 +100,7 @@ so your team sees it there; GitHub's dates have no time of day, and the reminder
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/due-date-dark.webp">
-  <img alt="The due date picker: Today, Tomorrow, Friday and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
+  <img alt="The due date picker: Today, Tomorrow, Friday, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
 </picture>
 
 ### Issues that read well
@@ -378,8 +377,8 @@ When you and someone else change the same issue:
 
 ## Getting started
 
-Issues for the Mac is [in the App Store](https://apps.apple.com/app/id6819589759), free; the iPhone and iPad app
-follows. To build it yourself instead:
+Issues is [in the App Store](https://apps.apple.com/app/id6819589759) for the Mac, iPhone and iPad, free. To build it
+yourself instead:
 
 ### Requirements
 
@@ -636,7 +635,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 ## Not there yet
 
 Cycles of their own beyond a view of one iteration, linked pull requests, file uploads, real-time updates and
-notifications on screen for new Inbox entries are planned but not built. Also good to know in 0.3.0:
+notifications on screen for new Inbox entries are planned but not built. Also good to know in 1.0:
 
 - Pull requests and draft issues appear on the board and can be moved, but their text is read-only.
 - Images in descriptions of private repositories may not load.
@@ -720,7 +719,8 @@ the source, starting with `Sync/SyncEngine.swift` and `Sync/Mutation.swift`.
 ## Versions
 
 The project follows [semantic versioning](https://semver.org). Every release is tagged (`v0.1.0`) and described in
-the [changelog](CHANGELOG.md). Until 1.0, minor versions may change behaviour.
+the [changelog](CHANGELOG.md). Since 1.0, a minor version (1.1) adds or changes features and a patch version (1.0.1)
+only fixes what's broken.
 
 ## Acknowledgements
 
