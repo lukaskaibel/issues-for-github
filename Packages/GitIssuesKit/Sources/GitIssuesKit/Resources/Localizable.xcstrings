@@ -23546,7 +23546,7 @@
       }
     },
     "formatBold" : {
-      "comment" : "Format menu (Mac, iPad with a keyboard), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: makes the selected text bold.",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: makes the selected text bold, or takes the bold off text that has it. Also shown, tinted, at the left of the bar while the caret is in bold text, where a tap takes the bold off.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23606,13 +23606,13 @@
       }
     },
     "formatBulletedList" : {
-      "comment" : "Format menu, Format panel and bar above the keyboard: turns the lines into a list with bullets (Markdown -).",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad): turns the lines into a list with bullets (Markdown -), or back. Also the name of the ⇧⌘7 shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aufzählung"
+            "value" : "Aufzählungsliste"
           }
         },
         "en" : {
@@ -23665,8 +23665,68 @@
         }
       }
     },
+    "formatCheckbox" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that ticks or unticks the checkbox of the checklist item the caret is in. VoiceOver reads 'Checked' or 'Unchecked' after it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontrollkästchen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checkbox"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Casilla"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Case à cocher"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "チェックボックス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "체크상자"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caixa de seleção"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Флажок"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复选框"
+          }
+        }
+      }
+    },
     "formatChecklist" : {
-      "comment" : "Format menu (Mac, iPad with a keyboard), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: turns the line into a checklist item (a task with a checkbox).",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: turns the line into a checklist item (a task with a checkbox), or back. Also the name of the ⇧⌘L shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23726,7 +23786,7 @@
       }
     },
     "formatCode" : {
-      "comment" : "Format menu (Mac, iPad with a keyboard), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: formats the selected text as code (program code, in a monospaced font).",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: formats the selected text as code (program code, in a monospaced font), or back. Also shown, tinted, at the left of the bar while the caret is in code. Also the name of the ⌘E shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23846,7 +23906,7 @@
       }
     },
     "formatIndent" : {
-      "comment" : "Format menu, Format panel and bar above the keyboard: moves the list items one level in, under the item above (also the Tab key).",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad): moves the list items one level in, under the item above (also the Tab key). Also shown at the left of the bar while the caret is in a list item that can move in.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23906,7 +23966,7 @@
       }
     },
     "formatItalic" : {
-      "comment" : "Format menu (Mac, iPad with a keyboard), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: makes the selected text italic.",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: makes the selected text italic, or takes the italics off text that has them. Also shown, tinted, at the left of the bar while the caret is in italic text, where a tap takes the italics off.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -24086,7 +24146,7 @@
       }
     },
     "formatNumberedList" : {
-      "comment" : "Format menu, Format panel and bar above the keyboard: turns the lines into a numbered list (Markdown 1.).",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad): turns the lines into a numbered list (Markdown 1.), or back. Also the name of the ⇧⌘9 shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -24145,8 +24205,68 @@
         }
       }
     },
+    "formatOpenLink" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that opens the link the caret is on in the browser.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Link"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir enlace"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir le lien"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リンクを開く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "링크 열기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir link"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыть ссылку"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开链接"
+          }
+        }
+      }
+    },
     "formatOutdent" : {
-      "comment" : "Format menu, Format panel and bar above the keyboard: moves the list items one level out (also Shift-Tab).",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad): moves the list items one level out (also Shift-Tab). Also shown at the left of the bar while the caret is in a nested list item.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -24266,7 +24386,7 @@
       }
     },
     "formatStrikethrough" : {
-      "comment" : "Format menu, Format panel and bar above the keyboard: strikes the selected text through (Markdown ~~).",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad): strikes the selected text through (Markdown ~~), or back. Also shown, tinted, at the left of the bar while the caret is in struck-through text. Also the name of the ⇧⌘X shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

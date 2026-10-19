@@ -66,19 +66,36 @@ shot() {
   send "overlay none" "appearance $appearance" "window $width $height onscreen" "select Git Issues" "mode board"
   sleep 1
   for command in "$@"; do send "$command"; sleep 0.6; done
-  front
-  sleep 1.2
-  "$work/capture" shot "$pid" "$work/$name.png" || { echo "No picture of $name. Is the screen locked?" >&2; exit 1; }
+  local code
+  for _ in 1 2 3 4; do
+    front
+    sleep 1.2
+    if "$work/capture" shot "$pid" "$work/$name.png"; then code=0; break; else code=$?; fi
+    # 3: the window was drawn inactive, as when another app came to the front meanwhile.
+    [ "$code" = 3 ] || break
+  done
+  case $code in
+    0) ;;
+    3) echo "The window stayed inactive for $name." >&2; exit 1 ;;
+    *) echo "No picture of $name. Is the screen locked?" >&2; exit 1 ;;
+  esac
   mkdir -p "$out"
   swift Tools/store-frame.swift "$work/$name.png" "$out/$name.png" "$appearance" live
   echo "$out/$name.png"
 }
 
 echo "Taking screenshots…"
+# The names keep the store's order: planning right after the board, light and dark taking turns.
+rm -f "$out"/*.png
 shot 1-board light 1282 760
-shot 2-issue dark 1282 760 "open 9"
-shot 3-list light 1282 760 "mode list" "scrolllist 0"
-shot 4-palette dark 1282 760 "focus 9" "overlay palette"
-shot 5-selection light 1282 760 "mode list" "scrolllist 0" "pick 7 8 15"
-shot 6-peek dark 1282 760 "mode list" "scrolllist 0" "peek 16"
-shot 7-inbox light 1282 760 "select inbox" "entry 25"
+# The roadmap's timeline: the sample's epics over the milestones 0.3, 0.4 and 1.0.
+shot 2-roadmap dark 1282 760 "select roadmap" "roadmap timeline" "roadmap months"
+# The view "This Week", with its filter and its cycle over the board.
+shot 3-views light 1282 760 "view This Week"
+send "view Board"
+shot 4-issue dark 1282 760 "open 9"
+shot 5-list light 1282 760 "mode list" "scrolllist 0"
+shot 6-palette dark 1282 760 "focus 9" "overlay palette"
+shot 7-selection light 1282 760 "mode list" "scrolllist 0" "pick 7 8 15"
+shot 8-peek dark 1282 760 "mode list" "scrolllist 0" "peek 16"
+shot 9-inbox light 1282 760 "select inbox" "entry 25"

@@ -47,9 +47,63 @@ enum WritingTool: CaseIterable, Identifiable {
     }
 }
 
+/// A button on the left of the bar for where the caret is: a style it is in (on, tinted; a tap takes it off), the
+/// checkbox of its line, moving its list item out or in, and opening the link it is on.
+enum CaretTool: CaseIterable, Identifiable {
+    case bold, italic, strikethrough, code, checkbox, outdent, indent, openLink
+
+    var id: Self { self }
+
+    var style: MarkdownSyntax.Style? {
+        switch self {
+        case .bold: .bold
+        case .italic: .italic
+        case .strikethrough: .strikethrough
+        case .code: .code
+        default: nil
+        }
+    }
+
+    var name: String {
+        switch self {
+        case .bold: String(localized: .formatBold)
+        case .italic: String(localized: .formatItalic)
+        case .strikethrough: String(localized: .formatStrikethrough)
+        case .code: String(localized: .formatCode)
+        case .checkbox: String(localized: .formatCheckbox)
+        case .outdent: String(localized: .formatOutdent)
+        case .indent: String(localized: .formatIndent)
+        case .openLink: String(localized: .formatOpenLink)
+        }
+    }
+
+    func symbol(checked: Bool) -> String {
+        switch self {
+        case .bold: "bold"
+        case .italic: "italic"
+        case .strikethrough: "strikethrough"
+        case .code: "chevron.left.forwardslash.chevron.right"
+        case .checkbox: checked ? "checkmark.square.fill" : "square"
+        case .outdent: "decrease.indent"
+        case .indent: "increase.indent"
+        case .openLink: "arrow.up.right.square"
+        }
+    }
+
+    /// The buttons for a place in the text, in the order they stand in.
+    static func tools(for context: MarkdownEditing.Context) -> [CaretTool] {
+        var tools = allCases.filter { $0.style.map(context.styles.contains) ?? false }
+        if context.isChecklist { tools.append(.checkbox) }
+        if context.canOutdent { tools.append(.outdent) }
+        if context.canIndent { tools.append(.indent) }
+        if context.link != nil { tools.append(.openLink) }
+        return tools
+    }
+}
+
 /// The bar above the keyboard while you write, as in Notebook and Notes: the tools float over the page in a capsule
 /// of glass, a little above the keyboard, and the ones that don't fit wait on the next page. Done, next to it, is
-/// always in reach.
+/// always in reach. On the left, buttons for where the caret is come and go in a capsule of their own.
 @MainActor
 final class WritingBar: UIView {
     /// Room above the capsule, the capsule, and the gap between it and the keyboard.
@@ -60,6 +114,9 @@ final class WritingBar: UIView {
     /// About a fingertip per tool; a page holds as many as fit.
     static let toolWidth: CGFloat = 52
     static let spacing: CGFloat = 8
+    /// The buttons for where the caret is, a little narrower, with a margin inside their capsule.
+    static let caretToolWidth: CGFloat = 40
+    static let caretMargin: CGFloat = 5
 
     /// The capsule spans the screen on an iPhone, less its margins and Done; on a wider screen it stops at about ten
     /// tools.
@@ -99,10 +156,28 @@ struct WritingBarView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let width = WritingBar.barWidth(for: proxy.size.width)
+            let full = WritingBar.barWidth(for: proxy.size.width)
+            let context = editor.caretContext.context
+            // As many as leave the tools room for two of theirs.
+            let room = Int((full - 2 * WritingBar.toolWidth - WritingBar.spacing - 2 * WritingBar.caretMargin) / WritingBar.caretToolWidth)
+            let caretTools = Array(CaretTool.tools(for: context).prefix(max(0, room)))
+            let caretWidth = caretTools.isEmpty ? 0 : CGFloat(caretTools.count) * WritingBar.caretToolWidth + 2 * WritingBar.caretMargin
+            let width = full - (caretTools.isEmpty ? 0 : caretWidth + WritingBar.spacing)
             let pages = Self.pages(of: WritingTool.allCases, width: width)
             let perPage = pages.first?.count ?? 1
             HStack(spacing: WritingBar.spacing) {
+                if !caretTools.isEmpty {
+                    HStack(spacing: 0) {
+                        ForEach(caretTools) { tool in
+                            caretButton(tool, checked: context.isChecked)
+                                .transition(.scale(scale: 0.4).combined(with: .opacity))
+                        }
+                    }
+                    .padding(.horizontal, WritingBar.caretMargin)
+                    .frame(width: caretWidth, height: WritingBar.barHeight)
+                    .glassEffect(.regular.interactive(), in: .capsule)
+                    .transition(.scale(scale: 0.4, anchor: .leading).combined(with: .opacity))
+                }
                 ScrollView(.horizontal) {
                     HStack(spacing: 0) {
                         ForEach(pages.indices, id: \.self) { index in
@@ -147,6 +222,40 @@ struct WritingBarView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.top, WritingBar.topGap)
+            .animation(UIAccessibility.isReduceMotionEnabled ? nil : .spring(duration: Theme.keyboardBarSpring.duration, bounce: Theme.keyboardBarSpring.bounce), value: caretTools)
+            // Fewer pages when the buttons for the caret take room: stay on one that is there.
+            .onChange(of: pages.count) { _, count in
+                if let current = page, current >= count { page = max(0, count - 1) }
+            }
+        }
+    }
+
+    /// A button for where the caret is. A style the caret is in shows as on, tinted.
+    private func caretButton(_ tool: CaretTool, checked: Bool) -> some View {
+        let isOn = tool.style != nil || (tool == .checkbox && checked)
+        return Button { perform(tool) } label: {
+            Image(systemName: tool.symbol(checked: checked))
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(isOn ? Theme.accent : Color.primary)
+                .frame(width: WritingBar.caretToolWidth - 4, height: 36)
+                .background { if tool.style != nil { Capsule().fill(Theme.accent.opacity(0.16)) } }
+                .frame(width: WritingBar.caretToolWidth, height: WritingBar.barHeight)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(tool.name)
+        .accessibilityAddTraits(tool.style != nil ? .isSelected : [])
+        .accessibilityValue(tool == .checkbox ? Text(checked ? .checkboxChecked : .checkboxUnchecked) : Text(verbatim: ""))
+    }
+
+    private func perform(_ tool: CaretTool) {
+        if let style = tool.style { return editor.toggle(style) }
+        switch tool {
+        case .checkbox: editor.toggleChecked()
+        case .outdent: editor.indent(by: -1)
+        case .indent: editor.indent(by: 1)
+        case .openLink: if let link = editor.caretContext.context.link { editor.openLink(link) }
+        default: break
         }
     }
 

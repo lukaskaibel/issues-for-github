@@ -5,12 +5,14 @@ import AppKit
 typealias PlatformColor = NSColor
 typealias PlatformImage = NSImage
 typealias PlatformFont = NSFont
+typealias PlatformView = NSView
 #else
 import UIKit
 
 typealias PlatformColor = UIColor
 typealias PlatformImage = UIImage
 typealias PlatformFont = UIFont
+typealias PlatformView = UIView
 #endif
 
 /// The few things AppKit and UIKit spell differently, so shared views can stay free of `#if`.
@@ -91,6 +93,40 @@ extension Image {
         self.init(nsImage: platformImage)
         #else
         self.init(uiImage: platformImage)
+        #endif
+    }
+}
+
+extension PlatformFont {
+    /// The font with italics added, keeping its size and weight.
+    func italicized() -> PlatformFont {
+        #if os(macOS)
+        NSFontManager.shared.convert(self, toHaveTrait: .italicFontMask)
+        #else
+        fontDescriptor.withSymbolicTraits(fontDescriptor.symbolicTraits.union(.traitItalic))
+            .map { UIFont(descriptor: $0, size: pointSize) } ?? self
+        #endif
+    }
+
+    /// The system font at another weight, keeping the size and the italics.
+    func withWeight(_ weight: PlatformFont.Weight) -> PlatformFont {
+        let font = PlatformFont.systemFont(ofSize: pointSize, weight: weight)
+        return isItalic ? font.italicized() : font
+    }
+
+    var isItalic: Bool {
+        #if os(macOS)
+        fontDescriptor.symbolicTraits.contains(.italic)
+        #else
+        fontDescriptor.symbolicTraits.contains(.traitItalic)
+        #endif
+    }
+
+    var isMonospaced: Bool {
+        #if os(macOS)
+        fontDescriptor.symbolicTraits.contains(.monoSpace)
+        #else
+        fontDescriptor.symbolicTraits.contains(.traitMonoSpace)
         #endif
     }
 }

@@ -87,6 +87,10 @@ enum Theme {
     static let spring = Animation.spring(response: 0.3, dampingFraction: 0.82)
     static let quick = Animation.easeOut(duration: 0.14)
     static let overlay = Animation.spring(response: 0.26, dampingFraction: 0.86)
+    /// How long Markdown takes to change its look as you type: bold thickening, a heading growing, marks fading.
+    static let textStyleDuration: TimeInterval = 0.18
+    /// The buttons for where the caret is, coming and going in the bar above the keyboard (UIKit spring).
+    static let keyboardBarSpring: (duration: TimeInterval, bounce: CGFloat) = (0.32, 0.16)
 
     static let sidebarWidth: CGFloat = 220
     /// The Inbox's list beside the issue, as wide as Linear's.
@@ -199,9 +203,33 @@ extension View {
             glassEffect(.regular, in: shape)
         }
     }
+
+    /// A bar at the foot of a scrolling page, such as the comment field. The page scrolls up clear of it and, just
+    /// above it, blurs and fades into its ground, as under the toolbar: nothing shows through the bar's glass or in
+    /// the strip beneath it.
+    func pageFootBar(@ViewBuilder _ bar: () -> some View) -> some View {
+        // The system's soft edge alone leaves text legible under the bar (faint on the Mac, blurred on iPhone), so
+        // the page's own ground rises behind the bar too.
+        scrollEdgeEffectStyle(.soft, for: .bottom)
+            .safeAreaBar(edge: .bottom, spacing: 0) {
+                bar().background(alignment: .top) {
+                    VStack(spacing: 0) {
+                        LinearGradient(colors: [Theme.panel.opacity(0), Theme.panel], startPoint: .top, endPoint: .bottom)
+                            .frame(height: Theme.pageFootFade)
+                        Theme.panel
+                    }
+                    .padding(.top, -Theme.pageFootFade)
+                    .ignoresSafeArea(edges: .bottom)
+                    .allowsHitTesting(false)
+                }
+            }
+    }
 }
 
 extension Theme {
+    /// How far above a bar at the foot of a page the page starts to fade out.
+    static let pageFootFade: CGFloat = 24
+
     static var solidGlass: Bool {
         #if DEBUG
         UserDefaults.standard.bool(forKey: "debugSolidGlass")

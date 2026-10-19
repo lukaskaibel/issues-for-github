@@ -3,9 +3,12 @@ import Foundation
 /// Inline Markdown inside one line: emphasis by CommonMark's delimiter rules, code spans, links, images, maths,
 /// autolinks, footnote references, backslash escapes and the HTML GitHub allows (comments, `<img>`, other tags).
 enum InlineParser {
-    static func spans(in u: [UInt16], range: NSRange) -> [InlineSpan] {
+    /// `typing`: the text is being typed in, where a space before closing marks doesn't end the style yet. It is there
+    /// for a moment whenever a space is typed at the end of bold text, which would otherwise flicker off and on with
+    /// every word. Read, the text is what GitHub shows.
+    static func spans(in u: [UInt16], range: NSRange, typing: Bool = false) -> [InlineSpan] {
         guard range.length > 0 else { return [] }
-        var result = parse(u, range)
+        var result = parse(u, range, typing: typing)
         result.sort { $0.range.location < $1.range.location || ($0.range.location == $1.range.location && $0.range.length > $1.range.length) }
         return result
     }
@@ -19,7 +22,7 @@ enum InlineParser {
         let canClose: Bool
     }
 
-    private static func parse(_ u: [UInt16], _ range: NSRange) -> [InlineSpan] {
+    private static func parse(_ u: [UInt16], _ range: NSRange, typing: Bool) -> [InlineSpan] {
         var spans: [InlineSpan] = []
         var delimiters: [Delimiter] = []
         let end = range.upperBound
@@ -88,7 +91,7 @@ enum InlineParser {
                         markers: [NSRange(location: i, length: 1), NSRange(location: link.text.upperBound, length: link.end - link.text.upperBound)],
                         content: link.text
                     ))
-                    spans.append(contentsOf: parse(u, link.text))
+                    spans.append(contentsOf: parse(u, link.text, typing: typing))
                     i = link.end
                 } else {
                     i += 1
@@ -134,6 +137,9 @@ enum InlineParser {
                 if c == 95 {
                     canOpen = flanks.left && (!flanks.right || isPunctuation(before))
                     canClose = flanks.right && (!flanks.left || isPunctuation(after))
+                }
+                if typing, !canClose, before.map(isWhitespace) == true, after.map(isWhitespace) ?? true {
+                    canClose = true
                 }
                 // ~strike~ and ~~strike~~, as GitHub has both.
                 if c != 126 || run <= 2 {

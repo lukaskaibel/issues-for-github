@@ -27,7 +27,7 @@
   <img alt="Apple silicon" src="https://img.shields.io/badge/Apple%20silicon-native-111214">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-5B63D3"></a>
-  <a href="CHANGELOG.md"><img alt="Version 0.3.0" src="https://img.shields.io/badge/version-0.3.0-5B63D3"></a>
+  <a href="CHANGELOG.md"><img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-5B63D3"></a>
 </p>
 
 <p align="center">
@@ -46,14 +46,13 @@
   <img alt="Issues showing a GitHub Project as a board, with Backlog, Todo, In Progress and In Review columns; in In Progress, two sub-issues hang under their parent" src="Design/screenshots/hero-light.webp">
 </picture>
 
-> **New: Issues for iPhone and iPad.** The same app, built from the same project, with the same sync, offline
-> queue and actions: lists with swipes and the issue menu on iPhone, the board with drag and drop on iPad.
-> [See it below.](#iphone-and-ipad)
+> **New in 1.0: planning.** Milestones, epics and a roadmap, your project's views from GitHub, and a window built
+> like Mail and Notes. [See them below.](#milestones-epics-and-a-roadmap)
 
-> **Status: early.** Version 0.3.0 covers the daily work with issues on the Mac, iPhone and iPad: boards and lists,
-> the Inbox, due dates, sub-issues and blockers, in nine languages. The Mac app is
-> [in the App Store](https://apps.apple.com/app/id6819589759), and the iPhone and iPad app is on its way there. You can
-> also build it from source (five minutes, see below).
+> **Version 1.0** covers the daily work with issues and the planning around it, on the Mac, iPhone and iPad: boards,
+> lists and views, the Inbox, due dates, sub-issues and blockers, milestones, epics and a roadmap, in nine languages.
+> It is [in the App Store](https://apps.apple.com/app/id6819589759) for all three, free. You can also build it from
+> source (five minutes, see below).
 
 ## Why
 
@@ -101,19 +100,22 @@ so your team sees it there; GitHub's dates have no time of day, and the reminder
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/due-date-dark.webp">
-  <img alt="The due date picker: Today, Tomorrow, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
+  <img alt="The due date picker: Today, Tomorrow, Friday, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
 </picture>
 
 ### Issues that read well
 
-Descriptions are Markdown, edited in place: click and type. Sub-issues come with a progress bar, and the plus beside them adds a new one or an issue that exists already. What blocks the issue and
+Descriptions are Markdown, edited in place: click and type. It types like a notes app: `⌘B` turns bold on and off,
+Return continues a list and leaves bold text, `-` starts a bullet and `- []` a checkbox, and a style's marks are kept
+and deleted as a pair; a change of style eases in. Sub-issues come
+with a progress bar, and the plus beside them adds a new one or an issue that exists already. What blocks the issue and
 what it blocks are listed below; a blocked issue carries a red flag on its card. Comments sit below, with the field
 for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
 inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arrows in the toolbar.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">
-  <img alt="An issue with its description, six sub-issues of which four are done, the issue it blocks, two comments, and its properties" src="Design/screenshots/issue-light.webp">
+  <img alt="An issue with its description, six sub-issues of which four are done, the issue it blocks, and its properties in the inspector beside it" src="Design/screenshots/issue-light.webp">
 </picture>
 
 ### Markdown that reads as GitHub draws it
@@ -166,7 +168,7 @@ labels, `D` due date, `I` assign to me.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/new-issue-dark.webp">
-  <img alt="The new-issue dialog with a title typed in and buttons for status, priority, assignee and labels" src="Design/screenshots/new-issue-light.webp">
+  <img alt="The new-issue dialog with a title typed in and buttons for status, priority, assignee, labels, due date and milestone" src="Design/screenshots/new-issue-light.webp">
 </picture>
 
 ### A list, in light or dark
@@ -205,12 +207,10 @@ the milestones their unfinished issues are in, on a timeline: drag a bar onto an
 there with everything left to do, drag a milestone's diamond to change its day. When a milestone's day has come,
 **Complete** closes it on GitHub and moves what isn't done to the next one.
 
-<!-- The roadmap's picture comes with the next shared picture run (Tools/readme-images.sh):
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/roadmap-dark.webp">
-  <img alt="The roadmap of a board: five epics as bars on a timeline over the milestones 0.3, 0.4 and 1.0, with how many of each epic's issues are done" src="Design/screenshots/roadmap-light.webp">
+  <img alt="The roadmap of a board: five epics, four of them as bars on a timeline over the milestones 0.3, 0.4 and 1.0 with how many of their issues are done, and one under Later" src="Design/screenshots/roadmap-light.webp">
 </picture>
--->
 
 ### A project's views, in the sidebar
 
@@ -222,12 +222,10 @@ of the project, click a chip to change it. A changed filter stays yours until yo
 view for everyone; `⇧V` shows a view as board or list, by other columns or groups, or with the iteration on its cards.
 New views, renamed ones and deleted ones are GitHub's too, so a view looks the same on github.com.
 
-<!-- The views' picture comes with the next shared picture run (Tools/readme-images.sh):
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/views-dark.webp">
   <img alt="The sidebar with the project Git Issues at its top and its views Board, This Week, By Area, Bugs and Sync, Release Plan, Epics and Team under it; This Week open as a board, its filter Iteration is Current as a chip, and over the columns Cycle 4 with its dates, the days left, its progress and arrows to Cycle 3 and Cycle 5" src="Design/screenshots/views-light.webp">
 </picture>
--->
 
 What a view is for decides how it looks, read from how it is set up on GitHub. Grouped by parent issue, milestone or
 iteration, its groups show how far each is, and those with nothing under way start folded: a view of work packages
@@ -235,12 +233,10 @@ opens as an overview. Grouped by assignee, each person's bar is what they have o
 that cycle on top, with the days left and arrows to the one before and after. A roadmap view is a timeline of the
 issues' start and target dates, their iterations or their milestones.
 
-<!-- The timeline's picture comes with the next shared picture run (Tools/readme-images.sh):
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/timeline-dark.webp">
   <img alt="The view Release Plan as a timeline: its issues grouped by milestone, 0.3 with 4 of 15 done and a bar of its progress, each issue a bar across its cycle in the colour of its status, today as a line and the days of 0.3, 0.4 and 1.0 as diamonds over the months" src="Design/screenshots/timeline-light.webp">
 </picture>
--->
 
 ## iPhone and iPad
 
@@ -269,7 +265,8 @@ The interface uses the system's own parts.
   their progress or each person's load, and a view of one iteration has the cycle on top, as on the Mac.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
   place, the Markdown drawn as on GitHub while you write, with a bar above the keyboard as in Notes (its Aa opens the
-  Format panel); the properties are glass chips under the title, the sub-issues a checklist, the comments a conversation, and the
+  Format panel); on its left, buttons come in for what the caret is in: its style, which a tap takes off, the line's
+  checkbox, moving a list item in or out, and opening a link. The properties are glass chips under the title, the sub-issues a checklist, the comments a conversation, and the
   comment field stays at the bottom as in Messages. A project's board on iPad stands its columns on soft grey lanes,
   as on the Mac.
 - **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
@@ -313,8 +310,8 @@ The interface uses the system's own parts.
   by its header to move it; they are the project's Status field on GitHub. In the list, drag a section by its header
   to arrange the list your way (that order is a preference on your Mac and leaves GitHub alone).
 - **GitHub's Markdown, always drawn.** Headings, lists, checklists that tick, alerts, code in colour, tables, Mermaid
-  diagrams and maths, drawn natively in the app's type and colours while you write them: the Markdown shows only next
-  to the caret. In descriptions, comments, the comment field, new issues and milestones.
+  diagrams and maths, drawn natively in the app's type and colours while you write them, and typed as in a notes app:
+  the Markdown shows only next to the caret. In descriptions, comments, the comment field, new issues and milestones.
 - **Keyboard first.** Single keys change status, priority, assignee, labels and the due date. Back and forward work
   like a browser: ⌘[ and ⌘], the side buttons of a mouse, or a two-finger swipe.
 - **Due dates and reminders.** The day an issue is due, typed in a few words or picked in a month, and a notification
@@ -396,8 +393,8 @@ When you and someone else change the same issue:
 
 ## Getting started
 
-Issues for the Mac is [in the App Store](https://apps.apple.com/app/id6819589759), free; the iPhone and iPad app
-follows. To build it yourself instead:
+Issues is [in the App Store](https://apps.apple.com/app/id6819589759) for the Mac, iPhone and iPad, free. To build it
+yourself instead:
 
 ### Requirements
 
@@ -581,17 +578,19 @@ formula to edit its source, with the diagram or formula drawn under it as you ty
 again. The pencil after a link changes its address, and the button in the corner of a code block copies the code.
 `Esc` or `⌘↵` leaves the description, which saves it; it is also saved a moment after you stop typing.
 
-While writing a description, a comment or a new issue:
+While writing a description, a comment or a new issue (also on iPad with a keyboard):
 
 | Key | Action |
 | --- | --- |
-| `⌘B` `⌘I` `⇧⌘X` `⌘E` | Bold, italics, strikethrough, code |
+| `⌘B` `⌘I` `⇧⌘X` `⌘E` | Bold, italics, strikethrough, code: on, or off inside it. At the end of a style it leaves it, just behind it goes back in; at a caret in a word, the word |
 | `⌘L` | Link: the selected text, or a new one, and its address in a popover |
 | `⇧⌘T` `⇧⌘H` `⇧⌘J` `⇧⌘B` | Title, heading, subheading, body |
 | `⇧⌘L` `⇧⌘7` `⇧⌘9` `⌘'` | Checklist, bulleted list, numbered list, quote |
 | `⇧⌘U` | Tick or untick the checkbox |
-| `Return` | Continue the list; on an empty item, end it |
+| `Return` | Continues a list or quote; on an empty item ends it. At the end of bold text, leaves it for the next line |
 | `Tab` `⇧Tab`, or `⌥⌘]` `⌥⌘[` | Nest or un-nest a list item; in code, indent |
+| `-` at the start of a line | A bullet, with its space; `- []` makes a checkbox |
+| `Delete` | Behind a style, deletes its letters and keeps its marks until the last one; into a mark, takes the style off; into a list marker, the marker |
 | `*` `_` `` ` `` `~` with text selected | Put that mark around the selected words, line by line |
 
 On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. A parent takes the
@@ -640,6 +639,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap the status circle of a sub-issue | Pick its status; Open or Closed for one on none of your boards |
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place, drawn as on GitHub; the bar above the keyboard has Aa for the Format panel, a checklist, a link, undo and redo, and more formatting on its next page |
+| Tap a button on the left of the keyboard bar | Take off the style the caret is in, tick the line's checkbox, move a list item in or out, open the link |
 | Tap a checkbox, a link, a table or a diagram in a description | Tick it, open it, or edit its source |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
 | Tap the milestone chip of an issue | Put it into another milestone, or a new one |
@@ -658,7 +658,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 ## Not there yet
 
 Cycles of their own beyond a view of one iteration, linked pull requests, file uploads, real-time updates and
-notifications on screen for new Inbox entries are planned but not built. Also good to know in 0.3.0:
+notifications on screen for new Inbox entries are planned but not built. Also good to know in 1.0:
 
 - Pull requests and draft issues appear on the board and can be moved, but their text is read-only.
 - Images in descriptions of private repositories may not load, and pictures can't be pasted into a description: GitHub
@@ -745,7 +745,8 @@ the source, starting with `Sync/SyncEngine.swift` and `Sync/Mutation.swift`.
 ## Versions
 
 The project follows [semantic versioning](https://semver.org). Every release is tagged (`v0.1.0`) and described in
-the [changelog](CHANGELOG.md). Until 1.0, minor versions may change behaviour.
+the [changelog](CHANGELOG.md). Since 1.0, a minor version (1.1) adds or changes features and a patch version (1.0.1)
+only fixes what's broken.
 
 ## Acknowledgements
 

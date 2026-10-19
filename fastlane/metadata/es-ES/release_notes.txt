@@ -1,12 +1,18 @@
-Issues ahora habla nueve idiomas, tiene una Entrada y te avisa cuando vencen tus incidencias.
+La mayor actualización hasta ahora: planifica con hitos, épicas y una hoja de ruta, abre las vistas que tu proyecto tiene en GitHub y usa Issues en nueve idiomas, con un nuevo diseño al estilo de Mail y Notas.
 
+• Hitos: los próximos de un tablero, en la barra lateral, cada uno con sus incidencias, su progreso y el día en que vence. Completa uno y pasa lo que quede pendiente al siguiente
+• Épicas: incidencias cuyo trabajo se reparte en sus subincidencias. En el tablero, las incidencias de una épica aparecen juntas bajo su nombre; arrastra el nombre para moverlas todas
+• Una hoja de ruta: tus épicas como barras sobre los hitos, por meses o trimestres. Arrastra una barra para mover una épica y sus incidencias a otro hito
+• En la barra lateral, las vistas que tu proyecto tiene en GitHub, como tablero o lista y con los filtros como chips. Agrupada por hito o por incidencia principal, una vista muestra el progreso de cada grupo; filtrada por la iteración actual, los días que quedan; y con diseño de hoja de ruta, se ve como cronograma
+• Los hitos, las vistas y la hoja de ruta, también en el iPhone y el iPad; la hoja de ruta se muestra como lista en el iPhone y como cronograma en el iPad
+• Un nuevo diseño: en el Mac, una ventana en Liquid Glass como la de Mail y Notas, un inspector junto a la incidencia y menús contextuales con un campo de búsqueda. En el iPhone y el iPad, las propiedades de la incidencia en chips de Liquid Glass y los comentarios como una conversación
+• Un icono nuevo para la app, un tablón de planificación en siete materiales, y el icono que elijas para cada proyecto
 • Nueve idiomas: inglés, alemán, francés, español, portugués, ruso, japonés, coreano y chino, según el idioma de tu dispositivo
-• La Entrada: tus notificaciones de GitHub, con la incidencia justo al lado. Lee, archiva y pospón con una tecla o deslizando; github.com y tus otros dispositivos quedan al día. También aparecen ahí las incidencias que vencen hoy y las que tu propia cuenta te asignó en otro lugar, por ejemplo con gh o con un agente de programación
+• La Entrada: tus notificaciones de GitHub, con la incidencia justo al lado. Lee, archiva y pospón con una tecla o deslizando; github.com y tus otros dispositivos quedan al día
 • Fechas de vencimiento con recordatorios: elige un día o escríbelo, por ejemplo “en 3 días”, y ese día tu Mac, tu iPhone y tu iPad te lo recuerdan
-• Las subincidencias quedan justo debajo de su incidencia principal, en el tablero y en la lista, y se contraen con la flecha. Completa la última y la principal también se completa
-• Subincidencias y bloqueos: añade incidencias existentes como subincidencias, pon una incidencia bajo otra y marca qué bloquea a qué
-• Todas las incidencias, estén o no en un tablero: tus repositorios en la barra lateral, con las incidencias que no están en ningún tablero bajo “Sin proyecto”; un clic las pone en uno
+• Las subincidencias quedan justo debajo de su incidencia principal; completa la última y la principal también se completa. Marca qué bloquea a qué
+• Todas las incidencias, estén o no en un tablero: tus repositorios en la barra lateral, con las incidencias que no están en ningún tablero; un clic las pone en uno
 • Descripciones como en GitHub: tablas, listas de tareas que se marcan, código y diagramas Mermaid
-• Arrastra incidencias a otro lugar en la lista, no solo en el tablero
-• Menos clics: elegir un estado, una persona o una etiqueta cierra el menú; la casilla al principio de la fila permite elegir varios
-• Corregido: girar un iPad a horizontal podía cerrar la app
+• Escribir en Markdown como en una app de notas: la negrita, la cursiva y el código se activan y desactivan, las listas continúan al pasar a la línea siguiente, y en el iPhone y el iPad la barra sobre el teclado muestra botones según dónde esté el punto de inserción
+• Menos clics: elegir un estado, una persona o una etiqueta cierra el menú
+• Corregido: girar un iPad a horizontal podía cerrar la app, y en el Mac deslizar con dos dedos ya no vuelve atrás sin querer

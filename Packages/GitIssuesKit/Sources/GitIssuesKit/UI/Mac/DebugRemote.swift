@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "mdfocus", "mdcaret", "mddump", "mainmenu", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "mdfocus", "mdcaret", "mddump", "mainmenu", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -247,8 +247,11 @@ enum DebugRemote {
             // Puts the caret at the end of the open issue's description.
             if let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
                let editor = findDescription(in: window.contentView) {
-                window.makeFirstResponder(editor)
+                let focused = window.makeFirstResponder(editor)
                 editor.setSelectedRange(NSRange(location: (editor.string as NSString).length, length: 0))
+                log("focusdesc: \(focused ? "focused" : "refused") editable=\(editor.isEditable)")
+            } else {
+                log("focusdesc: no description")
             }
         case "mdfocus":
             // mdfocus <accessibility identifier>: the caret at the end of that Markdown editor (issue-description, comment-field).
@@ -341,7 +344,8 @@ enum DebugRemote {
             let responder = window?.firstResponder
             var description = responder.map { String(describing: type(of: $0)) } ?? "nil"
             if let text = responder as? NSTextView {
-                description += text.isFieldEditor ? " (single-line field, text: \"\(text.string)\")" : " (multi-line editor)"
+                description += text.isFieldEditor ? " (single-line field, text: \"\(text.string)\")"
+                    : " (multi-line editor, text: \(text.string.debugDescription), selection: \(text.selectedRange()))"
                 if let field = text.delegate as? NSView, let content = window?.contentView {
                     let frame = field.convert(field.bounds, to: content)
                     description += " at x=\(Int(frame.minX)) y=\(Int(content.bounds.height - frame.maxY)) w=\(Int(frame.width))"
@@ -427,6 +431,9 @@ enum DebugRemote {
             model.goBack()
         case "forward":
             model.goForward()
+        case "swipe":
+            // swipe <amount>: shows the arrow of a two-finger swipe that far, -1...1 (positive is back); 0 hides it.
+            if let amount = Double(argument) { model.swipeProgress = amount }
         case "fold":
             // fold <number>: folds the sub-issues under an issue in or out.
             if let item = item(argument, model) { model.toggleFolded(item) }

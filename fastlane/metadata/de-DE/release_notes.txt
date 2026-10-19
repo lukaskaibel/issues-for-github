@@ -1,12 +1,18 @@
-Issues spricht jetzt neun Sprachen, hat einen Eingang und erinnert dich, wenn Issues fällig sind.
+Das bisher größte Update: Plane mit Meilensteinen, Epics und einer Roadmap, öffne die Ansichten deines Projekts von GitHub und nutze Issues in neun Sprachen – in einem neuen Design, gebaut wie Mail und Notizen.
 
+• Meilensteine: die nächsten eines Boards in der Seitenleiste, jeweils mit ihren Issues, dem Fortschritt und dem Fälligkeitstag. Schließ einen ab und verschiebe, was übrig ist, in den nächsten
+• Epics: Issues, deren Arbeit in ihren Sub-Issues steckt. Auf dem Board stehen die Issues eines Epics unter seinem Namen beisammen; ziehst du den Namen, ziehen alle mit
+• Eine Roadmap: deine Epics als Balken über den Meilensteinen, nach Monaten oder Quartalen. Zieh einen Balken auf einen anderen Meilenstein, und das Epic kommt samt seinen Issues dorthin
+• Die Ansichten deines Projekts von GitHub in der Seitenleiste, als Board oder Liste, mit Filtern, die du mit einem Klick änderst. Nach Meilenstein oder übergeordnetem Issue gruppiert, zeigt eine Ansicht den Fortschritt jeder Gruppe, die der aktuellen Iteration ihre restlichen Tage; eine Roadmap-Ansicht ist eine Zeitleiste
+• Meilensteine, Ansichten und die Roadmap auch auf iPhone und iPad; die Roadmap ist auf dem iPhone eine Liste, auf dem iPad eine Zeitleiste
+• Neues Design: auf dem Mac das Fenster von Mail und Notizen in Liquid Glass, die Informationen zum Issue gleich daneben und Kontextmenüs mit Suchfeld. Auf iPhone und iPad zeigen Issues ihre Eigenschaften als Chips aus Glas und die Kommentare als Unterhaltung
+• Ein neues App-Symbol, eine Pinnwand in sieben Materialien zur Wahl, und ein eigenes Symbol für jedes Projekt
 • Neun Sprachen: Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Russisch, Japanisch, Koreanisch und Chinesisch, passend zur Sprache deines Geräts
-• Der Eingang: deine Mitteilungen von GitHub, mit dem Issue gleich daneben. Lesen, archivieren und zurückstellen per Taste oder Wischen; github.com und deine anderen Geräte sind auf demselben Stand. Heute fällige Issues erscheinen dort auch, ebenso Issues, die dir dein eigener Account anderswo zugewiesen hat, etwa mit gh oder einem Coding-Agenten
+• Der Eingang: deine Mitteilungen von GitHub, mit dem Issue gleich daneben. Lesen, archivieren und zurückstellen per Taste oder Wischen; github.com und deine anderen Geräte sind auf demselben Stand
 • Fälligkeitsdaten mit Erinnerung: Wähle einen Tag oder tippe ihn ein, etwa „in 3 Tagen“, und am Tag selbst erinnern dich Mac, iPhone und iPad
-• Sub-Issues hängen auf dem Board und in der Liste direkt unter ihrem übergeordneten Issue und lassen sich mit dem Pfeil einklappen. Erledigst du das letzte, ist auch das übergeordnete Issue erledigt
-• Sub-Issues und Blocker: vorhandene Issues als Sub-Issues hinzufügen, einem Issue ein übergeordnetes geben und festhalten, was was blockiert
+• Sub-Issues hängen direkt unter ihrem übergeordneten Issue; erledigst du das letzte, ist auch das übergeordnete erledigt. Dazu Blocker: Halte fest, was was blockiert
 • Jedes Issue, ob auf einem Board oder nicht: deine Repositories in der Seitenleiste, die Issues auf keinem Board unter „Kein Projekt“; ein Klick bringt sie auf eines
 • Beschreibungen wie auf GitHub: Tabellen, abhakbare Checklisten, Code und Mermaid-Diagramme
-• Issues lassen sich jetzt auch in der Liste an eine andere Stelle ziehen, nicht nur auf dem Board
-• Weniger Klicks: Ein Klick auf einen Status, eine Person oder ein Label schließt die Auswahl; mehrere wählst du mit dem Kästchen am Zeilenanfang
-• Behoben: Beim Drehen eines iPad ins Querformat konnte die App abstürzen
+• Markdown schreiben wie in einer Notizen-App: Fett, Kursiv und Code lassen sich ein- und ausschalten, Listen gehen in der nächsten Zeile weiter, und auf iPhone und iPad hat die Leiste über der Tastatur Tasten für die Stelle, an der die Einfügemarke steht
+• Weniger Klicks: Ein Klick auf einen Status, eine Person oder ein Label schließt die Auswahl
+• Behoben: Beim Drehen eines iPad ins Querformat konnte die App abstürzen, und auf dem Mac führt ein Wischen mit zwei Fingern nicht mehr versehentlich zurück

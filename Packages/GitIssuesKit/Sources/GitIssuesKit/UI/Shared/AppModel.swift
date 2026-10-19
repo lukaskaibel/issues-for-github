@@ -367,6 +367,8 @@ public final class AppModel {
     /// The app's main window, to tell it apart from popovers and the settings window.
     @ObservationIgnored weak var mainWindow: NSWindow?
     @ObservationIgnored var keyMonitorToken: Any?
+    /// The start of a two-finger swipe, held back until it is clear whether it goes back or forward or scrolls.
+    @ObservationIgnored var pendingSwipe: PendingSwipe?
     #endif
     /// Set while a board drag is in progress so keyboard shortcuts stay out of the way.
     var isDragging = false

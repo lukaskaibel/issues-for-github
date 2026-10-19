@@ -84,7 +84,7 @@ struct IssueScreen: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            .pageFootBar {
                 // While the description is edited, the keyboard bar is the only thing above the keyboard.
                 if item.kind != .draft, !editingDescription {
                     CommentComposer(item: item)
@@ -1343,17 +1343,20 @@ private struct MobileActivity: View {
     }
 }
 
-/// The comment field at the bottom of an issue, as in Messages: it grows while typing and sends with the arrow.
+/// The comment field at the bottom of an issue, as in Messages: it grows while typing and sends with the arrow
+/// inside it, which fills with the accent colour once there is something to send.
 private struct CommentComposer: View {
     @Environment(AppModel.self) private var model
     var item: Item
     @State private var draft = ""
     @State private var sent = 0
     @State private var height = EditorStyle.lineHeight
+    /// The round send button, 6 points inside the field's corner, as on the Mac.
+    @ScaledMetric(relativeTo: .body) private var buttonSize: CGFloat = 32
 
     var body: some View {
         let empty = draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        HStack(alignment: .bottom, spacing: 10) {
+        HStack(alignment: .bottom, spacing: 0) {
             // Markdown as it will look on GitHub, growing with the text up to six lines and then scrolling. ⌘↵
             // sends, as on the Mac; Return alone starts a new line.
             ScrollView {
@@ -1371,21 +1374,25 @@ private struct CommentComposer: View {
             .scrollIndicators(.never)
             .scrollBounceBehavior(.basedOnSize)
             .frame(height: min(max(height, EditorStyle.lineHeight), EditorStyle.lineHeight * 6))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22))
+            .padding(.leading, 16)
+            .padding(.vertical, 11)
             Button(action: send) {
                 Image(systemName: "arrow.up")
-                    .font(.body.weight(.semibold))
-                    .frame(width: 44, height: 44)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(empty ? Theme.textTertiary : Color.white)
+                    .frame(width: buttonSize, height: buttonSize)
+                    .background(Circle().fill(empty ? Theme.field : Theme.accentFill))
+                    // The whole corner of the field takes the tap, not just the circle.
+                    .frame(width: buttonSize + 12, height: buttonSize + 12)
+                    .contentShape(Rectangle())
             }
-            .buttonStyle(.glassProminent)
-            .buttonBorderShape(.circle)
+            .buttonStyle(PlainPressStyle())
             .disabled(empty)
             .keyboardShortcut(.return, modifiers: .command)
             .accessibilityLabel(.sendCommentButton)
             .accessibilityIdentifier("comment-send")
         }
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22))
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 8)

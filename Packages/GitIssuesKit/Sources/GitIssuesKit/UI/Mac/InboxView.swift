@@ -511,7 +511,7 @@ private struct InboxIssue: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollIndicators(.never)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            .pageFootBar {
                 if item.kind != .draft {
                     CommentComposer(item: item)
                         .frame(maxWidth: 680)

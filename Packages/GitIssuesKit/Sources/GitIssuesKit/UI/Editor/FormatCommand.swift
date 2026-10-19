@@ -86,19 +86,17 @@ extension EditorController {
         }
     }
 
-    /// Whether the caret or the selection is in text with this formatting.
+    /// Whether the caret or the selection is in text with this formatting, as the typing rules see it: what shows as
+    /// on is what a press takes off.
     func isActive(_ command: FormatCommand) -> Bool {
-        guard !document.lines.isEmpty else { return false }
-        let selection = self.selection
-        let line = document.lines[document.lineIndex(containing: selection.location)]
-        let format: InlineFormat
+        let style: MarkdownSyntax.Style
         switch command {
-        case .bold: format = .bold
-        case .italic: format = .italic
-        case .strikethrough: format = .strikethrough
-        case .code: format = .code
+        case .bold: style = .bold
+        case .italic: style = .italic
+        case .strikethrough: style = .strikethrough
+        case .code: style = .code
         default: return currentLineFormat == command
         }
-        return line.spans.contains { format.matches($0.kind) && $0.range.location <= selection.location && $0.range.upperBound >= selection.upperBound }
+        return MarkdownEditing.context(in: markdownState).styles.contains(style)
     }
 }

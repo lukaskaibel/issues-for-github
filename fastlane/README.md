@@ -49,6 +49,16 @@ Builds the Mac, iPhone and iPad apps and uploads them to TestFlight
 
 token_only:true builds them without GITHUB_CLIENT_ID
 
+### submit
+
+```sh
+[bundle exec] fastlane submit
+```
+
+Submits the newest uploaded builds of the Mac, iPhone and iPad apps for review, with texts and screenshots
+
+Builds nothing: run it after `beta` once the TestFlight builds are tested. automatic_release:true as for release
+
 ### release
 
 ```sh
@@ -96,6 +106,14 @@ Builds the iPhone and iPad app for the App Store, signed, without uploading it
 
 Builds the iPhone and iPad app and uploads it to TestFlight
 
+### ios submit
+
+```sh
+[bundle exec] fastlane ios submit
+```
+
+Submits the newest uploaded build of the iPhone and iPad app for review, with texts and screenshots
+
 ### ios release
 
 ```sh
@@ -140,6 +158,14 @@ Builds the Mac app for the App Store, signed, without uploading it
 ```
 
 Builds the Mac app and uploads it to TestFlight
+
+### mac submit
+
+```sh
+[bundle exec] fastlane mac submit
+```
+
+Submits the newest uploaded build of the Mac app for review, with texts and screenshots
 
 ### mac release
 

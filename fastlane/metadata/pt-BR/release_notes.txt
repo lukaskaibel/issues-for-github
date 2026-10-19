@@ -1,12 +1,18 @@
-O Issues agora fala nove idiomas, tem uma Entrada e lembra você quando as issues vencem.
+A maior atualização até agora: planeje com marcos, épicos e um roteiro, abra as visualizações que seu projeto tem no GitHub e use o Issues em nove idiomas, com um novo visual no estilo do Mail e do Notas.
 
+• Marcos: os próximos de um quadro, na barra lateral, cada um com suas issues, quanto já está pronto e o dia em que vence. Conclua um e mova o que sobrou para o próximo
+• Épicos: issues cujo trabalho se divide em sub-issues. No quadro, as issues de um épico ficam juntas sob o nome dele; arraste o nome para mover todas
+• Um roteiro: seus épicos como barras sobre os marcos, por mês ou trimestre. Arraste uma barra para mover um épico e suas issues para outro marco
+• Na barra lateral, as visualizações do seu projeto no GitHub, em quadro ou lista, com os filtros em chips. Agrupada por marco ou por issue principal, uma visualização mostra quanto cada grupo já avançou; a da iteração atual mostra quantos dias faltam; uma visualização de roteiro aparece como linha do tempo
+• Marcos, visualizações e o roteiro também no iPhone e no iPad; o roteiro aparece como lista no iPhone e como linha do tempo no iPad
+• Um novo visual: no Mac, uma janela em Liquid Glass como a do Mail e do Notas, um inspetor com as propriedades ao lado da issue e menus do botão direito com um campo de busca. No iPhone e no iPad, issues com as propriedades em chips de vidro e os comentários como uma conversa
+• Um novo ícone do app, um mural de planejamento em sete materiais, e um ícone à sua escolha para cada projeto
 • Nove idiomas: inglês, alemão, francês, espanhol, português, russo, japonês, coreano e chinês, seguindo o idioma do seu dispositivo
-• A Entrada: suas notificações do GitHub, com a issue logo ao lado. Leia, arquive e adie com uma tecla ou deslizando o dedo; github.com e seus outros dispositivos ficam em sincronia. As issues que vencem hoje também aparecem ali, assim como as que sua própria conta atribuiu a você em outro lugar, por exemplo com o gh ou um agente de programação
+• A Entrada: suas notificações do GitHub, com a issue logo ao lado. Leia, arquive e adie com uma tecla ou deslizando o dedo; github.com e seus outros dispositivos ficam em sincronia
 • Prazos com lembretes: escolha um dia ou digite, como “em 3 dias”, e no dia o seu Mac, iPhone e iPad lembram você
-• As sub-issues ficam logo abaixo da issue principal, no quadro e na lista, e se recolhem com a seta. Conclua a última e a issue principal também é concluída
-• Sub-issues e bloqueios: adicione issues existentes como sub-issues, coloque uma issue sob outra e marque o que bloqueia o quê
-• Todas as issues, estejam ou não em um quadro: seus repositórios na barra lateral, com as issues que não estão em nenhum quadro sob “Sem projeto”; um clique as coloca em um
+• As sub-issues ficam logo abaixo da issue principal; conclua a última e a issue principal também é concluída. Marque o que bloqueia o quê
+• Todas as issues, estejam ou não em um quadro: seus repositórios na barra lateral, com as issues que não estão em nenhum quadro; um clique as coloca em um
 • Descrições exibidas como no GitHub: tabelas, checklists que você pode marcar, código e diagramas Mermaid
-• Arraste issues para outro lugar na lista, não só no quadro
-• Menos cliques: escolher um status, uma pessoa ou uma etiqueta fecha o menu; a caixa de seleção no início da linha permite escolher vários
-• Corrigido: girar um iPad para a horizontal podia fechar o app
+• Escrever em Markdown como em um app de notas: o negrito, o itálico e o código se ativam e se desativam, as listas continuam na próxima linha, e no iPhone e no iPad a barra acima do teclado mostra botões para o trecho onde está o ponto de inserção
+• Menos cliques: escolher um status, uma pessoa ou uma etiqueta fecha o menu
+• Corrigido: girar um iPad para a horizontal podia fechar o app, e no Mac deslizar com dois dedos não volta mais para a tela anterior por engano

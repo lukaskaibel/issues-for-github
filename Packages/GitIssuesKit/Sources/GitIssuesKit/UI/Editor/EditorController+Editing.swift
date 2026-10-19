@@ -5,7 +5,9 @@ import UIKit
 #endif
 
 /// Typing as in Notebook: lists continue on Return and end on an empty item, Tab nests them, Backspace at the start of
-/// an item takes its bullet away, and the formatting shortcuts wrap Markdown around the selection.
+/// an item takes its bullet away. Where Notebook has no rule of its own, the typing rules of `MarkdownEditing` take
+/// over: styles turn on and off at the caret, a style's marks come and go as a pair, Return leaves a style at its end,
+/// and `-` starts a bullet.
 extension EditorController {
     // MARK: - Changing text
 
@@ -46,6 +48,24 @@ extension EditorController {
         }
 
         switch line.kind {
+        case .code:
+            let leading = text.substring(with: line.range).prefix { $0 == " " || $0 == "\t" }
+            replace(selection, with: "\n" + leading, select: NSRange(location: selection.location + 1 + (String(leading) as NSString).length, length: 0))
+            return true
+        case .fence, .math, .mathDelimiter, .tableHeader, .tableDelimiter, .tableRow, .comment:
+            return false
+        default:
+            break
+        }
+
+        // Return leaves a style at its end and splits one in its middle, continues a list or quote with the next
+        // marker, and ends it on an empty item.
+        if perform(MarkdownEditing.insertNewline) {
+            if case .listItem(let item) = line.kind, item.isOrdered { renumberList(after: self.selection.location) }
+            return true
+        }
+
+        switch line.kind {
         case .listItem(let item):
             let content = text.substring(with: line.content).trimmingCharacters(in: .whitespaces)
             if content.isEmpty, selection.length == 0 {
@@ -70,10 +90,6 @@ extension EditorController {
             }
             let prefixText = text.substring(with: prefix)
             replace(selection, with: "\n" + prefixText, select: NSRange(location: selection.location + 1 + (prefixText as NSString).length, length: 0))
-            return true
-        case .code:
-            let leading = text.substring(with: line.range).prefix { $0 == " " || $0 == "\t" }
-            replace(selection, with: "\n" + leading, select: NSRange(location: selection.location + 1 + (String(leading) as NSString).length, length: 0))
             return true
         default:
             return false
@@ -134,7 +150,10 @@ extension EditorController {
 
     func deleteBackward() -> Bool {
         let selection = self.selection
-        guard selection.length == 0, selection.location > 0, !document.lines.isEmpty else { return false }
+        guard !document.lines.isEmpty, !isComposing else { return false }
+        // A selection that holds one of a style's marks takes the other one too.
+        guard selection.length == 0 else { return perform(MarkdownEditing.deleteBackward) }
+        guard selection.location > 0 else { return false }
         let location = selection.location
         let index = document.lineIndex(containing: location)
         let line = document.lines[index]
@@ -155,15 +174,17 @@ extension EditorController {
             case .listItem(let item):
                 if item.level > 0, item.indent > 0 { return indent(by: -1) }
                 replace(item.prefix, with: "", select: NSRange(location: item.prefix.location, length: 0))
+                return true
             case .quote(_, let prefix):
                 replace(prefix, with: "", select: NSRange(location: prefix.location, length: 0))
+                return true
             case .heading(_, let marker):
                 // At the start of a heading's text: it becomes body text, as in Notes.
                 replace(marker, with: "", select: NSRange(location: marker.location, length: 0))
+                return true
             default:
-                return false
+                break
             }
-            return true
         }
 
         // Around a link the address is hidden: deleting takes the link's text, never its punctuation.
@@ -196,12 +217,15 @@ extension EditorController {
                 return true
             }
         }
-        return false
+        // Behind a style's closing marks its last letter goes and the marks stay; into a mark, both go.
+        return perform(MarkdownEditing.deleteBackward)
     }
 
     func deleteForward() -> Bool {
         let selection = self.selection
-        guard selection.length == 0, selection.location < storage.length, !document.lines.isEmpty else { return false }
+        guard !document.lines.isEmpty, !isComposing else { return false }
+        guard selection.length == 0 else { return perform(MarkdownEditing.deleteForward) }
+        guard selection.location < storage.length else { return false }
         let line = document.lines[document.lineIndex(containing: selection.location)]
         if let span = line.spans.first(where: { isAtomic($0) && $0.range.location == selection.location }) {
             replace(span.range, with: "", select: NSRange(location: span.range.location, length: 0))
@@ -217,7 +241,7 @@ extension EditorController {
             replace(NSRange(location: link.range.upperBound, length: 1), with: "", select: NSRange(location: link.content.upperBound, length: 0))
             return true
         }
-        return false
+        return perform(MarkdownEditing.deleteForward)
     }
 
     // MARK: - Tab
@@ -315,8 +339,9 @@ extension EditorController {
     // MARK: - Typing
 
     func shouldInsert(_ replacement: String, in range: NSRange) -> Bool {
-        guard !isPerformingEdit else { return true }
+        guard !isPerformingEdit, !isComposing else { return true }
         let text = nsText
+        let selection = self.selection
 
         // Typing a marker with text selected wraps it.
         if range.length > 0, ["*", "_", "`", "~"].contains(replacement), !text.substring(with: range).contains("\n"), wrap(range, in: replacement) {
@@ -334,6 +359,15 @@ extension EditorController {
                 return false
             }
         }
+        // A selection deleted (as iOS sends it): a style's mark goes with its pair.
+        if replacement.isEmpty, range.length > 0, range == selection {
+            return !perform(MarkdownEditing.deleteBackward)
+        }
+        // "-" at the start of a line makes a bullet with its space, "- []" a checkbox, and a closing mark typed where
+        // the same one is steps over it.
+        if range.length == 0, selection == range, (replacement as NSString).length == 1 {
+            return !perform { MarkdownEditing.insert(replacement, in: $0) }
+        }
         return true
     }
 
@@ -346,65 +380,6 @@ extension EditorController {
     }
 
     // MARK: - Formatting
-
-    enum InlineFormat {
-        case bold, italic, code, strikethrough
-
-        var marker: String {
-            switch self {
-            case .bold: "**"
-            case .italic: "_"
-            case .code: "`"
-            case .strikethrough: "~~"
-            }
-        }
-
-        func matches(_ kind: InlineSpan.Kind) -> Bool {
-            switch (self, kind) {
-            case (.bold, .strong), (.italic, .emphasis), (.code, .code), (.strikethrough, .strikethrough): true
-            default: false
-            }
-        }
-    }
-
-    /// ⌘B and friends: takes the formatting off when the selection (or the caret) is in it, puts it on otherwise.
-    func toggle(_ format: InlineFormat) {
-        let selection = self.selection
-        guard !document.lines.isEmpty else { return }
-        // Words on several lines that all have the format lose it, each line's.
-        let pieces = wordRanges(in: selection)
-        if pieces.count > 1 {
-            let spans = pieces.compactMap { piece in
-                document.lines[document.lineIndex(containing: piece.location)].spans.first {
-                    format.matches($0.kind) && $0.range.location <= piece.location && $0.range.upperBound >= piece.upperBound
-                }
-            }
-            if spans.count == pieces.count, let start = spans.first?.range.location, let end = spans.last?.range.upperBound {
-                var result = ""
-                var location = start
-                for span in spans {
-                    result += nsText.substring(with: NSRange(location: location, length: span.range.location - location)) + nsText.substring(with: span.content)
-                    location = span.range.upperBound
-                }
-                replace(NSRange(location: start, length: end - start), with: result, select: NSRange(location: start, length: (result as NSString).length))
-                return
-            }
-        }
-        let line = document.lines[document.lineIndex(containing: selection.location)]
-        if let span = line.spans.first(where: { format.matches($0.kind) && $0.range.location <= selection.location && $0.range.upperBound >= selection.upperBound }) {
-            let content = nsText.substring(with: span.content)
-            let caret = selection.location - (span.content.location - span.range.location)
-            replace(span.range, with: content, select: NSRange(location: max(span.range.location, caret), length: selection.length > 0 ? (content as NSString).length : 0))
-            return
-        }
-        let marker = format.marker
-        let markerLength = (marker as NSString).length
-        if selection.length == 0 {
-            replace(selection, with: marker + marker, select: NSRange(location: selection.location + markerLength, length: 0))
-            return
-        }
-        wrap(selection, in: marker)
-    }
 
     /// Puts a marker around the selected words of each line the selection touches. A line's own punctuation
     /// (`- [ ] `, `## `, `> `) and the spaces around the words stay outside, or GitHub would no longer see a list, a

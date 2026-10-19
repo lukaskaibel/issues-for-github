@@ -1,12 +1,18 @@
-Issues parle désormais neuf langues, a une Réception et vous rappelle les tickets qui arrivent à échéance.
+La mise à jour la plus importante à ce jour : planifiez avec des jalons, des epics et une feuille de route, retrouvez les vues GitHub de votre projet et utilisez Issues en neuf langues, avec une nouvelle interface conçue comme Mail et Notes.
 
+• Jalons : les prochains jalons d’un tableau dans la barre latérale, chacun avec ses tickets, son avancement et son échéance. Terminez-en un et déplacez ce qui reste vers le suivant
+• Epics : des tickets dont le travail se répartit en sous-tickets. Sur le tableau, les tickets d’un epic sont réunis sous son nom ; faites glisser le nom pour les déplacer tous
+• Une feuille de route : vos epics en barres le long des jalons, par mois ou par trimestre. Faites glisser une barre pour déplacer un epic et ses tickets vers un autre jalon
+• Les vues GitHub de votre projet dans la barre latérale, en tableau ou en liste, avec des filtres en pastilles. Regroupée par jalon ou par ticket parent, une vue montre où en est chaque groupe ; une vue de l’itération en cours indique les jours restants ; une vue feuille de route s’affiche en chronologie
+• Jalons, vues et feuille de route également sur iPhone et iPad ; la feuille de route s’affiche en liste sur iPhone et en chronologie sur iPad
+• Une nouvelle interface : sur Mac, une fenêtre en Liquid Glass comme celle de Mail et Notes, un inspecteur à côté du ticket et des menus contextuels avec un champ de recherche. Sur iPhone et iPad, les propriétés du ticket en pastilles de verre et les commentaires sous forme de conversation
+• Une nouvelle icône pour l’app, un panneau de planification décliné en sept matériaux, et une icône au choix pour chaque projet
 • Neuf langues : anglais, allemand, français, espagnol, portugais, russe, japonais, coréen et chinois, selon la langue de votre appareil
-• La Réception : vos notifications GitHub, avec le ticket juste à côté. Lisez, archivez et mettez en attente d’une touche ou d’un balayage ; github.com et vos autres appareils sont à jour. Les tickets à échéance aujourd’hui y apparaissent aussi, tout comme ceux que votre propre compte vous a assignés ailleurs, par exemple avec gh ou un agent de codage
+• La Réception : vos notifications GitHub, avec le ticket juste à côté. Lisez, archivez et mettez en attente d’une touche ou d’un balayage ; github.com et vos autres appareils sont à jour
 • Échéances avec rappels : choisissez un jour ou saisissez-le, par exemple « dans 3 jours », et le jour venu, votre Mac, votre iPhone et votre iPad vous préviennent
-• Les sous-tickets se rangent juste sous leur ticket parent, sur le tableau comme dans la liste, et se replient d’un clic sur la flèche. Terminez le dernier, et le ticket parent est terminé lui aussi
-• Sous-tickets et blocages : ajoutez des tickets existants comme sous-tickets, donnez un parent à un ticket et indiquez ce qui bloque quoi
-• Tous les tickets, sur un tableau ou non : vos dépôts dans la barre latérale, et les tickets qui ne sont sur aucun tableau sous « Aucun projet » ; un clic suffit pour les placer sur un tableau
+• Les sous-tickets se rangent juste sous leur ticket parent ; terminez le dernier, et le ticket parent est terminé lui aussi. Indiquez ce qui bloque quoi
+• Tous les tickets, sur un tableau ou non : vos dépôts dans la barre latérale, et les tickets qui ne sont sur aucun tableau ; un clic suffit pour les placer sur un tableau
 • Descriptions affichées comme sur GitHub : tableaux, cases à cocher, code et diagrammes Mermaid
-• Déplacez aussi les tickets dans la liste en les faisant glisser, pas seulement sur le tableau
-• Moins de clics : choisir un statut, une personne ou une étiquette ferme le menu ; la case en début de ligne permet d’en choisir plusieurs
-• Corrigé : l’app pouvait se fermer inopinément lors du passage d’un iPad en mode paysage
+• Écrire en Markdown comme dans une app de notes : le gras, l’italique et le code s’activent et se désactivent, les listes se poursuivent quand vous allez à la ligne, et sur iPhone et iPad, la barre au-dessus du clavier propose des boutons adaptés à l’endroit où se trouve le point d’insertion
+• Moins de clics : choisir un statut, une personne ou une étiquette ferme le menu
+• Corrigé : l’app pouvait se fermer inopinément lors du passage d’un iPad en mode paysage ; sur Mac, un balayage à deux doigts ne vous ramène plus en arrière par mégarde
