@@ -6,7 +6,7 @@ La mise à jour la plus importante à ce jour : planifiez avec des jalons, des 
 • Les vues GitHub de votre projet dans la barre latérale, en tableau ou en liste, avec des filtres en pastilles. Regroupée par jalon ou par ticket parent, une vue montre où en est chaque groupe ; une vue de l’itération en cours indique les jours restants ; une vue feuille de route s’affiche en chronologie
 • Jalons, vues et feuille de route également sur iPhone et iPad ; la feuille de route s’affiche en liste sur iPhone et en chronologie sur iPad
 • Une nouvelle interface : sur Mac, une fenêtre en Liquid Glass comme celle de Mail et Notes, un inspecteur à côté du ticket et des menus contextuels avec un champ de recherche. Sur iPhone et iPad, les propriétés du ticket en pastilles de verre et les commentaires sous forme de conversation
-• Une nouvelle icône pour l’app, un tableau avec des cartes, également sur fond graphite ou indigo, et une icône au choix pour chaque projet
+• Une icône retravaillée pour l’app, également sur fond graphite ou indigo, et une icône au choix pour chaque projet
 • Neuf langues : anglais, allemand, français, espagnol, portugais, russe, japonais, coréen et chinois, selon la langue de votre appareil
 • La Réception : vos notifications GitHub, avec le ticket juste à côté. Lisez, archivez et mettez en attente d’une touche ou d’un balayage ; github.com et vos autres appareils sont à jour
 • Échéances avec rappels : choisissez un jour ou saisissez-le, par exemple « dans 3 jours », et le jour venu, votre Mac, votre iPhone et votre iPad vous préviennent

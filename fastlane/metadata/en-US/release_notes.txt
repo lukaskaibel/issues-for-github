@@ -6,7 +6,7 @@ The biggest update yet: plan with milestones, epics and a roadmap, open your pro
 • Your project's views from GitHub in the sidebar, as a board or a list, with filters as chips. Grouped by milestone or parent, a view shows how far each group is; a view of the current iteration shows its days left; a roadmap view is a timeline
 • Milestones, views and the roadmap on iPhone and iPad too; the roadmap is a list on iPhone and a timeline on iPad
 • A new look: on the Mac, the window of Mail and Notes in Liquid Glass, an inspector beside the issue, and right-click menus with a search field. On iPhone and iPad, issues with glass chips and comments as a conversation
-• A new app icon, a board of cards, also on graphite or indigo, and an icon of your choice for each project
+• A refined app icon, also on graphite or indigo, and an icon of your choice for each project
 • Nine languages: English, German, French, Spanish, Portuguese, Russian, Japanese, Korean and Chinese, following your device's language
 • The Inbox: your GitHub notifications, with the issue right beside them. Read, archive and snooze with a key or a swipe; github.com and your other devices agree
 • Due dates with reminders: pick a day or type it, such as "in 3 days", and on the day your Mac, iPhone and iPad remind you

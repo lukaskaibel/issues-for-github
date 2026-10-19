@@ -6,7 +6,7 @@ A maior atualização até agora: planeje com marcos, épicos e um roteiro, abra
 • Na barra lateral, as visualizações do seu projeto no GitHub, em quadro ou lista, com os filtros em chips. Agrupada por marco ou por issue principal, uma visualização mostra quanto cada grupo já avançou; a da iteração atual mostra quantos dias faltam; uma visualização de roteiro aparece como linha do tempo
 • Marcos, visualizações e o roteiro também no iPhone e no iPad; o roteiro aparece como lista no iPhone e como linha do tempo no iPad
 • Um novo visual: no Mac, uma janela em Liquid Glass como a do Mail e do Notas, um inspetor com as propriedades ao lado da issue e menus do botão direito com um campo de busca. No iPhone e no iPad, issues com as propriedades em chips de vidro e os comentários como uma conversa
-• Um novo ícone do app, um quadro com cartões, também sobre fundo grafite ou índigo, e um ícone à sua escolha para cada projeto
+• Um ícone aprimorado para o app, também sobre fundo grafite ou índigo, e um ícone à sua escolha para cada projeto
 • Nove idiomas: inglês, alemão, francês, espanhol, português, russo, japonês, coreano e chinês, seguindo o idioma do seu dispositivo
 • A Entrada: suas notificações do GitHub, com a issue logo ao lado. Leia, arquive e adie com uma tecla ou deslizando o dedo; github.com e seus outros dispositivos ficam em sincronia
 • Prazos com lembretes: escolha um dia ou digite, como “em 3 dias”, e no dia o seu Mac, iPhone e iPad lembram você
