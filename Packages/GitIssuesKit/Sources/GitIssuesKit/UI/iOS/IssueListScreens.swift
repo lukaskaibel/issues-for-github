@@ -33,7 +33,6 @@ struct MyIssuesScreen: View {
                     } label: {
                         Label(.options, systemImage: "ellipsis")
                     }
-                    .accessibilityIdentifier("my-issues-options")
                     NewIssueButton(context: NewIssueContext(assignToMe: true))
                 }
             }
