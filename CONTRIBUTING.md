@@ -26,7 +26,7 @@ Every pull request is reviewed and merged by the maintainer; nothing lands on `m
 - **Changes go through the queue.** Anything that writes to GitHub is a `Mutation` (see `Sync/Mutation.swift`), so
   that it works offline and can be re-applied on top of fresh data. If you add one, add a test for it.
 - **Never write to a project you didn't create while testing.** `gi-cli selftest` and the debug remote refuse to
-  touch anything but a project titled "Git Issues Sandbox"; keep it that way.
+  touch anything but a project titled "Git Issues Sandbox"; keep it that way. Release builds don't show that project.
 - **Every text is translated.** Never write English straight into a view: add the text to the String Catalog with a
   comment that says where it appears (`Tools/strings.py add`, or Xcode's catalog editor) and use its symbol, as in
   `Text(.newIssue)`. A new text needs all nine languages before it is merged, with the words in `Design/glossary.md`;
