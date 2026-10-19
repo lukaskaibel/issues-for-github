@@ -103,6 +103,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- The end of an issue reads cleanly above the field for a new comment, on the Mac, iPhone and iPad and in the Mac's
+  Inbox: the page fades out just above the field, as it does under the toolbar. Before, the text behind showed through
+  the field's glass, over "Leave a comment…", and peeked out in the strip below it.
+- On iPhone and iPad the send button sits inside the comment field, as on the Mac and in Messages: a small circle that
+  turns the accent colour once there is something to send. Before, it was a round button beside the field and taller
+  than it.
 - On the Mac, a two-finger swipe goes back or forward only when you mean it: it has to move clearly sideways, as in
   Safari, and far enough that its arrow fills before you lift your fingers. Before, a scroll that started a little to
   the side or a short flick could take you back. The arrow now grows inside the page in glass, instead of sliding out
