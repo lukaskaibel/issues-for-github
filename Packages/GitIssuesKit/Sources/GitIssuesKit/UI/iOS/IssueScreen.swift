@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import UIKit.UIGestureRecognizerSubclass
 
 /// One issue: title and description to edit in place, its properties, sub-issues and comments. On a wide
 /// iPad window the properties stand in a column on the right, as on the Mac.
@@ -25,12 +26,28 @@ struct IssueScreen: View {
                     RecentIssues.record(item.id)
                     if let entry = inboxEntry { model.selectInboxEntry(entry) }
                 }
-                .onDisappear { model.detailDisappeared(item) }
+                .onDisappear {
+                    model.detailDisappeared(item)
+                    if model.isPickingSubIssues(of: item) { model.endPickingSubIssues() }
+                }
                 .onChange(of: navigation.pickerRequest) { _, request in
                     guard let request, request.itemId == itemId else { return }
+                    navigation.pickerRequest = nil
+                    // While sub-issues are picked, S, P, A, L and D change them, as on the Mac.
+                    if model.isPickingSubIssues(of: item), let first = model.pickedSubIssues.first {
+                        navigation.sheet = .picker(itemId: first.id, kind: request.kind)
+                        return
+                    }
                     picker = request.kind
                     pickerFromKeyboard = true
-                    navigation.pickerRequest = nil
+                }
+                // Picked sub-issues moved under another parent are gone from the list, and so is the picking once
+                // all of them are.
+                .onChange(of: model.pickedSubIssues.map(\.id)) { _, stillHere in
+                    guard model.isPickingSubIssues(of: item), stillHere.count < model.pickedSubIssueIds.count else { return }
+                    withAnimation(Theme.spring) {
+                        if stillHere.isEmpty { model.endPickingSubIssues() } else { model.pickedSubIssueIds = Set(stillHere) }
+                    }
                 }
         } else {
             MobileEmptyState(
@@ -44,6 +61,7 @@ struct IssueScreen: View {
 
     private func content(_ item: Item) -> some View {
         let regular = wide
+        let picking = model.isPickingSubIssues(of: item)
         return HStack(alignment: .top, spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
@@ -85,8 +103,9 @@ struct IssueScreen: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .pageFootBar {
-                // While the description is edited, the keyboard bar is the only thing above the keyboard.
-                if item.kind != .draft, !editingDescription {
+                // While the description is edited, the keyboard bar is the only thing above the keyboard; while
+                // sub-issues are picked, the bar of what to do with them.
+                if item.kind != .draft, !editingDescription, !picking {
                     CommentComposer(item: item)
                 }
             }
@@ -98,10 +117,17 @@ struct IssueScreen: View {
         }
         .background(Theme.panel)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(picking)
         .toolbar(regular ? .automatic : .hidden, for: .tabBar)
-        .toolbar { toolbar(item) }
+        .toolbar {
+            if picking { pickingToolbar(item) } else { toolbar(item) }
+        }
         .sheet(item: $picker, onDismiss: { pickerFromKeyboard = false }) { kind in
             IssuePickerSheet(kind: kind, itemId: item.id, focusesSearch: pickerFromKeyboard)
+        }
+        // Escape lets the picked sub-issues go, as Done does.
+        .escapeKey(isActive: picking) {
+            withAnimation(Theme.spring) { model.endPickingSubIssues() }
         }
         .background { keyboardShortcuts(item) }
     }
@@ -199,6 +225,56 @@ struct IssueScreen: View {
         }
     }
 
+    /// While sub-issues are picked, as in Mail: Select All and Done in place of going back and the issue's own
+    /// buttons, how many are picked as the title, and at the foot what to do with them.
+    @ToolbarContentBuilder
+    private func pickingToolbar(_ item: Item) -> some ToolbarContent {
+        let order = model.pickableSubIssueIds(of: item)
+        let picked = model.pickedSubIssues
+        ToolbarItem(placement: .topBarLeading) {
+            let all = !order.isEmpty && Set(order).isSubset(of: model.pickedSubIssueIds)
+            Button(all ? .deselectAll : .selectAll) {
+                withAnimation(Theme.spring) { model.pickSubIssues(all ? [] : order) }
+            }
+            .accessibilityIdentifier("sub-pick-all")
+        }
+        ToolbarItem(placement: .principal) {
+            Text(.selectedCount(count: picked.count))
+                .font(.headline)
+                .monospacedDigit()
+        }
+        ToolbarItem(placement: .confirmationAction) {
+            Button(role: .confirm) {
+                withAnimation(Theme.spring) { model.endPickingSubIssues() }
+            } label: {
+                Label(.done, systemImage: "checkmark")
+            }
+            .accessibilityIdentifier("sub-pick-done")
+        }
+        ToolbarItem(placement: .bottomBar) {
+            // In words: a bar button with an icon shows only the icon, and an arrow alone says little.
+            Button {
+                if let first = picked.first { navigation.sheet = .picker(itemId: first.id, kind: .parent) }
+            } label: {
+                Text(.changeParentIssueMenuItem)
+            }
+            .disabled(picked.isEmpty || !picked.allSatisfy(model.canRelate))
+            .accessibilityIdentifier("sub-pick-parent")
+        }
+        ToolbarSpacer(.flexible, placement: .bottomBar)
+        ToolbarItem(placement: .bottomBar) {
+            Menu {
+                if let first = picked.first {
+                    ItemMenuContent(item: first, showsOpen: false)
+                }
+            } label: {
+                Label(.more, systemImage: "ellipsis")
+            }
+            .disabled(picked.isEmpty)
+            .accessibilityIdentifier("sub-pick-more")
+        }
+    }
+
     /// Where the issue sits among its project's issues, in list order, for stepping through them.
     private func position(of item: Item) -> (index: Int, items: [Item])? {
         let scope: Scope = item.projectId.map { .project($0) } ?? item.repoId.map { .repository($0) } ?? .myIssues
@@ -234,7 +310,12 @@ struct IssueScreen: View {
 
     private func assignCurrentToMe() {
         guard let current = currentItem, current.kind != .draft, let viewer = model.viewer else { return }
-        model.toggleAssignee(current, viewer.person)
+        let picked = model.isPickingSubIssues(of: current) ? model.pickedSubIssues : []
+        if picked.isEmpty {
+            model.toggleAssignee(current, viewer.person)
+        } else {
+            model.toggleAssignMe(picked)
+        }
     }
 
     private func step(_ delta: Int, from item: Item) {
@@ -891,6 +972,8 @@ private struct MobileSubIssues: View {
 
     var body: some View {
         let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let order = model.pickableSubIssueIds(of: item)
+        let picking = model.isPickingSubIssues(of: item)
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Text(.subIssues).font(.sectionTitle)
@@ -905,8 +988,29 @@ private struct MobileSubIssues: View {
                         .frame(width: 64)
                 }
                 Spacer()
-                // A new sub-issue, or an issue that exists already.
-                Menu {
+                if !picking {
+                    SelectSubIssuesButton(item: item, order: order)
+                    addMenu
+                }
+            }
+            .frame(minHeight: 36)
+            if !subs.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(subs.enumerated()), id: \.element.id) { index, sub in
+                        MobileSubIssueRow(sub: sub, parent: item, order: order, block: order)
+                        if index < subs.count - 1 {
+                            SubIssueSeparator(above: model.isPickedSubIssue(sub), below: model.isPickedSubIssue(subs[index + 1]))
+                        }
+                    }
+                }
+                .animation(Theme.spring, value: subs.map(\.id))
+            }
+        }
+    }
+
+    /// A new sub-issue, or an issue that exists already.
+    private var addMenu: some View {
+        Menu {
                     Button {
                         navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
                     } label: {
@@ -917,28 +1021,15 @@ private struct MobileSubIssues: View {
                     } label: {
                         Label(.addExistingIssueMenuItem, systemImage: "magnifyingglass")
                     }
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.body.weight(.medium))
-                        .frame(width: 36, height: 36)
-                        .contentShape(Rectangle())
-                }
-                .foregroundStyle(Theme.textSecondary)
-                .accessibilityLabel(.addSubIssueButton)
-                .accessibilityIdentifier("sub-add")
-            }
-            if !subs.isEmpty {
-                VStack(spacing: 0) {
-                    ForEach(Array(subs.enumerated()), id: \.element.id) { index, sub in
-                        MobileSubIssueRow(sub: sub)
-                        if index < subs.count - 1 {
-                            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32)
-                        }
-                    }
-                }
-                .animation(Theme.spring, value: subs.map(\.id))
-            }
+        } label: {
+            Image(systemName: "plus")
+                .font(.body.weight(.medium))
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
         }
+        .foregroundStyle(Theme.textSecondary)
+        .accessibilityLabel(.addSubIssueButton)
+        .accessibilityIdentifier("sub-add")
     }
 }
 
@@ -952,6 +1043,8 @@ private struct MobileEpicWork: View {
         let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
         let groups = model.subIssuesByMilestone(of: item, subs)
         let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
+        let order = model.pickableSubIssueIds(of: item)
+        let picking = model.isPickingSubIssues(of: item)
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 Text(.progress).font(.sectionTitle)
@@ -962,27 +1055,12 @@ private struct MobileEpicWork: View {
                         .monospacedDigit()
                 }
                 Spacer()
-                Menu {
-                    Button {
-                        navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
-                    } label: {
-                        Label(.newSubIssue, systemImage: "plus")
-                    }
-                    Button {
-                        navigation.sheet = .picker(itemId: item.id, kind: .addSubIssue)
-                    } label: {
-                        Label(.addExistingIssueMenuItem, systemImage: "magnifyingglass")
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.body.weight(.medium))
-                        .frame(width: 36, height: 36)
-                        .contentShape(Rectangle())
+                if !picking {
+                    SelectSubIssuesButton(item: item, order: order)
+                    addMenu
                 }
-                .foregroundStyle(Theme.textSecondary)
-                .accessibilityLabel(.addSubIssueButton)
-                .accessibilityIdentifier("sub-add")
             }
+            .frame(minHeight: 36)
             if subs.isEmpty {
                 Text(.epicNoIssuesYet).font(.footnote).foregroundStyle(Theme.textSecondary)
             } else {
@@ -996,6 +1074,7 @@ private struct MobileEpicWork: View {
                 })
                 VStack(spacing: 0) {
                     ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
+                        let block = group.subs.compactMap { sub in model.item(contentId: sub.id).map(\.id) }.filter(order.contains)
                         HStack(spacing: 8) {
                             MilestoneIcon(mark: group.group.map { model.mark(of: $0, projectId: item.projectId) } ?? .none, size: 13)
                             Text(group.title ?? String(localized: .noMilestone))
@@ -1027,9 +1106,9 @@ private struct MobileEpicWork: View {
                         .overlay(alignment: .top) {
                             if index > 0 { Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32) }
                         }
-                        ForEach(group.subs) { sub in
-                            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32)
-                            MobileSubIssueRow(sub: sub)
+                        ForEach(Array(group.subs.enumerated()), id: \.element.id) { position, sub in
+                            SubIssueSeparator(above: position > 0 && model.isPickedSubIssue(group.subs[position - 1]), below: model.isPickedSubIssue(sub))
+                            MobileSubIssueRow(sub: sub, parent: item, order: order, block: block)
                         }
                     }
                 }
@@ -1037,34 +1116,77 @@ private struct MobileEpicWork: View {
             }
         }
     }
+
+    private var addMenu: some View {
+        Menu {
+            Button {
+                navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
+            } label: {
+                Label(.newSubIssue, systemImage: "plus")
+            }
+            Button {
+                navigation.sheet = .picker(itemId: item.id, kind: .addSubIssue)
+            } label: {
+                Label(.addExistingIssueMenuItem, systemImage: "magnifyingglass")
+            }
+        } label: {
+            Image(systemName: "plus")
+                .font(.body.weight(.medium))
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
+        }
+        .foregroundStyle(Theme.textSecondary)
+        .accessibilityLabel(.addSubIssueButton)
+        .accessibilityIdentifier("sub-add")
+    }
 }
 
+/// One sub-issue on its parent's page, as a line of a checklist. After Select, or a ⌘- or Shift-click with a pointer
+/// on an iPad, a tap picks it instead of opening it, and the long-press menu of a picked one and the bar at the foot
+/// change all picked ones, as on the Mac.
 private struct MobileSubIssueRow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openRoute) private var openRoute
     @Environment(\.colorScheme) private var scheme
     var sub: SubIssue
+    /// The issue whose page lists it.
+    var parent: Item
+    /// The sub-issues that can be picked, as listed, for Shift-click to pick a run of them.
+    var order: [String]
+    /// Those listed together with this one, under the same heading, whose picks join into one shape.
+    var block: [String]
+    /// The keys held as the row was last touched or clicked.
+    @State private var keys: UIKeyModifierFlags = []
 
     var body: some View {
         let boardItem = model.item(contentId: sub.id)
+        // One the app only knows from GitHub, or not under this issue on the app's side, can't change with the others.
+        let pickable = boardItem.map { order.contains($0.id) } ?? false
+        let picking = model.isPickingSubIssues(of: parent)
+        let picked = picking && boardItem.map { model.pickedSubIssueIds.contains($0.id) } == true
         HStack(spacing: 10) {
-            // A tap shows the statuses to pick from, as the status chip does, so another pick takes a wrong one back.
-            Menu {
-                statusMenu(boardItem)
-            } label: {
-                StatusIcon(glyph: glyph(boardItem), size: 17)
-                    .frame(width: 32, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .accessibilityLabel(.subIssueStatusLabel(number: sub.number, status: statusText(boardItem)))
-            .accessibilityIdentifier("sub-status-#\(sub.number)")
-            .sensoryFeedback(.selection, trigger: statusText(boardItem))
-            Button {
-                if let boardItem {
-                    openRoute(.issue(boardItem.id))
-                } else if let url = sub.url.flatMap(URL.init(string:)) {
-                    Platform.open(url)
+            if picking {
+                // In place of the status circle, so a done one's checkmark can't pass for a picked one.
+                PickMark(picked: picked)
+                    .opacity(pickable ? 1 : 0.35)
+                    .onTapGesture { tap(boardItem, pickable: pickable, picking: true) }
+                    .transition(.scale(scale: 0.5).combined(with: .opacity))
+            } else {
+                // A tap shows the statuses to pick from, as the status chip does, so another pick takes a wrong one back.
+                Menu {
+                    statusMenu(boardItem)
+                } label: {
+                    StatusIcon(glyph: glyph(boardItem), size: 17)
+                        .frame(width: 32, height: 44)
+                        .contentShape(Rectangle())
                 }
+                .accessibilityLabel(.subIssueStatusLabel(number: sub.number, status: statusText(boardItem)))
+                .accessibilityIdentifier("sub-status-#\(sub.number)")
+                .sensoryFeedback(.selection, trigger: statusText(boardItem))
+                .transition(.scale(scale: 0.5).combined(with: .opacity))
+            }
+            Button {
+                tap(boardItem, pickable: pickable, picking: picking)
             } label: {
                 HStack(spacing: 10) {
                     Text(sub.number > 0 ? "#\(sub.number)" : String(localized: .unsentIssueNumber))
@@ -1090,14 +1212,21 @@ private struct MobileSubIssueRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(PlainPressStyle())
+            .disabled(picking && !pickable)
+            .accessibilityAddTraits(picked ? .isSelected : [])
             .accessibilityIdentifier("sub-#\(sub.number)")
         }
         // The status circle stands where a checklist's box does, in line with the text above.
         .padding(.leading, -7)
         .padding(.trailing, 2)
+        // Picked ones tinted, and picked neighbours joined into one shape, as on the Mac.
+        .background(shape(picked: picked, boardItem).fill(picked ? Theme.selectionFill : .clear).padding(.leading, -SubIssueSeparator.tintOutset).padding(.trailing, -6))
+        .gesture(HeldKeys { keys = $0 })
         .contextMenu {
             if let boardItem {
-                ItemMenuContent(item: boardItem) { openRoute(.issue(boardItem.id)) }
+                ItemMenuContent(item: boardItem, onSelect: pickable && !picking ? { select(boardItem) } : nil) {
+                    openRoute(.issue(boardItem.id))
+                }
             } else {
                 Button {
                     withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
@@ -1126,6 +1255,44 @@ private struct MobileSubIssueRow: View {
                 }
             }
         }
+    }
+
+    /// A tap opens the sub-issue, or, while picking, picks it or lets it go; with Shift, everything from the last one
+    /// picked. ⌘ and Shift start picking, as in Mail.
+    private func tap(_ boardItem: Item?, pickable: Bool, picking: Bool) {
+        let held = keys.intersection([.command, .shift])
+        keys = []
+        guard picking || !held.isEmpty else {
+            if let boardItem {
+                openRoute(.issue(boardItem.id))
+            } else if let url = sub.url.flatMap(URL.init(string:)) {
+                Platform.open(url)
+            }
+            return
+        }
+        guard let boardItem, pickable else { return }
+        withAnimation(Theme.spring) {
+            if !picking { model.startPickingSubIssues(of: parent) }
+            if held.contains(.shift) {
+                model.extendSubIssuePick(to: boardItem, in: order)
+            } else {
+                model.toggleSubIssuePick(boardItem)
+            }
+        }
+    }
+
+    private func select(_ boardItem: Item) {
+        withAnimation(Theme.spring) { model.startPickingSubIssues(of: parent, with: boardItem) }
+    }
+
+    private func shape(picked: Bool, _ boardItem: Item?) -> UnevenRoundedRectangle {
+        let index = picked ? boardItem.flatMap { block.firstIndex(of: $0.id) } : nil
+        let above = index.map { $0 > 0 && model.pickedSubIssueIds.contains(block[$0 - 1]) } ?? false
+        let below = index.map { $0 < block.count - 1 && model.pickedSubIssueIds.contains(block[$0 + 1]) } ?? false
+        return UnevenRoundedRectangle(
+            topLeadingRadius: above ? 0 : 10, bottomLeadingRadius: below ? 0 : 10,
+            bottomTrailingRadius: below ? 0 : 10, topTrailingRadius: above ? 0 : 10, style: .continuous
+        )
     }
 
     /// On a board, its columns with the current one checked. Elsewhere it is only open or closed, and an issue the
@@ -1178,6 +1345,101 @@ private struct MobileSubIssueRow: View {
             return StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary)
         }
         return StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
+    }
+}
+
+/// The hairline between two sub-issues, hidden next to a picked one; between two picked ones, the tint that joins them.
+private struct SubIssueSeparator: View {
+    var above: Bool
+    var below: Bool
+    /// How far a picked row's tint reaches before its circle, which stands a little left of the text above.
+    static let tintOutset: CGFloat = 9
+
+    var body: some View {
+        if above && below {
+            Rectangle().fill(Theme.selectionFill).frame(height: 1).padding(.leading, -Self.tintOutset).padding(.trailing, -6)
+        } else {
+            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32).opacity(above || below ? 0 : 1)
+        }
+    }
+}
+
+/// The circle that stands for a sub-issue's status while picking, filled with a checkmark once picked, as in Mail.
+private struct PickMark: View {
+    var picked: Bool
+
+    var body: some View {
+        Image(systemName: picked ? "checkmark.circle.fill" : "circle")
+            .font(.system(size: 20))
+            .foregroundStyle(picked ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.textTertiary))
+            .contentTransition(.symbolEffect(.replace))
+            .frame(width: 32, height: 44)
+            .contentShape(Rectangle())
+            .accessibilityHidden(true)
+    }
+}
+
+/// Select in the heading of an issue's sub-issues, once there are two that can change together.
+private struct SelectSubIssuesButton: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+    var order: [String]
+
+    var body: some View {
+        if order.count > 1 {
+            Button {
+                withAnimation(Theme.spring) { model.startPickingSubIssues(of: item) }
+            } label: {
+                Text(.select)
+                    .font(.subheadline.weight(.medium))
+                    .frame(minHeight: 36)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainPressStyle())
+            .foregroundStyle(Theme.accent)
+            .accessibilityIdentifier("sub-select")
+        }
+    }
+}
+
+/// The keys held as a view is touched or clicked: ⌘ and Shift with a keyboard and pointer on an iPad, which SwiftUI's
+/// buttons don't tell. It never takes the touch, so the buttons beneath act as usual and ask for them.
+private struct HeldKeys: UIGestureRecognizerRepresentable {
+    var onTouch: (UIKeyModifierFlags) -> Void
+
+    func makeUIGestureRecognizer(context: Context) -> Recognizer {
+        let recognizer = Recognizer()
+        recognizer.cancelsTouchesInView = false
+        recognizer.delaysTouchesEnded = false
+        recognizer.onTouch = onTouch
+        return recognizer
+    }
+
+    func updateUIGestureRecognizer(_ recognizer: Recognizer, context: Context) {
+        recognizer.onTouch = onTouch
+    }
+
+    final class Recognizer: UIGestureRecognizer {
+        var onTouch: ((UIKeyModifierFlags) -> Void)?
+
+        override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+            onTouch?(event.modifierFlags)
+            state = .failed
+        }
+    }
+}
+
+extension AppModel {
+    /// The sub-issues on an issue's page that can be picked, as listed there: those the app has as issues under it.
+    func pickableSubIssueIds(of item: Item) -> [String] {
+        let subs = item.contentId.map { detail(for: $0).subIssues } ?? []
+        let listed = item.isEpic ? subIssuesByMilestone(of: item, subs).flatMap(\.subs) : subs
+        return listed.compactMap { self.item(contentId: $0.id) }.filter { $0.parentId == item.contentId }.map(\.id)
+    }
+
+    func isPickedSubIssue(_ sub: SubIssue) -> Bool {
+        guard !pickedSubIssueIds.isEmpty, let item = item(contentId: sub.id) else { return false }
+        return pickedSubIssueIds.contains(item.id)
     }
 }
 

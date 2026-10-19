@@ -257,6 +257,43 @@ final class PadTests: AppTestCase {
         wait(element("card-#9"))
     }
 
+    /// ⌘-click and Shift-click pick sub-issues, as in Mail, and the keys then change all of them. (Escape, which lets
+    /// them go too, can't be tested: XCTest's Escape never reaches an app in the simulator, though other keys do.)
+    func testPickSubIssuesWithPointerAndKeys() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openProject("Git Issues")
+        element("card-#9").tap()
+        wait(element("issue-title"))
+        let first = element("sub-#13")
+        scrollTo(first)
+        XCUIElement.perform(withKeyModifiers: .command) { first.tap() }
+        wait(element("sub-pick-done"))
+        XCUIElement.perform(withKeyModifiers: .shift) { element("sub-#11").tap() }
+        wait(labelled("4 selected"))
+        XCTAssertTrue(element("sub-#28").isSelected)
+        XCTAssertFalse(element("sub-#12").isSelected)
+        snapshot("iPad sub-issues picked with the pointer")
+
+        // ⌘-click lets one go again.
+        XCUIElement.perform(withKeyModifiers: .command) { element("sub-#28").tap() }
+        wait(labelled("3 selected"))
+        XCUIElement.perform(withKeyModifiers: .command) { element("sub-#28").tap() }
+        wait(labelled("4 selected"))
+
+        app.typeKey("s", modifierFlags: [])
+        wait(app.navigationBars["Status"])
+        button("Todo").tap()
+        waitGone(app.navigationBars["Status"])
+        element("sub-pick-done").tap()
+        waitGone(element("sub-pick-done"))
+        for number in [13, 28, 10, 11] {
+            waitForLabel(element("sub-status-#\(number)"), containing: "Todo")
+        }
+        waitForLabel(element("sub-status-#12"), containing: "Done")
+        waitForLabel(element("property-status"), containing: "In Progress")
+    }
+
     func testSidebarProjectsAccountAndCompose() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()

@@ -541,6 +541,83 @@ final class PhoneTests: AppTestCase {
         waitForLabel(element("sub-status-#11"), containing: "In Progress")
     }
 
+    func testPickSeveralSubIssuesAndChangeThemTogether() {
+        launch()
+        element("row-#9").tap()
+        wait(element("issue-title"))
+
+        // Select puts circles before the sub-issues; a tap then picks one instead of opening it.
+        let select = element("sub-select")
+        scrollTo(select)
+        select.tap()
+        wait(element("sub-pick-done"))
+        XCTAssertFalse(element("comment-field").exists, "The bar for the picked ones stands where the comment field was")
+        clearOfPickBar(element("sub-#12"))
+        element("sub-#10").tap()
+        element("sub-#11").tap()
+        wait(labelled("2 selected"))
+        XCTAssertTrue(element("sub-#10").isSelected)
+        XCTAssertFalse(element("sub-#12").isSelected)
+        snapshot("Picking sub-issues")
+
+        // The long-press menu of a picked one changes both.
+        element("sub-#11").press(forDuration: 1.2)
+        wait(labelled("2 issues"))
+        snapshot("Menu of two picked sub-issues")
+        XCTAssertFalse(button("Open Issue").exists)
+        button("Status").tap()
+        button("In Progress").tap()
+        element("sub-pick-done").tap()
+        waitGone(element("sub-pick-done"))
+        wait(element("comment-field"))
+        waitForLabel(element("sub-status-#10"), containing: "In Progress")
+        waitForLabel(element("sub-status-#11"), containing: "In Progress")
+
+        // Select from a row's own menu starts with that row picked; the bar at the foot moves them under another
+        // parent, and with all of them gone from the list the picking ends.
+        element("sub-#12").press(forDuration: 1.2)
+        button("Select").tap()
+        wait(element("sub-pick-done"))
+        clearOfPickBar(element("sub-#23"))
+        element("sub-#23").tap()
+        wait(labelled("2 selected"))
+        element("sub-pick-parent").tap()
+        let search = app.searchFields.firstMatch
+        wait(search)
+        search.tap()
+        search.typeText("Offline")
+        let epic = labelled("Offline-first sync", type: .button)
+        wait(epic)
+        epic.tap()
+        waitGone(element("sub-#12"))
+        waitGone(element("sub-#23"))
+        waitGone(element("sub-pick-done"))
+        XCTAssertTrue(element("sub-#13").exists, "The others stay")
+
+        // Select All, then none.
+        scrollTo(select)
+        select.tap()
+        element("sub-pick-all").tap()
+        wait(labelled("4 selected"))
+        XCTAssertEqual(element("sub-pick-all").label, "Deselect All")
+        element("sub-pick-all").tap()
+        wait(labelled("0 selected"))
+        element("sub-pick-done").tap()
+        waitGone(element("sub-pick-done"))
+    }
+
+    /// Moves the page up a little until the sub-issue is clear of the bar that picking brings at the foot.
+    private func clearOfPickBar(_ row: XCUIElement) {
+        let bar = element("sub-pick-parent")
+        wait(bar)
+        var drags = 0
+        while row.frame.maxY > bar.frame.minY - 16, drags < 6 {
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+                .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+            drags += 1
+        }
+    }
+
     // MARK: Gestures
 
     func testSwipeActions() {
