@@ -376,13 +376,14 @@ final class DropdownPanel: NSPanel {
 // MARK: - SwiftUI
 
 extension View {
-    /// Shows a dropdown under this view while `isPresented` is true, or over it or beside it. `takesKey` false leaves
-    /// the keyboard where it is, for a submenu opened under the pointer.
+    /// Shows a dropdown under this view while `isPresented` is true, or over it or beside it; with `rect`, under or
+    /// beside that part of the view, from its top left. `takesKey` false leaves the keyboard where it is, for a submenu
+    /// opened under the pointer.
     func dropdown<Content: View>(
-        isPresented: Binding<Bool>, placement: DropdownPlacement = .below, takesKey: Bool = true,
+        isPresented: Binding<Bool>, placement: DropdownPlacement = .below, at rect: CGRect? = nil, takesKey: Bool = true,
         @ViewBuilder content: @escaping (_ close: @escaping () -> Void) -> Content
     ) -> some View {
-        modifier(DropdownModifier(isPresented: isPresented, placement: placement, takesKey: takesKey, dropdownContent: content))
+        modifier(DropdownModifier(isPresented: isPresented, placement: placement, rect: rect, takesKey: takesKey, dropdownContent: content))
     }
 }
 
@@ -390,12 +391,13 @@ private struct DropdownModifier<DropdownContent: View>: ViewModifier {
     @Environment(AppModel.self) private var model
     @Binding var isPresented: Bool
     var placement: DropdownPlacement
+    var rect: CGRect?
     var takesKey: Bool
     var dropdownContent: (_ close: @escaping () -> Void) -> DropdownContent
 
     func body(content: Content) -> some View {
         content.background(
-            DropdownAnchor(isPresented: $isPresented, model: model, placement: placement, takesKey: takesKey, content: dropdownContent)
+            DropdownAnchor(isPresented: $isPresented, model: model, placement: placement, rect: rect, takesKey: takesKey, content: dropdownContent)
         )
     }
 }
@@ -404,6 +406,7 @@ private struct DropdownAnchor<DropdownContent: View>: NSViewRepresentable {
     @Binding var isPresented: Bool
     var model: AppModel
     var placement: DropdownPlacement
+    var rect: CGRect?
     var takesKey: Bool
     var content: (_ close: @escaping () -> Void) -> DropdownContent
 
@@ -417,7 +420,7 @@ private struct DropdownAnchor<DropdownContent: View>: NSViewRepresentable {
         if isPresented, !view.isShowing, !view.closedItself {
             view.isShowing = true
             let binding = $isPresented
-            view.panel = Dropdown.show(below: view.bounds, in: view, model: model, placement: placement, takesKey: takesKey, onClose: { [weak view] in
+            view.panel = Dropdown.show(below: rect ?? view.bounds, in: view, model: model, placement: placement, takesKey: takesKey, onClose: { [weak view] in
                 view?.isShowing = false
                 view?.closedItself = true
                 binding.wrappedValue = false

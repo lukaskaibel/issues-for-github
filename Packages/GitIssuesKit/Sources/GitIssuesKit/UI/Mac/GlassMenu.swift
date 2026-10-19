@@ -110,7 +110,7 @@ struct GlassMenuView: View {
             }
         }
         .coordinateSpace(.named(SubmenuFrames.space))
-        .overlay(alignment: .topLeading) {
+        .overlay {
             SubmenuSlot(cursor: cursor, frames: frames) { index, closeSubmenu in
                 if rows.indices.contains(index) { submenu(of: rows[index].item, close: closeSubmenu) }
             }
@@ -307,7 +307,9 @@ private final class SubmenuFrames {
 }
 
 /// Where a glass menu's submenu opens: beside the row whose submenu is open. One for the whole menu, in place of one
-/// for every row with a submenu, each of which was an AppKit view to set up when the menu opened.
+/// for every row with a submenu, each of which was an AppKit view to set up when the menu opened. It covers the whole
+/// menu and is told the row: moved onto the row instead, it would still be where it was when the submenu opens, since
+/// it is laid out only afterwards.
 private struct SubmenuSlot<Content: View>: View {
     let cursor: MenuCursor<Int>
     let frames: SubmenuFrames
@@ -315,19 +317,15 @@ private struct SubmenuSlot<Content: View>: View {
 
     var body: some View {
         let open = cursor.open
-        let frame = open.flatMap { frames.rects[$0] } ?? .zero
         Color.clear
-            .frame(width: frame.width, height: frame.height)
             .allowsHitTesting(false)
             .dropdown(isPresented: Binding(
                 // Read when asked, not when drawn: a submenu that closes itself is asked about before this is redrawn.
                 get: { cursor.open != nil },
                 set: { isOpen in if !isOpen, cursor.open == open { cursor.open = nil } }
-            ), placement: .trailing, takesKey: cursor.openTakesKey) { close in
+            ), placement: .trailing, at: open.flatMap { frames.rects[$0] }, takesKey: cursor.openTakesKey) { close in
                 if let open = cursor.open { content(open, close) }
             }
-            .padding(.leading, frame.minX)
-            .padding(.top, frame.minY)
     }
 }
 
