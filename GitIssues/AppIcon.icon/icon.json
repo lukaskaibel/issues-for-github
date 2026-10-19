@@ -3,8 +3,8 @@
     {
       "value": {
         "linear-gradient": [
-          "srgb:0.81176,0.78039,0.72941,1.00000",
-          "srgb:0.67843,0.64314,0.57647,1.00000"
+          "srgb:0.97255,0.97255,0.96863,1.00000",
+          "srgb:0.93725,0.93725,0.93725,1.00000"
         ],
         "orientation": {
           "start": {
@@ -22,8 +22,8 @@
       "appearance": "dark",
       "value": {
         "linear-gradient": [
-          "srgb:0.29020,0.27059,0.24314,1.00000",
-          "srgb:0.16471,0.14902,0.13333,1.00000"
+          "srgb:0.22745,0.22745,0.24314,1.00000",
+          "srgb:0.12157,0.12157,0.13333,1.00000"
         ],
         "orientation": {
           "start": {
@@ -42,27 +42,27 @@
     {
       "layers": [
         {
-          "glass": false,
+          "glass": true,
           "image-name-specializations": [
             {
-              "value": "things-light.png"
+              "value": "cards-light.png"
             },
             {
               "appearance": "dark",
-              "value": "things-dark.png"
+              "value": "cards-dark.png"
             }
           ],
-          "name": "things"
+          "name": "cards"
         }
       ],
-      "name": "Things",
+      "name": "Cards",
       "shadow": {
-        "kind": "none",
+        "kind": "neutral",
         "opacity": 0.5
       },
       "translucency": {
         "enabled": false,
-        "value": 0.5
+        "value": 0.4
       }
     },
     {
@@ -71,24 +71,25 @@
           "glass": false,
           "image-name-specializations": [
             {
-              "value": "surface-light.png"
+              "value": "lines-light.png"
             },
             {
               "appearance": "dark",
-              "value": "surface-dark.png"
+              "value": "lines-dark.png"
             }
           ],
-          "name": "surface"
+          "name": "lines"
         }
       ],
-      "name": "Surface",
+      "name": "Lines",
       "shadow": {
         "kind": "none",
         "opacity": 0.5
       },
+      "specular": false,
       "translucency": {
         "enabled": false,
-        "value": 0.5
+        "value": 0.4
       }
     }
   ],

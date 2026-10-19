@@ -6,6 +6,13 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **A new app icon: a board.** Three columns divided only by two thin lines, as the lines in Notes divide a page,
+  with three cards to do in lilac, two in progress in amber and one done in indigo. It follows light and dark mode, and
+  in the dark the colours turn brighter. Settings on the Mac, and your account on iPhone and iPad, offer the board on
+  graphite or on indigo instead; the pinboard and its materials are gone, so everyone starts from the board.
+
 ### Fixed
 
 - On the Mac, an issue and the Inbox read cleanly under the toolbar: what scrolls up fades out just below it, as above
