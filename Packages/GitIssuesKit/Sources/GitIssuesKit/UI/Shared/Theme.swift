@@ -215,10 +215,10 @@ extension View {
                 bar().background(alignment: .top) {
                     VStack(spacing: 0) {
                         LinearGradient(colors: [Theme.panel.opacity(0), Theme.panel], startPoint: .top, endPoint: .bottom)
-                            .frame(height: Theme.pageFootFade)
+                            .frame(height: Theme.pageEdgeFade)
                         Theme.panel
                     }
-                    .padding(.top, -Theme.pageFootFade)
+                    .padding(.top, -Theme.pageEdgeFade)
                     .ignoresSafeArea(edges: .bottom)
                     .allowsHitTesting(false)
                 }
@@ -226,9 +226,52 @@ extension View {
     }
 }
 
+#if os(macOS)
+extension View {
+    /// A scrolling page under the window's toolbar. The page's ground lies behind the toolbar, and what scrolls up
+    /// fades into it just below, as above the comment field: nothing runs through the title or past the toolbar's
+    /// buttons.
+    func pageUnderToolbar() -> some View {
+        modifier(PageUnderToolbar())
+    }
+}
+
+private struct PageUnderToolbar: ViewModifier {
+    /// How far the page has scrolled under the toolbar, up to the length of the fade. The fade comes in with it, so a
+    /// page at its top shows its first line in full.
+    @State private var scrolled: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        // The toolbar's own background, the system's edge effect, differs from page to page: on the issue page the
+        // text stays sharp under the title, over the Inbox lies a film of another grey with a line under it. So the
+        // page's ground takes its place, as at the foot.
+        content
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+            .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                min(max(geometry.contentOffset.y + geometry.contentInsets.top, 0), Theme.pageEdgeFade)
+            } action: { _, offset in
+                scrolled = offset
+            }
+            .safeAreaBar(edge: .top, spacing: 0) {
+                Color.clear.frame(height: 0).background(alignment: .bottom) {
+                    VStack(spacing: 0) {
+                        Theme.panel
+                        LinearGradient(colors: [Theme.panel, Theme.panel.opacity(0)], startPoint: .top, endPoint: .bottom)
+                            .frame(height: Theme.pageEdgeFade)
+                            .opacity(scrolled / Theme.pageEdgeFade)
+                    }
+                    .padding(.bottom, -Theme.pageEdgeFade)
+                    .ignoresSafeArea(edges: .top)
+                    .allowsHitTesting(false)
+                }
+            }
+    }
+}
+#endif
+
 extension Theme {
-    /// How far above a bar at the foot of a page the page starts to fade out.
-    static let pageFootFade: CGFloat = 24
+    /// How far from the toolbar above a page, or from a bar at its foot, the page fades out.
+    static let pageEdgeFade: CGFloat = 24
 
     static var solidGlass: Bool {
         #if DEBUG
