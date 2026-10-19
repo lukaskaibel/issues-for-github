@@ -300,7 +300,7 @@ struct AccountDropdown: View {
     var project: Project?
     var close: () -> Void
 
-    @State private var active: Entry?
+    @State private var cursor = MenuCursor<Entry>()
     @State private var queueOpen = false
     @State private var appearanceOpen = false
     @State private var hiddenOpen = false
@@ -362,13 +362,9 @@ struct AccountDropdown: View {
         .font(.ui)
         .foregroundStyle(Theme.text)
         .background(MenuKeys(
-            onMove: { delta in
-                let list = entries
-                let index = menuStep(active.flatMap { list.firstIndex(of: $0) }, by: delta, count: list.count)
-                active = index.map { list[$0] }
-            },
-            onActivate: { if let active { perform(active) } },
-            onOpen: { if active == .queue || active == .appearance || active == .hidden, let active { perform(active) } }
+            onMove: { cursor.step($0, through: entries) },
+            onActivate: { if let active = cursor.key { perform(active) } },
+            onOpen: { if let active = cursor.key, active == .queue || active == .appearance || active == .hidden { perform(active) } }
         ))
     }
 
@@ -440,31 +436,27 @@ struct AccountDropdown: View {
 
     @ViewBuilder
     private func row(_ entry: Entry) -> some View {
-        let isActive = active == entry
-        let hover: (Bool) -> Void = { inside in
-            if inside { active = entry } else if active == entry { active = nil }
-        }
         switch entry {
         case .project(let id):
             if let other = model.openProjects.first(where: { $0.id == id }) {
-                ProjectMenuRow(project: other, checked: other.id == project?.id, active: isActive, action: { perform(entry) }, onHover: hover)
+                ProjectMenuRow(project: other, checked: other.id == project?.id, cursor: cursor, key: entry, action: { perform(entry) })
             }
         case .hidden:
-            MenuRow(title: String(localized: .hiddenProjectsCount(count: hiddenProjects.count)), systemImage: "eye.slash", submenu: true, active: isActive || hiddenOpen, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .hiddenProjectsCount(count: hiddenProjects.count)), systemImage: "eye.slash", submenu: true, cursor: cursor, key: entry, open: hiddenOpen, action: { perform(entry) })
         case .more:
-            MenuRow(title: String(localized: .switchProjectEllipsis), systemImage: "square.stack", active: isActive, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .switchProjectEllipsis), systemImage: "square.stack", cursor: cursor, key: entry, action: { perform(entry) })
         case .sync:
-            MenuRow(title: String(localized: .syncNow), systemImage: "arrow.triangle.2.circlepath", shortcut: "⌘R", active: isActive, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .syncNow), systemImage: "arrow.triangle.2.circlepath", shortcut: "⌘R", cursor: cursor, key: entry, action: { perform(entry) })
         case .queue:
-            MenuRow(title: String(localized: .queuedChangesTitle), systemImage: "tray.full", value: "\(waiting)", submenu: true, active: isActive || queueOpen, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .queuedChangesTitle), systemImage: "tray.full", value: "\(waiting)", submenu: true, cursor: cursor, key: entry, open: queueOpen, action: { perform(entry) })
         case .appearance:
-            MenuRow(title: String(localized: .appearance), systemImage: "circle.lefthalf.filled", value: model.appearance.title, submenu: true, active: isActive || appearanceOpen, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .appearance), systemImage: "circle.lefthalf.filled", value: model.appearance.title, submenu: true, cursor: cursor, key: entry, open: appearanceOpen, action: { perform(entry) })
         case .settings:
-            MenuRow(title: String(localized: .settingsEllipsis), systemImage: "gearshape", shortcut: "⌘,", active: isActive, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .settingsEllipsis), systemImage: "gearshape", shortcut: "⌘,", cursor: cursor, key: entry, action: { perform(entry) })
         case .signOut:
-            MenuRow(title: String(localized: model.isDemo ? .leaveSampleData : .signOut), systemImage: "rectangle.portrait.and.arrow.right", active: isActive, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: model.isDemo ? .leaveSampleData : .signOut), systemImage: "rectangle.portrait.and.arrow.right", cursor: cursor, key: entry, action: { perform(entry) })
         case .signOutEverywhere:
-            MenuRow(title: String(localized: .signOutEverywhereEllipsis), active: isActive, action: { perform(entry) }, onHover: hover)
+            MenuRow(title: String(localized: .signOutEverywhereEllipsis), cursor: cursor, key: entry, action: { perform(entry) })
         }
     }
 
@@ -502,18 +494,15 @@ struct AccountDropdown: View {
 struct AppearanceDropdown: View {
     @Environment(AppModel.self) private var model
     var close: () -> Void
-    @State private var active: Int?
+    @State private var cursor = MenuCursor<AppearanceSetting>()
 
     var body: some View {
         let options = AppearanceSetting.allCases
         VStack(spacing: 0) {
-            ForEach(Array(options.enumerated()), id: \.element) { index, option in
+            ForEach(options, id: \.self) { option in
                 MenuRow(
                     title: option.title, systemImage: option.systemImage, checked: model.appearance == option,
-                    active: active == index, action: { pick(option) },
-                    onHover: { inside in
-                        if inside { active = index } else if active == index { active = nil }
-                    }
+                    cursor: cursor, key: option, action: { pick(option) }
                 )
             }
         }
@@ -522,8 +511,8 @@ struct AppearanceDropdown: View {
         .font(.ui)
         .foregroundStyle(Theme.text)
         .background(MenuKeys(
-            onMove: { active = menuStep(active, by: $0, count: options.count) },
-            onActivate: { if let active { pick(options[active]) } },
+            onMove: { cursor.step($0, through: Array(options)) },
+            onActivate: { if let active = cursor.key { pick(active) } },
             onBack: close
         ))
     }
