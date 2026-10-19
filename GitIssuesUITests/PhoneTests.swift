@@ -136,6 +136,12 @@ final class PhoneTests: AppTestCase {
             scrollTo(row)
             row.swipeRight()
             wait(button("Done"))
+            // Scrolled up under its section's header, the row's Done is covered: bring it down and swipe again.
+            if !button("Done").isHittable {
+                app.swipeDown(velocity: .slow)
+                row.swipeRight()
+                wait(button("Done"))
+            }
             button("Done").tap()
             waitGone(button("Done"))
         }
