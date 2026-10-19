@@ -6,6 +6,13 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **Cards leave out the repository.** A board is one project's, so on a project that spans several repositories its
+  cards no longer put the repository's name next to the number. On the Mac, point at the number and it names the
+  repository the way GitHub does, as in `acme/website#12`; a row's number in a list does the same. My Issues, which
+  mixes projects, still says where each issue comes from.
+
 ## [1.0.0] - 2026-10-19
 
 Issues now plans the work as well as tracking it, in a window built like Mail and Notes. In the App Store this version
