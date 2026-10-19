@@ -67,23 +67,23 @@ enum AppearanceSetting: String, CaseIterable, Identifiable {
     }
 }
 
-/// The icons the app can wear: a board of three columns divided by lines, on its light page, on graphite or on indigo,
-/// each with a light and a dark look that follows the system. The board on its page is the app bundle's own icon.
+/// The icons the app can wear: a card lifted off a board, on its light page, on graphite or on indigo, each with a
+/// light and a dark look that follows the system. The card on its page is the app bundle's own icon.
 enum AppIconChoice: String, CaseIterable, Identifiable {
-    case board
+    case card
     case graphite
     case indigo
 
-    static let standard = AppIconChoice.board
-    /// Picks stored under the earlier designs (the pinboard's materials, "a", "e" and so on) no longer read, so everyone
-    /// starts from the board.
+    static let standard = AppIconChoice.card
+    /// Picks stored under earlier designs (the board, the pinboard's materials, "a", "e" and so on) no longer read, so
+    /// everyone else starts from the card.
     static let defaultsKey = "dockIcon"
 
     var id: String { rawValue }
 
     var title: String {
         let name: LocalizedStringResource = switch self {
-        case .board: .board
+        case .card: .appIconCard
         case .graphite: .appIconGraphite
         case .indigo: .appIconIndigo
         }
@@ -124,7 +124,7 @@ enum AppIconChoice: String, CaseIterable, Identifiable {
     /// Name of the alternate icon in the app bundle; nil is the app's own icon.
     var alternateIconName: String? {
         switch self {
-        case .board: nil
+        case .card: nil
         case .graphite: "AppIcon-Graphite"
         case .indigo: "AppIcon-Indigo"
         }

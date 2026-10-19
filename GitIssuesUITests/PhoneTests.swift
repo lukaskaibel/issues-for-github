@@ -851,9 +851,9 @@ final class PhoneTests: AppTestCase {
         graphite.tap()
         confirmIconChange()
         XCTAssertTrue(graphite.isSelected)
-        button("Board").tap()
+        button("Card").tap()
         confirmIconChange()
-        XCTAssertTrue(button("Board").isSelected)
+        XCTAssertTrue(button("Card").isSelected)
     }
 
     func testLeavingSampleDataShowsSignIn() {
