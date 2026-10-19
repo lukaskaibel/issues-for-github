@@ -6,20 +6,6 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
-### Changed
-
-- **A new app icon: a board.** Three columns divided only by two thin lines, as the lines in Notes divide a page,
-  with three cards to do in lilac, two in progress in amber and one done in indigo. It follows light and dark mode, and
-  in the dark the colours turn brighter. Settings on the Mac, and your account on iPhone and iPad, offer the board on
-  graphite or on indigo instead; the pinboard and its materials are gone, so everyone starts from the board.
-
-### Fixed
-
-- On the Mac, an issue and the Inbox read cleanly under the toolbar: what scrolls up fades out just below it, as above
-  the comment field, and the toolbar lies on the page's own ground. Before, the text of an issue stayed sharp under the
-  toolbar and ran through its title, "#9" and the project's name; over the Inbox the toolbar had a strip of another
-  grey with a line under it, which the notifications showed through.
-
 ## [1.0.0] - 2026-10-19
 
 Issues now plans the work as well as tracking it, in a window built like Mail and Notes. In the App Store this version
@@ -129,15 +115,17 @@ follows 0.2.0: 0.3.0 went to TestFlight only, so its changes reach the App Store
   checklist with the status first, and its comments a conversation with each person's picture and the new ones
   marked. Lists have larger rows and hairlines between them, and the iPad board stands its columns on lanes as the
   Mac's does.
-- **A new app icon: a planning board.** An index card, a screenshot of code and a sticky note, pinned to a warm grey
-  fabric board and joined with string; it follows light and dark mode. Settings on the Mac, and your account on
-  iPhone and iPad, offer the board in six more materials: cork, metal with magnets, a whiteboard, and slate, navy or
-  sage fabric. The Mac shows the one you pick in the Dock while the app is open, switching with the system's light
-  and dark mode; iPhone and iPad put it on the Home Screen. The card icons are gone, so everyone starts from the
-  pinboard.
+- **A new app icon: a board.** Three columns divided only by two thin lines, as the lines in Notes divide a page,
+  with three cards to do in lilac, two in progress in amber and one done in indigo. It follows light and dark mode, and
+  in the dark the colours turn brighter. Settings on the Mac, and your account on iPhone and iPad, offer the board on
+  graphite or on indigo instead, and everyone starts from the board.
 
 ### Fixed
 
+- On the Mac, an issue and the Inbox read cleanly under the toolbar: what scrolls up fades out just below it, as above
+  the comment field, and the toolbar lies on the page's own ground. Before, the text of an issue stayed sharp under the
+  toolbar and ran through its title, "#9" and the project's name; over the Inbox the toolbar had a strip of another
+  grey with a line under it, which the notifications showed through.
 - The end of an issue reads cleanly above the field for a new comment, on the Mac, iPhone and iPad and in the Mac's
   Inbox: the page fades out just above the field, as it does under the toolbar. Before, the text behind showed through
   the field's glass, over "Leave a comment…", and peeked out in the strip below it.
