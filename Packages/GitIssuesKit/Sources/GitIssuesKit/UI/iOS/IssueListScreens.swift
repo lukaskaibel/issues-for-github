@@ -10,18 +10,6 @@ struct MyIssuesScreen: View {
 
     var body: some View {
         IssueList(scope: .myIssues)
-            // Its filter, as a line of chips under the title like a view's; a tap changes it.
-            .safeAreaInset(edge: .top, spacing: 0) {
-                if !model.mineFilter.isEmpty {
-                    FilterChipStrip(filter: model.mineFilter, scope: .myIssues, identifier: "my-issues-filter") {
-                        navigation.sheet = .myIssuesFilter
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Theme.panel)
-                }
-            }
             .navigationTitle(.myIssues)
             .navigationSubtitle(SyncSubtitle.text(model))
             .toolbar {
@@ -594,6 +582,15 @@ struct IssueList: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                             .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
+                    }
+                    if scope == .myIssues, !model.mineFilter.isEmpty {
+                        // My Issues' filter as a line of chips under the title, like a view's; a tap changes it.
+                        FilterChipStrip(filter: model.mineFilter, scope: .myIssues, identifier: "my-issues-filter") {
+                            navigation.sheet = .myIssuesFilter
+                        }
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 8, trailing: 16))
                     }
                     if case .project(let id) = scope, let project = model.projects.first(where: { $0.id == id }),
                        project.priorityFieldId == nil, project.viewerCanUpdate, project.lastSyncedAt != nil {

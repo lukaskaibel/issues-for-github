@@ -199,21 +199,25 @@ struct FilterIconView: View {
     var size: CGFloat = 13
 
     var body: some View {
-        switch icon {
-        case .status(let glyph): StatusIcon(glyph: glyph, size: size + 1)
-        case .symbol(let name):
-            Image(systemName: name).font(.system(size: size - 1, weight: .medium)).foregroundStyle(Theme.textSecondary)
-                .frame(width: size + 2, height: size + 2)
-        case .person(let person): Avatar(login: person.login, url: person.avatarUrl, size: size + 3)
-        case .label(let color):
-            Circle().fill(Theme.labelColor(color)).frame(width: size * 0.62, height: size * 0.62).frame(width: size + 2, height: size + 2)
-        case .milestone(let mark): MilestoneIcon(mark: mark, size: size)
-        case .dot(let color): GroupIcon(icon: .dot(color), size: size + 1)
-        case .iteration(let current): IterationIcon(size: size + 1).foregroundStyle(current ? Theme.started : Theme.textSecondary)
-        case .priority(let level): PriorityIcon(level: level).scaleEffect(size / 14)
-        case .project(let look): ProjectGlyphImage(look: look, size: size + 1)
-        case .none: EmptyView()
+        Group {
+            switch icon {
+            case .status(let glyph): StatusIcon(glyph: glyph, size: size + 1)
+            case .symbol(let name):
+                Image(systemName: name).font(.system(size: size - 1, weight: .medium)).foregroundStyle(Theme.textSecondary)
+                    .frame(width: size + 2, height: size + 2)
+            case .person(let person): Avatar(login: person.login, url: person.avatarUrl, size: size + 3)
+            case .label(let color):
+                Circle().fill(Theme.labelColor(color)).frame(width: size * 0.62, height: size * 0.62).frame(width: size + 2, height: size + 2)
+            case .milestone(let mark): MilestoneIcon(mark: mark, size: size)
+            case .dot(let color): GroupIcon(icon: .dot(color), size: size + 1)
+            case .iteration(let current): IterationIcon(size: size + 1).foregroundStyle(current ? Theme.started : Theme.textSecondary)
+            case .priority(let level): PriorityIcon(level: level).scaleEffect(size / 14)
+            case .project(let look): ProjectGlyphImage(look: look, size: size + 1)
+            case .none: EmptyView()
+            }
         }
+        // The name beside it says what it is; a priority's icon would otherwise read "High priority" before "Priority".
+        .accessibilityHidden(true)
     }
 }
 

@@ -6,6 +6,21 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **My Issues, filtered and grouped your way.** My Issues has the filter chips and Display options of a project's
+  view now. Press `F` to filter it by project, status, priority, label, milestone, due date, last change, or open or
+  closed, and `⇧V` to group it by status, project, priority or due date and to order it by priority, due date, last
+  change, creation or as the boards have it. Status and priority mean the same in every project: "In Review" and
+  "Doing" are both in progress, "P0" and "Urgent" both urgent. Grouped by project, the rows leave out the project's
+  name. On iPhone and iPad the filter is a line under the title, and the "…" menu has Filter…, Group By and Order By.
+  What you choose stays on the device, as GitHub has no view behind My Issues.
+
+### Changed
+
+- **My Issues puts the most urgent first** in each group, then what is due soonest, instead of each board's order,
+  which said little once several projects were mixed. **Order by › Manual** brings the boards' order back.
+
 ## [1.0.0] - 2026-10-19
 
 Issues now plans the work as well as tracking it, in a window built like Mail and Notes. In the App Store this version

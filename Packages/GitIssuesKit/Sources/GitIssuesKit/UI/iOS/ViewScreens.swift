@@ -266,18 +266,22 @@ struct FilterGlyph: View {
     var icon: FilterIcon
 
     var body: some View {
-        switch icon {
-        case .status(let glyph): StatusIcon(glyph: glyph, size: 13)
-        case .symbol(let name): Image(systemName: name).font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)
-        case .person(let person): Avatar(login: person.login, url: person.avatarUrl, size: 16)
-        case .label(let color): Circle().fill(Theme.labelColor(color)).frame(width: 8, height: 8)
-        case .milestone(let mark): MilestoneIcon(mark: mark, size: 12)
-        case .dot(let color): GroupIcon(icon: .dot(color), size: 13)
-        case .iteration(let current): IterationIcon(size: 13).foregroundStyle(current ? Theme.started : Theme.textSecondary)
-        case .priority(let level): PriorityIcon(level: level)
-        case .project(let look): ProjectGlyphImage(look: look, size: 14)
-        case .none: EmptyView()
+        Group {
+            switch icon {
+            case .status(let glyph): StatusIcon(glyph: glyph, size: 13)
+            case .symbol(let name): Image(systemName: name).font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)
+            case .person(let person): Avatar(login: person.login, url: person.avatarUrl, size: 16)
+            case .label(let color): Circle().fill(Theme.labelColor(color)).frame(width: 8, height: 8)
+            case .milestone(let mark): MilestoneIcon(mark: mark, size: 12)
+            case .dot(let color): GroupIcon(icon: .dot(color), size: 13)
+            case .iteration(let current): IterationIcon(size: 13).foregroundStyle(current ? Theme.started : Theme.textSecondary)
+            case .priority(let level): PriorityIcon(level: level)
+            case .project(let look): ProjectGlyphImage(look: look, size: 14)
+            case .none: EmptyView()
+            }
         }
+        // The name beside it says what it is; a priority's icon would otherwise read "High priority" before "Priority".
+        .accessibilityHidden(true)
     }
 }
 
