@@ -1755,6 +1755,8 @@ final class IssueHeaderCell: NSView {
         case .person(let person): MenuIcons.avatar(person).draw(in: iconRect.insetBy(dx: -1, dy: -1))
         case .repository: MenuIcons.symbol("book.closed", color: Theme.textSecondary)?.draw(in: iconRect)
         case .priority(let level): MenuIcons.priority(level).draw(in: iconRect)
+        case .project(let look): MenuIcons.symbol(look.glyph.systemName, color: Theme.projectColor(look.color))?.draw(in: iconRect)
+        case .due(let tone): MenuIcons.symbol("calendar", color: tone.color)?.draw(in: iconRect.insetBy(dx: 0.5, dy: 0.5))
         }
         let titleX = section.icon == .plain ? left : left + 22
         // Room for the count and the + button after the title.

@@ -10,6 +10,9 @@ struct IssueRow: View {
     var item: Item
     /// In My Issues and search, where rows come from several projects.
     var showsProject = false
+    /// Whether such a row names its project, or only the repository of an issue on no board: My Issues grouped by
+    /// project says it in the group.
+    var namesBoard = true
     /// Part of the title to highlight, for search results.
     var highlight: String? = nil
     /// How the row hangs under a parent in its group.
@@ -155,7 +158,7 @@ struct IssueRow: View {
                 }
                 .frame(maxWidth: 160, alignment: .leading)
             }
-            if showsProject, let project = model.project(of: item) {
+            if showsProject, namesBoard, let project = model.project(of: item) {
                 HStack(spacing: 5) {
                     ProjectIcon(projectId: project.id, size: 10)
                     Text(project.title)
@@ -232,7 +235,9 @@ struct IssueRow: View {
         }
         if showsEpic, let epic { parts.append(String(localized: .epicTooltip(epic: epic.title))) }
         parts += chips.map(model.spokenChip)
-        if showsProject, let place = model.project(of: item)?.title ?? item.repoShortName { parts.append(place) }
+        if showsProject, let place = item.isOnBoard ? (namesBoard ? model.project(of: item)?.title : nil) : item.repoShortName {
+            parts.append(place)
+        }
         return parts.joined(separator: ", ")
     }
 }

@@ -13,7 +13,7 @@ struct FilterBar: View {
             HStack(spacing: 6) {
                 FilterChipsRow(
                     filter: Binding(get: { model.filter(of: view) }, set: { model.setFilter($0, of: view) }),
-                    projectId: view.projectId
+                    scope: .project(view.projectId)
                 )
                 Spacer(minLength: 8)
                 if changed {
@@ -66,7 +66,7 @@ struct QuietButtonStyle: ButtonStyle {
 struct FilterChipsRow: View {
     @Environment(AppModel.self) private var model
     @Binding var filter: ProjectFilter
-    var projectId: String
+    var scope: FilterScope
     /// In a form the chips wrap onto more lines; in the bar they stay on one and scroll.
     var wraps = false
     @State private var adding = false
@@ -74,7 +74,7 @@ struct FilterChipsRow: View {
     var body: some View {
         let chips = Group {
             ForEach(Array(filter.terms.enumerated()), id: \.offset) { index, term in
-                FilterChipView(filter: $filter, index: index, term: term, projectId: projectId)
+                FilterChipView(filter: $filter, index: index, term: term, scope: scope)
             }
             Button {
                 adding = true
@@ -92,7 +92,7 @@ struct FilterChipsRow: View {
             .buttonStyle(PlainPressStyle())
             .help(Text(.filterTooltip))
             .dropdown(isPresented: $adding) { close in
-                FilterMenu(filter: $filter, projectId: projectId, close: close)
+                FilterMenu(filter: $filter, scope: scope, close: close)
             }
         }
         if wraps {
@@ -113,11 +113,11 @@ struct FilterChipView: View {
     @Binding var filter: ProjectFilter
     var index: Int
     var term: ProjectFilter.Term
-    var projectId: String
+    var scope: FilterScope
     @State private var picking = false
 
     var body: some View {
-        let chip = model.chip(for: term, projectId: projectId)
+        let chip = model.chip(for: term, in: scope)
         HStack(spacing: 0) {
             HStack(spacing: 5) {
                 if !chip.isRaw { FilterIconView(icon: chip.icon, size: 11) }
@@ -159,7 +159,7 @@ struct FilterChipView: View {
                 }
                 .buttonStyle(PlainPressStyle())
                 .dropdown(isPresented: $picking) { close in
-                    FilterValueList(filter: $filter, projectId: projectId, property: property(for: term), termIndex: index, close: close)
+                    FilterValueList(filter: $filter, scope: scope, property: property(for: term), termIndex: index, close: close)
                 }
             }
             divider
@@ -189,7 +189,7 @@ struct FilterChipView: View {
 
     private func property(for term: ProjectFilter.Term) -> FilterProperty? {
         let key = term.key == "assignees" ? "assignee" : term.key == "labels" ? "label" : term.key
-        return model.filterProperties(projectId: projectId).first { $0.id == key }
+        return model.filterProperties(scope).first { $0.id == key }
     }
 }
 
@@ -211,6 +211,7 @@ struct FilterIconView: View {
         case .dot(let color): GroupIcon(icon: .dot(color), size: size + 1)
         case .iteration(let current): IterationIcon(size: size + 1).foregroundStyle(current ? Theme.started : Theme.textSecondary)
         case .priority(let level): PriorityIcon(level: level).scaleEffect(size / 14)
+        case .project(let look): ProjectGlyphImage(look: look, size: size + 1)
         case .none: EmptyView()
         }
     }
@@ -220,7 +221,7 @@ struct FilterIconView: View {
 struct FilterMenu: View {
     @Environment(AppModel.self) private var model
     @Binding var filter: ProjectFilter
-    var projectId: String
+    var scope: FilterScope
     var close: () -> Void
 
     @State private var property: FilterProperty?
@@ -230,22 +231,24 @@ struct FilterMenu: View {
         if editingText {
             FilterTextEditor(filter: $filter, close: close)
         } else if let property {
-            FilterValueList(filter: $filter, projectId: projectId, property: property, termIndex: model.termIndex(for: property, in: filter), close: close)
+            FilterValueList(filter: $filter, scope: scope, property: property, termIndex: model.termIndex(for: property, in: filter), close: close)
         } else {
-            let properties = model.filterProperties(projectId: projectId)
+            let properties = model.filterProperties(scope)
+            // My Issues has no filter on GitHub, so no GitHub words to write it in.
+            let text = scope == .myIssues ? [] : [PickerItem(id: "text", title: String(localized: .editFilterAsText), icon: AnyView(FilterIconView(icon: .symbol("chevron.left.forwardslash.chevron.right"))), alwaysShown: true)]
             PickerList(
                 placeholder: String(localized: .filterEllipsis),
                 items: properties.map { property in
                     PickerItem(id: "property:\(property.id)", title: property.title, icon: AnyView(FilterIconView(icon: property.icon)),
                                trailing: AnyView(Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.textTertiary)))
-                } + [PickerItem(id: "text", title: String(localized: .editFilterAsText), icon: AnyView(FilterIconView(icon: .symbol("chevron.left.forwardslash.chevron.right"))), alwaysShown: true)],
+                } + text,
                 hint: "F",
                 width: 280,
                 search: { query in
                     let matchingProperties = properties.filter { fuzzyScore(query, $0.title) != nil }.map { property in
                         PickerItem(id: "property:\(property.id)", title: property.title, icon: AnyView(FilterIconView(icon: property.icon)))
                     }
-                    let values = model.allFilterValues(projectId: projectId).compactMap { entry -> (PickerItem, Int)? in
+                    let values = model.allFilterValues(in: scope).compactMap { entry -> (PickerItem, Int)? in
                         guard let score = fuzzyScore(query, entry.value.title) ?? entry.value.subtitle.flatMap({ fuzzyScore(query, $0) }) else { return nil }
                         return (PickerItem(
                             id: "value:\(entry.value.id)", title: entry.value.title, subtitle: entry.property.title,
@@ -263,7 +266,7 @@ struct FilterMenu: View {
                         editingText = true
                     } else if id.hasPrefix("property:") {
                         property = properties.first { "property:\($0.id)" == id }
-                    } else if id.hasPrefix("value:"), let entry = model.allFilterValues(projectId: projectId).first(where: { "value:\($0.value.id)" == id }) {
+                    } else if id.hasPrefix("value:"), let entry = model.allFilterValues(in: scope).first(where: { "value:\($0.value.id)" == id }) {
                         filter = model.toggling(entry.value, in: filter, termIndex: model.termIndex(for: entry.property, in: filter))
                         close()
                     }
@@ -288,14 +291,14 @@ struct FilterMenu: View {
 struct FilterValueList: View {
     @Environment(AppModel.self) private var model
     @Binding var filter: ProjectFilter
-    var projectId: String
+    var scope: FilterScope
     var property: FilterProperty?
     var termIndex: Int?
     var close: () -> Void
 
     var body: some View {
         if let property {
-            let values = model.filterValues(property, projectId: projectId)
+            let values = model.filterValues(property, in: scope)
             let picked = termIndex.flatMap { filter.terms.indices.contains($0) ? model.pickedValues(filter.terms[$0]) : nil } ?? []
             PickerList(
                 placeholder: property.title,
@@ -394,10 +397,11 @@ struct FlowLayout: Layout {
 
 // MARK: - The header's buttons
 
-/// The header's filter button: adds a filter to the view open (F).
+/// The header's filter button: adds a filter to the view open, or to My Issues (F).
 struct HeaderFilterButton: View {
     @Environment(AppModel.self) private var model
-    var view: ProjectView
+    @Binding var filter: ProjectFilter
+    var scope: FilterScope
     @State private var open = false
 
     var body: some View {
@@ -414,19 +418,18 @@ struct HeaderFilterButton: View {
         .help(Text(.filterTooltip))
         .accessibilityLabel(.filter)
         .dropdown(isPresented: $open) { close in
-            FilterMenu(
-                filter: Binding(get: { model.filter(of: view) }, set: { model.setFilter($0, of: view) }),
-                projectId: view.projectId, close: close
-            )
+            FilterMenu(filter: $filter, scope: scope, close: close)
         }
         .onChange(of: model.filterMenuRequest) { open = true }
     }
 }
 
-/// The header's Display button: board or list, columns, grouping, order and the fields shown (⇧V).
-struct DisplayButton: View {
+/// The header's Display button (⇧V), with a dot while you see the page differently from how it starts out: a view
+/// as it is on GitHub, My Issues as it comes.
+struct DisplayButton<Options: View>: View {
     @Environment(AppModel.self) private var model
-    var view: ProjectView
+    var changed: Bool
+    @ViewBuilder var options: (_ close: @escaping () -> Void) -> Options
     @State private var open = false
 
     var body: some View {
@@ -436,7 +439,7 @@ struct DisplayButton: View {
             HStack(spacing: 6) {
                 Image(systemName: "slider.horizontal.3").font(.system(size: 12, weight: .medium))
                 Text(.display)
-                if model.displayDiffers(view) {
+                if changed {
                     Circle().fill(Theme.accent).frame(width: 5, height: 5)
                 }
             }
@@ -449,7 +452,7 @@ struct DisplayButton: View {
         .buttonStyle(PlainPressStyle())
         .help(Text(.displayTooltip))
         .dropdown(isPresented: $open) { close in
-            DisplayOptions(view: view, close: close)
+            options(close)
         }
         .onChange(of: model.displayMenuRequest) { open = true }
     }

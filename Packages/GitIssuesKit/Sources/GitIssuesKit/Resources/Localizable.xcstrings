@@ -8089,6 +8089,66 @@
         }
       }
     },
+    "clearFilter" : {
+      "comment" : "My Issues (Mac, iPhone, iPad): button that takes away every condition of the filter at once. Shown next to the filter chips, in the filter sheet, and when nothing matches the filter.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter entfernen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Filter"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrar filtro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effacer le filtre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フィルタをクリア"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터 지우기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limpar filtro"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сбросить фильтр"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清除筛选"
+          }
+        }
+      }
+    },
     "clearSelection" : {
       "comment" : "Mac, right-click menu on several selected issues: unselects them all. Title case, as in menus.",
       "extractionState" : "manual",
@@ -11492,7 +11552,7 @@
       }
     },
     "created" : {
-      "comment" : "iPad, issue screen, column of properties on the right: label of the row saying when and by whom the issue was created. Short. Also: Mac, issue view, properties panel: label of the row showing when the issue was created and by whom. Short: about 10 characters.",
+      "comment" : "iPad, issue screen, column of properties on the right: label of the row saying when and by whom the issue was created. Short. Also: Mac, issue view, properties panel: label of the row showing when the issue was created and by whom. Short: about 10 characters. Also a choice of order in the Display options of My Issues: newest issues first.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -13634,7 +13694,7 @@
       }
     },
     "displayOptions" : {
-      "comment" : "Command palette: opens the Display options of the view on screen (⇧V).",
+      "comment" : "Command palette: opens the Display options of the view on screen (⇧V). Also for My Issues.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -14529,6 +14589,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "本周内"
+          }
+        }
+      }
+    },
+    "dueGroupNextWeek" : {
+      "comment" : "My Issues grouped by due date (Mac, iPhone, iPad): heading of the group of open issues due in the seven days after today. The groups before it are Overdue and Today; the one after it is Later.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nächste 7 Tage"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next 7 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Próximos 7 días"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7 prochains jours"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今後7日間"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "향후 7일"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Próximos 7 dias"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ближайшие 7 дней"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未来 7 天"
           }
         }
       }
@@ -21806,7 +21926,7 @@
       }
     },
     "filterOverdue" : {
-      "comment" : "Filter menu, value of Due date: issues whose due date has passed.",
+      "comment" : "Filter menu, value of Due date: issues whose due date has passed. Also the heading of the first group when My Issues is grouped by due date.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -22226,7 +22346,7 @@
       }
     },
     "filterTooltip" : {
-      "comment" : "Mac tooltip of the button that adds a condition to the view's filter. F is the key.",
+      "comment" : "Mac tooltip of the button that adds a condition to the view's filter. F is the key. The same button filters My Issues.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -22286,7 +22406,7 @@
       }
     },
     "filterUpdated" : {
-      "comment" : "Filter menu and filter chips: when an issue last changed, as something to filter by.",
+      "comment" : "Filter menu and filter chips: when an issue last changed, as something to filter by. Also a choice of order in the Display options of My Issues: latest change first.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -31562,7 +31682,7 @@
       }
     },
     "later" : {
-      "comment" : "Roadmap section: epics planned for no open milestone yet.",
+      "comment" : "Roadmap section: epics planned for no open milestone yet. Also, in My Issues grouped by due date, the group of issues due more than seven days from now.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -39338,7 +39458,7 @@
       }
     },
     "noDueDate" : {
-      "comment" : "Mac: tooltip of the due date spot on a card or row when the issue has none.",
+      "comment" : "Mac: tooltip of the due date spot on a card or row when the issue has none. Also the heading of the group of issues without one when My Issues is grouped by due date, and a value of the Due date filter in My Issues.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -40653,6 +40773,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "没有分配给你的议题"
+          }
+        }
+      }
+    },
+    "nothingMatchesFilterMessage" : {
+      "comment" : "My Issues (Mac, iPhone, iPad): text under 'Nothing matches the filter', above the Clear Filter button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere den Filter oder entferne ihn, um alles zu sehen, was dir zugewiesen ist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change the filter or clear it to see everything assigned to you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambia el filtro o bórralo para ver todo lo que tienes asignado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifiez le filtre ou effacez-le pour voir tout ce qui vous est assigné."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フィルタを変更するかクリアすると、割り当てられたすべてのIssueが表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터를 변경하거나 지우면 나에게 할당된 모든 이슈를 볼 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altere o filtro ou limpe-o para ver tudo o que está atribuído a você."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Измените фильтр или сбросьте его, чтобы увидеть всё, что вам назначено."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改或清除筛选条件，即可查看分配给你的所有议题。"
+          }
+        }
+      }
+    },
+    "nothingMatchesFilterTitle" : {
+      "comment" : "My Issues (Mac, iPhone, iPad): title of the empty list when issues are assigned to you but the filter hides all of them.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts passt zum Filter"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matches the filter"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nada coincide con el filtro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun ticket ne correspond au filtre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フィルタに一致するIssueはありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터와 일치하는 이슈 없음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nada corresponde ao filtro"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Под фильтр ничего не подходит"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有符合筛选条件的议题"
           }
         }
       }
@@ -46009,6 +46249,186 @@
         }
       }
     },
+    "priorityLevelHigh" : {
+      "comment" : "My Issues (Mac, iPhone, iPad): the second level of priority, as a filter value and as a group heading. It stands for the high priority of every project, whatever the project calls it (P1, High).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoch"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haute"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "높음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alta"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Высокий"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高"
+          }
+        }
+      }
+    },
+    "priorityLevelLow" : {
+      "comment" : "My Issues (Mac, iPhone, iPad): the lowest level of priority, as a filter value and as a group heading. It stands for the low priority of every project, whatever the project calls it (P3, Low, Minor).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niedrig"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baja"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basse"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "低"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "낮음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baixa"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Низкий"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "低"
+          }
+        }
+      }
+    },
+    "priorityLevelMedium" : {
+      "comment" : "My Issues (Mac, iPhone, iPad): the middle level of priority, as a filter value and as a group heading. It stands for the medium priority of every project, whatever the project calls it (P2, Medium, Normal).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mittel"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Media"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moyenne"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보통"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Média"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Средний"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中"
+          }
+        }
+      }
+    },
     "priorityLevelSpoken" : {
       "comment" : "VoiceOver, iPhone and iPad: part of what is read for an issue in a list. %(priority)@ is the name of a priority option from GitHub, such as 'Urgent' or 'High'.",
       "extractionState" : "manual",
@@ -46065,6 +46485,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "优先级 %@"
+          }
+        }
+      }
+    },
+    "priorityLevelUrgent" : {
+      "comment" : "My Issues (Mac, iPhone, iPad): the highest level of priority, as a filter value and as a group heading. It stands for the top priority of every project, whatever the project calls it (P0, Urgent, Critical).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dringend"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Urgent"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Urgente"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Urgente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "緊急"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "긴급"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Urgente"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Срочный"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "紧急"
           }
         }
       }
@@ -68330,7 +68810,7 @@
       }
     },
     "reset" : {
-      "comment" : "Button that takes back the changes to a view's filter or display made on this device, to how the view is on GitHub.",
+      "comment" : "Button that takes back the changes to a view's filter or display made on this device, to how the view is on GitHub. Also, in My Issues' Display options and on iPhone and iPad in its \"…\" menu, back to how My Issues shows at first.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -68445,6 +68925,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "恢复为 GitHub 上该视图的筛选条件"
+          }
+        }
+      }
+    },
+    "resetMyIssuesDisplayTooltip" : {
+      "comment" : "Mac tooltip of Reset in My Issues' Display options: it goes back to how My Issues shows at first, grouped by the kind of status and ordered by priority.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurück zu Gruppen nach Status, Dringendes zuerst"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to groups by status, most urgent first"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver a grupos por estado, lo más urgente primero"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revenir aux groupes par statut, le plus urgent d’abord"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ステータス別のグループと緊急度順に戻す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "상태별 그룹, 긴급한 순서로 되돌리기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voltar a grupos por status, o mais urgente primeiro"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вернуть группы по статусу, срочные сначала"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复为按状态分组、最紧急的在前"
           }
         }
       }
@@ -79929,6 +80469,66 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "unknownProject" : {
+      "comment" : "My Issues, filter chip: a project the filter names that can't be found any more, because it was deleted or you lost access to it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbekanntes Projekt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown project"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proyecto desconocido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Projet inconnu"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不明なプロジェクト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "알 수 없는 프로젝트"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Projeto desconhecido"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неизвестный проект"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未知项目"
           }
         }
       }

@@ -480,7 +480,7 @@ private struct RootPalette: View {
                 model.viewMode = .list
             })
         }
-        if let view = model.currentView {
+        if model.currentView != nil || model.scope == .myIssues {
             list.append(PaletteCommand(id: "filter", title: .filterEllipsis, section: go, icon: symbol("line.3.horizontal.decrease"), keys: ["F"]) {
                 model.overlay = nil
                 model.filterMenuRequest += 1
@@ -489,6 +489,13 @@ private struct RootPalette: View {
                 model.overlay = nil
                 model.displayMenuRequest += 1
             })
+        }
+        if model.scope == .myIssues, !model.mineFilter.isEmpty {
+            list.append(PaletteCommand(id: "clear-filter", title: .clearFilter, section: go, icon: symbol("line.3.horizontal.decrease.circle")) {
+                model.setMineFilter(ProjectFilter(""))
+            })
+        }
+        if let view = model.currentView {
             if model.filterChanged(view), model.canEditViews(projectId: view.projectId) {
                 list.append(PaletteCommand(id: "save-view", title: .saveViewMenu, section: go, icon: symbol("square.and.arrow.down"), keys: ["⌘", "S"]) {
                     model.saveFilter(of: view)

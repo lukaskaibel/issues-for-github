@@ -29,6 +29,10 @@ struct BoardColumn: Identifiable, Equatable {
 }
 
 struct ListSection: Identifiable, Equatable {
+    /// The group of issues on no board in My Issues and a repository's list, whichever way they are grouped. Ids stay
+    /// the same in every language: folded sections and the order of sections are kept by them.
+    static let noProjectId = "No project"
+
     /// What a group of the list is made of.
     enum Kind: Equatable {
         /// Issues with a status, or a kind of status.
@@ -39,6 +43,9 @@ struct ListSection: Identifiable, Equatable {
         case milestone(title: String?)
         /// The issues of a view's group: the value of the field it groups by that they share.
         case group(GroupKey)
+        /// A group of My Issues by project, priority or due date. It mixes projects, so nothing can be dropped into
+        /// it or made in it.
+        case mine
     }
 
     var id: String
@@ -328,6 +335,14 @@ public final class AppModel {
     var viewDisplays: [String: ViewDisplay] = AppModel.decoded("views.display") ?? [:] {
         didSet { AppModel.store(viewDisplays, "views.display") }
     }
+    /// How My Issues is grouped and ordered. GitHub has no view behind it, so this stays on the device.
+    var mineDisplay = MineDisplay(stored: UserDefaults.standard.string(forKey: "mine.display")) ?? MineDisplay() {
+        didSet { UserDefaults.standard.set(mineDisplay.stored, forKey: "mine.display") }
+    }
+    /// My Issues' filter, written as a view's filter is (`project:… priority:urgent,high`); on this device too.
+    var mineFilterText: String = UserDefaults.standard.string(forKey: "mine.filter") ?? "" {
+        didSet { UserDefaults.standard.set(mineFilterText, forKey: "mine.filter") }
+    }
     /// Filters changed here and not saved to GitHub yet, by view id, as GitHub keeps unsaved changes to a view.
     var draftFilters: [String: String] = UserDefaults.standard.dictionary(forKey: "views.drafts") as? [String: String] ?? [:] {
         didSet { UserDefaults.standard.set(draftFilters, forKey: "views.drafts") }
@@ -346,6 +361,8 @@ public final class AppModel {
     var projectIconRequest = 0
     /// Filter contexts of projects, worked out once per change of the data.
     @ObservationIgnored var filterContexts: [String: FilterContext] = [:]
+    /// My Issues' filter and order with what they need to know of your issues, worked out once per change too.
+    @ObservationIgnored var mineRulesCache: MineRules?
     /// Projects tucked away in the sidebar. They can still be found in the command palette.
     var hiddenProjectIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenProjects") ?? []) {
         didSet { UserDefaults.standard.set(Array(hiddenProjectIds), forKey: "hiddenProjects") }
@@ -837,7 +854,7 @@ public final class AppModel {
         projects.filter { !$0.closed }
     }
 
-    /// Items of a scope, in board order. Issues on none of your boards come first, newest first.
+    /// Items of a scope, in board order (My Issues in its own). Issues on none of your boards come first, newest first.
     /// Epics are planned on the roadmap, as Linear's projects are, so boards and lists leave them out.
     func items(in scope: Scope) -> [Item] {
         switch scope {
@@ -846,8 +863,7 @@ public final class AppModel {
             if let view = currentView(projectId: id) { return items(of: view) }
             return allItems.filter { $0.projectId == id && !$0.isEpic }
         case .myIssues:
-            guard let login = viewer?.login else { return [] }
-            return allItems.filter { item in !item.isEpic && item.assignees.contains { $0.login == login } }
+            return mineItems()
         case .inbox:
             return []
         case .repository(let id):
@@ -1044,7 +1060,10 @@ public final class AppModel {
                 ListSection(id: $0.id, title: $0.title, glyph: $0.glyph, option: $0.option, items: $0.items, nesting: $0.nesting)
             }
 
-        case .myIssues, .repository:
+        case .myIssues:
+            result = mineSections(items(in: scope))
+
+        case .repository:
             result = groupedByKindOfStatus(items(in: scope))
 
         case .milestone:
@@ -1071,39 +1090,35 @@ public final class AppModel {
 
     /// Issues from several boards, grouped by what their status means. Issues on none of your boards lead, since
     /// they wait for someone to put them on one; when there are none, the group isn't there.
-    private func groupedByKindOfStatus(_ items: [Item]) -> [ListSection] {
+    func groupedByKindOfStatus(_ items: [Item]) -> [ListSection] {
         enum Group: CaseIterable {
             case noProject, started, unstarted, backlog, noStatus, completed, canceled
         }
         func group(of item: Item) -> Group {
-            guard item.isOnBoard else {
-                if !item.isClosed { return .noProject }
-                return item.stateReason == "NOT_PLANNED" ? .canceled : .completed
-            }
-            switch statusOption(of: item)?.statusCategory {
-            case .started: return .started
-            case .unstarted: return .unstarted
-            case .backlog: return .backlog
-            case .completed: return .completed
-            case .canceled: return .canceled
-            case nil: return .noStatus
+            switch kindOfStatus(of: item) {
+            case .started: .started
+            case .unstarted: .unstarted
+            case .backlog: .backlog
+            case .completed: .completed
+            case .canceled: .canceled
+            case nil: item.isOnBoard ? .noStatus : .noProject
             }
         }
         let grouped = Dictionary(grouping: items, by: group)
         return Group.allCases.compactMap { kind in
             guard let matching = grouped[kind], !matching.isEmpty else { return nil }
             // The id stays the same in every language: folded sections and the order of sections are kept by it.
-            let (id, title, glyph): (String, LocalizedStringResource, StatusGlyph) = switch kind {
-            case .noProject: ("No project", .noProject, .noProject)
-            case .started: ("In progress", .statusGroupInProgress, StatusGlyph(category: .started, progress: 0.5, color: Theme.started))
-            case .unstarted: ("Todo", .statusGroupTodo, StatusGlyph(category: .unstarted, progress: 0, color: Theme.textBody))
-            case .backlog: ("Backlog", .statusGroupBacklog, .none)
-            case .noStatus: ("No status", .noStatus, .none)
-            case .completed: ("Done", .statusGroupDone, StatusGlyph(category: .completed, progress: 1, color: Theme.accent))
-            case .canceled: ("Canceled", .statusGroupCanceled, StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary))
+            let (id, title, glyph): (String, String, StatusGlyph) = switch kind {
+            case .noProject: (ListSection.noProjectId, String(localized: .noProject), .noProject)
+            case .started: ("In progress", Self.statusTitle(.started), Self.statusGlyph(.started))
+            case .unstarted: ("Todo", Self.statusTitle(.unstarted), Self.statusGlyph(.unstarted))
+            case .backlog: ("Backlog", Self.statusTitle(.backlog), Self.statusGlyph(.backlog))
+            case .noStatus: ("No status", String(localized: .noStatus), .none)
+            case .completed: ("Done", Self.statusTitle(.completed), Self.statusGlyph(.completed))
+            case .canceled: ("Canceled", Self.statusTitle(.canceled), Self.statusGlyph(.canceled))
             }
             let (shown, nesting) = Nesting.arrange(matching, folded: foldedParents)
-            return ListSection(id: id, title: String(localized: title), glyph: glyph, option: nil, items: shown, nesting: nesting)
+            return ListSection(id: id, title: title, glyph: glyph, option: nil, items: shown, nesting: nesting)
         }
     }
 
@@ -1118,6 +1133,7 @@ public final class AppModel {
         sectionCache = [:]
         columnCache = [:]
         filterContexts = [:]
+        mineRulesCache = nil
         planningCache = PlanningCache()
         dataVersion &+= 1
 
