@@ -8,6 +8,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **My Issues, filtered and grouped your way.** My Issues has the filter chips and Display options of a project's
+  view now. Press `F` to filter it by project, status, priority, label, milestone, due date, last change, or open or
+  closed, and `⇧V` to group it by status, project, priority or due date and to order it by priority, due date, last
+  change, creation or as the boards have it. Status and priority mean the same in every project: "In Review" and
+  "Doing" are both in progress, "P0" and "Urgent" both urgent. Grouped by project, the rows leave out the project's
+  name. On iPhone and iPad the filter is a line under the title, and the "…" menu has Filter…, Group By and Order By.
+  What you choose stays on the device, as GitHub has no view behind My Issues.
 - **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and
   those without a priority after them, with the done ones at the bottom. The arrows beside the plus over them order
   them by status, newest first or in GitHub's order instead; the choice holds for every issue on that device, and the
@@ -24,6 +31,8 @@ All notable changes to this project are recorded here. The format follows
   cards no longer put the repository's name next to the number. On the Mac, point at the number and it names the
   repository the way GitHub does, as in `acme/website#12`; a row's number in a list does the same. My Issues, which
   mixes projects, still says where each issue comes from.
+- **My Issues puts the most urgent first** in each group, then what is due soonest, instead of each board's order,
+  which said little once several projects were mixed. **Order by › Manual** brings the boards' order back.
 
 ### Fixed
 
