@@ -142,6 +142,7 @@ private struct InboxList: View {
                     .animation(Theme.spring, value: entries.map(\.id))
                 }
                 .scrollIndicators(.never)
+                .pageUnderToolbar()
                 .onChange(of: model.focusScrollToken) {
                     guard let id = model.inboxSelectedId else { return }
                     withAnimation(Theme.quick) { proxy.scrollTo(id) }
@@ -510,6 +511,7 @@ private struct InboxIssue: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollIndicators(.never)
+            .pageUnderToolbar()
             .pageFootBar {
                 if item.kind != .draft {
                     CommentComposer(item: item)

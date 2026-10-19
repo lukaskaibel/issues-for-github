@@ -15,13 +15,13 @@ render() {
   swift Tools/pad-icon.swift "$work/full.png" "$3"
 }
 
-# Each board, light and dark, under the name AppIconChoice uses: AppIcon.icon is the pinboard, AppIcon-Cork.icon the cork.
+# Each board, light and dark, under the name AppIconChoice uses: AppIcon.icon is the board, AppIcon-Graphite.icon the graphite one.
 rm -f "$resources"/icon-*.png
 for document in GitIssues/AppIcon*.icon; do
   name=$(basename "$document" .icon)
   name=${name#AppIcon}
   name=${name#-}
-  name=$(echo "${name:-pinboard}" | tr '[:upper:]' '[:lower:]')
+  name=$(echo "${name:-board}" | tr '[:upper:]' '[:lower:]')
   render "$document" Default "$work/$name-light.png"
   render "$document" Dark "$work/$name-dark.png"
   for look in light dark; do
@@ -29,6 +29,6 @@ for document in GitIssues/AppIcon*.icon; do
   done
 done
 
-sips -z 256 256 "$work/pinboard-light.png" --out Design/icon.png >/dev/null
-sips -z 256 256 "$work/pinboard-dark.png" --out Design/icon-dark.png >/dev/null
+sips -z 256 256 "$work/board-light.png" --out Design/icon.png >/dev/null
+sips -z 256 256 "$work/board-dark.png" --out Design/icon-dark.png >/dev/null
 echo "Rendered the board icons into $resources and Design/."

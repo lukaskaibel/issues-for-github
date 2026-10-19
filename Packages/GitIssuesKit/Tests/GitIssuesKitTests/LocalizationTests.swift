@@ -155,7 +155,7 @@ struct LocalizationTests {
         // GitHub's search query, HTTP headers and the Info.plist key of the OAuth app.
         "is:issue is:open assignee:@me archived:false", "Authorization", "Accept", "Link", "GitHubClientID",
         // Names inside the app: the database folder, alternate icons, a date template, a background task.
-        "GitIssues", "AppIcon-Cork", "AppIcon-Metal", "AppIcon-Whiteboard", "AppIcon-Slate", "AppIcon-Navy", "AppIcon-Sage", "Md", "Send queued changes",
+        "GitIssues", "AppIcon-Graphite", "AppIcon-Indigo", "Md", "Send queued changes",
         // The system's setting for light or dark mode, which the Dock follows.
         "AppleInterfaceStyle",
         // GitHub's names for what a notification is about.
