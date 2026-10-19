@@ -85,7 +85,8 @@ way, under the epic's name; drag the name to another column and they all go.
 
 Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count and
 a dropdown opens right there. Type to filter, press a number to pick; the pick closes it, and so does another click on
-what opened it. For several assignees or labels, tick their checkboxes or Shift-click them, and it stays open.
+what opened it. For several assignees or labels, tick their checkboxes or Shift-click them, and it stays open. Type a
+label the repository doesn't have and **Create label “…”** makes it there, in one of GitHub's colours, and adds it.
 Right-click a card for everything at once: the menu has rows as big as the pickers' and a search field, so typing
 "rev" finds Status › In Review, and Status, Priority, Assignee, Labels, Due Date and Milestone open the same pickers
 as a click on the card.
@@ -343,6 +344,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Repositories in the sidebar | The repositories linked to the project, and those its issues come from |
 | No project | An issue that is in none of your projects; adding it to one is GitHub's *Add to project* |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
+| A label typed into the picker | A new label in the issue's repository, in one of GitHub's colours |
 | Sub-issues hanging under their parent | Only how the app arranges them; GitHub's order and fields stay as they are |
 | A parent done with its last sub-issue | The parent's status moves to the done column and it is closed, as if you had moved it there |
 | Blocked by and blocking | GitHub's issue dependencies |
@@ -630,6 +632,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold an issue | Status, priority, assignee, labels, due date and milestone as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
 | Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
 | Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several |
+| Type a label the repository doesn't have in the Labels sheet | Create label “…” makes it in the repository and adds it |
 | Tap the date chip of an issue | Pick a due date: quick choices, a calendar, or typed in the search field |
 | Touch and hold a reminder | Start the issue, mark it done or move it to tomorrow, without opening the app |
 | Tap the plus beside an issue's sub-issues | A new sub-issue, or an issue that exists already |

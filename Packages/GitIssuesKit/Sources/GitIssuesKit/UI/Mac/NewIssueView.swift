@@ -376,6 +376,7 @@ struct NewIssueView: View {
                     items: items(kind),
                     multiple: kind.multiple,
                     width: kind.width,
+                    creating: kind == .labels ? { model.newLabelRow($0, projectId: draft.projectId, repoId: draft.repoId) } : nil,
                     onPick: { pick(kind, $0) },
                     onClose: close
                 )
@@ -439,7 +440,12 @@ struct NewIssueView: View {
                 draft.assignees.append(person)
             }
         case .labels:
-            if let index = draft.labels.firstIndex(where: { $0.id == id }) {
+            if let name = AppModel.newLabelName(id) {
+                if let label = model.labelForNewIssue(named: name, projectId: draft.projectId, repoId: draft.repoId),
+                   !draft.labels.contains(where: { $0.id == label.id }) {
+                    draft.labels.append(label)
+                }
+            } else if let index = draft.labels.firstIndex(where: { $0.id == id }) {
                 draft.labels.remove(at: index)
             } else if let label = model.pickableLabels(projectId: draft.projectId, repoId: draft.repoId).first(where: { $0.id == id }) {
                 draft.labels.append(label)

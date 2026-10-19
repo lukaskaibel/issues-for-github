@@ -13,6 +13,11 @@ follows 0.2.0: 0.3.0 went to TestFlight only, so its changes reach the App Store
 
 ### Added
 
+- **New labels from the picker.** Type a label the repository doesn't have and the picker offers **Create label
+  “…”**: the label is made in the repository, in one of GitHub's colours, and goes on the issue, or on every issue you
+  picked. It works in every label picker on the Mac (a card, the inspector, ⌘K, the right-click menu and the new-issue
+  dialog) and in the Labels sheet on iPhone and iPad. A name that differs only in case picks the label that is there,
+  and offline the new label waits with your other changes.
 - **My Issues, filtered and grouped your way.** My Issues has the filter chips and Display options of a project's
   view now. Press `F` to filter it by project, status, priority, label, milestone, due date, last change, or open or
   closed, and `⇧V` to group it by status, project, priority or due date and to order it by priority, due date, last
