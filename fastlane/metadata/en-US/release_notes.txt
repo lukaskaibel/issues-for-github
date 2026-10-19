@@ -13,5 +13,6 @@ The biggest update yet: plan with milestones, epics and a roadmap, open your pro
 • Sub-issues hang under their parent; finish the last one and the parent is done too. Mark what blocks what
 • Every issue, on a board or not: your repositories in the sidebar, with the issues on no board one click from going onto one
 • Descriptions drawn as on GitHub: tables, checklists that tick, code and Mermaid diagrams
+• Writing Markdown as in a notes app: bold, italics and code turn on and off, lists go on with Return, and on iPhone and iPad the bar above the keyboard has buttons for where the caret is
 • Fewer clicks: picking a status, person or label closes the picker
 • Fixed: turning an iPad to landscape could quit the app, and on the Mac a two-finger swipe no longer goes back by accident
