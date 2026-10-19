@@ -230,6 +230,9 @@ final class PhoneTests: AppTestCase {
         let done = element("writing-bar-done")
         wait(done)
         app.typeText("Rank matches by **how close** they are.")
+        // Typed this fast, iOS takes the keys for a hardware keyboard's and puts the on-screen one away for a moment,
+        // the bar going down with it: tap once it is back.
+        _ = app.keyboards.firstMatch.waitForExistence(timeout: 3)
         snapshot("Editing a description")
         // Undo and redo in the bar take back the typing and bring it back.
         button("Undo").tap()

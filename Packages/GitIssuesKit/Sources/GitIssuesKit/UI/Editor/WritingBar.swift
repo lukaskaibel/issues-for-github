@@ -129,18 +129,29 @@ final class WritingBar: UIView {
     init(editor: EditorController) {
         host = UIHostingController(rootView: WritingBarView(editor: editor))
         super.init(frame: CGRect(x: 0, y: 0, width: 400, height: Self.height))
-        autoresizingMask = [.flexibleWidth]
+        // A height of its own, so that iOS takes the intrinsic one.
+        autoresizingMask = [.flexibleWidth, .flexibleHeight]
         backgroundColor = .clear
         host.view.backgroundColor = .clear
         host.safeAreaRegions = []
-        host.view.frame = bounds
-        host.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        host.view.frame = CGRect(x: 0, y: 0, width: bounds.width, height: Self.height)
+        host.view.autoresizingMask = [.flexibleWidth, .flexibleBottomMargin]
         addSubview(host.view)
     }
 
     required init?(coder: NSCoder) { fatalError() }
 
-    override var intrinsicContentSize: CGSize { CGSize(width: UIView.noIntrinsicMetric, height: Self.height) }
+    /// With a hardware keyboard the bar stands at the foot of the screen, where the home indicator is and iOS keeps
+    /// touches for its own gestures: it stands above that, the strip below it left empty. Above the keyboard its
+    /// safe area has nothing at the bottom.
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: UIView.noIntrinsicMetric, height: Self.height + safeAreaInsets.bottom)
+    }
+
+    override func safeAreaInsetsDidChange() {
+        super.safeAreaInsetsDidChange()
+        invalidateIntrinsicContentSize()
+    }
 
     /// Only the capsule and Done take touches: the strip around them belongs to the page.
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
