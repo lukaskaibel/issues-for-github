@@ -6,6 +6,8 @@ import ScreenCaptureKit
 // whatever lies in front of or behind them, cropped to the largest window.
 //   capture shot <pid> <out.png>
 //   capture rec <pid> <out.mov> <seconds>
+// A shot of a window drawn inactive, with grey traffic lights, is still written but exits with 3, so the caller can
+// bring the app to the front again and take it once more.
 let args = CommandLine.arguments
 guard args.count >= 4, let pid = pid_t(args[2]) else {
     print("usage: capture shot <pid> <out.png> | capture rec <pid> <out.mov> <seconds>")
@@ -37,6 +39,20 @@ func setup() async throws -> (SCContentFilter, SCStreamConfiguration) {
     return (filter, config)
 }
 
+/// Whether the traffic lights in the window's top left corner are coloured, as on the window of the active app: the
+/// close button's red shows there and nothing else red does.
+func drawnActive(_ image: CGImage, scale: CGFloat) -> Bool {
+    let bitmap = NSBitmapImageRep(cgImage: image)
+    var red = 0
+    for y in 0..<min(Int(50 * scale), image.height) {
+        for x in 0..<min(Int(60 * scale), image.width) {
+            guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else { continue }
+            if color.redComponent > 0.7, color.greenComponent < 0.55, color.blueComponent < 0.55 { red += 1 }
+        }
+    }
+    return red > Int(20 * scale * scale)
+}
+
 final class RecordingDelegate: NSObject, SCRecordingOutputDelegate {
     func recordingOutput(_ recordingOutput: SCRecordingOutput, didFailWithError error: Error) {
         print("recording failed: \(error)")
@@ -50,6 +66,10 @@ Task {
         if mode == "shot" {
             let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
             try NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])!.write(to: out)
+            if !drawnActive(image, scale: CGFloat(filter.pointPixelScale)) {
+                print("capture: the window is drawn inactive")
+                exit(3)
+            }
         } else {
             config.minimumFrameInterval = CMTime(value: 1, timescale: 60)
             config.queueDepth = 8

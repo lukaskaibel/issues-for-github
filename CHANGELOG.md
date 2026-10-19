@@ -109,6 +109,10 @@ All notable changes to this project are recorded here. The format follows
 - On iPhone and iPad the send button sits inside the comment field, as on the Mac and in Messages: a small circle that
   turns the accent colour once there is something to send. Before, it was a round button beside the field and taller
   than it.
+- On the Mac, a two-finger swipe goes back or forward only when you mean it: it has to move clearly sideways, as in
+  Safari, and far enough that its arrow fills before you lift your fingers. Before, a scroll that started a little to
+  the side or a short flick could take you back. The arrow now grows inside the page in glass, instead of sliding out
+  from behind the sidebar.
 - On iPhone and iPad, tapping the status circle of a sub-issue on an issue's page opens a menu of its board's
   statuses, as the status chip does, with the current one checked. Before, the tap marked it done at once, and the
   circle had no way back. A sub-issue on none of your boards offers Open and Closed.
