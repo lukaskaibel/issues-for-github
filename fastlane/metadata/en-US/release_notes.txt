@@ -12,6 +12,7 @@ The biggest update yet: plan with milestones, epics and a roadmap, open your pro
 • Due dates with reminders: pick a day or type it, such as "in 3 days", and on the day your Mac, iPhone and iPad remind you
 • Sub-issues hang under their parent; finish the last one and the parent is done too. Mark what blocks what
 • Every issue, on a board or not: your repositories in the sidebar, with the issues on no board one click from going onto one
+• My Issues your way: filter it and group it by project, status, priority or due date, with the most urgent first
 • Descriptions drawn as on GitHub: tables, checklists that tick, code and Mermaid diagrams
 • Writing Markdown as in a notes app: bold, italics and code turn on and off, lists go on with Return, and on iPhone and iPad the bar above the keyboard has buttons for where the caret is
 • Fewer clicks: picking a status, person or label closes the picker

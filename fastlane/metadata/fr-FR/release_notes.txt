@@ -12,6 +12,7 @@ La mise à jour la plus importante à ce jour : planifiez avec des jalons, des 
 • Échéances avec rappels : choisissez un jour ou saisissez-le, par exemple « dans 3 jours », et le jour venu, votre Mac, votre iPhone et votre iPad vous préviennent
 • Les sous-tickets se rangent juste sous leur ticket parent ; terminez le dernier, et le ticket parent est terminé lui aussi. Indiquez ce qui bloque quoi
 • Tous les tickets, sur un tableau ou non : vos dépôts dans la barre latérale, et les tickets qui ne sont sur aucun tableau ; un clic suffit pour les placer sur un tableau
+• Mes tickets à votre façon : filtrez-les et regroupez-les par projet, statut, priorité ou échéance, les plus urgents en premier
 • Descriptions affichées comme sur GitHub : tableaux, cases à cocher, code et diagrammes Mermaid
 • Écrire en Markdown comme dans une app de notes : le gras, l’italique et le code s’activent et se désactivent, les listes se poursuivent quand vous allez à la ligne, et sur iPhone et iPad, la barre au-dessus du clavier propose des boutons adaptés à l’endroit où se trouve le point d’insertion
 • Moins de clics : choisir un statut, une personne ou une étiquette ferme le menu

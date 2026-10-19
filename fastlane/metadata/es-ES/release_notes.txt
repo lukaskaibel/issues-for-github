@@ -12,6 +12,7 @@ La mayor actualización hasta ahora: planifica con hitos, épicas y una hoja de 
 • Fechas de vencimiento con recordatorios: elige un día o escríbelo, por ejemplo “en 3 días”, y ese día tu Mac, tu iPhone y tu iPad te lo recuerdan
 • Las subincidencias quedan justo debajo de su incidencia principal; completa la última y la principal también se completa. Marca qué bloquea a qué
 • Todas las incidencias, estén o no en un tablero: tus repositorios en la barra lateral, con las incidencias que no están en ningún tablero; un clic las pone en uno
+• Mis incidencias a tu manera: fíltralas y agrúpalas por proyecto, estado, prioridad o fecha de vencimiento, con las más urgentes primero
 • Descripciones como en GitHub: tablas, listas de tareas que se marcan, código y diagramas Mermaid
 • Escribir en Markdown como en una app de notas: la negrita, la cursiva y el código se activan y desactivan, las listas continúan al pasar a la línea siguiente, y en el iPhone y el iPad la barra sobre el teclado muestra botones según dónde esté el punto de inserción
 • Menos clics: elegir un estado, una persona o una etiqueta cierra el menú
