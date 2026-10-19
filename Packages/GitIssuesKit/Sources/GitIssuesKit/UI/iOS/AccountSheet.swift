@@ -62,7 +62,7 @@ struct AccountSheet: View {
 
                 if UIApplication.shared.supportsAlternateIcons {
                     Section(.appIcon) {
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 4), spacing: 14) {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: min(AppIconChoice.allCases.count, 4)), spacing: 14) {
                             ForEach(AppIconChoice.allCases) { choice in
                                 AppIconButton(choice: choice, selected: model.appIcon == choice) {
                                     model.appIcon = choice

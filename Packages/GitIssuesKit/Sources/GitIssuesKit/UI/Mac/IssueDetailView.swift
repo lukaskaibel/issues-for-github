@@ -40,6 +40,7 @@ struct IssueDetailView: View {
             .frame(maxWidth: .infinity)
         }
         .scrollIndicators(.never)
+        .pageUnderToolbar()
         .pageFootBar {
             if item.kind != .draft {
                 CommentComposer(item: item)

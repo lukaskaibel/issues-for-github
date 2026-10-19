@@ -193,9 +193,10 @@ struct SettingsView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// The board in each material, four to a row, named underneath.
+    /// Each of the board icons, at most four to a row, named underneath.
     private var iconGrid: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.fixed(62), spacing: 8), count: 4), alignment: .leading, spacing: 10) {
+        let perRow = min(AppIconChoice.allCases.count, 4)
+        return LazyVGrid(columns: Array(repeating: GridItem(.fixed(62), spacing: 8), count: perRow), alignment: .leading, spacing: 10) {
             ForEach(AppIconChoice.allCases) { choice in
                 Button {
                     model.appIcon = choice
@@ -229,7 +230,7 @@ struct SettingsView: View {
                 .accessibilityAddTraits(model.appIcon == choice ? .isSelected : [])
             }
         }
-        .frame(width: 4 * 62 + 3 * 8)
+        .frame(width: CGFloat(perRow) * 62 + CGFloat(perRow - 1) * 8)
     }
 }
 #endif

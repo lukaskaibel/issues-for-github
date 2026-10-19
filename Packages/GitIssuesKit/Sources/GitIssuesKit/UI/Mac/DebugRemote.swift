@@ -49,7 +49,7 @@ enum DebugRemote {
     }
 
     /// The only project test commands may change.
-    static let sandboxTitle = "Git Issues Sandbox"
+    static let sandboxTitle = Project.sandboxTitle
 
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)

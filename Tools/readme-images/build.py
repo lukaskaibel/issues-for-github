@@ -140,7 +140,7 @@ mac = scaled(window("board-dark"), 0.62)
 canvas = shadow_onto(canvas, mac, (640 * S, 150 * S), "dark", rim=True)
 phone = scaled(device(f"{store}/iphone/7-project-dark.png", "iphone"), 0.165 * S)
 canvas = shadow_onto(canvas, phone, (585 * S, 268 * S), "dark")
-icon = Image.open("Packages/GitIssuesKit/Sources/GitIssuesKit/Resources/icon-pinboard-dark.png").convert("RGBA")
+icon = Image.open("Packages/GitIssuesKit/Sources/GitIssuesKit/Resources/icon-board-dark.png").convert("RGBA")
 canvas.alpha_composite(icon.resize((176 * S, 176 * S), Image.LANCZOS), (66 * S, 128 * S))
 
 
