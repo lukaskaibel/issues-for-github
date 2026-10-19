@@ -13,5 +13,6 @@ La mayor actualización hasta ahora: planifica con hitos, épicas y una hoja de 
 • Las subincidencias quedan justo debajo de su incidencia principal; completa la última y la principal también se completa. Marca qué bloquea a qué
 • Todas las incidencias, estén o no en un tablero: tus repositorios en la barra lateral, con las incidencias que no están en ningún tablero; un clic las pone en uno
 • Descripciones como en GitHub: tablas, listas de tareas que se marcan, código y diagramas Mermaid
+• Escribir en Markdown como en una app de notas: la negrita, la cursiva y el código se activan y desactivan, las listas continúan al pasar a la línea siguiente, y en el iPhone y el iPad la barra sobre el teclado muestra botones según dónde esté el punto de inserción
 • Menos clics: elegir un estado, una persona o una etiqueta cierra el menú
 • Corregido: girar un iPad a horizontal podía cerrar la app, y en el Mac deslizar con dos dedos ya no vuelve atrás sin querer

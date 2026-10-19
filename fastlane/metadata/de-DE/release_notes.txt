@@ -13,5 +13,6 @@ Das bisher größte Update: Plane mit Meilensteinen, Epics und einer Roadmap, ö
 • Sub-Issues hängen direkt unter ihrem übergeordneten Issue; erledigst du das letzte, ist auch das übergeordnete erledigt. Dazu Blocker: Halte fest, was was blockiert
 • Jedes Issue, ob auf einem Board oder nicht: deine Repositories in der Seitenleiste, die Issues auf keinem Board unter „Kein Projekt“; ein Klick bringt sie auf eines
 • Beschreibungen wie auf GitHub: Tabellen, abhakbare Checklisten, Code und Mermaid-Diagramme
+• Markdown schreiben wie in einer Notizen-App: Fett, Kursiv und Code lassen sich ein- und ausschalten, Listen gehen in der nächsten Zeile weiter, und auf iPhone und iPad hat die Leiste über der Tastatur Tasten für die Stelle, an der die Einfügemarke steht
 • Weniger Klicks: Ein Klick auf einen Status, eine Person oder ein Label schließt die Auswahl
 • Behoben: Beim Drehen eines iPad ins Querformat konnte die App abstürzen, und auf dem Mac führt ein Wischen mit zwei Fingern nicht mehr versehentlich zurück

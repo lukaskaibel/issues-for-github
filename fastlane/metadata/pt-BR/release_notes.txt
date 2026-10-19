@@ -13,5 +13,6 @@ A maior atualização até agora: planeje com marcos, épicos e um roteiro, abra
 • As sub-issues ficam logo abaixo da issue principal; conclua a última e a issue principal também é concluída. Marque o que bloqueia o quê
 • Todas as issues, estejam ou não em um quadro: seus repositórios na barra lateral, com as issues que não estão em nenhum quadro; um clique as coloca em um
 • Descrições exibidas como no GitHub: tabelas, checklists que você pode marcar, código e diagramas Mermaid
+• Escrever em Markdown como em um app de notas: o negrito, o itálico e o código se ativam e se desativam, as listas continuam na próxima linha, e no iPhone e no iPad a barra acima do teclado mostra botões para o trecho onde está o ponto de inserção
 • Menos cliques: escolher um status, uma pessoa ou uma etiqueta fecha o menu
 • Corrigido: girar um iPad para a horizontal podia fechar o app, e no Mac deslizar com dois dedos não volta mais para a tela anterior por engano
