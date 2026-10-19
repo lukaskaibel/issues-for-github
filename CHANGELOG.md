@@ -12,6 +12,10 @@ All notable changes to this project are recorded here. The format follows
   with three cards to do in lilac, two in progress in amber and one done in indigo. It follows light and dark mode, and
   in the dark the colours turn brighter. Settings on the Mac, and your account on iPhone and iPad, offer the board on
   graphite or on indigo instead; the pinboard and its materials are gone, so everyone starts from the board.
+- **Cards leave out the repository.** A board is one project's, so on a project that spans several repositories its
+  cards no longer put the repository's name next to the number. On the Mac, point at the number and it names the
+  repository the way GitHub does, as in `acme/website#12`; a row's number in a list does the same. My Issues, which
+  mixes projects, still says where each issue comes from.
 
 ### Fixed
 

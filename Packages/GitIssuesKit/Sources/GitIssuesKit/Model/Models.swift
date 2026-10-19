@@ -158,6 +158,13 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
     public var isEditableContent: Bool { kind == .issue && !isDetached }
     public var repoShortName: String? { repo?.split(separator: "/").last.map(String.init) }
 
+    /// The issue as GitHub refers to it from anywhere, such as "acme/website#12"; just the repository before it has
+    /// a number, nothing for a draft.
+    public var reference: String? {
+        guard let repo else { return nil }
+        return number.map { "\(repo)#\($0)" } ?? repo
+    }
+
     /// The branch name GitHub suggests for the issue: its number and title, such as "14-sign-in-with-device-flow".
     public var branchName: String? {
         guard let number else { return nil }
