@@ -85,10 +85,17 @@ shot() {
 }
 
 echo "Taking screenshots…"
+# The names keep the store's order: planning right after the board, light and dark taking turns.
+rm -f "$out"/*.png
 shot 1-board light 1282 760
-shot 2-issue dark 1282 760 "open 9"
-shot 3-list light 1282 760 "mode list" "scrolllist 0"
-shot 4-palette dark 1282 760 "focus 9" "overlay palette"
-shot 5-selection light 1282 760 "mode list" "scrolllist 0" "pick 7 8 15"
-shot 6-peek dark 1282 760 "mode list" "scrolllist 0" "peek 16"
-shot 7-inbox light 1282 760 "select inbox" "entry 25"
+# The roadmap's timeline: the sample's epics over the milestones 0.3, 0.4 and 1.0.
+shot 2-roadmap dark 1282 760 "select roadmap" "roadmap timeline" "roadmap months"
+# The view "This Week", with its filter and its cycle over the board.
+shot 3-views light 1282 760 "view This Week"
+send "view Board"
+shot 4-issue dark 1282 760 "open 9"
+shot 5-list light 1282 760 "mode list" "scrolllist 0"
+shot 6-palette dark 1282 760 "focus 9" "overlay palette"
+shot 7-selection light 1282 760 "mode list" "scrolllist 0" "pick 7 8 15"
+shot 8-peek dark 1282 760 "mode list" "scrolllist 0" "peek 16"
+shot 9-inbox light 1282 760 "select inbox" "entry 25"
