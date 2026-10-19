@@ -73,6 +73,19 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **Markdown that reads as GitHub draws it, while you write it.** Descriptions, comments, the comment field, new
+  issues and milestones are drawn as on GitHub at all times: headings, lists, checklists that tick, quotes, code in
+  colour, tables and Mermaid diagrams, and now also GitHub's alerts (`> [!NOTE]`, Tip, Important, Warning, Caution),
+  `$maths$` set as formulas, footnotes, pictures from the web (`<img>` tags too) and HTML comments, which are faint
+  while you write and hidden in what you read. The Markdown shows only next to the caret, faintly, and folds away when
+  you move on; a click puts the caret right where you clicked, and a click into a table, a diagram or a formula brings
+  up its source, with the diagram or formula drawn under it as you type. Lists continue on Return, Tab nests them and
+  Backspace takes a bullet away. A link's address hides behind a small pencil that changes it, and a code block has a
+  button that copies it. On the Mac, the new Format menu has the shortcuts of Notes (`⌘B`, `⌘I`, `⌘L`, `⇧⌘H`, `⇧⌘L`,
+  `⇧⌘U` and more), and on iPad with a keyboard the same shortcuts work, listed while you hold `⌘`. On iPhone and iPad the bar above the
+  keyboard is a capsule of glass as in Notes: Aa opens the Format panel in place of the keyboard, next to a checklist,
+  a link, undo, redo and more formatting, with Done beside it. VoiceOver reads each checkbox with its item and whether
+  it is ticked, and ticks it.
 - **A Mac app like Mail and Notes, with Linear's pickers kept.** The window has the system's sidebar and a toolbar in
   Liquid Glass: back and forward, the title of the page with its project and when it last synced, Board and List in
   the middle (`⌘1`, `⌘2`), the page's own buttons such as Filter and Display, a milestone's progress and date or the

@@ -5,6 +5,7 @@ import SwiftUI
 /// The app's single window and its menu commands. The app target only has to show this scene.
 public struct GitIssuesScene: Scene {
     @State private var model = AppModel.shared
+    @State private var markdownFocus = MarkdownFocus.shared
 
     public init() {}
 
@@ -95,6 +96,7 @@ public struct GitIssuesScene: Scene {
                 Button(.syncWithGitHubNow) { model.refresh() }
                     .keyboardShortcut("r", modifiers: .command)
             }
+            FormatCommands(isEditing: markdownFocus.isEditing)
             CommandMenu(.issueMenu) {
                 Button(.copyGitHubLink) {
                     if let item = model.targetItem { model.copyLink(item) }

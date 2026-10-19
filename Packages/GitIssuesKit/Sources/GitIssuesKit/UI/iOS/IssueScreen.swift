@@ -318,16 +318,16 @@ private struct DescriptionEditor: View {
     @Binding var editing: Bool
 
     var body: some View {
-        // A tap on a drawn description shows the text, and a second tap puts the caret where it lands.
-        DescriptionBody(text: item.body, isEditable: item.isEditableContent, onSave: save, editing: $editing) { _ in
-            MarkdownTextEditor(
-                text: item.body,
-                placeholder: item.isEditableContent ? .addDescriptionPlaceholder : .noDescription,
-                isEditable: item.isEditableContent,
-                onSave: save,
-                editing: $editing
-            )
-        }
+        // Drawn as on GitHub, and a tap puts the caret where it lands.
+        MarkdownEditor(
+            text: item.body,
+            placeholder: item.isEditableContent ? .addDescriptionPlaceholder : .noDescription,
+            isEditable: item.isEditableContent,
+            onSave: save,
+            editing: $editing,
+            accessibilityLabel: .description,
+            accessibilityIdentifier: "issue-description"
+        )
         .id(item.id)
     }
 
@@ -1349,20 +1349,31 @@ private struct CommentComposer: View {
     var item: Item
     @State private var draft = ""
     @State private var sent = 0
-    @FocusState private var focused: Bool
+    @State private var height = EditorStyle.lineHeight
 
     var body: some View {
         let empty = draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         HStack(alignment: .bottom, spacing: 10) {
-            TextField(.leaveCommentPlaceholder, text: $draft, axis: .vertical)
-                .lineLimit(1...6)
-                .focused($focused)
-                // ⌘↵ sends, as on the Mac; Return alone starts a new line.
-                .screenKey(.sendComment, "\r", modifiers: .command, isActive: focused) { send() }
-                .accessibilityIdentifier("comment-field")
-                .padding(.horizontal, 16)
-                .padding(.vertical, 11)
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22))
+            // Markdown as it will look on GitHub, growing with the text up to six lines and then scrolling. ⌘↵
+            // sends, as on the Mac; Return alone starts a new line.
+            ScrollView {
+                MarkdownEditor(
+                    text: draft,
+                    placeholder: .leaveCommentPlaceholder,
+                    onChange: { draft = $0 },
+                    onSubmit: send,
+                    submitTitle: .sendComment,
+                    accessibilityLabel: .leaveCommentPlaceholder,
+                    accessibilityIdentifier: "comment-field"
+                )
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+            }
+            .scrollIndicators(.never)
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(height: min(max(height, EditorStyle.lineHeight), EditorStyle.lineHeight * 6))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22))
             Button(action: send) {
                 Image(systemName: "arrow.up")
                     .font(.body.weight(.semibold))

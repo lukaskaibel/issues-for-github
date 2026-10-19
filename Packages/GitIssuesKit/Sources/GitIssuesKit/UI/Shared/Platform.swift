@@ -94,15 +94,3 @@ extension Image {
         #endif
     }
 }
-
-extension PlatformFont {
-    /// The font with italics added, keeping its size and weight.
-    func italicized() -> PlatformFont {
-        #if os(macOS)
-        NSFontManager.shared.convert(self, toHaveTrait: .italicFontMask)
-        #else
-        fontDescriptor.withSymbolicTraits(fontDescriptor.symbolicTraits.union(.traitItalic))
-            .map { UIFont(descriptor: $0, size: pointSize) } ?? self
-        #endif
-    }
-}

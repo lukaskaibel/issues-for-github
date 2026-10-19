@@ -107,6 +107,8 @@ for theme in dark light; do
 
   shot "board-$theme"
   say "open 9"; sleep 1.5; shot "issue-$theme"
+  # Issue #16's description, drawn as on GitHub, with the caret in "bold": its stars show beside it, faintly.
+  say "close" "open 16"; sleep 2; say "mdfocus issue-description" "mdcaret old**"; sleep 1.2; shot "markdown-$theme"
   say "close" "focus 9" "overlay palette"; sleep 1.2; shot "palette-$theme"
   say "overlay due 9"; sleep 1.2; shot "due-$theme"
   say "overlay none" "focus" "mode list"; sleep 1.2; shot "list-$theme"

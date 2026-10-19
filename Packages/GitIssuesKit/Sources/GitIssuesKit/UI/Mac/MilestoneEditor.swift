@@ -16,10 +16,11 @@ struct MilestoneEditor: View {
     @State private var descr = ""
     @State private var dueOpen = false
     @FocusState private var focus: Field?
+    @State private var editingDescription = false
+    @State private var descriptionHeight: CGFloat = 74
 
     private enum Field {
         case name
-        case descr
     }
 
     var body: some View {
@@ -53,24 +54,28 @@ struct MilestoneEditor: View {
                         .font(.system(size: 18, weight: .semibold))
                         .focused($focus, equals: .name)
                         .focusOnAppear()
-                        .onSubmit { focus = .descr }
+                        .onSubmit { editingDescription = true }
                 }
-                ZStack(alignment: .topLeading) {
-                    if descr.isEmpty {
-                        Text(.milestoneDescriptionPlaceholder)
-                            .font(.system(size: 14))
-                            .foregroundStyle(Theme.textTertiary)
-                            .allowsHitTesting(false)
-                    }
-                    TextEditor(text: $descr)
-                        .font(.system(size: 14))
-                        .lineSpacing(3)
-                        .scrollContentBackground(.hidden)
-                        .scrollIndicators(.never)
-                        .focused($focus, equals: .descr)
-                        .frame(height: 74)
-                        .padding(.leading, -5)
+                // What it is about, as it will look on GitHub, growing with the text up to a point and then scrolling.
+                ScrollView {
+                    MarkdownEditor(
+                        text: descr,
+                        placeholder: .milestoneDescriptionPlaceholder,
+                        onChange: { descr = $0 },
+                        editing: $editingDescription,
+                        onSubmit: save,
+                        onEscape: { model.overlay = nil },
+                        accessibilityLabel: .milestoneDescriptionPlaceholder,
+                        accessibilityIdentifier: "milestone-description"
+                    )
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { descriptionHeight = $0 }
+                    // A click below the text puts the caret at its end.
+                    .frame(minHeight: 74, alignment: .top)
+                    .background { Color.clear.contentShape(.rect).onTapGesture { editingDescription = true } }
                 }
+                .scrollIndicators(.never)
+                .scrollBounceBehavior(.basedOnSize)
+                .frame(height: min(max(descriptionHeight, 74), 260))
                 .padding(.leading, 26)
             }
             .padding(.horizontal, 18)

@@ -15,10 +15,10 @@ struct NewIssueSheet: View {
     @State private var confirmDiscard = false
     @State private var created = 0
     @FocusState private var focus: Field?
+    @State private var editingBody = false
 
     private enum Field {
         case title
-        case body
     }
 
     var body: some View {
@@ -35,18 +35,25 @@ struct NewIssueSheet: View {
                             // Return moves on to the description instead of breaking the title.
                             guard new.contains("\n") else { return }
                             draft.title = new.replacingOccurrences(of: "\n", with: "")
-                            focus = .body
+                            editingBody = true
                         }
-                        .onSubmit { focus = .body }
+                        .onSubmit { editingBody = true }
                         .accessibilityLabel(.issueTitle)
                         .accessibilityIdentifier("new-title")
-                    TextField(.addDescriptionPlaceholder, text: $draft.body, axis: .vertical)
-                        .font(.body)
-                        .foregroundStyle(Theme.textBody)
-                        .lineLimit(4...)
-                        .focused($focus, equals: .body)
-                        .accessibilityLabel(.description)
-                        .accessibilityIdentifier("new-description")
+                    // The description as it will look on GitHub.
+                    MarkdownEditor(
+                        text: draft.body,
+                        placeholder: .addDescriptionPlaceholder,
+                        onChange: { draft.body = $0 },
+                        editing: $editingBody,
+                        onSubmit: create,
+                        submitTitle: .createIssue,
+                        accessibilityLabel: .description,
+                        accessibilityIdentifier: "new-description"
+                    )
+                    .frame(minHeight: EditorStyle.lineHeight * 4, alignment: .top)
+                    // A tap below the text puts the caret at its end.
+                    .background { Color.clear.contentShape(.rect).onTapGesture { editingBody = true } }
                     if repos.isEmpty, draft.projectId != nil {
                         Label(.projectHasNoRepository, systemImage: "exclamationmark.triangle")
                             .font(.footnote)

@@ -93,6 +93,7 @@ for theme in ["dark", "light"]:
     webp(place(board, theme, (160, 130), 2000), f"hero-{theme}")
     drag_animation(theme, window(f"board-{theme}"), band)
     webp(place(window(f"issue-{theme}"), theme, (130, 110), 1800), f"issue-{theme}")
+    webp(place(window(f"markdown-{theme}"), theme, (130, 110), 1800), f"markdown-{theme}")
     webp(place(window(f"inbox-{theme}"), theme, (130, 110), 1800), f"inbox-{theme}")
     webp(place(window(f"repository-{theme}"), theme, (130, 110), 1800), f"repository-{theme}")
     webp(place(window(f"roadmap-{theme}"), theme, (130, 110), 1800), f"roadmap-{theme}")

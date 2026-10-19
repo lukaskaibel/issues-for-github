@@ -226,42 +226,55 @@ final class PhoneTests: AppTestCase {
         let description = element("issue-description")
         wait(description)
         description.tap()
+        // The bar above the keyboard, with Done in reach.
+        let done = element("writing-bar-done")
+        wait(done)
         app.typeText("Rank matches by **how close** they are.")
         snapshot("Editing a description")
-        let done = button("Done")
-        wait(done)
+        // Undo and redo in the bar take back the typing and bring it back.
+        button("Undo").tap()
+        waitForValue(description, lacking: "they are.")
+        button("Redo").tap()
+        waitForValue(description, containing: "they are.")
         done.tap()
+        waitGone(done)
         goBack()
         scrollTo(element("row-#17"))
         element("row-#17").tap()
         wait(element("issue-description"))
-        XCTAssertTrue(labelled("how close").waitForExistence(timeout: 4))
+        XCTAssertTrue(((element("issue-description").value as? String) ?? "").contains("Rank matches by **how close** they are."))
     }
 
-    func testDrawnDescriptionTicksBoxesAndShowsTheText() {
+    func testDescriptionTicksBoxesAndFormatsInPlace() {
         launch()
         wait(element("row-#9"))
         scrollTo(element("row-#16"))
         element("row-#16").tap()
-        // A checklist, a table and a diagram: drawn as on GitHub, with boxes that tick.
+        // A checklist, an alert, a table and a diagram, drawn as on GitHub, with boxes that tick.
         let box = app.buttons["Images pasted from the clipboard"]
         wait(box)
         XCTAssertEqual(box.value as? String, "Unchecked")
         box.tap()
         waitForValue(box, equalTo: "Checked")
-        snapshot("Drawn description")
-
-        // A tap shows the Markdown, ticked box included; a second tap edits it.
-        labelled("drawn the way GitHub draws it").tap()
-        waitGone(box)
+        snapshot("Description drawn as on GitHub")
         let text = element("issue-description")
-        XCTAssertTrue((text.value as? String)?.contains("- [x] Images pasted from the clipboard") == true)
-        text.tap()
-        let done = button("Done")
+        XCTAssertTrue(((text.value as? String) ?? "").contains("- [x] Images pasted from the clipboard"))
+        XCTAssertFalse(element("writing-bar-done").exists, "ticking a box doesn't bring up the keyboard")
+
+        // A tap in the first line puts the caret there; the Format panel turns the line into a heading.
+        text.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.01)).tap()
+        let done = element("writing-bar-done")
         wait(done)
-        snapshot("Editing a drawn description")
+        button("Format").tap()
+        let heading = button("Heading")
+        wait(heading)
+        heading.tap()
+        waitForValue(text, containing: "## Write Markdown")
+        snapshot("Format panel")
+        button("Close").tap()
+        wait(done)
         done.tap()
-        wait(box)
+        waitGone(done)
         XCTAssertEqual(box.value as? String, "Checked")
     }
 
@@ -290,7 +303,7 @@ final class PhoneTests: AppTestCase {
         field.tap()
         field.typeText("Let's ship this on Friday.")
         element("comment-send").tap()
-        let comment = labelled("Let's ship this on Friday.")
+        let comment = textShowing("Let's ship this on Friday.")
         wait(comment)
         scrollTo(comment)
         snapshot("Comment sent")
@@ -677,7 +690,7 @@ final class PhoneTests: AppTestCase {
         XCTAssertTrue(row.label.contains("theo"), row.label)
         XCTAssertTrue(row.label.contains("labels ui"), row.label)
         row.tap()
-        wait(labelled("Cards that land outside a column"))
+        wait(textShowing("Cards that land outside a column"))
     }
 
     func testDiscardingANewIssueAsksFirst() {
