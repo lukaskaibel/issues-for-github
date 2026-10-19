@@ -1011,16 +1011,16 @@ private struct MobileSubIssues: View {
     /// A new sub-issue, or an issue that exists already.
     private var addMenu: some View {
         Menu {
-                    Button {
-                        navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
-                    } label: {
-                        Label(.newSubIssue, systemImage: "plus")
-                    }
-                    Button {
-                        navigation.sheet = .picker(itemId: item.id, kind: .addSubIssue)
-                    } label: {
-                        Label(.addExistingIssueMenuItem, systemImage: "magnifyingglass")
-                    }
+            Button {
+                navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
+            } label: {
+                Label(.newSubIssue, systemImage: "plus")
+            }
+            Button {
+                navigation.sheet = .picker(itemId: item.id, kind: .addSubIssue)
+            } label: {
+                Label(.addExistingIssueMenuItem, systemImage: "magnifyingglass")
+            }
         } label: {
             Image(systemName: "plus")
                 .font(.body.weight(.medium))
@@ -1085,7 +1085,7 @@ private struct MobileEpicWork: View {
                             }
                             Text("\(group.subs.count)").font(.footnote).monospacedDigit().foregroundStyle(Theme.textTertiary)
                             Spacer()
-                            if group.group?.isOpen ?? true {
+                            if !picking, group.group?.isOpen ?? true {
                                 Button {
                                     navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id, milestoneTitle: group.title))
                                 } label: {

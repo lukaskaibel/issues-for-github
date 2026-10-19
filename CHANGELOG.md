@@ -25,6 +25,13 @@ All notable changes to this project are recorded here. The format follows
   them under another parent with Change Parent Issue…, into an epic or out of their parent, or set their status,
   priority, assignee, labels, due date or milestone. Their status, priority and assignee buttons and the single keys
   act on all of them too, and `Esc` lets them go before it leaves the issue.
+- **Pick several sub-issues on iPhone and iPad.** Tap **Select** over an issue's sub-issues, or Select in one's long-press
+  menu, and a circle stands where each status circle was, as in Mail; a tap then picks a sub-issue instead of opening
+  it. **Change Parent Issue…** in the bar at the bottom moves all picked ones under another parent, and the "…" beside
+  it, like the long-press menu of a picked one, sets their status, priority, assignee, labels, due date or milestone,
+  or moves them into an epic or out of their parent. Select All and ✓ are at the top. On iPad, ⌘-click and
+  Shift-click with a pointer pick sub-issues straight away, S, P, A, L, D and I then change all of them, and `Esc`
+  lets them go.
 - **Pickers offer what you chose last.** The issue you just made a parent is at the top of the parent picker for the
   next issue, above a line, and Return picks it again. The same goes for epics, blocked by and blocking, labels and
   assignees, also in a new issue, on the Mac, iPhone and iPad: up to three of your latest choices come first. Rows no

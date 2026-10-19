@@ -272,7 +272,9 @@ The interface uses the system's own parts.
   The bar above the keyboard turns bold, italics, code, bullets and checklists on and off, and on its left buttons
   come in for what the caret is in: its style, which a tap takes off, the line's checkbox, moving a list item in or
   out, and opening a link. The properties are glass chips under the title, the sub-issues a checklist, the comments a conversation, and the
-  comment field stays at the bottom as in Messages. A project's board on iPad stands its columns on soft grey lanes,
+  comment field stays at the bottom as in Messages. **Select** over the sub-issues puts circles in place of their
+  status, as in Mail: tap several, then move them all under another parent with the bar at the bottom, or change
+  their status, priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its columns on soft grey lanes,
   as on the Mac.
 - **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
   projects, changes the icon and opens your account, then its views, its next milestones and roadmap, and its repositories, each an entry. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
@@ -280,7 +282,8 @@ The interface uses the system's own parts.
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
   work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
-  their picker ready to type in; Return picks the first match.
+  their picker ready to type in; Return picks the first match. With a pointer, ⌘-click and Shift-click pick several
+  sub-issues in an issue, as on the Mac; the keys then change all of them, and Esc lets them go.
 - **Sample data:** "Explore with Sample Data" on the sign-in screen shows two sample projects without a GitHub account.
   Nothing there is sent anywhere.
 - **In the background:** changes made just before locking the phone are still sent, and iOS refreshes the app now and
@@ -643,6 +646,9 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold a reminder | Start the issue, mark it done or move it to tomorrow, without opening the app |
 | Tap the plus beside an issue's sub-issues | A new sub-issue, or an issue that exists already |
 | Tap the status circle of a sub-issue | Pick its status; Open or Closed for one on none of your boards |
+| Tap **Select** over an issue's sub-issues, or Select in a sub-issue's menu | Circles in place of their status: tap to pick several, **Select All** at the top, ✓ when done |
+| While sub-issues are picked | **Change Parent Issue…** at the bottom moves all of them under another parent; "…" beside it, or touching and holding a picked one, sets their status, priority, assignee, labels, due date or milestone, or moves them into an epic or out of their parent |
+| ⌘-click or Shift-click a sub-issue (iPad, with a pointer) | Pick several straight away; S, P, A, L, D and I change all of them, Esc lets them go |
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place; the bar above the keyboard turns bold, italics, code, bullets and checklists on and off and adds links |
 | Tap a button on the left of the keyboard bar | Take off the style the caret is in, tick the line's checkbox, move a list item in or out, open the link |

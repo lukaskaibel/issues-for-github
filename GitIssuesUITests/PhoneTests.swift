@@ -636,6 +636,33 @@ final class PhoneTests: AppTestCase {
         waitGone(element("sub-pick-done"))
     }
 
+    func testPickSubIssuesOfAnEpic() {
+        launch()
+        scrollTo(element("row-#8"))
+        element("row-#8").tap()
+        let parent = element("chip-parent")
+        wait(parent)
+        parent.tap()
+
+        // An epic lists its issues by milestone; picking works across them, and "…" at the foot changes all.
+        let select = element("sub-select")
+        scrollTo(select)
+        select.tap()
+        clearOfPickBar(element("sub-#4"))
+        element("sub-#8").tap()
+        element("sub-#15").tap()
+        wait(labelled("2 selected"))
+        snapshot("Picking an epic's sub-issues")
+        element("sub-pick-more").tap()
+        wait(labelled("2 issues"))
+        button("Priority").tap()
+        button("Low").tap()
+        element("sub-pick-done").tap()
+        waitGone(element("sub-pick-done"))
+        element("sub-#15").tap()
+        waitForLabel(element("chip-priority"), containing: "Low")
+    }
+
     /// Moves the page up a little until the sub-issue is clear of the bar that picking brings at the foot.
     private func clearOfPickBar(_ row: XCUIElement) {
         let bar = element("sub-pick-parent")
