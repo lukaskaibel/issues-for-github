@@ -16,10 +16,13 @@ All notable changes to this project are recorded here. The format follows
   you move on; a click puts the caret right where you clicked, and a click into a table, a diagram or a formula brings
   up its source, with the diagram or formula drawn under it as you type. Lists continue on Return, Tab nests them and
   Backspace takes a bullet away. A link's address hides behind a small pencil that changes it, and a code block has a
-  button that copies it. On the Mac, the new Format menu has the shortcuts of Notes (`⌘B`, `⌘I`, `⌘L`, `⇧⌘H`, `⇧⌘L`,
-  `⇧⌘U` and more), and on iPad with a keyboard the same shortcuts work, listed while you hold `⌘`. On iPhone and iPad the bar above the
-  keyboard is a capsule of glass as in Notes: Aa opens the Format panel in place of the keyboard, next to a checklist,
-  a link, undo, redo and more formatting, with Done beside it. VoiceOver reads each checkbox with its item and whether
+  button that copies it. Typing works as in 1.0.0: styles turn on and off, a style's marks come and go as a pair,
+  Return leaves bold, `-` starts a bullet, and text eases into its new look. On the Mac, the new Format menu has the
+  shortcuts of Notes (`⌘B`, `⌘I`, `⌘L`, `⇧⌘H`, `⇧⌘L`, `⇧⌘U` and more), and on iPad with a keyboard the same shortcuts
+  work, listed while you hold `⌘`; the list shortcuts are now those of Notes too: `⇧⌘7` bullets, `⇧⌘9` numbers and
+  `⇧⌘L` a checklist. On iPhone and iPad the bar above the keyboard is a capsule of glass as in Notes: Aa opens the
+  Format panel in place of the keyboard, next to a checklist, a link, undo, redo and more formatting, with Done beside
+  it, and the buttons for where the caret is stay on its left. VoiceOver reads each checkbox with its item and whether
   it is ticked, and ticks it.
 
 ## [1.0.0] - 2026-10-19
