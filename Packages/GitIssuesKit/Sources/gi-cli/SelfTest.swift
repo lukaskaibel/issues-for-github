@@ -4,7 +4,7 @@ import GRDB
 
 /// End-to-end check of every kind of write, against the sandbox project only.
 enum SelfTest {
-    static let sandboxTitle = "Git Issues Sandbox"
+    static let sandboxTitle = Project.sandboxTitle
 
     /// Only the views part, on its own: `gi-cli selftest views`.
     static func runViews() async throws {
