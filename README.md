@@ -162,9 +162,8 @@ The list groups issues by status. Each header stays pinned while you scroll thro
 a click. Drag an issue up or down to give it a new place, or into another section to change its status, as on the
 board. The app follows the system appearance, or stays light or dark if you prefer.
 
-Its icon is a planning board: an index card, a screenshot of code and a sticky note, pinned up and joined with string.
-Settings (on iPhone and iPad, your account) offers the board in seven materials: the warm grey fabric pinboard, cork,
-metal with magnets, a whiteboard, and slate, navy or sage fabric. Each follows light and dark mode.
+Its icon is a card with a done mark, lifted off a board of faint tiles. Settings (on iPhone and iPad, your account)
+offers it on its light page, on graphite or as a white card on indigo. Each follows light and dark mode.
 
 <img alt="The list grouped by status, half in the dark appearance and half in the light one" src="Design/screenshots/list-appearance.webp">
 
@@ -516,7 +515,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘⇧.` | Copy a branch name for the issue, as GitHub suggests it |
 | `⌘⌫` | Delete the issue (asks first; needs admin rights in the repository) |
 | `⌘R` | Sync with GitHub now |
-| `⌘,` | Settings: light, dark or system appearance, the app icon's board, and reminders of due issues |
+| `⌘,` | Settings: light, dark or system appearance, the app icon, and reminders of due issues |
 
 In the Inbox:
 
@@ -686,7 +685,7 @@ Config/                      Build settings, Info.plist and entitlements
 Design/                      Earlier icon variants, screenshots, social preview, the glossary
 Website/                     The website on GitHub Pages: home, privacy policy, terms, support (each also in
                              de/, es/, fr/, ja/, ko/, pt-br/, ru/, zh-hans/), Impressum
-Tools/                       The icon's boards, release builds, iOS tests, App Store and README screenshots,
+Tools/                       The app icon, release builds, iOS tests, App Store and README screenshots,
                              TestFlight uploads, the String Catalog and the website's languages
 fastlane/                    App Store releases: lanes, the listing's texts and the age rating
 ```
@@ -731,7 +730,8 @@ python3 -m http.server --directory Website
 ```
 
 `gi-cli selftest` runs every kind of write end to end against GitHub. It only touches a project titled
-"Git Issues Sandbox", which you create yourself with Status and Priority fields. `gi-cli inbox` lists your
+"Git Issues Sandbox", which you create yourself with Status and Priority fields. Only debug builds show it: release
+builds leave out the sandbox, the issues of its repositories and their notifications. `gi-cli inbox` lists your
 notifications the way the Inbox reads them and changes nothing; `gi-cli inbox read|archive <thread id>` only acts on
 notifications from the sandbox project's repositories.
 

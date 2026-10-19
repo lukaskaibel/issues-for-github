@@ -67,32 +67,25 @@ enum AppearanceSetting: String, CaseIterable, Identifiable {
     }
 }
 
-/// The icons the app can wear: a planning board in seven materials, each with a light and a dark look that
-/// follows the system. The pinboard is the app bundle's own icon.
+/// The icons the app can wear: a card lifted off a board, on its light page, on graphite or on indigo, each with a
+/// light and a dark look that follows the system. The card on its page is the app bundle's own icon.
 enum AppIconChoice: String, CaseIterable, Identifiable {
-    case pinboard
-    case cork
-    case metal
-    case whiteboard
-    case slate
-    case navy
-    case sage
+    case card
+    case graphite
+    case indigo
 
-    static let standard = AppIconChoice.pinboard
-    /// Picks stored under the earlier designs ("a", "e" and so on) no longer read, so everyone starts from the pinboard.
+    static let standard = AppIconChoice.card
+    /// Picks stored under earlier designs (the board, the pinboard's materials, "a", "e" and so on) no longer read, so
+    /// everyone else starts from the card.
     static let defaultsKey = "dockIcon"
 
     var id: String { rawValue }
 
     var title: String {
         let name: LocalizedStringResource = switch self {
-        case .pinboard: .appIconPinboard
-        case .cork: .appIconCork
-        case .metal: .appIconMetal
-        case .whiteboard: .appIconWhiteboard
-        case .slate: .appIconSlate
-        case .navy: .appIconNavy
-        case .sage: .appIconSage
+        case .card: .appIconCard
+        case .graphite: .appIconGraphite
+        case .indigo: .appIconIndigo
         }
         return String(localized: name)
     }
@@ -131,13 +124,9 @@ enum AppIconChoice: String, CaseIterable, Identifiable {
     /// Name of the alternate icon in the app bundle; nil is the app's own icon.
     var alternateIconName: String? {
         switch self {
-        case .pinboard: nil
-        case .cork: "AppIcon-Cork"
-        case .metal: "AppIcon-Metal"
-        case .whiteboard: "AppIcon-Whiteboard"
-        case .slate: "AppIcon-Slate"
-        case .navy: "AppIcon-Navy"
-        case .sage: "AppIcon-Sage"
+        case .card: nil
+        case .graphite: "AppIcon-Graphite"
+        case .indigo: "AppIcon-Indigo"
         }
     }
 

@@ -647,7 +647,7 @@ public final class AppModel {
 
     // MARK: Observing the database
 
-    private struct Snapshot {
+    struct Snapshot {
         var viewer: Viewer?
         var projects: [Project]
         var items: [Item]
@@ -660,9 +660,33 @@ public final class AppModel {
         var milestones: [Milestone]
         var views: [ProjectView]
         var fields: [ProjectField]
+
+        /// Without the self-test's project (`Project.sandboxTitle`) and what only its repositories hold: issues on
+        /// no board and notifications. The app you use leaves it out; debug builds keep it for the test tools.
+        func withoutSandbox() -> Snapshot {
+            let sandbox = Set(projects.filter(\.isSandbox).map(\.id))
+            guard !sandbox.isEmpty else { return self }
+            let elsewhere = Set(repos.filter { !sandbox.contains($0.projectId) }.map(\.id))
+            let own = repos.filter { sandbox.contains($0.projectId) && !elsewhere.contains($0.id) }
+            let ownIds = Set(own.map(\.id))
+            let ownNames = Set(own.map(\.nameWithOwner))
+            var result = self
+            result.projects.removeAll { sandbox.contains($0.id) }
+            result.repos.removeAll { sandbox.contains($0.projectId) }
+            result.items.removeAll { item in
+                if let projectId = item.projectId { return sandbox.contains(projectId) }
+                return item.repoId.map(ownIds.contains) ?? false
+            }
+            result.options.removeAll { sandbox.contains($0.projectId) }
+            result.views.removeAll { sandbox.contains($0.projectId) }
+            result.fields.removeAll { sandbox.contains($0.projectId) }
+            result.milestones.removeAll { ownIds.contains($0.repoId) }
+            result.inbox.removeAll { ownNames.contains($0.repo) }
+            return result
+        }
     }
 
-    private nonisolated static func fetchSnapshot(_ db: Database) throws -> Snapshot {
+    nonisolated static func fetchSnapshot(_ db: Database) throws -> Snapshot {
         Snapshot(
             viewer: try KV.viewer(db),
             projects: try Project
@@ -702,6 +726,9 @@ public final class AppModel {
     }
 
     private func apply(_ snapshot: Snapshot) {
+        #if !DEBUG
+        let snapshot = snapshot.withoutSandbox()
+        #endif
         if viewer != snapshot.viewer { viewer = snapshot.viewer }
         var listed = snapshot.projects
         #if DEBUG

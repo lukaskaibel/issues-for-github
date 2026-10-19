@@ -994,6 +994,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     private var row: IssueRowModel?
     /// The date's place, for its tooltip.
     private var dateRect = NSRect.zero
+    /// The number's place, whose tooltip names the repository.
+    private var numberRect = NSRect.zero
     private var highlighted = false
     private var number = NSAttributedString()
     private var title = NSAttributedString()
@@ -1229,6 +1231,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         drawPriority(row.priority, x: x, midY: midY, onAccent: onAccent)
         x += 14 + 10
         number.draw(at: NSPoint(x: x, y: midY - numberSize.height / 2))
+        let numberRect = NSRect(x: x, y: midY - 9, width: numberSize.width, height: 18)
         x += 40 + 10
         // A sub-issue hangs under its parent: status and title move in, with a line from the parent's status.
         if drawsTree { drawTree(row, from: x, midY: midY) }
@@ -1438,12 +1441,14 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             }
         }
         // Tooltips follow the parts; rebuilt only when they moved.
-        if parts.map(\.rect) != self.parts.map(\.rect) || foldRect != tooltipFoldRect || toolTipsNeedUpdate {
+        if parts.map(\.rect) != self.parts.map(\.rect) || foldRect != tooltipFoldRect || numberRect != self.numberRect || toolTipsNeedUpdate {
             toolTipsNeedUpdate = false
             tooltipFoldRect = foldRect
+            self.numberRect = numberRect
             removeAllToolTips()
             for part in parts { addToolTip(part.rect.insetBy(dx: -3, dy: -4), owner: self, userData: nil) }
             if let foldRect { addToolTip(foldRect.insetBy(dx: -3, dy: -4), owner: self, userData: nil) }
+            addToolTip(numberRect.insetBy(dx: -3, dy: -4), owner: self, userData: nil)
             if dateRect.width > 0 { addToolTip(dateRect, owner: self, userData: nil) }
         }
         self.parts = parts
@@ -1535,6 +1540,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             return String(localized: row.folded ? .unfoldSubIssuesTooltip(count: row.nested ?? 0) : .foldSubIssuesTooltip)
         }
         if let part = part(at: point) { return model?.tooltip(part.kind, for: row.item) ?? "" }
+        // A project's rows leave out the repository; as a project can span several, the number names it.
+        if numberRect.insetBy(dx: -3, dy: -4).contains(point) { return row.item.reference ?? "" }
         if dateRect.insetBy(dx: -3, dy: -4).contains(point), let updated = row.item.updatedAt {
             var lines = [String(localized: .updatedOnDateTooltip(date: updated.formatted(date: .long, time: .shortened)))]
             if let created = row.item.createdAt {

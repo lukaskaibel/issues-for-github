@@ -899,15 +899,15 @@ final class PhoneTests: AppTestCase {
         launch()
         element("account-button").tap()
         wait(app.navigationBars["Account"])
-        let cork = button("Cork")
-        scrollTo(cork, in: app.collectionViews.firstMatch)
-        wait(cork)
-        cork.tap()
+        let graphite = button("Graphite")
+        scrollTo(graphite, in: app.collectionViews.firstMatch)
+        wait(graphite)
+        graphite.tap()
         confirmIconChange()
-        XCTAssertTrue(cork.isSelected)
-        button("Pinboard").tap()
+        XCTAssertTrue(graphite.isSelected)
+        button("Card").tap()
         confirmIconChange()
-        XCTAssertTrue(button("Pinboard").isSelected)
+        XCTAssertTrue(button("Card").isSelected)
     }
 
     func testLeavingSampleDataShowsSignIn() {

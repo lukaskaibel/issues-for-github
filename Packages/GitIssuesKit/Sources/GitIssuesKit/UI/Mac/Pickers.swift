@@ -27,7 +27,8 @@ struct PickerList: View {
     var onClose: () -> Void
 
     @State private var query = ""
-    @State private var index = 0
+    /// The lit row, by its place in the list.
+    @State private var cursor = MenuCursor<Int>(0)
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -52,11 +53,11 @@ struct PickerList: View {
                 .background(RoundedRectangle(cornerRadius: large ? 13 : 9, style: .continuous).fill(Theme.field))
                 .padding([.horizontal, .top], large ? 10 : 6)
                 .onKeyPress(.downArrow) {
-                    index = min(index + 1, max(visible.count - 1, 0))
+                    cursor.moveByKeys(to: min((cursor.key ?? -1) + 1, max(visible.count - 1, 0)))
                     return .handled
                 }
                 .onKeyPress(.upArrow) {
-                    index = max(index - 1, 0)
+                    cursor.moveByKeys(to: max((cursor.key ?? 0) - 1, 0))
                     return .handled
                 }
                 .onKeyPress(.escape) {
@@ -71,40 +72,16 @@ struct PickerList: View {
                 }
                 .onKeyPress(.return, phases: .down) { press in
                     // Shift-Return picks and stays open, ready for the next name; plain Return is the submit below.
-                    guard multiple, press.modifiers.contains(.shift), visible.indices.contains(index) else { return .ignored }
+                    guard multiple, press.modifiers.contains(.shift), let index = cursor.key, visible.indices.contains(index) else { return .ignored }
                     pick(visible[index], keepOpen: true)
                     query = ""
                     return .handled
                 }
                 .onSubmit {
-                    if visible.indices.contains(index) { pick(visible[index]) }
+                    if let index = cursor.key, visible.indices.contains(index) { pick(visible[index]) }
                 }
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(Array(visible.enumerated()), id: \.element.id) { position, item in
-                            PickerRow(item: item, active: position == index, onCheck: multiple ? { pick(item, keepOpen: true) } : nil)
-                                .id(item.id)
-                                .onTapGesture {
-                                    pick(item, keepOpen: multiple && !NSEvent.modifierFlags.isDisjoint(with: [.shift, .command]))
-                                }
-                                .onHover { if $0 { index = position } }
-                        }
-                        if visible.isEmpty {
-                            Text(.noMatches)
-                                .foregroundStyle(Theme.textSecondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 15)
-                                .frame(height: PickerRow.height)
-                        }
-                    }
-                    .padding(.vertical, 6)
-                }
-                .scrollIndicators(.never)
-                .frame(height: min(CGFloat(max(visible.count, 1)), CGFloat(maxRows)) * PickerRow.height + 12)
-                .onChange(of: index) {
-                    if visible.indices.contains(index) { proxy.scrollTo(visible[index].id) }
-                }
+            PickerRows(visible: visible, cursor: cursor, multiple: multiple, maxRows: maxRows) { item, keepOpen in
+                pick(item, keepOpen: keepOpen)
             }
         }
         .frame(width: width)
@@ -116,13 +93,14 @@ struct PickerList: View {
             if multiple {
                 return
             } else if opensOnSelection, let current = items.firstIndex(where: \.selected) {
-                index = current
+                cursor.moveByKeys(to: current)
             } else if !opensOnSelection, let first = items.firstIndex(where: { !$0.selected }) {
-                index = first
+                cursor.moveByKeys(to: first)
             }
         }
         .onChange(of: query) {
-            index = 0
+            // The first match lit, and scrolled to.
+            cursor.moveByKeys(to: 0)
             onQueryChange(query)
         }
     }
@@ -142,16 +120,60 @@ struct PickerList: View {
     }
 }
 
+/// A picker's rows, scrolling when there are more than fit. Apart from the search field above, so moving the light
+/// with the keys redraws the list and not the search behind it.
+private struct PickerRows: View {
+    var visible: [PickerItem]
+    var cursor: MenuCursor<Int>
+    var multiple: Bool
+    var maxRows: Int
+    var onPick: (_ item: PickerItem, _ keepOpen: Bool) -> Void
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(Array(visible.enumerated()), id: \.element.id) { position, item in
+                        PickerRow(item: item, cursor: cursor, position: position, onCheck: multiple ? { onPick(item, true) } : nil)
+                            .id(item.id)
+                            .onTapGesture {
+                                onPick(item, multiple && !NSEvent.modifierFlags.isDisjoint(with: [.shift, .command]))
+                            }
+                            .onHover { if $0 { cursor.key = position } }
+                    }
+                    if visible.isEmpty {
+                        Text(.noMatches)
+                            .foregroundStyle(Theme.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 15)
+                            .frame(height: PickerRow.height)
+                    }
+                }
+                .padding(.vertical, 6)
+            }
+            .scrollIndicators(.never)
+            .frame(height: min(CGFloat(max(visible.count, 1)), CGFloat(maxRows)) * PickerRow.height + 12)
+            .onChange(of: cursor.keyMoves) {
+                // Only for the keys: the pointer is on its row already, and scrolling would move the row away from it.
+                if let index = cursor.key, visible.indices.contains(index) { proxy.scrollTo(visible[index].id) }
+            }
+        }
+    }
+}
+
 struct PickerRow: View {
     /// Taller than a menu's rows, so they are easy to hit, as in Linear.
     static let height: CGFloat = 30
 
     var item: PickerItem
-    var active: Bool
+    var cursor: MenuCursor<Int>
+    /// Its place in the list, which the cursor goes by.
+    var position: Int
     /// In pickers that take several values: picks the row without closing, from a checkbox at its start.
     var onCheck: (() -> Void)? = nil
 
     var body: some View {
+        let active = cursor.isLit(position)
         HStack(spacing: 10) {
             if let onCheck {
                 // Ticked when picked; on the row under the pointer or keyboard an empty box offers it.

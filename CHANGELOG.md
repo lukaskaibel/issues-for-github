@@ -18,8 +18,30 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **A new app icon: a card lifted off a board.** A card in the app's indigo with a done mark, turned a little as if
+  just picked up, over a faint board of three columns and three rows of tiles. It follows light and dark mode.
+  Settings on the Mac, and your account on iPhone and iPad, offer it on graphite or as a white card on indigo
+  instead; the pinboard and its materials are gone, so everyone starts from the card.
+- **Cards leave out the repository.** A board is one project's, so on a project that spans several repositories its
+  cards no longer put the repository's name next to the number. On the Mac, point at the number and it names the
+  repository the way GitHub does, as in `acme/website#12`; a row's number in a list does the same. My Issues, which
+  mixes projects, still says where each issue comes from.
 - **My Issues puts the most urgent first** in each group, then what is due soonest, instead of each board's order,
   which said little once several projects were mixed. **Order by › Manual** brings the boards' order back.
+
+### Fixed
+
+- On the Mac, an issue and the Inbox read cleanly under the toolbar: what scrolls up fades out just below it, as above
+  the comment field, and the toolbar lies on the page's own ground. Before, the text of an issue stayed sharp under the
+  toolbar and ran through its title, "#9" and the project's name; over the Inbox the toolbar had a strip of another
+  grey with a line under it, which the notifications showed through.
+- Right-click menus on the Mac keep up with the pointer: the row under it lights up at once, and moving down a long
+  menu no longer stutters. A submenu opens as soon as the pointer rests on its row or moves toward it, stays open
+  while the pointer crosses other rows on the way to it, and opens faster. Before, every row with a submenu the
+  pointer passed opened its submenu, and the menu's glass turned dim and back each time.
+- The same goes for every other list that lights up under the pointer: the pickers for status, priority, people,
+  labels, dates and the rest, the command palette, the project icon picker, the project's menu at the top of the
+  sidebar, the Inbox's menus and the menus of a new view.
 
 ## [1.0.0] - 2026-10-19
 

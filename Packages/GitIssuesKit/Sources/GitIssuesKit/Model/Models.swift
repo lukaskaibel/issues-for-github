@@ -63,6 +63,11 @@ public struct Project: Codable, FetchableRecord, PersistableRecord, Identifiable
     /// The Date field that holds when an issue is due ("Due date"); nil until the project has one.
     public var dueFieldId: String?
     public var lastSyncedAt: Date?
+
+    /// The project the self-test and the debug remote write to, which you create yourself (CONTRIBUTING.md). Only
+    /// debug builds show it.
+    public static let sandboxTitle = "Git Issues Sandbox"
+    public var isSandbox: Bool { title == Self.sandboxTitle }
 }
 
 /// One option of a project's Status or Priority single-select field.
@@ -152,6 +157,13 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
     /// the app doesn't keep) are read-only.
     public var isEditableContent: Bool { kind == .issue && !isDetached }
     public var repoShortName: String? { repo?.split(separator: "/").last.map(String.init) }
+
+    /// The issue as GitHub refers to it from anywhere, such as "acme/website#12"; just the repository before it has
+    /// a number, nothing for a draft.
+    public var reference: String? {
+        guard let repo else { return nil }
+        return number.map { "\(repo)#\($0)" } ?? repo
+    }
 
     /// The branch name GitHub suggests for the issue: its number and title, such as "14-sign-in-with-device-flow".
     public var branchName: String? {

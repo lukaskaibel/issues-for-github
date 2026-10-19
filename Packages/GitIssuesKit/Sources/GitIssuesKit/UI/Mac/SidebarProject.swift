@@ -102,15 +102,16 @@ struct ProjectMenuButton: View {
 }
 
 /// A project in the project's menu: its icon, its name, and a check on the one the sidebar is about.
-struct ProjectMenuRow: View {
+struct ProjectMenuRow<Key: Hashable & Sendable>: View {
     var project: Project
     var checked: Bool
     var dimmed = false
-    var active: Bool
+    var cursor: MenuCursor<Key>
+    var key: Key
     var action: () -> Void
-    var onHover: (Bool) -> Void
 
     var body: some View {
+        let active = cursor.isLit(key)
         Button(action: action) {
             HStack(spacing: 10) {
                 ProjectIcon(projectId: project.id, size: 12)
@@ -134,7 +135,7 @@ struct ProjectMenuRow: View {
         .buttonStyle(PlainPressStyle())
         .padding(.horizontal, 4)
         .help("\(project.ownerLogin) · \(project.title)")
-        .onHover(perform: onHover)
+        .onHover { cursor.hover(key, $0) }
     }
 }
 
@@ -143,17 +144,12 @@ struct HiddenProjectsMenu: View {
     @Environment(AppModel.self) private var model
     var projects: [Project]
     var close: () -> Void
-    @State private var active: Int?
+    @State private var cursor = MenuCursor<String>()
 
     var body: some View {
         VStack(spacing: 0) {
-            ForEach(Array(projects.enumerated()), id: \.element.id) { index, project in
-                ProjectMenuRow(
-                    project: project, checked: false, dimmed: true, active: active == index, action: { pick(project) },
-                    onHover: { inside in
-                        if inside { active = index } else if active == index { active = nil }
-                    }
-                )
+            ForEach(projects) { project in
+                ProjectMenuRow(project: project, checked: false, dimmed: true, cursor: cursor, key: project.id, action: { pick(project) })
             }
         }
         .padding(.vertical, 4)
@@ -161,8 +157,8 @@ struct HiddenProjectsMenu: View {
         .font(.ui)
         .foregroundStyle(Theme.text)
         .background(MenuKeys(
-            onMove: { active = menuStep(active, by: $0, count: projects.count) },
-            onActivate: { if let active, projects.indices.contains(active) { pick(projects[active]) } },
+            onMove: { cursor.step($0, through: projects.map(\.id)) },
+            onActivate: { if let id = cursor.key, let project = projects.first(where: { $0.id == id }) { pick(project) } },
             onBack: close
         ))
     }

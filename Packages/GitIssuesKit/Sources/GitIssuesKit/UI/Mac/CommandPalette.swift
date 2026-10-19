@@ -172,10 +172,81 @@ extension PaletteCommand {
     }
 }
 
+/// The palette's commands under the search field, apart from it so the light moving redraws two rows and the
+/// commands aren't worked out again.
+private struct PaletteRows: View {
+    var rows: [PaletteCommand]
+    var query: String
+    var cursor: MenuCursor<Int>
+    var run: (PaletteCommand) -> Void
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { position, command in
+                        if position == 0 || rows[position - 1].section != command.section {
+                            Text(command.section)
+                                .font(.tinySemibold)
+                                .foregroundStyle(Theme.textTertiary)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 10)
+                                .padding(.bottom, 4)
+                        }
+                        PaletteRow(command: command, cursor: cursor, position: position)
+                            .id(command.id)
+                            .onTapGesture { run(command) }
+                            .onHover { if $0 { cursor.key = position } }
+                    }
+                    if rows.isEmpty {
+                        Text(.nothingMatchesQuery(query: query))
+                            .foregroundStyle(Theme.textSecondary)
+                            .padding(.horizontal, 16)
+                            .frame(height: 44)
+                    }
+                }
+                .padding(.bottom, 6)
+            }
+            .scrollIndicators(.never)
+            .frame(maxHeight: 400)
+            .fixedSize(horizontal: false, vertical: true)
+            .onChange(of: cursor.keyMoves) {
+                // Only for the keys: the pointer is on its row already.
+                if let index = cursor.key, rows.indices.contains(index) { proxy.scrollTo(rows[index].id) }
+            }
+        }
+    }
+}
+
+private struct PaletteRow: View {
+    var command: PaletteCommand
+    var cursor: MenuCursor<Int>
+    var position: Int
+
+    var body: some View {
+        let active = cursor.isLit(position)
+        HStack(spacing: 10) {
+            command.icon.frame(width: 16, height: 16)
+            Text(command.title).lineLimit(1)
+            Spacer(minLength: 8)
+            HStack(spacing: 4) {
+                ForEach(command.keys, id: \.self) { Keycap($0, emphasized: active) }
+            }
+        }
+        .font(.system(size: 14))
+        .padding(.horizontal, 12)
+        .frame(height: 38)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(active ? Theme.menuHighlight : .clear))
+        .padding(.horizontal, 8)
+        .contentShape(Rectangle())
+    }
+}
+
 private struct RootPalette: View {
     @Environment(AppModel.self) private var model
     @State private var query = ""
-    @State private var index = 0
+    /// The lit row, by its place in the list.
+    @State private var cursor = MenuCursor<Int>(0)
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -197,11 +268,11 @@ private struct RootPalette: View {
                 .padding(.horizontal, 18)
                 .frame(height: 56)
                 .onKeyPress(.downArrow) {
-                    index = min(index + 1, max(rows.count - 1, 0))
+                    cursor.moveByKeys(to: min((cursor.key ?? -1) + 1, max(rows.count - 1, 0)))
                     return .handled
                 }
                 .onKeyPress(.upArrow) {
-                    index = max(index - 1, 0)
+                    cursor.moveByKeys(to: max((cursor.key ?? 0) - 1, 0))
                     return .handled
                 }
                 .onKeyPress(.escape) {
@@ -209,61 +280,17 @@ private struct RootPalette: View {
                     return .handled
                 }
                 .onSubmit {
-                    if rows.indices.contains(index) { run(rows[index]) }
+                    if let index = cursor.key, rows.indices.contains(index) { run(rows[index]) }
                 }
             Rectangle().fill(Theme.popoverBorder).frame(height: 1)
 
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(rows.enumerated()), id: \.element.id) { position, command in
-                            if position == 0 || rows[position - 1].section != command.section {
-                                Text(command.section)
-                                    .font(.tinySemibold)
-                                    .foregroundStyle(Theme.textTertiary)
-                                    .padding(.horizontal, 20)
-                                    .padding(.top, 10)
-                                    .padding(.bottom, 4)
-                            }
-                            HStack(spacing: 10) {
-                                command.icon.frame(width: 16, height: 16)
-                                Text(command.title).lineLimit(1)
-                                Spacer(minLength: 8)
-                                HStack(spacing: 4) {
-                                    ForEach(command.keys, id: \.self) { Keycap($0, emphasized: position == index) }
-                                }
-                            }
-                            .font(.system(size: 14))
-                            .padding(.horizontal, 12)
-                            .frame(height: 38)
-                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(position == index ? Theme.menuHighlight : .clear))
-                            .padding(.horizontal, 8)
-                            .contentShape(Rectangle())
-                            .id(command.id)
-                            .onTapGesture { run(command) }
-                            .onHover { if $0 { index = position } }
-                        }
-                        if rows.isEmpty {
-                            Text(.nothingMatchesQuery(query: query))
-                                .foregroundStyle(Theme.textSecondary)
-                                .padding(.horizontal, 16)
-                                .frame(height: 44)
-                        }
-                    }
-                    .padding(.bottom, 6)
-                }
-                .scrollIndicators(.never)
-                .frame(maxHeight: 400)
-                .fixedSize(horizontal: false, vertical: true)
-                .onChange(of: index) {
-                    if rows.indices.contains(index) { proxy.scrollTo(rows[index].id) }
-                }
-            }
+            PaletteRows(rows: rows, query: query, cursor: cursor, run: run)
         }
         .font(.ui)
         .foregroundStyle(Theme.text)
         .onAppear { focused = true }
-        .onChange(of: query) { index = 0 }
+        // The first match lit, and scrolled to.
+        .onChange(of: query) { cursor.moveByKeys(to: 0) }
     }
 
     private func run(_ command: PaletteCommand) {
