@@ -13,5 +13,6 @@ La mise à jour la plus importante à ce jour : planifiez avec des jalons, des 
 • Les sous-tickets se rangent juste sous leur ticket parent ; terminez le dernier, et le ticket parent est terminé lui aussi. Indiquez ce qui bloque quoi
 • Tous les tickets, sur un tableau ou non : vos dépôts dans la barre latérale, et les tickets qui ne sont sur aucun tableau ; un clic suffit pour les placer sur un tableau
 • Descriptions affichées comme sur GitHub : tableaux, cases à cocher, code et diagrammes Mermaid
+• Écrire en Markdown comme dans une app de notes : le gras, l’italique et le code s’activent et se désactivent, les listes se poursuivent quand vous allez à la ligne, et sur iPhone et iPad, la barre au-dessus du clavier propose des boutons adaptés à l’endroit où se trouve le point d’insertion
 • Moins de clics : choisir un statut, une personne ou une étiquette ferme le menu
 • Corrigé : l’app pouvait se fermer inopinément lors du passage d’un iPad en mode paysage ; sur Mac, un balayage à deux doigts ne vous ramène plus en arrière par mégarde
