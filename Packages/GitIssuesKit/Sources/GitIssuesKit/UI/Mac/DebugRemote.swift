@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "mdfocus", "mdcaret", "mddump", "mainmenu", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mainmenu"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -105,8 +105,21 @@ enum DebugRemote {
             for column in model.columns { log("column \(column.title) \(column.count)") }
             for section in model.sections { log("section \(section.title) \(section.count) \(section.detail ?? "")") }
         case "filter":
-            // filter <text>: changes the filter of the view on screen, here only.
+            // filter <text>: changes the filter of the view on screen, here only, or My Issues'.
             if let view = model.currentView { model.setFilter(ProjectFilter(argument), of: view) }
+            if model.scope == .myIssues { model.setMineFilter(ProjectFilter(argument)) }
+        case "display" where model.scope == .myIssues:
+            // display group status|project|priority|dueDate, display sort priority|dueDate|updated|created|manual [desc],
+            // display reset: how My Issues shows.
+            let bits = argument.split(separator: " ").map(String.init)
+            switch bits.first {
+            case "group": model.setMineDisplay { $0.grouping = MineGrouping(rawValue: bits.dropFirst().first ?? "") ?? .status }
+            case "sort":
+                model.setMineOrder(MineOrder(rawValue: bits.dropFirst().first ?? "") ?? .priority)
+                model.setMineDisplay { $0.descending = bits.last == "desc" }
+            case "reset": model.resetMineDisplay()
+            default: break
+            }
         case "display":
             // display group|columns <field name>, display sort <field name> [desc], display reset.
             guard let view = model.currentView else { break }
@@ -235,6 +248,33 @@ enum DebugRemote {
                     }
                 }
                 dump(ItemMenuBuilder(model: model, item: item).menu(), 0)
+            }
+        case "menusweep":
+            // menusweep top|main <x> <y from> <y to>: times the pointer going up and down over the open dropdown, or over
+            // the window for the command palette.
+            let bits = argument.split(separator: " ").map(String.init)
+            let numbers = bits.dropFirst().compactMap { Double($0) }
+            if numbers.count == 3 {
+                MenuTiming.sweep(main: bits.first == "main", x: numbers[0], from: numbers[1], to: numbers[2], model: model, log: log)
+            }
+        case "menutiming":
+            // menutiming <number> sweep [row] | plain | submenu <row> <times> | open: times the issue's right-click menu
+            // under a pointer the app moves itself (see MenuTiming). show | panels | hover <level> <x> <y> |
+            // click <level> <x> <y> drive it for a test.
+            let bits = argument.split(separator: " ").map(String.init)
+            guard let first = bits.first, let item = item(first, model) else { break }
+            let menu = { ItemMenuBuilder(model: model, item: item).menu() }
+            let numbers = bits.dropFirst(2).compactMap { Double($0) }
+            switch bits.count > 1 ? bits[1] : "sweep" {
+            case "sweep": MenuTiming.sweep(menu(), rest: bits.count > 2 ? bits[2...].joined(separator: " ") : "Status", model: model, log: log)
+            case "plain": MenuTiming.plain(menu(), model: model, log: log)
+            case "submenu" where bits.count > 3: MenuTiming.submenu(menu(), row: bits[2], times: Int(bits[3]) ?? 1, model: model, log: log)
+            case "open": MenuTiming.opening(menu, times: 8, model: model, log: log)
+            case "show": MenuTiming.show(menu(), model: model)
+            case "panels": MenuTiming.describe(log: log)
+            case "hover" where numbers.count == 3: MenuTiming.hover(NSPoint(x: numbers[1], y: numbers[2]), level: Int(numbers[0]))
+            case "click" where numbers.count == 3: MenuTiming.click(NSPoint(x: numbers[1], y: numbers[2]), level: Int(numbers[0]))
+            default: log("menutiming: \(argument)?")
             }
         case "key":
             sendKeys(argument)
@@ -668,6 +708,7 @@ enum DebugRemote {
             let size = argument.split(separator: " ").compactMap { Double($0) }
             if size.count == 2, let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }) {
                 window.ignoresMouseEvents = true
+                Dropdown.offscreen = !argument.hasSuffix("onscreen")
                 if argument.hasSuffix("onscreen"), let screen = NSScreen.main?.visibleFrame {
                     window.setFrame(CGRect(x: screen.minX, y: screen.maxY - size[1], width: size[0], height: size[1]), display: true)
                 } else {

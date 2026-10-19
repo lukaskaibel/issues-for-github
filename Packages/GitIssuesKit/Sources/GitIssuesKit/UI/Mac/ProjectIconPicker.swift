@@ -11,7 +11,7 @@ struct ProjectIconPicker: View {
 
     @State private var query = ""
     /// Under the pointer or the arrow keys.
-    @State private var active: Spot?
+    @State private var cursor = MenuCursor<Spot>()
     @FocusState private var focused: Bool
 
     enum Spot: Hashable {
@@ -51,7 +51,7 @@ struct ProjectIconPicker: View {
                     return .handled
                 }
                 .onSubmit {
-                    if let active { pick(active, look: look) } else { close() }
+                    if let active = cursor.key { pick(active, look: look) } else { close() }
                 }
             Rectangle().fill(Theme.popoverBorder).frame(height: 1)
             HStack(spacing: 2) {
@@ -102,8 +102,9 @@ struct ProjectIconPicker: View {
                         proxy.scrollTo("\(look.glyph.group)", anchor: .top)
                     }
                 }
-                .onChange(of: active) {
-                    if case .glyph(let key) = active, let row = rows.first(where: { $0.glyphs.contains { $0.key == key } }) {
+                .onChange(of: cursor.keyMoves) {
+                    // Only for the keys: the pointer is on the glyph already, and scrolling would move it away.
+                    if case .glyph(let key) = cursor.key, let row = rows.first(where: { $0.glyphs.contains { $0.key == key } }) {
                         proxy.scrollTo(row.id)
                     }
                 }
@@ -123,7 +124,7 @@ struct ProjectIconPicker: View {
         .onChange(of: query) {
             // Return picks the best match, as in the other pickers.
             let first = Self.lines(for: query).first { !$0.glyphs.isEmpty }?.glyphs.first
-            active = query.isEmpty ? nil : first.map { .glyph($0.key) }
+            cursor.key = query.isEmpty ? nil : first.map { .glyph($0.key) }
         }
     }
 
@@ -156,11 +157,11 @@ struct ProjectIconPicker: View {
                     }
                 }
                 .frame(width: Self.cell, height: Self.cell)
-                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(active == .color(index) ? Theme.menuHighlight : .clear))
+                .background(CursorHighlight(cursor: cursor, key: .color(index), radius: 6))
                 .contentShape(Rectangle())
         }
         .buttonStyle(PlainPressStyle())
-        .onHover { inside in hover(.color(index), inside) }
+        .onHover { cursor.hover(.color(index), $0) }
         .help(Defaults.colourName(color))
         .accessibilityLabel(Defaults.colourName(color))
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -175,20 +176,19 @@ struct ProjectIconPicker: View {
             ProjectGlyphImage(look: ProjectLook(glyph: glyph, color: look.color), size: 16)
                 .frame(width: Self.cell, height: Self.cell)
                 .background {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(selected ? Theme.projectColor(look.color).opacity(0.16) : active == .glyph(glyph.key) ? Theme.menuHighlight : .clear)
+                    if selected {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.projectColor(look.color).opacity(0.16))
+                    } else {
+                        CursorHighlight(cursor: cursor, key: .glyph(glyph.key), radius: 6)
+                    }
                 }
                 .contentShape(Rectangle())
         }
         .buttonStyle(PlainPressStyle())
-        .onHover { inside in hover(.glyph(glyph.key), inside) }
+        .onHover { cursor.hover(.glyph(glyph.key), $0) }
         .help(Text(glyph.name))
         .accessibilityLabel(Text(glyph.name))
         .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-
-    private func hover(_ spot: Spot, _ inside: Bool) {
-        if inside { active = spot } else if active == spot { active = nil }
     }
 
     private func pick(_ spot: Spot, look: ProjectLook) {
@@ -210,12 +210,12 @@ struct ProjectIconPicker: View {
     }
 
     private func move(rows delta: Int, in rows: [Line], look: ProjectLook) -> KeyPress.Result {
-        active = active.flatMap { Self.vertical(from: $0, by: delta, rows: rows.map(\.glyphs)) } ?? start(in: rows, look: look)
+        cursor.moveByKeys(to: cursor.key.flatMap { Self.vertical(from: $0, by: delta, rows: rows.map(\.glyphs)) } ?? start(in: rows, look: look))
         return .handled
     }
 
     private func move(by delta: Int, in rows: [Line], look: ProjectLook) -> KeyPress.Result {
-        active = active.flatMap { Self.sideways(from: $0, by: delta, rows: rows.map(\.glyphs)) } ?? start(in: rows, look: look)
+        cursor.moveByKeys(to: cursor.key.flatMap { Self.sideways(from: $0, by: delta, rows: rows.map(\.glyphs)) } ?? start(in: rows, look: look))
         return .handled
     }
 

@@ -28,7 +28,7 @@ swiftc -O Tools/readme-images/capture.swift -o "$work/capture" 2>/dev/null
 
 # The debug app shares its settings with the real one. Note what the scenes change and put it back afterwards.
 keys=(appearance viewMode selectedProject inbox.selected inbox.bucket roadmap.layout roadmap.zoom showsIssueInspector
-  "NSWindow Frame main")
+  mine.display mine.filter "NSWindow Frame main")
 saved=()
 types=()
 for key in "${keys[@]}"; do
@@ -138,6 +138,10 @@ for theme in dark light; do
   say "overlay due 9"; sleep 1.2; shot "due-$theme"
   say "overlay none" "focus" "mode list"; sleep 1.2; shot "list-$theme"
   say "select repo git-issues"; sleep 1.2; shot "repository-$theme"
+  # My Issues grouped by project, done issues filtered out, with its Display options open.
+  say "select mine" "display reset" "filter -status:done" "display group project"; sleep 1.2
+  say "menu display"; sleep 1; shot "my-issues-$theme"
+  say "menu none" "filter" "display reset"
   # The roadmap's timeline: the sample's epics over the milestones 0.3, 0.4 and 1.0.
   say "select Git Issues" "select roadmap" "roadmap timeline" "roadmap months"; sleep 1.5; shot "roadmap-$theme"
   # The project's views in the sidebar, "This Week" open with its filter and its cycle over the board.

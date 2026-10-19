@@ -193,7 +193,7 @@ struct SettingsView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// Each of the board icons, at most four to a row, named underneath.
+    /// Each of the icons, at most four to a row, named underneath.
     private var iconGrid: some View {
         let perRow = min(AppIconChoice.allCases.count, 4)
         return LazyVGrid(columns: Array(repeating: GridItem(.fixed(62), spacing: 8), count: perRow), alignment: .leading, spacing: 10) {
