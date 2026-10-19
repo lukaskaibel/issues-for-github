@@ -318,9 +318,8 @@ struct MilestoneEditorSheet: View {
                         .submitLabel(.done)
                         .accessibilityIdentifier("milestone-name")
                     MarkdownEditor(
-                        text: descr,
+                        draft: $descr,
                         placeholder: .milestoneDescriptionPlaceholder,
-                        onChange: { descr = $0 },
                         editing: $editingDescription,
                         accessibilityLabel: .milestoneDescriptionPlaceholder,
                         accessibilityIdentifier: "milestone-description"

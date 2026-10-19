@@ -722,9 +722,8 @@ struct CommentComposer: View {
             // Markdown as it will look on GitHub, growing with the text up to a point and then scrolling.
             ScrollView {
                 MarkdownEditor(
-                    text: draft,
+                    draft: $draft,
                     placeholder: .leaveCommentPlaceholder,
-                    onChange: { draft = $0 },
                     editing: $focused,
                     onSubmit: send,
                     accessibilityLabel: .leaveCommentPlaceholder,

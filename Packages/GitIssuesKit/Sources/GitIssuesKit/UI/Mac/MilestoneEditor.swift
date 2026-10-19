@@ -59,9 +59,8 @@ struct MilestoneEditor: View {
                 // What it is about, as it will look on GitHub, growing with the text up to a point and then scrolling.
                 ScrollView {
                     MarkdownEditor(
-                        text: descr,
+                        draft: $descr,
                         placeholder: .milestoneDescriptionPlaceholder,
-                        onChange: { descr = $0 },
                         editing: $editingDescription,
                         onSubmit: save,
                         onEscape: { model.overlay = nil },

@@ -42,9 +42,8 @@ struct NewIssueSheet: View {
                         .accessibilityIdentifier("new-title")
                     // The description as it will look on GitHub.
                     MarkdownEditor(
-                        text: draft.body,
+                        draft: $draft.body,
                         placeholder: .addDescriptionPlaceholder,
-                        onChange: { draft.body = $0 },
                         editing: $editingBody,
                         onSubmit: create,
                         submitTitle: .createIssue,

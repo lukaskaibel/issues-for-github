@@ -72,9 +72,8 @@ struct NewIssueView: View {
                 // The description as it will look on GitHub, growing with the text up to a point and then scrolling.
                 ScrollView {
                     MarkdownEditor(
-                        text: draft.body,
+                        draft: $draft.body,
                         placeholder: .addDescriptionPlaceholder,
-                        onChange: { draft.body = $0 },
                         editing: $editingBody,
                         onSubmit: create,
                         onEscape: { model.overlay = nil },

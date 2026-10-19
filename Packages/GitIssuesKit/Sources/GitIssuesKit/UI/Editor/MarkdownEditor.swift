@@ -11,8 +11,8 @@ import UIKit
 /// its source with a preview. It is as tall as its text.
 ///
 /// For a text that is saved as you go (a description), pass `onSave`: it gets the text after a short pause in typing,
-/// when you leave the text and when you tick a checkbox. For a draft kept elsewhere (a new comment), pass `onChange`,
-/// which gets every change.
+/// when you leave the text and when you tick a checkbox. For a draft kept elsewhere (a new comment), pass it as
+/// `draft:`, which follows every change.
 struct MarkdownEditor: View {
     var text: String
     var placeholder: LocalizedStringResource?
@@ -21,6 +21,9 @@ struct MarkdownEditor: View {
     var allowsChecking = false
     var onSave: ((String) -> Void)?
     var onChange: ((String) -> Void)?
+    /// A draft, read afresh at every update: SwiftUI updates the view again for other reasons (its height, say) with
+    /// the `text` it had then, which may be a few keys behind the typing.
+    var draft: Binding<String>?
     /// Whether it is being typed in.
     var editing: Binding<Bool> = .constant(false)
     /// Takes the keyboard focus as soon as it is shown, with the caret at the end.
@@ -48,6 +51,31 @@ struct MarkdownEditor: View {
         SizedMarkdownEditor(configuration: self, checkboxes: checkboxes)
         #endif
     }
+}
+
+extension MarkdownEditor {
+    /// A draft kept elsewhere, such as a new comment: it follows every change, and a change made to it from outside
+    /// (cleared once sent) shows at once.
+    init(
+        draft: Binding<String>,
+        placeholder: LocalizedStringResource? = nil,
+        editing: Binding<Bool> = .constant(false),
+        takesFocus: Bool = false,
+        onSubmit: (() -> Void)? = nil,
+        onEscape: (() -> Void)? = nil,
+        submitTitle: LocalizedStringResource = .done,
+        accessibilityLabel: LocalizedStringResource? = nil,
+        accessibilityIdentifier: String? = nil
+    ) {
+        self.init(
+            text: draft.wrappedValue, placeholder: placeholder, onChange: { draft.wrappedValue = $0 }, draft: draft,
+            editing: editing, takesFocus: takesFocus, onSubmit: onSubmit, onEscape: onEscape, submitTitle: submitTitle,
+            accessibilityLabel: accessibilityLabel, accessibilityIdentifier: accessibilityIdentifier
+        )
+    }
+
+    /// The text as it is now: a draft's current value, else the text given.
+    var currentText: String { draft?.wrappedValue ?? text }
 }
 
 /// Where the checkboxes are drawn in the text, and how to tick one.
@@ -105,6 +133,7 @@ final class MarkdownEditorCoordinator {
     private var pendingSave: DispatchWorkItem?
     /// The model's text, as far as the editor knows: what it was given or last handed back.
     private var known: String
+
     /// What `editing` was when last seen, to tell when it is set from outside.
     private var seenEditing = false
 
@@ -116,7 +145,7 @@ final class MarkdownEditorCoordinator {
         editor.onSubmit = configuration.onSubmit
         editor.onEscape = configuration.onEscape
         editor.submitTitle = configuration.submitTitle
-        known = Diff3.normalize(configuration.text)
+        known = Diff3.normalize(configuration.currentText)
         editor.load(text: known)
         editor.textView.placeholder = configuration.placeholder.map { String(localized: $0) } ?? ""
         editor.onTextChange = { [weak self] in self?.textChanged() }
@@ -180,14 +209,27 @@ final class MarkdownEditorCoordinator {
                 }
             }
         }
-        let incoming = Diff3.normalize(configuration.text)
+        let incoming = Diff3.normalize(configuration.currentText)
         guard incoming != known else { return }
+        if configuration.onChange != nil {
+            // While SwiftUI updates the view, a draft can still read as it was a few keys ago. Looked at again once
+            // the update is over, it is either what was typed (nothing to do) or changed from outside: sent, or put
+            // back. That shows at once.
+            DispatchQueue.main.async { [weak self] in self?.takeDraft() }
+            return
+        }
         known = incoming
-        // A draft follows its model at once (it was sent, or put back). Text that is saved as you go takes in what
-        // came from GitHub or another device unless you are typing in it.
-        if configuration.onChange != nil || (!editor.isFocused && !hasUnsavedChanges) {
+        // Text that is saved as you go takes in what came from GitHub or another device unless you are typing in it.
+        if !editor.isFocused && !hasUnsavedChanges {
             editor.reload(text: incoming)
         }
+    }
+
+    private func takeDraft() {
+        let incoming = Diff3.normalize(configuration.currentText)
+        guard incoming != known else { return }
+        known = incoming
+        editor.reload(text: incoming)
     }
 
     private func textChanged() {

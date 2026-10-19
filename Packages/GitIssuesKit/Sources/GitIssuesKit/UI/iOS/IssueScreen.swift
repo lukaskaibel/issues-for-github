@@ -1361,9 +1361,8 @@ private struct CommentComposer: View {
             // sends, as on the Mac; Return alone starts a new line.
             ScrollView {
                 MarkdownEditor(
-                    text: draft,
+                    draft: $draft,
                     placeholder: .leaveCommentPlaceholder,
-                    onChange: { draft = $0 },
                     onSubmit: send,
                     submitTitle: .sendComment,
                     accessibilityLabel: .leaveCommentPlaceholder,
@@ -1375,7 +1374,8 @@ private struct CommentComposer: View {
             .scrollBounceBehavior(.basedOnSize)
             .frame(height: min(max(height, EditorStyle.lineHeight), EditorStyle.lineHeight * 6))
             .padding(.leading, 16)
-            .padding(.vertical, 11)
+            // One line is as tall as the send button's corner, as with a plain text field.
+            .padding(.vertical, max(6, (buttonSize + 12 - EditorStyle.lineHeight) / 2))
             Button(action: send) {
                 Image(systemName: "arrow.up")
                     .font(.subheadline.weight(.bold))

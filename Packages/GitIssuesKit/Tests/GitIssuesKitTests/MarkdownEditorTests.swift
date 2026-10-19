@@ -79,6 +79,7 @@ final class MarkdownEditorTests: XCTestCase {
         draft = ""
         // Sent: the model clears the draft while the field still has the focus.
         editor.update(MarkdownEditor(text: draft, onChange: { [unowned self] in drafts.append($0) }))
+        settle()
         XCTAssertEqual(editor.editor.text, "")
     }
 
@@ -101,6 +102,32 @@ final class MarkdownEditorTests: XCTestCase {
         window.makeFirstResponder(nil)
         XCTAssertFalse(focus.isEditing)
         XCTAssertNil(focus.textView)
+    }
+
+    func testADraftIsReadAfreshAtEveryUpdate() {
+        var draft = ""
+        let binding = Binding(get: { draft }, set: { draft = $0 })
+        // The view as SwiftUI built it before the typing, with the text it had then.
+        let early = MarkdownEditor(draft: binding)
+        let editor = coordinator(early)
+        type("Ship", into: editor)
+        XCTAssertEqual(draft, "Ship")
+        // Updated again for another reason, with that early view: what was typed stays.
+        editor.update(early)
+        settle()
+        XCTAssertEqual(editor.editor.text, "Ship")
+        // During SwiftUI's update the draft can read as it was a few keys ago; afterwards it reads as typed.
+        var stale: String? = "Sh"
+        let lagging = MarkdownEditor(draft: Binding(get: { stale ?? draft }, set: { draft = $0 }))
+        editor.update(lagging)
+        stale = nil
+        settle()
+        XCTAssertEqual(editor.editor.text, "Ship")
+        // Sent: the draft is cleared from outside, and the field with it.
+        draft = ""
+        editor.update(early)
+        settle()
+        XCTAssertEqual(editor.editor.text, "")
     }
 
     func testATickedBoxInTextThatIsOnlyReadIsSavedAtOnce() {
