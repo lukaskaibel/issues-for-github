@@ -124,10 +124,15 @@ extension AppModel {
         }
         guard modifiers.isEmpty else { return false }
 
-        // Escape steps back one layer at a time: the peek, then the open issue, then the selection.
+        // Escape steps back one layer at a time: the peek, then sub-issues picked on the open issue, then the open
+        // issue, then the selection.
         if isEscape {
             if peekItemId != nil {
                 togglePeek()
+                return true
+            }
+            if openItem != nil, !pickedSubIssues.isEmpty {
+                clearSelection()
                 return true
             }
             if openItem != nil {

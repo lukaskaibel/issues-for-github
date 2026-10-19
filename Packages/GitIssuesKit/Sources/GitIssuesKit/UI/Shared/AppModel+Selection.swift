@@ -17,15 +17,22 @@ extension AppModel {
         Dictionary(uniqueKeysWithValues: orderedItems.enumerated().map { ($1.id, $0) })
     }
 
-    /// What shortcuts, the palette and the Issue menu act on: the open issue, else the picked issues (through
-    /// `targets(for:)`), else the issue under the pointer or keyboard focus.
+    /// What shortcuts, the palette and the Issue menu act on: the picked issues (through `targets(for:)`), on an
+    /// issue's page the sub-issues picked on it, else the open issue or the issue under the pointer or keyboard focus.
     var actionItem: Item? {
         if openItem == nil, let first = selectedItems.first { return first }
+        if openItem != nil, let first = pickedSubIssues.first { return first }
         return targetItem
     }
 
     /// The issues an action on `item` applies to: the whole selection when the item is part of it.
     func targets(for item: Item) -> [Item] {
+        if let openItemId, item.id != openItemId {
+            // On an issue's page, its picked sub-issues; the board's picks behind the page don't count there.
+            guard pickedSubIssueIds.contains(item.id) else { return [item] }
+            let picked = pickedSubIssues
+            return picked.count > 1 ? picked : [item]
+        }
         guard selectedIds.count > 1, selectedIds.contains(item.id) else { return [item] }
         let items = selectedItems
         return items.isEmpty ? [item] : items
@@ -60,10 +67,38 @@ extension AppModel {
     }
 
     func clearSelection() {
+        // On an issue's page only its picked sub-issues show; the board's picks wait behind it.
+        if openItemId != nil, !pickedSubIssueIds.isEmpty {
+            pickedSubIssueIds = []
+            subIssuePickAnchor = nil
+            return
+        }
         guard !selectedIds.isEmpty || selectionAnchorId != nil else { return }
         selectedIds = []
         selectionAnchorId = nil
         selectionRange = []
+    }
+
+    // MARK: Sub-issues on an issue's page
+
+    /// The open issue's sub-issues that are picked and still under it.
+    var pickedSubIssues: [Item] {
+        guard !pickedSubIssueIds.isEmpty, let parentId = openItem?.contentId else { return [] }
+        return allItems.filter { pickedSubIssueIds.contains($0.id) && $0.parentId == parentId }
+    }
+
+    /// ⌘-click on a sub-issue: picks it or puts it back.
+    func toggleSubIssuePick(_ item: Item) {
+        if pickedSubIssueIds.contains(item.id) { pickedSubIssueIds.remove(item.id) } else { pickedSubIssueIds.insert(item.id) }
+        subIssuePickAnchor = item.id
+    }
+
+    /// Shift-click on a sub-issue: everything from the last click to this one, in `order` as they are listed.
+    func extendSubIssuePick(to item: Item, in order: [String]) {
+        let anchor = subIssuePickAnchor.flatMap { order.contains($0) ? $0 : nil } ?? item.id
+        guard let from = order.firstIndex(of: anchor), let to = order.firstIndex(of: item.id) else { return }
+        pickedSubIssueIds = Set(order[min(from, to)...max(from, to)])
+        subIssuePickAnchor = anchor
     }
 
     // MARK: Acting on several issues

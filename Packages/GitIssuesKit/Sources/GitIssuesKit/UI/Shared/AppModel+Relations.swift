@@ -98,6 +98,8 @@ extension AppModel {
     func setParent(of children: [Item], to parent: Item?) {
         guard parent.map(canRelate) ?? true else { return }
         let parentId = parent?.contentId
+        // Offered first the next time a parent is picked.
+        noteRecent(.parent, parentId)
         let above = parent.map { ancestors(of: $0) } ?? []
         var seen = Set<String>()
         let mutations = children.compactMap { child -> Mutation? in
@@ -128,6 +130,7 @@ extension AppModel {
             issue.contentId == other.contentId ? nil : issue.summary.map { (blocked: $0, blocker: other) }
         }
         let all = pairs.allSatisfy { isBlocked($0.blocked.contentId, by: $0.blocker.contentId) }
+        if !all { noteRecent(.blockedBy, other.contentId) }
         setBlocked(pairs, !all)
     }
 
@@ -138,6 +141,7 @@ extension AppModel {
             issue.contentId == other.contentId ? nil : issue.summary.map { (blocked: other, blocker: $0) }
         }
         let all = pairs.allSatisfy { isBlocked($0.blocked.contentId, by: $0.blocker.contentId) }
+        if !all { noteRecent(.blocking, other.contentId) }
         setBlocked(pairs, !all)
     }
 

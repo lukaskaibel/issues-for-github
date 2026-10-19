@@ -280,9 +280,10 @@ struct SubIssuesSection: View {
             .frame(height: 32)
 
             if !subs.isEmpty {
+                let order = subs.compactMap { model.item(contentId: $0.id)?.id }
                 VStack(spacing: 0) {
                     ForEach(subs) { sub in
-                        SubIssueRow(sub: sub, showsPriority: showsPriority)
+                        SubIssueRow(sub: sub, showsPriority: showsPriority, order: order, block: order)
                     }
                 }
                 .animation(Theme.spring, value: subs.map(\.id))
@@ -291,15 +292,22 @@ struct SubIssuesSection: View {
     }
 }
 
+/// One sub-issue on its parent's page. A click opens it; ⌘-click and Shift-click pick several, as in the list, and
+/// their right-click menu and pickers then change all of them, such as moving them under another parent.
 private struct SubIssueRow: View {
     @Environment(AppModel.self) private var model
     var sub: SubIssue
     var showsPriority: Bool
+    /// The sub-issues as listed, for Shift-click to pick a run of them.
+    var order: [String]
+    /// The sub-issues listed together with this one, under the same heading.
+    var block: [String]
     @State private var hovering = false
     @State private var menuRegion = UUID()
 
     var body: some View {
         let boardItem = model.item(contentId: sub.id)
+        let picked = boardItem.map { model.pickedSubIssueIds.contains($0.id) } ?? false
         // A checklist, as in Reminders: the status where the checkbox is, the title, then the rest on the right.
         HStack(spacing: 10) {
             if let boardItem {
@@ -357,14 +365,18 @@ private struct SubIssueRow: View {
         }
         .padding(.horizontal, 8)
         .frame(height: 38)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hovering ? Theme.hover : .clear))
+        // Picked ones tinted, as picked notifications in the Inbox; picked neighbours join into one shape, as a
+        // selection does in Finder.
+        .background(shape(picked: picked, of: boardItem).fill(picked ? Theme.selectionFill : hovering ? Theme.hover : .clear))
         .overlay(alignment: .bottom) {
             // A hairline from where the title starts, as between a checklist's lines.
-            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 34).opacity(hovering ? 0 : 1)
+            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 34).opacity(hovering || picked ? 0 : 1)
         }
         .contentShape(Rectangle())
+        .accessibilityAddTraits(picked ? .isSelected : [])
         .onHover { hovering = $0 }
         .onTapGesture {
+            if model.handleSubIssueClick(on: boardItem, in: order) { return }
             if let boardItem {
                 model.open(boardItem)
             } else if let url = sub.url.flatMap(URL.init(string:)) {
@@ -399,6 +411,16 @@ private struct SubIssueRow: View {
             }
             return menu.build()
         }
+    }
+
+    private func shape(picked: Bool, of boardItem: Item?) -> UnevenRoundedRectangle {
+        let index = picked ? boardItem.flatMap { block.firstIndex(of: $0.id) } : nil
+        let above = index.map { $0 > 0 && model.pickedSubIssueIds.contains(block[$0 - 1]) } ?? false
+        let below = index.map { $0 < block.count - 1 && model.pickedSubIssueIds.contains(block[$0 + 1]) } ?? false
+        return UnevenRoundedRectangle(
+            topLeadingRadius: above ? 0 : 8, bottomLeadingRadius: below ? 0 : 8,
+            bottomTrailingRadius: below ? 0 : 8, topTrailingRadius: above ? 0 : 8, style: .continuous
+        )
     }
 
     private func glyph(_ boardItem: Item?) -> StatusGlyph {
@@ -463,11 +485,13 @@ struct EpicWorkSection: View {
                     )
                 })
 
+                let order = groups.flatMap(\.subs).compactMap { model.item(contentId: $0.id)?.id }
                 VStack(spacing: 0) {
                     ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
                         EpicGroupHeader(item: item, group: group.group, title: group.title, count: group.subs.count)
+                        let block = group.subs.compactMap { model.item(contentId: $0.id)?.id }
                         ForEach(group.subs) { sub in
-                            SubIssueRow(sub: sub, showsPriority: showsPriority)
+                            SubIssueRow(sub: sub, showsPriority: showsPriority, order: order, block: block)
                         }
                     }
                 }

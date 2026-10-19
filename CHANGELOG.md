@@ -15,6 +15,15 @@ All notable changes to this project are recorded here. The format follows
   "Doing" are both in progress, "P0" and "Urgent" both urgent. Grouped by project, the rows leave out the project's
   name. On iPhone and iPad the filter is a line under the title, and the "…" menu has Filter…, Group By and Order By.
   What you choose stays on the device, as GitHub has no view behind My Issues.
+- **Pick several sub-issues on an issue's page.** On the Mac, ⌘-click and Shift-click pick sub-issues in an issue's
+  list of sub-issues, as on the board and in the list. Right-click one of them and the menu changes all of them: move
+  them under another parent with Change Parent Issue…, into an epic or out of their parent, or set their status,
+  priority, assignee, labels, due date or milestone. Their status, priority and assignee buttons and the single keys
+  act on all of them too, and `Esc` lets them go before it leaves the issue.
+- **Pickers offer what you chose last.** The issue you just made a parent is at the top of the parent picker for the
+  next issue, above a line, and Return picks it again. The same goes for epics, blocked by and blocking, labels and
+  assignees, also in a new issue, on the Mac, iPhone and iPad: up to three of your latest choices come first. Rows no
+  longer move while you tick several labels or people in a picker that stays open.
 
 ### Changed
 
