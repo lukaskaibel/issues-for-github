@@ -162,9 +162,8 @@ The list groups issues by status. Each header stays pinned while you scroll thro
 a click. Drag an issue up or down to give it a new place, or into another section to change its status, as on the
 board. The app follows the system appearance, or stays light or dark if you prefer.
 
-Its icon is a board: three columns divided only by two thin lines, as the lines in Notes divide a page, with three
-cards to do, two in progress and one done in the status colours. Settings (on iPhone and iPad, your account) offers the
-board on its light page, on graphite or on indigo. Each follows light and dark mode.
+Its icon is a card with a done mark, lifted off a board of faint tiles. Settings (on iPhone and iPad, your account)
+offers it on its light page, on graphite or as a white card on indigo. Each follows light and dark mode.
 
 <img alt="The list grouped by status, half in the dark appearance and half in the light one" src="Design/screenshots/list-appearance.webp">
 
@@ -664,7 +663,7 @@ Config/                      Build settings, Info.plist and entitlements
 Design/                      Earlier icon variants, screenshots, social preview, the glossary
 Website/                     The website on GitHub Pages: home, privacy policy, terms, support (each also in
                              de/, es/, fr/, ja/, ko/, pt-br/, ru/, zh-hans/), Impressum
-Tools/                       The icon's boards, release builds, iOS tests, App Store and README screenshots,
+Tools/                       The app icon, release builds, iOS tests, App Store and README screenshots,
                              TestFlight uploads, the String Catalog and the website's languages
 fastlane/                    App Store releases: lanes, the listing's texts and the age rating
 ```

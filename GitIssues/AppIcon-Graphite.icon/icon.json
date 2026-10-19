@@ -1,99 +1,90 @@
 {
-  "fill-specializations": [
+  "fill-specializations" : [
     {
-      "value": {
-        "linear-gradient": [
+      "value" : {
+        "linear-gradient" : [
           "srgb:0.29020,0.29412,0.33333,1.00000",
           "srgb:0.14510,0.14902,0.17255,1.00000"
         ],
-        "orientation": {
-          "start": {
-            "x": 0.5,
-            "y": 0
+        "orientation" : {
+          "start" : {
+            "x" : 0.5,
+            "y" : 0
           },
-          "stop": {
-            "x": 0.5,
-            "y": 1
+          "stop" : {
+            "x" : 0.5,
+            "y" : 1
           }
         }
       }
     },
     {
-      "appearance": "dark",
-      "value": {
-        "linear-gradient": [
+      "appearance" : "dark",
+      "value" : {
+        "linear-gradient" : [
           "srgb:0.22745,0.23137,0.26667,1.00000",
           "srgb:0.09412,0.09804,0.11373,1.00000"
         ],
-        "orientation": {
-          "start": {
-            "x": 0.5,
-            "y": 0
+        "orientation" : {
+          "start" : {
+            "x" : 0.5,
+            "y" : 0
           },
-          "stop": {
-            "x": 0.5,
-            "y": 1
+          "stop" : {
+            "x" : 0.5,
+            "y" : 1
           }
         }
       }
     }
   ],
-  "groups": [
+  "groups" : [
     {
-      "layers": [
+      "layers" : [
         {
-          "glass": true,
-          "image-name-specializations": [
-            {
-              "value": "cards-light.png"
-            },
-            {
-              "appearance": "dark",
-              "value": "cards-dark.png"
-            }
-          ],
-          "name": "cards"
+          "glass" : true,
+          "image-name" : "card.png",
+          "name" : "card"
         }
       ],
-      "name": "Cards",
-      "shadow": {
-        "kind": "neutral",
-        "opacity": 0.5
+      "name" : "Card",
+      "shadow" : {
+        "kind" : "layer-color",
+        "opacity" : 0.59999999999999998
       },
-      "translucency": {
-        "enabled": false,
-        "value": 0.4
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.40000000000000002
       }
     },
     {
-      "layers": [
+      "layers" : [
         {
-          "glass": false,
-          "image-name-specializations": [
+          "glass" : false,
+          "image-name-specializations" : [
             {
-              "value": "lines-light.png"
+              "value" : "tiles-light.png"
             },
             {
-              "appearance": "dark",
-              "value": "lines-dark.png"
+              "appearance" : "dark",
+              "value" : "tiles-dark.png"
             }
           ],
-          "name": "lines"
+          "name" : "tiles"
         }
       ],
-      "name": "Lines",
-      "shadow": {
-        "kind": "none",
-        "opacity": 0.5
+      "name" : "Board",
+      "shadow" : {
+        "kind" : "none",
+        "opacity" : 0.5
       },
-      "specular": false,
-      "translucency": {
-        "enabled": false,
-        "value": 0.4
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
       }
     }
   ],
-  "supported-platforms": {
-    "squares": "shared"
+  "supported-platforms" : {
+    "squares" : "shared"
   }
 }
