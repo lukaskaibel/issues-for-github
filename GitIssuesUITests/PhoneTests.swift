@@ -24,6 +24,60 @@ final class PhoneTests: AppTestCase {
         wait(element("row-#9"))
     }
 
+    func testMyIssuesFiltersGroupsAndOrders() {
+        launch()
+        wait(app.navigationBars["My Issues"])
+        wait(element("row-#8"))
+        // Most urgent first, also across projects: #9 (Urgent) before #8 (High) in In progress.
+        XCTAssertLessThan(element("row-#9").frame.minY, element("row-#8").frame.minY)
+
+        // Grouped by project from the "…" menu; the issues on no board lead.
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        wait(button("Group by"))
+        button("Group by").tap()
+        wait(button("Project"))
+        button("Project").tap()
+        wait(element("section-No project"))
+        wait(element("section-Git Issues"))
+        snapshot("My Issues by project")
+
+        // Only what is urgent, whatever each project calls it.
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        wait(button("Filter…"))
+        button("Filter…").tap()
+        wait(app.navigationBars["Filter"])
+        button("Add Filter").tap()
+        wait(app.navigationBars["Add Filter"])
+        button("Priority").tap()
+        wait(app.navigationBars["Priority"])
+        let urgent = pickerRow("Urgent")
+        wait(urgent)
+        snapshot("My Issues filter values")
+        urgent.tap()
+        goBack()
+        goBack()
+        button("Done").tap()
+        waitForValue(element("my-issues-filter"), equalTo: "Priority is Urgent")
+        wait(element("row-#9"))
+        waitGone(element("row-#8"))
+        snapshot("My Issues, only urgent")
+
+        // One tap on the filter line, Clear Filter, and everything is back.
+        element("my-issues-filter").tap()
+        wait(button("Clear Filter"))
+        button("Clear Filter").tap()
+        button("Done").tap()
+        waitGone(element("my-issues-filter"))
+        scrollTo(element("row-#8"))
+        wait(element("row-#8"))
+
+        // Reset goes back to groups by status.
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        wait(button("Reset"))
+        button("Reset").tap()
+        wait(element("section-In progress"))
+    }
+
     func testIssuesMoveWithinTheirSection() {
         launch()
         openProjectTab("Git Issues")

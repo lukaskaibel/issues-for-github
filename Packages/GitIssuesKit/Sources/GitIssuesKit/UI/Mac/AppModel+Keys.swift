@@ -253,8 +253,8 @@ extension AppModel {
             break
         }
 
-        // F filters the view on screen, ⇧V shows how it is displayed, as in Linear.
-        if openItem == nil, currentView != nil, !event.modifierFlags.contains(.command) {
+        // F filters the view on screen or My Issues, ⇧V shows how it is displayed, as in Linear.
+        if openItem == nil, currentView != nil || scope == .myIssues, !event.modifierFlags.contains(.command) {
             if key == "f", !event.modifierFlags.contains(.shift) {
                 filterMenuRequest += 1
                 return true

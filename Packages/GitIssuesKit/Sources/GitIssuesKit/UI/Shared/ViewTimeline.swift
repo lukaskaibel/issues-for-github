@@ -386,6 +386,8 @@ private struct TimelineGroupIcon: View {
             case .epic: EpicIcon(color: Theme.epic)
             case .repository: RepositoryIcon(size: 12).foregroundStyle(Theme.textSecondary)
             case .priority(let level): PriorityIcon(level: level)
+            case .project(let look): ProjectGlyphImage(look: look, size: 13)
+            case .due(let tone): Image(systemName: "calendar").font(.system(size: 11, weight: .medium)).foregroundStyle(tone.color)
             case .plain: EmptyView()
             }
         }

@@ -45,6 +45,8 @@ enum MobileSheet: Identifiable, Equatable {
     case milestoneEditor(projectId: String?, title: String?, assigning: [String])
     /// A saved view's filter, to change and save.
     case viewFilter(String)
+    /// My Issues' filter.
+    case myIssuesFilter
     /// A new saved view, starting from the one open or a copy of another.
     case newView(projectId: String, sourceViewId: String?, duplicate: Bool)
     /// The glyph and colour a project shows with.
@@ -60,6 +62,7 @@ enum MobileSheet: Identifiable, Equatable {
         case .dueDate(let id): "due-\(id)"
         case .picker(let itemId, let kind): "picker-\(kind)-\(itemId)"
         case .viewFilter(let id): "view-filter-\(id)"
+        case .myIssuesFilter: "my-issues-filter"
         case .newView(let projectId, let source, let duplicate): "new-view-\(projectId)-\(source ?? "-")-\(duplicate)"
         case .projectIcon(let id): "project-icon-\(id)"
         }

@@ -119,6 +119,9 @@ struct ContentPanel: View {
                     InboxView()
                         .transition(.opacity)
                 } else {
+                    if model.scope == .myIssues {
+                        MyIssuesFilterBar()
+                    }
                     if let view = model.currentView {
                         FilterBar(view: view)
                         // A view of one iteration says which, when, and how far it is, as Linear's cycles.

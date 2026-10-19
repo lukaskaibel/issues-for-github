@@ -272,6 +272,8 @@ extension AppModel {
             return row?.next != title
         case .group(let key):
             return canDrop(item, into: key)
+        case .mine:
+            return false
         }
     }
 
@@ -295,6 +297,8 @@ extension AppModel {
             guard !mutations.isEmpty else { return false }
             withAnimation(Theme.spring) { perform(mutations) }
             return true
+        case .mine:
+            return false
         }
     }
 
@@ -311,6 +315,8 @@ extension AppModel {
             overlay = .newIssue(statusId: nil, parentItemId: nil)
         case .group(let key):
             addIssue(in: key)
+        case .mine:
+            break
         }
     }
 }

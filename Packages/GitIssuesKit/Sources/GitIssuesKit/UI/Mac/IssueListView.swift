@@ -6,11 +6,21 @@ struct IssueListView: View {
 
     var body: some View {
         if model.sections.isEmpty {
-            EmptyState(title: emptyTitle, message: emptyMessage)
+            if model.scope == .myIssues, !model.mineFilter.isEmpty, !model.assignedItems.isEmpty {
+                // The filter hides everything; one click shows it all again.
+                EmptyState(title: String(localized: .nothingMatchesFilterTitle), message: String(localized: .nothingMatchesFilterMessage)) {
+                    Button(.clearFilter) { model.setMineFilter(ProjectFilter("")) }
+                        .buttonStyle(SecondaryButtonStyle())
+                }
+            } else {
+                EmptyState(title: emptyTitle, message: emptyMessage)
+            }
         } else {
-            // Where rows come from several boards, each says which; an issue on none says its repository.
+            // Where rows come from several boards, each says which; an issue on none says its repository. My Issues
+            // grouped by project says it in the groups.
             let showsProject = model.scope == .myIssues
                 || model.currentRepositoryId.map { model.boards(ofRepository: $0).count > 1 } ?? false
+            let groupsByProject = model.scope == .myIssues && model.mineDisplay.grouping == .project
             let canEdit = model.scopeProjectId.flatMap { id in model.projects.first { $0.id == id } }?.viewerCanUpdate == true
             let canAdd = model.scopeProjectId != nil && (model.currentProjectId != nil || canEdit)
             // A milestone's list doesn't repeat its milestone on every row, nor the roadmap an epic's.
@@ -36,7 +46,7 @@ struct IssueListView: View {
                                     item: item, glyph: model.glyph(of: item), priority: model.priorityLevel(of: item),
                                     showsPriority: model.project(of: item)?.priorityFieldId != nil,
                                     showsStatus: !item.isOnBoard || model.project(of: item)?.statusFieldId != nil,
-                                    projectTitle: showsProject ? model.project(of: item)?.title ?? (model.scope == .myIssues ? item.repoShortName : nil) : nil,
+                                    projectTitle: showsProject ? place(of: item, groupsByProject: groupsByProject) : nil,
                                     due: model.dueBadge(for: item),
                                     selected: model.isSelected(item.id),
                                     selecting: !model.selectedIds.isEmpty,
@@ -62,13 +72,20 @@ struct IssueListView: View {
                 focusedId: model.focusedItemId,
                 focusScrollToken: model.focusScrollToken,
                 avatarVersion: model.avatarVersion,
-                listKey: "\(model.scope) \(model.currentView?.id ?? "")"
+                // Grouped otherwise, My Issues starts at the top again too.
+                listKey: "\(model.scope) \(model.currentView?.id ?? "") \(model.scope == .myIssues ? model.mineDisplay.grouping.rawValue : "")"
             )
             // A different project starts at the top again.
             .id(model.scope)
             .padding(.top, 6)
             .task(id: model.scope) { await model.preloadAvatars() }
         }
+    }
+
+    /// Which board a row is on, or for an issue on none in My Issues, its repository.
+    private func place(of item: Item, groupsByProject: Bool) -> String? {
+        if let project = model.project(of: item) { return groupsByProject ? nil : project.title }
+        return model.scope == .myIssues ? item.repoShortName : nil
     }
 
     /// On the roadmap, an epic that runs over several milestones says how far: "0.3 → 0.4".

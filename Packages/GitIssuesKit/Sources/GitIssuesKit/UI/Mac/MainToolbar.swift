@@ -72,7 +72,7 @@ private struct PrincipalControl: View {
 }
 
 /// The page's own buttons, in one piece of glass: an issue's arrows, link and GitHub; what to do with a
-/// notification; a view's filter and display; a milestone's progress and date; the roadmap's zoom.
+/// notification; the filter and display of a view or My Issues; a milestone's progress and date; the roadmap's zoom.
 private struct PageControls: View {
     @Environment(AppModel.self) private var model
     let openItem: Item?
@@ -104,6 +104,9 @@ private struct PageControls: View {
                 }
                 if let view = model.currentView {
                     ViewToolbarButtons(view: view)
+                }
+                if model.scope == .myIssues {
+                    MyIssuesToolbarButtons()
                 }
                 if let repo = model.currentRepository, repo.url != nil {
                     RepositoryGitHubButton(repo: repo)
@@ -174,7 +177,7 @@ extension AppModel {
 
     fileprivate func hasPageControls(openItem: Item?) -> Bool {
         if openItem != nil || scope == .inbox { return true }
-        return roadmapScopeProjectId != nil || milestoneScope != nil || currentView != nil
+        return roadmapScopeProjectId != nil || milestoneScope != nil || currentView != nil || scope == .myIssues
             || currentRepository?.url != nil || showsPriorityFieldButton
     }
 }
@@ -345,12 +348,32 @@ private struct RoadmapToolbarControls: View {
 
 /// A view's filter (F) and how it is displayed (⇧V), side by side in one piece of glass.
 private struct ViewToolbarButtons: View {
+    @Environment(AppModel.self) private var model
     let view: ProjectView
 
     var body: some View {
         HStack(spacing: 0) {
-            HeaderFilterButton(view: view)
-            DisplayButton(view: view)
+            HeaderFilterButton(
+                filter: Binding(get: { model.filter(of: view) }, set: { model.setFilter($0, of: view) }),
+                scope: .project(view.projectId)
+            )
+            DisplayButton(changed: model.displayDiffers(view)) { close in
+                DisplayOptions(view: view, close: close)
+            }
+        }
+    }
+}
+
+/// My Issues' filter and display, as a view has them.
+private struct MyIssuesToolbarButtons: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        HStack(spacing: 0) {
+            HeaderFilterButton(filter: Binding(get: { model.mineFilter }, set: { model.setMineFilter($0) }), scope: .myIssues)
+            DisplayButton(changed: !model.mineDisplay.isDefault) { close in
+                MyIssuesDisplayOptions(close: close)
+            }
         }
     }
 }
