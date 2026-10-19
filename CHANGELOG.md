@@ -6,6 +6,13 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- On the Mac, an issue and the Inbox read cleanly under the toolbar: what scrolls up fades out just below it, as above
+  the comment field, and the toolbar lies on the page's own ground. Before, the text of an issue stayed sharp under the
+  toolbar and ran through its title, "#9" and the project's name; over the Inbox the toolbar had a strip of another
+  grey with a line under it, which the notifications showed through.
+
 ## [1.0.0] - 2026-10-19
 
 Issues now plans the work as well as tracking it, in a window built like Mail and Notes. In the App Store this version
