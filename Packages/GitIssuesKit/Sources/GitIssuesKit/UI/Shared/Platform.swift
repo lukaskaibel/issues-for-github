@@ -5,12 +5,14 @@ import AppKit
 typealias PlatformColor = NSColor
 typealias PlatformImage = NSImage
 typealias PlatformFont = NSFont
+typealias PlatformView = NSView
 #else
 import UIKit
 
 typealias PlatformColor = UIColor
 typealias PlatformImage = UIImage
 typealias PlatformFont = UIFont
+typealias PlatformView = UIView
 #endif
 
 /// The few things AppKit and UIKit spell differently, so shared views can stay free of `#if`.
@@ -103,6 +105,28 @@ extension PlatformFont {
         #else
         fontDescriptor.withSymbolicTraits(fontDescriptor.symbolicTraits.union(.traitItalic))
             .map { UIFont(descriptor: $0, size: pointSize) } ?? self
+        #endif
+    }
+
+    /// The system font at another weight, keeping the size and the italics.
+    func withWeight(_ weight: PlatformFont.Weight) -> PlatformFont {
+        let font = PlatformFont.systemFont(ofSize: pointSize, weight: weight)
+        return isItalic ? font.italicized() : font
+    }
+
+    var isItalic: Bool {
+        #if os(macOS)
+        fontDescriptor.symbolicTraits.contains(.italic)
+        #else
+        fontDescriptor.symbolicTraits.contains(.traitItalic)
+        #endif
+    }
+
+    var isMonospaced: Bool {
+        #if os(macOS)
+        fontDescriptor.symbolicTraits.contains(.monoSpace)
+        #else
+        fontDescriptor.symbolicTraits.contains(.traitMonoSpace)
         #endif
     }
 }

@@ -27,7 +27,7 @@ struct MarkdownEditor: NSViewRepresentable {
     func makeNSView(context: Context) -> MarkdownTextView {
         let view = MarkdownTextView(usingTextLayoutManager: false)
         view.delegate = context.coordinator
-        view.textStorage?.delegate = context.coordinator
+        view.setUpStyling()
         view.drawsBackground = false
         view.isRichText = false
         view.importsGraphics = false
@@ -85,7 +85,7 @@ struct MarkdownEditor: NSViewRepresentable {
     }
 
     @MainActor
-    final class Coordinator: NSObject, NSTextViewDelegate, NSTextStorageDelegate {
+    final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: MarkdownEditor
         private(set) var hasUnsavedChanges = false
         private var pendingSave: DispatchWorkItem?
@@ -118,15 +118,6 @@ struct MarkdownEditor: NSViewRepresentable {
             parent.onSave(view.string)
         }
 
-        // Restyled while the edit is still open, so the new text never shows unstyled.
-        nonisolated func textStorage(
-            _ textStorage: NSTextStorage, willProcessEditing editedMask: NSTextStorageEditActions,
-            range editedRange: NSRange, changeInLength delta: Int
-        ) {
-            guard editedMask.contains(.editedCharacters) else { return }
-            MainActor.assumeIsolated { MarkdownStyler.style(textStorage, insideEdit: true) }
-        }
-
         func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
             let url = (link as? URL) ?? (link as? String).flatMap(URL.init(string:))
             guard let url else { return false }
@@ -136,17 +127,38 @@ struct MarkdownEditor: NSViewRepresentable {
     }
 }
 
-/// The text view behind `MarkdownEditor`: sizes itself to its text, draws a placeholder, and treats
-/// Escape and ⌘↵ as "done".
-final class MarkdownTextView: NSTextView {
+/// The text view behind `MarkdownEditor`: sizes itself to its text, draws a placeholder, types Markdown by the
+/// rules of `MarkdownEditing` (with ⌘B and the other shortcuts), and treats Escape and ⌘↵ as "done".
+final class MarkdownTextView: NSTextView, NSTextStorageDelegate, MarkdownTextInput {
     var placeholder = ""
     var onEndEditing: () -> Void = {}
     var onFocusChange: (Bool) -> Void = { _ in }
     var takesFocusWhenShown = false
+    var unwrapped: MarkdownUnwrapped?
 
     var isFirstResponder: Bool { window?.firstResponder === self }
 
     private var measured: (width: CGFloat, string: String, height: CGFloat)?
+    private let styleAnimator = MarkdownStyleAnimator()
+
+    func setUpStyling() {
+        textStorage?.delegate = self
+        styleAnimator.view = self
+        styleAnimator.onFrame = { [weak self] in
+            // A heading that grows changes the height without changing the text.
+            self?.measured = nil
+            self?.invalidateIntrinsicContentSize()
+        }
+    }
+
+    // Restyled as part of the edit, before it is laid out, so the new text never shows unstyled.
+    nonisolated func textStorage(
+        _ textStorage: NSTextStorage, didProcessEditing editedMask: NSTextStorageEditActions,
+        range editedRange: NSRange, changeInLength delta: Int
+    ) {
+        guard editedMask.contains(.editedCharacters) else { return }
+        MainActor.assumeIsolated { styleAnimator.restyle(textStorage, edited: editedRange) }
+    }
 
     /// The height the text needs at a width, measured on a copy so the visible layout is left alone.
     func height(forWidth width: CGFloat) -> CGFloat {
@@ -225,7 +237,75 @@ final class MarkdownTextView: NSTextView {
             finishEditing()
             return true
         }
+        if isFirstResponder, isEditable, !hasMarkedText(), formatShortcut(event, flags) { return true }
         return super.performKeyEquivalent(with: event)
+    }
+
+    /// ⌘B, ⌘I, ⌘E and ⌘⇧X for bold, italics, code and strikethrough, and ⌘⇧7, ⌘⇧8 and ⌘⇧9 for a numbered list,
+    /// bullets and a checklist, as in Google Docs and Notion. The digits go by their key, whatever the layout.
+    private func formatShortcut(_ event: NSEvent, _ flags: NSEvent.ModifierFlags) -> Bool {
+        let key = event.charactersIgnoringModifiers?.lowercased()
+        switch (flags, key, event.keyCode) {
+        case (.command, "b", _): toggle(.bold)
+        case (.command, "i", _): toggle(.italic)
+        case (.command, "e", _): toggle(.code)
+        case ([.command, .shift], "x", _): toggle(.strikethrough)
+        case ([.command, .shift], _, 26): toggle(.ordered)
+        case ([.command, .shift], _, 28): toggle(.bullet)
+        case ([.command, .shift], _, 25): toggle(.checklist)
+        default: return false
+        }
+        return true
+    }
+
+    // MARK: Typing Markdown
+
+    var markdownState: MarkdownEditing.State {
+        MarkdownEditing.State(string, selection: selectedRange())
+    }
+
+    func apply(_ state: MarkdownEditing.State) {
+        let change = MarkdownEditing.difference(from: string, to: state.text)
+        if change.range.length > 0 || !change.replacement.isEmpty, let storage = textStorage {
+            breakUndoCoalescing()
+            guard shouldChangeText(in: change.range, replacementString: change.replacement) else { return }
+            styleAnimator.keep(storage, replacing: change.range, with: change.replacement)
+            storage.replaceCharacters(in: change.range, with: change.replacement)
+            didChangeText()
+        }
+        setSelectedRange(state.selection)
+    }
+
+    /// Whether the typing rules may change this keystroke: not while a word is being composed (Japanese, Chinese).
+    private var acceptsRules: Bool { isEditable && !hasMarkedText() }
+
+    override func insertNewline(_ sender: Any?) {
+        guard acceptsRules, perform(MarkdownEditing.insertNewline) else { return super.insertNewline(sender) }
+    }
+
+    override func deleteBackward(_ sender: Any?) {
+        guard acceptsRules, perform(MarkdownEditing.deleteBackward) else { return super.deleteBackward(sender) }
+    }
+
+    override func deleteForward(_ sender: Any?) {
+        guard acceptsRules, perform(MarkdownEditing.deleteForward) else { return super.deleteForward(sender) }
+    }
+
+    /// Tab and ⇧Tab move a list item in and out; elsewhere they do what they always do.
+    override func insertTab(_ sender: Any?) {
+        guard acceptsRules, perform(MarkdownEditing.indent) else { return super.insertTab(sender) }
+    }
+
+    override func insertBacktab(_ sender: Any?) {
+        guard acceptsRules, perform(MarkdownEditing.outdent) else { return super.insertBacktab(sender) }
+    }
+
+    override func insertText(_ string: Any, replacementRange: NSRange) {
+        if acceptsRules, replacementRange.location == NSNotFound, let typed = string as? String,
+           perform({ MarkdownEditing.insert(typed, in: $0) }) {
+            return
+        }
+        super.insertText(string, replacementRange: replacementRange)
     }
 
     private func finishEditing() {

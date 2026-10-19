@@ -5,7 +5,9 @@ import AppKit
 import UIKit
 #endif
 
-/// Styles Markdown text in place without changing a character.
+/// Styles Markdown text in place without changing a character. Every line of body text is exactly as tall as any
+/// other, whatever it holds (bold, code, an emoji or nothing at all), so lines never move while you type; only a
+/// heading is taller.
 @MainActor
 enum MarkdownStyler {
     #if os(macOS)
@@ -18,48 +20,54 @@ enum MarkdownStyler {
     static var scale: CGFloat { fontSize / 14 }
     static var lineHeight: CGFloat { (22 * scale).rounded() }
 
-    static var paragraphStyle: NSParagraphStyle {
+    static var font: PlatformFont { PlatformFont.systemFont(ofSize: fontSize) }
+
+    static var paragraphStyle: NSParagraphStyle { paragraphStyle(for: font) }
+
+    /// Lines exactly as tall as a line of `font`, whatever else is in them.
+    static func paragraphStyle(for font: PlatformFont) -> NSParagraphStyle {
         let style = NSMutableParagraphStyle()
+        #if os(macOS)
+        let height = ceil(measurer.defaultLineHeight(for: font))
+        #else
+        let height = ceil(font.lineHeight)
+        #endif
+        style.minimumLineHeight = height
+        style.maximumLineHeight = height
         style.lineSpacing = 4 * scale
         style.paragraphSpacing = 4 * scale
         return style
     }
 
+    #if os(macOS)
+    private static let measurer = NSLayoutManager()
+    #endif
+
     static var baseAttributes: [NSAttributedString.Key: Any] {
         [
-            .font: PlatformFont.systemFont(ofSize: fontSize),
+            .font: font,
             .foregroundColor: PlatformColor(Theme.textBody),
             .paragraphStyle: paragraphStyle,
         ]
     }
 
-    private static var mono: PlatformFont { PlatformFont.monospacedSystemFont(ofSize: fontSize - 1.5 * scale, weight: .regular) }
+    /// The colour the Markdown punctuation fades back to.
+    static var mutedColor: PlatformColor { PlatformColor(Theme.textTertiary) }
 
-    private static func regex(_ pattern: String) -> NSRegularExpression {
-        // The patterns are fixed and tested, so a failure here is a programming error.
-        try! NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines])
+    static func headingFont(level: Int) -> PlatformFont {
+        let size: CGFloat = [20, 17, 15.5, 14.5, 14, 14][min(max(level, 1), 6) - 1] * scale
+        return PlatformFont.systemFont(ofSize: size, weight: .semibold)
     }
 
-    private static let blankLine = regex(#"^\n"#)
-    private static let heading = regex(#"^(#{1,6})[ \t]+(.+)$"#)
-    private static let quote = regex(#"^(>[ \t]?)(.*)$"#)
-    private static let listMarker = regex(#"^[ \t]*([-*+]|\d+[.)])[ \t]+(\[[ xX]\][ \t]+)?"#)
-    private static let rule = regex(#"^[ \t]*([-*_])([ \t]*\1){2,}[ \t]*$"#)
-    private static let bold = regex(#"(\*\*|__)(?=\S)(.+?)(?<=\S)\1"#)
-    private static let italic = regex(#"(?<![*\w])([*_])(?=[^\s*_])(.+?)(?<=[^\s*_])\1(?![*\w])"#)
-    private static let strike = regex(#"~~(?=\S)(.+?)(?<=\S)~~"#)
-    private static let link = regex(#"(!?)\[([^\]\n]+)\]\(([^)\s]+)[^)\n]*\)"#)
-    private static let url = regex(#"(?<![(<\w])https?://[^\s<>()\]]+"#)
-    private static let html = regex(#"</?[a-zA-Z][^>\n]*>"#)
-    private static let inlineCode = regex(#"`[^`\n]+`"#)
-    private static let fence = regex(#"^```[^\n]*\n[\s\S]*?(?:^```[ \t]*$|\z)"#)
+    private static var mono: PlatformFont { PlatformFont.monospacedSystemFont(ofSize: fontSize - 1.5 * scale, weight: .regular) }
 
     static func style(_ storage: NSTextStorage?, insideEdit: Bool = false) {
         guard let storage else { return }
         let mono = self.mono
         let string = storage.string
-        let all = NSRange(location: 0, length: (string as NSString).length)
-        let muted = PlatformColor(Theme.textTertiary)
+        let text = string as NSString
+        let all = NSRange(location: 0, length: text.length)
+        let muted = mutedColor
         let strong = PlatformColor(Theme.text)
         let accent = PlatformColor(Theme.accent)
 
@@ -74,86 +82,78 @@ enum MarkdownStyler {
         }
         func font(_ range: NSRange, _ transform: (PlatformFont) -> PlatformFont) {
             storage.enumerateAttribute(.font, in: range) { value, subrange, _ in
-                let current = (value as? PlatformFont) ?? PlatformFont.systemFont(ofSize: fontSize)
+                let current = (value as? PlatformFont) ?? self.font
                 storage.addAttribute(.font, value: transform(current), range: subrange)
             }
         }
 
-        each(blankLine) { match in
-            storage.addAttribute(.font, value: PlatformFont.systemFont(ofSize: 7 * scale), range: match.range)
-        }
-        each(heading) { match in
-            let level = match.range(at: 1).length
-            let size: CGFloat = [20, 17, 15.5, 14.5, 14, 14][min(level, 6) - 1] * scale
-            storage.addAttribute(.font, value: PlatformFont.systemFont(ofSize: size, weight: .semibold), range: match.range)
+        each(MarkdownSyntax.heading) { match in
+            let font = headingFont(level: match.range(at: 1).length)
+            storage.addAttribute(.font, value: font, range: match.range)
+            storage.addAttribute(.paragraphStyle, value: paragraphStyle(for: font), range: match.range)
             storage.addAttribute(.foregroundColor, value: strong, range: match.range(at: 2))
             storage.addAttribute(.foregroundColor, value: muted, range: match.range(at: 1))
         }
-        each(quote) { match in
+        each(MarkdownSyntax.quote) { match in
             storage.addAttribute(.foregroundColor, value: PlatformColor(Theme.textSecondary), range: match.range(at: 2))
             storage.addAttribute(.foregroundColor, value: muted, range: match.range(at: 1))
         }
-        each(listMarker) { match in
+        each(MarkdownSyntax.listMarker) { match in
             storage.addAttribute(.foregroundColor, value: muted, range: match.range)
         }
-        each(rule) { match in
+        each(MarkdownSyntax.rule) { match in
             storage.addAttribute(.foregroundColor, value: muted, range: match.range)
         }
-        each(bold) { match in
-            font(match.range(at: 2)) { PlatformFont.systemFont(ofSize: $0.pointSize, weight: .semibold) }
-            storage.addAttribute(.foregroundColor, value: strong, range: match.range(at: 2))
-            dim(storage, match.range, keeping: match.range(at: 2), color: muted)
+        for span in MarkdownSyntax.spans(in: text, all, fences: MarkdownSyntax.fences(in: text)) {
+            switch span.style {
+            case .bold:
+                font(span.content) { $0.withWeight(.semibold) }
+                storage.addAttribute(.foregroundColor, value: strong, range: span.content)
+            case .italic:
+                font(span.content) { $0.italicized() }
+            case .strikethrough:
+                storage.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: span.content)
+            case .code:
+                // Below, last: nothing inside it is Markdown.
+                continue
+            }
+            storage.addAttribute(.foregroundColor, value: muted, range: span.opening)
+            storage.addAttribute(.foregroundColor, value: muted, range: span.closing)
         }
-        each(italic) { match in
-            font(match.range(at: 2)) { $0.italicized() }
-            dim(storage, match.range, keeping: match.range(at: 2), color: muted)
-        }
-        each(strike) { match in
-            storage.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: match.range(at: 1))
-            dim(storage, match.range, keeping: match.range(at: 1), color: muted)
-        }
-        each(html) { match in
+        each(MarkdownSyntax.html) { match in
             storage.addAttribute(.foregroundColor, value: muted, range: match.range)
         }
-        each(url) { match in
-            let text = (string as NSString).substring(with: match.range)
-            if let target = URL(string: text) { storage.addAttribute(.link, value: target, range: match.range) }
+        each(MarkdownSyntax.url) { match in
+            let target = text.substring(with: match.range)
+            if let target = URL(string: target) { storage.addAttribute(.link, value: target, range: match.range) }
         }
-        each(link) { match in
+        each(MarkdownSyntax.link) { match in
             storage.addAttribute(.foregroundColor, value: muted, range: match.range)
             let isImage = match.range(at: 1).length > 0
             guard !isImage else { return }
-            let target = (string as NSString).substring(with: match.range(at: 3))
+            let target = text.substring(with: match.range(at: 3))
             storage.addAttribute(.foregroundColor, value: accent, range: match.range(at: 2))
             if let target = URL(string: target) { storage.addAttribute(.link, value: target, range: match.range(at: 2)) }
             storage.removeAttribute(.link, range: match.range(at: 3))
         }
         // Code last: nothing inside it is Markdown.
-        each(inlineCode) { match in
+        each(MarkdownSyntax.inlineCode) { match in
             clearMarkdown(storage, match.range)
             storage.addAttribute(.font, value: mono, range: match.range)
             storage.addAttribute(.backgroundColor, value: PlatformColor(Theme.control), range: match.range)
         }
-        each(fence) { match in
+        each(MarkdownSyntax.fence) { match in
             clearMarkdown(storage, match.range)
             storage.addAttribute(.font, value: mono, range: match.range)
-            let text = (string as NSString).substring(with: match.range) as NSString
+            let block = text.substring(with: match.range) as NSString
             // The ``` lines fade back; the code itself stays readable.
-            let firstLine = text.lineRange(for: NSRange(location: 0, length: 0))
+            let firstLine = block.lineRange(for: NSRange(location: 0, length: 0))
             storage.addAttribute(.foregroundColor, value: muted, range: NSRange(location: match.range.location, length: firstLine.length))
-            let lastLine = text.lineRange(for: NSRange(location: max(text.length - 1, 0), length: 0))
-            if lastLine.location > 0, text.substring(with: lastLine).hasPrefix("```") {
+            let lastLine = block.lineRange(for: NSRange(location: max(block.length - 1, 0), length: 0))
+            if lastLine.location > 0, block.substring(with: lastLine).hasPrefix("```") {
                 storage.addAttribute(.foregroundColor, value: muted, range: NSRange(location: match.range.location + lastLine.location, length: lastLine.length))
             }
         }
-    }
-
-    /// Fades the Markdown punctuation around a styled span.
-    private static func dim(_ storage: NSTextStorage, _ whole: NSRange, keeping inner: NSRange, color: PlatformColor) {
-        let before = NSRange(location: whole.location, length: inner.location - whole.location)
-        let after = NSRange(location: NSMaxRange(inner), length: NSMaxRange(whole) - NSMaxRange(inner))
-        storage.addAttribute(.foregroundColor, value: color, range: before)
-        storage.addAttribute(.foregroundColor, value: color, range: after)
     }
 
     private static func clearMarkdown(_ storage: NSTextStorage, _ range: NSRange) {

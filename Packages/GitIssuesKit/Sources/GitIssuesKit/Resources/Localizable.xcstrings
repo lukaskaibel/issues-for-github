@@ -22886,7 +22886,7 @@
       }
     },
     "formatBold" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that makes the selected text bold.",
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that makes the selected text bold, or takes the bold off text that has it. Also shown, tinted, at the left of the bar while the caret is in bold text.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -22945,8 +22945,128 @@
         }
       }
     },
+    "formatBulletedList" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that turns the line into a bulleted list item (or back); also the name of the ⌘⇧8 shortcut in the iPad's list of keyboard shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aufzählungsliste"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bulleted List"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lista con viñetas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liste à puces"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "箇条書き"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "글머리 기호 목록"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lista com marcadores"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Маркированный список"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "项目符号列表"
+          }
+        }
+      }
+    },
+    "formatCheckbox" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that ticks or unticks the checkbox of the checklist item the caret is in. VoiceOver reads 'Checked' or 'Unchecked' after it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontrollkästchen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checkbox"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Casilla"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Case à cocher"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "チェックボックス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "체크상자"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caixa de seleção"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Флажок"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复选框"
+          }
+        }
+      }
+    },
     "formatChecklist" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that turns the line into a checklist item (a task with a checkbox).",
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that turns the line into a checklist item (a task with a checkbox), or back. Also the name of the ⌘⇧9 shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23006,7 +23126,7 @@
       }
     },
     "formatCode" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that formats the selected text as code (program code, in a monospaced font).",
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that formats the selected text as code, or back. Also the name of the ⌘E shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23065,8 +23185,68 @@
         }
       }
     },
+    "formatIndent" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that moves the list item the caret is in one level in, under the item above.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einrücken"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indent"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aumentar sangría"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Augmenter le retrait"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "インデント"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "들여쓰기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aumentar recuo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Увеличить отступ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增加缩进"
+          }
+        }
+      }
+    },
     "formatItalic" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that makes the selected text italic.",
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that makes the selected text italic, or takes the italics off text that has them. Also shown, tinted, at the left of the bar while the caret is in italic text.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23181,6 +23361,246 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "链接"
+          }
+        }
+      }
+    },
+    "formatNumberedList" : {
+      "comment" : "iPad with a keyboard, writing an issue's description: name of the ⌘⇧7 shortcut, which turns the line into a numbered list item (or back), in the list of keyboard shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nummerierte Liste"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Numbered List"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lista numerada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liste numérotée"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "番号付きリスト"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "번호 매기기 목록"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lista numerada"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нумерованный список"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编号列表"
+          }
+        }
+      }
+    },
+    "formatOpenLink" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that opens the link the caret is on in the browser.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Link"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir enlace"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir le lien"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リンクを開く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "링크 열기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir link"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыть ссылку"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开链接"
+          }
+        }
+      }
+    },
+    "formatOutdent" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that moves the list item the caret is in one level out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausrücken"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outdent"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reducir sangría"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diminuer le retrait"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "インデント解除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내어쓰기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diminuir recuo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Уменьшить отступ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "减少缩进"
+          }
+        }
+      }
+    },
+    "formatStrikethrough" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that shows the caret is in struck-through text and takes the strikethrough off; also the name of the ⌘⇧X shortcut in the iPad's list of keyboard shortcuts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durchgestrichen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strikethrough"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tachado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barré"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取り消し線"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "취소선"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tachado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Зачеркнутый"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除线"
           }
         }
       }

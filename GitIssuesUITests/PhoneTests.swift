@@ -238,6 +238,41 @@ final class PhoneTests: AppTestCase {
         XCTAssertTrue(labelled("how close").waitForExistence(timeout: 4))
     }
 
+    func testTypingMarkdownInADescription() {
+        launch()
+        wait(element("row-#9"))
+        scrollTo(element("row-#17"))
+        element("row-#17").tap()
+        let description = element("issue-description")
+        wait(description)
+        description.tap()
+        wait(button("Done"))
+
+        // Bold from the bar; inside it a second Bold comes in on the left, which leaves it.
+        button("Bold").tap()
+        app.typeText("bold")
+        let bold = app.buttons.matching(NSPredicate(format: "label == 'Bold'"))
+        XCTAssertEqual(bold.count, 2)
+        bold.element(boundBy: 0).tap()
+        // "-" starts a bullet, Return continues the list and ends it on an empty item, "[]" makes a checkbox.
+        app.typeText(" text\n-item\n\n-[]todo")
+        waitForValue(description, equalTo: "**bold** text\n- item\n- [ ] todo")
+        snapshot("Typing Markdown")
+
+        // The checkbox of the caret's line ticks from the bar.
+        button("Checkbox").tap()
+        waitForValue(description, equalTo: "**bold** text\n- item\n- [x] todo")
+
+        // Saved: drawn as a checklist when the issue opens again, the box ticked.
+        button("Done").tap()
+        goBack()
+        scrollTo(element("row-#17"))
+        element("row-#17").tap()
+        let box = app.buttons["todo"]
+        wait(box)
+        XCTAssertEqual(box.value as? String, "Checked")
+    }
+
     func testDrawnDescriptionTicksBoxesAndShowsTheText() {
         launch()
         wait(element("row-#9"))
