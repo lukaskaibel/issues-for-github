@@ -6,6 +6,18 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Pick several sub-issues on an issue's page.** On the Mac, ⌘-click and Shift-click pick sub-issues in an issue's
+  list of sub-issues, as on the board and in the list. Right-click one of them and the menu changes all of them: move
+  them under another parent with Change Parent Issue…, into an epic or out of their parent, or set their status,
+  priority, assignee, labels, due date or milestone. Their status, priority and assignee buttons and the single keys
+  act on all of them too, and `Esc` lets them go before it leaves the issue.
+- **Pickers offer what you chose last.** The issue you just made a parent is at the top of the parent picker for the
+  next issue, above a line, and Return picks it again. The same goes for epics, blocked by and blocking, labels and
+  assignees, also in a new issue, on the Mac, iPhone and iPad: up to three of your latest choices come first. Rows no
+  longer move while you tick several labels or people in a picker that stays open.
+
 ### Changed
 
 - **A new app icon: a card lifted off a board.** A card in the app's indigo with a done mark, turned a little as if

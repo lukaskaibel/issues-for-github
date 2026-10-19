@@ -14,6 +14,8 @@ struct PickerItem: Identifiable {
     var trailing: AnyView? = nil
     /// Stays in the list whatever is typed, at its end, such as "New sub-issue…".
     var alwaysShown = false
+    /// Chosen lately (see `RecentPick`): first in the list, with a line under the last of them while nothing is typed.
+    var recent = false
 }
 
 /// Subsequence match: every character of the query appears in order. Higher is better; nil is no match.
@@ -171,21 +173,21 @@ extension AppModel {
                 )
             }
         case .assignees:
-            return people(for: item).map { person in
+            return recentFirst(people(for: item).map { person in
                 PickerItem(
                     id: person.id, title: person.login, subtitle: person.name,
                     selected: targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } },
                     icon: AnyView(Avatar(login: person.login, url: person.avatarUrl, size: 18))
                 )
-            }
+            }, .assignee)
         case .labels:
-            return labels(for: item).map { label in
+            return recentFirst(labels(for: item).map { label in
                 PickerItem(
                     id: label.id, title: label.name,
                     selected: targets.allSatisfy { target in target.labels.contains { $0.name == label.name } },
                     icon: AnyView(Circle().fill(Theme.labelColor(label.color)).frame(width: 9, height: 9))
                 )
-            }
+            }, .label, key: \.title)
         case .dueDate:
             return dueDateItems(for: item)
         case .subIssues:
@@ -240,10 +242,10 @@ extension AppModel {
                     icon: AnyView(Image(systemName: "xmark").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary))
                 ))
             }
-            rows += (candidates.filter(isParent) + candidates.filter { !isParent($0) }).map { candidate in
-                issueRow(candidate, near: item, selected: isParent(candidate))
-            }
-            return rows
+            rows += candidates.filter(isParent).map { issueRow($0, near: item, selected: true) }
+            // The parent given last comes next, for the next issue to go under it too.
+            let others = candidates.filter { !isParent($0) }.map { issueRow($0, near: item) }
+            return recentFirst(rows + others, .parent, after: rows.count)
         case .addSubIssue:
             let excluded = ancestors(of: item).union(subIssueIds(of: item))
             let rows = relatableIssues(near: item)
@@ -274,9 +276,9 @@ extension AppModel {
                 }
             }
             let candidates = relatableIssues(near: item).filter { !ids.contains($0.contentId ?? "") }
-            return (candidates.filter(linked) + candidates.filter { !linked($0) }).map { candidate in
-                issueRow(candidate, near: item, selected: linked(candidate))
-            }
+            let current = candidates.filter(linked).map { issueRow($0, near: item, selected: true) }
+            let others = candidates.filter { !linked($0) }.map { issueRow($0, near: item) }
+            return recentFirst(current + others, kind == .blockedBy ? .blockedBy : .blocking, after: current.count)
         }
     }
 
@@ -577,13 +579,14 @@ extension AppModel {
                 icon: AnyView(Image(systemName: "xmark").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary))
             ))
         }
-        rows += candidates.map { epic in
+        let epics = candidates.map { epic in
             PickerItem(
                 id: epic.contentId ?? epic.id, title: epic.title, selected: current == [epic.contentId],
                 icon: AnyView(EpicIcon()), prefix: epic.displayNumber,
                 trailing: milestoneTitle(of: epic).map { AnyView(Text($0).font(.small).foregroundStyle(Theme.textTertiary).lineLimit(1)) }
             )
         }
-        return rows
+        // An epic is a parent too: the one issues went under last comes first.
+        return recentFirst(rows + epics, .parent, after: rows.count)
     }
 }

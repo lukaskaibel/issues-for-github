@@ -179,6 +179,26 @@ final class PhoneTests: AppTestCase {
         waitForLabel(element("chip-labels"), containing: "sync")
     }
 
+    func testRecentChoicesComeFirst() {
+        // As if "sync" had just been added to another issue: it leads the sheet, apart from the rest.
+        launch(["-recentPicks", "{ label = (sync); }"])
+        scrollTo(element("row-#13"))
+        element("row-#13").tap()
+        wait(element("chip-labels"))
+        element("chip-labels").tap()
+        let sync = pickerRow("sync")
+        wait(sync)
+        XCTAssertLessThan(sync.frame.minY, pickerRow("auth").frame.minY, "The label picked last comes first")
+        snapshot("Labels sheet with the recent one first")
+
+        // Picking several keeps the rows where they are, although "bug" is now the latest choice.
+        let place = pickerRow("bug").frame.minY
+        element("check-bug").tap()
+        _ = XCTWaiter.wait(for: [expectation(description: "The list settles")], timeout: 0.8)
+        XCTAssertEqual(pickerRow("bug").frame.minY, place, accuracy: 1, "A picked row stays put")
+        XCTAssertLessThan(sync.frame.minY, pickerRow("bug").frame.minY)
+    }
+
     func testDueDateSheet() {
         launch()
         // Below #27 and #38, which are on no board and lead My Issues.

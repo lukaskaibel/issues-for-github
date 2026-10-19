@@ -83,12 +83,13 @@ sub-issue whose parent has another status stays in its own column and says which
 one is done, the parent moves to Done by itself. The issues of an epic in the same column stand together the same
 way, under the epic's name; drag the name to another column and they all go.
 
-Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count and
-a dropdown opens right there. Type to filter, press a number to pick; the pick closes it, and so does another click on
-what opened it. For several assignees or labels, tick their checkboxes or Shift-click them, and it stays open.
-Right-click a card for everything at once: the menu has rows as big as the pickers' and a search field, so typing
-"rev" finds Status › In Review, and Status, Priority, Assignee, Labels, Due Date and Milestone open the same pickers
-as a click on the card.
+Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count and a
+dropdown opens right there. Type to filter, press a number to pick; the pick closes it, and so does another click on
+what opened it. For several assignees or labels, tick their checkboxes or Shift-click them, and it stays open. Pickers
+put what you chose last at the top, above a line: give the next issue the same parent, epic, label or assignee with one
+key. Right-click a card for everything at once: the menu has rows as big as the pickers' and a search field, so typing
+"rev" finds Status › In Review, and Status, Priority, Assignee, Labels, Due Date and Milestone open the same pickers as
+a click on the card.
 
 ### Due dates that remind you
 
@@ -295,8 +296,9 @@ The interface uses the system's own parts.
   to arrange the list your way (that order is a preference on your Mac and leaves GitHub alone).
 - **GitHub's Markdown.** Headings, lists, code, tables, checklists that tick and Mermaid diagrams, drawn natively
   in the app's type and colours, and typed as in a notes app.
-- **Keyboard first.** Single keys change status, priority, assignee, labels and the due date. Back and forward work
-  like a browser: ⌘[ and ⌘], the side buttons of a mouse, or a two-finger swipe.
+- **Keyboard first.** Single keys change status, priority, assignee, labels and the due date, and pickers offer your
+  last choices first, so a run of similar changes takes one key each. Back and forward work like a browser: ⌘[ and ⌘],
+  the side buttons of a mouse, or a two-finger swipe.
 - **Due dates and reminders.** The day an issue is due, typed in a few words or picked in a month, and a notification
   on that day for issues assigned to you, from each of your devices.
 - **In nine languages.** English, German, French, Spanish, Portuguese (Brazil), Russian, Japanese, Korean and Chinese
@@ -513,13 +515,14 @@ In the Inbox:
 `⌘`-click and Shift-click pick several notifications to read, snooze or archive together. Right-click one for
 everything at once.
 
-Click an issue's priority, status, labels, assignees, due date or sub-issue count to change it in place, or
-right-click it for everything at once. The right-click menu takes the keys at once: type to find an entry, also one
-inside a submenu, `↑` `↓` to move, `→` to open a submenu or picker, `Return` to pick and `Esc` to close. A pick closes
-the dropdown, and so does a second click on what opened it; for several assignees or labels, tick the checkbox at the
-start of each row, or hold Shift while you click or press Return. The sub-issue count lists the sub-issues, whose
-status, priority and assignee change right there too, and the red flag of a blocked issue lists what blocks it. In the
-list, click a section header to fold it; Option-click folds them all.
+Click an issue's priority, status, labels, assignees, due date or sub-issue count to change it in place, or right-click
+it for everything at once. The right-click menu takes the keys at once: type to find an entry, also one inside a
+submenu, `↑` `↓` to move, `→` to open a submenu or picker, `Return` to pick and `Esc` to close. A pick closes the
+dropdown, and so does a second click on what opened it; for several assignees or labels, tick the checkbox at the start
+of each row, or hold Shift while you click or press Return. The pickers for parent, epic, blockers, labels and assignees
+list your last three choices first, above a line, with the light on the latest, so `Return` repeats it. The sub-issue
+count lists the sub-issues, whose status, priority and assignee change right there too, and the red flag of a blocked
+issue lists what blocks it. In the list, click a section header to fold it; Option-click folds them all.
 
 Sub-issues with the same status as their parent hang under it, indented; click the arrow beside the parent, or
 right-click it, to fold them in or out. A sub-issue whose parent has another status names its parent instead, and a
@@ -530,7 +533,9 @@ In an issue, the plus beside the sub-issues adds one: type to find an issue by t
 **New sub-issue…** to create one with what you typed. Right-click an issue for **Set Parent Issue…**, **Add
 Sub-issue** and **Mark As** (blocked by, blocking). These pickers find issues the same way; picking a checked one takes
 it away again. The issue's inspector has Parent, Blocked by and Blocking rows that open the same pickers, and the ✕ that
-shows when you point at a blocker in the issue takes it away.
+shows when you point at a blocker in the issue takes it away. ⌘-click or Shift-click sub-issues in an issue to pick
+several; right-click one of them to move them all under another parent, into an epic or out of their parent, or to
+change their status, priority, assignee or labels together. `Esc` lets them go.
 
 A project's next two milestones and its roadmap are listed under Milestones in the sidebar. In a milestone, click its date to change it, the text under the header to edit its name and description,
 and **Complete** (or the "…" menu) to close it: what isn't done moves to the next milestone or stays, as you choose.
@@ -578,7 +583,8 @@ use **Add column** at the right end of the board.
 
 To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
 Shift-click. A bar at the bottom then sets status, priority, assignee, labels or the due date for all of them, and so
-do the usual keys, dropdowns and right-click menu. `Esc` clears the pick.
+do the usual keys, dropdowns and right-click menu. `Esc` clears the pick. Sub-issues hanging under their parent are
+picked the same way, and so are the sub-issues listed in an open issue.
 
 Right-click the project at the top of the sidebar and choose **Change Icon…** to give it one of 257 glyphs in one of
 GitHub's eight colours; until then it is GitHub's table in grey. The glyphs come in groups such as Work, Code,
@@ -608,7 +614,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Swipe left on an issue | Assign to me (or unassign), delete |
 | Touch and hold an issue | Status, priority, assignee, labels, due date and milestone as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
 | Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
-| Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several |
+| Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several. Your last choices are listed first, as in every sheet that picks a parent, epic or blocker |
 | Tap the date chip of an issue | Pick a due date: quick choices, a calendar, or typed in the search field |
 | Touch and hold a reminder | Start the issue, mark it done or move it to tomorrow, without opening the app |
 | Tap the plus beside an issue's sub-issues | A new sub-issue, or an issue that exists already |
