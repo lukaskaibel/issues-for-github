@@ -40,7 +40,6 @@ private struct MarkdownTextViewBridge: UIViewRepresentable {
     func makeUIView(context: Context) -> MarkdownUITextView {
         let view = MarkdownUITextView()
         view.delegate = context.coordinator
-        view.textStorage.delegate = context.coordinator
         view.backgroundColor = .clear
         view.isScrollEnabled = false
         view.textContainerInset = .zero
@@ -79,7 +78,7 @@ private struct MarkdownTextViewBridge: UIViewRepresentable {
     }
 
     @MainActor
-    final class Coordinator: NSObject, UITextViewDelegate, NSTextStorageDelegate {
+    final class Coordinator: NSObject, UITextViewDelegate {
         var parent: MarkdownTextViewBridge
         private(set) var hasUnsavedChanges = false
         private var pendingSave: DispatchWorkItem?
@@ -107,6 +106,7 @@ private struct MarkdownTextViewBridge: UIViewRepresentable {
 
         func textViewDidChangeSelection(_ textView: UITextView) {
             (textView as? MarkdownUITextView)?.scrollCaretIntoView()
+            (textView as? MarkdownUITextView)?.updateKeyboardBar(animated: true)
         }
 
         func textViewDidEndEditing(_ textView: UITextView) {
@@ -130,15 +130,6 @@ private struct MarkdownTextViewBridge: UIViewRepresentable {
             parent.onSave(text)
         }
 
-        // Restyled while the edit is still open, so the new text never shows unstyled.
-        nonisolated func textStorage(
-            _ textStorage: NSTextStorage, willProcessEditing editedMask: NSTextStorage.EditActions,
-            range editedRange: NSRange, changeInLength delta: Int
-        ) {
-            guard editedMask.contains(.editedCharacters) else { return }
-            MainActor.assumeIsolated { MarkdownStyler.style(textStorage, insideEdit: true) }
-        }
-
         func textView(_ textView: UITextView, primaryActionFor textItem: UITextItem, defaultAction: UIAction) -> UIAction? {
             guard case .link(let url) = textItem.content else { return defaultAction }
             return UIAction { _ in Platform.open(url) }
@@ -147,8 +138,8 @@ private struct MarkdownTextViewBridge: UIViewRepresentable {
 }
 
 /// The text view behind the editor: reads until tapped, then edits where the tap landed. Sizes itself to its
-/// text and keeps the caret above the keyboard.
-final class MarkdownUITextView: UITextView {
+/// text, keeps the caret above the keyboard, and types Markdown by the rules of `MarkdownEditing`.
+final class MarkdownUITextView: UITextView, NSTextStorageDelegate, MarkdownTextInput {
     var placeholder = "" {
         didSet { placeholderLabel.text = placeholder }
     }
@@ -156,6 +147,9 @@ final class MarkdownUITextView: UITextView {
     var allowsEditing = true
     var onHeightChange: (CGFloat) -> Void = { _ in }
     var onEndEditing: () -> Void = {}
+    var unwrapped: MarkdownUnwrapped?
+    private let styleAnimator = MarkdownStyleAnimator()
+    private var keyboardBar: MarkdownKeyboardBar?
 
     private let placeholderLabel = UILabel()
     private var lastHeight: CGFloat = 0
@@ -192,7 +186,13 @@ final class MarkdownUITextView: UITextView {
         tap.delegate = tapDecider
         addGestureRecognizer(tap)
 
-        inputAccessoryView = MarkdownKeyboardBar(textView: self)
+        storage.delegate = self
+        styleAnimator.view = self
+        styleAnimator.onFrame = { [weak self] in self?.reportHeight() }
+
+        let bar = MarkdownKeyboardBar(textView: self)
+        keyboardBar = bar
+        inputAccessoryView = bar
 
         registerForTraitChanges([UITraitUserInterfaceStyle.self, UITraitPreferredContentSizeCategory.self]) { (view: MarkdownUITextView, _) in
             view.restyle()
@@ -206,6 +206,7 @@ final class MarkdownUITextView: UITextView {
 
     /// Styles the whole text again, for a new appearance or text size.
     func restyle() {
+        styleAnimator.stop()
         let selection = selectedRange
         typingAttributes = MarkdownStyler.baseAttributes
         MarkdownStyler.style(textStorage)
@@ -219,6 +220,16 @@ final class MarkdownUITextView: UITextView {
         placeholderLabel.isHidden = !text.isEmpty
         setNeedsLayout()
         reportHeight()
+        updateKeyboardBar(animated: true)
+    }
+
+    // Restyled as part of the edit, before it is laid out, so the new text never shows unstyled.
+    nonisolated func textStorage(
+        _ textStorage: NSTextStorage, didProcessEditing editedMask: NSTextStorage.EditActions,
+        range editedRange: NSRange, changeInLength delta: Int
+    ) {
+        guard editedMask.contains(.editedCharacters) else { return }
+        MainActor.assumeIsolated { styleAnimator.restyle(textStorage, edited: editedRange) }
     }
 
     func reportHeight() {
@@ -262,6 +273,7 @@ final class MarkdownUITextView: UITextView {
         } else {
             selectedRange = NSRange(location: (text as NSString).length, length: 0)
         }
+        updateKeyboardBar(animated: false)
     }
 
     func endEditingMode() {
@@ -306,6 +318,19 @@ final class MarkdownUITextView: UITextView {
             let escape = UIKeyCommand(input: UIKeyCommand.inputEscape, modifierFlags: [], action: #selector(finishEditing))
             escape.wantsPriorityOverSystemBehavior = true
             commands.append(escape)
+            // ⌘B and ⌘I come from the system's Format menu, through toggleBoldface and toggleItalics.
+            commands += [
+                UIKeyCommand(title: String(localized: .formatCode), action: #selector(formatCode), input: "e", modifierFlags: .command),
+                UIKeyCommand(title: String(localized: .formatStrikethrough), action: #selector(formatStrikethrough), input: "x", modifierFlags: [.command, .shift]),
+                UIKeyCommand(title: String(localized: .formatNumberedList), action: #selector(formatNumberedList), input: "7", modifierFlags: [.command, .shift]),
+                UIKeyCommand(title: String(localized: .formatBulletedList), action: #selector(formatBulletedList), input: "8", modifierFlags: [.command, .shift]),
+                UIKeyCommand(title: String(localized: .formatChecklist), action: #selector(formatChecklist), input: "9", modifierFlags: [.command, .shift]),
+            ]
+            let indent = UIKeyCommand(input: "\t", modifierFlags: [], action: #selector(indentItem))
+            let outdent = UIKeyCommand(input: "\t", modifierFlags: .shift, action: #selector(outdentItem))
+            indent.wantsPriorityOverSystemBehavior = true
+            outdent.wantsPriorityOverSystemBehavior = true
+            commands += [indent, outdent]
         }
         return commands
     }
@@ -314,7 +339,77 @@ final class MarkdownUITextView: UITextView {
         _ = resignFirstResponder()
     }
 
-    // MARK: Formatting from the keyboard bar
+    // MARK: Typing Markdown
+
+    var markdownState: MarkdownEditing.State {
+        MarkdownEditing.State(text ?? "", selection: selectedRange)
+    }
+
+    func apply(_ state: MarkdownEditing.State) {
+        let change = MarkdownEditing.difference(from: text ?? "", to: state.text)
+        if change.range.length > 0 || !change.replacement.isEmpty,
+           let start = position(from: beginningOfDocument, offset: change.range.location),
+           let end = position(from: start, offset: change.range.length),
+           let range = textRange(from: start, to: end) {
+            styleAnimator.keep(textStorage, replacing: change.range, with: change.replacement)
+            replace(range, withText: change.replacement)
+        }
+        selectedRange = state.selection
+        updateKeyboardBar(animated: true)
+    }
+
+    /// Whether the typing rules may change this keystroke: not while a word is being composed (Japanese, Chinese).
+    private var acceptsRules: Bool { isEditable && markedTextRange == nil }
+
+    override func insertText(_ text: String) {
+        let rule: (MarkdownEditing.State) -> MarkdownEditing.State? = text == "\n"
+            ? MarkdownEditing.insertNewline(in:)
+            : { MarkdownEditing.insert(text, in: $0) }
+        guard acceptsRules, perform(rule) else { return super.insertText(text) }
+    }
+
+    override func deleteBackward() {
+        guard acceptsRules, perform(MarkdownEditing.deleteBackward) else { return super.deleteBackward() }
+    }
+
+    override func toggleBoldface(_ sender: Any?) {
+        toggle(.bold)
+    }
+
+    override func toggleItalics(_ sender: Any?) {
+        toggle(.italic)
+    }
+
+    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+        switch action {
+        case #selector(toggleBoldface(_:)), #selector(toggleItalics(_:)): isEditable
+        // Markdown has no underline.
+        case #selector(toggleUnderline(_:)): false
+        default: super.canPerformAction(action, withSender: sender)
+        }
+    }
+
+    @objc private func formatCode() { toggle(.code) }
+    @objc private func formatStrikethrough() { toggle(.strikethrough) }
+    @objc private func formatNumberedList() { toggle(.ordered) }
+    @objc private func formatBulletedList() { toggle(.bullet) }
+    @objc private func formatChecklist() { toggle(.checklist) }
+
+    /// Tab and ⇧Tab move a list item in and out; elsewhere Tab types a tab, as before.
+    @objc private func indentItem() {
+        if !perform(MarkdownEditing.indent) { insertText("\t") }
+    }
+
+    @objc private func outdentItem() {
+        perform(MarkdownEditing.outdent)
+    }
+
+    func updateKeyboardBar(animated: Bool) {
+        guard isFirstResponder else { return }
+        keyboardBar?.update(MarkdownEditing.context(in: markdownState), animated: animated && window != nil)
+    }
+
+    // MARK: Links from the keyboard bar
 
     /// Wraps the selection in Markdown, or inserts the marks with the caret between them.
     func wrapSelection(_ prefix: String, _ suffix: String, placeholder: String = "") {
@@ -329,18 +424,6 @@ final class MarkdownUITextView: UITextView {
         }
     }
 
-    /// Starts the current line with a list marker, unless it already has one.
-    func prefixLine(_ marker: String) {
-        let string = text as NSString
-        let line = string.lineRange(for: NSRange(location: selectedRange.location, length: 0))
-        let current = string.substring(with: line)
-        guard !current.hasPrefix(marker) else { return }
-        let caret = selectedRange.location
-        guard let start = position(from: beginningOfDocument, offset: line.location),
-              let range = textRange(from: start, to: start) else { return }
-        replace(range, withText: marker)
-        selectedRange = NSRange(location: caret + (marker as NSString).length, length: 0)
-    }
 }
 
 private final class TapDecider: NSObject, UIGestureRecognizerDelegate {
@@ -360,11 +443,33 @@ private final class TapDecider: NSObject, UIGestureRecognizerDelegate {
     }
 }
 
-/// The bar above the keyboard while editing a description: Markdown shortcuts and Done. Built by hand rather
-/// than as a toolbar, which folds Done into an overflow menu on a narrow iPhone; here the shortcuts scroll instead
-/// and Done always stays in reach.
+/// The bar above the keyboard while editing a description. On its left, buttons for where the caret is come and
+/// go: the styles it is in (a tap takes one off), the checkbox of its line, moving a list item in or out, and
+/// opening the link it is on. Then the Markdown shortcuts, which scroll on a narrow iPhone, and Done. Built by hand
+/// rather than as a toolbar, which folds Done into an overflow menu on a narrow iPhone; here Done always stays in
+/// reach.
 private final class MarkdownKeyboardBar: UIView {
+    /// The buttons for where the caret is, in the order they stand in.
+    private enum QuickAction: CaseIterable {
+        case bold, italic, strikethrough, code, checkbox, outdent, indent, openLink
+
+        var style: MarkdownSyntax.Style? {
+            switch self {
+            case .bold: .bold
+            case .italic: .italic
+            case .strikethrough: .strikethrough
+            case .code: .code
+            default: nil
+            }
+        }
+    }
+
     weak var textView: MarkdownUITextView?
+    /// Without glass while it is empty: glass appears by getting its effect, not by fading in.
+    private let quickCapsule = UIVisualEffectView(effect: nil)
+    private var quickButtons: [QuickAction: UIButton] = [:]
+    private var shown: [QuickAction] = []
+    private var isChecked = false
 
     init(textView: MarkdownUITextView) {
         self.textView = textView
@@ -373,10 +478,11 @@ private final class MarkdownKeyboardBar: UIView {
         backgroundColor = .clear
 
         let buttons = UIStackView(arrangedSubviews: [
-            button("bold", .formatBold) { $0.wrapSelection("**", "**") },
-            button("italic", .formatItalic) { $0.wrapSelection("_", "_") },
-            button("chevron.left.forwardslash.chevron.right", .formatCode) { $0.wrapSelection("`", "`") },
-            button("checklist", .formatChecklist) { $0.prefixLine("- [ ] ") },
+            button("bold", .formatBold) { $0.toggle(.bold) },
+            button("italic", .formatItalic) { $0.toggle(.italic) },
+            button("chevron.left.forwardslash.chevron.right", .formatCode) { $0.toggle(.code) },
+            button("list.bullet", .formatBulletedList) { $0.toggle(.bullet) },
+            button("checklist", .formatChecklist) { $0.toggle(.checklist) },
             button("link", .formatLink) { $0.wrapSelection("[", "](https://)", placeholder: String(localized: .linkTextPlaceholder)) },
         ])
         buttons.axis = .horizontal
@@ -395,6 +501,26 @@ private final class MarkdownKeyboardBar: UIView {
         capsule.translatesAutoresizingMaskIntoConstraints = false
         capsule.contentView.addSubview(scroll)
 
+        let quick = UIStackView(arrangedSubviews: QuickAction.allCases.map { action in
+            let button = quickButton(action)
+            quickButtons[action] = button
+            return button
+        })
+        quick.axis = .horizontal
+        quick.spacing = 2
+        quick.alignment = .center
+        quick.translatesAutoresizingMaskIntoConstraints = false
+        quickCapsule.cornerConfiguration = .capsule()
+        quickCapsule.clipsToBounds = true
+        quickCapsule.isHidden = true
+        quickCapsule.contentView.addSubview(quick)
+
+        // The buttons for where the caret is first, pushing the shortcuts along when they come.
+        let row = UIStackView(arrangedSubviews: [quickCapsule, capsule])
+        row.axis = .horizontal
+        row.spacing = 8
+        row.translatesAutoresizingMaskIntoConstraints = false
+
         var doneConfiguration = UIButton.Configuration.prominentGlass()
         doneConfiguration.image = UIImage(systemName: "checkmark", withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .semibold))
         let done = UIButton(configuration: doneConfiguration, primaryAction: UIAction { [weak self] _ in
@@ -404,18 +530,23 @@ private final class MarkdownKeyboardBar: UIView {
         done.accessibilityLabel = String(localized: .done)
         done.translatesAutoresizingMaskIntoConstraints = false
 
-        addSubview(capsule)
+        addSubview(row)
         addSubview(done)
 
         // The capsule hugs its buttons and gives way, scrolling, when the bar is too narrow for all of them.
         let hug = capsule.widthAnchor.constraint(equalTo: buttons.widthAnchor, constant: 12)
         hug.priority = .defaultHigh
+        // Room for a button or so of the shortcuts, whatever comes on the left.
+        let squeeze = capsule.widthAnchor.constraint(greaterThanOrEqualToConstant: 58)
+        squeeze.priority = .required - 1
         NSLayoutConstraint.activate([
-            capsule.leadingAnchor.constraint(equalTo: layoutMarginsGuide.leadingAnchor),
-            capsule.centerYAnchor.constraint(equalTo: centerYAnchor),
+            row.leadingAnchor.constraint(equalTo: layoutMarginsGuide.leadingAnchor),
+            row.centerYAnchor.constraint(equalTo: centerYAnchor),
+            row.trailingAnchor.constraint(lessThanOrEqualTo: done.leadingAnchor, constant: -12),
             capsule.heightAnchor.constraint(equalToConstant: 46),
-            capsule.trailingAnchor.constraint(lessThanOrEqualTo: done.leadingAnchor, constant: -12),
+            quickCapsule.heightAnchor.constraint(equalToConstant: 46),
             hug,
+            squeeze,
 
             done.trailingAnchor.constraint(equalTo: layoutMarginsGuide.trailingAnchor),
             done.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -432,6 +563,10 @@ private final class MarkdownKeyboardBar: UIView {
             buttons.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
             buttons.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
             buttons.heightAnchor.constraint(equalTo: scroll.frameLayoutGuide.heightAnchor),
+
+            quick.leadingAnchor.constraint(equalTo: quickCapsule.contentView.leadingAnchor, constant: 5),
+            quick.trailingAnchor.constraint(equalTo: quickCapsule.contentView.trailingAnchor, constant: -5),
+            quick.centerYAnchor.constraint(equalTo: quickCapsule.contentView.centerYAnchor),
         ])
     }
 
@@ -440,6 +575,44 @@ private final class MarkdownKeyboardBar: UIView {
 
     override var intrinsicContentSize: CGSize {
         CGSize(width: UIView.noIntrinsicMetric, height: 58)
+    }
+
+    /// Shows the buttons for where the caret is now, those that come growing in and those that go shrinking away.
+    func update(_ context: MarkdownEditing.Context, animated: Bool) {
+        var actions = QuickAction.allCases.filter { $0.style.map(context.styles.contains) ?? false }
+        if context.isChecklist { actions.append(.checkbox) }
+        if context.canOutdent { actions.append(.outdent) }
+        if context.canIndent { actions.append(.indent) }
+        if context.link != nil { actions.append(.openLink) }
+        // As many as a narrow iPhone has room for beside the shortcuts.
+        actions = Array(actions.prefix(5))
+        if context.isChecklist, context.isChecked != isChecked {
+            isChecked = context.isChecked
+            updateCheckbox()
+        }
+        guard actions != shown else { return }
+        for action in actions where !shown.contains(action) {
+            quickButtons[action]?.transform = CGAffineTransform(scaleX: 0.4, y: 0.4)
+        }
+        shown = actions
+        let changes = { [self] in
+            for (action, button) in quickButtons {
+                let visible = actions.contains(action)
+                // A stack view counts hiding twice as twice; only change what changed.
+                if button.isHidden == visible { button.isHidden = !visible }
+                button.alpha = visible ? 1 : 0
+                button.transform = visible ? .identity : CGAffineTransform(scaleX: 0.4, y: 0.4)
+            }
+            if quickCapsule.isHidden == !actions.isEmpty {
+                quickCapsule.isHidden = actions.isEmpty
+                quickCapsule.effect = actions.isEmpty ? nil : UIGlassEffect()
+            }
+            layoutIfNeeded()
+        }
+        guard animated, !UIAccessibility.isReduceMotionEnabled else { return changes() }
+        UIView.animate(springDuration: Theme.keyboardBarSpring.duration, bounce: Theme.keyboardBarSpring.bounce,
+                       initialSpringVelocity: 0, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction],
+                       animations: changes)
     }
 
     private func button(_ symbol: String, _ label: LocalizedStringResource, _ action: @escaping (MarkdownUITextView) -> Void) -> UIButton {
@@ -453,6 +626,63 @@ private final class MarkdownKeyboardBar: UIView {
         button.accessibilityLabel = String(localized: label)
         button.widthAnchor.constraint(equalToConstant: 46).isActive = true
         return button
+    }
+
+    /// A button for where the caret is. A style the caret is in shows as on, tinted, and a tap turns it off.
+    private func quickButton(_ action: QuickAction) -> UIButton {
+        let symbol: String
+        let label: LocalizedStringResource
+        switch action {
+        case .bold: (symbol, label) = ("bold", .formatBold)
+        case .italic: (symbol, label) = ("italic", .formatItalic)
+        case .strikethrough: (symbol, label) = ("strikethrough", .formatStrikethrough)
+        case .code: (symbol, label) = ("chevron.left.forwardslash.chevron.right", .formatCode)
+        case .checkbox: (symbol, label) = ("square", .formatCheckbox)
+        case .outdent: (symbol, label) = ("decrease.indent", .formatOutdent)
+        case .indent: (symbol, label) = ("increase.indent", .formatIndent)
+        case .openLink: (symbol, label) = ("arrow.up.right.square", .formatOpenLink)
+        }
+        var configuration = UIButton.Configuration.plain()
+        configuration.image = UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .medium))
+        configuration.cornerStyle = .capsule
+        configuration.baseForegroundColor = .label
+        if action.style != nil {
+            configuration.baseForegroundColor = UIColor(Theme.accent)
+            configuration.background.backgroundColor = UIColor(Theme.accent).withAlphaComponent(0.16)
+        }
+        let button = UIButton(configuration: configuration, primaryAction: UIAction { [weak self] _ in
+            self?.perform(action)
+        })
+        button.accessibilityLabel = String(localized: label)
+        if action.style != nil { button.accessibilityTraits.insert(.selected) }
+        if action == .checkbox { button.accessibilityValue = String(localized: .checkboxUnchecked) }
+        button.isHidden = true
+        button.alpha = 0
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 40),
+            button.heightAnchor.constraint(equalToConstant: 36),
+        ])
+        return button
+    }
+
+    private func updateCheckbox() {
+        guard let button = quickButtons[.checkbox] else { return }
+        button.configuration?.image = UIImage(systemName: isChecked ? "checkmark.square.fill" : "square", withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .medium))
+        button.configuration?.baseForegroundColor = isChecked ? UIColor(Theme.accent) : .label
+        button.accessibilityValue = String(localized: isChecked ? .checkboxChecked : .checkboxUnchecked)
+    }
+
+    private func perform(_ action: QuickAction) {
+        guard let textView else { return }
+        if let style = action.style { return textView.toggle(style) }
+        switch action {
+        case .checkbox: textView.perform(MarkdownEditing.toggleCheckbox)
+        case .outdent: textView.perform(MarkdownEditing.outdent)
+        case .indent: textView.perform(MarkdownEditing.indent)
+        case .openLink:
+            if let link = MarkdownEditing.context(in: textView.markdownState).link { Platform.open(link) }
+        default: break
+        }
     }
 }
 #endif

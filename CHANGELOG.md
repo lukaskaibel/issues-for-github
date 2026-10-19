@@ -8,6 +8,18 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Writing Markdown as in a notes app.** Bold, italics, code and strikethrough turn on and off: Bold again inside
+  bold text takes the bold off, at the end of it leaves it so you type on plainly, and just behind it goes back in;
+  with the caret in a word it makes the word bold. A style's marks come and go as a pair: Delete behind bold text
+  deletes its letters and leaves the `**` in place until the last letter goes, and deleting one mark removes the other.
+  Return at the end of bold text leaves it for the next line (in the middle, the bold goes on there), continues a list
+  with the next bullet, number or checkbox, and ends it on an empty item. `-` at the start of a line makes a bullet
+  with its space, `- []` a checkbox, and Tab and ⇧Tab move a list item in and out. On the Mac, and on iPad with a
+  keyboard, `⌘B`, `⌘I`, `⌘E` and `⌘⇧X` make text bold, italic, code or struck through, and `⌘⇧7`, `⌘⇧8` and `⌘⇧9`
+  make a numbered list, bullets or a checklist.
+- **Buttons for where the caret is, above the iPhone and iPad keyboard.** On the left of the bar, buttons come in for
+  what the caret is in: its style, tinted, which a tap takes off; the checkbox of its line, to tick; moving a list item
+  in or out; and opening the link it is on. The bar also turns a line into a bulleted list now.
 - **An icon for each project.** A project shows a glyph instead of a coloured square: GitHub's table in grey until
   you pick another. Right-click the project at the top of the sidebar and choose **Change Icon…** (or **Change Project
   Icon…** in the command palette) for one of 257 glyphs in one of GitHub's eight colours; on iPhone and iPad it is in a
@@ -73,6 +85,10 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **Text eases into its new look as you type.** Bold text thickens, a heading grows, and a style's marks fade back
+  over a fifth of a second instead of snapping (not with Reduce Motion). Every line of a description that isn't a
+  heading is as tall as any other, whatever it holds (bold, code, an emoji or nothing), so nothing jumps while you type
+  or delete; a blank line between paragraphs is a full line now, as in other Markdown editors.
 - **A Mac app like Mail and Notes, with Linear's pickers kept.** The window has the system's sidebar and a toolbar in
   Liquid Glass: back and forward, the title of the page with its project and when it last synced, Board and List in
   the middle (`⌘1`, `⌘2`), the page's own buttons such as Filter and Display, a milestone's progress and date or the
@@ -109,6 +125,9 @@ All notable changes to this project are recorded here. The format follows
 - On iPhone and iPad the send button sits inside the comment field, as on the Mac and in Messages: a small circle that
   turns the accent colour once there is something to send. Before, it was a round button beside the field and taller
   than it.
+- In a description, Return inside bold text no longer splits its `**` over two lines, and Bold next to bold text no
+  longer piles up stars. A space typed in bold text no longer turns the bold off until the next letter, and
+  `_**both**_` shows italics as well as bold.
 - On the Mac, a two-finger swipe goes back or forward only when you mean it: it has to move clearly sideways, as in
   Safari, and far enough that its arrow fills before you lift your fingers. Before, a scroll that started a little to
   the side or a short flick could take you back. The arrow now grows inside the page in glass, instead of sliding out

@@ -87,6 +87,10 @@ enum Theme {
     static let spring = Animation.spring(response: 0.3, dampingFraction: 0.82)
     static let quick = Animation.easeOut(duration: 0.14)
     static let overlay = Animation.spring(response: 0.26, dampingFraction: 0.86)
+    /// How long Markdown takes to change its look as you type: bold thickening, a heading growing, marks fading.
+    static let textStyleDuration: TimeInterval = 0.18
+    /// The buttons for where the caret is, coming and going in the bar above the keyboard (UIKit spring).
+    static let keyboardBarSpring: (duration: TimeInterval, bounce: CGFloat) = (0.32, 0.16)
 
     static let sidebarWidth: CGFloat = 220
     /// The Inbox's list beside the issue, as wide as Linear's.

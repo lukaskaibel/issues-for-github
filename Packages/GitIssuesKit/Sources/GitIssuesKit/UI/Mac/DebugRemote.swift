@@ -247,8 +247,11 @@ enum DebugRemote {
             // Puts the caret at the end of the open issue's description.
             if let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
                let editor = findDescription(in: window.contentView) {
-                window.makeFirstResponder(editor)
+                let focused = window.makeFirstResponder(editor)
                 editor.setSelectedRange(NSRange(location: (editor.string as NSString).length, length: 0))
+                log("focusdesc: \(focused ? "focused" : "refused") editable=\(editor.isEditable)")
+            } else {
+                log("focusdesc: no description")
             }
         case "keycmd":
             // keycmd <character>: a menu shortcut such as ⌘N.
@@ -265,7 +268,8 @@ enum DebugRemote {
             let responder = window?.firstResponder
             var description = responder.map { String(describing: type(of: $0)) } ?? "nil"
             if let text = responder as? NSTextView {
-                description += text.isFieldEditor ? " (single-line field, text: \"\(text.string)\")" : " (multi-line editor)"
+                description += text.isFieldEditor ? " (single-line field, text: \"\(text.string)\")"
+                    : " (multi-line editor, text: \(text.string.debugDescription), selection: \(text.selectedRange()))"
                 if let field = text.delegate as? NSView, let content = window?.contentView {
                     let frame = field.convert(field.bounds, to: content)
                     description += " at x=\(Int(frame.minX)) y=\(Int(content.bounds.height - frame.maxY)) w=\(Int(frame.width))"
