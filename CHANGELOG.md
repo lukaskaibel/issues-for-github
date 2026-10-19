@@ -115,10 +115,14 @@ follows 0.2.0: 0.3.0 went to TestFlight only, so its changes reach the App Store
   checklist with the status first, and its comments a conversation with each person's picture and the new ones
   marked. Lists have larger rows and hairlines between them, and the iPad board stands its columns on lanes as the
   Mac's does.
-- **A new app icon: a board.** Three columns divided only by two thin lines, as the lines in Notes divide a page,
-  with three cards to do in lilac, two in progress in amber and one done in indigo. It follows light and dark mode, and
-  in the dark the colours turn brighter. Settings on the Mac, and your account on iPhone and iPad, offer the board on
-  graphite or on indigo instead, and everyone starts from the board.
+- **A new app icon: a card lifted off a board.** A card in the app's indigo with a done mark, turned a little as if
+  just picked up, over a faint board of three columns and three rows of tiles. It follows light and dark mode.
+  Settings on the Mac, and your account on iPhone and iPad, offer it on graphite or as a white card on indigo
+  instead, and everyone starts from the card.
+- **Cards leave out the repository.** A board is one project's, so on a project that spans several repositories its
+  cards no longer put the repository's name next to the number. On the Mac, point at the number and it names the
+  repository the way GitHub does, as in `acme/website#12`; a row's number in a list does the same. My Issues, which
+  mixes projects, still says where each issue comes from.
 
 ### Fixed
 
@@ -126,6 +130,13 @@ follows 0.2.0: 0.3.0 went to TestFlight only, so its changes reach the App Store
   the comment field, and the toolbar lies on the page's own ground. Before, the text of an issue stayed sharp under the
   toolbar and ran through its title, "#9" and the project's name; over the Inbox the toolbar had a strip of another
   grey with a line under it, which the notifications showed through.
+- Right-click menus on the Mac keep up with the pointer: the row under it lights up at once, and moving down a long
+  menu no longer stutters. A submenu opens as soon as the pointer rests on its row or moves toward it, stays open
+  while the pointer crosses other rows on the way to it, and opens faster. Before, every row with a submenu the
+  pointer passed opened its submenu, and the menu's glass turned dim and back each time.
+- The same goes for every other list that lights up under the pointer: the pickers for status, priority, people,
+  labels, dates and the rest, the command palette, the project icon picker, the project's menu at the top of the
+  sidebar, the Inbox's menus and the menus of a new view.
 - The end of an issue reads cleanly above the field for a new comment, on the Mac, iPhone and iPad and in the Mac's
   Inbox: the page fades out just above the field, as it does under the toolbar. Before, the text behind showed through
   the field's glass, over "Leave a comment…", and peeked out in the strip below it.

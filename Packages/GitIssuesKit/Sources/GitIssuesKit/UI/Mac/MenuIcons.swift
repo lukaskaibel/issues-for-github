@@ -76,9 +76,15 @@ enum MenuIcons {
     }
 
     static func symbol(_ name: String) -> NSImage? {
-        NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+        if let image = symbols[name] { return image }
+        let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
             .withSymbolConfiguration(.init(pointSize: 13, weight: .regular))
+        symbols[name] = image
+        return image
     }
+
+    /// Symbols looked up once: a right-click menu asks for a dozen each time it opens.
+    private static var symbols: [String: NSImage] = [:]
 
     /// A symbol in a colour of its own, such as the flags for blocked and blocking issues.
     static func symbol(_ name: String, color: Color) -> NSImage? {

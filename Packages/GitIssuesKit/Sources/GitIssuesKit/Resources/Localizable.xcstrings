@@ -2401,8 +2401,68 @@
         }
       }
     },
+    "appIconCard" : {
+      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a card with a done mark, lifted off a board of faint tiles. Short: about 10 characters fit. This one, the app's own icon, is the card on a light page; a card as on a kanban board, not a payment card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Card"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarjeta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carte"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "카드"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cartão"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Карточка"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "卡片"
+          }
+        }
+      }
+    },
     "appIconFootnote" : {
-      "comment" : "Mac Settings: note under the choice of app icons. 'The first' is the board on its light page, the app's own icon.",
+      "comment" : "Mac Settings: note under the choice of app icons. 'The first' is the card on its light page, the app's own icon.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -2462,7 +2522,7 @@
       }
     },
     "appIconGraphite" : {
-      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a kanban board: three columns divided by two thin lines, with coloured cards in them. Short: about 10 characters fit. The board on a dark grey plate; the colour graphite.",
+      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a card with a done mark, lifted off a board of faint tiles. Short: about 10 characters fit. The card on a dark grey plate; the colour graphite.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -2522,7 +2582,7 @@
       }
     },
     "appIconIndigo" : {
-      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a kanban board: three columns divided by two thin lines, with coloured cards in them. Short: about 10 characters fit. The board on an indigo plate, with white cards; the colour indigo.",
+      "comment" : "Name of an app icon, under a small picture of it in the Mac Settings and the iPhone and iPad account sheet. Every icon shows a card with a done mark, lifted off a board of faint tiles. Short: about 10 characters fit. A white card on an indigo plate; the colour indigo.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

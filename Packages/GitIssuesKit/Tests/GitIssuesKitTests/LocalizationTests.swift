@@ -121,7 +121,7 @@ struct LocalizationTests {
     /// English written straight into a view is never translated. GitHub's own words (field names, enum values)
     /// and the debugging tools stay as they are.
     @Test func noEnglishLeftInTheCode() {
-        let skipped: Set<String> = ["DebugRemote.swift", "DemoData.swift"]
+        let skipped: Set<String> = ["DebugRemote.swift", "DebugMenuTiming.swift", "DemoData.swift"]
         for (file, text) in Self.code where !skipped.contains(file) {
             for (number, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
                 let code = line.split(separator: "//", maxSplits: 1).first.map(String.init) ?? ""

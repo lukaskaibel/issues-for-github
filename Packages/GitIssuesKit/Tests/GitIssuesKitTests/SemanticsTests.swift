@@ -120,3 +120,24 @@ struct BranchNameTests {
         #expect(item(nil, "A draft").branchName == nil)
     }
 }
+
+@Suite("How a card's number names its repository")
+struct ReferenceTests {
+    private func item(_ number: Int?, repo: String?, kind: ItemKind = .issue) -> Item {
+        var item = Item(id: "PVTI_1", projectId: "PVT_1", kind: kind, position: 0, number: number, title: "Title", body: "", state: "OPEN")
+        item.repo = repo
+        return item
+    }
+
+    @Test func asGitHubWritesIt() {
+        #expect(item(12, repo: "acme/website").reference == "acme/website#12")
+    }
+
+    @Test func beforeItHasANumber() {
+        #expect(item(nil, repo: "acme/website").reference == "acme/website")
+    }
+
+    @Test func draftsHaveNone() {
+        #expect(item(nil, repo: nil, kind: .draft).reference == nil)
+    }
+}

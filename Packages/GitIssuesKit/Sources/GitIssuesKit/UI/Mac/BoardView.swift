@@ -183,6 +183,7 @@ struct ColumnView: View {
     @State private var hoveredId: String?
     @State private var hoveredPart: PickerKind?
     @State private var hoveringFold = false
+    @State private var hoveringNumber = false
     /// The epic whose header is under the pointer, and whether the pointer is on its fold arrow.
     @State private var hoveredEpic: String?
     @State private var hoveringEpicFold = false
@@ -262,6 +263,8 @@ struct ColumnView: View {
                         if part != hoveredPart { hoveredPart = part }
                         let onFold = drag.fold(at: point, in: column.items) != nil
                         if onFold != hoveringFold { hoveringFold = onFold }
+                        let onNumber = drag.number(at: point, in: column.items) != nil
+                        if onNumber != hoveringNumber { hoveringNumber = onNumber }
                         let header = drag.header(at: point, in: column.id)
                         if header?.epic != hoveredEpic { hoveredEpic = header?.epic }
                         let onEpicFold = header.map { drag.isOnFold(point, of: $0) } ?? false
@@ -270,6 +273,7 @@ struct ColumnView: View {
                         hover(nil)
                         hoveredPart = nil
                         hoveringFold = false
+                        hoveringNumber = false
                         hoveredEpic = nil
                         hoveringEpicFold = false
                     }
@@ -330,6 +334,8 @@ struct ColumnView: View {
             guard column.nesting.folded.contains(item.id) else { return String(localized: .foldSubIssuesTooltip) }
             return String(localized: .unfoldSubIssuesTooltip(count: column.nesting.nestedCounts[item.id] ?? 0))
         }
+        // Cards leave out the repository; as a project can span several, the number names it.
+        if hoveringNumber { return item.reference ?? "" }
         guard let hoveredPart else { return "" }
         return model.tooltip(hoveredPart, for: item)
     }

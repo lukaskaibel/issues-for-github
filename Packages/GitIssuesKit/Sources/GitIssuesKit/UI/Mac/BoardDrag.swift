@@ -74,6 +74,13 @@ final class BoardDrag {
         return rect.offsetBy(dx: frame.minX, dy: frame.minY).insetBy(dx: -3, dy: -4).contains(point) ? item : nil
     }
 
+    /// The card whose number is under a point.
+    func number(at point: CGPoint, in items: [Item]) -> Item? {
+        guard let item = card(at: point, in: items), let frame = cardFrames[item.id],
+              let rect = CardRegionStore.shared.number(item.id) else { return nil }
+        return rect.offsetBy(dx: frame.minX, dy: frame.minY).insetBy(dx: -3, dy: -4).contains(point) ? item : nil
+    }
+
     /// The clickable part of a card under a point, with its frame in board coordinates.
     func part(at point: CGPoint, in items: [Item]) -> (item: Item, kind: PickerKind, rect: CGRect)? {
         guard let item = card(at: point, in: items), let frame = cardFrames[item.id] else { return nil }
