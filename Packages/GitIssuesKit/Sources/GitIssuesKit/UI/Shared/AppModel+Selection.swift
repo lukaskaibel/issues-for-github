@@ -149,6 +149,50 @@ extension AppModel {
         }
     }
 
+    /// Adds a label typed into the picker to all of them, made first in each of their repositories that has none.
+    func addNewLabel(named name: String, to items: [Item]) {
+        var mutations: [Mutation] = []
+        var labels: [String: LabelRef] = [:]
+        for item in items where item.kind != .draft {
+            guard let contentId = item.contentId, let repoId = item.repoId,
+                  let label = labels[repoId]
+                    ?? newLabel(named: name, projectId: item.projectId, repoId: repoId, repo: item.repo, making: &mutations)
+            else { continue }
+            labels[repoId] = label
+            noteRecent(.label, label.name)
+            if !item.labels.contains(where: { $0.name.caseInsensitiveCompare(label.name) == .orderedSame }) {
+                mutations.append(.editLabels(.init(contentId: contentId, add: [label], remove: [])))
+            }
+        }
+        perform(mutations)
+    }
+
+    /// A label typed into a new issue's picker: the repository's own of that name, else one made there now.
+    func labelForNewIssue(named name: String, projectId: String?, repoId: String?) -> LabelRef? {
+        guard let repoId else { return nil }
+        var mutations: [Mutation] = []
+        let label = newLabel(named: name, projectId: projectId, repoId: repoId, repo: nil, making: &mutations)
+        perform(mutations)
+        noteRecent(.label, label?.name)
+        return label
+    }
+
+    /// The repository's label of that name, or one to make, with the change that makes it. `repo` names a repository
+    /// known only from an issue in the Inbox.
+    private func newLabel(
+        named name: String, projectId: String?, repoId: String, repo: String?, making mutations: inout [Mutation]
+    ) -> LabelRef? {
+        if let known = existingLabel(named: name, projectId: projectId, repoId: repoId) { return known }
+        guard let repo = anyRepository(id: repoId)?.nameWithOwner ?? repo else { return nil }
+        let made = Mutation.CreateLabel(
+            labelId: LabelRef.makeLocalId(), repoId: repoId, repo: repo, name: name, color: LabelRef.newColor(for: name)
+        )
+        mutations.append(.createLabel(made))
+        // A repository none of your boards use keeps its labels here, not in the database.
+        otherRepoMeta[repoId]?.labels.append(made.label)
+        return made.label
+    }
+
     func toggleAssignMe(_ items: [Item]) {
         guard let viewer else { return }
         toggleAssignee(items, viewer.person)
