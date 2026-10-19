@@ -180,12 +180,9 @@ struct ColumnView: View {
 
     @State private var scroll = ScrollPosition(edge: .top)
     @State private var metrics = ScrollMetrics()
-    @State private var hoveredId: String?
-    @State private var hoveredPart: PickerKind?
-    @State private var hoveringFold = false
-    /// The epic whose header is under the pointer, and whether the pointer is on its fold arrow.
-    @State private var hoveredEpic: String?
-    @State private var hoveringEpicFold = false
+    /// The card or epic header under the pointer. The column itself never reads it, so moving the pointer redraws
+    /// only the cards it leaves and enters.
+    @State private var hover = ColumnHover()
 
     /// A row of the column as drawn: an issue, an epic's header, or the slot where an epic's lifted issues land.
     /// Each column stands in a soft lane, as Reminders sets its columns apart, with the cards inset in it.
@@ -230,19 +227,14 @@ struct ColumnView: View {
                         case .groupSlot(let group, let depth):
                             EpicGroupSlot(group: group.group, width: width, depth: depth, drag: drag)
                         case .row(.epic(let group)):
-                            EpicGroupHeader(
-                                group: group, columnId: column.id, drag: drag,
-                                hovered: !model.isDragging && hoveredEpic == group.contentId,
-                                hoveringFold: !model.isDragging && hoveredEpic == group.contentId && hoveringEpicFold
-                            )
+                            EpicGroupHeader(group: group, columnId: column.id, drag: drag, hover: hover, dragging: model.isDragging)
                         case .row(.item(let item)):
                             BoardCell(
                                 card: model.cardModel(for: item, in: column.nesting, showsMilestone: model.currentMilestoneTitle == nil), width: width, drag: drag,
                                 place: column.nesting.place(of: item.id),
-                                highlighted: !model.isDragging && (hoveredId == item.id || model.focusedItemId == item.id),
                                 selected: model.isSelected(item.id),
-                                hoveredPart: hoveredId == item.id && !model.isDragging ? hoveredPart : nil,
-                                hoveringFold: hoveredId == item.id && !model.isDragging && hoveringFold,
+                                hover: hover,
+                                dragging: model.isDragging,
                                 avatarVersion: model.avatarVersion
                             )
                         }
@@ -253,25 +245,24 @@ struct ColumnView: View {
                 // One hover and one click handler per column instead of one per card.
                 .contentShape(Rectangle())
                 // The part under the pointer names its value, as in Linear.
-                .help(Text(hoveredTooltip))
+                .modifier(ColumnTooltip(column: column, hover: hover))
                 .onContinuousHover(coordinateSpace: .named(BoardDrag.space)) { phase in
                     switch phase {
                     case .active(let point):
-                        hover(card(at: point))
-                        let part = drag.part(at: point, in: column.items)?.kind
-                        if part != hoveredPart { hoveredPart = part }
-                        let onFold = drag.fold(at: point, in: column.items) != nil
-                        if onFold != hoveringFold { hoveringFold = onFold }
+                        let item = card(at: point)
+                        report(item)
                         let header = drag.header(at: point, in: column.id)
-                        if header?.epic != hoveredEpic { hoveredEpic = header?.epic }
-                        let onEpicFold = header.map { drag.isOnFold(point, of: $0) } ?? false
-                        if onEpicFold != hoveringEpicFold { hoveringEpicFold = onEpicFold }
+                        hover.update(ColumnHover.State(
+                            card: item.map { item in
+                                ColumnHover.Card(
+                                    id: item.id, part: drag.part(at: point, in: [item])?.kind, onFold: drag.fold(at: point, in: [item]) != nil
+                                )
+                            },
+                            header: header.map { ColumnHover.Header(epic: $0.epic, onFold: drag.isOnFold(point, of: $0)) }
+                        ))
                     case .ended:
-                        hover(nil)
-                        hoveredPart = nil
-                        hoveringFold = false
-                        hoveredEpic = nil
-                        hoveringEpicFold = false
+                        report(nil)
+                        hover.update(ColumnHover.State())
                     }
                 }
                 .gesture(SpatialTapGesture(coordinateSpace: .named(BoardDrag.space)).onEnded { value in
@@ -321,27 +312,15 @@ struct ColumnView: View {
         .onChange(of: drag.tick) { autoScroll() }
     }
 
-    private var hoveredTooltip: String {
-        if let epic = hoveredEpic, hoveringEpicFold, let group = column.nesting.groups.first(where: { $0.contentId == epic }) {
-            return String(localized: group.folded ? .unfoldEpicGroupTooltip(count: group.count) : .foldEpicGroupTooltip)
-        }
-        guard let item = column.items.first(where: { $0.id == hoveredId }) else { return "" }
-        if hoveringFold {
-            guard column.nesting.folded.contains(item.id) else { return String(localized: .foldSubIssuesTooltip) }
-            return String(localized: .unfoldSubIssuesTooltip(count: column.nesting.nestedCounts[item.id] ?? 0))
-        }
-        guard let hoveredPart else { return "" }
-        return model.tooltip(hoveredPart, for: item)
-    }
-
     private func card(at point: CGPoint) -> Item? {
         column.items.first { drag.cardFrames[$0.id]?.contains(point) == true }
     }
 
-    private func hover(_ item: Item?) {
-        guard hoveredId != item?.id else { return }
-        if let previous = hoveredId { model.pointer(.left, previous) }
-        hoveredId = item?.id
+    /// Tells the model which card the pointer is on, as it leaves one and enters another.
+    private func report(_ item: Item?) {
+        let previous = hover.current.card?.id
+        guard previous != item?.id else { return }
+        if let previous { model.pointer(.left, previous) }
         if let item { model.pointer(.entered, item.id) }
     }
 
@@ -364,6 +343,32 @@ struct ColumnView: View {
     }
 }
 
+/// The column's tooltip, which names what is under the pointer. As a modifier it is worked out again as the pointer
+/// moves without the column's cards being worked out again.
+private struct ColumnTooltip: ViewModifier {
+    @Environment(AppModel.self) private var model
+    var column: BoardColumn
+    var hover: ColumnHover
+
+    func body(content: Content) -> some View {
+        content.help(Text(tooltip))
+    }
+
+    private var tooltip: String {
+        let pointer = hover.current
+        if let header = pointer.header, header.onFold, let group = column.nesting.groups.first(where: { $0.contentId == header.epic }) {
+            return String(localized: group.folded ? .unfoldEpicGroupTooltip(count: group.count) : .foldEpicGroupTooltip)
+        }
+        guard let card = pointer.card, let item = column.items.first(where: { $0.id == card.id }) else { return "" }
+        if card.onFold {
+            guard column.nesting.folded.contains(item.id) else { return String(localized: .foldSubIssuesTooltip) }
+            return String(localized: .unfoldSubIssuesTooltip(count: column.nesting.nestedCounts[item.id] ?? 0))
+        }
+        guard let part = card.part else { return "" }
+        return model.tooltip(part, for: item)
+    }
+}
+
 /// Over the issues of an epic standing together in a column: the epic's icon where the line down to them starts,
 /// its name on up to three lines, how many of its issues are there, and the arrow that folds them away. A click
 /// opens the epic, one on the arrow folds its issues or shows them again, and dragging it moves them all. The
@@ -373,8 +378,8 @@ private struct EpicGroupHeader: View {
     var group: Nesting.EpicGroup
     var columnId: String
     var drag: BoardDrag
-    var hovered: Bool
-    var hoveringFold: Bool
+    var hover: ColumnHover
+    var dragging: Bool
     @State private var owner = UUID()
     @State private var last = LastFrame()
 
@@ -382,6 +387,9 @@ private struct EpicGroupHeader: View {
     private static let line: CGFloat = 16
 
     var body: some View {
+        let pointer = dragging ? nil : hover[header: group.contentId]
+        let hovered = pointer != nil
+        let hoveringFold = pointer?.onFold ?? false
         HStack(alignment: .top, spacing: 6) {
             EpicIcon(size: 12)
                 .frame(width: CardTreeLines.indent, height: Self.line)
@@ -475,20 +483,24 @@ private struct EpicGroupSlot: View {
 /// hangs in under its parent, with a line from the parent; a card with sub-issues folded into it shows the edge
 /// of a second card under it.
 private struct BoardCell: View {
+    @Environment(AppModel.self) private var model
     var card: CardModel
     var width: CGFloat
     var drag: BoardDrag
     var place: Nesting.Place
-    var highlighted: Bool
     var selected: Bool
-    var hoveredPart: PickerKind?
-    var hoveringFold: Bool
+    var hover: ColumnHover
+    var dragging: Bool
     var avatarVersion: Int
     @State private var owner = UUID()
     @State private var last = LastFrame()
 
     var body: some View {
         let id = card.item.id
+        // Asked here rather than in the column, so the pointer or the keyboard focus moving doesn't work out the
+        // whole column again, and only the cards they leave and enter are painted anew.
+        let pointer = dragging ? nil : hover[card: id]
+        let highlighted = !dragging && (pointer != nil || model.focusedItemId == id)
         let isSlot = drag.active?.item.id == id
         let depth = min(isSlot ? drag.target?.depth ?? 0 : place.depth, CardTreeLines.deepest)
         let indent = CGFloat(depth) * CardTreeLines.indent
@@ -504,7 +516,7 @@ private struct BoardCell: View {
             } else {
                 CardView(
                     card: card, width: width - indent, highlighted: highlighted, selected: selected,
-                    avatarVersion: avatarVersion, hoveredPart: hoveredPart, hoveringFold: hoveringFold
+                    avatarVersion: avatarVersion, hoveredPart: pointer?.part, hoveringFold: pointer?.onFold ?? false
                 )
                 .equatable()
                 .background(alignment: .top) { if card.folded { CardStackEdge() } }
