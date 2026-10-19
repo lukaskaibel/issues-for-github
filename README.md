@@ -100,7 +100,7 @@ so your team sees it there; GitHub's dates have no time of day, and the reminder
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/due-date-dark.webp">
-  <img alt="The due date picker: Today, Tomorrow, Friday and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
+  <img alt="The due date picker: Today, Tomorrow, Friday, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
 </picture>
 
 ### Issues that read well
