@@ -56,7 +56,7 @@ struct MonthGrid: View {
     var onPick: (CalendarDay) -> Void
 
     @State private var month: CalendarDay
-    @State private var hovered: CalendarDay?
+    @State private var cursor = MenuCursor<CalendarDay>()
 
     init(selected: CalendarDay?, onPick: @escaping (CalendarDay) -> Void) {
         self.selected = selected
@@ -119,16 +119,17 @@ struct MonthGrid: View {
                 .opacity(inMonth || isSelected ? 1 : 0.6)
                 .frame(maxWidth: .infinity)
                 .frame(height: 26)
-                .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(isSelected ? Theme.accentFill : hovered == day ? Theme.menuHighlight : .clear)
-                )
+                .background {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.accentFill)
+                    } else {
+                        CursorHighlight(cursor: cursor, key: day, radius: 6)
+                    }
+                }
                 .contentShape(Rectangle())
         }
         .buttonStyle(PlainPressStyle())
-        .onHover { inside in
-            if inside { hovered = day } else if hovered == day { hovered = nil }
-        }
+        .onHover { cursor.hover(day, $0) }
         .accessibilityLabel(day.longLabel)
     }
 

@@ -182,7 +182,7 @@ private struct BucketSwitch: View {
 private struct InboxActionsMenu: View {
     @Environment(AppModel.self) private var model
     var close: () -> Void
-    @State private var active: Int?
+    @State private var cursor = MenuCursor<Int>()
 
     private var rows: [(title: LocalizedStringResource, image: String, shortcut: String?, action: () -> Void)] {
         [
@@ -200,9 +200,8 @@ private struct InboxActionsMenu: View {
             ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                 if index == 2 { MenuDivider() }
                 MenuRow(
-                    title: String(localized: row.title), systemImage: row.image, shortcut: row.shortcut, active: active == index,
-                    action: { pick(row.action) },
-                    onHover: { inside in if inside { active = index } else if active == index { active = nil } }
+                    title: String(localized: row.title), systemImage: row.image, shortcut: row.shortcut, cursor: cursor, key: index,
+                    action: { pick(row.action) }
                 )
             }
         }
@@ -211,8 +210,8 @@ private struct InboxActionsMenu: View {
         .font(.ui)
         .foregroundStyle(Theme.text)
         .background(MenuKeys(
-            onMove: { active = menuStep(active, by: $0, count: rows.count) },
-            onActivate: { if let active { pick(rows[active].action) } },
+            onMove: { cursor.step($0, through: Array(rows.indices)) },
+            onActivate: { if let active = cursor.key { pick(rows[active].action) } },
             onBack: close
         ))
     }
@@ -641,7 +640,7 @@ private struct SnoozeMenu: View {
     var startsWithDate: Bool
     var close: () -> Void
 
-    @State private var active: Int?
+    @State private var cursor = MenuCursor<Int>()
     @State private var picking = false
     @State private var date = SnoozeChoice.tomorrow.date()
 
@@ -668,24 +667,22 @@ private struct SnoozeMenu: View {
                 VStack(spacing: 0) {
                     ForEach(Array(SnoozeChoice.allCases.enumerated()), id: \.offset) { index, choice in
                         MenuRow(
-                            title: choice.title, systemImage: nil, value: choice.hint(), active: active == index,
-                            action: { snooze(until: choice.date()) },
-                            onHover: { inside in hover(index, inside) }
+                            title: choice.title, systemImage: nil, value: choice.hint(), cursor: cursor, key: index,
+                            action: { snooze(until: choice.date()) }
                         )
                     }
                     MenuDivider()
                     MenuRow(
-                        title: String(localized: .pickADate), systemImage: nil, active: active == SnoozeChoice.allCases.count,
-                        action: { picking = true },
-                        onHover: { inside in hover(SnoozeChoice.allCases.count, inside) }
+                        title: String(localized: .pickADate), systemImage: nil, cursor: cursor, key: SnoozeChoice.allCases.count,
+                        action: { picking = true }
                     )
                 }
                 .padding(.vertical, 4)
                 .frame(width: 230)
                 .background(MenuKeys(
-                    onMove: { active = menuStep(active, by: $0, count: SnoozeChoice.allCases.count + 1) },
+                    onMove: { cursor.step($0, through: Array(0...SnoozeChoice.allCases.count)) },
                     onActivate: {
-                        guard let active else { return }
+                        guard let active = cursor.key else { return }
                         if active < SnoozeChoice.allCases.count {
                             snooze(until: SnoozeChoice.allCases[active].date())
                         } else {
@@ -699,10 +696,6 @@ private struct SnoozeMenu: View {
         .font(.ui)
         .foregroundStyle(Theme.text)
         .onAppear { picking = startsWithDate }
-    }
-
-    private func hover(_ index: Int, _ inside: Bool) {
-        if inside { active = index } else if active == index { active = nil }
     }
 
     private func snooze(until: Date) {

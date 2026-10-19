@@ -28,6 +28,8 @@ private struct FocusAnchor: NSViewRepresentable {
     final class AnchorView: NSView {
         var isActive = true
         private var attempts = 0
+        /// The field once found, so the checks that follow don't search the window again.
+        private weak var field: NSTextField?
 
         // Never in the way of clicks on the field it sits behind.
         override func hitTest(_ point: NSPoint) -> NSView? { nil }
@@ -45,7 +47,9 @@ private struct FocusAnchor: NSViewRepresentable {
         }
 
         private func focus() {
-            guard isActive, let window, let field = textField(in: window) else { return }
+            guard isActive, let window,
+                  let field = field.flatMap({ $0.window === window ? $0 : nil }) ?? textField(in: window) else { return }
+            self.field = field
             if let editor = window.firstResponder as? NSTextView, editor.delegate === field { return }
             window.makeFirstResponder(field)
             attempts += 1

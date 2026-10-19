@@ -8,6 +8,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **My Issues, filtered and grouped your way.** My Issues has the filter chips and Display options of a project's
+  view now. Press `F` to filter it by project, status, priority, label, milestone, due date, last change, or open or
+  closed, and `⇧V` to group it by status, project, priority or due date and to order it by priority, due date, last
+  change, creation or as the boards have it. Status and priority mean the same in every project: "In Review" and
+  "Doing" are both in progress, "P0" and "Urgent" both urgent. Grouped by project, the rows leave out the project's
+  name. On iPhone and iPad the filter is a line under the title, and the "…" menu has Filter…, Group By and Order By.
+  What you choose stays on the device, as GitHub has no view behind My Issues.
 - **New labels from the picker.** Type a label the repository doesn't have and the picker offers **Create label
   “…”**: the label is made in the repository, in one of GitHub's colours, and goes on the issue, or on every issue you
   picked. It works in every label picker on the Mac (a card, the inspector, ⌘K, the right-click menu and the new-issue
@@ -16,14 +23,16 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
-- **A new app icon: a board.** Three columns divided only by two thin lines, as the lines in Notes divide a page,
-  with three cards to do in lilac, two in progress in amber and one done in indigo. It follows light and dark mode, and
-  in the dark the colours turn brighter. Settings on the Mac, and your account on iPhone and iPad, offer the board on
-  graphite or on indigo instead; the pinboard and its materials are gone, so everyone starts from the board.
+- **A new app icon: a card lifted off a board.** A card in the app's indigo with a done mark, turned a little as if
+  just picked up, over a faint board of three columns and three rows of tiles. It follows light and dark mode.
+  Settings on the Mac, and your account on iPhone and iPad, offer it on graphite or as a white card on indigo
+  instead; the pinboard and its materials are gone, so everyone starts from the card.
 - **Cards leave out the repository.** A board is one project's, so on a project that spans several repositories its
   cards no longer put the repository's name next to the number. On the Mac, point at the number and it names the
   repository the way GitHub does, as in `acme/website#12`; a row's number in a list does the same. My Issues, which
   mixes projects, still says where each issue comes from.
+- **My Issues puts the most urgent first** in each group, then what is due soonest, instead of each board's order,
+  which said little once several projects were mixed. **Order by › Manual** brings the boards' order back.
 
 ### Fixed
 
@@ -31,6 +40,13 @@ All notable changes to this project are recorded here. The format follows
   the comment field, and the toolbar lies on the page's own ground. Before, the text of an issue stayed sharp under the
   toolbar and ran through its title, "#9" and the project's name; over the Inbox the toolbar had a strip of another
   grey with a line under it, which the notifications showed through.
+- Right-click menus on the Mac keep up with the pointer: the row under it lights up at once, and moving down a long
+  menu no longer stutters. A submenu opens as soon as the pointer rests on its row or moves toward it, stays open
+  while the pointer crosses other rows on the way to it, and opens faster. Before, every row with a submenu the
+  pointer passed opened its submenu, and the menu's glass turned dim and back each time.
+- The same goes for every other list that lights up under the pointer: the pickers for status, priority, people,
+  labels, dates and the rest, the command palette, the project icon picker, the project's menu at the top of the
+  sidebar, the Inbox's menus and the menus of a new view.
 
 ## [1.0.0] - 2026-10-19
 
