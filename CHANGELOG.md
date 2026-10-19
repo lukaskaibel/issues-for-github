@@ -15,6 +15,11 @@ All notable changes to this project are recorded here. The format follows
   "Doing" are both in progress, "P0" and "Urgent" both urgent. Grouped by project, the rows leave out the project's
   name. On iPhone and iPad the filter is a line under the title, and the "…" menu has Filter…, Group By and Order By.
   What you choose stays on the device, as GitHub has no view behind My Issues.
+- **New labels from the picker.** Type a label the repository doesn't have and the picker offers **Create label
+  “…”**: the label is made in the repository, in one of GitHub's colours, and goes on the issue, or on every issue you
+  picked. It works in every label picker on the Mac (a card, the inspector, ⌘K, the right-click menu and the new-issue
+  dialog) and in the Labels sheet on iPhone and iPad. A name that differs only in case picks the label that is there,
+  and offline the new label waits with your other changes.
 - **Pick several sub-issues on an issue's page.** On the Mac, ⌘-click and Shift-click pick sub-issues in an issue's
   list of sub-issues, as on the board and in the list. Right-click one of them and the menu changes all of them: move
   them under another parent with Change Parent Issue…, into an epic or out of their parent, or set their status,

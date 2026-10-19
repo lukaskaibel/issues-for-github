@@ -233,6 +233,36 @@ final class PhoneTests: AppTestCase {
         waitForLabel(element("chip-labels"), containing: "sync")
     }
 
+    func testTypingALabelTheRepositoryLacksMakesIt() {
+        launch()
+        scrollTo(element("row-#13"))
+        element("row-#13").tap()
+        wait(element("chip-labels"))
+        element("chip-labels").tap()
+        let search = app.searchFields.firstMatch
+        wait(search)
+        search.tap()
+        // A label of that name, whatever its case, is picked rather than made again.
+        search.typeText("SYNC")
+        wait(pickerRow("sync"))
+        XCTAssertFalse(pickerRow("Create label").exists)
+        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "perf")
+        let create = pickerRow("Create label “perf”")
+        wait(create)
+        XCTAssertFalse(element("check-Create label “perf”").exists, "Making a label has no circle")
+        snapshot("Labels sheet, a label to make")
+        create.tap()
+        waitGone(app.navigationBars["Labels"])
+        waitForLabel(element("chip-labels"), containing: "perf")
+        // Made in the repository, it is one of its labels from now on.
+        element("chip-labels").tap()
+        wait(search)
+        search.tap()
+        search.typeText("perf")
+        wait(pickerRow("perf"))
+        XCTAssertFalse(pickerRow("Create label").exists)
+    }
+
     func testRecentChoicesComeFirst() {
         // As if "sync" had just been added to another issue: it leads the sheet, apart from the rest.
         launch(["-recentPicks", "{ label = (sync); }"])
