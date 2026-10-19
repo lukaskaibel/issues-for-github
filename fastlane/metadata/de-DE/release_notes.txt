@@ -6,7 +6,7 @@ Das bisher größte Update: Plane mit Meilensteinen, Epics und einer Roadmap, ö
 • Die Ansichten deines Projekts von GitHub in der Seitenleiste, als Board oder Liste, mit Filtern, die du mit einem Klick änderst. Nach Meilenstein oder übergeordnetem Issue gruppiert, zeigt eine Ansicht den Fortschritt jeder Gruppe, die der aktuellen Iteration ihre restlichen Tage; eine Roadmap-Ansicht ist eine Zeitleiste
 • Meilensteine, Ansichten und die Roadmap auch auf iPhone und iPad; die Roadmap ist auf dem iPhone eine Liste, auf dem iPad eine Zeitleiste
 • Neues Design: auf dem Mac das Fenster von Mail und Notizen in Liquid Glass, die Informationen zum Issue gleich daneben und Kontextmenüs mit Suchfeld. Auf iPhone und iPad zeigen Issues ihre Eigenschaften als Chips aus Glas und die Kommentare als Unterhaltung
-• Ein neues App-Symbol, eine Pinnwand in sieben Materialien zur Wahl, und ein eigenes Symbol für jedes Projekt
+• Ein neues App-Symbol, ein Board mit Karten, auch auf Graphit oder Indigo, und ein eigenes Symbol für jedes Projekt
 • Neun Sprachen: Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Russisch, Japanisch, Koreanisch und Chinesisch, passend zur Sprache deines Geräts
 • Der Eingang: deine Mitteilungen von GitHub, mit dem Issue gleich daneben. Lesen, archivieren und zurückstellen per Taste oder Wischen; github.com und deine anderen Geräte sind auf demselben Stand
 • Fälligkeitsdaten mit Erinnerung: Wähle einen Tag oder tippe ihn ein, etwa „in 3 Tagen“, und am Tag selbst erinnern dich Mac, iPhone und iPad
