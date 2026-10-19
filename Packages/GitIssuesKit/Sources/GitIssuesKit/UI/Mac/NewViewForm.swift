@@ -62,7 +62,7 @@ struct NewViewForm: View {
                 }
                 GridRow(alignment: .top) {
                     Text(.filter).foregroundStyle(Theme.textSecondary).frame(height: 24)
-                    FilterChipsRow(filter: $filter, projectId: projectId, wraps: true)
+                    FilterChipsRow(filter: $filter, scope: .project(projectId), wraps: true)
                 }
                 if let binding = templateBinding {
                     if layout == .board {

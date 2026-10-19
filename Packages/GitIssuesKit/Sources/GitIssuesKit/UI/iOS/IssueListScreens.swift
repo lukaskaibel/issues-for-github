@@ -18,12 +18,13 @@ struct MyIssuesScreen: View {
                 }
                 ToolbarItemGroup(placement: .primaryAction) {
                     Menu {
+                        MyIssuesDisplayMenu()
+                        Divider()
                         Button {
                             navigation.sheet = .arrangeSections(.myIssues)
                         } label: {
                             Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
                         }
-                        Divider()
                         Button {
                             model.refresh()
                         } label: {
@@ -36,6 +37,73 @@ struct MyIssuesScreen: View {
                 }
             }
             .task(id: model.dataVersion) { await model.preloadAvatars(for: .myIssues) }
+    }
+}
+
+/// My Issues' filter and how it shows, at the top of its "…" menu: Filter… opens the sheet, a group or an order is
+/// picked right in the menu, which then closes.
+private struct MyIssuesDisplayMenu: View {
+    @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
+
+    var body: some View {
+        let display = model.mineDisplay
+        Button {
+            navigation.sheet = .myIssuesFilter
+        } label: {
+            Label(.filterEllipsis, systemImage: "line.3.horizontal.decrease")
+        }
+        Picker(.groupBy, selection: Binding(get: { model.mineDisplay.grouping }, set: { grouping in model.setMineDisplay { $0.grouping = grouping } })) {
+            ForEach(MineGrouping.allCases) { Text($0.title).tag($0) }
+        }
+        .pickerStyle(.menu)
+        Picker(.orderBy, selection: Binding(get: { model.mineDisplay.order }, set: { model.setMineOrder($0) })) {
+            ForEach(MineOrder.allCases) { Text($0.title).tag($0) }
+        }
+        .pickerStyle(.menu)
+        if display.order != .manual {
+            Button {
+                model.setMineDisplay { $0.descending.toggle() }
+            } label: {
+                Label(display.descending ? .descending : .ascending, systemImage: display.descending ? "arrow.down" : "arrow.up")
+            }
+        }
+        if !display.isDefault {
+            Button(role: .destructive) {
+                model.resetMineDisplay()
+            } label: {
+                Label(.reset, systemImage: "arrow.uturn.backward")
+            }
+        }
+    }
+}
+
+/// My Issues' filter, term by term, as a view's. It is yours alone and applies at once, so there is nothing to save.
+struct MyIssuesFilterSheet: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            FilterTermsForm(filter: Binding(get: { model.mineFilter }, set: { model.setMineFilter($0) }), scope: .myIssues) {
+                if !model.mineFilter.isEmpty {
+                    Section {
+                        Button(role: .destructive) {
+                            model.setMineFilter(ProjectFilter(""))
+                        } label: {
+                            Label(.clearFilter, systemImage: "xmark.circle")
+                        }
+                    }
+                }
+            }
+            .navigationTitle(.filter)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(.done) { dismiss() }
+                }
+            }
+        }
     }
 }
 
@@ -514,6 +582,15 @@ struct IssueList: View {
                             .listRowBackground(Color.clear)
                             .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
                     }
+                    if scope == .myIssues, !model.mineFilter.isEmpty {
+                        // My Issues' filter as a line of chips under the title, like a view's; a tap changes it.
+                        FilterChipStrip(filter: model.mineFilter, scope: .myIssues, identifier: "my-issues-filter") {
+                            navigation.sheet = .myIssuesFilter
+                        }
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 8, trailing: 16))
+                    }
                     if case .project(let id) = scope, let project = model.projects.first(where: { $0.id == id }),
                        project.priorityFieldId == nil, project.viewerCanUpdate, project.lastSyncedAt != nil {
                         PriorityFieldBanner(projectId: id)
@@ -584,7 +661,8 @@ struct IssueList: View {
             openRoute(.issue(item.id))
         } label: {
             IssueRow(
-                item: item, showsProject: showsProject, place: section.nesting.place(of: item.id), nested: nested,
+                item: item, showsProject: showsProject, namesBoard: !(scope == .myIssues && model.mineDisplay.grouping == .project),
+                place: section.nesting.place(of: item.id), nested: nested,
                 folded: folded,
                 // Under its parent or its epic's header, the parent goes without saying.
                 showsParent: section.nesting.namesParent(of: item) && section.kind != .epic(contentId: item.parentId)
@@ -735,11 +813,23 @@ struct IssueList: View {
         case .inbox:
             EmptyView()
         case .myIssues:
-            MobileEmptyState(
-                title: String(localized: .nothingAssignedTitle),
-                message: String(localized: .myIssuesEmptyMessage),
-                systemImage: "scope"
-            )
+            if !model.mineFilter.isEmpty, !model.assignedItems.isEmpty {
+                // The filter hides everything; one tap shows it all again.
+                MobileEmptyState(
+                    title: String(localized: .nothingMatchesFilterTitle),
+                    message: String(localized: .nothingMatchesFilterMessage),
+                    systemImage: "line.3.horizontal.decrease.circle"
+                ) {
+                    Button(.clearFilter) { model.setMineFilter(ProjectFilter("")) }
+                        .buttonStyle(.bordered)
+                }
+            } else {
+                MobileEmptyState(
+                    title: String(localized: .nothingAssignedTitle),
+                    message: String(localized: .myIssuesEmptyMessage),
+                    systemImage: "scope"
+                )
+            }
         case .repository(let repoId):
             if model.status.readRepositories.contains(repoId) || model.isDemo {
                 MobileEmptyState(

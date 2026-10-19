@@ -176,42 +176,9 @@ private struct ViewFilterLine: View {
         let changed = model.filterChanged(view)
         if !filter.isEmpty || changed {
             HStack(spacing: 8) {
-                Button {
+                FilterChipStrip(filter: filter, scope: .project(view.projectId), identifier: "view-filter") {
                     navigation.sheet = .viewFilter(view.id)
-                } label: {
-                    // A line of chips that fades out at its end, as a row's chips do; the whole line is one button.
-                    HStack(spacing: 6) {
-                        if filter.isEmpty {
-                            Text(.filter).foregroundStyle(Theme.textTertiary)
-                        }
-                        ForEach(Array(filter.terms.enumerated()), id: \.offset) { _, term in
-                            let chip = model.chip(for: term, projectId: view.projectId)
-                            HStack(spacing: 5) {
-                                FilterGlyph(icon: chip.icon)
-                                if chip.isRaw {
-                                    Text(chip.property).font(.caption.monospaced())
-                                } else if let values = chip.values {
-                                    Text(Self.text(of: chip, values: values)).foregroundStyle(Theme.text)
-                                } else {
-                                    Text("\(chip.property) \(chip.comparison ?? "")").foregroundStyle(Theme.text)
-                                }
-                            }
-                            .font(.footnote)
-                            .padding(.horizontal, 9)
-                            .frame(height: 26)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.groupHeader))
-                        }
-                    }
-                    .fixedSize(horizontal: true, vertical: false)
-                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                    .clipped()
-                    .mask(LinearGradient(stops: [.init(color: .black, location: 0.88), .init(color: .clear, location: 1)], startPoint: .leading, endPoint: .trailing))
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(.filter)
-                .accessibilityValue(Text(verbatim: filter.terms.map { Self.spoken(model.chip(for: $0, projectId: view.projectId)) }.joined(separator: ", ")))
-                .accessibilityIdentifier("view-filter")
                 if changed, model.canEditViews(projectId: view.projectId) {
                     Button {
                         model.saveFilter(of: view)
@@ -230,6 +197,52 @@ private struct ViewFilterLine: View {
             }
             .padding(.horizontal, 16)
         }
+    }
+}
+
+/// A filter as a line of small chips that fades out at its end, as a row's chips do. The whole line is one button,
+/// which opens the filter to change it.
+struct FilterChipStrip: View {
+    @Environment(AppModel.self) private var model
+    var filter: ProjectFilter
+    var scope: FilterScope
+    var identifier = "filter"
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                if filter.isEmpty {
+                    Text(.filter).foregroundStyle(Theme.textTertiary)
+                }
+                ForEach(Array(filter.terms.enumerated()), id: \.offset) { _, term in
+                    let chip = model.chip(for: term, in: scope)
+                    HStack(spacing: 5) {
+                        FilterGlyph(icon: chip.icon)
+                        if chip.isRaw {
+                            Text(chip.property).font(.caption.monospaced())
+                        } else if let values = chip.values {
+                            Text(Self.text(of: chip, values: values)).foregroundStyle(Theme.text)
+                        } else {
+                            Text("\(chip.property) \(chip.comparison ?? "")").foregroundStyle(Theme.text)
+                        }
+                    }
+                    .font(.footnote)
+                    .padding(.horizontal, 9)
+                    .frame(height: 26)
+                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.groupHeader))
+                }
+            }
+            .fixedSize(horizontal: true, vertical: false)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            .clipped()
+            .mask(LinearGradient(stops: [.init(color: .black, location: 0.88), .init(color: .clear, location: 1)], startPoint: .leading, endPoint: .trailing))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(.filter)
+        .accessibilityValue(Text(verbatim: filter.terms.map { Self.spoken(model.chip(for: $0, in: scope)) }.joined(separator: ", ")))
+        .accessibilityIdentifier(identifier)
     }
 
     /// A chip's words in the short line. One value or any of several reads as the values alone, as the icon says
@@ -253,17 +266,22 @@ struct FilterGlyph: View {
     var icon: FilterIcon
 
     var body: some View {
-        switch icon {
-        case .status(let glyph): StatusIcon(glyph: glyph, size: 13)
-        case .symbol(let name): Image(systemName: name).font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)
-        case .person(let person): Avatar(login: person.login, url: person.avatarUrl, size: 16)
-        case .label(let color): Circle().fill(Theme.labelColor(color)).frame(width: 8, height: 8)
-        case .milestone(let mark): MilestoneIcon(mark: mark, size: 12)
-        case .dot(let color): GroupIcon(icon: .dot(color), size: 13)
-        case .iteration(let current): IterationIcon(size: 13).foregroundStyle(current ? Theme.started : Theme.textSecondary)
-        case .priority(let level): PriorityIcon(level: level)
-        case .none: EmptyView()
+        Group {
+            switch icon {
+            case .status(let glyph): StatusIcon(glyph: glyph, size: 13)
+            case .symbol(let name): Image(systemName: name).font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)
+            case .person(let person): Avatar(login: person.login, url: person.avatarUrl, size: 16)
+            case .label(let color): Circle().fill(Theme.labelColor(color)).frame(width: 8, height: 8)
+            case .milestone(let mark): MilestoneIcon(mark: mark, size: 12)
+            case .dot(let color): GroupIcon(icon: .dot(color), size: 13)
+            case .iteration(let current): IterationIcon(size: 13).foregroundStyle(current ? Theme.started : Theme.textSecondary)
+            case .priority(let level): PriorityIcon(level: level)
+            case .project(let look): ProjectGlyphImage(look: look, size: 14)
+            case .none: EmptyView()
+            }
         }
+        // The name beside it says what it is; a priority's icon would otherwise read "High priority" before "Priority".
+        .accessibilityHidden(true)
     }
 }
 
@@ -281,7 +299,7 @@ struct ViewFilterSheet: View {
                 let changed = model.filterChanged(view)
                 FilterTermsForm(
                     filter: Binding(get: { model.filter(of: view) }, set: { model.setFilter($0, of: view) }),
-                    projectId: view.projectId
+                    scope: .project(view.projectId)
                 ) {
                     if changed {
                         Section {
@@ -320,16 +338,16 @@ struct ViewFilterSheet: View {
 struct FilterTermsForm<Footer: View>: View {
     @Environment(AppModel.self) private var model
     @Binding var filter: ProjectFilter
-    var projectId: String
+    var scope: FilterScope
     @ViewBuilder var footer: Footer
 
     var body: some View {
         Form {
             Section {
                 ForEach(Array(filter.terms.enumerated()), id: \.offset) { index, term in
-                    let chip = model.chip(for: term, projectId: projectId)
+                    let chip = model.chip(for: term, in: scope)
                     NavigationLink {
-                        FilterTermScreen(filter: $filter, projectId: projectId, index: index)
+                        FilterTermScreen(filter: $filter, scope: scope, index: index)
                     } label: {
                         HStack(spacing: 10) {
                             FilterGlyph(icon: chip.icon).frame(width: 20)
@@ -351,7 +369,7 @@ struct FilterTermsForm<Footer: View>: View {
                     for index in offsets.sorted(by: >) { filter = filter.removing(index) }
                 }
                 NavigationLink {
-                    FilterPropertyScreen(filter: $filter, projectId: projectId)
+                    FilterPropertyScreen(filter: $filter, scope: scope)
                 } label: {
                     Label(.addFilter, systemImage: "plus")
                         .foregroundStyle(Theme.accent)
@@ -366,12 +384,12 @@ struct FilterTermsForm<Footer: View>: View {
 private struct FilterPropertyScreen: View {
     @Environment(AppModel.self) private var model
     @Binding var filter: ProjectFilter
-    var projectId: String
+    var scope: FilterScope
 
     var body: some View {
-        List(model.filterProperties(projectId: projectId)) { property in
+        List(model.filterProperties(scope)) { property in
             NavigationLink {
-                FilterValuesScreen(filter: $filter, projectId: projectId, property: property, termIndex: nil)
+                FilterValuesScreen(filter: $filter, scope: scope, property: property, termIndex: nil)
             } label: {
                 HStack(spacing: 10) {
                     FilterGlyph(icon: property.icon).frame(width: 20)
@@ -388,12 +406,12 @@ private struct FilterPropertyScreen: View {
 private struct FilterTermScreen: View {
     @Environment(AppModel.self) private var model
     @Binding var filter: ProjectFilter
-    var projectId: String
+    var scope: FilterScope
     var index: Int
 
     var body: some View {
         if filter.terms.indices.contains(index), let property = property(of: filter.terms[index]) {
-            FilterValuesScreen(filter: $filter, projectId: projectId, property: property, termIndex: index)
+            FilterValuesScreen(filter: $filter, scope: scope, property: property, termIndex: index)
         } else {
             EmptyView()
         }
@@ -402,9 +420,9 @@ private struct FilterTermScreen: View {
     private func property(of term: ProjectFilter.Term) -> FilterProperty? {
         let key = term.key == "assignees" ? "assignee" : term.key == "labels" ? "label" : term.key
         if key == "has" || key == "no" {
-            return model.filterProperties(projectId: projectId).first { $0.id == term.values.first?.lowercased() }
+            return model.filterProperties(scope).first { $0.id == term.values.first?.lowercased() }
         }
-        return model.filterProperties(projectId: projectId).first { $0.id == key }
+        return model.filterProperties(scope).first { $0.id == key }
     }
 }
 
@@ -414,13 +432,13 @@ private struct FilterValuesScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @Binding var filter: ProjectFilter
-    var projectId: String
+    var scope: FilterScope
     var property: FilterProperty
     var termIndex: Int?
     @State private var query = ""
 
     var body: some View {
-        let values = model.filterValues(property, projectId: projectId)
+        let values = model.filterValues(property, in: scope)
         let index = termIndex ?? model.termIndex(for: property, in: filter)
         let term = index.flatMap { filter.terms.indices.contains($0) ? filter.terms[$0] : nil }
         let picked = term.map(model.pickedValues) ?? []
@@ -488,7 +506,7 @@ struct NewViewSheet: View {
     var body: some View {
         NavigationStack {
             if let binding = templateBinding {
-                FilterTermsForm(filter: $filter, projectId: projectId) {
+                FilterTermsForm(filter: $filter, scope: .project(projectId)) {
                     Section {
                         Picker(.layout, selection: $layout) {
                             Label(.board, systemImage: "rectangle.split.3x1").tag(ViewMode.board)

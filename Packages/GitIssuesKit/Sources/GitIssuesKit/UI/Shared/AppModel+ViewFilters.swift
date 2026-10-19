@@ -37,6 +37,8 @@ enum FilterIcon: Equatable {
     case dot(String)
     case iteration(current: Bool)
     case priority(PriorityLevel)
+    /// A project's glyph in its colour.
+    case project(ProjectLook)
     case none
 }
 
@@ -60,8 +62,16 @@ struct FilterChipModel: Equatable {
 extension AppModel {
     // MARK: Properties
 
-    /// What the filter menu offers for a project, in the order Linear lists them.
-    func filterProperties(projectId: String) -> [FilterProperty] {
+    /// What the filter menu offers: for a project, in the order Linear lists them; for My Issues, what means the same
+    /// in every project.
+    func filterProperties(_ scope: FilterScope) -> [FilterProperty] {
+        switch scope {
+        case .project(let projectId): filterProperties(projectId: projectId)
+        case .myIssues: mineFilterProperties()
+        }
+    }
+
+    private func filterProperties(projectId: String) -> [FilterProperty] {
         let project = projects.first { $0.id == projectId }
         var result: [FilterProperty] = []
         if project?.statusFieldId != nil {
@@ -101,8 +111,15 @@ extension AppModel {
         return result
     }
 
-    /// The values the filter menu offers for a property, with how many of the project's issues each finds.
-    func filterValues(_ property: FilterProperty, projectId: String) -> [FilterValue] {
+    /// The values the filter menu offers for a property, with how many issues each finds.
+    func filterValues(_ property: FilterProperty, in scope: FilterScope) -> [FilterValue] {
+        switch scope {
+        case .project(let projectId): filterValues(property, projectId: projectId)
+        case .myIssues: mineFilterValues(property)
+        }
+    }
+
+    private func filterValues(_ property: FilterProperty, projectId: String) -> [FilterValue] {
         let items = allItems.filter { $0.projectId == projectId && !$0.isEpic }
         let today = CalendarDay.today()
         var result: [FilterValue] = []
@@ -204,9 +221,9 @@ extension AppModel {
     }
 
     /// Every value of every property, for typing into the filter menu without picking a property first.
-    func allFilterValues(projectId: String) -> [(property: FilterProperty, value: FilterValue)] {
-        filterProperties(projectId: projectId).flatMap { property in
-            filterValues(property, projectId: projectId).map { (property, $0) }
+    func allFilterValues(in scope: FilterScope) -> [(property: FilterProperty, value: FilterValue)] {
+        filterProperties(scope).flatMap { property in
+            filterValues(property, in: scope).map { (property, $0) }
         }
     }
 
@@ -220,12 +237,12 @@ extension AppModel {
     // MARK: Chips
 
     /// How a term reads as a chip.
-    func chip(for term: ProjectFilter.Term, projectId: String) -> FilterChipModel {
+    func chip(for term: ProjectFilter.Term, in scope: FilterScope) -> FilterChipModel {
         guard let key = term.key else {
             return FilterChipModel(property: String(localized: .filterText), icon: .symbol("magnifyingglass"), comparison: String(localized: .filterContains),
                                    values: "“\(term.values.first ?? "")”", picksValues: false, negatable: false)
         }
-        let properties = filterProperties(projectId: projectId)
+        let properties = filterProperties(scope)
         let several = term.values.count > 1
         let comparison = term.negated
             ? String(localized: several ? .filterIsNoneOf : .filterIsNot)
@@ -254,10 +271,10 @@ extension AppModel {
         default:
             guard let property = properties.first(where: { $0.id == key || ($0.id == "assignee" && key == "assignees") || ($0.id == "label" && key == "labels") })
                 ?? (key == "reason" ? FilterProperty(id: "reason", title: String(localized: .filterReason), icon: .symbol("checkmark.circle")) : nil),
-                  filterContext(projectId: projectId).map({ term.isUnderstood($0) }) ?? false else {
+                  understands(term, in: scope) else {
                 return FilterChipModel(property: term.raw, icon: .none, comparison: nil, values: nil, picksValues: false, negatable: false, isRaw: true)
             }
-            let shown = term.values.prefix(3).map { valueTitle($0, key: key, projectId: projectId) }
+            let shown = term.values.prefix(3).map { valueTitle($0, key: key, in: scope) }
             let more = term.values.count > 3 ? " +\(term.values.count - 3)" : ""
             return FilterChipModel(
                 property: property.title, icon: property.icon, comparison: comparison,
@@ -286,8 +303,17 @@ extension AppModel {
         }
     }
 
-    /// How a value reads: "me" for @me, "Current" for @current, "before today", "Oct 1", "#12".
-    func valueTitle(_ value: String, key: String, projectId: String) -> String {
+    /// Whether the app knows what a term means, and so can show it as a chip that can be changed.
+    private func understands(_ term: ProjectFilter.Term, in scope: FilterScope) -> Bool {
+        switch scope {
+        case .project(let projectId): filterContext(projectId: projectId).map { term.isUnderstood($0) } ?? false
+        case .myIssues: MineRules.understands(term, today: .today())
+        }
+    }
+
+    /// How a value reads: "me" for @me, "Current" for @current, "before today", "Oct 1", "#12", a project's title.
+    func valueTitle(_ value: String, key: String, in scope: FilterScope) -> String {
+        if scope == .myIssues, let title = mineValueTitle(value, key: key) { return title }
         let today = CalendarDay.today()
         var sign = ""
         var rest = value
@@ -297,8 +323,8 @@ extension AppModel {
             break
         }
         if sign.isEmpty, let range = rest.range(of: "..") {
-            let from = valueTitle(String(rest[..<range.lowerBound]), key: key, projectId: projectId)
-            let to = valueTitle(String(rest[range.upperBound...]), key: key, projectId: projectId)
+            let from = valueTitle(String(rest[..<range.lowerBound]), key: key, in: scope)
+            let to = valueTitle(String(rest[range.upperBound...]), key: key, in: scope)
             return "\(from) – \(to)"
         }
         var name: String
