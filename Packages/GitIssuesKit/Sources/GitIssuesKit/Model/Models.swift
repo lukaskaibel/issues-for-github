@@ -28,6 +28,21 @@ public struct LabelRef: Codable, Hashable, Sendable, Identifiable {
         self.name = name
         self.color = color
     }
+
+    /// The id of a label made here until GitHub has made it.
+    public static let localPrefix = LocalID.prefix + "label-"
+
+    public static func makeLocalId() -> String { localPrefix + UUID().uuidString.lowercased() }
+
+    /// Strong colours of GitHub's own labels (bug, help wanted, good first issue…): pale ones and yellow come out
+    /// grey or olive on a card, where light colours are darkened to be read.
+    static let newLabelColors = ["d73a4a", "d93f0b", "0e8a16", "008672", "0075ca", "7057ff", "d876e3"]
+
+    /// One of them for a new label, always the same for the same name, so it has one colour in every repository.
+    public static func newColor(for name: String) -> String {
+        let sum = name.lowercased().unicodeScalars.reduce(0) { ($0 &* 31 &+ Int($1.value)) & 0xFFFF }
+        return newLabelColors[sum % newLabelColors.count]
+    }
 }
 
 public enum ItemKind: String, Codable, Sendable {
