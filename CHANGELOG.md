@@ -6,6 +6,16 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Right-click menus on the Mac keep up with the pointer: the row under it lights up at once, and moving down a long
+  menu no longer stutters. A submenu opens as soon as the pointer rests on its row or moves toward it, stays open
+  while the pointer crosses other rows on the way to it, and opens faster. Before, every row with a submenu the
+  pointer passed opened its submenu, and the menu's glass turned dim and back each time.
+- The same goes for every other list that lights up under the pointer: the pickers for status, priority, people,
+  labels, dates and the rest, the command palette, the project icon picker, the project's menu at the top of the
+  sidebar, the Inbox's menus and the menus of a new view.
+
 ## [1.0.0] - 2026-10-19
 
 Issues now plans the work as well as tracking it, in a window built like Mail and Notes. In the App Store this version

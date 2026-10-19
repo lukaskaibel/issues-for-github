@@ -10,6 +10,9 @@ import SwiftUI
 enum Dropdown {
     /// Open dropdowns, the first opened from a window and each further one from the one before.
     private static var panels: [DropdownPanel] = []
+    /// Panels kept for the next dropdowns, with their glass and a place for content: making a window and its views
+    /// took a third of the time a submenu needed to open.
+    private static var spares: [DropdownPanel] = []
 
     /// The click that last closed dropdowns from outside: where it was, on screen, and what those dropdowns were
     /// opened from. The same click then reaches what is under it; when that is what opened one of them, it stays
@@ -33,16 +36,21 @@ enum Dropdown {
     #if DEBUG
     /// Set by the debug remote to follow what dropdowns do.
     static var trace: ((String) -> Void)?
+    /// Set by the debug remote while the window is parked off screen: its dropdowns open off screen too, instead of
+    /// at the edge of the screen, where the pointer could reach them.
+    static var offscreen = false
     #else
     static let trace: ((String) -> Void)? = nil
     #endif
 
     /// Opens a dropdown at `rect`, given in `view`'s coordinates: under it, over it, or beside it as a submenu.
     /// From a view inside an open dropdown it opens on top of that one; from anywhere else it replaces whatever
-    /// is open.
+    /// is open. A submenu opened under the pointer leaves the keyboard with its menu (`takesKey` false): its glass
+    /// would otherwise turn dim with every row the pointer passes, and typing still finds the submenu once the
+    /// pointer is in it.
     @discardableResult
     static func show<Content: View>(
-        below rect: NSRect, in view: NSView, model: AppModel, placement: DropdownPlacement = .below,
+        below rect: NSRect, in view: NSView, model: AppModel, placement: DropdownPlacement = .below, takesKey: Bool = true,
         onClose: @escaping () -> Void = {},
         @ViewBuilder content: (_ close: @escaping () -> Void) -> Content
     ) -> DropdownPanel? {
@@ -53,7 +61,12 @@ enum Dropdown {
             DispatchQueue.main.async(execute: onClose)
             return nil
         }
-        if let host = window as? DropdownPanel, let index = panels.firstIndex(where: { $0 === host }) {
+        if let host = window as? DropdownPanel {
+            // A closed dropdown's content lives on until its panel is used again; nothing opens from it meanwhile.
+            guard let index = panels.firstIndex(where: { $0 === host }) else {
+                DispatchQueue.main.async(execute: onClose)
+                return nil
+            }
             close(from: index + 1)
         } else {
             close()
@@ -68,8 +81,13 @@ enum Dropdown {
             .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(Theme.popoverBorder.opacity(inGlass ? 0.35 : 1), lineWidth: 0.5))
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .fixedSize()
-        let hosting = ResizingHostingView(rootView: root)
+        // A panel kept from before has its content view in place; a new one is measured before it gets it, so it is
+        // laid out once, at its size.
+        let panel = spares.popLast() ?? DropdownPanel(glass: inGlass)
+        let hosting = panel.hosting
+        hosting.rootView = AnyView(root)
         let size = hosting.fittingSize
+        hosting.lastSize = size
 
         let screen = window.screen?.visibleFrame ?? .infinite
         var origin: NSPoint
@@ -86,9 +104,16 @@ enum Dropdown {
             origin.y = max(origin.y, screen.minY + 8)
         }
         origin.x = min(max(origin.x, screen.minX + 8), screen.maxX - size.width - 8)
+        #if DEBUG
+        if offscreen, !(window is DropdownPanel) { origin.x = NSScreen.screens.map(\.frame.minX).min()! - size.width - 3000 }
+        #endif
 
-        let panel = DropdownPanel(contentRect: NSRect(origin: origin, size: size))
+        panel.setFrame(NSRect(origin: origin, size: size), display: false)
+        panel.attachContent()
         panel.anchor = anchor
+        panel.opener = window
+        // A submenu comes and goes at once, as the system's do: fading in, it seemed slow to open.
+        panel.animationBehavior = window is DropdownPanel ? .none : .utilityWindow
         handle.panel = panel
         let opensUpward = origin.y > anchor.minY
         hosting.onFittingSizeChange = { [weak panel] fitting in
@@ -99,20 +124,19 @@ enum Dropdown {
             frame.size = fitting
             panel.setFrame(frame, display: true)
         }
-        if inGlass {
-            // Liquid Glass, as the system's own menus are drawn now.
-            let glass = NSGlassEffectView()
-            glass.cornerRadius = radius
-            glass.contentView = hosting
-            panel.contentView = glass
-        } else {
-            panel.contentView = hosting
-        }
         panel.appearance = window.effectiveAppearance
         panel.onClose = onClose
         window.addChildWindow(panel, ordered: .above)
-        panel.makeKeyAndOrderFront(nil)
+        if takesKey { panel.makeKeyAndOrderFront(nil) } else { panel.orderFront(nil) }
+        // A panel used again had the shadow of the dropdown before.
+        panel.invalidateShadow()
         panels.append(panel)
+        if spares.isEmpty, !(window is DropdownPanel) {
+            // One ready for a submenu, made once the dropdown is on screen; submenus that close are kept for the next.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if isOpen, spares.isEmpty { spares.append(DropdownPanel(glass: glassMaterial)) }
+            }
+        }
         trace?("show: \(panels.count) open, nested=\(window is DropdownPanel)")
         return panel
     }
@@ -178,15 +202,51 @@ enum Dropdown {
         guard panels.indices.contains(index) else { return }
         trace?("close from \(index) of \(panels.count)")
         let closing = panels[index...].reversed()
-        let underneath = panels[index].parent
+        let underneath = panels[index].opener
         panels.removeSubrange(index...)
         for panel in closing {
             panel.parent?.removeChildWindow(panel)
             panel.orderOut(nil)
             panel.onClose()
+            keep(panel)
         }
         // Back to what the dropdown was opened from, so its keys work again.
         if let underneath, underneath.isVisible { underneath.makeKey() }
+    }
+
+    /// Keeps a closed dropdown's panel for the next one, emptied once it has faded out.
+    private static func keep(_ panel: DropdownPanel) {
+        panel.onClose = {}
+        panel.opener = nil
+        panel.hosting.onFittingSizeChange = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + (panel.animationBehavior == .none ? 0 : 0.3)) {
+            guard !panel.isVisible, !panels.contains(where: { $0 === panel }) else { return }
+            panel.hosting.rootView = AnyView(EmptyView())
+            if spares.count < 2, panel.isGlass == glassMaterial { spares.append(panel) }
+        }
+    }
+
+    /// The open dropdown under a point on screen, the top one where they overlap.
+    static func panel(at point: NSPoint) -> DropdownPanel? {
+        panels.last { $0.frame.contains(point) }
+    }
+
+    /// The dropdown opened from `panel`, such as the submenu open beside a menu.
+    static func panel(openedFrom panel: NSWindow) -> DropdownPanel? {
+        panels.first { $0.opener === panel }
+    }
+
+    /// Gives the keyboard to the dropdown opened from `panel`.
+    static func focusPanel(openedFrom panel: NSWindow) {
+        self.panel(openedFrom: panel)?.makeKey()
+    }
+
+    /// Keys pressed while the pointer is in a submenu that hasn't got the keyboard go to that submenu, which takes the
+    /// keyboard from then on: typing finds what the pointer is on, as it would if the submenu had it all along.
+    fileprivate static func submenuForKeys(from panel: DropdownPanel) -> DropdownPanel? {
+        guard let index = panels.firstIndex(where: { $0 === panel }),
+              let under = panels.lastIndex(where: { $0.frame.contains(NSEvent.mouseLocation) }), under > index else { return nil }
+        return panels[under]
     }
 
     fileprivate static func panelDidResignKey(_ resigned: DropdownPanel) {
@@ -229,24 +289,40 @@ private final class PanelHandle {
 /// A hosting view that reports when its content wants a different size.
 final class ResizingHostingView<Content: View>: NSHostingView<Content> {
     var onFittingSizeChange: ((NSSize) -> Void)?
-    private var lastSize: NSSize = .zero
+    /// The size last measured.
+    var lastSize: NSSize = .zero
+    private var measuring = false
 
     override func invalidateIntrinsicContentSize() {
         super.invalidateIntrinsicContentSize()
-        let size = fittingSize
-        guard size != lastSize else { return }
-        lastSize = size
-        DispatchQueue.main.async { [weak self] in self?.onFittingSizeChange?(size) }
+        // Measured once the change is over, not for each part of it: measuring lays the whole content out.
+        guard !measuring else { return }
+        measuring = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            measuring = false
+            let size = fittingSize
+            guard size != lastSize else { return }
+            lastSize = size
+            onFittingSizeChange?(size)
+        }
     }
 }
 
 final class DropdownPanel: NSPanel {
+    /// What the dropdown shows, swapped when the panel is used again for another one.
+    let hosting = ResizingHostingView(rootView: AnyView(EmptyView()))
+    /// In Liquid Glass, or on the solid ground a debug run can ask for.
+    let isGlass: Bool
     var onClose: () -> Void = {}
     /// What it was opened from, on screen.
     var anchor: NSRect = .zero
+    /// The window it was opened from: the app's window, or the dropdown a submenu belongs to.
+    weak var opener: NSWindow?
 
-    init(contentRect: NSRect) {
-        super.init(contentRect: contentRect, styleMask: [.borderless], backing: .buffered, defer: false)
+    init(glass: Bool) {
+        isGlass = glass
+        super.init(contentRect: NSRect(x: 0, y: 0, width: 100, height: 100), styleMask: [.borderless], backing: .buffered, defer: false)
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
@@ -259,6 +335,20 @@ final class DropdownPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
+    /// Puts the content into the panel the first time it is used; a panel used again has it already.
+    func attachContent() {
+        guard hosting.window == nil else { return }
+        if isGlass {
+            // Liquid Glass, as the system's own menus are drawn now.
+            let effect = NSGlassEffectView()
+            effect.cornerRadius = Dropdown.cornerRadius
+            effect.contentView = hosting
+            contentView = effect
+        } else {
+            contentView = hosting
+        }
+    }
+
     /// Clicking anywhere else closes it, as a menu would.
     override func resignKey() {
         super.resignKey()
@@ -269,17 +359,30 @@ final class DropdownPanel: NSPanel {
     override func cancelOperation(_ sender: Any?) {
         MainActor.assumeIsolated { Dropdown.close(self) }
     }
+
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .keyDown, let submenu = MainActor.assumeIsolated({ Dropdown.submenuForKeys(from: self) }) {
+            submenu.makeKey()
+            submenu.sendEvent(event)
+            return
+        }
+        // A click in a submenu opened under the pointer picks at once, as in a menu: a window without the keyboard
+        // hands its first click only to views that ask for it, and a picker's rows sit in a scroll view that doesn't.
+        if [.leftMouseDown, .rightMouseDown].contains(event.type), !isKeyWindow { makeKey() }
+        super.sendEvent(event)
+    }
 }
 
 // MARK: - SwiftUI
 
 extension View {
-    /// Shows a dropdown under this view while `isPresented` is true, or over it or beside it.
+    /// Shows a dropdown under this view while `isPresented` is true, or over it or beside it. `takesKey` false leaves
+    /// the keyboard where it is, for a submenu opened under the pointer.
     func dropdown<Content: View>(
-        isPresented: Binding<Bool>, placement: DropdownPlacement = .below,
+        isPresented: Binding<Bool>, placement: DropdownPlacement = .below, takesKey: Bool = true,
         @ViewBuilder content: @escaping (_ close: @escaping () -> Void) -> Content
     ) -> some View {
-        modifier(DropdownModifier(isPresented: isPresented, placement: placement, dropdownContent: content))
+        modifier(DropdownModifier(isPresented: isPresented, placement: placement, takesKey: takesKey, dropdownContent: content))
     }
 }
 
@@ -287,11 +390,12 @@ private struct DropdownModifier<DropdownContent: View>: ViewModifier {
     @Environment(AppModel.self) private var model
     @Binding var isPresented: Bool
     var placement: DropdownPlacement
+    var takesKey: Bool
     var dropdownContent: (_ close: @escaping () -> Void) -> DropdownContent
 
     func body(content: Content) -> some View {
         content.background(
-            DropdownAnchor(isPresented: $isPresented, model: model, placement: placement, content: dropdownContent)
+            DropdownAnchor(isPresented: $isPresented, model: model, placement: placement, takesKey: takesKey, content: dropdownContent)
         )
     }
 }
@@ -300,20 +404,27 @@ private struct DropdownAnchor<DropdownContent: View>: NSViewRepresentable {
     @Binding var isPresented: Bool
     var model: AppModel
     var placement: DropdownPlacement
+    var takesKey: Bool
     var content: (_ close: @escaping () -> Void) -> DropdownContent
 
     func makeNSView(context: Context) -> PassthroughView { PassthroughView() }
 
     func updateNSView(_ view: PassthroughView, context: Context) {
-        if isPresented, !view.isShowing {
+        // A dropdown that closed itself (a pick, Escape) set the binding to false, but until the view that owns the
+        // binding is drawn again, this is handed what it held before: such as when the menu it was opened from takes
+        // the keyboard back, which would open it again at once.
+        if !isPresented { view.closedItself = false }
+        if isPresented, !view.isShowing, !view.closedItself {
             view.isShowing = true
             let binding = $isPresented
-            view.panel = Dropdown.show(below: view.bounds, in: view, model: model, placement: placement, onClose: { [weak view] in
+            view.panel = Dropdown.show(below: view.bounds, in: view, model: model, placement: placement, takesKey: takesKey, onClose: { [weak view] in
                 view?.isShowing = false
+                view?.closedItself = true
                 binding.wrappedValue = false
             }, content: content)
         } else if !isPresented, view.isShowing, let panel = view.panel {
             Dropdown.close(panel)
+            view.closedItself = false
         }
     }
 }
@@ -321,6 +432,8 @@ private struct DropdownAnchor<DropdownContent: View>: NSViewRepresentable {
 /// A view that is never the target of a click, for anchoring and measuring.
 final class PassthroughView: NSView {
     var isShowing = false
+    /// The dropdown closed itself, and its owner hasn't been drawn closed since.
+    var closedItself = false
     weak var panel: DropdownPanel?
     override var isFlipped: Bool { true }
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
