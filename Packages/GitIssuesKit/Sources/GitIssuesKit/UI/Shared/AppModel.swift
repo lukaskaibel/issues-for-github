@@ -413,6 +413,10 @@ public final class AppModel {
     var completesParents = UserDefaults.standard.object(forKey: "subIssues.completeParent") as? Bool ?? true {
         didSet { UserDefaults.standard.set(completesParents, forKey: "subIssues.completeParent") }
     }
+    /// How issues list their sub-issues: by priority until another order is picked.
+    var subIssueOrder = UserDefaults.standard.string(forKey: "subIssues.order").flatMap(SubIssueOrder.init(rawValue:)) ?? .priority {
+        didSet { UserDefaults.standard.set(subIssueOrder.rawValue, forKey: "subIssues.order") }
+    }
     /// Whether starting work on an issue starts its epic too.
     var startsEpics = UserDefaults.standard.object(forKey: "epics.startWithWork") as? Bool ?? true {
         didSet { UserDefaults.standard.set(startsEpics, forKey: "epics.startWithWork") }

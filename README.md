@@ -110,7 +110,8 @@ Return continues a list and leaves bold text, `-` starts a bullet and `- []` a c
 and deleted as a pair; a change of style eases in, and lines keep their height whatever they hold. One with a
 table, a checklist, code or a Mermaid diagram is drawn the way GitHub draws it, with checkboxes that tick; a click on
 the text brings up the Markdown. Sub-issues come
-with a progress bar, and the plus beside them adds a new one or an issue that exists already. What blocks the issue and
+with a progress bar, the most urgent first and the done ones last, and the plus beside them adds a new one or an issue
+that exists already. What blocks the issue and
 what it blocks are listed below; a blocked issue carries a red flag on its card. Comments sit below, with the field
 for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
 inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arrows in the toolbar.
@@ -251,7 +252,8 @@ The interface uses the system's own parts.
   place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams are drawn until you tap them).
   The bar above the keyboard turns bold, italics, code, bullets and checklists on and off, and on its left buttons
   come in for what the caret is in: its style, which a tap takes off, the line's checkbox, moving a list item in or
-  out, and opening a link. The properties are glass chips under the title, the sub-issues a checklist, the comments a conversation, and the
+  out, and opening a link. The properties are glass chips under the title, the sub-issues a checklist (by priority, or
+  another order from the arrows beside its plus), the comments a conversation, and the
   comment field stays at the bottom as in Messages. A project's board on iPad stands its columns on soft grey lanes,
   as on the Mac.
 - **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
@@ -274,7 +276,8 @@ The interface uses the system's own parts.
 - **Every issue of your repositories**, also those on none of your boards, which one click puts on one.
 - **Sub-issues and blockers.** Put any issue under another one, add issues that exist already as sub-issues, and mark
   which issues block which, with a red flag on blocked cards. Sub-issues with their parent's status hang under it on
-  the board and in the list, and a parent is done when its last sub-issue is.
+  the board and in the list, and a parent is done when its last sub-issue is. An issue lists its sub-issues by
+  priority, or by status, newest first or in GitHub's order.
 - **Milestones, epics and a roadmap.** A board's milestones with their own board and progress, epics whose
   sub-issues are the work, and a roadmap of the epics over the milestones, on a timeline or as a list. Completing a
   milestone closes it on GitHub and moves what is left to the next one.
@@ -325,6 +328,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | No project | An issue that is in none of your projects; adding it to one is GitHub's *Add to project* |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
 | Sub-issues hanging under their parent | Only how the app arranges them; GitHub's order and fields stay as they are |
+| The order of an issue's sub-issues | Only how the app lists them, kept on each device; GitHub's order stays as it is |
 | A parent done with its last sub-issue | The parent's status moves to the done column and it is closed, as if you had moved it there |
 | Blocked by and blocking | GitHub's issue dependencies |
 | Milestone | GitHub's milestones of the board's repositories; those of the same name are one, and a repository gets a copy when an issue of it goes in |
@@ -527,7 +531,10 @@ click there changes the parent. When you finish the last open sub-issue, the par
 Sub-issues turns that off.
 
 In an issue, the plus beside the sub-issues adds one: type to find an issue by title or number, or pick
-**New sub-issue…** to create one with what you typed. Right-click an issue for **Set Parent Issue…**, **Add
+**New sub-issue…** to create one with what you typed. The arrows beside the plus order the sub-issues, in every issue:
+by **Priority** (the most urgent first, those without one after them), **Status** (work in progress first),
+**Newest First** or **GitHub's Order**. In all but GitHub's order the done ones go last. They start out by priority,
+and the list a card's sub-issue count opens follows the same order. Right-click an issue for **Set Parent Issue…**, **Add
 Sub-issue** and **Mark As** (blocked by, blocking). These pickers find issues the same way; picking a checked one takes
 it away again. The issue's inspector has Parent, Blocked by and Blocking rows that open the same pickers, and the ✕ that
 shows when you point at a blocker in the issue takes it away.

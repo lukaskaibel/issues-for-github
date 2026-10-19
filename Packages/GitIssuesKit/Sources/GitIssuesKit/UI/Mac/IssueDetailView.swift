@@ -249,7 +249,7 @@ struct SubIssuesSection: View {
     @State private var adding = false
 
     var body: some View {
-        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let subs = model.orderedSubIssues(of: item)
         let showsPriority = model.project(of: item)?.priorityFieldId != nil
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 10) {
@@ -265,6 +265,7 @@ struct SubIssuesSection: View {
                         .frame(width: 64)
                 }
                 Spacer()
+                if subs.count > 1 { SubIssueOrderButton() }
                 if model.canRelate(item) {
                     // A new sub-issue, or one that exists already, as in Linear: type to find it.
                     IconButton(systemName: "plus", label: String(localized: .addSubIssueButton), size: 22) { adding = true }
@@ -288,6 +289,25 @@ struct SubIssuesSection: View {
                 .animation(Theme.spring, value: subs.map(\.id))
             }
         }
+    }
+}
+
+/// Picks the order sub-issues are listed in, for every issue: a short list that closes on the pick.
+private struct SubIssueOrderButton: View {
+    @Environment(AppModel.self) private var model
+    @State private var open = false
+
+    var body: some View {
+        IconButton(systemName: "arrow.up.arrow.down", label: String(localized: .orderSubIssuesTooltip), size: 22) { open = true }
+            .dropdown(isPresented: $open) { close in
+                SelectList(
+                    options: SubIssueOrder.allCases.map { .init(id: $0.rawValue, title: String(localized: $0.title)) },
+                    selected: model.subIssueOrder.rawValue
+                ) { id in
+                    withAnimation(Theme.spring) { model.subIssueOrder = SubIssueOrder(rawValue: id) ?? .priority }
+                    close()
+                }
+            }
     }
 }
 
@@ -421,7 +441,7 @@ struct EpicWorkSection: View {
     @State private var adding = false
 
     var body: some View {
-        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let subs = model.orderedSubIssues(of: item)
         let groups = model.subIssuesByMilestone(of: item, subs)
         let showsPriority = model.project(of: item)?.priorityFieldId != nil
         let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
@@ -439,6 +459,7 @@ struct EpicWorkSection: View {
                     }
                 }
                 Spacer()
+                if subs.count > 1 { SubIssueOrderButton() }
                 if model.canRelate(item) {
                     IconButton(systemName: "plus", label: String(localized: .addSubIssueButton), size: 22) { adding = true }
                         .dropdown(isPresented: $adding) { close in
