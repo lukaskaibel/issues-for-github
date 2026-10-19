@@ -63,6 +63,11 @@ public struct Project: Codable, FetchableRecord, PersistableRecord, Identifiable
     /// The Date field that holds when an issue is due ("Due date"); nil until the project has one.
     public var dueFieldId: String?
     public var lastSyncedAt: Date?
+
+    /// The project the self-test and the debug remote write to, which you create yourself (CONTRIBUTING.md). Only
+    /// debug builds show it.
+    public static let sandboxTitle = "Git Issues Sandbox"
+    public var isSandbox: Bool { title == Self.sandboxTitle }
 }
 
 /// One option of a project's Status or Priority single-select field.
