@@ -66,9 +66,19 @@ shot() {
   send "overlay none" "appearance $appearance" "window $width $height onscreen" "select Git Issues" "mode board"
   sleep 1
   for command in "$@"; do send "$command"; sleep 0.6; done
-  front
-  sleep 1.2
-  "$work/capture" shot "$pid" "$work/$name.png" || { echo "No picture of $name. Is the screen locked?" >&2; exit 1; }
+  local code
+  for _ in 1 2 3 4; do
+    front
+    sleep 1.2
+    if "$work/capture" shot "$pid" "$work/$name.png"; then code=0; break; else code=$?; fi
+    # 3: the window was drawn inactive, as when another app came to the front meanwhile.
+    [ "$code" = 3 ] || break
+  done
+  case $code in
+    0) ;;
+    3) echo "The window stayed inactive for $name." >&2; exit 1 ;;
+    *) echo "No picture of $name. Is the screen locked?" >&2; exit 1 ;;
+  esac
   mkdir -p "$out"
   swift Tools/store-frame.swift "$work/$name.png" "$out/$name.png" "$appearance" live
   echo "$out/$name.png"

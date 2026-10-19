@@ -100,7 +100,7 @@ so your team sees it there; GitHub's dates have no time of day, and the reminder
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/due-date-dark.webp">
-  <img alt="The due date picker: Today, Tomorrow, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
+  <img alt="The due date picker: Today, Tomorrow, Friday and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
 </picture>
 
 ### Issues that read well
@@ -114,7 +114,7 @@ inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arr
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">
-  <img alt="An issue with its description, six sub-issues of which four are done, the issue it blocks, two comments, and its properties" src="Design/screenshots/issue-light.webp">
+  <img alt="An issue with its description, six sub-issues of which four are done, the issue it blocks, and its properties in the inspector beside it" src="Design/screenshots/issue-light.webp">
 </picture>
 
 ### An inbox for what changed
@@ -150,7 +150,7 @@ labels, `D` due date, `I` assign to me.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/new-issue-dark.webp">
-  <img alt="The new-issue dialog with a title typed in and buttons for status, priority, assignee and labels" src="Design/screenshots/new-issue-light.webp">
+  <img alt="The new-issue dialog with a title typed in and buttons for status, priority, assignee, labels, due date and milestone" src="Design/screenshots/new-issue-light.webp">
 </picture>
 
 ### A list, in light or dark
@@ -189,12 +189,10 @@ the milestones their unfinished issues are in, on a timeline: drag a bar onto an
 there with everything left to do, drag a milestone's diamond to change its day. When a milestone's day has come,
 **Complete** closes it on GitHub and moves what isn't done to the next one.
 
-<!-- The roadmap's picture comes with the next shared picture run (Tools/readme-images.sh):
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/roadmap-dark.webp">
-  <img alt="The roadmap of a board: five epics as bars on a timeline over the milestones 0.3, 0.4 and 1.0, with how many of each epic's issues are done" src="Design/screenshots/roadmap-light.webp">
+  <img alt="The roadmap of a board: five epics, four of them as bars on a timeline over the milestones 0.3, 0.4 and 1.0 with how many of their issues are done, and one under Later" src="Design/screenshots/roadmap-light.webp">
 </picture>
--->
 
 ### A project's views, in the sidebar
 
@@ -206,12 +204,10 @@ of the project, click a chip to change it. A changed filter stays yours until yo
 view for everyone; `⇧V` shows a view as board or list, by other columns or groups, or with the iteration on its cards.
 New views, renamed ones and deleted ones are GitHub's too, so a view looks the same on github.com.
 
-<!-- The views' picture comes with the next shared picture run (Tools/readme-images.sh):
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/views-dark.webp">
   <img alt="The sidebar with the project Git Issues at its top and its views Board, This Week, By Area, Bugs and Sync, Release Plan, Epics and Team under it; This Week open as a board, its filter Iteration is Current as a chip, and over the columns Cycle 4 with its dates, the days left, its progress and arrows to Cycle 3 and Cycle 5" src="Design/screenshots/views-light.webp">
 </picture>
--->
 
 What a view is for decides how it looks, read from how it is set up on GitHub. Grouped by parent issue, milestone or
 iteration, its groups show how far each is, and those with nothing under way start folded: a view of work packages
@@ -219,12 +215,10 @@ opens as an overview. Grouped by assignee, each person's bar is what they have o
 that cycle on top, with the days left and arrows to the one before and after. A roadmap view is a timeline of the
 issues' start and target dates, their iterations or their milestones.
 
-<!-- The timeline's picture comes with the next shared picture run (Tools/readme-images.sh):
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/timeline-dark.webp">
   <img alt="The view Release Plan as a timeline: its issues grouped by milestone, 0.3 with 4 of 15 done and a bar of its progress, each issue a bar across its cycle in the colour of its status, today as a line and the days of 0.3, 0.4 and 1.0 as diamonds over the months" src="Design/screenshots/timeline-light.webp">
 </picture>
--->
 
 ## iPhone and iPad
 

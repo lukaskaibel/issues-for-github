@@ -78,7 +78,9 @@ def drag_animation(theme, board, band):
             img = img.convert("RGB").resize((width, round(H * width / W)), Image.LANCZOS)
             paths.append(f"{work}/o{k:04d}.png")
             img.save(paths[-1])
-        command = ["img2webp", "-loop", "0", "-lossy", "-q", "82", "-m", "6"]
+        # A lossy frame keeps the pixels that changed only a little since the one before, so a fade on the dark board
+        # leaves blocky ghosts behind; a key frame every 4 to 8 frames clears them within a quarter of a second.
+        command = ["img2webp", "-loop", "0", "-kmin", "4", "-kmax", "8", "-lossy", "-q", "82", "-m", "6"]
         for path in paths:
             command += ["-d", str(round(1000 / fps)), path]
         command[-2] = "900"  # a moment's rest before it starts over
