@@ -105,8 +105,21 @@ enum DebugRemote {
             for column in model.columns { log("column \(column.title) \(column.count)") }
             for section in model.sections { log("section \(section.title) \(section.count) \(section.detail ?? "")") }
         case "filter":
-            // filter <text>: changes the filter of the view on screen, here only.
+            // filter <text>: changes the filter of the view on screen, here only, or My Issues'.
             if let view = model.currentView { model.setFilter(ProjectFilter(argument), of: view) }
+            if model.scope == .myIssues { model.setMineFilter(ProjectFilter(argument)) }
+        case "display" where model.scope == .myIssues:
+            // display group status|project|priority|dueDate, display sort priority|dueDate|updated|created|manual [desc],
+            // display reset: how My Issues shows.
+            let bits = argument.split(separator: " ").map(String.init)
+            switch bits.first {
+            case "group": model.setMineDisplay { $0.grouping = MineGrouping(rawValue: bits.dropFirst().first ?? "") ?? .status }
+            case "sort":
+                model.setMineOrder(MineOrder(rawValue: bits.dropFirst().first ?? "") ?? .priority)
+                model.setMineDisplay { $0.descending = bits.last == "desc" }
+            case "reset": model.resetMineDisplay()
+            default: break
+            }
         case "display":
             // display group|columns <field name>, display sort <field name> [desc], display reset.
             guard let view = model.currentView else { break }

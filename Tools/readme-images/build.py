@@ -97,6 +97,7 @@ for theme in ["dark", "light"]:
     webp(place(window(f"issue-{theme}"), theme, (130, 110), 1800), f"issue-{theme}")
     webp(place(window(f"inbox-{theme}"), theme, (130, 110), 1800), f"inbox-{theme}")
     webp(place(window(f"repository-{theme}"), theme, (130, 110), 1800), f"repository-{theme}")
+    webp(place(window(f"my-issues-{theme}"), theme, (130, 110), 1800), f"my-issues-{theme}")
     webp(place(window(f"roadmap-{theme}"), theme, (130, 110), 1800), f"roadmap-{theme}")
     webp(place(window(f"views-{theme}"), theme, (130, 110), 1800), f"views-{theme}")
     webp(place(window(f"timeline-{theme}"), theme, (130, 110), 1800), f"timeline-{theme}")

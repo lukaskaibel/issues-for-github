@@ -13,6 +13,13 @@ follows 0.2.0: 0.3.0 went to TestFlight only, so its changes reach the App Store
 
 ### Added
 
+- **My Issues, filtered and grouped your way.** My Issues has the filter chips and Display options of a project's
+  view now. Press `F` to filter it by project, status, priority, label, milestone, due date, last change, or open or
+  closed, and `⇧V` to group it by status, project, priority or due date and to order it by priority, due date, last
+  change, creation or as the boards have it. Status and priority mean the same in every project: "In Review" and
+  "Doing" are both in progress, "P0" and "Urgent" both urgent. Grouped by project, the rows leave out the project's
+  name. On iPhone and iPad the filter is a line under the title, and the "…" menu has Filter…, Group By and Order By.
+  What you choose stays on the device, as GitHub has no view behind My Issues.
 - **Writing Markdown as in a notes app.** Bold, italics, code and strikethrough turn on and off: Bold again inside
   bold text takes the bold off, at the end of it leaves it so you type on plainly, and just behind it goes back in;
   with the caret in a word it makes the word bold. A style's marks come and go as a pair: Delete behind bold text
@@ -123,6 +130,8 @@ follows 0.2.0: 0.3.0 went to TestFlight only, so its changes reach the App Store
   cards no longer put the repository's name next to the number. On the Mac, point at the number and it names the
   repository the way GitHub does, as in `acme/website#12`; a row's number in a list does the same. My Issues, which
   mixes projects, still says where each issue comes from.
+- **My Issues puts the most urgent first** in each group, then what is due soonest, instead of each board's order,
+  which said little once several projects were mixed. **Order by › Manual** brings the boards' order back.
 
 ### Fixed
 
