@@ -255,7 +255,8 @@ struct ColumnView: View {
                         hover.update(ColumnHover.State(
                             card: item.map { item in
                                 ColumnHover.Card(
-                                    id: item.id, part: drag.part(at: point, in: [item])?.kind, onFold: drag.fold(at: point, in: [item]) != nil
+                                    id: item.id, part: drag.part(at: point, in: [item])?.kind, onFold: drag.fold(at: point, in: [item]) != nil,
+                                    onNumber: drag.number(at: point, in: [item]) != nil
                                 )
                             },
                             header: header.map { ColumnHover.Header(epic: $0.epic, onFold: drag.isOnFold(point, of: $0)) }
@@ -364,6 +365,8 @@ private struct ColumnTooltip: ViewModifier {
             guard column.nesting.folded.contains(item.id) else { return String(localized: .foldSubIssuesTooltip) }
             return String(localized: .unfoldSubIssuesTooltip(count: column.nesting.nestedCounts[item.id] ?? 0))
         }
+        // Cards leave out the repository; as a project can span several, the number names it.
+        if card.onNumber { return item.reference ?? "" }
         guard let part = card.part else { return "" }
         return model.tooltip(part, for: item)
     }

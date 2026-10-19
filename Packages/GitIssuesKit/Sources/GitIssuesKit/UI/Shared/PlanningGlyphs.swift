@@ -201,6 +201,10 @@ enum SectionIcon: Equatable {
     case progress(done: Int, total: Int)
     case repository
     case priority(PriorityLevel)
+    /// A project's glyph in its colour.
+    case project(ProjectLook)
+    /// A calendar in the colour of a due date: red once passed, orange for today.
+    case due(DueTone)
 }
 
 extension AppModel {
@@ -213,7 +217,7 @@ extension AppModel {
         case .milestone(let title):
             title.flatMap { title in projectId.flatMap { milestoneGroup(projectId: $0, title: title) } }
                 .map { .milestone(mark(of: $0, projectId: projectId)) } ?? .plain
-        case .group: section.groupIcon ?? .plain
+        case .group, .mine: section.groupIcon ?? .plain
         }
     }
 
@@ -304,6 +308,13 @@ struct GroupIcon: View {
             RepositoryIcon(size: size - 2).foregroundStyle(Theme.textSecondary)
         case .priority(let level):
             PriorityIcon(level: level)
+        case .project(let look):
+            ProjectGlyphImage(look: look, size: size)
+        case .due(let tone):
+            Image(systemName: "calendar")
+                .font(.system(size: size * 0.82, weight: .medium))
+                .foregroundStyle(tone.color)
+                .frame(width: size, height: size)
         }
     }
 }

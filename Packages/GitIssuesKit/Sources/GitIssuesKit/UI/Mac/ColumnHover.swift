@@ -13,6 +13,8 @@ final class ColumnHover {
         var part: PickerKind?
         /// Whether the pointer is on the arrow that folds the sub-issues under the card.
         var onFold = false
+        /// Whether the pointer is on the card's number, whose tooltip names the repository. The card looks the same.
+        var onNumber = false
     }
 
     struct Header: Equatable {

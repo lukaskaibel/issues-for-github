@@ -40,6 +40,7 @@ struct ColumnHoverTests {
         #expect(redrawn(hover) { hover.update(.init(card: .init(id: "card-7", part: .labels))) } == ["card-7"])
         #expect(redrawn(hover) { hover.update(.init(card: .init(id: "card-7", onFold: true))) } == ["card-7"])
         #expect(hover[card: "card-7"]?.onFold == true)
+        #expect(redrawn(hover) { hover.update(.init(card: .init(id: "card-7", onNumber: true))) } == ["card-7"])
     }
 
     @Test func staysQuietWhileThePointerStaysOnTheSamePart() {

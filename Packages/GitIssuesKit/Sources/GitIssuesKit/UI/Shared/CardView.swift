@@ -5,8 +5,6 @@ struct CardModel: Equatable {
     var item: Item
     var priority: PriorityLevel
     var showsPriority: Bool
-    /// Repository names only matter on boards that span more than one.
-    var showsRepo: Bool
     var due: DueBadge?
     /// How many sub-issues hang under the card in its column, folded or not; nil when none do.
     var nested: Int?
@@ -32,7 +30,6 @@ extension AppModel {
             item: item,
             priority: priorityLevel(of: item),
             showsPriority: project(of: item)?.priorityFieldId != nil,
-            showsRepo: repos(projectId: item.projectId).count > 1,
             due: dueBadge(for: item),
             nested: nesting?.nestedCounts[item.id],
             folded: nesting?.folded.contains(item.id) ?? false,
@@ -128,12 +125,21 @@ final class CardRegionStore: @unchecked Sendable {
     private let lock = NSLock()
     private var regions: [String: [(kind: PickerKind, rect: CGRect)]] = [:]
     private var folds: [String: CGRect] = [:]
+    private var numbers: [String: CGRect] = [:]
 
-    func set(_ itemId: String, _ parts: [(kind: PickerKind, rect: CGRect)], fold: CGRect? = nil) {
+    func set(_ itemId: String, _ parts: [(kind: PickerKind, rect: CGRect)], fold: CGRect? = nil, number: CGRect? = nil) {
         lock.lock()
         regions[itemId] = parts
         folds[itemId] = fold
+        numbers[itemId] = number
         lock.unlock()
+    }
+
+    /// The issue's number, which names its repository under the pointer.
+    func number(_ itemId: String) -> CGRect? {
+        lock.lock()
+        defer { lock.unlock() }
+        return numbers[itemId]
     }
 
     /// The arrow that folds the sub-issues under a card.
@@ -161,21 +167,23 @@ private struct CardPainter {
         let padding = CardView.padding
         var parts: [(kind: PickerKind, rect: CGRect)] = []
         var fold: CGRect?
+        var numberRect: CGRect?
         // Each part lights up in a shape that suits it, as in Linear: a small square behind an icon, a halo
         // around avatars, and chips in their own outline.
         func hovered(_ kind: PickerKind) -> Bool { view.hoveredPart == kind && !view.lifted }
         func part(_ kind: PickerKind, _ rect: CGRect) {
             parts.append((kind, rect))
         }
-        defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts, fold: fold) } }
+        defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts, fold: fold, number: numberRect) } }
         let outline = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5), cornerRadius: CardView.cornerRadius, style: .continuous)
         let fill = view.lifted ? Theme.cardLifted : view.selected ? Theme.selectionFill : (view.highlighted ? Theme.cardHover : Theme.card)
         let border = view.lifted ? Theme.cardLiftedBorder : view.selected ? Theme.selectionBorder : (view.highlighted ? Theme.cardHoverBorder : Theme.cardBorder)
         context.fill(outline, with: .color(fill))
         context.stroke(outline, with: .color(border), lineWidth: view.selected && !view.lifted ? 1.5 : 1)
 
-        // Top line: the arrow that folds the sub-issues under the card, number, repository, pull-request mark, the
-        // parent of a sub-issue whose parent is elsewhere, and assignees on the right.
+        // Top line: the arrow that folds the sub-issues under the card, number, pull-request mark, the parent of a
+        // sub-issue whose parent is elsewhere, and assignees on the right. A board belongs to one project, so the
+        // repository is left to the number's tooltip.
         let topY = padding.height + 9
         var x = padding.width
         if card.nested != nil {
@@ -195,15 +203,9 @@ private struct CardPainter {
                 .foregroundStyle(view.lifted ? Theme.textSecondary : Theme.textTertiary)
         )
         context.draw(number, at: CGPoint(x: x, y: topY), anchor: .leading)
-        x += number.measure(in: CGSize(width: 200, height: 40)).width + 6
-        if card.showsRepo, let repo = item.repoShortName {
-            let text = context.resolve(Text(repo).font(.system(size: CardView.metaSize)).foregroundStyle(Theme.textTertiary))
-            let width = min(text.measure(in: CGSize(width: 400, height: 40)).width, size.width - x - 80)
-            if width > 20 {
-                context.draw(text, in: CGRect(x: x, y: topY - 8, width: width, height: 16))
-                x += width + 6
-            }
-        }
+        let numberWidth = number.measure(in: CGSize(width: 200, height: 40)).width
+        numberRect = CGRect(x: x, y: topY - 8, width: numberWidth, height: 16)
+        x += numberWidth + 6
         if item.kind == .pullRequest {
             context.draw(
                 Text(Image(systemName: "arrow.triangle.pull")).font(.system(size: 10, weight: .medium)).foregroundStyle(Theme.textTertiary),

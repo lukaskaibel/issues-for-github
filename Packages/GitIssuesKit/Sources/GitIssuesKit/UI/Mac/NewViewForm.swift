@@ -62,7 +62,7 @@ struct NewViewForm: View {
                 }
                 GridRow(alignment: .top) {
                     Text(.filter).foregroundStyle(Theme.textSecondary).frame(height: 24)
-                    FilterChipsRow(filter: $filter, projectId: projectId, wraps: true)
+                    FilterChipsRow(filter: $filter, scope: .project(projectId), wraps: true)
                 }
                 if let binding = templateBinding {
                     if layout == .board {
@@ -275,16 +275,12 @@ private struct SelectList: View {
     var options: [SelectDropdown.Option]
     var selected: String
     var onPick: (String) -> Void
-    @State private var active: Int?
+    @State private var cursor = MenuCursor<String>()
 
     var body: some View {
         VStack(spacing: 0) {
-            ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
-                MenuRow(
-                    title: option.title, checked: option.id == selected, active: active == index,
-                    action: { onPick(option.id) },
-                    onHover: { if $0 { active = index } else if active == index { active = nil } }
-                )
+            ForEach(options) { option in
+                MenuRow(title: option.title, checked: option.id == selected, cursor: cursor, key: option.id, action: { onPick(option.id) })
             }
         }
         .padding(.vertical, 4)
@@ -292,10 +288,10 @@ private struct SelectList: View {
         .font(.ui)
         .foregroundStyle(Theme.text)
         .background(MenuKeys(
-            onMove: { active = menuStep(active, by: $0, count: options.count) },
-            onActivate: { if let active, options.indices.contains(active) { onPick(options[active].id) } }
+            onMove: { cursor.step($0, through: options.map(\.id)) },
+            onActivate: { if let id = cursor.key { onPick(id) } }
         ))
-        .onAppear { active = options.firstIndex { $0.id == selected } }
+        .onAppear { cursor.key = selected }
     }
 }
 
