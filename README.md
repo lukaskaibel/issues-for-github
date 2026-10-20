@@ -744,7 +744,7 @@ Design/                      Earlier icon variants, screenshots, social preview,
 Website/                     The website on GitHub Pages: home, privacy policy, terms, support (each also in
                              de/, es/, fr/, ja/, ko/, pt-br/, ru/, zh-hans/), Impressum
 Tools/                       The app icon, release builds, iOS tests, App Store and README screenshots,
-                             TestFlight uploads, the String Catalog and the website's languages
+                             TestFlight uploads, the String Catalog, the website's languages and board timing
 fastlane/                    App Store releases: lanes, the listing's texts and the age rating
 ```
 

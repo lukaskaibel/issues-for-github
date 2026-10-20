@@ -63,6 +63,10 @@ All notable changes to this project are recorded here. The format follows
 - On the Mac, cards in a long board column light up under the pointer without lagging behind it. Going from one card
   to the next used to work out every card in the column again; now only the card the pointer leaves and the one it
   enters are drawn anew, so a column of a hundred issues answers the pointer as quickly as a short one.
+- Board cards are drawn faster, on the Mac and on iPad, and look exactly as before. A card worked out its colours and
+  each of its texts anew every time it was drawn, which is whenever the pointer goes onto it or leaves it and whenever
+  it scrolls into view; now it keeps them, so drawing a card again takes about a quarter of the time. On the Mac the
+  pointer going from card to card and a long column scrolling miss a frame of a 120 Hz display less often.
 
 ## [1.0.0] - 2026-10-20
 
