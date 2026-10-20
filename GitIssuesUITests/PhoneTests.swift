@@ -596,6 +596,31 @@ final class PhoneTests: AppTestCase {
         waitForLabel(element("sub-status-#11"), containing: "In Progress")
     }
 
+    func testSubIssuesFollowThePickedOrder() {
+        launch()
+        element("row-#9").tap()
+        wait(element("issue-title"))
+        let done = element("sub-#23")
+        scrollTo(done)
+        func isAbove(_ first: String, _ second: String) -> Bool {
+            element("sub-#\(first)").frame.minY < element("sub-#\(second)").frame.minY
+        }
+        // By priority to start with: #13 (Medium) over #28 (Low), and the done ones after both.
+        XCTAssertTrue(isAbove("13", "28"))
+        XCTAssertTrue(isAbove("28", "10"))
+
+        element("sub-order").tap()
+        wait(button("Newest First"))
+        snapshot("Sub-issue order")
+        button("Newest First").tap()
+        waitGone(button("Newest First"))
+        // #28 was opened last; the done ones stay at the bottom.
+        let newest = expectation(for: NSPredicate { _, _ in isAbove("28", "13") }, evaluatedWith: nil)
+        wait(for: [newest], timeout: 6)
+        XCTAssertTrue(isAbove("13", "10"))
+        snapshot("Sub-issues, newest first")
+    }
+
     // MARK: Gestures
 
     func testSwipeActions() {

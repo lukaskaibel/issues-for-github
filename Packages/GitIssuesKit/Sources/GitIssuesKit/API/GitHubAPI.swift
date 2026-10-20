@@ -372,6 +372,7 @@ public final class GitHubAPI: Sendable {
                     var repository: RepoDTO?
                     var assignees: Nodes<PersonDTO>?
                     var milestone: MilestoneRefDTO?
+                    var createdAt: Date?
                 }
                 var title: String?
                 var body: String?
@@ -388,7 +389,7 @@ public final class GitHubAPI: Sendable {
             ... on Issue {
               title body
               comments(first: 100) { nodes { id body createdAt author { login avatarUrl } } }
-              subIssues(first: 100) { nodes { id number title state stateReason url
+              subIssues(first: 100) { nodes { id number title state stateReason url createdAt
                 repository { id nameWithOwner }
                 assignees(first: 3) { nodes { id login name avatarUrl } }
                 milestone { id title } } }
@@ -414,7 +415,7 @@ public final class GitHubAPI: Sendable {
                 id: sub.id, parentId: contentId, number: sub.number, title: sub.title, state: sub.state,
                 stateReason: sub.stateReason, repo: sub.repository?.nameWithOwner, url: sub.url, position: index,
                 assignees: (sub.assignees?.items ?? []).map(\.person),
-                milestoneId: sub.milestone?.id, milestoneTitle: sub.milestone?.title
+                milestoneId: sub.milestone?.id, milestoneTitle: sub.milestone?.title, createdAt: sub.createdAt
             )
         }
         var links: [LinkedIssue] = []

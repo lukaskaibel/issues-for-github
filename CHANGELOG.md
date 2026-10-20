@@ -20,6 +20,11 @@ All notable changes to this project are recorded here. The format follows
   picked. It works in every label picker on the Mac (a card, the inspector, ⌘K, the right-click menu and the new-issue
   dialog) and in the Labels sheet on iPhone and iPad. A name that differs only in case picks the label that is there,
   and offline the new label waits with your other changes.
+- **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and
+  those without a priority after them, with the done ones at the bottom. The arrows beside the plus over them order
+  them by status, newest first or in GitHub's order instead; the choice holds for every issue on that device, and the
+  list a card's sub-issue count opens follows it too. Before, they were always in GitHub's order, which is mostly the
+  order they were added in.
 - **Pick several sub-issues on an issue's page.** On the Mac, ⌘-click and Shift-click pick sub-issues in an issue's
   list of sub-issues, as on the board and in the list. Right-click one of them and the menu changes all of them: move
   them under another parent with Change Parent Issue…, into an epic or out of their parent, or set their status,
@@ -61,6 +66,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- On the Mac, cards in a long board column light up under the pointer without lagging behind it. Going from one card
+  to the next used to work out every card in the column again; now only the card the pointer leaves and the one it
+  enters are drawn anew, so a column of a hundred issues answers the pointer as quickly as a short one.
 - On the Mac, an issue and the Inbox read cleanly under the toolbar: what scrolls up fades out just below it, as above
   the comment field, and the toolbar lies on the page's own ground. Before, the text of an issue stayed sharp under the
   toolbar and ran through its title, "#9" and the project's name; over the Inbox the toolbar had a strip of another
