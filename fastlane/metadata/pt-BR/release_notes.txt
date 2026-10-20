@@ -6,12 +6,13 @@ A maior atualização até agora: planeje com marcos, épicos e um roteiro, abra
 • Na barra lateral, as visualizações do seu projeto no GitHub, em quadro ou lista, com os filtros em chips. Agrupada por marco ou por issue principal, uma visualização mostra quanto cada grupo já avançou; a da iteração atual mostra quantos dias faltam; uma visualização de roteiro aparece como linha do tempo
 • Marcos, visualizações e o roteiro também no iPhone e no iPad; o roteiro aparece como lista no iPhone e como linha do tempo no iPad
 • Um novo visual: no Mac, uma janela em Liquid Glass como a do Mail e do Notas, um inspetor com as propriedades ao lado da issue e menus do botão direito com um campo de busca. No iPhone e no iPad, issues com as propriedades em chips de vidro e os comentários como uma conversa
-• Um novo ícone do app, um mural de planejamento em sete materiais, e um ícone à sua escolha para cada projeto
+• Um ícone aprimorado para o app, também sobre fundo grafite ou índigo, e um ícone à sua escolha para cada projeto
 • Nove idiomas: inglês, alemão, francês, espanhol, português, russo, japonês, coreano e chinês, seguindo o idioma do seu dispositivo
 • A Entrada: suas notificações do GitHub, com a issue logo ao lado. Leia, arquive e adie com uma tecla ou deslizando o dedo; github.com e seus outros dispositivos ficam em sincronia
 • Prazos com lembretes: escolha um dia ou digite, como “em 3 dias”, e no dia o seu Mac, iPhone e iPad lembram você
 • As sub-issues ficam logo abaixo da issue principal; conclua a última e a issue principal também é concluída. Marque o que bloqueia o quê
 • Todas as issues, estejam ou não em um quadro: seus repositórios na barra lateral, com as issues que não estão em nenhum quadro; um clique as coloca em um
+• Minhas issues do seu jeito: filtre e agrupe por projeto, status, prioridade ou prazo, com as mais urgentes primeiro
 • Descrições exibidas como no GitHub: tabelas, checklists que você pode marcar, código e diagramas Mermaid
 • Escrever em Markdown como em um app de notas: o negrito, o itálico e o código se ativam e se desativam, as listas continuam na próxima linha, e no iPhone e no iPad a barra acima do teclado mostra botões para o trecho onde está o ponto de inserção
 • Menos cliques: escolher um status, uma pessoa ou uma etiqueta fecha o menu

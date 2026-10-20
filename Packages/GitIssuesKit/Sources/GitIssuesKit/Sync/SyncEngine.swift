@@ -27,6 +27,11 @@ public actor SyncEngine {
     private var unhydratable: [String: String] = [:]
     /// Repositories whose issue events GitHub won't list, so they aren't asked again.
     var eventsUnreadable: Set<String> = []
+    /// How many open blockers each blocked issue had when its blockers were last read, so one whose blockers GitHub
+    /// won't all show (in a repository you can't see) isn't asked for again and again.
+    var blockersRead: [String: Int] = [:]
+    /// Blocked issues read again since, whose blockers may be others now.
+    var blockersDue: Set<String> = []
     /// Boards last read before GitHub had caught up with their updatedAt, and since when that has been so.
     private var readBehind: [String: Date] = [:]
     private var wasOffline = true
@@ -400,6 +405,7 @@ public actor SyncEngine {
                     )
                 }
             }
+            blockersDue.formUnion(hydrated.filter { $0.blockedByCount > 0 }.compactMap(\.contentId))
         }
 
         // GitHub at times answers with a board's new updatedAt but its cards as they were a moment before. Such a
@@ -492,6 +498,7 @@ public actor SyncEngine {
         if !written.leftBoard.isEmpty { lastAssignedPull = nil }
         if !written.remaps.isEmpty { await publish(remaps: written.remaps) }
         await post(written.notices)
+        try await readBlockers()
     }
 
     /// Whether a board's cards were read before GitHub had caught up with the board: its newest card is as new as the
@@ -1312,6 +1319,11 @@ public actor SyncEngine {
                 arguments: [contentId, LocalID.prefix + "%"]
             )
             for link in detail.links { try link.save(db) }
+            // What blocks each sub-issue, for its row; one with a change of its own on the way keeps that.
+            let changing = try Self.blockersChangingHere(db)
+            for sub in detail.subIssues where !changing.contains(sub.id) {
+                try Self.replaceBlockers(of: sub.id, with: detail.subBlockers.filter { $0.issueId == sub.id }, db)
+            }
             func open(_ relation: LinkedIssue.Relation) -> Int {
                 detail.links.filter { $0.relation == relation && !$0.isClosed }.count
             }
@@ -1322,9 +1334,63 @@ public actor SyncEngine {
                     open(.blockedBy), open(.blocking), contentId,
                 ]
             )
+            try Self.setSubIssueCounts(db, of: contentId, total: detail.subIssues.count, completed: detail.subIssues.filter(\.isClosed).count)
             try Outbox.rebase(db)
         }
         if contentId == watchedIssueId { lastDetailPull = Date() }
+        try await refreshSubIssues(below: detail.subIssues)
+    }
+
+    /// The sub-issues of a sub-issue, read when it is unfolded in its parent's list.
+    public func loadSubIssues(parentId: String) async throws {
+        guard !isDemo, !parentId.hasPrefix(LocalID.prefix) else { return }
+        let (subs, blockers) = try await api.subIssues(parentId: parentId)
+        try await db.writer.write { db in
+            try db.execute(
+                sql: "DELETE FROM subIssue WHERE parentId = ? AND id NOT LIKE ?",
+                arguments: [parentId, LocalID.prefix + "%"]
+            )
+            for sub in subs { try sub.save(db) }
+            // What blocks each of them, for its row, as an issue's page reads it for its own sub-issues.
+            let changing = try Self.blockersChangingHere(db)
+            for sub in subs where !changing.contains(sub.id) {
+                try Self.replaceBlockers(of: sub.id, with: blockers.filter { $0.issueId == sub.id }, db)
+            }
+            let completed = subs.filter(\.isClosed).count
+            try db.execute(
+                sql: "UPDATE item SET subTotal = ?, subCompleted = ? WHERE contentId = ?",
+                arguments: [subs.count, completed, parentId]
+            )
+            try Self.setSubIssueCounts(db, of: parentId, total: subs.count, completed: completed)
+            try Outbox.rebase(db)
+        }
+        try await refreshSubIssues(below: subs)
+    }
+
+    /// Reads again the sub-issues of those `subs` whose own sub-issues were read before and changed on GitHub since,
+    /// as GitHub's count of them tells.
+    private func refreshSubIssues(below subs: [SubIssue]) async throws {
+        let stale = try await db.reader.read { db in
+            try subs.filter { sub in
+                guard let total = sub.subTotal, let completed = sub.subCompleted else { return false }
+                let row = try Row.fetchOne(
+                    db, sql: "SELECT COUNT(*) AS listed, COALESCE(SUM(state != 'OPEN'), 0) AS closed FROM subIssue WHERE parentId = ? AND id NOT LIKE ?",
+                    arguments: [sub.id, LocalID.prefix + "%"]
+                )
+                let listed: Int = row?["listed"] ?? 0
+                let closed: Int = row?["closed"] ?? 0
+                return listed > 0 && (listed != total || closed != completed)
+            }
+        }
+        for sub in stale { try await loadSubIssues(parentId: sub.id) }
+    }
+
+    /// GitHub's count of an issue's sub-issues, where other issues list it as one of theirs.
+    private static func setSubIssueCounts(_ db: Database, of contentId: String, total: Int, completed: Int) throws {
+        try db.execute(
+            sql: "UPDATE subIssue SET subTotal = ?, subCompleted = ? WHERE id = ?",
+            arguments: [total, completed, contentId]
+        )
     }
 
     /// Labels and assignable people of a repository that is on no board, for an issue seen only in the Inbox.

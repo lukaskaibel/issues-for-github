@@ -13,10 +13,17 @@ extension Mutation.SetParent {
         // Where the issue counts now: the lists of sub-issues it is in, and the parent its card names.
         var current = try String.fetchSet(db, sql: "SELECT parentId FROM subIssue WHERE id = ?", arguments: [id])
         current.formUnion(try String.fetchAll(db, sql: "SELECT parentId FROM item WHERE contentId = ? AND parentId IS NOT NULL", arguments: [id]))
+        // Its own sub-issues' progress, to list it with under the new parent.
+        let counts = try Row.fetchOne(db, sql: "SELECT subTotal, subCompleted FROM subIssue WHERE id = ? AND subTotal IS NOT NULL LIMIT 1", arguments: [id])
+            ?? Row.fetchOne(db, sql: "SELECT subTotal, subCompleted FROM item WHERE contentId = ? LIMIT 1", arguments: [id])
         for old in current where old != parentId {
             try db.execute(sql: "DELETE FROM subIssue WHERE parentId = ? AND id = ?", arguments: [old, id])
             try db.execute(
                 sql: "UPDATE item SET subTotal = MAX(subTotal - 1, 0), subCompleted = MAX(subCompleted - ?, 0) WHERE contentId = ?",
+                arguments: [done, old]
+            )
+            try db.execute(
+                sql: "UPDATE subIssue SET subTotal = MAX(subTotal - 1, 0), subCompleted = MAX(subCompleted - ?, 0) WHERE id = ?",
                 arguments: [done, old]
             )
         }
@@ -26,12 +33,17 @@ extension Mutation.SetParent {
                     sql: "UPDATE item SET subTotal = subTotal + 1, subCompleted = subCompleted + ? WHERE contentId = ?",
                     arguments: [done, parentId]
                 )
+                try db.execute(
+                    sql: "UPDATE subIssue SET subTotal = subTotal + 1, subCompleted = subCompleted + ? WHERE id = ?",
+                    arguments: [done, parentId]
+                )
             }
             if try !SubIssue.exists(db, key: ["parentId": parentId, "id": id]) {
                 let count = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM subIssue WHERE parentId = ?", arguments: [parentId]) ?? 0
                 try SubIssue(
                     id: id, parentId: parentId, number: child.number ?? 0, title: child.title, state: state,
-                    stateReason: child.stateReason, repo: child.repo, url: child.url, position: count, assignees: child.assignees
+                    stateReason: child.stateReason, repo: child.repo, url: child.url, position: count, assignees: child.assignees,
+                    subTotal: counts?["subTotal"], subCompleted: counts?["subCompleted"]
                 ).insert(db)
             }
         }

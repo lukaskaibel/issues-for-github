@@ -8,36 +8,32 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
-- **My Issues, filtered and grouped your way.** My Issues has the filter chips and Display options of a project's
-  view now. Press `F` to filter it by project, status, priority, label, milestone, due date, last change, or open or
-  closed, and `⇧V` to group it by status, project, priority or due date and to order it by priority, due date, last
-  change, creation or as the boards have it. Status and priority mean the same in every project: "In Review" and
-  "Doing" are both in progress, "P0" and "Urgent" both urgent. Grouped by project, the rows leave out the project's
-  name. On iPhone and iPad the filter is a line under the title, and the "…" menu has Filter…, Group By and Order By.
-  What you choose stays on the device, as GitHub has no view behind My Issues.
-- **New labels from the picker.** Type a label the repository doesn't have and the picker offers **Create label
-  “…”**: the label is made in the repository, in one of GitHub's colours, and goes on the issue, or on every issue you
-  picked. It works in every label picker on the Mac (a card, the inspector, ⌘K, the right-click menu and the new-issue
-  dialog) and in the Labels sheet on iPhone and iPad. A name that differs only in case picks the label that is there,
-  and offline the new label waits with your other changes.
-- **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and
-  those without a priority after them, with the done ones at the bottom. The arrows beside the plus over them (on
-  iPhone and iPad, the "…" there) order them by status, newest first or in GitHub's order instead; the choice holds
-  for every issue on that device, and the
-  list a card's sub-issue count opens follows it too. Before, they were always in GitHub's order, which is mostly the
-  order they were added in.
+- **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and those
+  without a priority after them, with the done ones at the bottom. The arrows beside the plus over them (on iPhone and
+  iPad, the "…" there) order them by status, newest first or in GitHub's order instead; the choice holds for every
+  issue on that device, and the list a card's sub-issue count opens follows it too. Before, they were always in
+  GitHub's order, which is mostly the order they were added in.
+- **A blocked issue says what blocks it.** The red flag on a blocked issue's card and list row now carries the number
+  of the issue to finish first, as in `#364`, with `+1` for each further one, and the sub-issues listed in an issue,
+  which had no flag at all, carry the same. On the Mac a click on the flag lists the blockers and changes them, as on
+  the card, and pointing at it names them all. The chip at the top of a blocked issue says "Blocked by #364". The app
+  reads which issues block a card along with the board, so the numbers are there without opening each issue.
+- **Sub-issues of sub-issues, as a tree.** In an issue, a sub-issue that has sub-issues of its own says how many of
+  them are done, as "1/2" next to its number, and the arrow beside its status unfolds them under it, indented and
+  joined by lines as in the board's lists; theirs unfold the same way, as many levels down as GitHub has. An epic's
+  issues do it too. What you unfold stays unfolded on that device. On the Mac, iPhone and iPad.
 - **Pick several sub-issues on an issue's page.** On the Mac, ⌘-click and Shift-click pick sub-issues in an issue's
-  list of sub-issues, as on the board and in the list. Right-click one of them and the menu changes all of them: move
+  list of sub-issues, also ones unfolded under another, as on the board and in the list. Right-click one of them and the menu changes all of them: move
   them under another parent with Change Parent Issue…, into an epic or out of their parent, or set their status,
   priority, assignee, labels, due date or milestone. Their status, priority and assignee buttons and the single keys
   act on all of them too, and `Esc` lets them go before it leaves the issue.
 - **Pick several sub-issues on iPhone and iPad.** Choose **Select** in the "…" beside the plus over an issue's
   sub-issues, or in one's long-press menu, and a circle stands where each status circle was, as in Mail; a tap then
-  picks a sub-issue instead of opening it. **Change Parent Issue…** in the bar at the bottom moves all picked ones under another parent, and the "…" beside
-  it, like the long-press menu of a picked one, sets their status, priority, assignee, labels, due date or milestone,
-  or moves them into an epic or out of their parent. Select All and ✓ are at the top. On iPad, ⌘-click and
-  Shift-click with a pointer pick sub-issues straight away, S, P, A, L, D and I then change all of them, and `Esc`
-  lets them go.
+  picks a sub-issue instead of opening it, also one unfolded under another. **Change Parent Issue…** in the bar at the
+  bottom moves all picked ones under another parent, and the "…" beside it, like the long-press menu of a picked one,
+  sets their status, priority, assignee, labels, due date or milestone, or moves them into an epic or out of their
+  parent. Select All and ✓ are at the top. On iPad, ⌘-click and Shift-click with a pointer pick sub-issues straight
+  away, S, P, A, L, D and I then change all of them, and `Esc` lets them go.
 - **Pickers offer what you chose last.** The issue you just made a parent is at the top of the parent picker for the
   next issue, above a line, and Return picks it again. The same goes for epics, blocked by and blocking, labels and
   assignees, also in a new issue, on the Mac, iPhone and iPad: up to three of your latest choices come first. Rows no
@@ -61,41 +57,32 @@ All notable changes to this project are recorded here. The format follows
   Format panel in place of the keyboard, next to a checklist, a link, undo, redo and more formatting, with Done beside
   it, and the buttons for where the caret is stay on its left. VoiceOver reads each checkbox with its item and whether
   it is ticked, and ticks it.
-- **A new app icon: a card lifted off a board.** A card in the app's indigo with a done mark, turned a little as if
-  just picked up, over a faint board of three columns and three rows of tiles. It follows light and dark mode.
-  Settings on the Mac, and your account on iPhone and iPad, offer it on graphite or as a white card on indigo
-  instead; the pinboard and its materials are gone, so everyone starts from the card.
-- **Cards leave out the repository.** A board is one project's, so on a project that spans several repositories its
-  cards no longer put the repository's name next to the number. On the Mac, point at the number and it names the
-  repository the way GitHub does, as in `acme/website#12`; a row's number in a list does the same. My Issues, which
-  mixes projects, still says where each issue comes from.
-- **My Issues puts the most urgent first** in each group, then what is due soonest, instead of each board's order,
-  which said little once several projects were mixed. **Order by › Manual** brings the boards' order back.
 
 ### Fixed
 
 - On the Mac, cards in a long board column light up under the pointer without lagging behind it. Going from one card
   to the next used to work out every card in the column again; now only the card the pointer leaves and the one it
   enters are drawn anew, so a column of a hundred issues answers the pointer as quickly as a short one.
-- On the Mac, an issue and the Inbox read cleanly under the toolbar: what scrolls up fades out just below it, as above
-  the comment field, and the toolbar lies on the page's own ground. Before, the text of an issue stayed sharp under the
-  toolbar and ran through its title, "#9" and the project's name; over the Inbox the toolbar had a strip of another
-  grey with a line under it, which the notifications showed through.
-- Right-click menus on the Mac keep up with the pointer: the row under it lights up at once, and moving down a long
-  menu no longer stutters. A submenu opens as soon as the pointer rests on its row or moves toward it, stays open
-  while the pointer crosses other rows on the way to it, and opens faster. Before, every row with a submenu the
-  pointer passed opened its submenu, and the menu's glass turned dim and back each time.
-- The same goes for every other list that lights up under the pointer: the pickers for status, priority, people,
-  labels, dates and the rest, the command palette, the project icon picker, the project's menu at the top of the
-  sidebar, the Inbox's menus and the menus of a new view.
 
-## [1.0.0] - 2026-10-19
+## [1.0.0] - 2026-10-20
 
 Issues now plans the work as well as tracking it, in a window built like Mail and Notes. In the App Store this version
 follows 0.2.0: 0.3.0 went to TestFlight only, so its changes reach the App Store with this one.
 
 ### Added
 
+- **New labels from the picker.** Type a label the repository doesn't have and the picker offers **Create label
+  “…”**: the label is made in the repository, in one of GitHub's colours, and goes on the issue, or on every issue you
+  picked. It works in every label picker on the Mac (a card, the inspector, ⌘K, the right-click menu and the new-issue
+  dialog) and in the Labels sheet on iPhone and iPad. A name that differs only in case picks the label that is there,
+  and offline the new label waits with your other changes.
+- **My Issues, filtered and grouped your way.** My Issues has the filter chips and Display options of a project's
+  view now. Press `F` to filter it by project, status, priority, label, milestone, due date, last change, or open or
+  closed, and `⇧V` to group it by status, project, priority or due date and to order it by priority, due date, last
+  change, creation or as the boards have it. Status and priority mean the same in every project: "In Review" and
+  "Doing" are both in progress, "P0" and "Urgent" both urgent. Grouped by project, the rows leave out the project's
+  name. On iPhone and iPad the filter is a line under the title, and the "…" menu has Filter…, Group By and Order By.
+  What you choose stays on the device, as GitHub has no view behind My Issues.
 - **Writing Markdown as in a notes app.** Bold, italics, code and strikethrough turn on and off: Bold again inside
   bold text takes the bold off, at the end of it leaves it so you type on plainly, and just behind it goes back in;
   with the caret in a word it makes the word bold. A style's marks come and go as a pair: Delete behind bold text
@@ -198,15 +185,30 @@ follows 0.2.0: 0.3.0 went to TestFlight only, so its changes reach the App Store
   checklist with the status first, and its comments a conversation with each person's picture and the new ones
   marked. Lists have larger rows and hairlines between them, and the iPad board stands its columns on lanes as the
   Mac's does.
-- **A new app icon: a planning board.** An index card, a screenshot of code and a sticky note, pinned to a warm grey
-  fabric board and joined with string; it follows light and dark mode. Settings on the Mac, and your account on
-  iPhone and iPad, offer the board in six more materials: cork, metal with magnets, a whiteboard, and slate, navy or
-  sage fabric. The Mac shows the one you pick in the Dock while the app is open, switching with the system's light
-  and dark mode; iPhone and iPad put it on the Home Screen. The card icons are gone, so everyone starts from the
-  pinboard.
+- **A new app icon: a card lifted off a board.** A card in the app's indigo with a done mark, turned a little as if
+  just picked up, over a faint board of three columns and three rows of tiles. It follows light and dark mode.
+  Settings on the Mac, and your account on iPhone and iPad, offer it on graphite or as a white card on indigo
+  instead, and everyone starts from the card.
+- **Cards leave out the repository.** A board is one project's, so on a project that spans several repositories its
+  cards no longer put the repository's name next to the number. On the Mac, point at the number and it names the
+  repository the way GitHub does, as in `acme/website#12`; a row's number in a list does the same. My Issues, which
+  mixes projects, still says where each issue comes from.
+- **My Issues puts the most urgent first** in each group, then what is due soonest, instead of each board's order,
+  which said little once several projects were mixed. **Order by › Manual** brings the boards' order back.
 
 ### Fixed
 
+- On the Mac, an issue and the Inbox read cleanly under the toolbar: what scrolls up fades out just below it, as above
+  the comment field, and the toolbar lies on the page's own ground. Before, the text of an issue stayed sharp under the
+  toolbar and ran through its title, "#9" and the project's name; over the Inbox the toolbar had a strip of another
+  grey with a line under it, which the notifications showed through.
+- Right-click menus on the Mac keep up with the pointer: the row under it lights up at once, and moving down a long
+  menu no longer stutters. A submenu opens as soon as the pointer rests on its row or moves toward it, stays open
+  while the pointer crosses other rows on the way to it, and opens faster. Before, every row with a submenu the
+  pointer passed opened its submenu, and the menu's glass turned dim and back each time.
+- The same goes for every other list that lights up under the pointer: the pickers for status, priority, people,
+  labels, dates and the rest, the command palette, the project icon picker, the project's menu at the top of the
+  sidebar, the Inbox's menus and the menus of a new view.
 - The end of an issue reads cleanly above the field for a new comment, on the Mac, iPhone and iPad and in the Mac's
   Inbox: the page fades out just above the field, as it does under the toolbar. Before, the text behind showed through
   the field's glass, over "Leave a comment…", and peeked out in the strip below it.

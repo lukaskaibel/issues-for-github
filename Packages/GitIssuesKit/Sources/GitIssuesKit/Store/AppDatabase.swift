@@ -306,6 +306,13 @@ public final class AppDatabase: Sendable {
                 t.add(column: "createdAt", .datetime)
             }
         }
+        migrator.registerMigration("subIssueTree") { db in
+            // Filled in the next time the parent's sub-issues are read.
+            try db.alter(table: "subIssue") { t in
+                t.add(column: "subTotal", .integer)
+                t.add(column: "subCompleted", .integer)
+            }
+        }
         return migrator
     }
 }

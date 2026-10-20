@@ -257,6 +257,9 @@ public struct SubIssue: Codable, FetchableRecord, PersistableRecord, Identifiabl
     public var milestoneTitle: String?
     /// When it was opened, for listing the newest first; nil until its parent is read from GitHub again.
     public var createdAt: Date?
+    /// How many sub-issues it has itself, and how many of them are closed, as GitHub counts them. Nil until read.
+    public var subTotal: Int?
+    public var subCompleted: Int?
 
     public var isClosed: Bool { state != "OPEN" }
 }
