@@ -253,7 +253,7 @@ enum DebugRemote {
             }
         case "menusweep":
             // menusweep top|main <x> <y from> <y to>: times the pointer going up and down over the open dropdown, or over
-            // the window for the command palette.
+            // the window for the command palette or the Inbox.
             let bits = argument.split(separator: " ").map(String.init)
             let numbers = bits.dropFirst().compactMap { Double($0) }
             if numbers.count == 3 {

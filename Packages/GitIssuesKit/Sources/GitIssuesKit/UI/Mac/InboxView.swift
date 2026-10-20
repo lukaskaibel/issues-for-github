@@ -305,6 +305,10 @@ private struct InboxRow: View {
             }
         }
         .padding(.horizontal, 6)
+        // Placed as a whole: without it the avatar, the issue's icon and every text, even one that stays as it is, each
+        // take on the hover fade themselves, so they are drawn again on every frame of it, each time waiting for the
+        // window server, and the pointer stutters down the Inbox.
+        .geometryGroup()
         .contentShape(Rectangle())
         .onHover { inside in withAnimation(Theme.quick) { hovering = inside } }
         .onTapGesture { click() }

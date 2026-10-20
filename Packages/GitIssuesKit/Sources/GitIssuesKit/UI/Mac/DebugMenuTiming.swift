@@ -149,18 +149,24 @@ enum MenuTiming {
     }
 
     /// Up and down between `from` and `to` at `x`, three times, over the open dropdown or, with `main`, over the app's
-    /// window (the command palette).
+    /// window (the command palette, the Inbox). Each step goes into the series `<command file>.menusweep.tsv`.
     static func sweep(main: Bool, x: CGFloat, from: CGFloat, to: CGFloat, model: AppModel, log: @escaping (String) -> Void) {
         guard let target: NSWindow = main ? model.mainWindow : panels().last else { return log("menusweep: nothing open") }
         inside = nil
         let run = Run()
         let down = Array(stride(from: from, through: to, by: 5))
+        var places: [String] = []
+        LayerDrawLog.install()
         for _ in 0..<3 {
             for y in down + down.reversed() {
+                places.append("\(Int(y))")
                 run.step("move") { move(to: NSPoint(x: x, y: y), in: target) }
             }
         }
-        run.finish(log) { "menusweep: " + summary($0["move"]) }
+        run.finish(log) { [run] samples in
+            writeSeries("menusweep", header: "y", places: places, run.series)
+            return "menusweep: " + summary(samples["move"])
+        }
     }
 
     // MARK: The board
