@@ -971,7 +971,7 @@ private struct MobileSubIssues: View {
     var item: Item
 
     var body: some View {
-        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let subs = model.orderedSubIssues(of: item)
         let order = model.pickableSubIssueIds(of: item)
         let picking = model.isPickingSubIssues(of: item)
         VStack(alignment: .leading, spacing: 8) {
@@ -989,7 +989,7 @@ private struct MobileSubIssues: View {
                 }
                 Spacer()
                 if !picking {
-                    SelectSubIssuesButton(item: item, order: order)
+                    if subs.count > 1 { MobileSubIssueOptionsMenu(item: item, order: order) }
                     addMenu
                 }
             }
@@ -1040,7 +1040,7 @@ private struct MobileEpicWork: View {
     var item: Item
 
     var body: some View {
-        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let subs = model.orderedSubIssues(of: item)
         let groups = model.subIssuesByMilestone(of: item, subs)
         let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
         let order = model.pickableSubIssueIds(of: item)
@@ -1056,7 +1056,7 @@ private struct MobileEpicWork: View {
                 }
                 Spacer()
                 if !picking {
-                    SelectSubIssuesButton(item: item, order: order)
+                    if subs.count > 1 { MobileSubIssueOptionsMenu(item: item, order: order) }
                     addMenu
                 }
             }
@@ -1138,6 +1138,47 @@ private struct MobileEpicWork: View {
         .foregroundStyle(Theme.textSecondary)
         .accessibilityLabel(.addSubIssueButton)
         .accessibilityIdentifier("sub-add")
+    }
+}
+
+/// Beside the plus over an issue's sub-issues, as the "…" menu of a list in Reminders: Select, to pick several of them
+/// and change them together, and the order they are listed in, for every issue. The heading has no room for both as
+/// buttons of their own on an iPhone.
+private struct MobileSubIssueOptionsMenu: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+    /// The sub-issues that can be picked.
+    var order: [String]
+
+    var body: some View {
+        Menu {
+            if order.count > 1 {
+                Button {
+                    withAnimation(Theme.spring) { model.startPickingSubIssues(of: item) }
+                } label: {
+                    Label(.select, systemImage: "checkmark.circle")
+                }
+            }
+            Picker(selection: Binding(
+                get: { model.subIssueOrder },
+                set: { order in withAnimation(Theme.spring) { model.subIssueOrder = order } }
+            )) {
+                ForEach(SubIssueOrder.allCases, id: \.self) { order in
+                    Text(order.title).tag(order)
+                }
+            } label: {
+                Text(.orderBy)
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.body.weight(.medium))
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
+        }
+        .foregroundStyle(Theme.textSecondary)
+        .accessibilityLabel(.subIssueOptions)
+        .accessibilityIdentifier("sub-options")
     }
 }
 
@@ -1379,29 +1420,6 @@ private struct PickMark: View {
     }
 }
 
-/// Select in the heading of an issue's sub-issues, once there are two that can change together.
-private struct SelectSubIssuesButton: View {
-    @Environment(AppModel.self) private var model
-    var item: Item
-    var order: [String]
-
-    var body: some View {
-        if order.count > 1 {
-            Button {
-                withAnimation(Theme.spring) { model.startPickingSubIssues(of: item) }
-            } label: {
-                Text(.select)
-                    .font(.subheadline.weight(.medium))
-                    .frame(minHeight: 36)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(PlainPressStyle())
-            .foregroundStyle(Theme.accent)
-            .accessibilityIdentifier("sub-select")
-        }
-    }
-}
-
 /// The keys held as a view is touched or clicked: ⌘ and Shift with a keyboard and pointer on an iPad, which SwiftUI's
 /// buttons don't tell. It never takes the touch, so the buttons beneath act as usual and ask for them.
 private struct HeldKeys: UIGestureRecognizerRepresentable {
@@ -1432,7 +1450,7 @@ private struct HeldKeys: UIGestureRecognizerRepresentable {
 extension AppModel {
     /// The sub-issues on an issue's page that can be picked, as listed there: those the app has as issues under it.
     func pickableSubIssueIds(of item: Item) -> [String] {
-        let subs = item.contentId.map { detail(for: $0).subIssues } ?? []
+        let subs = orderedSubIssues(of: item)
         let listed = item.isEpic ? subIssuesByMilestone(of: item, subs).flatMap(\.subs) : subs
         return listed.compactMap { self.item(contentId: $0.id) }.filter { $0.parentId == item.contentId }.map(\.id)
     }

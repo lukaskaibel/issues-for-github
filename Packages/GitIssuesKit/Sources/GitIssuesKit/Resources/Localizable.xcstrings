@@ -24865,6 +24865,66 @@
         }
       }
     },
+    "githubOrder" : {
+      "comment" : "Choice in the menu that orders an issue's sub-issues (header of the Sub-issues section): exactly as GitHub lists them, which is the order they were added in unless someone reordered them on github.com. Other choices: Priority, Status, Newest First.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wie auf GitHub"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub's Order"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orden de GitHub"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordre de GitHub"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHubの順序"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub 순서"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordem do GitHub"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Как на GitHub"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub 顺序"
+          }
+        }
+      }
+    },
     "goMenu" : {
       "comment" : "iPad with a keyboard: name of the menu in the menu bar with commands that move between places (Back, Search, Board, List, My Issues, Inbox). As the Go menu in the Finder.",
       "extractionState" : "manual",
@@ -39937,6 +39997,66 @@
         }
       }
     },
+    "newestFirst" : {
+      "comment" : "Choice in the menu that orders an issue's sub-issues (header of the Sub-issues section): the most recently opened sub-issues first. Other choices: Priority, Status, GitHub's Order.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neueste zuerst"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Newest First"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más recientes primero"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus récents d’abord"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しい順"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "최신순"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mais recentes primeiro"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сначала новые"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最新优先"
+          }
+        }
+      }
+    },
     "nextIssue" : {
       "comment" : "iPad, issue screen: toolbar button with a down arrow (read by VoiceOver) and the J keyboard command; opens the next issue of the list. Title case.",
       "extractionState" : "manual",
@@ -45201,6 +45321,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "排序方式"
+          }
+        }
+      }
+    },
+    "orderSubIssuesTooltip" : {
+      "comment" : "Tooltip and VoiceOver label of the button with up and down arrows in the header of an issue's Sub-issues section (Mac, iPhone, iPad). It opens a short menu for the order sub-issues are listed in: Priority, Status, Newest First, GitHub's Order.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-Issues sortieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order sub-issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordenar subincidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trier les sous-tickets"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サブIssueを並べ替え"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하위 이슈 정렬"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordenar sub-issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сортировать подзадачи"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "排序子议题"
           }
         }
       }
@@ -72554,7 +72734,7 @@
       }
     },
     "select" : {
-      "comment" : "iPhone and iPad: button in the heading of an issue's sub-issues, and item in a sub-issue's long-press menu. Puts circles in front of the sub-issues so several can be picked and changed together, as Select in Mail. A verb.",
+      "comment" : "iPhone and iPad: first item of the '…' menu beside the plus over an issue's sub-issues, and an item in a sub-issue's long-press menu. Puts circles in place of the sub-issues' status circles so several can be picked and changed together, as Select in Mail. A verb.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -78879,6 +79059,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "不在此看板上；将在 GitHub 上打开"
+          }
+        }
+      }
+    },
+    "subIssueOptions" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the '…' button beside the plus over an issue's sub-issues; its menu has Select (pick several sub-issues) and the order they are listed in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optionen für Sub-Issues"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-issue options"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opciones de subincidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Options des sous-tickets"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サブIssueのオプション"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하위 이슈 옵션"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opções de sub-issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Параметры подзадач"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "子议题选项"
           }
         }
       }
