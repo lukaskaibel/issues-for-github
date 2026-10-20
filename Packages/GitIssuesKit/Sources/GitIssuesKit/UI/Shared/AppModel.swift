@@ -305,6 +305,13 @@ public final class AppModel {
     @ObservationIgnored var foldedEpics = Set(UserDefaults.standard.stringArray(forKey: "foldedEpicGroups") ?? []) {
         didSet { UserDefaults.standard.set(Array(foldedEpics), forKey: "foldedEpicGroups") }
     }
+    /// Sub-issues (node ids) whose own sub-issues are unfolded under them in an issue's list of sub-issues. Kept on
+    /// this device.
+    var unfoldedSubIssues = Set(UserDefaults.standard.stringArray(forKey: "unfoldedSubIssues") ?? []) {
+        didSet { UserDefaults.standard.set(Array(unfoldedSubIssues), forKey: "unfoldedSubIssues") }
+    }
+    /// Sub-issues (node ids) whose own sub-issues are being read from GitHub.
+    var loadingSubIssues: Set<String> = []
     /// A new issue that was closed before it was created, kept for the next time the dialog opens.
     @ObservationIgnored var unsentNewIssue: NewIssueDraft?
     /// A title typed into a picker before choosing to create a new issue instead, for the dialog to start with.

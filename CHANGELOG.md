@@ -18,6 +18,10 @@ All notable changes to this project are recorded here. The format follows
   which had no flag at all, carry the same. On the Mac a click on the flag lists the blockers and changes them, as on
   the card, and pointing at it names them all. The chip at the top of a blocked issue says "Blocked by #364". The app
   reads which issues block a card along with the board, so the numbers are there without opening each issue.
+- **Sub-issues of sub-issues, as a tree.** In an issue, a sub-issue that has sub-issues of its own says how many of
+  them are done, as "1/2" next to its number, and the arrow beside its status unfolds them under it, indented and
+  joined by lines as in the board's lists; theirs unfold the same way, as many levels down as GitHub has. An epic's
+  issues do it too. What you unfold stays unfolded on that device. On the Mac, iPhone and iPad.
 
 ### Changed
 

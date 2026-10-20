@@ -248,6 +248,7 @@ struct SubIssuesSection: View {
     @State private var adding = false
 
     var body: some View {
+        let detail = item.contentId.map { model.detail(for: $0) }
         let subs = model.orderedSubIssues(of: item)
         let showsPriority = model.project(of: item)?.priorityFieldId != nil
         VStack(alignment: .leading, spacing: 4) {
@@ -279,13 +280,14 @@ struct SubIssuesSection: View {
             }
             .frame(height: 32)
 
-            if !subs.isEmpty {
+            if let detail, !subs.isEmpty {
+                let lines = model.subIssueLines(subs, in: detail)
                 VStack(spacing: 0) {
-                    ForEach(subs) { sub in
-                        SubIssueRow(sub: sub, showsPriority: showsPriority)
+                    ForEach(lines) { line in
+                        SubIssueRow(line: line, showsPriority: showsPriority)
                     }
                 }
-                .animation(Theme.spring, value: subs.map(\.id))
+                .animation(Theme.spring, value: lines.map(\.id))
             }
         }
     }
@@ -310,32 +312,30 @@ private struct SubIssueOrderButton: View {
     }
 }
 
+/// A sub-issue in an issue's list of them. One with sub-issues of its own shows how far they are and an arrow that
+/// unfolds them under it, indented, with lines from it as in the board's lists.
 private struct SubIssueRow: View {
     @Environment(AppModel.self) private var model
-    var sub: SubIssue
+    var line: SubIssueLine
     var showsPriority: Bool
     @State private var hovering = false
     @State private var menuRegion = UUID()
+
+    /// How much further in each level of sub-issues is: as far as the arrow takes the title, so a sub-issue's
+    /// status icon stands under its parent's arrow and their titles line up.
+    static let indent: CGFloat = 20
+
+    private var sub: SubIssue { line.sub }
 
     var body: some View {
         let boardItem = model.item(contentId: sub.id)
         // A checklist, as in Reminders: the status where the checkbox is, the title, then the rest on the right.
         HStack(spacing: 10) {
-            if let boardItem {
-                // On the board it has a status column; pick one, as on its card.
-                PartButton(kind: .status, itemId: boardItem.id) {
-                    StatusIcon(glyph: glyph(boardItem), size: 16)
+            HStack(spacing: 0) {
+                status(boardItem)
+                if line.progress != nil {
+                    foldArrow
                 }
-            } else {
-                // Elsewhere it is only open or closed.
-                Button {
-                    withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
-                } label: {
-                    StatusIcon(glyph: glyph(boardItem), size: 16)
-                }
-                .buttonStyle(PlainPressStyle())
-                .help(sub.isClosed ? Text(.reopen) : Text(.markAsDoneTooltip))
-                .accessibilityLabel(sub.isClosed ? Text(.reopenSubIssue) : Text(.markSubIssueAsDone))
             }
 
             Text(sub.title)
@@ -353,6 +353,10 @@ private struct SubIssueRow: View {
                 }
             }
             Spacer(minLength: 8)
+            if let progress = line.progress {
+                SubIssueChip(completed: progress.done, total: progress.total)
+                    .help(Text(.subIssuesDone(done: progress.done.formatted(), total: progress.total)))
+            }
             if showsPriority, let boardItem {
                 PartButton(kind: .priority, itemId: boardItem.id) {
                     PriorityIcon(level: model.priorityLevel(of: boardItem))
@@ -384,15 +388,23 @@ private struct SubIssueRow: View {
                 AvatarStack(people: sub.assignees)
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.leading, 8 + indent)
+        .padding(.trailing, 8)
         .frame(height: 38)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hovering ? Theme.hover : .clear))
+        .background {
+            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hovering ? Theme.hover : .clear)
+            TreeLines(place: line.place, firstLine: 16, indent: Self.indent, iconRadius: 8, linesDown: line.childrenShow)
+        }
         .overlay(alignment: .bottom) {
             // A hairline from where the title starts, as between a checklist's lines.
-            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 34).opacity(hovering ? 0 : 1)
+            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 34 + indent).opacity(hovering ? 0 : 1)
         }
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
+        // Unfolded, its sub-issues are read again each time the list shows.
+        .task(id: line.unfolded) {
+            if line.unfolded { await model.loadSubIssues(of: sub) }
+        }
         .onTapGesture {
             if let boardItem {
                 model.open(boardItem)
@@ -430,6 +442,55 @@ private struct SubIssueRow: View {
         }
     }
 
+    private var indent: CGFloat {
+        CGFloat(min(line.place.depth, 5)) * Self.indent
+    }
+
+    @ViewBuilder
+    private func status(_ boardItem: Item?) -> some View {
+        if let boardItem {
+            // On the board it has a status column; pick one, as on its card.
+            PartButton(kind: .status, itemId: boardItem.id) {
+                StatusIcon(glyph: glyph(boardItem), size: 16)
+            }
+        } else {
+            // Elsewhere it is only open or closed.
+            Button {
+                withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
+            } label: {
+                StatusIcon(glyph: glyph(boardItem), size: 16)
+            }
+            .buttonStyle(PlainPressStyle())
+            .help(sub.isClosed ? Text(.reopen) : Text(.markAsDoneTooltip))
+            .accessibilityLabel(sub.isClosed ? Text(.reopenSubIssue) : Text(.markSubIssueAsDone))
+        }
+    }
+
+    /// Right after the status icon, as in the board's lists; a spinner while its sub-issues are read the first time.
+    private var foldArrow: some View {
+        Button {
+            model.toggleSubIssues(of: sub.id)
+        } label: {
+            ZStack {
+                if line.waiting {
+                    ProgressView().controlSize(.mini)
+                } else {
+                    FoldArrow(unfolded: line.unfolded)
+                }
+            }
+            .frame(width: 16, height: 16)
+            .hoverFill(radius: 5, fill: Theme.partHover)
+        }
+        .buttonStyle(PlainPressStyle())
+        .padding(.leading, 4)
+        .help(foldLabel)
+        .accessibilityLabel(foldLabel)
+    }
+
+    private var foldLabel: Text {
+        line.unfolded ? Text(.foldSubIssuesTooltip) : Text(.unfoldSubIssuesTooltip(count: line.progress?.total ?? 0))
+    }
+
     private func glyph(_ boardItem: Item?) -> StatusGlyph {
         if let boardItem, boardItem.statusId != nil { return model.glyph(of: boardItem) }
         if !sub.isClosed { return StatusGlyph(category: .unstarted, progress: 0, color: Theme.textBody) }
@@ -450,6 +511,7 @@ struct EpicWorkSection: View {
     @State private var adding = false
 
     var body: some View {
+        let detail = item.contentId.map { model.detail(for: $0) }
         let subs = model.orderedSubIssues(of: item)
         let groups = model.subIssuesByMilestone(of: item, subs)
         let showsPriority = model.project(of: item)?.priorityFieldId != nil
@@ -493,15 +555,16 @@ struct EpicWorkSection: View {
                     )
                 })
 
+                let lines = detail.map { detail in groups.map { model.subIssueLines($0.subs, in: detail) } } ?? []
                 VStack(spacing: 0) {
-                    ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
+                    ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
                         EpicGroupHeader(item: item, group: group.group, title: group.title, count: group.subs.count)
-                        ForEach(group.subs) { sub in
-                            SubIssueRow(sub: sub, showsPriority: showsPriority)
+                        ForEach(lines.indices.contains(index) ? lines[index] : []) { line in
+                            SubIssueRow(line: line, showsPriority: showsPriority)
                         }
                     }
                 }
-                .animation(Theme.spring, value: subs.map(\.id))
+                .animation(Theme.spring, value: lines.map { $0.map(\.id) })
             }
         }
     }

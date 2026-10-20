@@ -110,15 +110,16 @@ Descriptions are Markdown, edited in place: click and type. It types like a note
 Return continues a list and leaves bold text, `-` starts a bullet and `- []` a checkbox, and a style's marks are kept
 and deleted as a pair; a change of style eases in. Sub-issues come
 with a progress bar, the most urgent first and the done ones last, and the plus beside them adds a new one or an issue
-that exists already. What blocks the issue and what it blocks are listed below. A blocked issue carries a red flag
-with the number of the issue to finish first, as in `#5`, on its card, its list row and its line among its parent's
-sub-issues. Comments sit below, with the field
+that exists already. A sub-issue with sub-issues of its own says how many of them are done, and the arrow beside it
+unfolds them under it, level by level, as a tree. What blocks the issue and what it blocks are listed below. A blocked
+issue carries a red flag with the number of the issue to finish first, as in `#5`, on its card, its list row and its
+line among its parent's sub-issues. Comments sit below, with the field
 for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
 inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arrows in the toolbar.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">
-  <img alt="An issue with its description, six sub-issues of which four are done, the issue it blocks, and its properties in the inspector beside it" src="Design/screenshots/issue-light.webp">
+  <img alt="An issue with its description, six sub-issues of which four are done, one of them with two sub-issues of its own, the issue it blocks, and its properties in the inspector beside it" src="Design/screenshots/issue-light.webp">
 </picture>
 
 ### Markdown that reads as GitHub draws it
@@ -210,7 +211,7 @@ so what you choose stays on your device.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/repository-dark.webp">
-  <img alt="A repository in the sidebar, with its issues as a list: three under No project at the top, then In progress with two sub-issues under their parent, and Todo" src="Design/screenshots/repository-light.webp">
+  <img alt="A repository in the sidebar, with its issues as a list: four under No project at the top, then In progress with two sub-issues under their parent, and Todo" src="Design/screenshots/repository-light.webp">
 </picture>
 
 ### Milestones, epics and a roadmap
@@ -287,8 +288,8 @@ The interface uses the system's own parts.
   place, the Markdown drawn as on GitHub while you write, with a bar above the keyboard as in Notes (its Aa opens the
   Format panel); on its left, buttons come in for what the caret is in: its style, which a tap takes off, the line's
   checkbox, moving a list item in or out, and opening a link. The properties are glass chips under the title, the
-  sub-issues a checklist (by priority, or another order from the arrows beside its plus), the comments a conversation,
-  and the
+  sub-issues a checklist (by priority, or another order from the arrows beside its plus; the arrow beside one with
+  sub-issues of its own unfolds them under it), the comments a conversation, and the
   comment field stays at the bottom as in Messages. A project's board on iPad stands its columns on soft grey lanes,
   as on the Mac.
 - **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
@@ -315,7 +316,7 @@ The interface uses the system's own parts.
   which issues block which; a blocked issue carries a red flag that names what blocks it, on its card and in its
   parent's sub-issues. Sub-issues with their parent's status hang under it on the board and in the list, and a parent
   is done when its last sub-issue is. An issue lists its sub-issues by priority, or by status, newest first or in
-  GitHub's order.
+  GitHub's order, and unfolds sub-issues of sub-issues as a tree.
 - **Milestones, epics and a roadmap.** A board's milestones with their own board and progress, epics whose
   sub-issues are the work, and a roadmap of the epics over the milestones, on a timeline or as a list. Completing a
   milestone closes it on GitHub and moves what is left to the next one.
@@ -572,6 +573,9 @@ right-click it, to fold them in or out. A sub-issue whose parent has another sta
 click there changes the parent. When you finish the last open sub-issue, the parent moves to Done too; Settings ›
 Sub-issues turns that off.
 
+In an issue, a sub-issue that has sub-issues of its own shows how many of them are done; click the arrow beside its
+status to unfold them under it, and theirs under them. They stay unfolded on this Mac until you fold them again.
+
 In an issue, the plus beside the sub-issues adds one: type to find an issue by title or number, or pick
 **New sub-issue…** to create one with what you typed. The arrows beside the plus order the sub-issues, in every issue:
 by **Priority** (the most urgent first, those without one after them), **Status** (work in progress first),
@@ -671,6 +675,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold a reminder | Start the issue, mark it done or move it to tomorrow, without opening the app |
 | Tap the plus beside an issue's sub-issues | A new sub-issue, or an issue that exists already |
 | Tap the status circle of a sub-issue | Pick its status; Open or Closed for one on none of your boards |
+| Tap the arrow beside a sub-issue | Unfold its own sub-issues under it, or fold them in again |
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place, drawn as on GitHub; the bar above the keyboard has Aa for the Format panel, a checklist, a link, undo and redo, and more formatting on its next page |
 | Tap a button on the left of the keyboard bar | Take off the style the caret is in, tick the line's checkbox, move a list item in or out, open the link |

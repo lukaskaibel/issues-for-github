@@ -8,7 +8,10 @@ import Observation
 final class IssueDetailModel {
     let contentId: String
     private(set) var comments: [Comment] = []
-    private(set) var subIssues: [SubIssue] = []
+    /// The issue's own sub-issues and, by parent, those of every sub-issue below it that has been read.
+    private(set) var subIssueTree: [String: [SubIssue]] = [:]
+
+    var subIssues: [SubIssue] { subIssueTree[contentId] ?? [] }
 
     @ObservationIgnored private let db: AppDatabase
     @ObservationIgnored private var observation: AnyDatabaseCancellable?
@@ -37,15 +40,35 @@ final class IssueDetailModel {
         }
     }
 
-    private func update(_ value: (comments: [Comment], subIssues: [SubIssue])) {
-        if comments != value.comments { comments = value.comments }
-        if subIssues != value.subIssues { subIssues = value.subIssues }
+    /// The sub-issues of a sub-issue below this issue, as far as they have been read.
+    func subIssues(of parentId: String) -> [SubIssue] {
+        subIssueTree[parentId] ?? []
     }
 
-    private nonisolated static func fetch(_ db: Database, contentId: String) throws -> (comments: [Comment], subIssues: [SubIssue]) {
-        (
+    private func update(_ value: (comments: [Comment], tree: [String: [SubIssue]])) {
+        if comments != value.comments { comments = value.comments }
+        if subIssueTree != value.tree { subIssueTree = value.tree }
+    }
+
+    private nonisolated static func fetch(_ db: Database, contentId: String) throws -> (comments: [Comment], tree: [String: [SubIssue]]) {
+        // Level by level down the tree; GitHub allows eight. An issue met twice, in stale data, is read once.
+        var tree: [String: [SubIssue]] = [:]
+        var level = [contentId]
+        var seen: Set<String> = [contentId]
+        for _ in 0..<8 where !level.isEmpty {
+            let subs = try SubIssue
+                .filter(level.contains(Column("parentId")))
+                .order(Column("position"))
+                .fetchAll(db)
+            level = []
+            for sub in subs {
+                tree[sub.parentId, default: []].append(sub)
+                if seen.insert(sub.id).inserted { level.append(sub.id) }
+            }
+        }
+        return (
             try Comment.filter(Column("issueId") == contentId).order(Column("createdAt")).fetchAll(db),
-            try SubIssue.filter(Column("parentId") == contentId).order(Column("position")).fetchAll(db)
+            tree
         )
     }
 }
