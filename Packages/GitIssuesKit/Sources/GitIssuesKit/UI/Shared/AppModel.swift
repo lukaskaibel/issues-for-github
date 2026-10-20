@@ -212,8 +212,10 @@ public final class AppModel {
     /// The fields of every project, their own and GitHub's.
     private(set) var fields: [ProjectField] = []
     private(set) var outbox: [OutboxEntry] = []
-    /// What blocks the issues whose detail was read, and what they block.
+    /// What blocks the issues whose detail was read, and what they block; for every blocked issue, what blocks it.
     private(set) var links: [LinkedIssue] = []
+    /// The open issues that block each issue, by its node id, in GitHub's order: what its flag names.
+    private(set) var openBlockers: [String: [LinkedIssue]] = [:]
     /// GitHub's notifications about issues and pull requests, newest first, archived ones included.
     private(set) var inboxEntries: [InboxEntry] = []
     /// Assignments your own account made, as kept; `selfAssignedInboxEntries` is what the Inbox shows of them.
@@ -306,6 +308,13 @@ public final class AppModel {
     @ObservationIgnored var foldedEpics = Set(UserDefaults.standard.stringArray(forKey: "foldedEpicGroups") ?? []) {
         didSet { UserDefaults.standard.set(Array(foldedEpics), forKey: "foldedEpicGroups") }
     }
+    /// Sub-issues (node ids) whose own sub-issues are unfolded under them in an issue's list of sub-issues. Kept on
+    /// this device.
+    var unfoldedSubIssues = Set(UserDefaults.standard.stringArray(forKey: "unfoldedSubIssues") ?? []) {
+        didSet { UserDefaults.standard.set(Array(unfoldedSubIssues), forKey: "unfoldedSubIssues") }
+    }
+    /// Sub-issues (node ids) whose own sub-issues are being read from GitHub.
+    var loadingSubIssues: Set<String> = []
     /// What was chosen lately in pickers, by kind, newest first (see `RecentPick`). Kept on this device.
     @ObservationIgnored var recentPicks = UserDefaults.standard.dictionary(forKey: "recentPicks") as? [String: [String]] ?? [:] {
         didSet { UserDefaults.standard.set(recentPicks, forKey: "recentPicks") }
@@ -654,6 +663,7 @@ public final class AppModel {
         fields = []
         outbox = []
         links = []
+        openBlockers = [:]
         inboxEntries = []
         selfAssignedEntries = []
         inboxMeta = InboxMeta()
@@ -762,7 +772,10 @@ public final class AppModel {
         if allItems != snapshot.items { allItems = snapshot.items }
         outbox = snapshot.outbox
         noteOwnAssignments(in: snapshot.outbox)
-        if links != snapshot.links { links = snapshot.links }
+        if links != snapshot.links {
+            links = snapshot.links
+            openBlockers = Dictionary(grouping: links.filter { $0.relation == .blockedBy && !$0.isClosed }, by: \.issueId)
+        }
         let threads = snapshot.inbox.filter { !$0.isSelfAssigned }
         let assigned = snapshot.inbox.filter(\.isSelfAssigned)
         if inboxEntries != threads { inboxEntries = threads }

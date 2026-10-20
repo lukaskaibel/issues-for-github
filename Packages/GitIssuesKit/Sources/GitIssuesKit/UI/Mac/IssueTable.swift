@@ -13,6 +13,8 @@ struct IssueRowModel: Equatable {
     /// Shown in "My Issues", where rows come from several projects.
     var projectTitle: String?
     var due: DueBadge?
+    /// What blocks it, when an open issue does.
+    var blocker: BlockerMark?
     /// Picked for a change to several issues at once, and whether anything is picked, which shows every
     /// row's checkbox.
     var selected = false
@@ -1002,6 +1004,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     private var date = NSAttributedString()
     private var project: NSAttributedString?
     private var subCount: NSAttributedString?
+    private var blockerText: NSAttributedString?
     private var parentHint: NSAttributedString?
     private var milestoneText: NSAttributedString?
     private var milestoneSize = NSSize.zero
@@ -1014,6 +1017,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     private var dateSize = NSSize.zero
     private var projectSize = NSSize.zero
     private var subCountSize = NSSize.zero
+    private var blockerSize = NSSize.zero
     private var parentHintSize = NSSize.zero
     private var dueSize = NSSize.zero
     /// Where the clickable parts were drawn last, in this cell's coordinates.
@@ -1107,6 +1111,12 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                     .foregroundColor: secondary,
                 ])
                 : nil
+            blockerText = row.blocker?.text.map {
+                NSAttributedString(string: $0, attributes: [
+                    .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
+                    .foregroundColor: onAccent ? NSColor.white : NSColor(Theme.blocked),
+                ])
+            }
             if let due = row.due {
                 let color = onAccent ? NSColor.white : NSColor(due.tone.color)
                 dueText = NSAttributedString(string: due.label, attributes: [
@@ -1141,11 +1151,13 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             dateSize = date.size()
             projectSize = project?.size() ?? .zero
             subCountSize = subCount?.size() ?? .zero
+            blockerSize = blockerText?.size() ?? .zero
             parentHintSize = parentHint?.size() ?? .zero
             dueSize = dueText?.size() ?? .zero
-            let spoken = row.due.map {
+            var spoken = row.due.map {
                 String(localized: .issueRowSpokenWithDue(number: item.displayNumber, title: item.title, due: $0.tooltip))
             } ?? "\(item.displayNumber) \(item.title)"
+            if row.blocker != nil, let blocked = model?.tooltip(.blockedBy, for: item) { spoken += ", \(blocked)" }
             setAccessibilityLabel(item.parentNumber.map { number in
                 let parent = String(localized: row.parentIsEpic
                     ? .epicTooltip(epic: item.parentTitle ?? "#\(number)") : .subIssueOf(number: "#\(number)"))
@@ -1364,10 +1376,10 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
         if canEditFields, let labelsRect { parts.append((.labels, labelsRect)) }
 
-        // The title takes what is left, with the sub-issue count and a flag when blocked directly after it, and
-        // the parent of a sub-issue whose parent is elsewhere.
+        // The title takes what is left, with the sub-issue count and, when blocked, a flag with what blocks it
+        // directly after it, and the parent of a sub-issue whose parent is elsewhere.
         let subWidth: CGFloat? = subCount == nil ? nil : subCountSize.width + 7 + 11 + 4 + 7
-        let blockedWidth: CGFloat? = row.item.blockedByCount > 0 ? 26 : nil
+        let blockedWidth: CGFloat? = row.blocker == nil ? nil : blockerText == nil ? 26 : 7 + 11 + 4 + blockerSize.width + 7
         let beside = (subWidth.map { $0 + 10 } ?? 0) + (blockedWidth.map { $0 + 6 } ?? 0)
         let hintWidth: CGFloat? = parentHint == nil ? nil : 7 + 11 + 4 + parentHintSize.width + 7
         // The parent keeps some room as long as the title keeps more.
@@ -1409,13 +1421,15 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             let rect = NSRect(x: after, y: midY - 10, width: blockedWidth, height: 20)
             parts.append((.blockedBy, rect))
             drawChip(rect, hovered: hoveredPart == .blockedBy)
-            if let flag = Self.blockedFlag {
+            if let flag = onAccent ? Self.blockedFlagOnAccent : Self.blockedFlag {
                 let size = flag.size
+                let flagX = blockerText == nil ? rect.midX - size.width / 2 : rect.minX + 7 + (11 - size.width) / 2
                 flag.draw(
-                    in: NSRect(x: rect.midX - size.width / 2, y: midY - size.height / 2, width: size.width, height: size.height),
+                    in: NSRect(x: flagX, y: midY - size.height / 2, width: size.width, height: size.height),
                     from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
                 )
             }
+            blockerText?.draw(at: NSPoint(x: rect.minX + 7 + 11 + 4, y: midY - blockerSize.height / 2))
         }
         if let parentHint, let hintWidth {
             let width = min(hintWidth, right - 12 - afterTitle)
@@ -1531,6 +1545,13 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     private static var blockedFlag: NSImage? {
         NSImage(systemSymbolName: "flag.fill", accessibilityDescription: nil)?.withSymbolConfiguration(
             NSImage.SymbolConfiguration(pointSize: 9, weight: .medium).applying(.init(paletteColors: [NSColor(Theme.blocked)]))
+        )
+    }
+
+    /// In a picked row, which is filled with the accent colour, the flag is white like the rest of the row.
+    private static var blockedFlagOnAccent: NSImage? {
+        NSImage(systemSymbolName: "flag.fill", accessibilityDescription: nil)?.withSymbolConfiguration(
+            NSImage.SymbolConfiguration(pointSize: 9, weight: .medium).applying(.init(paletteColors: [.white]))
         )
     }
 

@@ -81,12 +81,13 @@ extension AppModel {
 
     // MARK: Sub-issues on an issue's page
 
-    /// The open issue's sub-issues that are picked and still under it; on iPhone and iPad, those of the issue that
-    /// is picking.
+    /// The open issue's sub-issues that are picked and still under it, also ones further down that were unfolded; on
+    /// iPhone and iPad, those of the issue that is picking.
     var pickedSubIssues: [Item] {
         guard !pickedSubIssueIds.isEmpty,
               let parentId = (openItem ?? subIssuePickParentId.flatMap { item(id: $0) })?.contentId else { return [] }
-        return allItems.filter { pickedSubIssueIds.contains($0.id) && $0.parentId == parentId }
+        let below = descendants(of: [parentId]).subtracting([parentId])
+        return allItems.filter { pickedSubIssueIds.contains($0.id) && below.contains($0.contentId ?? "") }
     }
 
     /// iPhone and iPad: Select on an issue's sub-issues, or on one of them, which is then picked already.

@@ -622,6 +622,7 @@ final class PhoneTests: AppTestCase {
         // The long-press menu of a picked one changes both.
         element("sub-#11").press(forDuration: 1.2)
         wait(labelled("2 issues"))
+        XCTAssertFalse(app.keyboards.firstMatch.exists, "No on-screen keyboard comes up with the menu")
         snapshot("Menu of two picked sub-issues")
         XCTAssertFalse(button("Open Issue").exists)
         button("Status").tap()
@@ -696,6 +697,35 @@ final class PhoneTests: AppTestCase {
         waitForLabel(element("chip-priority"), containing: "Low")
     }
 
+    func testPickASubIssueUnfoldedUnderAnother() {
+        launch()
+        element("row-#9").tap()
+        wait(element("issue-title"))
+        // #13's own sub-issues unfold under it; one of them is picked with one listed in #9 itself.
+        let fold = element("sub-fold-#13")
+        scrollTo(fold)
+        fold.tap()
+        wait(element("sub-#29"))
+        element("sub-options").tap()
+        button("Select").tap()
+        clearOfPickBar(element("sub-#28"))
+        XCTAssertTrue(element("sub-fold-#13").exists, "The arrow stays while picking")
+        element("sub-#29").tap()
+        element("sub-#28").tap()
+        wait(labelled("2 selected"))
+        snapshot("Picking a sub-issue of a sub-issue")
+        // #29 is on no board, so its menu offers Add to Project in place of Status; Assign to Me suits both.
+        element("sub-#29").press(forDuration: 1.2)
+        wait(labelled("2 issues"))
+        XCTAssertFalse(app.keyboards.firstMatch.exists, "No on-screen keyboard comes up with the menu")
+        snapshot("Menu of a picked sub-issue of a sub-issue")
+        button("Assign to Me").tap()
+        element("sub-pick-done").tap()
+        waitGone(element("sub-pick-done"))
+        element("sub-#29").tap()
+        waitForLabel(element("chip-assignee"), containing: "jordan")
+    }
+
     /// Moves the page up a little until the sub-issue is clear of the bar that picking brings at the foot.
     private func clearOfPickBar(_ row: XCUIElement) {
         let bar = element("sub-pick-parent")
@@ -706,6 +736,27 @@ final class PhoneTests: AppTestCase {
                 .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
             drags += 1
         }
+    }
+
+    func testSubIssuesOfASubIssueUnfoldUnderIt() {
+        launch()
+        element("row-#9").tap()
+        wait(element("issue-title"))
+        // #13 has sub-issues of its own: it says how far they are, and its arrow unfolds them under it.
+        let fold = element("sub-fold-#13")
+        scrollTo(fold)
+        wait(fold)
+        waitForLabel(element("sub-#13"), containing: "1 of 2 sub-issues done")
+        XCTAssertFalse(element("sub-#29").exists)
+        fold.tap()
+        let child = element("sub-#29")
+        wait(child)
+        wait(element("sub-#30"))
+        snapshot("Sub-issues of a sub-issue")
+        // Folded again, they go.
+        fold.tap()
+        waitGone(child)
+        waitGone(element("sub-#30"))
     }
 
     func testSubIssuesFollowThePickedOrder() {

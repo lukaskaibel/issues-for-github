@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "picksub", "recents", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mainmenu"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mainmenu", "subtree", "picksub", "recents"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -479,6 +479,9 @@ enum DebugRemote {
         case "fold":
             // fold <number>: folds the sub-issues under an issue in or out.
             if let item = item(argument, model) { model.toggleFolded(item) }
+        case "subtree":
+            // subtree <number>: shows or hides a sub-issue's own sub-issues under it in an issue's list of them.
+            if let contentId = item(argument, model)?.contentId { model.toggleSubIssues(of: contentId) }
         case "foldepic":
             // foldepic <number>: folds the issues of an epic away under its headers, or shows them.
             if let epic = item(argument, model), let group = (model.columns.flatMap(\.nesting.groups) + model.sections.flatMap(\.nesting.groups))
@@ -862,7 +865,11 @@ enum DebugRemote {
             // picksub <number> [<number>…]: picks sub-issues of the open issue, as ⌘-click on their rows does;
             // picksub to <number> picks the run up to it, as Shift-click does.
             let bits = argument.split(separator: " ").map(String.init)
-            let order = model.openItem?.contentId.map { model.detail(for: $0).subIssues.compactMap { model.item(contentId: $0.id)?.id } } ?? []
+            let order = model.openItem.flatMap { open in
+                open.contentId.map { id in
+                    model.subIssueLines(model.orderedSubIssues(of: open), in: model.detail(for: id)).compactMap { model.item(contentId: $0.sub.id)?.id }
+                }
+            } ?? []
             if bits.first == "to", let target = bits.dropFirst().first.flatMap({ item($0, model) }) {
                 model.extendSubIssuePick(to: target, in: order)
             } else {
