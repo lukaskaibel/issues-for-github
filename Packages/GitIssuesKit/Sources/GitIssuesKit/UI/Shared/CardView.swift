@@ -65,6 +65,14 @@ struct CardView: View, Equatable {
     var hoveredPart: PickerKind? = nil
     /// Whether the pointer is on the arrow that folds the sub-issues under the card.
     var hoveringFold = false
+    /// On the Mac board, what the column draws around a card, painted in the card's own pass so a row of a long
+    /// column is a single view: the dashed slot where the lifted card would land, this tall, in place of the card;
+    /// the edge of a second card peeking out under one whose sub-issues are folded into it; and the lines from a
+    /// sub-issue's parent, in the gutter left of the card and through the gap above it. They reach past the card's
+    /// frame, as the views they replace did, so the Canvas is that much bigger than the card it lays out as.
+    var slotHeight: CGFloat? = nil
+    var stackEdge = false
+    var tree: Nesting.Place? = nil
 
     static let padding = CGSize(width: 12, height: 10)
     /// Rounder than a button, as Reminders' cards and Apple's grouped rows are.
@@ -84,14 +92,19 @@ struct CardView: View, Equatable {
 
     var body: some View {
         let titleHeight = Self.titleHeight(card.item.title, width: width - 2 * Self.padding.width)
+        let height = slotHeight ?? Self.height(titleHeight: titleHeight)
+        let around = surroundings
         Canvas { context, size in
             #if DEBUG
             let began = clock_gettime_nsec_np(CLOCK_UPTIME_RAW)
             defer { CardPaintTiming.add(since: began) }
             #endif
-            CardPainter(context: context, size: size, titleHeight: titleHeight).draw(self)
+            var card = context
+            card.translateBy(x: around.leading, y: around.top)
+            CardPainter(context: card, size: CGSize(width: width, height: height), titleHeight: titleHeight).draw(self)
         }
-        .frame(width: width, height: Self.height(titleHeight: titleHeight))
+        .frame(width: around.leading + width + around.trailing, height: around.top + height + around.bottom)
+        .padding(EdgeInsets(top: -around.top, leading: -around.leading, bottom: -around.bottom, trailing: -around.trailing))
         .accessibilityElement()
         .accessibilityLabel(
             "\(card.item.displayNumber) \(card.item.title)" + (card.spokenBlocker.map { ", \($0)" } ?? "")
@@ -103,10 +116,21 @@ struct CardView: View, Equatable {
                 + card.spokenChips.map { ", \($0)" }.joined()
         )
         .accessibilityAddTraits(.isButton)
+        // The slot stands in for the card being dragged.
+        .accessibilityHidden(slotHeight != nil)
     }
 
     static func height(titleHeight: CGFloat) -> CGFloat {
         padding.height + 18 + 6 + titleHeight + 6 + 20 + padding.height
+    }
+
+    /// How far the Canvas, which clips, reaches past the card for what is drawn around it: the gutter and the gap
+    /// above for the lines from a parent, and the edge of the card under it; for the slot, its dashes, which straddle
+    /// its outline.
+    private var surroundings: (leading: CGFloat, top: CGFloat, bottom: CGFloat, trailing: CGFloat) {
+        guard slotHeight == nil else { return (1, 1, 1, 1) }
+        let gutter = tree.map { CGFloat(min($0.depth, CardTreeLines.deepest)) * CardTreeLines.indent } ?? 0
+        return (gutter, tree == nil ? 0 : CardTreeLines.boardGap, stackEdge ? CardStackEdge.height : 0, 0)
     }
 
     private static let titleFont = PlatformFont.systemFont(ofSize: titleSize, weight: .medium)
@@ -271,7 +295,7 @@ final class CardPaintCache: @unchecked Sendable {
 enum CardInk: Hashable {
     case card, cardHover, cardLifted, selectionFill
     case cardBorder, cardHoverBorder, cardLiftedBorder, selectionBorder
-    case partHover, textSecondary, textTertiary, textBody, barOff, urgent, epic
+    case partHover, textSecondary, textTertiary, textBody, barOff, urgent, epic, treeLine
     case milestone(MilestoneMark)
     case label(hex: String)
     case option(String)
@@ -293,6 +317,7 @@ enum CardInk: Hashable {
         case .barOff: Theme.barOff
         case .urgent: Theme.urgent
         case .epic: Theme.epic
+        case .treeLine: Theme.treeLine
         case .milestone(let mark): mark.color
         case .label(let hex): Theme.labelColor(hex)
         case .option(let name): Theme.optionColor(name) ?? Theme.textTertiary
@@ -407,6 +432,13 @@ private struct CardPainter {
         func part(_ kind: PickerKind, _ rect: CGRect) {
             parts.append((kind, rect))
         }
+        if view.slotHeight != nil {
+            drawSlot()
+            return
+        }
+        // Behind the card: the lines from its parent, then the card under it.
+        if let tree = view.tree { drawTree(tree, edge: view.stackEdge) }
+        if view.stackEdge { drawStackEdge() }
         defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts, fold: fold, number: numberRect) } }
         let outline = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5), cornerRadius: CardView.cornerRadius, style: .continuous)
         let fill = ink(view.lifted ? .cardLifted : view.selected ? .selectionFill : (view.highlighted ? .cardHover : .card))
@@ -617,6 +649,31 @@ private struct CardPainter {
         }
     }
 
+    /// What `CardStackEdge` draws behind a card: a second card's edge, 6 points in on each side and 5 points lower.
+    private func drawStackEdge() {
+        let rect = CGRect(x: 6, y: CardStackEdge.height, width: size.width - 12, height: size.height)
+        let shape = RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous)
+        context.fill(shape.path(in: rect), with: .color(ink(.card)))
+        context.stroke(shape.inset(by: 0.5).path(in: rect), with: .color(ink(.cardBorder)), lineWidth: 1)
+    }
+
+    /// What `CardTreeLines` draws in the gutter left of a sub-issue card and through the gap above it.
+    private func drawTree(_ place: Nesting.Place, edge: Bool) {
+        let gutter = CGFloat(min(place.depth, CardTreeLines.deepest)) * CardTreeLines.indent
+        let gap = CardTreeLines.boardGap
+        let height = gap + size.height + (edge ? CardStackEdge.height : 0)
+        var lines = context
+        lines.translateBy(x: -gutter, y: -gap)
+        lines.stroke(CardTreeLines.path(place: place, gap: gap, branchY: 19, height: height), with: .color(ink(.treeLine)), lineWidth: 1)
+    }
+
+    /// Where the card being dragged would land: a dashed card as big as the lifted one.
+    private func drawSlot() {
+        let path = RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous).path(in: CGRect(origin: .zero, size: size))
+        context.fill(path, with: .color(Theme.accent.opacity(0.10)))
+        context.stroke(path, with: .color(Theme.accent.opacity(0.55)), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+    }
+
     /// A chevron that points down while the sub-issues show and to the right while they are folded in.
     static func foldArrow(folded: Bool, center: CGPoint) -> Path {
         var path = Path()
@@ -687,6 +744,8 @@ struct CardTreeLines: View {
     /// Sub-issue cards hang this much further in per level, down to a few levels.
     static let indent: CGFloat = 16
     static let deepest = 3
+    /// The gap between cards in a column of the Mac board.
+    static let boardGap: CGFloat = 8
 
     var place: Nesting.Place
     /// The gap between cards, which the lines bridge.
@@ -696,38 +755,43 @@ struct CardTreeLines: View {
 
     var body: some View {
         Canvas { context, size in
-            let depth = min(place.depth, Self.deepest)
-            var path = Path()
-            for level in 0..<depth {
-                let lineX = CGFloat(level) * Self.indent + Self.indent / 2
-                let continues = place.continues.indices.contains(level) && place.continues[level]
-                if level < depth - 1 {
-                    if continues {
-                        path.move(to: CGPoint(x: lineX, y: 0))
-                        path.addLine(to: CGPoint(x: lineX, y: size.height))
-                    }
-                    continue
-                }
-                let y = gap + branchY
-                let end = CGFloat(depth) * Self.indent
-                if continues {
-                    path.move(to: CGPoint(x: lineX, y: 0))
-                    path.addLine(to: CGPoint(x: lineX, y: size.height))
-                    path.move(to: CGPoint(x: lineX, y: y))
-                    path.addLine(to: CGPoint(x: end, y: y))
-                } else {
-                    let radius: CGFloat = 5
-                    path.move(to: CGPoint(x: lineX, y: 0))
-                    path.addLine(to: CGPoint(x: lineX, y: y - radius))
-                    path.addQuadCurve(to: CGPoint(x: lineX + radius, y: y), control: CGPoint(x: lineX, y: y))
-                    path.addLine(to: CGPoint(x: end, y: y))
-                }
-            }
-            context.stroke(path, with: .color(Theme.treeLine), lineWidth: 1)
+            context.stroke(Self.path(place: place, gap: gap, branchY: branchY, height: size.height), with: .color(Theme.treeLine), lineWidth: 1)
         }
         .padding(.top, -gap)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+
+    /// The lines for a card's place, from the bottom of the card above, `height` tall in all.
+    static func path(place: Nesting.Place, gap: CGFloat, branchY: CGFloat, height: CGFloat) -> Path {
+        let depth = min(place.depth, Self.deepest)
+        var path = Path()
+        for level in 0..<depth {
+            let lineX = CGFloat(level) * Self.indent + Self.indent / 2
+            let continues = place.continues.indices.contains(level) && place.continues[level]
+            if level < depth - 1 {
+                if continues {
+                    path.move(to: CGPoint(x: lineX, y: 0))
+                    path.addLine(to: CGPoint(x: lineX, y: height))
+                }
+                continue
+            }
+            let y = gap + branchY
+            let end = CGFloat(depth) * Self.indent
+            if continues {
+                path.move(to: CGPoint(x: lineX, y: 0))
+                path.addLine(to: CGPoint(x: lineX, y: height))
+                path.move(to: CGPoint(x: lineX, y: y))
+                path.addLine(to: CGPoint(x: end, y: y))
+            } else {
+                let radius: CGFloat = 5
+                path.move(to: CGPoint(x: lineX, y: 0))
+                path.addLine(to: CGPoint(x: lineX, y: y - radius))
+                path.addQuadCurve(to: CGPoint(x: lineX + radius, y: y), control: CGPoint(x: lineX, y: y))
+                path.addLine(to: CGPoint(x: end, y: y))
+            }
+        }
+        return path
     }
 }
 

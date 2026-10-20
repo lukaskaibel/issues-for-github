@@ -51,6 +51,11 @@ All notable changes to this project are recorded here. The format follows
   each of its texts anew every time it was drawn, which is whenever the pointer goes onto it or leaves it and whenever
   it scrolls into view; now it keeps them, so drawing a card again takes about a quarter of the time. On the Mac the
   pointer going from card to card and a long column scrolling miss a frame of a 120 Hz display less often.
+- On the Mac, a long board column scrolls more smoothly, most of all past sub-issues and epics' headers. A column
+  builds each card as it scrolls into view, and a card was up to four views: the card, the lines from its parent, the
+  edge of the sub-issues folded into it and the slot it leaves while dragged. Now the card draws all of that in one
+  go, and an epic's header has fewer parts, so scrolling misses a frame of a 120 Hz display less than half as often.
+  The board looks exactly as before.
 
 ## [1.0.0] - 2026-10-20
 
