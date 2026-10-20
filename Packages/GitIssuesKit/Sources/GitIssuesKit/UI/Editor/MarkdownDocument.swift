@@ -145,6 +145,13 @@ struct InlineSpan: Equatable {
         case comment
         /// Any other HTML tag, which GitHub may draw but the editor shows as it is.
         case html
+
+        var isStyle: Bool {
+            switch self {
+            case .strong, .emphasis, .strikethrough, .code: true
+            default: false
+            }
+        }
     }
 
     var kind: Kind
@@ -154,6 +161,9 @@ struct InlineSpan: Equatable {
     var markers: [NSRange]
     /// What you read.
     var content: NSRange
+
+    /// Bold, italics, strikethrough and code: styles that typing and the bar above the keyboard turn on and off.
+    var isStyle: Bool { kind.isStyle }
 
     /// Spans that are one thing on screen: the caret goes around them and a selection takes all or nothing.
     var isAtomic: Bool {

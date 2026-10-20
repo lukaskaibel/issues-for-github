@@ -307,6 +307,7 @@ struct MilestoneEditorSheet: View {
     @State private var choosingDate = false
     @State private var prepared = false
     @FocusState private var nameFocused: Bool
+    @State private var titleLink = TitleLink()
 
     var body: some View {
         NavigationStack {
@@ -317,10 +318,12 @@ struct MilestoneEditorSheet: View {
                         .focused($nameFocused)
                         .submitLabel(.done)
                         .accessibilityIdentifier("milestone-name")
+                        .titleOf(titleLink) { nameFocused = true }
                     MarkdownEditor(
                         draft: $descr,
                         placeholder: .milestoneDescriptionPlaceholder,
                         editing: $editingDescription,
+                        titleLink: titleLink,
                         accessibilityLabel: .milestoneDescriptionPlaceholder,
                         accessibilityIdentifier: "milestone-description"
                     )

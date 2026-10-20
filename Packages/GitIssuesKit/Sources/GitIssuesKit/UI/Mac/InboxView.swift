@@ -483,6 +483,7 @@ private struct InboxIssue: View {
     @Environment(AppModel.self) private var model
     var item: Item
     var entry: InboxEntry
+    @State private var titleLink = TitleLink()
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -498,9 +499,9 @@ private struct InboxIssue: View {
                     ForEach(model.conflict(for: item)) { conflict in
                         ConflictBanner(entry: conflict)
                     }
-                    TitleField(item: item)
+                    TitleField(item: item, link: titleLink)
                     PropertyChipRow(item: item)
-                    DescriptionView(item: item)
+                    DescriptionView(item: item, titleLink: titleLink)
                     if item.kind == .issue, !item.isDetached {
                         SubIssuesSection(item: item)
                     }

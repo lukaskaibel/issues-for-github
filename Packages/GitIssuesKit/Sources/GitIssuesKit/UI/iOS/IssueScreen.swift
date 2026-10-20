@@ -17,6 +17,7 @@ struct IssueScreen: View {
     /// Whether the picker was opened with a key, so its search takes the typing.
     @State private var pickerFromKeyboard = false
     @State private var editingDescription = false
+    @State private var titleLink = TitleLink()
 
     var body: some View {
         if let item = model.item(id: itemId) {
@@ -69,7 +70,7 @@ struct IssueScreen: View {
                         MobileConflictBanner(entry: entry)
                             .padding(.bottom, 18)
                     }
-                    IssueTitleField(item: item)
+                    IssueTitleField(item: item, link: titleLink)
                     if !regular {
                         PropertyChips(item: item, picker: $picker)
                             .padding(.top, 14)
@@ -81,7 +82,7 @@ struct IssueScreen: View {
                         MobileInboxNews(entry: entry)
                             .padding(.top, 18)
                     }
-                    DescriptionEditor(item: item, editing: $editingDescription)
+                    DescriptionEditor(item: item, editing: $editingDescription, titleLink: titleLink)
                         .padding(.top, 18)
                     if item.kind == .issue, !item.isDetached {
                         Group {
@@ -338,6 +339,8 @@ extension PickerKind: Identifiable {
 private struct IssueTitleField: View {
     @Environment(AppModel.self) private var model
     var item: Item
+    /// The description below, which the keys of a keyboard go on to.
+    var link: TitleLink?
     @State private var title = ""
     @FocusState private var focused: Bool
 
@@ -362,6 +365,7 @@ private struct IssueTitleField: View {
             .focused($focused)
             .submitLabel(.done)
             .accessibilityIdentifier("issue-title")
+            .titleOf(link) { focused = true }
             .onAppear { title = item.title }
             .onChange(of: item.title) { _, new in
                 if !focused { title = new }
@@ -397,6 +401,7 @@ private struct DescriptionEditor: View {
     @Environment(AppModel.self) private var model
     var item: Item
     @Binding var editing: Bool
+    var titleLink: TitleLink?
 
     var body: some View {
         // Drawn as on GitHub, and a tap puts the caret where it lands.
@@ -406,6 +411,7 @@ private struct DescriptionEditor: View {
             isEditable: item.isEditableContent,
             onSave: save,
             editing: $editing,
+            titleLink: titleLink,
             accessibilityLabel: .description,
             accessibilityIdentifier: "issue-description"
         )

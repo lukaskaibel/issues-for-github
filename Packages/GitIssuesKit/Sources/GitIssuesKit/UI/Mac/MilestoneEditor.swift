@@ -18,6 +18,7 @@ struct MilestoneEditor: View {
     @FocusState private var focus: Field?
     @State private var editingDescription = false
     @State private var descriptionHeight: CGFloat = 74
+    @State private var titleLink = TitleLink()
 
     private enum Field {
         case name
@@ -54,7 +55,9 @@ struct MilestoneEditor: View {
                         .font(.system(size: 18, weight: .semibold))
                         .focused($focus, equals: .name)
                         .focusOnAppear()
-                        .onSubmit { editingDescription = true }
+                        // Return, Tab, ↓ and → at the end go on to the start of the description.
+                        .onSubmit { titleLink.enterText() }
+                        .titleOf(titleLink) { focus = .name }
                 }
                 // What it is about, as it will look on GitHub, growing with the text up to a point and then scrolling.
                 ScrollView {
@@ -64,6 +67,7 @@ struct MilestoneEditor: View {
                         editing: $editingDescription,
                         onSubmit: save,
                         onEscape: { model.overlay = nil },
+                        titleLink: titleLink,
                         accessibilityLabel: .milestoneDescriptionPlaceholder,
                         accessibilityIdentifier: "milestone-description"
                     )

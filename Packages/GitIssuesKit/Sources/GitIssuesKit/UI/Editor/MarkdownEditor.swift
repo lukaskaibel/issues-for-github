@@ -34,6 +34,8 @@ struct MarkdownEditor: View {
     var onEscape: (() -> Void)?
     /// What ⌘↵ does, in the list of shortcuts on iPad.
     var submitTitle: LocalizedStringResource = .done
+    /// The title above the text, which the keys go to and from as to and from the line above.
+    var titleLink: TitleLink?
     /// What VoiceOver calls it, and how UI tests find it.
     var accessibilityLabel: LocalizedStringResource?
     var accessibilityIdentifier: String?
@@ -64,18 +66,34 @@ extension MarkdownEditor {
         onSubmit: (() -> Void)? = nil,
         onEscape: (() -> Void)? = nil,
         submitTitle: LocalizedStringResource = .done,
+        titleLink: TitleLink? = nil,
         accessibilityLabel: LocalizedStringResource? = nil,
         accessibilityIdentifier: String? = nil
     ) {
         self.init(
             text: draft.wrappedValue, placeholder: placeholder, onChange: { draft.wrappedValue = $0 }, draft: draft,
             editing: editing, takesFocus: takesFocus, onSubmit: onSubmit, onEscape: onEscape, submitTitle: submitTitle,
-            accessibilityLabel: accessibilityLabel, accessibilityIdentifier: accessibilityIdentifier
+            titleLink: titleLink, accessibilityLabel: accessibilityLabel, accessibilityIdentifier: accessibilityIdentifier
         )
     }
 
     /// The text as it is now: a draft's current value, else the text given.
     var currentText: String { draft?.wrappedValue ?? text }
+}
+
+/// A title field above a Markdown editor (an issue's title over its description), which the keys go between as between
+/// lines, as in Notebook: Tab, ↓ on the title's last line and → at its end go to the start of the text; ↑ on the text's
+/// first line, and ← or Delete at its very start, go back to the end of the title.
+@MainActor
+final class TitleLink {
+    /// Puts the caret at the start of the text; set by the editor.
+    var enterText: () -> Void = {}
+    /// Puts the caret at the end of the title; set by the title.
+    var enterTitle: () -> Void = {}
+    #if os(macOS)
+    /// A view behind the title, in the window whose field editor the title is typed in.
+    weak var titleView: NSView?
+    #endif
 }
 
 /// Where the checkboxes are drawn in the text, and how to tick one.
@@ -146,6 +164,7 @@ final class MarkdownEditorCoordinator {
         editor.onEscape = configuration.onEscape
         editor.submitTitle = configuration.submitTitle
         known = Diff3.normalize(configuration.currentText)
+        link(configuration.titleLink)
         editor.load(text: known)
         editor.textView.placeholder = configuration.placeholder.map { String(localized: $0) } ?? ""
         editor.onTextChange = { [weak self] in self?.textChanged() }
@@ -171,6 +190,16 @@ final class MarkdownEditorCoordinator {
         }
     }
 
+    /// The keys go between the text and the title above it, when it has one; only editable text is gone into.
+    private func link(_ titleLink: TitleLink?) {
+        guard let titleLink, configuration.isEditable else {
+            editor.onBackToTitle = nil
+            return
+        }
+        titleLink.enterText = { [weak editor] in editor?.enterFromTitle() }
+        editor.onBackToTitle = { [weak titleLink] in titleLink?.enterTitle() }
+    }
+
     private func applyAccessibility() {
         let view = editor.textView
         #if os(macOS)
@@ -192,6 +221,7 @@ final class MarkdownEditorCoordinator {
         editor.onSubmit = configuration.onSubmit
         editor.onEscape = configuration.onEscape
         editor.submitTitle = configuration.submitTitle
+        link(configuration.titleLink)
         let placeholder = configuration.placeholder.map { String(localized: $0) } ?? ""
         if editor.textView.placeholder != placeholder { editor.textView.placeholder = placeholder }
         applyAccessibility()

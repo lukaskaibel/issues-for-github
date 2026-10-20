@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -383,6 +383,12 @@ enum DebugRemote {
             let frame = editor.convert(editor.bounds, to: nil)
             log("mddump id=\(editor.accessibilityIdentifier()) focused=\(controller.isFocused) selection=\(controller.selection) block=\(controller.activeBlock.map(String.init) ?? "-") revealed=\(controller.revealed) frame=\(Int(frame.minX)),\(Int(frame.minY)) \(Int(frame.width))x\(Int(frame.height)) content=\(Int(controller.contentHeight(forWidth: editor.bounds.width))) scrollTop=\(editor.enclosingScrollView.map { Int($0.contentView.bounds.minY) }.map(String.init) ?? "no scroll view") insets=\(editor.enclosingScrollView.map { "\($0.contentInsets.top),\($0.contentInsets.bottom) safe=\($0.safeAreaInsets.top),\($0.safeAreaInsets.bottom) clip=\($0.contentView.contentInsets.bottom) frame=\(Int($0.frame.height)) doc=\(Int($0.documentView?.frame.height ?? 0))" } ?? "-")")
             log("mddump text=\(controller.text.replacingOccurrences(of: "\n", with: "\\n"))")
+        case "mdseen":
+            // mdseen: the caret's line in the Markdown editor with the focus, as it shows (see `debugSeenLine`).
+            log(markdownEditor(nil)?.controller?.debugSeenLine ?? "mdseen: no editor")
+        case "mdfold":
+            // mdfold <index>: where the character at index is drawn over the next frames, to see marks fold.
+            if let controller = markdownEditor(nil)?.controller, let index = Int(argument) { controller.debugSampleFold(at: index, log: log) }
         case "keycmd":
             // keycmd <character>: a menu shortcut such as ⌘N.
             if let character = argument.first {
@@ -398,7 +404,7 @@ enum DebugRemote {
             let responder = window?.firstResponder
             var description = responder.map { String(describing: type(of: $0)) } ?? "nil"
             if let text = responder as? NSTextView {
-                description += text.isFieldEditor ? " (single-line field, text: \"\(text.string)\")"
+                description += text.isFieldEditor ? " (single-line field, text: \"\(text.string)\", selection: \(text.selectedRange()))"
                     : " (multi-line editor, text: \(text.string.debugDescription), selection: \(text.selectedRange()))"
                 if let field = text.delegate as? NSView, let content = window?.contentView {
                     let frame = field.convert(field.bounds, to: content)
@@ -407,8 +413,9 @@ enum DebugRemote {
                 if let key = NSApp.keyWindow { description += " keyWindow=\(key.frame.width)" } else { description += " keyWindow=nil" }
             }
             log("responder: \(description) overlay=\(String(describing: model.overlay))")
-        case "keycode":
-            // keycode <code> [cmd] [shift]
+        case "keycode", "winkeycode":
+            // keycode <code> [cmd] [shift]. winkeycode hands the key to the window itself, past the app's key monitor,
+            // which a copy in the background (without a key window) would otherwise take arrows from text with.
             let bits = argument.split(separator: " ").map(String.init)
             if let code = bits.first.flatMap({ UInt16($0) }) {
                 var modifiers: NSEvent.ModifierFlags = []
@@ -417,8 +424,8 @@ enum DebugRemote {
                 if bits.contains("opt") { modifiers.insert(.option) }
                 let arrows: [UInt16: String] = [125: "\u{F701}", 126: "\u{F700}", 123: "\u{F702}", 124: "\u{F703}"]
                 if arrows[code] != nil { modifiers.formUnion([.numericPad, .function]) }
-                let characters = arrows[code] ?? [36: "\r", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a"][code] ?? ""
-                sendKey(characters: modifiers.contains(.shift) ? characters.uppercased() : characters, code: code, modifiers: modifiers)
+                let characters = arrows[code] ?? [36: "\r", 48: "\t", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a"][code] ?? ""
+                sendKey(characters: modifiers.contains(.shift) ? characters.uppercased() : characters, code: code, modifiers: modifiers, toWindow: parts.first == "winkeycode")
             }
         case "status":
             let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
@@ -1201,7 +1208,7 @@ enum DebugRemote {
         }
     }
 
-    private static func sendKey(characters: String, code: UInt16, modifiers: NSEvent.ModifierFlags = []) {
+    private static func sendKey(characters: String, code: UInt16, modifiers: NSEvent.ModifierFlags = [], toWindow: Bool = false) {
         // To the key window, as a real key press would go: a dropdown if one is open. A copy opened in the background
         // has no key window, and the app hands key presses only to that, so an open dropdown gets them itself.
         let dropdown = NSApp.keyWindow == nil ? NSApp.windows.last(where: { $0 is DropdownPanel && $0.isVisible }) : nil
@@ -1211,8 +1218,49 @@ enum DebugRemote {
             windowNumber: window.windowNumber, context: nil, characters: characters,
             charactersIgnoringModifiers: characters, isARepeat: false, keyCode: code
         ) {
-            if let dropdown { dropdown.sendEvent(event) } else { NSApp.sendEvent(event) }
+            if let dropdown { dropdown.sendEvent(event) } else if toWindow { window.sendEvent(event) } else { NSApp.sendEvent(event) }
         }
+    }
+}
+
+extension EditorController {
+    /// Where the character after `index` is drawn on each of the next frames, and how far the marks before it show,
+    /// to see marks fold in or out (a caret or a key right before it).
+    func debugSampleFold(at index: Int, log: @escaping (String) -> Void) {
+        var samples: [String] = []
+        let start = CACurrentMediaTime()
+        let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] timer in
+            MainActor.assumeIsolated {
+                guard let self, index < self.storage.length else { return timer.invalidate() }
+                self.layoutManager.ensureLayout(forCharacterRange: NSRange(location: 0, length: index + 1))
+                let glyph = self.layoutManager.glyphIndexForCharacter(at: index)
+                let x = self.layoutManager.location(forGlyphAt: glyph).x
+                let fade = index > 0 ? self.storage.attribute(.markdownFade, at: index - 1, effectiveRange: nil) as? CGFloat : nil
+                samples.append(String(format: "%.0fms x %.1f%@", (CACurrentMediaTime() - start) * 1000, x, fade.map { String(format: " fade %.2f", $0) } ?? ""))
+                if samples.count == 16 {
+                    timer.invalidate()
+                    log("fold " + samples.joined(separator: ", "))
+                }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    /// The caret's line as it shows, for the debug remote: hidden marks left out, marks folding in or out in braces, the
+    /// caret as `|`, and what decides it.
+    var debugSeenLine: String {
+        guard !document.lines.isEmpty else { return "seen: (empty)" }
+        let caret = selection.location
+        let line = document.lines[document.lineIndex(containing: caret)]
+        var seen = ""
+        for index in line.range.location...line.range.upperBound {
+            if index == caret { seen += "|" }
+            guard index < line.range.upperBound else { break }
+            let character = nsText.substring(with: NSRange(location: index, length: 1))
+            if layoutManager.isHidden(index) { continue }
+            seen += storage.attribute(.markdownFade, at: index, effectiveRange: nil) != nil ? "{\(character)}" : character
+        }
+        return "seen: \(seen)  text: \(nsText.substring(with: line.range))  caret \(caret) marks \(showsMarks ? "shown" : "hidden") typedHeading \(typedHeading.map(String.init) ?? "none") folding \(revealAnimator.isRunning) animates \(revealAnimator.isEnabled)"
     }
 }
 #endif

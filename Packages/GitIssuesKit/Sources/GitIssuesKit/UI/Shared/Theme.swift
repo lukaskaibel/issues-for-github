@@ -89,6 +89,8 @@ enum Theme {
     static let overlay = Animation.spring(response: 0.26, dampingFraction: 0.86)
     /// How long Markdown takes to change its look as you type: bold thickening, a heading growing, marks fading.
     static let textStyleDuration: TimeInterval = 0.18
+    /// Markdown marks unfolding next to the caret and folding away behind it.
+    static let markRevealDuration: TimeInterval = 0.16
     /// The buttons for where the caret is, coming and going in the bar above the keyboard (UIKit spring).
     static let keyboardBarSpring: (duration: TimeInterval, bounce: CGFloat) = (0.32, 0.16)
 

@@ -182,7 +182,36 @@ final class MarkdownTextView: UITextView {
             escape.wantsPriorityOverSystemBehavior = true
             commands.append(escape)
         }
+        // ↑ on the first line and ← at the very start go to the title above the text, as on the Mac.
+        if controller?.onBackToTitle != nil {
+            var inputs: [String] = []
+            if controller?.isCaretOnFirstLine == true { inputs.append(UIKeyCommand.inputUpArrow) }
+            if selectedRange == NSRange(location: 0, length: 0) { inputs.append(UIKeyCommand.inputLeftArrow) }
+            for input in inputs {
+                let command = UIKeyCommand(input: input, modifierFlags: [], action: #selector(backToTitle))
+                command.wantsPriorityOverSystemBehavior = true
+                commands.append(command)
+            }
+        }
         return commands
+    }
+
+    @objc private func backToTitle() {
+        guard let controller else { return }
+        _ = controller.moveUpIntoTitle() || controller.moveBackIntoTitle()
+    }
+
+    /// Delete at the very start of the text goes back to the title above it, as into the line above.
+    override func deleteBackward() {
+        if selectedRange == NSRange(location: 0, length: 0), controller?.deleteBackIntoTitle() == true { return }
+        super.deleteBackward()
+        controller?.lastDeleteBackward = CACurrentMediaTime()
+    }
+
+    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        // Keys pressed: a keyboard is attached, whatever the game controller framework says.
+        if presses.contains(where: { $0.key != nil }) { HardwareKeyboard.shared.keyWasPressed() }
+        super.pressesBegan(presses, with: event)
     }
 
     @objc private func submit() {
