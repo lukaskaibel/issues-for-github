@@ -138,6 +138,22 @@ struct SubIssueTreeTests {
         #expect(Set(shown.map(\.id)).count == shown.count)
     }
 
+    @Test func unfoldedSubIssuesFollowThePickedOrderToo() {
+        // The open ones first, as every order but GitHub's has them.
+        let shown = SubIssueLine.lines(
+            Self.tree["issue-1"] ?? [], of: "issue-1", tree: Self.tree, unfolded: ["issue-2"], loading: [], card: { _ in nil },
+            arrange: { $0.sorted { !$0.isClosed && $1.isClosed } }
+        )
+        #expect(shown.map(\.sub.number) == [2, 4, 5, 3])
+        var reversed = Self.tree
+        reversed["issue-2"] = reversed["issue-2"]?.reversed()
+        let arranged = SubIssueLine.lines(
+            Self.tree["issue-1"] ?? [], of: "issue-1", tree: reversed, unfolded: ["issue-2"], loading: [], card: { _ in nil },
+            arrange: { $0.sorted { !$0.isClosed && $1.isClosed } }
+        )
+        #expect(arranged.map(\.sub.number) == [2, 4, 5, 3])
+    }
+
     @Test func aFoldedSubIssueHidesEverythingBelowIt() {
         // #4 stays unfolded, but under a folded #2 it doesn't show.
         #expect(lines(unfolded: ["issue-4"]).map(\.sub.number) == [2, 3])
