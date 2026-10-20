@@ -57,6 +57,11 @@ struct MarkdownEditingTests {
         #expect(toggled(.italic, "**_both|_**") == "**_both_|**")
     }
 
+    @Test func leavingBoldTakesTheSpacesTypedLastAlong() {
+        #expect(toggled(.bold, "a **bold |**") == "a **bold** |")
+        #expect(marked(Editing.insertNewline(in: state("a **bold |**"))) == "a **bold**\n|")
+    }
+
     @Test func boldJustBehindBoldTextGoesBackIn() {
         #expect(toggled(.bold, "**bold**| text") == "**bold|** text")
     }
