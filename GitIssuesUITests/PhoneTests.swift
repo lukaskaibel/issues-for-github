@@ -657,8 +657,10 @@ final class PhoneTests: AppTestCase {
         XCTAssertEqual(element("sub-pick-all").label, "Deselect All")
         element("sub-pick-all").tap()
         wait(labelled("0 selected"))
+        // The bar settles with Select All back in place before ✓ ends the picking.
+        waitForLabel(element("sub-pick-all"), containing: "Select All")
         element("sub-pick-done").tap()
-        waitGone(element("sub-pick-done"))
+        waitGone(element("sub-pick-done"), 10)
     }
 
     func testPickSubIssuesOfAnEpic() {
