@@ -77,9 +77,10 @@ end
 
 # Lets Xcode make the development profiles for the archive, signed in with the same API key. An archive signed for the
 # App Store from the start (signs_for_store_from_start?) takes the Apple Distribution certificate instead, and no
-# development profile; the identity of Config/Local.xcconfig is overridden for it.
-def signing_arguments(development: true)
-  return ["CODE_SIGN_STYLE=Manual", "CODE_SIGN_IDENTITY=Apple Distribution"].shelljoin unless development
+# development profile; the identity of Config/Local.xcconfig is overridden for it, and the team goes to every target,
+# since the Swift packages' resource bundles, which don't read Config/Local.xcconfig, are signed manually then too.
+def signing_arguments(team, development: true)
+  return ["CODE_SIGN_STYLE=Manual", "CODE_SIGN_IDENTITY=Apple Distribution", "DEVELOPMENT_TEAM=#{team}"].shelljoin unless development
 
   [
     "-allowProvisioningUpdates",
@@ -250,7 +251,7 @@ def archive_for_store(platform, token_only: false, marketing_version: version)
     export_options: export_options,
     skip_profile_detection: true,
     # gym hands these to the export as well, so the signing arguments mustn't go into export_xcargs a second time.
-    xcargs: "#{signing_arguments(development: !signs_for_store_from_start?(platform))} " \
+    xcargs: "#{signing_arguments(team, development: !signs_for_store_from_start?(platform))} " \
             "MARKETING_VERSION=#{marketing_version} CURRENT_PROJECT_VERSION=#{build_number}"
   )
   check_sandbox(File.join(folder, "Issues.xcarchive")) if platform == :mac
