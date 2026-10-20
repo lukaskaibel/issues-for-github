@@ -246,6 +246,25 @@ struct BlockedIcon: View {
     }
 }
 
+/// A blocked issue's flag with the issue that blocks it, "#364 +1", in red, as its card shows it: for rows drawn as
+/// views, such as a sub-issue's in its parent.
+struct BlockerFlag: View {
+    var mark: BlockerMark
+    var size: CGFloat = 12
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "flag.fill").font(.system(size: size - 2, weight: .medium))
+            if let text = mark.text {
+                Text(text).font(.system(size: size)).monospacedDigit()
+            }
+        }
+        .foregroundStyle(Theme.blocked)
+        .lineLimit(1)
+        .fixedSize()
+    }
+}
+
 struct BlockingIcon: View {
     var size: CGFloat = 11
 

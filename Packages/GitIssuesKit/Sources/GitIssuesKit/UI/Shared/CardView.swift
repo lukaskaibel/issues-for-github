@@ -6,6 +6,9 @@ struct CardModel: Equatable {
     var priority: PriorityLevel
     var showsPriority: Bool
     var due: DueBadge?
+    /// What blocks it, when an open issue does; and that as VoiceOver reads it.
+    var blocker: BlockerMark?
+    var spokenBlocker: String?
     /// How many sub-issues hang under the card in its column, folded or not; nil when none do.
     var nested: Int?
     var folded = false
@@ -26,11 +29,14 @@ extension AppModel {
     /// What a card shows; `nesting` is its column's, for the sub-issues hanging under it.
     func cardModel(for item: Item, in nesting: Nesting? = nil, showsMilestone: Bool = true) -> CardModel {
         let chips = showsMilestone ? fieldChips(of: item, in: item.projectId.map { .project($0) }) : []
+        let blocker = blockerMark(for: item)
         return CardModel(
             item: item,
             priority: priorityLevel(of: item),
             showsPriority: project(of: item)?.priorityFieldId != nil,
             due: dueBadge(for: item),
+            blocker: blocker,
+            spokenBlocker: blocker.map { _ in tooltip(.blockedBy, for: item) },
             nested: nesting?.nestedCounts[item.id],
             folded: nesting?.folded.contains(item.id) ?? false,
             showsParent: nesting.map { $0.namesParent(of: item) } ?? (item.parentNumber != nil),
@@ -84,7 +90,8 @@ struct CardView: View, Equatable {
         .frame(width: width, height: Self.height(titleHeight: titleHeight))
         .accessibilityElement()
         .accessibilityLabel(
-            "\(card.item.displayNumber) \(card.item.title)" + (card.due.map { ", \($0.tooltip)" } ?? "")
+            "\(card.item.displayNumber) \(card.item.title)" + (card.spokenBlocker.map { ", \($0)" } ?? "")
+                + (card.due.map { ", \($0.tooltip)" } ?? "")
                 + (card.item.parentNumber.map { number in
                     ", " + String(localized: card.parentIsEpic
                         ? .epicTooltip(epic: card.item.parentTitle ?? "#\(number)") : .subIssueOf(number: "#\(number)"))
@@ -277,15 +284,18 @@ private struct CardPainter {
             dueChip = (text, text.measure(in: CGSize(width: 200, height: 40)).width + 14)
         }
         let limit = size.width - padding.width - (dueChip.map { $0.width + 6 } ?? 0)
-        // Blocked by an open issue: a red flag first, so labels never push it off the card.
-        if item.blockedByCount > 0 {
-            let rect = CGRect(x: x, y: bottomY - 10, width: 26, height: 20)
+        // Blocked by an open issue: a red flag with the issue to finish first, before the labels, so they never push
+        // it off the card.
+        if let blocker = card.blocker {
+            // Until this device knows which issue blocks it, the flag shows alone.
+            let label = blocker.text.map { Text("\(Image(systemName: "flag.fill")) \($0)").font(.system(size: CardView.chipSize)).monospacedDigit() }
+                ?? Text(Image(systemName: "flag.fill")).font(.system(size: CardView.chipSize - 2, weight: .medium))
+            let text = context.resolve(label.foregroundStyle(Theme.blocked))
+            let width = blocker.text == nil ? 26 : text.measure(in: CGSize(width: 200, height: 40)).width + 14
+            let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
             part(.blockedBy, rect)
             chip(rect, hovered: hovered(.blockedBy))
-            context.draw(
-                Text(Image(systemName: "flag.fill")).font(.system(size: CardView.chipSize - 2, weight: .medium)).foregroundStyle(Theme.blocked),
-                at: CGPoint(x: rect.midX, y: bottomY), anchor: .center
-            )
+            context.draw(text, at: CGPoint(x: rect.midX, y: bottomY), anchor: .center)
             x = rect.maxX + 6
         }
         var shown = 0

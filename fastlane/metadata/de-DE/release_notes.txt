@@ -6,12 +6,13 @@ Das bisher größte Update: Plane mit Meilensteinen, Epics und einer Roadmap, ö
 • Die Ansichten deines Projekts von GitHub in der Seitenleiste, als Board oder Liste, mit Filtern, die du mit einem Klick änderst. Nach Meilenstein oder übergeordnetem Issue gruppiert, zeigt eine Ansicht den Fortschritt jeder Gruppe, die der aktuellen Iteration ihre restlichen Tage; eine Roadmap-Ansicht ist eine Zeitleiste
 • Meilensteine, Ansichten und die Roadmap auch auf iPhone und iPad; die Roadmap ist auf dem iPhone eine Liste, auf dem iPad eine Zeitleiste
 • Neues Design: auf dem Mac das Fenster von Mail und Notizen in Liquid Glass, die Informationen zum Issue gleich daneben und Kontextmenüs mit Suchfeld. Auf iPhone und iPad zeigen Issues ihre Eigenschaften als Chips aus Glas und die Kommentare als Unterhaltung
-• Ein neues App-Symbol, eine Pinnwand in sieben Materialien zur Wahl, und ein eigenes Symbol für jedes Projekt
+• Ein überarbeitetes App-Symbol, auch auf Graphit oder Indigo, und ein eigenes Symbol für jedes Projekt
 • Neun Sprachen: Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Russisch, Japanisch, Koreanisch und Chinesisch, passend zur Sprache deines Geräts
 • Der Eingang: deine Mitteilungen von GitHub, mit dem Issue gleich daneben. Lesen, archivieren und zurückstellen per Taste oder Wischen; github.com und deine anderen Geräte sind auf demselben Stand
 • Fälligkeitsdaten mit Erinnerung: Wähle einen Tag oder tippe ihn ein, etwa „in 3 Tagen“, und am Tag selbst erinnern dich Mac, iPhone und iPad
 • Sub-Issues hängen direkt unter ihrem übergeordneten Issue; erledigst du das letzte, ist auch das übergeordnete erledigt. Dazu Blocker: Halte fest, was was blockiert
 • Jedes Issue, ob auf einem Board oder nicht: deine Repositories in der Seitenleiste, die Issues auf keinem Board unter „Kein Projekt“; ein Klick bringt sie auf eines
+• „Meine Issues“ nach deinen Wünschen: filtern und nach Projekt, Status, Priorität oder Fälligkeitsdatum gruppieren, das Dringendste zuerst
 • Beschreibungen wie auf GitHub: Tabellen, abhakbare Checklisten, Code und Mermaid-Diagramme
 • Markdown schreiben wie in einer Notizen-App: Fett, Kursiv und Code lassen sich ein- und ausschalten, Listen gehen in der nächsten Zeile weiter, und auf iPhone und iPad hat die Leiste über der Tastatur Tasten für die Stelle, an der die Einfügemarke steht
 • Weniger Klicks: Ein Klick auf einen Status, eine Person oder ein Label schließt die Auswahl

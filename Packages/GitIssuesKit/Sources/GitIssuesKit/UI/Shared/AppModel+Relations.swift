@@ -16,6 +16,33 @@ extension AppModel {
         return links.filter { $0.issueId == contentId && $0.relation == relation }
     }
 
+    /// What a blocked issue's flag says, or nil when nothing open blocks it.
+    func blockerMark(for item: Item) -> BlockerMark? {
+        guard item.blockedByCount > 0 else { return nil }
+        return BlockerMark(blockers: item.contentId.flatMap { openBlockers[$0] } ?? [], count: item.blockedByCount)
+    }
+
+    /// The same for a sub-issue in its parent's list: as its card has it when it is on a board, else as its
+    /// parent's detail read it.
+    func blockerMark(for sub: SubIssue) -> BlockerMark? {
+        if let item = item(contentId: sub.id) { return blockerMark(for: item) }
+        guard let blockers = openBlockers[sub.id], !blockers.isEmpty else { return nil }
+        return BlockerMark(blockers: blockers, count: blockers.count)
+    }
+
+    /// The chip on a blocked issue's own page: "Blocked by #364", or "Blocked" until this device knows by what.
+    func blockedChipText(for item: Item) -> String {
+        guard let text = blockerMark(for: item)?.text else { return String(localized: .blockedChip) }
+        return String(localized: .blockedByNumbers(numbers: text))
+    }
+
+    /// What blocks a sub-issue, as its flag's tooltip and VoiceOver say it: "Blocked by #6 and #14".
+    func blockedText(for sub: SubIssue) -> String {
+        if let item = item(contentId: sub.id) { return tooltip(.blockedBy, for: item) }
+        let numbers = (openBlockers[sub.id] ?? []).map(\.displayNumber).formatted(.list(type: .and))
+        return String(localized: .blockedByNumbers(numbers: numbers))
+    }
+
     /// Whether `issueId` is blocked by `blockerId`, from either issue's relations.
     func isBlocked(_ issueId: String, by blockerId: String) -> Bool {
         links.contains { link in
@@ -164,6 +191,25 @@ extension SubIssue {
             contentId: id, number: number > 0 ? number : nil, title: title, state: state, stateReason: stateReason,
             repo: repo, url: url, assignees: assignees
         )
+    }
+}
+
+/// A blocked issue's flag, as cards, list rows and sub-issue rows show it: red, with the issue that blocks it, "#364",
+/// and "+1" for each other one, so it says what to finish first.
+struct BlockerMark: Equatable {
+    /// The first blocker's number, "#364"; nil until this device knows which issue it is, when the flag shows alone.
+    var first: String?
+    var more: Int
+
+    init(blockers: [LinkedIssue], count: Int) {
+        first = blockers.first?.displayNumber
+        more = first == nil ? 0 : max(count - 1, 0)
+    }
+
+    /// "#364 +1", or nil for the flag alone.
+    var text: String? {
+        guard let first else { return nil }
+        return more > 0 ? "\(first) +\(more)" : first
     }
 }
 

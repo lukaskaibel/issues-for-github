@@ -64,6 +64,8 @@ public struct RemoteIssueDetail: Sendable {
     public var subIssues: [SubIssue]
     /// Issues this one is blocked by, and issues it blocks.
     public var links: [LinkedIssue] = []
+    /// What blocks each of its sub-issues, for their rows to say so.
+    public var subBlockers: [LinkedIssue] = []
 }
 
 public struct CreatedIssue: Sendable {
@@ -362,15 +364,6 @@ public final class GitHubAPI: Sendable {
                     var createdAt: Date
                     var author: ActorDTO?
                 }
-                struct LinkDTO: Decodable {
-                    var id: String
-                    var number: Int
-                    var title: String
-                    var state: String
-                    var stateReason: String?
-                    var url: String?
-                    var repository: RepoDTO?
-                }
                 var title: String?
                 var body: String?
                 var comments: Nodes<CommentDTO>?
@@ -410,19 +403,43 @@ public final class GitHubAPI: Sendable {
         }
         var links: [LinkedIssue] = []
         for (relation, nodes) in [(LinkedIssue.Relation.blockedBy, node.blockedBy), (.blocking, node.blocking)] {
-            links += (nodes?.items ?? []).enumerated().map { index, other in
-                LinkedIssue(
-                    id: other.id, issueId: contentId, relation: relation, number: other.number, title: other.title,
-                    state: other.state, stateReason: other.stateReason, repo: other.repository?.nameWithOwner,
-                    url: other.url, position: index
-                )
-            }
+            links += (nodes?.items ?? []).enumerated().map { index, other in other.link(of: contentId, relation, position: index) }
         }
-        return RemoteIssueDetail(title: node.title ?? "", body: node.body ?? "", comments: comments, subIssues: subs, links: links)
+        let subBlockers = (node.subIssues?.items ?? []).flatMap(\.blockers)
+        return RemoteIssueDetail(
+            title: node.title ?? "", body: node.body ?? "", comments: comments, subIssues: subs, links: links, subBlockers: subBlockers
+        )
     }
 
-    /// Only the sub-issues of an issue, for a sub-issue unfolded in another issue's list of them.
-    public func subIssues(parentId: String) async throws -> [SubIssue] {
+    /// The issues that block each of these. GitHub counts an issue's blockers with its card but doesn't say which
+    /// they are, and a card names the one to finish first.
+    public func blockers(of contentIds: [String]) async throws -> [String: [LinkedIssue]] {
+        struct Response: Decodable {
+            struct Node: Decodable {
+                var id: String?
+                var blockedBy: Nodes<LinkDTO>?
+            }
+            var nodes: [Node?]
+        }
+        let query = """
+        query($ids: [ID!]!) {
+          nodes(ids: $ids) { ... on Issue { id
+            blockedBy(first: 20) { nodes { id number title state stateReason url repository { id nameWithOwner } } } } }
+        }
+        """
+        var result: [String: [LinkedIssue]] = [:]
+        for chunk in contentIds.chunked(into: 50) {
+            let response: Response = try await client.run(query, variables: ["ids": chunk], allowPartial: true)
+            for node in response.nodes.compactMap({ $0 }) {
+                guard let id = node.id else { continue }
+                result[id] = (node.blockedBy?.items ?? []).enumerated().map { index, other in other.link(of: id, .blockedBy, position: index) }
+            }
+        }
+        return result
+    }
+
+    /// Only the sub-issues of an issue, with what blocks each, for a sub-issue unfolded in another issue's list of them.
+    public func subIssues(parentId: String) async throws -> (subIssues: [SubIssue], blockers: [LinkedIssue]) {
         struct Response: Decodable {
             struct Node: Decodable {
                 var subIssues: Nodes<SubIssueDTO>?
@@ -439,9 +456,8 @@ public final class GitHubAPI: Sendable {
         guard let node = response.node else {
             throw APIError.graphql([GraphQLErrorItem(message: String(localized: .errorIssueNotFound), type: "NOT_FOUND")])
         }
-        return (node.subIssues?.items ?? []).enumerated().map { index, sub in
-            sub.subIssue(parentId: parentId, position: index)
-        }
+        let subs = node.subIssues?.items ?? []
+        return (subs.enumerated().map { index, sub in sub.subIssue(parentId: parentId, position: index) }, subs.flatMap(\.blockers))
     }
 
     /// Current title and body, fetched right before sending a text edit to catch concurrent changes.
@@ -834,7 +850,7 @@ enum GQL {
     }
     """
 
-    /// A sub-issue in its parent's list, with how far its own sub-issues are.
+    /// A sub-issue in its parent's list, with how far its own sub-issues are and what blocks it.
     static let subIssueFields = """
     fragment SubIssueFields on Issue {
       id number title state stateReason url createdAt
@@ -842,6 +858,7 @@ enum GQL {
       assignees(first: 3) { nodes { id login name avatarUrl } }
       milestone { id title }
       subIssuesSummary { total completed }
+      blockedBy(first: 10) { nodes { id number title state stateReason url repository { id nameWithOwner } } }
     }
     """
 
@@ -928,6 +945,24 @@ struct RepoDTO: Decodable {
     var nameWithOwner: String
 }
 
+/// Another issue, as an issue's blockers or the issues it blocks list it.
+struct LinkDTO: Decodable {
+    var id: String
+    var number: Int
+    var title: String
+    var state: String
+    var stateReason: String?
+    var url: String?
+    var repository: RepoDTO?
+
+    func link(of issueId: String, _ relation: LinkedIssue.Relation, position: Int) -> LinkedIssue {
+        LinkedIssue(
+            id: id, issueId: issueId, relation: relation, number: number, title: title, state: state,
+            stateReason: stateReason, repo: repository?.nameWithOwner, url: url, position: position
+        )
+    }
+}
+
 struct PersonDTO: Decodable {
     var id: String
     var login: String
@@ -970,6 +1005,12 @@ struct SubIssueDTO: Decodable {
     var milestone: MilestoneRefDTO?
     var createdAt: Date?
     var subIssuesSummary: Summary?
+    var blockedBy: Nodes<LinkDTO>?
+
+    /// What blocks it, for its row to say so.
+    var blockers: [LinkedIssue] {
+        (blockedBy?.items ?? []).enumerated().map { index, other in other.link(of: id, .blockedBy, position: index) }
+    }
 
     func subIssue(parentId: String, position: Int) -> SubIssue {
         SubIssue(

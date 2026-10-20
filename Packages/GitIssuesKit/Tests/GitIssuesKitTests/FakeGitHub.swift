@@ -13,6 +13,9 @@ final class FakeGitHub: @unchecked Sendable {
         var title: String?
         var updatedAt = "2026-10-01T10:00:00Z"
         var closed = false
+        /// The issues that block it, and how many more GitHub counts but won't show (in repositories you can't see).
+        var blockedBy: [String] = []
+        var hiddenBlockers = 0
     }
 
     static let projectId = "P1"
@@ -96,6 +99,26 @@ final class FakeGitHub: @unchecked Sendable {
             guard let index = issues.firstIndex(where: { $0.contentId == contentId }) else { return }
             issues[index].closed = closed
         }
+    }
+
+    /// Marks one issue as blocked by another, as GitHub does: only the events say so, and the issue's own count.
+    func block(_ contentId: String, by blocker: String) {
+        lock.withLock {
+            guard let index = issues.firstIndex(where: { $0.contentId == contentId }) else { return }
+            issues[index].blockedBy.append(blocker)
+        }
+        event("blocked_by_added", on: contentId)
+        event("blocking_added", on: blocker)
+    }
+
+    /// Takes a blocker away.
+    func unblock(_ contentId: String, from blocker: String) {
+        lock.withLock {
+            guard let index = issues.firstIndex(where: { $0.contentId == contentId }) else { return }
+            issues[index].blockedBy.removeAll { $0 == blocker }
+        }
+        event("blocked_by_removed", on: contentId)
+        event("blocking_removed", on: blocker)
     }
 
     /// Renames an issue the way GitHub does at times: the issue changes, but neither its card nor the board says so.
@@ -201,6 +224,16 @@ final class FakeGitHub: @unchecked Sendable {
                 log.append("issues")
                 let ids = variables["ids"] as? [String] ?? []
                 data = ["nodes": ids.map { id -> Any in issues.first { $0.contentId == id }.map(issueNode) ?? NSNull() }]
+            } else if query.contains("subIssues(first: 100)") {
+                let id = variables["id"] as? String ?? ""
+                log.append("detail")
+                data = ["node": issues.first { $0.contentId == id }.map { detail($0) as Any } ?? NSNull()]
+            } else if query.contains("blockedBy(first: 20)") {
+                log.append("blockers")
+                let ids = variables["ids"] as? [String] ?? []
+                data = ["nodes": ids.map { id -> Any in
+                    issues.first { $0.contentId == id }.map { ["id": $0.contentId, "blockedBy": ["nodes": blockers(of: $0)]] as Any } ?? NSNull()
+                }]
             } else {
                 return (500, [:], Data("Not part of the fake: \(query)".utf8))
             }
@@ -251,7 +284,10 @@ final class FakeGitHub: @unchecked Sendable {
             "parent": parent.map { ["id": $0.contentId, "number": $0.number, "title": "Issue \($0.number)"] as [String: Any] } ?? NSNull(),
             "viewerCanDelete": true,
             "subIssuesSummary": ["total": issues.filter { $0.parent == issue.contentId }.count, "completed": 0],
-            "issueDependenciesSummary": ["blockedBy": 0, "blocking": 0],
+            "issueDependenciesSummary": [
+                "blockedBy": issue.blockedBy.count + issue.hiddenBlockers,
+                "blocking": issues.filter { $0.blockedBy.contains(issue.contentId) }.count,
+            ],
             "comments": ["totalCount": 0],
         ]
     }
@@ -264,6 +300,7 @@ final class FakeGitHub: @unchecked Sendable {
             "url": "https://github.com/\(Self.repo)/issues/\(issue.number)",
             "repository": ["id": Self.repoId, "nameWithOwner": Self.repo], "assignees": ["nodes": []], "milestone": NSNull(),
             "subIssuesSummary": ["total": children.count, "completed": children.filter(\.closed).count],
+            "blockedBy": ["nodes": blockers(of: issue)],
         ]
     }
 
@@ -272,6 +309,29 @@ final class FakeGitHub: @unchecked Sendable {
             "id": issue.itemId!, "updatedAt": issue.updatedAt, "type": "ISSUE",
             "fieldValues": ["nodes": [["optionId": "todo", "field": ["id": "F-status"]]] + (cardValues[issue.itemId!] ?? [])],
             "content": content(issue),
+        ]
+    }
+
+    /// Another issue as an issue's relations list it.
+    private func link(_ issue: Issue) -> [String: Any] {
+        [
+            "id": issue.contentId, "number": issue.number, "title": issue.title ?? "Issue \(issue.number)", "state": "OPEN",
+            "stateReason": NSNull(), "url": "https://github.com/\(Self.repo)/issues/\(issue.number)",
+            "repository": ["id": Self.repoId, "nameWithOwner": Self.repo],
+        ]
+    }
+
+    private func blockers(of issue: Issue) -> [[String: Any]] {
+        issue.blockedBy.compactMap { id in issues.first { $0.contentId == id }.map(link) }
+    }
+
+    /// An issue as its page reads it: no comments, its sub-issues with what blocks them, and its own relations.
+    private func detail(_ issue: Issue) -> [String: Any] {
+        [
+            "title": issue.title ?? "Issue \(issue.number)", "body": "", "comments": ["nodes": []],
+            "subIssues": ["nodes": issues.filter { $0.parent == issue.contentId }.map(subIssue)],
+            "blockedBy": ["nodes": blockers(of: issue)],
+            "blocking": ["nodes": issues.filter { $0.blockedBy.contains(issue.contentId) }.map(link)],
         ]
     }
 

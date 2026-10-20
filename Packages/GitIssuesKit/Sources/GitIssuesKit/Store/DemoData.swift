@@ -161,7 +161,7 @@ public enum DemoData {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { drop() }
             ```
             """, parent: 40, hoursAgo: 1, due: 0, milestone: "0.3"),
-        IssueSpec(number: 13, title: "Cancel a drag with Escape", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 6, milestone: "0.3"),
+        IssueSpec(number: 13, title: "Cancel a drag with Escape", status: "In Progress", priority: "Medium", labels: ["ui"], assignees: [viewer.person], parent: 9, hoursAgo: 6, blockedBy: [5], milestone: "0.3"),
         IssueSpec(number: 28, title: "Tilt the lifted card with the pointer's speed", status: "In Progress", priority: "Low", labels: ["ui"], assignees: [mira], parent: 9, hoursAgo: 0.6, milestone: "0.3"),
         IssueSpec(number: 15, title: "Conflict banner when text changed on GitHub", status: "In Progress", priority: "High", labels: ["sync"], assignees: [theo], parent: 41, hoursAgo: 7, milestone: "0.3"),
         IssueSpec(number: 17, title: "Command palette with fuzzy search", status: "Todo", priority: "High", labels: ["ui"], assignees: [viewer.person], hoursAgo: 20, due: 1, milestone: "0.3"),
