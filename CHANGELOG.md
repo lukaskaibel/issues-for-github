@@ -15,6 +15,11 @@ All notable changes to this project are recorded here. The format follows
   "Doing" are both in progress, "P0" and "Urgent" both urgent. Grouped by project, the rows leave out the project's
   name. On iPhone and iPad the filter is a line under the title, and the "…" menu has Filter…, Group By and Order By.
   What you choose stays on the device, as GitHub has no view behind My Issues.
+- **A blocked issue says what blocks it.** The red flag on a blocked issue's card and list row now carries the number
+  of the issue to finish first, as in `#364`, with `+1` for each further one, and the sub-issues listed in an issue,
+  which had no flag at all, carry the same. On the Mac a click on the flag lists the blockers and changes them, as on
+  the card, and pointing at it names them all. The chip at the top of a blocked issue says "Blocked by #364". The app
+  reads which issues block a card along with the board, so the numbers are there without opening each issue.
 
 ### Changed
 

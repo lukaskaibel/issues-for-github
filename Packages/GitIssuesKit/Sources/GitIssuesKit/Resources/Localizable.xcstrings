@@ -4664,7 +4664,7 @@
       }
     },
     "blockedByCount" : {
-      "comment" : "Tooltip of the 'blocked' chip on a card or row, when not every blocking issue is on the user's boards: how many issues block it.",
+      "comment" : "Tooltip of the red flag on a card, list row or sub-issue row, when not every blocking issue is known here: how many issues block it. Also read by VoiceOver.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -5006,7 +5006,7 @@
       }
     },
     "blockedByNumbers" : {
-      "comment" : "Tooltip of the 'blocked' chip on a card or row. %(numbers)@ is a list of issue numbers, already joined with the language's 'and', such as '#6 and #14'.",
+      "comment" : "What blocks an issue, %(numbers)@ being issue numbers: the tooltip of the red flag on a card, list row or sub-issue row, where %(numbers)@ is already joined with the language's 'and', such as '#6 and #14'; and the chip on a blocked issue's page (Mac peek, iPhone and iPad issue screen), where it is the first one and how many more, such as '#6 +1'. Also read by VoiceOver.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -5186,7 +5186,7 @@
       }
     },
     "blockedChip" : {
-      "comment" : "Chip on an issue that another issue blocks (Mac selection bar, iPhone and iPad issue screen); opens the list of what blocks it. Short.",
+      "comment" : "Chip on an issue that another issue blocks (Mac peek, iPhone and iPad issue screen), until the app knows which issue that is; opens the list of what blocks it. Short.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -5235,66 +5235,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Заблокирована"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "被阻塞"
-          }
-        }
-      }
-    },
-    "blockedSpoken" : {
-      "comment" : "iPhone and iPad, VoiceOver: one of the parts read for an issue in a list, after its status and priority, when another issue blocks it. Lower case, as the parts are joined with commas.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "blockiert"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "blocked"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "bloqueada"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "bloqué"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ブロック中"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "차단됨"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "bloqueada"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "заблокирована"
           }
         },
         "zh-Hans" : {

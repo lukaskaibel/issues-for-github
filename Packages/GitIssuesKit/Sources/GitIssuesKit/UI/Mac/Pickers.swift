@@ -319,6 +319,8 @@ struct PropertyButton<Label: View>: View {
 struct PartButton<Label: View>: View {
     var kind: PickerKind
     var itemId: String
+    /// What the tooltip says in place of the part's name, such as which issues block this one.
+    var help: String? = nil
     @ViewBuilder var label: Label
 
     @State private var open = false
@@ -338,7 +340,7 @@ struct PartButton<Label: View>: View {
         }
         .buttonStyle(PlainPressStyle())
         .onHover { hovering = $0 }
-        .help(kind.help)
+        .help(help ?? kind.help)
         .dropdown(isPresented: $open) { close in
             ItemPicker(kind: kind, itemId: itemId, close: close)
         }

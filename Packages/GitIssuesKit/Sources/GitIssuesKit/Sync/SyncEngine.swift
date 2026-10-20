@@ -27,6 +27,11 @@ public actor SyncEngine {
     private var unhydratable: [String: String] = [:]
     /// Repositories whose issue events GitHub won't list, so they aren't asked again.
     var eventsUnreadable: Set<String> = []
+    /// How many open blockers each blocked issue had when its blockers were last read, so one whose blockers GitHub
+    /// won't all show (in a repository you can't see) isn't asked for again and again.
+    var blockersRead: [String: Int] = [:]
+    /// Blocked issues read again since, whose blockers may be others now.
+    var blockersDue: Set<String> = []
     /// Boards last read before GitHub had caught up with their updatedAt, and since when that has been so.
     private var readBehind: [String: Date] = [:]
     private var wasOffline = true
@@ -400,6 +405,7 @@ public actor SyncEngine {
                     )
                 }
             }
+            blockersDue.formUnion(hydrated.filter { $0.blockedByCount > 0 }.compactMap(\.contentId))
         }
 
         // GitHub at times answers with a board's new updatedAt but its cards as they were a moment before. Such a
@@ -492,6 +498,7 @@ public actor SyncEngine {
         if !written.leftBoard.isEmpty { lastAssignedPull = nil }
         if !written.remaps.isEmpty { await publish(remaps: written.remaps) }
         await post(written.notices)
+        try await readBlockers()
     }
 
     /// Whether a board's cards were read before GitHub had caught up with the board: its newest card is as new as the
@@ -1294,6 +1301,11 @@ public actor SyncEngine {
                 arguments: [contentId, LocalID.prefix + "%"]
             )
             for link in detail.links { try link.save(db) }
+            // What blocks each sub-issue, for its row; one with a change of its own on the way keeps that.
+            let changing = try Self.blockersChangingHere(db)
+            for sub in detail.subIssues where !changing.contains(sub.id) {
+                try Self.replaceBlockers(of: sub.id, with: detail.subBlockers.filter { $0.issueId == sub.id }, db)
+            }
             func open(_ relation: LinkedIssue.Relation) -> Int {
                 detail.links.filter { $0.relation == relation && !$0.isClosed }.count
             }

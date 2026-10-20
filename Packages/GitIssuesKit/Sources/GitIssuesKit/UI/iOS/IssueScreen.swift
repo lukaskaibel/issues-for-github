@@ -474,7 +474,7 @@ private struct PropertyChips: View {
                 Button {
                     picker = .blockedBy
                 } label: {
-                    PropertyChip(text: String(localized: .blockedChip)) { BlockedIcon(size: 11) }
+                    PropertyChip(text: model.blockedChipText(for: item)) { BlockedIcon(size: 11) }
                 }
                 .buttonStyle(PlainPressStyle())
                 .accessibilityLabel(model.tooltip(.blockedBy, for: item))
@@ -1075,6 +1075,10 @@ private struct MobileSubIssueRow: View {
                         .font(.subheadline)
                         .foregroundStyle(sub.isClosed ? Theme.textSecondary : Theme.text)
                         .lineLimit(1)
+                    if let blocker = model.blockerMark(for: sub) {
+                        BlockerFlag(mark: blocker, size: 13)
+                            .accessibilityLabel(model.blockedText(for: sub))
+                    }
                     Spacer(minLength: 8)
                     if boardItem == nil, sub.url != nil {
                         Image(systemName: "arrow.up.right")
