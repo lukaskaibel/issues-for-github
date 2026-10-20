@@ -890,7 +890,7 @@ private struct MobileSubIssues: View {
     var item: Item
 
     var body: some View {
-        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let subs = model.orderedSubIssues(of: item)
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Text(.subIssues).font(.sectionTitle)
@@ -905,6 +905,7 @@ private struct MobileSubIssues: View {
                         .frame(width: 64)
                 }
                 Spacer()
+                if subs.count > 1 { MobileSubIssueOrderMenu() }
                 // A new sub-issue, or an issue that exists already.
                 Menu {
                     Button {
@@ -949,7 +950,7 @@ private struct MobileEpicWork: View {
     var item: Item
 
     var body: some View {
-        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let subs = model.orderedSubIssues(of: item)
         let groups = model.subIssuesByMilestone(of: item, subs)
         let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
         VStack(alignment: .leading, spacing: 12) {
@@ -962,6 +963,7 @@ private struct MobileEpicWork: View {
                         .monospacedDigit()
                 }
                 Spacer()
+                if subs.count > 1 { MobileSubIssueOrderMenu() }
                 Menu {
                     Button {
                         navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
@@ -1036,6 +1038,35 @@ private struct MobileEpicWork: View {
                 .animation(Theme.spring, value: subs.map(\.id))
             }
         }
+    }
+}
+
+/// Picks the order sub-issues are listed in, for every issue.
+private struct MobileSubIssueOrderMenu: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Menu {
+            Picker(selection: Binding(
+                get: { model.subIssueOrder },
+                set: { order in withAnimation(Theme.spring) { model.subIssueOrder = order } }
+            )) {
+                ForEach(SubIssueOrder.allCases, id: \.self) { order in
+                    Text(order.title).tag(order)
+                }
+            } label: {
+                Text(.orderBy)
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.subheadline.weight(.medium))
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
+        }
+        .foregroundStyle(Theme.textSecondary)
+        .accessibilityLabel(.orderSubIssuesTooltip)
+        .accessibilityIdentifier("sub-order")
     }
 }
 

@@ -271,7 +271,8 @@ struct SelectDropdown: View {
     }
 }
 
-private struct SelectList: View {
+/// The choices of a short list, the one picked checked; arrow keys and Return pick too.
+struct SelectList: View {
     var options: [SelectDropdown.Option]
     var selected: String
     var onPick: (String) -> Void

@@ -24745,6 +24745,66 @@
         }
       }
     },
+    "githubOrder" : {
+      "comment" : "Choice in the menu that orders an issue's sub-issues (header of the Sub-issues section): exactly as GitHub lists them, which is the order they were added in unless someone reordered them on github.com. Other choices: Priority, Status, Newest First.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wie auf GitHub"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub's Order"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orden de GitHub"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordre de GitHub"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHubの順序"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub 순서"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordem do GitHub"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Как на GitHub"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub 顺序"
+          }
+        }
+      }
+    },
     "goMenu" : {
       "comment" : "iPad with a keyboard: name of the menu in the menu bar with commands that move between places (Back, Search, Board, List, My Issues, Inbox). As the Go menu in the Finder.",
       "extractionState" : "manual",
@@ -39817,6 +39877,66 @@
         }
       }
     },
+    "newestFirst" : {
+      "comment" : "Choice in the menu that orders an issue's sub-issues (header of the Sub-issues section): the most recently opened sub-issues first. Other choices: Priority, Status, GitHub's Order.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neueste zuerst"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Newest First"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más recientes primero"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus récents d’abord"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しい順"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "최신순"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mais recentes primeiro"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сначала новые"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最新优先"
+          }
+        }
+      }
+    },
     "nextIssue" : {
       "comment" : "iPad, issue screen: toolbar button with a down arrow (read by VoiceOver) and the J keyboard command; opens the next issue of the list. Title case.",
       "extractionState" : "manual",
@@ -45081,6 +45201,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "排序方式"
+          }
+        }
+      }
+    },
+    "orderSubIssuesTooltip" : {
+      "comment" : "Tooltip and VoiceOver label of the button with up and down arrows in the header of an issue's Sub-issues section (Mac, iPhone, iPad). It opens a short menu for the order sub-issues are listed in: Priority, Status, Newest First, GitHub's Order.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-Issues sortieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order sub-issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordenar subincidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trier les sous-tickets"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サブIssueを並べ替え"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하위 이슈 정렬"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordenar sub-issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сортировать подзадачи"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "排序子议题"
           }
         }
       }
