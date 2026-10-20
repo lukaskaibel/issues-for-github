@@ -20,6 +20,11 @@ All notable changes to this project are recorded here. The format follows
   picked. It works in every label picker on the Mac (a card, the inspector, ⌘K, the right-click menu and the new-issue
   dialog) and in the Labels sheet on iPhone and iPad. A name that differs only in case picks the label that is there,
   and offline the new label waits with your other changes.
+- **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and
+  those without a priority after them, with the done ones at the bottom. The arrows beside the plus over them order
+  them by status, newest first or in GitHub's order instead; the choice holds for every issue on that device, and the
+  list a card's sub-issue count opens follows it too. Before, they were always in GitHub's order, which is mostly the
+  order they were added in.
 
 ### Changed
 
