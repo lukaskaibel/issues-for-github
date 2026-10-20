@@ -432,6 +432,10 @@ private struct EpicGroupHeader: View {
         }
         .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(hovered && !hoveringFold ? Theme.hover : .clear))
         .animation(Theme.quick, value: hovered)
+        // Placed as a whole: without it the name, the count and the icon each take on the hover fade themselves, so
+        // they are drawn again on every frame of it, each time waiting for the window server, and the pointer
+        // stutters over an epic's header.
+        .geometryGroup()
         .contentShape(Rectangle())
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .named(BoardDrag.space))
