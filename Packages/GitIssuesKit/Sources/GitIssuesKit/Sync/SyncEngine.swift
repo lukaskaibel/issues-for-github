@@ -1008,7 +1008,16 @@ public actor SyncEngine {
             try await api.editAssignees(contentId: m.contentId, add: m.add.map(\.id), remove: m.remove.map(\.id))
 
         case .editLabels(let m):
-            try await api.editLabels(contentId: m.contentId, add: m.add.map(\.id), remove: m.remove.map(\.id))
+            // A label GitHub never made can be neither added nor taken off.
+            let made = { (label: LabelRef) in !label.id.hasPrefix(LocalID.prefix) }
+            let add = m.add.filter(made).map(\.id)
+            let remove = m.remove.filter(made).map(\.id)
+            guard !add.isEmpty || !remove.isEmpty else { break }
+            try await api.editLabels(contentId: m.contentId, add: add, remove: remove)
+
+        case .createLabel(let m):
+            let label = try await api.label(named: m.name, color: m.color, repoId: m.repoId, repo: m.repo)
+            return .sent([m.labelId: label.id])
 
         case .addComment(let m):
             let id = try await api.addComment(contentId: m.contentId, body: m.body)
@@ -1210,6 +1219,7 @@ public actor SyncEngine {
             try db.execute(sql: "UPDATE milestone SET id = ? WHERE id = ?", arguments: [new, old])
             try db.execute(sql: "UPDATE item SET milestoneId = ? WHERE milestoneId = ?", arguments: [new, old])
             try db.execute(sql: "UPDATE subIssue SET milestoneId = ? WHERE milestoneId = ?", arguments: [new, old])
+            if old.hasPrefix(LabelRef.localPrefix) { try Mutation.CreateLabel.remap(db, from: old, to: new) }
         }
         for var entry in try Outbox.active(db) {
             let remapped = entry.mutation.remapping(remaps)
@@ -1261,6 +1271,14 @@ public actor SyncEngine {
             }
             return Notice(
                 title: String(localized: .noticeMilestoneNotCreated(milestone: m.title)),
+                message: error.localizedDescription,
+                isWarning: true
+            )
+        }
+        if case .createLabel(let m) = entry.mutation {
+            try m.withdraw(db)
+            return Notice(
+                title: String(localized: .noticeLabelNotCreated(label: m.name)),
                 message: error.localizedDescription,
                 isWarning: true
             )
@@ -1346,6 +1364,10 @@ public actor SyncEngine {
                     Date(), repoId,
                 ]
             )
+            // Labels still being made stay offered.
+            for entry in try Outbox.active(db) {
+                if case .createLabel(let m) = entry.mutation, m.repoId == repoId { try m.apply(db) }
+            }
         }
     }
 
@@ -1441,6 +1463,8 @@ public actor SyncEngine {
                     m.createdUrl = "https://github.com/\(m.repo)/milestone/\(number)"
                     try await store(entry, mutation: .createMilestone(m), state: .pending)
                     remaps = [m.milestoneId: id]
+                case .createLabel(let m):
+                    remaps = [m.labelId: "demo-label-\(UUID().uuidString.lowercased())"]
                 default:
                     break
                 }

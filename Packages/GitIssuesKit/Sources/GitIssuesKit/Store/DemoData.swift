@@ -123,14 +123,17 @@ public enum DemoData {
     private static let appIssues: [IssueSpec] = [
         IssueSpec(number: 5, title: "Keyboard navigation across board and list", status: "In Review", priority: "Medium", labels: ["ui"], assignees: [viewer.person], body: "J and K move through issues, Return opens one and Escape goes back. Arrow keys switch columns on the board.", hoursAgo: 3, milestone: "0.3"),
         IssueSpec(number: 16, title: "Markdown editor for descriptions and comments", status: "In Review", priority: "Low", labels: ["ui"], assignees: [viewer.person, mira], body: """
-            Style Markdown while typing: headings, **bold**, _italics_, `code` and lists. A description with a table, a checklist, code or a diagram is drawn the way GitHub draws it, and a click brings up the text.
+            Write Markdown and read it the way GitHub draws it: headings, **bold**, _italics_, `code`, lists, tables, checklists and Mermaid diagrams. The Markdown shows only next to the caret, and a click into a table or a diagram brings up its source.
 
             - [x] Headings, bold, italics and code
-            - [x] Lists and quotes
+            - [x] Lists, quotes and alerts
             - [x] Tables and Mermaid diagrams
             - [ ] Images pasted from the clipboard
 
-            | Element | While typing | Drawn |
+            > [!TIP]
+            > Tick a box and the description is saved to GitHub.
+
+            | Element | Written as | Drawn as |
             |---|---|---|
             | Table | Rows of pipes | A grid |
             | Checklist | `- [ ]` | Boxes that tick |
@@ -138,8 +141,8 @@ public enum DemoData {
 
             ```mermaid
             flowchart LR
-                Drawn -->|click| Editor
-                Editor -->|Escape| Drawn
+                Markdown -->|written| Drawn
+                Drawn -->|click| Source
                 Drawn -->|tick a box| Saved[Saved to GitHub]
             ```
             """, hoursAgo: 5, milestone: "0.3"),

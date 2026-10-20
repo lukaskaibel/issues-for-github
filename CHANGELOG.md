@@ -15,6 +15,11 @@ All notable changes to this project are recorded here. The format follows
   "Doing" are both in progress, "P0" and "Urgent" both urgent. Grouped by project, the rows leave out the project's
   name. On iPhone and iPad the filter is a line under the title, and the "…" menu has Filter…, Group By and Order By.
   What you choose stays on the device, as GitHub has no view behind My Issues.
+- **New labels from the picker.** Type a label the repository doesn't have and the picker offers **Create label
+  “…”**: the label is made in the repository, in one of GitHub's colours, and goes on the issue, or on every issue you
+  picked. It works in every label picker on the Mac (a card, the inspector, ⌘K, the right-click menu and the new-issue
+  dialog) and in the Labels sheet on iPhone and iPad. A name that differs only in case picks the label that is there,
+  and offline the new label waits with your other changes.
 - **A blocked issue says what blocks it.** The red flag on a blocked issue's card and list row now carries the number
   of the issue to finish first, as in `#364`, with `+1` for each further one, and the sub-issues listed in an issue,
   which had no flag at all, carry the same. On the Mac a click on the flag lists the blockers and changes them, as on
@@ -23,6 +28,22 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **Markdown that reads as GitHub draws it, while you write it.** Descriptions, comments, the comment field, new
+  issues and milestones are drawn as on GitHub at all times: headings, lists, checklists that tick, quotes, code in
+  colour, tables and Mermaid diagrams, and now also GitHub's alerts (`> [!NOTE]`, Tip, Important, Warning, Caution),
+  `$maths$` set as formulas, footnotes, pictures from the web (`<img>` tags too) and HTML comments, which are faint
+  while you write and hidden in what you read. The Markdown shows only next to the caret, faintly, and folds away when
+  you move on; a click puts the caret right where you clicked, and a click into a table, a diagram or a formula brings
+  up its source, with the diagram or formula drawn under it as you type. Lists continue on Return, Tab nests them and
+  Backspace takes a bullet away. A link's address hides behind a small pencil that changes it, and a code block has a
+  button that copies it. Typing works as in 1.0.0: styles turn on and off, a style's marks come and go as a pair,
+  Return leaves bold, `-` starts a bullet, and text eases into its new look. On the Mac, the new Format menu has the
+  shortcuts of Notes (`⌘B`, `⌘I`, `⌘L`, `⇧⌘H`, `⇧⌘L`, `⇧⌘U` and more), and on iPad with a keyboard the same shortcuts
+  work, listed while you hold `⌘`; the list shortcuts are now those of Notes too: `⇧⌘7` bullets, `⇧⌘9` numbers and
+  `⇧⌘L` a checklist. On iPhone and iPad the bar above the keyboard is a capsule of glass as in Notes: Aa opens the
+  Format panel in place of the keyboard, next to a checklist, a link, undo, redo and more formatting, with Done beside
+  it, and the buttons for where the caret is stay on its left. VoiceOver reads each checkbox with its item and whether
+  it is ticked, and ticks it.
 - **A new app icon: a card lifted off a board.** A card in the app's indigo with a done mark, turned a little as if
   just picked up, over a faint board of three columns and three rows of tiles. It follows light and dark mode.
   Settings on the Mac, and your account on iPhone and iPad, offer it on graphite or as a white card on indigo

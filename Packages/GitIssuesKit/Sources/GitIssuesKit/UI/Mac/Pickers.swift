@@ -22,6 +22,8 @@ struct PickerList: View {
     var opensOnSelection = true
     /// How many rows are drawn at most, for lists of issues that can run into the thousands.
     var limit = Int.max
+    /// A row that makes what is typed, such as a label the repository doesn't have yet.
+    var creating: ((String) -> PickerItem?)? = nil
     var onQueryChange: (String) -> Void = { _ in }
     var onPick: (String) -> Void
     var onClose: () -> Void
@@ -107,7 +109,7 @@ struct PickerList: View {
 
     private var filtered: [PickerItem] {
         if let search, !query.isEmpty { return search(query) }
-        let rows = matching(query, in: items)
+        let rows = matching(query, in: items, creating: query.isEmpty ? nil : creating?(query))
         guard rows.count > limit else { return rows }
         // Rows that are always there stay, after the best matches.
         let kept = rows.filter(\.alwaysShown)
@@ -134,7 +136,7 @@ private struct PickerRows: View {
             ScrollView {
                 VStack(spacing: 0) {
                     ForEach(Array(visible.enumerated()), id: \.element.id) { position, item in
-                        PickerRow(item: item, cursor: cursor, position: position, onCheck: multiple ? { onPick(item, true) } : nil)
+                        PickerRow(item: item, cursor: cursor, position: position, onCheck: multiple && !item.creates ? { onPick(item, true) } : nil)
                             .id(item.id)
                             .onTapGesture {
                                 onPick(item, multiple && !NSEvent.modifierFlags.isDisjoint(with: [.shift, .command]))
@@ -271,6 +273,7 @@ struct ItemPicker: View {
                 large: large,
                 opensOnSelection: kind.opensOnSelection,
                 limit: kind.picksIssues ? 60 : .max,
+                creating: kind == .labels ? { model.newLabelRow($0, projectId: item.projectId, repoId: item.repoId) } : nil,
                 onQueryChange: { query = $0 },
                 onPick: { id in
                     // A title typed to look for an issue becomes the new one's, when none was picked.

@@ -36,6 +36,9 @@ final class FakeGitHub: @unchecked Sendable {
     var cardValues: [String: [[String: Any]]] = [:]
     /// Which cards a filter matches, as GitHub would say.
     var matching: (String) -> [String] = { _ in [] }
+    /// The repository's labels, as GitHub lists them, and whether it refuses to make more, as for someone who can't.
+    var labels: [[String: Any]] = []
+    var refusesLabels = false
     let token = UUID().uuidString
 
     init(_ issues: [Issue]) {
@@ -139,10 +142,20 @@ final class FakeGitHub: @unchecked Sendable {
                 return (200, ["ETag": etag], try! JSONSerialization.data(withJSONObject: events))
             }
             let payload = (try? JSONSerialization.jsonObject(with: request.bodyData)) as? [String: Any] ?? [:]
+            if request.url?.path == "/repos/\(Self.repo)/labels", request.httpMethod == "POST" {
+                return makeLabel(payload)
+            }
             let query = payload["query"] as? String ?? ""
             let variables = payload["variables"] as? [String: Any] ?? [:]
             let data: Any
-            if query.contains("items { totalCount }") {
+            if query.contains("label(name: $name)") {
+                let name = variables["name"] as? String ?? ""
+                log.append("label \(name)")
+                data = ["node": ["label": label(named: name).map { $0 as Any } ?? NSNull()]]
+            } else if query.contains("addLabelsToLabelable(") {
+                log.append("add labels \((variables["ids"] as? [String] ?? []).joined(separator: ", "))")
+                data = ["addLabelsToLabelable": ["clientMutationId": NSNull()]]
+            } else if query.contains("items { totalCount }") {
                 log.append("meta")
                 data = ["node": meta()]
             } else if query.contains("query: $q") {
@@ -211,6 +224,22 @@ final class FakeGitHub: @unchecked Sendable {
     }
 
     private var onBoard: [Issue] { issues.filter { $0.itemId != nil } }
+
+    private func label(named name: String) -> [String: Any]? {
+        labels.first { ($0["name"] as? String)?.caseInsensitiveCompare(name) == .orderedSame }
+    }
+
+    /// GitHub's REST answer to making a label: the label, or why not.
+    private func makeLabel(_ payload: [String: Any]) -> (status: Int, headers: [String: String], body: Data) {
+        let name = payload["name"] as? String ?? ""
+        log.append("create label \(name)")
+        if refusesLabels { return (403, [:], Data("{\"message\":\"Must have admin rights to Repository.\"}".utf8)) }
+        if label(named: name) != nil { return (422, [:], Data("{\"message\":\"Validation Failed\"}".utf8)) }
+        let made: [String: Any] = ["id": "LA_\(labels.count + 1)", "name": name, "color": payload["color"] as? String ?? "ededed"]
+        labels.append(made)
+        let body: [String: Any] = ["node_id": made["id"]!, "name": name, "color": made["color"]!]
+        return (201, [:], try! JSONSerialization.data(withJSONObject: body))
+    }
 
     private func meta() -> [String: Any] {
         [

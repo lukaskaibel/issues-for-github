@@ -14,6 +14,8 @@ struct PickerItem: Identifiable {
     var trailing: AnyView? = nil
     /// Stays in the list whatever is typed, at its end, such as "New sub-issue…".
     var alwaysShown = false
+    /// Makes what was typed, such as a new label: picked on its own, never ticked along with others.
+    var creates = false
 }
 
 /// Subsequence match: every character of the query appears in order. Higher is better; nil is no match.
@@ -55,6 +57,18 @@ func matching(_ query: String, in items: [PickerItem]) -> [PickerItem] {
         .sorted { $0.1 > $1.1 }
         .map(\.0)
     return matches + items.filter(\.alwaysShown)
+}
+
+/// The same, with a row that makes what was typed: after the rows that contain the text as typed, before those that
+/// only have its letters in order, so "ui" makes a label "ui" before it picks "duplicate".
+func matching(_ query: String, in items: [PickerItem], creating typed: PickerItem?) -> [PickerItem] {
+    let rows = matching(query, in: items)
+    guard let typed else { return rows }
+    let text = query.trimmingCharacters(in: .whitespaces)
+    let contains = { (row: PickerItem) in
+        !row.alwaysShown && row.title.range(of: text, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+    }
+    return rows.filter(contains) + [typed] + rows.filter { !contains($0) }
 }
 
 // MARK: - Picker contents for an issue
@@ -284,6 +298,12 @@ extension AppModel {
     static let existingSubIssueId = "existing-sub-issue"
     static let removeParentId = "remove-parent"
     static let newMilestoneId = "new-milestone"
+    /// A row that makes a label carries its name in its id.
+    static let newLabelPrefix = "new-label:"
+
+    static func newLabelName(_ id: String) -> String? {
+        id.hasPrefix(newLabelPrefix) ? String(id.dropFirst(newLabelPrefix.count)) : nil
+    }
 
     /// An issue in a picker that picks issues: status, number and title, and its repository when it is another.
     private func issueRow(_ candidate: Item, near item: Item, selected: Bool = false) -> PickerItem {
@@ -429,7 +449,11 @@ extension AppModel {
         case .assignees:
             if let person = people(for: current).first(where: { $0.id == id }) { toggleAssignee(targets, person) }
         case .labels:
-            if let label = labels(for: current).first(where: { $0.id == id }) { toggleLabel(targets, named: label.name) }
+            if let name = Self.newLabelName(id) {
+                addNewLabel(named: name, to: targets)
+            } else if let label = labels(for: current).first(where: { $0.id == id }) {
+                toggleLabel(targets, named: label.name)
+            }
         case .dueDate:
             setDueDate(of: targets, to: CalendarDay(id))
         case .subIssues:
@@ -513,6 +537,23 @@ extension AppModel {
 
     func pickableLabels(projectId: String?, repoId: String?) -> [LabelRef] {
         labels(projectId: projectId, repoId: repoId).filter { !Item.isEpicLabel($0.name) }
+    }
+
+    /// "Create label …" for a name the repository has no label of, whatever its case. Not one that would make an
+    /// epic: Make Epic does that.
+    func newLabelRow(_ query: String, projectId: String?, repoId: String?) -> PickerItem? {
+        let name = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, repoId != nil, !Item.isEpicLabel(name),
+              existingLabel(named: name, projectId: projectId, repoId: repoId) == nil else { return nil }
+        return PickerItem(
+            id: Self.newLabelPrefix + name, title: String(localized: .createLabelNamed(name: name)),
+            icon: AnyView(Image(systemName: "plus").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)),
+            creates: true
+        )
+    }
+
+    func existingLabel(named name: String, projectId: String?, repoId: String?) -> LabelRef? {
+        labels(projectId: projectId, repoId: repoId).first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
     }
 
     func labels(projectId: String?, repoId: String?) -> [LabelRef] {
