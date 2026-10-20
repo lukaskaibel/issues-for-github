@@ -596,6 +596,27 @@ final class PhoneTests: AppTestCase {
         waitForLabel(element("sub-status-#11"), containing: "In Progress")
     }
 
+    func testSubIssuesOfASubIssueUnfoldUnderIt() {
+        launch()
+        element("row-#9").tap()
+        wait(element("issue-title"))
+        // #13 has sub-issues of its own: it says how far they are, and its arrow unfolds them under it.
+        let fold = element("sub-fold-#13")
+        scrollTo(fold)
+        wait(fold)
+        waitForLabel(element("sub-#13"), containing: "1 of 2 sub-issues done")
+        XCTAssertFalse(element("sub-#29").exists)
+        fold.tap()
+        let child = element("sub-#29")
+        wait(child)
+        wait(element("sub-#30"))
+        snapshot("Sub-issues of a sub-issue")
+        // Folded again, they go.
+        fold.tap()
+        waitGone(child)
+        waitGone(element("sub-#30"))
+    }
+
     func testSubIssuesFollowThePickedOrder() {
         launch()
         element("row-#9").tap()

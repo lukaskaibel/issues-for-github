@@ -890,6 +890,7 @@ private struct MobileSubIssues: View {
     var item: Item
 
     var body: some View {
+        let detail = item.contentId.map { model.detail(for: $0) }
         let subs = model.orderedSubIssues(of: item)
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
@@ -928,16 +929,14 @@ private struct MobileSubIssues: View {
                 .accessibilityLabel(.addSubIssueButton)
                 .accessibilityIdentifier("sub-add")
             }
-            if !subs.isEmpty {
+            if let detail, !subs.isEmpty {
+                let lines = model.subIssueLines(subs, in: detail)
                 VStack(spacing: 0) {
-                    ForEach(Array(subs.enumerated()), id: \.element.id) { index, sub in
-                        MobileSubIssueRow(sub: sub)
-                        if index < subs.count - 1 {
-                            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32)
-                        }
+                    ForEach(lines) { line in
+                        MobileSubIssueRow(line: line, separated: line.id != lines.first?.id)
                     }
                 }
-                .animation(Theme.spring, value: subs.map(\.id))
+                .animation(Theme.spring, value: lines.map(\.id))
             }
         }
     }
@@ -950,6 +949,7 @@ private struct MobileEpicWork: View {
     var item: Item
 
     var body: some View {
+        let detail = item.contentId.map { model.detail(for: $0) }
         let subs = model.orderedSubIssues(of: item)
         let groups = model.subIssuesByMilestone(of: item, subs)
         let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
@@ -996,6 +996,7 @@ private struct MobileEpicWork: View {
                         total: group.subs.count
                     )
                 })
+                let lines = detail.map { detail in groups.map { model.subIssueLines($0.subs, in: detail) } } ?? []
                 VStack(spacing: 0) {
                     ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
                         HStack(spacing: 8) {
@@ -1029,13 +1030,12 @@ private struct MobileEpicWork: View {
                         .overlay(alignment: .top) {
                             if index > 0 { Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32) }
                         }
-                        ForEach(group.subs) { sub in
-                            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32)
-                            MobileSubIssueRow(sub: sub)
+                        ForEach(lines.indices.contains(index) ? lines[index] : []) { line in
+                            MobileSubIssueRow(line: line, separated: true)
                         }
                     }
                 }
-                .animation(Theme.spring, value: subs.map(\.id))
+                .animation(Theme.spring, value: lines.map { $0.map(\.id) })
             }
         }
     }
@@ -1070,26 +1070,45 @@ private struct MobileSubIssueOrderMenu: View {
     }
 }
 
+/// A sub-issue in an issue's list of them. One with sub-issues of its own shows how far they are and an arrow that
+/// unfolds them under it, indented, with lines from it as in the lists.
 private struct MobileSubIssueRow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openRoute) private var openRoute
     @Environment(\.colorScheme) private var scheme
-    var sub: SubIssue
+    var line: SubIssueLine
+    /// With a hairline over it, from where its text starts.
+    var separated: Bool
+
+    /// How much further in each level of sub-issues is: as wide as the arrow, so a sub-issue's status icon stands
+    /// under its parent's arrow and their numbers line up.
+    private static let indent: CGFloat = 28
+
+    private var sub: SubIssue { line.sub }
+
+    private var indent: CGFloat {
+        CGFloat(min(line.place.depth, 4)) * Self.indent
+    }
 
     var body: some View {
         let boardItem = model.item(contentId: sub.id)
         HStack(spacing: 10) {
-            // A tap shows the statuses to pick from, as the status chip does, so another pick takes a wrong one back.
-            Menu {
-                statusMenu(boardItem)
-            } label: {
-                StatusIcon(glyph: glyph(boardItem), size: 17)
-                    .frame(width: 32, height: 44)
-                    .contentShape(Rectangle())
+            HStack(spacing: 0) {
+                // A tap shows the statuses to pick from, as the status chip does, so another pick takes a wrong one back.
+                Menu {
+                    statusMenu(boardItem)
+                } label: {
+                    StatusIcon(glyph: glyph(boardItem), size: 17)
+                        .frame(width: 32, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel(.subIssueStatusLabel(number: sub.number, status: statusText(boardItem)))
+                .accessibilityIdentifier("sub-status-#\(sub.number)")
+                .sensoryFeedback(.selection, trigger: statusText(boardItem))
+                if line.progress != nil {
+                    foldArrow
+                }
             }
-            .accessibilityLabel(.subIssueStatusLabel(number: sub.number, status: statusText(boardItem)))
-            .accessibilityIdentifier("sub-status-#\(sub.number)")
-            .sensoryFeedback(.selection, trigger: statusText(boardItem))
             Button {
                 if let boardItem {
                     openRoute(.issue(boardItem.id))
@@ -1111,6 +1130,14 @@ private struct MobileSubIssueRow: View {
                             .accessibilityLabel(model.blockedText(for: sub))
                     }
                     Spacer(minLength: 8)
+                    if let progress = line.progress {
+                        MobileChip {
+                            SubIssueGlyph().frame(width: 11, height: 11)
+                            Text("\(progress.done)/\(progress.total)").monospacedDigit()
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(.subIssuesDone(done: progress.done.formatted(), total: progress.total))
+                    }
                     if boardItem == nil, sub.url != nil {
                         Image(systemName: "arrow.up.right")
                             .font(.caption.weight(.medium))
@@ -1127,9 +1154,22 @@ private struct MobileSubIssueRow: View {
             .buttonStyle(PlainPressStyle())
             .accessibilityIdentifier("sub-#\(sub.number)")
         }
+        .padding(.leading, indent)
+        .background {
+            TreeLines(place: line.place, firstLine: 16, indent: Self.indent, iconRadius: 8.5, deepest: 4, linesDown: line.childrenShow)
+        }
+        .overlay(alignment: .top) {
+            if separated {
+                Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 39 + indent)
+            }
+        }
         // The status circle stands where a checklist's box does, in line with the text above.
         .padding(.leading, -7)
         .padding(.trailing, 2)
+        // Unfolded, its sub-issues are read again each time the list shows.
+        .task(id: line.unfolded) {
+            if line.unfolded { await model.loadSubIssues(of: sub) }
+        }
         .contextMenu {
             if let boardItem {
                 ItemMenuContent(item: boardItem) { openRoute(.issue(boardItem.id)) }
@@ -1161,6 +1201,29 @@ private struct MobileSubIssueRow: View {
                 }
             }
         }
+    }
+
+    /// Right after the status circle; a spinner while its sub-issues are read the first time.
+    private var foldArrow: some View {
+        Button {
+            model.toggleSubIssues(of: sub.id)
+        } label: {
+            ZStack {
+                if line.waiting {
+                    ProgressView().controlSize(.mini)
+                } else {
+                    FoldArrow(unfolded: line.unfolded)
+                }
+            }
+            // The arrow stands over the status circles of the sub-issues it unfolds.
+            .frame(width: 24, height: 44)
+            .frame(width: Self.indent, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainPressStyle())
+        .sensoryFeedback(.selection, trigger: line.unfolded)
+        .accessibilityLabel(line.unfolded ? Text(.foldSubIssuesTooltip) : Text(.unfoldSubIssuesTooltip(count: line.progress?.total ?? 0)))
+        .accessibilityIdentifier("sub-fold-#\(sub.number)")
     }
 
     /// On a board, its columns with the current one checked. Elsewhere it is only open or closed, and an issue the

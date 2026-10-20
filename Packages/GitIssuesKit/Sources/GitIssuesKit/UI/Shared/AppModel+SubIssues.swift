@@ -65,8 +65,12 @@ extension AppModel {
 
     /// An issue's sub-issues in the order picked for them.
     func orderedSubIssues(of item: Item) -> [SubIssue] {
-        let subs = item.contentId.map { detail(for: $0).subIssues } ?? []
-        return subIssueOrder.arrange(subs) { sub in
+        arranged(item.contentId.map { detail(for: $0).subIssues } ?? [])
+    }
+
+    /// Sub-issues that come in GitHub's order, in the order picked for them.
+    func arranged(_ subs: [SubIssue]) -> [SubIssue] {
+        subIssueOrder.arrange(subs) { sub in
             let card = self.issue(contentId: sub.id)
             return SubIssueOrder.Key(
                 done: card.map(isDone) ?? sub.isClosed,
@@ -158,6 +162,32 @@ extension AppModel {
             return columns.first { $0.nesting.members.contains { $0.id == item.id } }?.nesting
         }
         return sections.first { $0.nesting.members.contains { $0.id == item.id } }?.nesting
+    }
+
+    // MARK: The tree in an issue's list of sub-issues
+
+    /// Shows a sub-issue's own sub-issues under it in an issue's list of them, or folds them in again. They are
+    /// folded at first.
+    func toggleSubIssues(of contentId: String) {
+        withAnimation(Theme.spring) {
+            if unfoldedSubIssues.contains(contentId) { unfoldedSubIssues.remove(contentId) } else { unfoldedSubIssues.insert(contentId) }
+        }
+    }
+
+    /// Reads a sub-issue's own sub-issues from GitHub, once at a time.
+    func loadSubIssues(of sub: SubIssue) async {
+        guard loadingSubIssues.insert(sub.id).inserted else { return }
+        try? await engine.loadSubIssues(parentId: sub.id)
+        loadingSubIssues.remove(sub.id)
+    }
+
+    /// The lines of a list of sub-issues as it shows: each one, and under each unfolded one its own sub-issues,
+    /// level by level.
+    func subIssueLines(_ subs: [SubIssue], in detail: IssueDetailModel) -> [SubIssueLine] {
+        SubIssueLine.lines(
+            subs, of: detail.contentId, tree: detail.subIssueTree, unfolded: unfoldedSubIssues, loading: loadingSubIssues,
+            card: { self.issue(contentId: $0) }, arrange: arranged
+        )
     }
 
     // MARK: Finishing the parent
@@ -270,6 +300,72 @@ extension AppModel {
             result.append(.setState(.init(contentId: contentId, closed: true, reason: "COMPLETED")))
         }
         return result
+    }
+}
+
+/// One line of an issue's list of sub-issues: a sub-issue at its level of the tree.
+struct SubIssueLine: Identifiable, Equatable {
+    struct Progress: Equatable {
+        var done: Int
+        var total: Int
+    }
+
+    var sub: SubIssue
+    /// How deep it hangs and where the tree's lines go on below it; depth 0 for the issue's own sub-issues.
+    var place: Nesting.Place
+    /// How far its own sub-issues are; nil when it has none.
+    var progress: Progress?
+    /// Whether its own sub-issues show under it.
+    var unfolded: Bool
+    /// The issues above it, from the one whose list this is.
+    var path: [String]
+    /// Unfolded, with its sub-issues in the lines that follow.
+    var childrenShow = false
+    /// Unfolded, while its sub-issues are being read for the first time.
+    var waiting = false
+
+    var id: String { (path + [sub.id]).joined(separator: "/") }
+
+    /// The lines of `subs`, the sub-issues of `root`: each one, and under each one in `unfolded` its own sub-issues
+    /// from `tree`, level by level, put in order by `arrange`. `card` finds a sub-issue's card, whose counts stand in
+    /// for GitHub's until read.
+    static func lines(
+        _ subs: [SubIssue], of root: String, tree: [String: [SubIssue]], unfolded: Set<String>, loading: Set<String>,
+        card: (String) -> Item?, arrange: ([SubIssue]) -> [SubIssue] = { $0 }
+    ) -> [SubIssueLine] {
+        var lines: [SubIssueLine] = []
+        func add(_ subs: [SubIssue], under parent: [Bool]?, path: [String]) {
+            for (index, sub) in subs.enumerated() {
+                let continues = parent.map { $0 + [index < subs.count - 1] } ?? []
+                let children = tree[sub.id] ?? []
+                let progress = Progress.of(sub, children: children, card: card(sub.id))
+                // An issue met again further down, in stale data, isn't unfolded a second time.
+                let shows = progress != nil && unfolded.contains(sub.id) && !path.contains(sub.id)
+                lines.append(SubIssueLine(
+                    sub: sub, place: Nesting.Place(depth: continues.count, continues: continues),
+                    progress: progress, unfolded: shows, path: path,
+                    childrenShow: shows && !children.isEmpty,
+                    waiting: shows && children.isEmpty && loading.contains(sub.id)
+                ))
+                if shows { add(arrange(children), under: continues, path: path + [sub.id]) }
+            }
+        }
+        add(subs, under: nil, path: [root])
+        return lines
+    }
+}
+
+extension SubIssueLine.Progress {
+    /// How far a sub-issue's own sub-issues are: from their list once it has been read in full, which follows
+    /// changes made here at once, otherwise from GitHub's count, or its card's before that is read. Nil when it has
+    /// none.
+    static func of(_ sub: SubIssue, children: [SubIssue], card: Item?) -> Self? {
+        let total = sub.subTotal ?? card?.subTotal ?? 0
+        if !children.isEmpty, sub.subTotal == nil || children.count == total {
+            return Self(done: children.filter(\.isClosed).count, total: children.count)
+        }
+        guard total > 0 else { return nil }
+        return Self(done: sub.subCompleted ?? card?.subCompleted ?? 0, total: total)
     }
 }
 

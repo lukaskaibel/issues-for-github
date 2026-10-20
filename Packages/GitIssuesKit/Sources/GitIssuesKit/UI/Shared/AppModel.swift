@@ -308,6 +308,13 @@ public final class AppModel {
     @ObservationIgnored var foldedEpics = Set(UserDefaults.standard.stringArray(forKey: "foldedEpicGroups") ?? []) {
         didSet { UserDefaults.standard.set(Array(foldedEpics), forKey: "foldedEpicGroups") }
     }
+    /// Sub-issues (node ids) whose own sub-issues are unfolded under them in an issue's list of sub-issues. Kept on
+    /// this device.
+    var unfoldedSubIssues = Set(UserDefaults.standard.stringArray(forKey: "unfoldedSubIssues") ?? []) {
+        didSet { UserDefaults.standard.set(Array(unfoldedSubIssues), forKey: "unfoldedSubIssues") }
+    }
+    /// Sub-issues (node ids) whose own sub-issues are being read from GitHub.
+    var loadingSubIssues: Set<String> = []
     /// What was chosen lately in pickers, by kind, newest first (see `RecentPick`). Kept on this device.
     @ObservationIgnored var recentPicks = UserDefaults.standard.dictionary(forKey: "recentPicks") as? [String: [String]] ?? [:] {
         didSet { UserDefaults.standard.set(recentPicks, forKey: "recentPicks") }
