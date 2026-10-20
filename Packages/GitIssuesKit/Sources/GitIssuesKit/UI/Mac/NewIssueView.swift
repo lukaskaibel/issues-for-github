@@ -399,20 +399,20 @@ struct NewIssueView: View {
                     PickerItem(id: option.id, title: option.name, selected: draft.priorityId == option.id, icon: AnyView(PriorityIcon(level: option.priorityLevel)))
                 }
         case .assignees:
-            return model.people(projectId: draft.projectId, repoId: draft.repoId).map { person in
+            return model.recentFirst(model.people(projectId: draft.projectId, repoId: draft.repoId).map { person in
                 PickerItem(
                     id: person.id, title: person.login, subtitle: person.name,
                     selected: draft.assignees.contains { $0.id == person.id },
                     icon: AnyView(Avatar(login: person.login, url: person.avatarUrl, size: 18))
                 )
-            }
+            }, .assignee)
         case .labels:
-            return model.pickableLabels(projectId: draft.projectId, repoId: draft.repoId).map { label in
+            return model.recentFirst(model.pickableLabels(projectId: draft.projectId, repoId: draft.repoId).map { label in
                 PickerItem(
                     id: label.id, title: label.name, selected: draft.labels.contains { $0.id == label.id },
                     icon: AnyView(Circle().fill(Theme.labelColor(label.color)).frame(width: 9, height: 9))
                 )
-            }
+            }, .label, key: \.title)
         case .milestone:
             return [PickerItem(
                 id: "", title: String(localized: .noMilestone), selected: draft.milestoneTitle == nil,
@@ -441,6 +441,7 @@ struct NewIssueView: View {
                 draft.assignees.remove(at: index)
             } else if let person = model.people(projectId: draft.projectId, repoId: draft.repoId).first(where: { $0.id == id }) {
                 draft.assignees.append(person)
+                model.noteRecent(.assignee, person.id)
             }
         case .labels:
             if let name = AppModel.newLabelName(id) {
@@ -452,6 +453,7 @@ struct NewIssueView: View {
                 draft.labels.remove(at: index)
             } else if let label = model.pickableLabels(projectId: draft.projectId, repoId: draft.repoId).first(where: { $0.id == id }) {
                 draft.labels.append(label)
+                model.noteRecent(.label, label.name)
             }
         case .dueDate:
             draft.dueDate = CalendarDay(id)?.string

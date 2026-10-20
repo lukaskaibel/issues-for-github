@@ -282,9 +282,10 @@ struct SubIssuesSection: View {
 
             if let detail, !subs.isEmpty {
                 let lines = model.subIssueLines(subs, in: detail)
+                let order = lines.compactMap { model.item(contentId: $0.sub.id)?.id }
                 VStack(spacing: 0) {
                     ForEach(lines) { line in
-                        SubIssueRow(line: line, showsPriority: showsPriority)
+                        SubIssueRow(line: line, showsPriority: showsPriority, order: order, block: order)
                     }
                 }
                 .animation(Theme.spring, value: lines.map(\.id))
@@ -313,11 +314,17 @@ private struct SubIssueOrderButton: View {
 }
 
 /// A sub-issue in an issue's list of them. One with sub-issues of its own shows how far they are and an arrow that
-/// unfolds them under it, indented, with lines from it as in the board's lists.
+/// unfolds them under it, indented, with lines from it as in the board's lists. A click opens it; ⌘-click and
+/// Shift-click pick several, as in the list, and their right-click menu and pickers then change all of them, such as
+/// moving them under another parent.
 private struct SubIssueRow: View {
     @Environment(AppModel.self) private var model
     var line: SubIssueLine
     var showsPriority: Bool
+    /// The sub-issues as listed, unfolded ones included, for Shift-click to pick a run of them.
+    var order: [String]
+    /// The sub-issues listed together with this one, under the same heading.
+    var block: [String]
     @State private var hovering = false
     @State private var menuRegion = UUID()
 
@@ -329,6 +336,7 @@ private struct SubIssueRow: View {
 
     var body: some View {
         let boardItem = model.item(contentId: sub.id)
+        let picked = boardItem.map { model.pickedSubIssueIds.contains($0.id) } ?? false
         // A checklist, as in Reminders: the status where the checkbox is, the title, then the rest on the right.
         HStack(spacing: 10) {
             HStack(spacing: 0) {
@@ -392,20 +400,24 @@ private struct SubIssueRow: View {
         .padding(.trailing, 8)
         .frame(height: 38)
         .background {
-            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hovering ? Theme.hover : .clear)
+            // Picked ones tinted, as picked notifications in the Inbox; picked neighbours join into one shape, as a
+            // selection does in Finder.
+            shape(picked: picked, of: boardItem).fill(picked ? Theme.selectionFill : hovering ? Theme.hover : .clear)
             TreeLines(place: line.place, firstLine: 16, indent: Self.indent, iconRadius: 8, linesDown: line.childrenShow)
         }
         .overlay(alignment: .bottom) {
             // A hairline from where the title starts, as between a checklist's lines.
-            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 34 + indent).opacity(hovering ? 0 : 1)
+            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 34 + indent).opacity(hovering || picked ? 0 : 1)
         }
         .contentShape(Rectangle())
+        .accessibilityAddTraits(picked ? .isSelected : [])
         .onHover { hovering = $0 }
         // Unfolded, its sub-issues are read again each time the list shows.
         .task(id: line.unfolded) {
             if line.unfolded { await model.loadSubIssues(of: sub) }
         }
         .onTapGesture {
+            if model.handleSubIssueClick(on: boardItem, in: order) { return }
             if let boardItem {
                 model.open(boardItem)
             } else if let url = sub.url.flatMap(URL.init(string:)) {
@@ -444,6 +456,16 @@ private struct SubIssueRow: View {
 
     private var indent: CGFloat {
         CGFloat(min(line.place.depth, 5)) * Self.indent
+    }
+
+    private func shape(picked: Bool, of boardItem: Item?) -> UnevenRoundedRectangle {
+        let index = picked ? boardItem.flatMap { block.firstIndex(of: $0.id) } : nil
+        let above = index.map { $0 > 0 && model.pickedSubIssueIds.contains(block[$0 - 1]) } ?? false
+        let below = index.map { $0 < block.count - 1 && model.pickedSubIssueIds.contains(block[$0 + 1]) } ?? false
+        return UnevenRoundedRectangle(
+            topLeadingRadius: above ? 0 : 8, bottomLeadingRadius: below ? 0 : 8,
+            bottomTrailingRadius: below ? 0 : 8, topTrailingRadius: above ? 0 : 8, style: .continuous
+        )
     }
 
     @ViewBuilder
@@ -556,11 +578,14 @@ struct EpicWorkSection: View {
                 })
 
                 let lines = detail.map { detail in groups.map { model.subIssueLines($0.subs, in: detail) } } ?? []
+                let order = lines.joined().compactMap { model.item(contentId: $0.sub.id)?.id }
                 VStack(spacing: 0) {
                     ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
                         EpicGroupHeader(item: item, group: group.group, title: group.title, count: group.subs.count)
-                        ForEach(lines.indices.contains(index) ? lines[index] : []) { line in
-                            SubIssueRow(line: line, showsPriority: showsPriority)
+                        let groupLines = lines.indices.contains(index) ? lines[index] : []
+                        let block = groupLines.compactMap { model.item(contentId: $0.sub.id)?.id }
+                        ForEach(groupLines) { line in
+                            SubIssueRow(line: line, showsPriority: showsPriority, order: order, block: block)
                         }
                     }
                 }

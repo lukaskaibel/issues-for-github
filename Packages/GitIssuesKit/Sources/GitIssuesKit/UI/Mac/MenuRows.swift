@@ -171,8 +171,10 @@ struct CursorHighlight<Key: Hashable & Sendable>: View {
 
 /// The line between groups of menu rows.
 struct MenuDivider: View {
+    static let height: CGFloat = 11
+
     var body: some View {
-        Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, 15).padding(.vertical, 5)
+        Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, 15).padding(.vertical, (Self.height - 1) / 2)
     }
 }
 

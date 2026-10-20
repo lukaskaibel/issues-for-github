@@ -32,6 +32,9 @@ struct PickerList: View {
     /// The lit row, by its place in the list.
     @State private var cursor = MenuCursor<Int>(0)
     @FocusState private var focused: Bool
+    /// Where each row was at the first pick that kept the list open, and whether it was a recent one, so rows stay
+    /// put under the pointer while more are picked.
+    @State private var held: [String: (place: Int, recent: Bool)]?
 
     var body: some View {
         let visible = filtered
@@ -82,7 +85,7 @@ struct PickerList: View {
                 .onSubmit {
                     if let index = cursor.key, visible.indices.contains(index) { pick(visible[index]) }
                 }
-            PickerRows(visible: visible, cursor: cursor, multiple: multiple, maxRows: maxRows) { item, keepOpen in
+            PickerRows(visible: visible, cursor: cursor, multiple: multiple, showsRecent: query.isEmpty, maxRows: maxRows) { item, keepOpen in
                 pick(item, keepOpen: keepOpen)
             }
         }
@@ -91,9 +94,12 @@ struct PickerList: View {
         .foregroundStyle(Theme.text)
         .onAppear {
             focused = true
-            // Single-choice pickers start on the current value, so Return keeps it.
+            // Single-choice pickers start on the choice made last time, so Return makes it again, or else on the
+            // current value, so Return keeps it. Pickers of several values start at the top, where recent ones are.
             if multiple {
                 return
+            } else if let recent = items.firstIndex(where: \.recent) {
+                cursor.moveByKeys(to: recent)
             } else if opensOnSelection, let current = items.firstIndex(where: \.selected) {
                 cursor.moveByKeys(to: current)
             } else if !opensOnSelection, let first = items.firstIndex(where: { !$0.selected }) {
@@ -107,9 +113,20 @@ struct PickerList: View {
         }
     }
 
+    private var rows: [PickerItem] {
+        guard let held else { return items }
+        return items.enumerated()
+            .sorted { a, b in (held[a.element.id]?.place ?? .max, a.offset) < (held[b.element.id]?.place ?? .max, b.offset) }
+            .map { _, item in
+                var item = item
+                item.recent = held[item.id]?.recent ?? false
+                return item
+            }
+    }
+
     private var filtered: [PickerItem] {
         if let search, !query.isEmpty { return search(query) }
-        let rows = matching(query, in: items, creating: query.isEmpty ? nil : creating?(query))
+        let rows = matching(query, in: self.rows, creating: query.isEmpty ? nil : creating?(query))
         guard rows.count > limit else { return rows }
         // Rows that are always there stay, after the best matches.
         let kept = rows.filter(\.alwaysShown)
@@ -117,6 +134,9 @@ struct PickerList: View {
     }
 
     private func pick(_ item: PickerItem, keepOpen: Bool = false) {
+        if keepOpen, held == nil {
+            held = Dictionary(rows.enumerated().map { ($1.id, (place: $0, recent: $1.recent)) }) { first, _ in first }
+        }
         onPick(item.id)
         if !keepOpen { onClose() }
     }
@@ -128,10 +148,14 @@ private struct PickerRows: View {
     var visible: [PickerItem]
     var cursor: MenuCursor<Int>
     var multiple: Bool
+    /// Whether recent rows get their line; not while something is typed, when rows go by how well they match.
+    var showsRecent: Bool
     var maxRows: Int
     var onPick: (_ item: PickerItem, _ keepOpen: Bool) -> Void
 
     var body: some View {
+        // The line under the recent rows, unless they are all there is.
+        let lineAfter = showsRecent ? visible.lastIndex(where: \.recent).flatMap { $0 < visible.count - 1 ? $0 : nil } : nil
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 0) {
@@ -142,6 +166,9 @@ private struct PickerRows: View {
                                 onPick(item, multiple && !NSEvent.modifierFlags.isDisjoint(with: [.shift, .command]))
                             }
                             .onHover { if $0 { cursor.key = position } }
+                        if position == lineAfter {
+                            MenuDivider()
+                        }
                     }
                     if visible.isEmpty {
                         Text(.noMatches)
@@ -154,7 +181,8 @@ private struct PickerRows: View {
                 .padding(.vertical, 6)
             }
             .scrollIndicators(.never)
-            .frame(height: min(CGFloat(max(visible.count, 1)), CGFloat(maxRows)) * PickerRow.height + 12)
+            .frame(height: min(CGFloat(max(visible.count, 1)), CGFloat(maxRows)) * PickerRow.height + 12
+                + (lineAfter != nil ? MenuDivider.height : 0))
             .onChange(of: cursor.keyMoves) {
                 // Only for the keys: the pointer is on its row already, and scrolling would move the row away from it.
                 if let index = cursor.key, visible.indices.contains(index) { proxy.scrollTo(visible[index].id) }
