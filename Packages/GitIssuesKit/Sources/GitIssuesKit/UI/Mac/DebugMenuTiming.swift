@@ -175,6 +175,9 @@ enum MenuTiming {
         let run = Run()
         var previous = ""
         var cards: [String] = []
+        /// Each step's pointer height and what was under it, for the series.
+        var places: [String] = []
+        LayerDrawLog.install()
         let down = Array(stride(from: from, through: to, by: 5))
         for _ in 0..<3 {
             for y in down + down.reversed() {
@@ -188,6 +191,7 @@ enum MenuTiming {
                         drag.number(at: point, in: items)?.id, header?.epic, header.map { drag.isOnFold(point, of: $0) ? "fold" : nil } ?? nil,
                     ].map { $0 ?? "-" }.joined(separator: "|")
                     defer { previous = under }
+                    places.append("\(Int(y))\t\(under)")
                     if let id = card?.id, cards.last != id { cards.append(id) }
                     return under == previous ? "same" : "change"
                 }) {
@@ -196,10 +200,27 @@ enum MenuTiming {
             }
         }
         CardPaintTiming.reset()
-        run.finish(log) { samples in
-            "boardsweep: " + summary((samples["change"] ?? []) + (samples["same"] ?? []))
+        run.finish(log) { [run] samples in
+            writeSeries("boardsweep", header: "y\tcard|part|fold|number|header|header fold", places: places, run.series)
+            return "boardsweep: " + summary((samples["change"] ?? []) + (samples["same"] ?? []))
                 + "; \(cards.count) times onto one of \(Set(cards).count) cards; " + paintedCards()
         }
+    }
+
+    /// One line a step, next to the debug remote's command file as `<file>.<name>.tsv`: what the step was, the main
+    /// thread's time in it (busy, CPU, longest pass and its CPU, passes) and the layers drawn in it (`LayerDrawLog`), to
+    /// find the steps that cost and what they drew.
+    private static func writeSeries(_ name: String, header: String, places: [String], _ series: [Run.Step]) {
+        guard let path = UserDefaults.standard.string(forKey: "debugCommandFile") else { return }
+        let lines = series.enumerated().map { index, step in
+            let sample = step.sample
+            return [
+                "\(index)", places.indices.contains(index) ? places[index] : "", step.name,
+                String(format: "%.2f\t%.2f\t%.2f\t%.2f\t%d", sample.busy, sample.cpu, sample.frame, sample.cpuFrame, sample.passes), step.drawn,
+            ].joined(separator: "\t")
+        }
+        let text = (["step\t\(header)\tkind\tbusy\tcpu\tframe\tcpu frame\tpasses\tdrawn"] + lines).joined(separator: "\n") + "\n"
+        try? text.write(toFile: path + ".\(name).tsv", atomically: true, encoding: .utf8)
     }
 
     /// "37 cards painted, 0.62 ms each", since the timing was last reset.
@@ -217,6 +238,14 @@ enum MenuTiming {
         /// The names in the order they first came, for the report.
         var names: [String] = []
         var current: String?
+        /// Every named step in order, with the layers drawn in it.
+        var series: [Step] = []
+
+        struct Step {
+            var name: String
+            var sample: Sample
+            var drawn: String
+        }
 
         func step(_ name: String?, _ action: @escaping () -> Void) {
             step({ name }, action)
@@ -243,6 +272,7 @@ enum MenuTiming {
         func finish(_ log: @escaping (String) -> Void, _ report: @escaping ([String: [Sample]]) -> String) {
             steps.append { [self] in
                 close()
+                LayerDrawLog.recording = false
                 Dropdown.close()
                 stopObserving()
                 log(report(samples))
@@ -250,6 +280,7 @@ enum MenuTiming {
             }
             startObserving()
             MenuTiming.current = Sample()
+            LayerDrawLog.recording = true
             start(steps)
         }
 
@@ -257,6 +288,7 @@ enum MenuTiming {
             if let current {
                 if samples[current] == nil { names.append(current) }
                 samples[current, default: []].append(MenuTiming.current)
+                series.append(Step(name: current, sample: MenuTiming.current, drawn: LayerDrawLog.take()))
             }
             MenuTiming.current = Sample()
             current = nil
