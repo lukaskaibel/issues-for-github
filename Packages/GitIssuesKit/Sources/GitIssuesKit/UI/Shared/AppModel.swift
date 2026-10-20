@@ -256,7 +256,10 @@ public final class AppModel {
     }
     /// Set while `viewMode` follows the view that was opened, which isn't a choice to remember.
     @ObservationIgnored var isFollowingView = false
-    private(set) var openItemId: String?
+    private(set) var openItemId: String? {
+        // Sub-issues picked on one issue's page mean nothing on the next.
+        didSet { if openItemId != oldValue, !pickedSubIssueIds.isEmpty { pickedSubIssueIds = [] } }
+    }
     /// The issue the keyboard focus is on. The issue under the pointer is tracked separately and is not
     /// observed, so moving the mouse over a long list does not redraw it.
     var focusedItemId: String?
@@ -312,6 +315,10 @@ public final class AppModel {
     }
     /// Sub-issues (node ids) whose own sub-issues are being read from GitHub.
     var loadingSubIssues: Set<String> = []
+    /// What was chosen lately in pickers, by kind, newest first (see `RecentPick`). Kept on this device.
+    @ObservationIgnored var recentPicks = UserDefaults.standard.dictionary(forKey: "recentPicks") as? [String: [String]] ?? [:] {
+        didSet { UserDefaults.standard.set(recentPicks, forKey: "recentPicks") }
+    }
     /// A new issue that was closed before it was created, kept for the next time the dialog opens.
     @ObservationIgnored var unsentNewIssue: NewIssueDraft?
     /// A title typed into a picker before choosing to create a new issue instead, for the dialog to start with.
@@ -407,6 +414,10 @@ public final class AppModel {
     /// Where a Shift-click or Shift-arrow range starts, and the range it added last.
     @ObservationIgnored var selectionAnchorId: String?
     @ObservationIgnored var selectionRange: Set<String> = []
+    /// Sub-issues picked on the open issue's page (⌘-click, Shift-click), changed together from their right-click
+    /// menu and the keys. The board's own picks stay as they were behind the page.
+    var pickedSubIssueIds: Set<String> = []
+    @ObservationIgnored var subIssuePickAnchor: String?
     /// The issue shown in the quick look that Space opens.
     var peekItemId: String?
 
