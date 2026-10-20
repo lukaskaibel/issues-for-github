@@ -13,6 +13,11 @@ All notable changes to this project are recorded here. The format follows
   them by status, newest first or in GitHub's order instead; the choice holds for every issue on that device, and the
   list a card's sub-issue count opens follows it too. Before, they were always in GitHub's order, which is mostly the
   order they were added in.
+- **A blocked issue says what blocks it.** The red flag on a blocked issue's card and list row now carries the number
+  of the issue to finish first, as in `#364`, with `+1` for each further one, and the sub-issues listed in an issue,
+  which had no flag at all, carry the same. On the Mac a click on the flag lists the blockers and changes them, as on
+  the card, and pointing at it names them all. The chip at the top of a blocked issue says "Blocked by #364". The app
+  reads which issues block a card along with the board, so the numbers are there without opening each issue.
 
 ### Changed
 
