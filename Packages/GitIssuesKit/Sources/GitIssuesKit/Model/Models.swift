@@ -240,6 +240,9 @@ public struct SubIssue: Codable, FetchableRecord, PersistableRecord, Identifiabl
     /// Its milestone (node id) and the milestone's title, so an epic can say when its sub-issues are due.
     public var milestoneId: String?
     public var milestoneTitle: String?
+    /// How many sub-issues it has itself, and how many of them are closed, as GitHub counts them. Nil until read.
+    public var subTotal: Int?
+    public var subCompleted: Int?
 
     public var isClosed: Bool { state != "OPEN" }
 }

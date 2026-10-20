@@ -300,6 +300,13 @@ public final class AppDatabase: Sendable {
             try db.execute(sql: "UPDATE item SET remoteUpdatedAt = NULL")
             try db.execute(sql: "UPDATE project SET remoteUpdatedAt = NULL")
         }
+        migrator.registerMigration("subIssueTree") { db in
+            // Filled in the next time the parent's sub-issues are read.
+            try db.alter(table: "subIssue") { t in
+                t.add(column: "subTotal", .integer)
+                t.add(column: "subCompleted", .integer)
+            }
+        }
         return migrator
     }
 }

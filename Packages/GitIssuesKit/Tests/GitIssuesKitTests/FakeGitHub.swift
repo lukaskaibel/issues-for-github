@@ -12,6 +12,7 @@ final class FakeGitHub: @unchecked Sendable {
         var parent: String?
         var title: String?
         var updatedAt = "2026-10-01T10:00:00Z"
+        var closed = false
     }
 
     static let projectId = "P1"
@@ -79,6 +80,19 @@ final class FakeGitHub: @unchecked Sendable {
         }
         event("parent_issue_added", on: child)
         event("sub_issue_added", on: parent)
+    }
+
+    /// Adds an issue that is on no board, such as a sub-issue of a sub-issue.
+    func addIssue(_ issue: Issue) {
+        lock.withLock { issues.append(issue) }
+    }
+
+    /// Closes an issue or opens it again.
+    func setClosed(_ contentId: String, _ closed: Bool) {
+        lock.withLock {
+            guard let index = issues.firstIndex(where: { $0.contentId == contentId }) else { return }
+            issues[index].closed = closed
+        }
     }
 
     /// Renames an issue the way GitHub does at times: the issue changes, but neither its card nor the board says so.
@@ -166,6 +180,10 @@ final class FakeGitHub: @unchecked Sendable {
                          "repository": ["id": Self.repoId], "viewerCanDelete": true]
                     },
                 ]]]
+            } else if query.contains("subIssues(first: 100) { nodes { ...SubIssueFields } }"), !query.contains("comments(") {
+                let id = variables["id"] as? String ?? ""
+                log.append("sub-issues \(id)")
+                data = ["node": ["subIssues": ["nodes": issues.filter { $0.parent == id }.map(subIssue)]]]
             } else if query.contains("... on Issue { ...IssueFields }") {
                 log.append("issues")
                 let ids = variables["ids"] as? [String] ?? []
@@ -206,6 +224,17 @@ final class FakeGitHub: @unchecked Sendable {
             "subIssuesSummary": ["total": issues.filter { $0.parent == issue.contentId }.count, "completed": 0],
             "issueDependenciesSummary": ["blockedBy": 0, "blocking": 0],
             "comments": ["totalCount": 0],
+        ]
+    }
+
+    private func subIssue(_ issue: Issue) -> [String: Any] {
+        let children = issues.filter { $0.parent == issue.contentId }
+        return [
+            "id": issue.contentId, "number": issue.number, "title": issue.title ?? "Issue \(issue.number)",
+            "state": issue.closed ? "CLOSED" : "OPEN", "stateReason": issue.closed ? "COMPLETED" : NSNull(),
+            "url": "https://github.com/\(Self.repo)/issues/\(issue.number)",
+            "repository": ["id": Self.repoId, "nameWithOwner": Self.repo], "assignees": ["nodes": []], "milestone": NSNull(),
+            "subIssuesSummary": ["total": children.count, "completed": children.filter(\.closed).count],
         ]
     }
 

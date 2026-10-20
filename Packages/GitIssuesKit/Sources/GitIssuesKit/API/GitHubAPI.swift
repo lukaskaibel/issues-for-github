@@ -362,7 +362,7 @@ public final class GitHubAPI: Sendable {
                     var createdAt: Date
                     var author: ActorDTO?
                 }
-                struct SubDTO: Decodable {
+                struct LinkDTO: Decodable {
                     var id: String
                     var number: Int
                     var title: String
@@ -370,15 +370,13 @@ public final class GitHubAPI: Sendable {
                     var stateReason: String?
                     var url: String?
                     var repository: RepoDTO?
-                    var assignees: Nodes<PersonDTO>?
-                    var milestone: MilestoneRefDTO?
                 }
                 var title: String?
                 var body: String?
                 var comments: Nodes<CommentDTO>?
-                var subIssues: Nodes<SubDTO>?
-                var blockedBy: Nodes<SubDTO>?
-                var blocking: Nodes<SubDTO>?
+                var subIssues: Nodes<SubIssueDTO>?
+                var blockedBy: Nodes<LinkDTO>?
+                var blocking: Nodes<LinkDTO>?
             }
             var node: Node?
         }
@@ -388,10 +386,7 @@ public final class GitHubAPI: Sendable {
             ... on Issue {
               title body
               comments(first: 100) { nodes { id body createdAt author { login avatarUrl } } }
-              subIssues(first: 100) { nodes { id number title state stateReason url
-                repository { id nameWithOwner }
-                assignees(first: 3) { nodes { id login name avatarUrl } }
-                milestone { id title } } }
+              subIssues(first: 100) { nodes { ...SubIssueFields } }
               blockedBy(first: 50) { nodes { id number title state stateReason url repository { id nameWithOwner } } }
               blocking(first: 50) { nodes { id number title state stateReason url repository { id nameWithOwner } } }
             }
@@ -401,6 +396,7 @@ public final class GitHubAPI: Sendable {
             }
           }
         }
+        \(GQL.subIssueFields)
         """
         let response: Response = try await client.run(query, variables: ["id": contentId])
         guard let node = response.node else {
@@ -410,12 +406,7 @@ public final class GitHubAPI: Sendable {
             Comment(id: $0.id, issueId: contentId, authorLogin: $0.author?.login, authorAvatarUrl: $0.author?.avatarUrl, body: $0.body, createdAt: $0.createdAt)
         }
         let subs = (node.subIssues?.items ?? []).enumerated().map { index, sub in
-            SubIssue(
-                id: sub.id, parentId: contentId, number: sub.number, title: sub.title, state: sub.state,
-                stateReason: sub.stateReason, repo: sub.repository?.nameWithOwner, url: sub.url, position: index,
-                assignees: (sub.assignees?.items ?? []).map(\.person),
-                milestoneId: sub.milestone?.id, milestoneTitle: sub.milestone?.title
-            )
+            sub.subIssue(parentId: contentId, position: index)
         }
         var links: [LinkedIssue] = []
         for (relation, nodes) in [(LinkedIssue.Relation.blockedBy, node.blockedBy), (.blocking, node.blocking)] {
@@ -428,6 +419,29 @@ public final class GitHubAPI: Sendable {
             }
         }
         return RemoteIssueDetail(title: node.title ?? "", body: node.body ?? "", comments: comments, subIssues: subs, links: links)
+    }
+
+    /// Only the sub-issues of an issue, for a sub-issue unfolded in another issue's list of them.
+    public func subIssues(parentId: String) async throws -> [SubIssue] {
+        struct Response: Decodable {
+            struct Node: Decodable {
+                var subIssues: Nodes<SubIssueDTO>?
+            }
+            var node: Node?
+        }
+        let query = """
+        query($id: ID!) {
+          node(id: $id) { ... on Issue { subIssues(first: 100) { nodes { ...SubIssueFields } } } }
+        }
+        \(GQL.subIssueFields)
+        """
+        let response: Response = try await client.run(query, variables: ["id": parentId])
+        guard let node = response.node else {
+            throw APIError.graphql([GraphQLErrorItem(message: String(localized: .errorIssueNotFound), type: "NOT_FOUND")])
+        }
+        return (node.subIssues?.items ?? []).enumerated().map { index, sub in
+            sub.subIssue(parentId: parentId, position: index)
+        }
     }
 
     /// Current title and body, fetched right before sending a text edit to catch concurrent changes.
@@ -786,6 +800,17 @@ enum GQL {
     }
     """
 
+    /// A sub-issue in its parent's list, with how far its own sub-issues are.
+    static let subIssueFields = """
+    fragment SubIssueFields on Issue {
+      id number title state stateReason url
+      repository { id nameWithOwner }
+      assignees(first: 3) { nodes { id login name avatarUrl } }
+      milestone { id title }
+      subIssuesSummary { total completed }
+    }
+    """
+
     /// An issue on its own, with the boards it is on, for issues read from a repository or a search.
     static let issueFields = """
     fragment IssueFields on Issue {
@@ -892,6 +917,34 @@ struct MilestoneRefDTO: Decodable {
 struct IssueTypeDTO: Decodable {
     var id: String?
     var name: String
+}
+
+/// A sub-issue as `GQL.subIssueFields` reads it.
+struct SubIssueDTO: Decodable {
+    struct Summary: Decodable {
+        var total: Int
+        var completed: Int
+    }
+    var id: String
+    var number: Int
+    var title: String
+    var state: String
+    var stateReason: String?
+    var url: String?
+    var repository: RepoDTO?
+    var assignees: Nodes<PersonDTO>?
+    var milestone: MilestoneRefDTO?
+    var subIssuesSummary: Summary?
+
+    func subIssue(parentId: String, position: Int) -> SubIssue {
+        SubIssue(
+            id: id, parentId: parentId, number: number, title: title, state: state,
+            stateReason: stateReason, repo: repository?.nameWithOwner, url: url, position: position,
+            assignees: (assignees?.items ?? []).map(\.person),
+            milestoneId: milestone?.id, milestoneTitle: milestone?.title,
+            subTotal: subIssuesSummary?.total, subCompleted: subIssuesSummary?.completed
+        )
+    }
 }
 
 struct FieldDTO: Decodable {

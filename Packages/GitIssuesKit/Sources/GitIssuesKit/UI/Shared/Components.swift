@@ -276,6 +276,89 @@ struct SubIssueGlyph: View {
     }
 }
 
+/// The arrow that folds a sub-issue's own sub-issues in or out: to the right while they are folded in, down while
+/// they show. The Mac draws it as its lists do; iPhone and iPad use the symbol their lists use.
+struct FoldArrow: View {
+    var unfolded: Bool
+
+    var body: some View {
+        #if os(macOS)
+        Chevron()
+            .stroke(Theme.textSecondary, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+            .frame(width: 7, height: 7)
+            .rotationEffect(.degrees(unfolded ? 90 : 0))
+        #else
+        Image(systemName: "chevron.right")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(Theme.textSecondary)
+            .rotationEffect(.degrees(unfolded ? 90 : 0))
+        #endif
+    }
+
+    private struct Chevron: Shape {
+        func path(in rect: CGRect) -> Path {
+            var path = Path()
+            path.move(to: CGPoint(x: rect.midX - rect.width / 4, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.midX + rect.width / 4, y: rect.midY))
+            path.addLine(to: CGPoint(x: rect.midX - rect.width / 4, y: rect.maxY))
+            return path
+        }
+    }
+}
+
+/// The lines of a tree of sub-issues through one row, as the board's lists draw them: a straight one for each level
+/// above whose sub-issues go on below the row, a branch into the row's status icon, and a line from that icon down
+/// to the row's own sub-issues while they show.
+struct TreeLines: View {
+    var place: Nesting.Place
+    /// Where the line of the first level runs, under the status icons of the rows that stand on their own.
+    var firstLine: CGFloat
+    /// How much further in each level is.
+    var indent: CGFloat
+    /// Half the status icon's width: lines stop short of it.
+    var iconRadius: CGFloat
+    /// The deepest level drawn further in; deeper ones stay there.
+    var deepest = 5
+    var linesDown: Bool
+
+    var body: some View {
+        Canvas { context, size in
+            let depth = min(place.depth, deepest)
+            let midY = size.height / 2
+            let iconX = firstLine + CGFloat(depth) * indent
+            var path = Path()
+            for level in 0..<depth {
+                let lineX = firstLine + CGFloat(level) * indent
+                let continues = place.continues.indices.contains(level) && place.continues[level]
+                if level < depth - 1 {
+                    if continues {
+                        path.move(to: CGPoint(x: lineX, y: 0))
+                        path.addLine(to: CGPoint(x: lineX, y: size.height))
+                    }
+                    continue
+                }
+                if continues {
+                    path.move(to: CGPoint(x: lineX, y: 0))
+                    path.addLine(to: CGPoint(x: lineX, y: size.height))
+                    path.move(to: CGPoint(x: lineX, y: midY))
+                } else {
+                    path.move(to: CGPoint(x: lineX, y: 0))
+                    path.addLine(to: CGPoint(x: lineX, y: midY - 5))
+                    path.addQuadCurve(to: CGPoint(x: lineX + 5, y: midY), control: CGPoint(x: lineX, y: midY))
+                }
+                path.addLine(to: CGPoint(x: iconX - iconRadius - 3, y: midY))
+            }
+            if linesDown {
+                path.move(to: CGPoint(x: iconX, y: midY + iconRadius + 3))
+                path.addLine(to: CGPoint(x: iconX, y: size.height))
+            }
+            context.stroke(path, with: .color(Theme.treeLine), lineWidth: 1)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
 // MARK: - Small controls
 
 struct Keycap: View {

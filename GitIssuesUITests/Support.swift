@@ -87,10 +87,11 @@ class AppTestCase: XCTestCase {
         XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed, "Still \(value ?? "nil")", file: file, line: line)
     }
 
-    /// Scrolls the list until the element is on screen and clear of the tab bar, which lists scroll under.
+    /// Scrolls the list until the element is on screen and clear of the tab bar and of an issue's comment field,
+    /// which lists and issues scroll under.
     func scrollTo(_ element: XCUIElement, in container: XCUIElement? = nil, maxSwipes: Int = 8) {
         var swipes = 0
-        while !(element.exists && element.isHittable && !behindTabBar(element)) && swipes < maxSwipes {
+        while !(element.exists && element.isHittable && !behindTabBar(element) && !behindCommentField(element)) && swipes < maxSwipes {
             (container ?? app).swipeUp(velocity: .slow)
             swipes += 1
         }
@@ -99,6 +100,16 @@ class AppTestCase: XCTestCase {
     private func behindTabBar(_ element: XCUIElement) -> Bool {
         let bar = app.tabBars.firstMatch
         return bar.exists && bar.frame.height > 0 && element.frame.maxY > bar.frame.minY - 8
+    }
+
+    /// Under the comment field at the bottom of an issue, where a touch may reach the field instead.
+    private func behindCommentField(_ element: XCUIElement) -> Bool {
+        let field = app.textFields["comment-field"].firstMatch
+        let send = app.buttons["comment-send"].firstMatch
+        guard field.exists, send.exists, !["comment-field", "comment-send"].contains(element.identifier) else { return false }
+        let bar = field.frame.union(send.frame)
+        let frame = element.frame
+        return frame.maxY > bar.minY - 8 && frame.maxX > bar.minX && frame.minX < bar.maxX
     }
 
     /// Opens a board card's menu with a long press, and stops waiting for animations until `closedCardMenu()`.

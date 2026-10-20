@@ -194,6 +194,9 @@ public enum DemoData {
     private static let appIssuesWithoutProject: [IssueSpec] = [
         IssueSpec(number: 27, title: "App quits when a project has no Status field", status: "", priority: nil, labels: ["bug"], assignees: [viewer.person], body: "Reported on 0.1.0: open a project without a Status field and the app quits right away.", hoursAgo: 4),
         IssueSpec(number: 26, title: "Support GitHub Enterprise Server", status: "", priority: nil, labels: ["feature"], body: "Sign in to a company's own GitHub, with its own address.", parent: 42, hoursAgo: 50, milestone: "1.0"),
+        // Steps of a sub-issue on the board, kept off it: its list of sub-issues unfolds them.
+        IssueSpec(number: 29, title: "Spring the card back to where it was picked up", status: "Done", priority: nil, labels: ["ui"], parent: 13, hoursAgo: 8, milestone: "0.3"),
+        IssueSpec(number: 30, title: "Stop auto-scrolling when the drag is cancelled", status: "", priority: nil, labels: ["ui"], parent: 13, hoursAgo: 7, milestone: "0.3"),
     ]
 
     private static let comments: [Int: [(Person, String, Double)]] = [
@@ -290,11 +293,13 @@ public enum DemoData {
                     }
                 }
                 for (position, child) in children.enumerated() {
+                    let grandchildren = issues.filter { $0.parent == child.number }
                     try SubIssue(
                         id: contentId(child.number), parentId: contentId(issue.number), number: child.number, title: child.title,
                         state: child.status == "Done" ? "CLOSED" : "OPEN", stateReason: child.status == "Done" ? "COMPLETED" : nil,
                         repo: spec.repo, url: "https://github.com/\(spec.repo)/issues/\(child.number)", position: position,
-                        assignees: child.assignees, milestoneId: child.milestone.map(milestoneId), milestoneTitle: child.milestone
+                        assignees: child.assignees, milestoneId: child.milestone.map(milestoneId), milestoneTitle: child.milestone,
+                        subTotal: grandchildren.count, subCompleted: grandchildren.filter { $0.status == "Done" }.count
                     ).insert(db)
                 }
                 for (position, comment) in (comments[issue.number] ?? []).enumerated() {
@@ -306,32 +311,39 @@ public enum DemoData {
                 }
             }
         }
+        var listedUnder: [Int: Int] = [:]
         for issue in appIssuesWithoutProject {
             let date = now.addingTimeInterval(-issue.hoursAgo * 3600)
             let parent = issue.parent.flatMap { number in appIssues.first { $0.number == number } }
+            let closed = issue.status == "Done"
             try Item(
                 id: Item.idWithoutProject(contentId(issue.number)), projectId: nil, kind: .issue,
                 position: Item.positionWithoutProject(updatedAt: date),
                 contentId: contentId(issue.number), number: issue.number, title: issue.title, body: issue.body,
-                state: "OPEN", url: "https://github.com/\(app.repo)/issues/\(issue.number)", repoId: app.repoId, repo: app.repo,
-                authorLogin: sam.login, createdAt: date, updatedAt: date,
+                state: closed ? "CLOSED" : "OPEN", stateReason: closed ? "COMPLETED" : nil,
+                url: "https://github.com/\(app.repo)/issues/\(issue.number)", repoId: app.repoId, repo: app.repo,
+                authorLogin: sam.login, createdAt: date, updatedAt: date, closedAt: closed ? date : nil,
                 parentId: parent.map { contentId($0.number) }, parentNumber: parent?.number, parentTitle: parent?.title,
                 assignees: issue.assignees,
                 labels: app.labels.filter { issue.labels.contains($0.name) },
                 viewerCanDelete: true,
                 milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone
             ).insert(db)
-            // On no board, but the sub-issue of an epic on one: the epic lists it.
+            // On no board, but the sub-issue of an issue on one: the issue lists it.
             if let parent {
-                let siblings = appIssues.filter { $0.parent == parent.number }.count
+                let position = appIssues.filter { $0.parent == parent.number }.count + listedUnder[parent.number, default: 0]
+                listedUnder[parent.number, default: 0] += 1
                 try SubIssue(
                     id: contentId(issue.number), parentId: contentId(parent.number), number: issue.number, title: issue.title,
-                    state: "OPEN", repo: app.repo, url: "https://github.com/\(app.repo)/issues/\(issue.number)", position: siblings,
-                    assignees: issue.assignees, milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone
+                    state: closed ? "CLOSED" : "OPEN", stateReason: closed ? "COMPLETED" : nil, repo: app.repo,
+                    url: "https://github.com/\(app.repo)/issues/\(issue.number)", position: position,
+                    assignees: issue.assignees, milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone,
+                    subTotal: 0, subCompleted: 0
                 ).insert(db)
-                try db.execute(
-                    sql: "UPDATE item SET subTotal = subTotal + 1 WHERE contentId = ?", arguments: [contentId(parent.number)]
-                )
+                for table in ["item SET subTotal = subTotal + 1, subCompleted = subCompleted + ? WHERE contentId = ?",
+                              "subIssue SET subTotal = subTotal + 1, subCompleted = subCompleted + ? WHERE id = ?"] {
+                    try db.execute(sql: "UPDATE \(table)", arguments: [closed ? 1 : 0, contentId(parent.number)])
+                }
             }
         }
         try seedInbox(db, now: now)

@@ -544,8 +544,10 @@ extension Mutation {
                 try SubIssue(
                     id: m.contentId, parentId: parentId, number: m.createdNumber ?? 0, title: m.title, state: "OPEN",
                     repo: m.repo, url: m.createdUrl, position: count, assignees: m.assignees,
-                    milestoneId: m.milestoneId, milestoneTitle: m.milestoneTitle
+                    milestoneId: m.milestoneId, milestoneTitle: m.milestoneTitle, subTotal: 0, subCompleted: 0
                 ).insert(db)
+                // The parent's progress, where another issue lists it as a sub-issue.
+                try db.execute(sql: "UPDATE subIssue SET subTotal = subTotal + 1 WHERE id = ?", arguments: [parentId])
             }
 
         case .addToProject(let m):

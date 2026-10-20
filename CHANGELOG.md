@@ -6,6 +6,13 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Sub-issues of sub-issues, as a tree.** In an issue, a sub-issue that has sub-issues of its own says how many of
+  them are done, as "1/2" next to its number, and the arrow beside its status unfolds them under it, indented and
+  joined by lines as in the board's lists; theirs unfold the same way, as many levels down as GitHub has. An epic's
+  issues do it too. What you unfold stays unfolded on that device. On the Mac, iPhone and iPad.
+
 ### Changed
 
 - **A new app icon: a card lifted off a board.** A card in the app's indigo with a done mark, turned a little as if
