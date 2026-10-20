@@ -11,21 +11,18 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.0.0"),
-        .package(url: "https://github.com/gonzalezreal/swift-markdown-ui.git", from: "2.4.0"),
-        // The parser MarkdownUI reads with, to find checkboxes and tables in a description the same way.
-        .package(url: "https://github.com/swiftlang/swift-cmark", from: "0.4.0"),
-        // Exact: MermaidDiagram turns its Mac images the right way up, which a fix upstream would undo.
+        // Exact: DiagramStore turns its Mac images the right way up, which a fix upstream would undo.
         .package(url: "https://github.com/lukilabs/beautiful-mermaid-swift", exact: "1.0.4"),
+        // Typesets the $maths$ GitHub draws, as Notebook does.
+        .package(url: "https://github.com/mgriebling/SwiftMath", from: "1.7.3"),
     ],
     targets: [
         .target(
             name: "GitIssuesKit",
             dependencies: [
                 .product(name: "GRDB", package: "GRDB.swift"),
-                .product(name: "MarkdownUI", package: "swift-markdown-ui"),
-                .product(name: "cmark-gfm", package: "swift-cmark"),
-                .product(name: "cmark-gfm-extensions", package: "swift-cmark"),
                 .product(name: "BeautifulMermaid", package: "beautiful-mermaid-swift"),
+                .product(name: "SwiftMath", package: "SwiftMath"),
             ],
             resources: [.process("Resources")],
             swiftSettings: [.swiftLanguageMode(.v5)]
@@ -37,10 +34,7 @@ let package = Package(
         ),
         .testTarget(
             name: "GitIssuesKitTests",
-            dependencies: [
-                "GitIssuesKit",
-                .product(name: "MarkdownUI", package: "swift-markdown-ui"),
-            ],
+            dependencies: ["GitIssuesKit"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]

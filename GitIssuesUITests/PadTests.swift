@@ -249,12 +249,35 @@ final class PadTests: AppTestCase {
         comment.tap()
         comment.typeText("Looks right on the iPad.")
         element("comment-send").tap()
-        wait(labelled("Looks right on the iPad."))
+        wait(textShowing("Looks right on the iPad."))
         XCTAssertFalse(((comment.value as? String) ?? "").contains("Looks right"), "The field is empty again")
         hideKeyboard()
 
         app.typeKey("[", modifierFlags: .command)
         wait(element("card-#9"))
+    }
+
+    /// With a keyboard, the Format menu's shortcuts go to the Markdown being typed in.
+    func testFormatShortcutsFromTheKeyboard() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openProject("Git Issues")
+        element("card-#9").tap()
+        let description = element("issue-description")
+        wait(description)
+        // A tap in the first line puts the caret there.
+        description.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.02)).tap()
+        wait(element("writing-bar-done"))
+        app.typeKey("t", modifierFlags: [.command, .shift])
+        waitForValue(description, containing: "# A card should lift")
+        app.typeKey("l", modifierFlags: [.command, .shift])
+        waitForValue(description, containing: "- [ ] A card should lift")
+        app.typeKey("u", modifierFlags: [.command, .shift])
+        waitForValue(description, containing: "- [x] A card should lift")
+        app.typeKey("7", modifierFlags: [.command, .shift])
+        waitForValue(description, containing: "- A card should lift")
+        waitForValue(description, lacking: "[x] A card")
+        snapshot("iPad Format shortcuts")
     }
 
     func testSidebarProjectsAccountAndCompose() {
