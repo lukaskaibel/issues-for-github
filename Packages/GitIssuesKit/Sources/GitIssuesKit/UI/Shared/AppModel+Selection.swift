@@ -27,7 +27,7 @@ extension AppModel {
 
     /// The issues an action on `item` applies to: the whole selection when the item is part of it.
     func targets(for item: Item) -> [Item] {
-        if let openItemId, item.id != openItemId {
+        if let pageId = openItemId ?? subIssuePickParentId, item.id != pageId {
             // On an issue's page, its picked sub-issues; the board's picks behind the page don't count there.
             guard pickedSubIssueIds.contains(item.id) else { return [item] }
             let picked = pickedSubIssues
@@ -81,11 +81,40 @@ extension AppModel {
 
     // MARK: Sub-issues on an issue's page
 
-    /// The open issue's sub-issues that are picked and still under it, also ones further down that were unfolded.
+    /// The open issue's sub-issues that are picked and still under it, also ones further down that were unfolded; on
+    /// iPhone and iPad, those of the issue that is picking.
     var pickedSubIssues: [Item] {
-        guard !pickedSubIssueIds.isEmpty, let parentId = openItem?.contentId else { return [] }
+        guard !pickedSubIssueIds.isEmpty,
+              let parentId = (openItem ?? subIssuePickParentId.flatMap { item(id: $0) })?.contentId else { return [] }
         let below = descendants(of: [parentId]).subtracting([parentId])
         return allItems.filter { pickedSubIssueIds.contains($0.id) && below.contains($0.contentId ?? "") }
+    }
+
+    /// iPhone and iPad: Select on an issue's sub-issues, or on one of them, which is then picked already.
+    func startPickingSubIssues(of parent: Item, with first: Item? = nil) {
+        if subIssuePickParentId != parent.id {
+            pickedSubIssueIds = []
+            subIssuePickAnchor = nil
+            subIssuePickParentId = parent.id
+        }
+        if let first, !pickedSubIssueIds.contains(first.id) { toggleSubIssuePick(first) }
+    }
+
+    /// Done, or leaving the issue: the circles go and nothing stays picked.
+    func endPickingSubIssues() {
+        subIssuePickParentId = nil
+        pickedSubIssueIds = []
+        subIssuePickAnchor = nil
+    }
+
+    func isPickingSubIssues(of item: Item) -> Bool {
+        subIssuePickParentId == item.id
+    }
+
+    /// Select All, and Deselect All with none.
+    func pickSubIssues(_ ids: [String]) {
+        pickedSubIssueIds = Set(ids)
+        subIssuePickAnchor = ids.first
     }
 
     /// ⌘-click on a sub-issue: picks it or puts it back.

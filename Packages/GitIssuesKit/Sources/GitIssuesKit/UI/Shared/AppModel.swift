@@ -414,10 +414,14 @@ public final class AppModel {
     /// Where a Shift-click or Shift-arrow range starts, and the range it added last.
     @ObservationIgnored var selectionAnchorId: String?
     @ObservationIgnored var selectionRange: Set<String> = []
-    /// Sub-issues picked on the open issue's page (⌘-click, Shift-click), changed together from their right-click
-    /// menu and the keys. The board's own picks stay as they were behind the page.
+    /// Sub-issues picked on the open issue's page (⌘-click, Shift-click, on iPhone and iPad also tapped after Select),
+    /// changed together from their right-click menu and the keys. The board's own picks stay as they were behind the
+    /// page.
     var pickedSubIssueIds: Set<String> = []
     @ObservationIgnored var subIssuePickAnchor: String?
+    /// iPhone and iPad: the issue whose sub-issues are being picked, after Select on its page. The Mac picks them on
+    /// the open issue's page without such a mode.
+    var subIssuePickParentId: String?
     /// The issue shown in the quick look that Space opens.
     var peekItemId: String?
 

@@ -289,10 +289,12 @@ The interface uses the system's own parts.
   place, the Markdown drawn as on GitHub while you write, with a bar above the keyboard as in Notes (its Aa opens the
   Format panel); on its left, buttons come in for what the caret is in: its style, which a tap takes off, the line's
   checkbox, moving a list item in or out, and opening a link. The properties are glass chips under the title, the
-  sub-issues a checklist (by priority, or another order from the arrows beside its plus; the arrow beside one with
-  sub-issues of its own unfolds them under it), the comments a conversation, and the
-  comment field stays at the bottom as in Messages. A project's board on iPad stands its columns on soft grey lanes,
-  as on the Mac.
+  sub-issues a checklist (by priority, or another order from the "…" beside its plus; the arrow beside one with
+  sub-issues of its own unfolds them under it), the comments a conversation, and the comment field stays at the bottom
+  as in Messages. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
+  unfolded ones too, then move them all under another parent with the bar at the bottom, or change their status,
+  priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its columns on
+  soft grey lanes, as on the Mac.
 - **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
   projects, changes the icon and opens your account, then its views, its next milestones and roadmap, and its repositories, each an entry. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
   drop (touch and hold, then drag). A milestone opens as the board's columns or a list, the roadmap as the timeline,
@@ -300,7 +302,8 @@ The interface uses the system's own parts.
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
   work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
   their picker ready to type in; Return picks the first match. While writing, the Mac's Format shortcuts work too
-  (⌘B, ⌘I, ⇧⌘H, ⇧⌘L and the others), listed while you hold ⌘.
+  (⌘B, ⌘I, ⇧⌘H, ⇧⌘L and the others), listed while you hold ⌘. With a pointer, ⌘-click and Shift-click pick several
+  sub-issues in an issue, as on the Mac; the keys then change all of them, and Esc lets them go.
 - **Sample data:** "Explore with Sample Data" on the sign-in screen shows two sample projects without a GitHub account.
   Nothing there is sent anywhere.
 - **In the background:** changes made just before locking the phone are still sent, and iOS refreshes the app now and
@@ -682,6 +685,10 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap the plus beside an issue's sub-issues | A new sub-issue, or an issue that exists already |
 | Tap the status circle of a sub-issue | Pick its status; Open or Closed for one on none of your boards |
 | Tap the arrow beside a sub-issue | Unfold its own sub-issues under it, or fold them in again |
+| Tap "…" beside the plus over an issue's sub-issues | **Select** several of them, or order them by priority, status, newest first or GitHub's order, in every issue |
+| **Select** in that "…", or in a sub-issue's menu | Circles in place of their status: tap to pick several, **Select All** at the top, ✓ when done |
+| While sub-issues are picked | **Change Parent Issue…** at the bottom moves all of them under another parent; "…" beside it, or touching and holding a picked one, sets their status, priority, assignee, labels, due date or milestone, or moves them into an epic or out of their parent |
+| ⌘-click or Shift-click a sub-issue (iPad, with a pointer) | Pick several straight away; S, P, A, L, D and I change all of them, Esc lets them go |
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place, drawn as on GitHub; the bar above the keyboard has Aa for the Format panel, a checklist, a link, undo and redo, and more formatting on its next page |
 | Tap a button on the left of the keyboard bar | Take off the style the caret is in, tick the line's checkbox, move a list item in or out, open the link |

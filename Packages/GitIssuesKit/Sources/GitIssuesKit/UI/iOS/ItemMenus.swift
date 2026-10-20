@@ -2,7 +2,7 @@
 import SwiftUI
 
 /// Everything that can be done to an issue, as one menu: what a long press on a row, a card or a
-/// sub-issue shows, and the same as the Mac's right-click menu.
+/// sub-issue shows, and the same as the Mac's right-click menu. On a picked sub-issue it changes all picked ones.
 struct ItemMenuContent: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
@@ -12,12 +12,29 @@ struct ItemMenuContent: View {
     var foldable = false
     /// Hidden in the issue's own screen, where it is open already.
     var showsOpen = true
+    /// On a sub-issue in its parent's list: picks it, to change several together.
+    var onSelect: (() -> Void)? = nil
     var onOpen: () -> Void = {}
 
     var body: some View {
+        let targets = model.targets(for: item)
+        if targets.count > 1 {
+            several(targets)
+        } else {
+            one
+        }
+    }
+
+    @ViewBuilder
+    private var one: some View {
         if showsOpen {
             Button(action: onOpen) {
                 Label(.openIssue, systemImage: "arrow.up.left.and.arrow.down.right")
+            }
+            if let onSelect {
+                Button(action: onSelect) {
+                    Label(.select, systemImage: "checkmark.circle")
+                }
             }
             if foldable {
                 let folded = model.isFolded(item)
@@ -29,28 +46,7 @@ struct ItemMenuContent: View {
             }
             Divider()
         }
-        StatusMenu(item: item)
-        if model.project(of: item)?.priorityFieldId != nil {
-            PriorityMenu(item: item)
-        }
-        if item.kind != .draft {
-            AssigneeMenu(item: item)
-            LabelsMenu(item: item)
-            if let viewer = model.viewer {
-                let mine = item.assignees.contains { $0.id == viewer.id }
-                Button {
-                    model.toggleAssignee(item, viewer.person)
-                } label: {
-                    Label(mine ? .unassignMe : .assignToMe, systemImage: mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
-                }
-            }
-        }
-        if model.canHaveDueDate(item) {
-            DueDateMenu(item: item)
-        }
-        if model.canHaveMilestone(item) {
-            MilestoneMenu(item: item)
-        }
+        properties([item])
         if model.canRelate(item) {
             Divider()
             RelationMenuItems(item: item)
@@ -88,54 +84,118 @@ struct ItemMenuContent: View {
             .disabled(!model.canDelete(item))
         }
     }
+
+    /// Picked sub-issues, as the Mac's menu on several: how many under a heading, what they can all get, and no
+    /// opening, sharing or deleting.
+    @ViewBuilder
+    private func several(_ targets: [Item]) -> some View {
+        Section {
+            properties(targets)
+        } header: {
+            Text(.selectedIssueCount(count: targets.count))
+        }
+        if targets.allSatisfy(model.canRelate) {
+            Section {
+                RelationMenuItems(item: item)
+            }
+        }
+        Section {
+            if targets.contains(where: { $0.url != nil }) {
+                Button {
+                    model.copyLinks(targets)
+                } label: {
+                    Label(.copyLinks, systemImage: "link")
+                }
+            }
+            Button {
+                withAnimation(Theme.spring) { model.endPickingSubIssues() }
+            } label: {
+                Label(.clearSelection, systemImage: "xmark.circle")
+            }
+        }
+    }
+
+    /// Status, priority, assignee, labels, Assign to Me, due date and milestone. Checkmarks show what all of them share.
+    @ViewBuilder
+    private func properties(_ targets: [Item]) -> some View {
+        StatusMenu(item: item)
+        if model.project(of: item)?.priorityFieldId != nil {
+            PriorityMenu(item: item)
+        }
+        if item.kind != .draft {
+            AssigneeMenu(item: item)
+            LabelsMenu(item: item)
+            if let viewer = model.viewer {
+                let mine = targets.allSatisfy { target in target.assignees.contains { $0.id == viewer.id } }
+                Button {
+                    model.toggleAssignMe(model.targets(for: model.item(id: item.id) ?? item))
+                } label: {
+                    Label(mine ? .unassignMe : .assignToMe, systemImage: mine ? "person.crop.circle.badge.minus" : "person.crop.circle.badge.plus")
+                }
+            }
+        }
+        if targets.contains(where: model.canHaveDueDate) {
+            DueDateMenu(item: item)
+        }
+        if targets.contains(where: model.canHaveMilestone) {
+            MilestoneMenu(item: item)
+        }
+    }
 }
 
-/// Parent, sub-issues and blockers. The pickers open as sheets over the whole window, since a long press can come
-/// from any row or card.
+/// Parent, sub-issues and blockers, for the issue or the picked ones it is among. The pickers open as sheets over the
+/// whole window, since a long press can come from any row or card.
 struct RelationMenuItems: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     var item: Item
 
     var body: some View {
+        let targets = model.targets(for: item)
+        let single = targets.count == 1
+        let hasParent = targets.contains { $0.parentId != nil }
         Button {
             navigation.sheet = .picker(itemId: item.id, kind: .parent)
         } label: {
-            Label(item.parentId == nil ? LocalizedStringResource.setParentIssueMenuItem : .changeParentIssueMenuItem, systemImage: "arrow.turn.left.up")
+            Label(hasParent ? LocalizedStringResource.changeParentIssueMenuItem : .setParentIssueMenuItem, systemImage: "arrow.turn.left.up")
         }
-        if item.parentId != nil {
+        if hasParent {
+            let number = single ? item.parentNumber : nil
             Button {
-                model.setParent(of: [model.item(id: item.id) ?? item], to: nil)
+                model.setParent(of: current, to: nil)
             } label: {
-                Label(item.parentNumber.map { .removeFromNumber(number: "#\($0)") } ?? .removeFromParentMenuItem, systemImage: "arrow.uturn.left")
+                Label(number.map { .removeFromNumber(number: "#\($0)") } ?? .removeFromParentMenuItem, systemImage: "arrow.uturn.left")
             }
         }
-        Menu {
-            Button {
-                navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
+        if single {
+            Menu {
+                Button {
+                    navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
+                } label: {
+                    Label(.newSubIssue, systemImage: "plus")
+                }
+                Button {
+                    navigation.sheet = .picker(itemId: item.id, kind: .addSubIssue)
+                } label: {
+                    Label(.addExistingIssueMenuItem, systemImage: "magnifyingglass")
+                }
             } label: {
-                Label(.newSubIssue, systemImage: "plus")
+                Label(.addSubIssue, systemImage: "arrow.turn.down.right")
             }
-            Button {
-                navigation.sheet = .picker(itemId: item.id, kind: .addSubIssue)
-            } label: {
-                Label(.addExistingIssueMenuItem, systemImage: "magnifyingglass")
-            }
-        } label: {
-            Label(.addSubIssue, systemImage: "arrow.turn.down.right")
         }
-        if !item.isEpic {
+        if !targets.contains(where: \.isEpic) {
             Button {
                 navigation.sheet = .picker(itemId: item.id, kind: .epic)
             } label: {
                 Label(.addToEpicCommand, systemImage: "square.stack.3d.up")
             }
         }
-        if model.canMakeEpic(item) {
+        if targets.allSatisfy(model.canMakeEpic) {
+            let isEpic = targets.allSatisfy(\.isEpic)
             Button {
-                model.setEpic([model.item(id: item.id) ?? item], !item.isEpic)
+                model.setEpic(current, !isEpic)
             } label: {
-                Label(item.isEpic ? .turnIntoIssueCommand : .makeEpicCommand, systemImage: item.isEpic ? "square.stack.3d.down.right" : "square.stack.3d.up.fill")
+                Label(isEpic ? .turnIntoIssueCommand : .makeEpicCommand, systemImage: isEpic ? "square.stack.3d.down.right" : "square.stack.3d.up.fill")
             }
         }
         Menu {
@@ -153,9 +213,15 @@ struct RelationMenuItems: View {
             Label(.markAsMenu, systemImage: "flag")
         }
     }
+
+    /// The latest copies of what the menu acts on, when an entry is chosen.
+    private var current: [Item] {
+        model.targets(for: model.item(id: item.id) ?? item)
+    }
 }
 
-/// The milestone as a submenu: none, the open ones with the current one checked, and a new one.
+/// The milestone as a submenu: none, the open ones with the current one checked, and a new one. With several picked
+/// issues, the one they share is checked.
 struct MilestoneMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
@@ -164,12 +230,13 @@ struct MilestoneMenu: View {
     var body: some View {
         let groups = model.milestoneGroups(for: item)
         let title = model.milestoneTitle(of: item)
+        let titles = Set(model.targets(for: item).map { model.milestoneTitle(of: $0) })
         Menu {
             Picker(.milestone, selection: Binding(
-                get: { title },
+                get: { titles.count == 1 ? title : String?.some(Self.mixed) },
                 set: { new in
                     let current = model.item(id: item.id) ?? item
-                    model.setMilestone(of: [current], to: new.flatMap { name in groups.first { $0.title == name } })
+                    model.setMilestone(of: model.targets(for: current), to: new.flatMap { name in groups.first { $0.title == name } })
                 }
             )) {
                 Label(.noMilestone, systemImage: "diamond").tag(String?.none)
@@ -186,7 +253,7 @@ struct MilestoneMenu: View {
             .pickerStyle(.inline)
             if item.projectId != nil {
                 Button {
-                    navigation.sheet = .milestoneEditor(projectId: item.projectId, title: nil, assigning: [item.id])
+                    navigation.sheet = .milestoneEditor(projectId: item.projectId, title: nil, assigning: model.targets(for: item).map(\.id))
                 } label: {
                     Label(.newMilestoneEllipsis, systemImage: "plus")
                 }
@@ -199,9 +266,13 @@ struct MilestoneMenu: View {
             }
         }
     }
+
+    /// A selection no row has, for picked issues in different milestones.
+    static let mixed = "\u{1}"
 }
 
-/// Status as a submenu with the app's status circles, the current one checked.
+/// Status as a submenu with the app's status circles, the current one checked: on several picked issues, the one they
+/// share.
 struct StatusMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(\.colorScheme) private var scheme
@@ -251,12 +322,12 @@ struct StatusMenu: View {
     }
 
     private var selection: Binding<String?> {
-        Binding(
-            get: { item.statusId },
+        let names = Set(model.targets(for: item).map { model.statusOption(of: $0)?.name })
+        return Binding(
+            get: { names.count == 1 ? item.statusId : nil },
             set: { id in
-                let current = model.item(id: item.id) ?? item
-                guard let option = model.statusOptions(projectId: current.projectId).first(where: { $0.id == id }) else { return }
-                withAnimation(Theme.spring) { model.setStatus(current, to: option) }
+                guard let id else { return }
+                model.pick(.status, id: id, for: item)
             }
         )
     }
@@ -308,7 +379,7 @@ struct AddToProjectMenuItems: View {
     }
 }
 
-/// Priority as a submenu with the bars, from "No priority" to "Urgent".
+/// Priority as a submenu with the bars, from "No priority" to "Urgent". Several picked issues share the checkmark.
 struct PriorityMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(\.colorScheme) private var scheme
@@ -343,28 +414,27 @@ struct PriorityMenu: View {
     }
 
     private var selection: Binding<String> {
-        Binding(
-            get: { item.priorityId ?? "" },
-            set: { id in
-                let current = model.item(id: item.id) ?? item
-                model.setPriority(current, to: model.priorityOptions(projectId: current.projectId).first { $0.id == id })
-            }
+        let names = Set(model.targets(for: item).map { model.priorityOption(of: $0)?.name })
+        return Binding(
+            get: { names.count == 1 ? item.priorityId ?? "" : MilestoneMenu.mixed },
+            set: { id in model.pick(.priority, id: id, for: item) }
         )
     }
 }
 
-/// People who can be assigned, each with a checkmark when assigned.
+/// People who can be assigned, each with a checkmark when assigned (to all picked issues, with several).
 struct AssigneeMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(\.colorScheme) private var scheme
     var item: Item
 
     var body: some View {
+        let targets = model.targets(for: item)
         Menu {
             ForEach(model.people(for: item)) { person in
                 Toggle(isOn: Binding(
-                    get: { item.assignees.contains { $0.id == person.id } },
-                    set: { _ in model.toggleAssignee(model.item(id: item.id) ?? item, person) }
+                    get: { targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } } },
+                    set: { _ in model.pick(.assignees, id: person.id, for: item) }
                 )) {
                     Label {
                         Text(person.login)
@@ -388,7 +458,7 @@ struct AssigneeMenu: View {
     }
 }
 
-/// The repository's labels, each with a checkmark when set.
+/// The repository's labels, each with a checkmark when set (on all picked issues, with several).
 struct LabelsMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(\.colorScheme) private var scheme
@@ -396,14 +466,15 @@ struct LabelsMenu: View {
 
     var body: some View {
         let labels = model.labels(for: item)
+        let targets = model.targets(for: item)
         Menu {
             if labels.isEmpty {
                 Text(.noLabelsInRepository)
             }
             ForEach(labels) { label in
                 Toggle(isOn: Binding(
-                    get: { item.labels.contains { $0.id == label.id } },
-                    set: { _ in model.toggleLabel(model.item(id: item.id) ?? item, label) }
+                    get: { targets.allSatisfy { target in target.labels.contains { $0.name == label.name } } },
+                    set: { _ in model.pick(.labels, id: label.id, for: item) }
                 )) {
                     Label {
                         Text(label.name)

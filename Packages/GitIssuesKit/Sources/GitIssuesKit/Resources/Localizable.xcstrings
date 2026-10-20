@@ -6728,7 +6728,7 @@
       }
     },
     "changeParentIssueMenuItem" : {
-      "comment" : "Menu item (Mac right-click menu, iPhone and iPad menus) for an issue that is a sub-issue: opens a list of issues to put it under instead. Title case.",
+      "comment" : "Menu item (Mac right-click menu, iPhone and iPad menus) for an issue that is a sub-issue: opens a list of issues to put it under instead. Title case. Also: iPhone and iPad: button in the bar at the foot of an issue's screen while sub-issues are picked; moves all picked ones under another issue.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -8210,7 +8210,7 @@
       }
     },
     "clearSelection" : {
-      "comment" : "Mac, right-click menu on several selected issues: unselects them all. Title case, as in menus.",
+      "comment" : "Mac, right-click menu on several selected issues: unselects them all. Title case, as in menus. Also: iPhone and iPad: last item of the long-press menu of picked sub-issues; lets them all go and ends picking.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -11192,7 +11192,7 @@
       }
     },
     "copyLinks" : {
-      "comment" : "Mac, right-click menu on several selected issues: copies the GitHub web addresses of all of them. Title case, as in menus.",
+      "comment" : "Mac, right-click menu on several selected issues: copies the GitHub web addresses of all of them. Title case, as in menus. Also: iPhone and iPad: in the long-press menu of picked sub-issues.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -13569,6 +13569,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "描述"
+          }
+        }
+      }
+    },
+    "deselectAll" : {
+      "comment" : "iPhone and iPad: in place of 'Select All' once all sub-issues are picked on an issue's page; lets all of them go again. Title case, as in Mail.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle abwählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deselect All"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deseleccionar todo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout désélectionner"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべての選択を解除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모두 선택 해제"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desmarcar tudo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Снять выбор"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消全选"
           }
         }
       }
@@ -72613,6 +72673,126 @@
         }
       }
     },
+    "select" : {
+      "comment" : "iPhone and iPad: first item of the '…' menu beside the plus over an issue's sub-issues, and an item in a sub-issue's long-press menu. Puts circles in place of the sub-issues' status circles so several can be picked and changed together, as Select in Mail. A verb.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleccionar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sélectionner"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선택"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selecionar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выбрать"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择"
+          }
+        }
+      }
+    },
+    "selectAll" : {
+      "comment" : "iPhone and iPad: button at the top left while sub-issues are being picked on an issue's page (after Select); picks all of them. Title case, as in Mail.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select All"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleccionar todo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout sélectionner"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてを選択"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모두 선택"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selecionar tudo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выбрать все"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全选"
+          }
+        }
+      }
+    },
     "selectAllIssuesCommand" : {
       "comment" : "Mac, command palette (⌘K): command that picks every issue on screen.",
       "extractionState" : "manual",
@@ -72674,7 +72854,7 @@
       }
     },
     "selectedCount" : {
-      "comment" : "Mac: start of the bar that floats at the bottom of the board or list while issues are selected: how many issues, e.g. '3 selected'.",
+      "comment" : "Mac: start of the bar that floats at the bottom of the board or list while issues are selected: how many issues, e.g. '3 selected'. Also: iPhone and iPad: title at the top of an issue's screen while its sub-issues are being picked (after Select), e.g. '2 selected'.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -72836,7 +73016,7 @@
       }
     },
     "selectedIssueCount" : {
-      "comment" : "Mac, command palette (⌘K): chip at the top, and heading above the commands, when several issues are picked; the commands apply to all of them. %(count)lld is 2 or more. Also: Mac: greyed-out first line of the right-click menu when several issues are selected; the menu acts on all of them. Example: '3 issues'.",
+      "comment" : "Mac, command palette (⌘K): chip at the top, and heading above the commands, when several issues are picked; the commands apply to all of them. %(count)lld is 2 or more. Also: Mac: greyed-out first line of the right-click menu when several issues are selected; the menu acts on all of them. Example: '3 issues'. Also: iPhone and iPad: heading of the long-press menu of a picked sub-issue while several are picked; the menu acts on all of them.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -78819,6 +78999,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "不在此看板上；将在 GitHub 上打开"
+          }
+        }
+      }
+    },
+    "subIssueOptions" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the '…' button beside the plus over an issue's sub-issues; its menu has Select (pick several sub-issues) and the order they are listed in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optionen für Sub-Issues"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-issue options"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opciones de subincidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Options des sous-tickets"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サブIssueのオプション"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하위 이슈 옵션"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opções de sub-issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Параметры подзадач"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "子议题选项"
           }
         }
       }
