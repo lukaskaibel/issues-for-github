@@ -98,7 +98,9 @@ extension AppModel {
             }
             return false
         }
-        if let responder = NSApp.keyWindow?.firstResponder, responder is NSTextView { return false }
+        // Text being typed in takes its keys; a comment, which is only read, leaves them to the app even when text in it
+        // is selected.
+        if let text = NSApp.keyWindow?.firstResponder as? NSTextView, text.isEditable { return false }
         // ⌘⌫ deletes the issue in focus, as in Linear. Inside a text field it keeps deleting text.
         if modifiers == .command, event.keyCode == 51, let item = actionItem, targets(for: item).count == 1 {
             requestDelete(item)

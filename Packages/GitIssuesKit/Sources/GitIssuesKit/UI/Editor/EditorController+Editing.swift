@@ -1,0 +1,497 @@
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
+
+/// Typing as in Notebook: lists continue on Return and end on an empty item, Tab nests them, Backspace at the start of
+/// an item takes its bullet away. Where Notebook has no rule of its own, the typing rules of `MarkdownEditing` take
+/// over: styles turn on and off at the caret, a style's marks come and go as a pair, Return leaves a style at its end,
+/// and `-` starts a bullet.
+extension EditorController {
+    // MARK: - Changing text
+
+    /// Replaces text the way typing does, so it can be undone, and puts the selection where asked.
+    @discardableResult
+    func replace(_ range: NSRange, with string: String, select selection: NSRange? = nil) -> Bool {
+        guard range.upperBound <= storage.length else { return false }
+        isPerformingEdit = true
+        defer { isPerformingEdit = false }
+        guard performEdit(range, with: string) else { return false }
+        if let selection {
+            setSelection(NSRange(location: min(selection.location, storage.length), length: min(selection.length, storage.length - min(selection.location, storage.length))))
+        }
+        return true
+    }
+
+    func insert(_ string: String) {
+        let selection = self.selection
+        replace(selection, with: string, select: NSRange(location: selection.location + (string as NSString).length, length: 0))
+    }
+
+    // MARK: - Return
+
+    func insertNewline() -> Bool {
+        let selection = self.selection
+        guard !document.lines.isEmpty else { return false }
+        let index = document.lineIndex(containing: selection.location)
+        let line = document.lines[index]
+        let text = nsText
+
+        // ```lang + Return closes the fence for you.
+        if line.kind == .fence, selection.length == 0, selection.location == line.range.upperBound,
+           let block = line.block, index == document.blocks[block].lines.lowerBound, !isClosed(block) {
+            let fenceText = text.substring(with: line.range).trimmingCharacters(in: .whitespaces)
+            let fence = String(fenceText.prefix { $0 == "`" || $0 == "~" })
+            replace(selection, with: "\n\n" + fence, select: NSRange(location: selection.location + 1, length: 0))
+            return true
+        }
+
+        switch line.kind {
+        case .code:
+            let leading = text.substring(with: line.range).prefix { $0 == " " || $0 == "\t" }
+            replace(selection, with: "\n" + leading, select: NSRange(location: selection.location + 1 + (String(leading) as NSString).length, length: 0))
+            return true
+        case .fence, .math, .mathDelimiter, .tableHeader, .tableDelimiter, .tableRow, .comment:
+            return false
+        default:
+            break
+        }
+
+        // Return leaves a style at its end and splits one in its middle, continues a list or quote with the next
+        // marker, and ends it on an empty item.
+        if perform(MarkdownEditing.insertNewline) {
+            if case .listItem(let item) = line.kind, item.isOrdered { renumberList(after: self.selection.location) }
+            return true
+        }
+
+        switch line.kind {
+        case .listItem(let item):
+            let content = text.substring(with: line.content).trimmingCharacters(in: .whitespaces)
+            if content.isEmpty, selection.length == 0 {
+                // Return on an empty item ends the list (or, nested, moves the item out one level).
+                if item.level > 0 {
+                    return indent(by: -1)
+                }
+                replace(item.prefix, with: "", select: NSRange(location: item.prefix.location, length: 0))
+                return true
+            }
+            let prefix = continuation(of: item, text: text)
+            replace(selection, with: "\n" + prefix, select: NSRange(location: selection.location + 1 + (prefix as NSString).length, length: 0))
+            renumberList(after: selection.location + 1)
+            return true
+        case .quote(_, let prefix):
+            let content = text.substring(with: line.content).trimmingCharacters(in: .whitespaces)
+            if line.block.map({ document.blocks[$0].lines.lowerBound }) == index, case .callout = line.block.map({ document.blocks[$0].kind }) ?? .quote {
+                // The callout's title line: the body continues inside the callout.
+            } else if content.isEmpty, selection.length == 0 {
+                replace(prefix, with: "", select: NSRange(location: prefix.location, length: 0))
+                return true
+            }
+            let prefixText = text.substring(with: prefix)
+            replace(selection, with: "\n" + prefixText, select: NSRange(location: selection.location + 1 + (prefixText as NSString).length, length: 0))
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func isClosed(_ block: Int) -> Bool {
+        let found = document.blocks[block]
+        return found.lines.count > 1 && document.lines[found.lines.upperBound].kind == .fence
+    }
+
+    /// The prefix for the next item: same indent and marker, the next number, an unticked box.
+    private func continuation(of item: ListItem, text: NSString) -> String {
+        let indent = text.substring(with: item.indentRange)
+        var marker: String
+        switch item.marker {
+        case .bullet(let character): marker = String(character)
+        case .ordered(let number, let delimiter): marker = "\(number + 1)\(delimiter)"
+        }
+        marker += " "
+        if item.isTask { marker += "[ ] " }
+        return indent + marker
+    }
+
+    /// Numbers the items of an ordered list one after the other again, from the item at `location` on.
+    func renumberList(after location: Int) {
+        guard !document.lines.isEmpty else { return }
+        let start = document.lineIndex(containing: location)
+        guard case .listItem(let first) = document.lines[start].kind, first.isOrdered else { return }
+        var expected: Int?
+        if start > 0, case .listItem(let previous) = document.lines[start - 1].kind, previous.indent == first.indent,
+           case .ordered(let number, _) = previous.marker {
+            expected = number + 1
+        }
+        guard var next = expected else { return }
+        var edits: [(NSRange, String)] = []
+        var index = start
+        while index < document.lines.count, case .listItem(let item) = document.lines[index].kind {
+            if item.indent == first.indent, case .ordered(let number, _) = item.marker {
+                if number != next { edits.append((NSRange(location: item.markerRange.location, length: item.markerRange.length - 1), "\(next)")) }
+                next += 1
+            } else if item.indent < first.indent {
+                break
+            }
+            index += 1
+        }
+        guard !edits.isEmpty else { return }
+        let selection = self.selection
+        var shift = 0
+        for (range, number) in edits.reversed() {
+            replace(range, with: number)
+            if range.location < selection.location { shift += (number as NSString).length - range.length }
+        }
+        setSelection(NSRange(location: selection.location + shift, length: selection.length))
+    }
+
+    // MARK: - Delete
+
+    func deleteBackward() -> Bool {
+        let selection = self.selection
+        guard !document.lines.isEmpty, !isComposing else { return false }
+        // A selection that holds one of a style's marks takes the other one too.
+        guard selection.length == 0 else { return perform(MarkdownEditing.deleteBackward) }
+        guard selection.location > 0 else { return false }
+        let location = selection.location
+        let index = document.lineIndex(containing: location)
+        let line = document.lines[index]
+
+        // A picture goes as a whole.
+        if let span = line.spans.first(where: { isAtomic($0) && $0.range.upperBound == location }) {
+            replace(span.range, with: "", select: NSRange(location: span.range.location, length: 0))
+            return true
+        }
+        if let object = blockObjectSpan(in: line), object.upperBound == location {
+            replace(object, with: "", select: NSRange(location: object.location, length: 0))
+            return true
+        }
+
+        // At the start of an item's text: take the bullet away (or move a nested item out a level).
+        if let contentStart = atomicPrefixEnd(line), location == contentStart {
+            switch line.kind {
+            case .listItem(let item):
+                if item.level > 0, item.indent > 0 { return indent(by: -1) }
+                replace(item.prefix, with: "", select: NSRange(location: item.prefix.location, length: 0))
+                return true
+            case .quote(_, let prefix):
+                replace(prefix, with: "", select: NSRange(location: prefix.location, length: 0))
+                return true
+            case .heading(_, let marker):
+                // At the start of a heading's text: it becomes body text, as in Notes.
+                replace(marker, with: "", select: NSRange(location: marker.location, length: 0))
+                return true
+            default:
+                break
+            }
+        }
+
+        // Around a link the address is hidden: deleting takes the link's text, never its punctuation.
+        if let link = line.spans.first(where: { if case .link = $0.kind { return true } else { return false } }) {
+            if location == link.range.upperBound || (location > link.content.upperBound && location < link.range.upperBound) {
+                if link.content.length > 0 {
+                    replace(NSRange(location: link.content.upperBound - 1, length: 1), with: "", select: NSRange(location: link.content.upperBound - 1, length: 0))
+                } else {
+                    replace(link.range, with: "", select: NSRange(location: link.range.location, length: 0))
+                }
+                return true
+            }
+            if location == link.content.location {
+                guard link.range.location > line.range.location else { return true }
+                replace(NSRange(location: link.range.location - 1, length: 1), with: "", select: NSRange(location: link.range.location - 1, length: 0))
+                return true
+            }
+        }
+
+        // At the start of a line under a table, diagram or picture: select it first, as Notes does, instead of
+        // pulling the line into it.
+        if location == line.range.location, index > 0, line.range.length > 0 {
+            let above = document.lines[index - 1]
+            if let block = above.block, document.blocks[block].isSwappable {
+                setSelection(document.blocks[block].range)
+                return true
+            }
+            if let object = blockObjectSpan(in: above) {
+                setSelection(object)
+                return true
+            }
+        }
+        // Behind a style's closing marks its last letter goes and the marks stay; into a mark, both go.
+        return perform(MarkdownEditing.deleteBackward)
+    }
+
+    func deleteForward() -> Bool {
+        let selection = self.selection
+        guard !document.lines.isEmpty, !isComposing else { return false }
+        guard selection.length == 0 else { return perform(MarkdownEditing.deleteForward) }
+        guard selection.location < storage.length else { return false }
+        let line = document.lines[document.lineIndex(containing: selection.location)]
+        if let span = line.spans.first(where: { isAtomic($0) && $0.range.location == selection.location }) {
+            replace(span.range, with: "", select: NSRange(location: span.range.location, length: 0))
+            return true
+        }
+        if let object = blockObjectSpan(in: line), object.location == selection.location {
+            replace(object, with: "", select: NSRange(location: object.location, length: 0))
+            return true
+        }
+        // At the end of a link's text, forward delete takes what comes after the link.
+        if let link = line.spans.first(where: { if case .link = $0.kind { return $0.content.upperBound == selection.location } else { return false } }) {
+            guard link.range.upperBound < line.range.upperBound else { return true }
+            replace(NSRange(location: link.range.upperBound, length: 1), with: "", select: NSRange(location: link.content.upperBound, length: 0))
+            return true
+        }
+        return perform(MarkdownEditing.deleteForward)
+    }
+
+    // MARK: - Tab
+
+    /// Tab and Shift-Tab: nest or un-nest the list items the selection touches, or indent code.
+    @discardableResult
+    func indent(by direction: Int) -> Bool {
+        let selection = self.selection
+        guard !document.lines.isEmpty else { return false }
+        let first = document.lineIndex(containing: selection.location)
+        let last = document.lineIndex(containing: max(selection.location, selection.upperBound - (selection.length > 0 ? 1 : 0)))
+        let lines = Array(first...last)
+        let text = nsText
+
+        let listLines = lines.filter { document.lines[$0].kind.isListItem }
+        if listLines.isEmpty {
+            if case .code = document.lines[first].kind {
+                if direction > 0 { insert("    ") } else { outdentCode(lines) }
+                return true
+            }
+            return direction < 0
+        }
+
+        let range = NSRange(location: document.lines[first].range.location, length: document.lines[last].range.upperBound - document.lines[first].range.location)
+        var result = ""
+        var shiftAtStart = 0
+        var totalShift = 0
+        for index in lines {
+            let line = document.lines[index]
+            var lineText = text.substring(with: line.range)
+            if case .listItem(let item) = line.kind {
+                if direction > 0 {
+                    let unit = String(repeating: " ", count: indentUnit(for: index))
+                    lineText = unit + lineText
+                    if index == first { shiftAtStart = unit.count }
+                    totalShift += unit.count
+                } else {
+                    let leading = lineText.prefix { $0 == " " || $0 == "\t" }
+                    let remove: Int
+                    if leading.hasPrefix("\t") {
+                        remove = 1
+                    } else {
+                        remove = min(leading.count, max(1, item.indent - parentIndent(for: index)))
+                    }
+                    guard item.indent > 0 else { result += lineText + (index == last ? "" : "\n"); continue }
+                    lineText = String(lineText.dropFirst(remove))
+                    if index == first { shiftAtStart = -remove }
+                    totalShift -= remove
+                }
+            }
+            result += lineText + (index == last ? "" : "\n")
+        }
+        guard result != text.substring(with: range) else { return true }
+        let newSelection = NSRange(location: max(range.location, selection.location + shiftAtStart), length: max(0, selection.length + totalShift - shiftAtStart))
+        replace(range, with: result, select: newSelection)
+        return true
+    }
+
+    /// How far to nest an item: under the item above it, to where that item's text starts.
+    private func indentUnit(for index: Int) -> Int {
+        var above = index - 1
+        guard case .listItem(let item) = document.lines[index].kind else { return 2 }
+        while above >= 0, case .listItem(let candidate) = document.lines[above].kind {
+            if candidate.indent <= item.indent {
+                let width = candidate.markerRange.upperBound - candidate.indentRange.upperBound + 1
+                return max(2, candidate.indent + width - item.indent)
+            }
+            above -= 1
+        }
+        return 2
+    }
+
+    private func parentIndent(for index: Int) -> Int {
+        guard case .listItem(let item) = document.lines[index].kind else { return 0 }
+        var above = index - 1
+        while above >= 0, case .listItem(let candidate) = document.lines[above].kind {
+            if candidate.indent < item.indent { return candidate.indent }
+            above -= 1
+        }
+        return 0
+    }
+
+    private func outdentCode(_ lines: [Int]) {
+        let text = nsText
+        guard let first = lines.first, let last = lines.last else { return }
+        let range = NSRange(location: document.lines[first].range.location, length: document.lines[last].range.upperBound - document.lines[first].range.location)
+        let result = lines.map { index -> String in
+            let line = text.substring(with: document.lines[index].range)
+            let spaces = line.prefix { $0 == " " }.count
+            return String(line.dropFirst(min(4, spaces)))
+        }.joined(separator: "\n")
+        replace(range, with: result, select: NSRange(location: range.location, length: (result as NSString).length))
+    }
+
+    // MARK: - Typing
+
+    func shouldInsert(_ replacement: String, in range: NSRange) -> Bool {
+        guard !isPerformingEdit, !isComposing else { return true }
+        let text = nsText
+        let selection = self.selection
+
+        // Typing a marker with text selected wraps it.
+        if range.length > 0, ["*", "_", "`", "~"].contains(replacement), !text.substring(with: range).contains("\n"), wrap(range, in: replacement) {
+            return false
+        }
+        // "[] " at the start of a line makes a task.
+        if replacement == " ", range.length == 0 {
+            let lineStart = text.lineRange(for: NSRange(location: range.location, length: 0)).location
+            let before = text.substring(with: NSRange(location: lineStart, length: range.location - lineStart))
+            let trimmed = before.trimmingCharacters(in: .whitespaces)
+            if ["[]", "[ ]", "- []", "* []"].contains(trimmed) {
+                let indent = before.prefix { $0 == " " || $0 == "\t" }
+                let task = indent + "- [ ] "
+                replace(NSRange(location: lineStart, length: range.location - lineStart), with: String(task), select: NSRange(location: lineStart + (String(task) as NSString).length, length: 0))
+                return false
+            }
+        }
+        // A selection deleted (as iOS sends it): a style's mark goes with its pair.
+        if replacement.isEmpty, range.length > 0, range == selection {
+            return !perform(MarkdownEditing.deleteBackward)
+        }
+        // "-" at the start of a line makes a bullet with its space, "- []" a checkbox, and a closing mark typed where
+        // the same one is steps over it.
+        if range.length == 0, selection == range, (replacement as NSString).length == 1 {
+            return !perform { MarkdownEditing.insert(replacement, in: $0) }
+        }
+        return true
+    }
+
+    // MARK: - Checkboxes
+
+    func toggleCheckbox(line index: Int) {
+        guard let line = document.lines[safe: index], case .listItem(let item) = line.kind, let box = item.checkbox else { return }
+        let selection = self.selection
+        replace(box, with: item.checked ? "[ ]" : "[x]", select: selection)
+    }
+
+    // MARK: - Formatting
+
+    /// Puts a marker around the selected words of each line the selection touches. A line's own punctuation
+    /// (`- [ ] `, `## `, `> `) and the spaces around the words stay outside, or GitHub would no longer see a list, a
+    /// heading or the emphasis. Returns false when no words are selected.
+    @discardableResult
+    func wrap(_ selection: NSRange, in marker: String) -> Bool {
+        guard !document.lines.isEmpty, selection.length > 0 else { return false }
+        let text = nsText
+        let markerLength = (marker as NSString).length
+        let pieces = wordRanges(in: selection)
+        guard let start = pieces.first?.location, let end = pieces.last?.upperBound else { return false }
+        var result = ""
+        var location = start
+        for piece in pieces {
+            result += text.substring(with: NSRange(location: location, length: piece.location - location)) + marker + text.substring(with: piece) + marker
+            location = piece.upperBound
+        }
+        return replace(NSRange(location: start, length: end - start), with: result, select: NSRange(location: start + markerLength, length: end - start + 2 * markerLength * (pieces.count - 1)))
+    }
+
+    /// The selected words of each line, without the line's own punctuation and the spaces around them; in a table
+    /// only words within one cell.
+    private func wordRanges(in selection: NSRange) -> [NSRange] {
+        guard !document.lines.isEmpty, selection.length > 0 else { return [] }
+        let text = nsText
+        let first = document.lineIndex(containing: selection.location)
+        let last = document.lineIndex(containing: selection.upperBound - 1)
+        var pieces: [NSRange] = []
+        for index in first...last {
+            let line = document.lines[index]
+            switch line.kind {
+            case .blank, .thematicBreak, .fence, .code, .mathDelimiter, .math, .tableDelimiter, .comment: continue
+            default: break
+            }
+            var range = NSIntersectionRange(selection, NSRange(location: line.content.location, length: line.range.upperBound - line.content.location))
+            // Half of an emoji is no space.
+            func isSpace(_ index: Int) -> Bool { UnicodeScalar(text.character(at: index)).map(CharacterSet.whitespacesAndNewlines.contains) ?? false }
+            while range.length > 0, isSpace(range.location) { range.location += 1; range.length -= 1 }
+            while range.length > 0, isSpace(range.upperBound - 1) { range.length -= 1 }
+            // In a table, only the words of one cell.
+            if line.kind == .tableHeader || line.kind == .tableRow, text.substring(with: range).contains("|") { continue }
+            if range.length > 0 { pieces.append(range) }
+        }
+        return pieces
+    }
+
+    enum LineFormat {
+        case body, heading(Int), bullets, numbered, checklist, quote
+    }
+
+    /// Turns the lines the selection touches into headings, list items, tasks, quotes or plain text.
+    func setLineFormat(_ format: LineFormat) {
+        let selection = self.selection
+        guard !document.lines.isEmpty else { return }
+        let text = nsText
+        let first = document.lineIndex(containing: selection.location)
+        let last = document.lineIndex(containing: max(selection.location, selection.upperBound - (selection.length > 0 ? 1 : 0)))
+        let range = NSRange(location: document.lines[first].range.location, length: document.lines[last].range.upperBound - document.lines[first].range.location)
+
+        // Applying a list format to lines that all have it already takes it off.
+        let all = (first...last).allSatisfy { index -> Bool in
+            let kind = document.lines[index].kind
+            switch (format, kind) {
+            case (.bullets, .listItem(let item)): return !item.isOrdered && !item.isTask
+            case (.numbered, .listItem(let item)): return item.isOrdered && !item.isTask
+            case (.checklist, .listItem(let item)): return item.isTask
+            case (.quote, .quote): return true
+            case (.heading(let level), .heading(let existing, _)): return level == existing
+            default: return false
+            }
+        }
+        var number = 1
+        var lines: [String] = []
+        for index in first...last {
+            let line = document.lines[index]
+            let content = text.substring(with: NSRange(location: line.content.location, length: line.range.upperBound - line.content.location))
+            var indent = ""
+            if case .listItem(let item) = line.kind { indent = text.substring(with: item.indentRange) }
+            if line.kind == .blank, first != last { lines.append(""); continue }
+            let prefix: String
+            switch all ? .body : format {
+            case .body: prefix = ""; indent = ""
+            case .heading(let level): prefix = String(repeating: "#", count: level) + " "; indent = ""
+            case .bullets: prefix = "- "
+            case .numbered: prefix = "\(number). "; number += 1
+            case .checklist: prefix = "- [ ] "
+            case .quote: prefix = "> "; indent = ""
+            }
+            lines.append(indent + prefix + content)
+        }
+        let result = lines.joined(separator: "\n")
+        let caretOffset = selection.location - document.lines[first].content.location
+        let newPrefix = (lines.first.map { ($0 as NSString).length } ?? 0) - (text.substring(with: NSRange(location: document.lines[first].content.location, length: document.lines[first].range.upperBound - document.lines[first].content.location)) as NSString).length
+        let caret = range.location + max(0, newPrefix) + max(0, caretOffset)
+        replace(range, with: result, select: selection.length > 0 ? NSRange(location: range.location, length: (result as NSString).length) : NSRange(location: min(caret, range.location + (result as NSString).length), length: 0))
+    }
+
+    /// ⌘⇧U as in Notes: ticks or unticks the tasks the selection touches.
+    func toggleChecked() {
+        let selection = self.selection
+        guard !document.lines.isEmpty else { return }
+        let index = document.lineIndex(containing: selection.location)
+        toggleCheckbox(line: index)
+    }
+
+    /// ⌘L: the selection becomes a link, or a link is put in with a word to type over, and its address is asked for.
+    func insertLink() {
+        let selection = self.selection
+        let selected = selection.length > 0 ? nsText.substring(with: selection) : String(localized: .linkTextPlaceholder)
+        guard !selected.contains("\n") else { return beep() }
+        replace(selection, with: "[" + selected + "]()", select: NSRange(location: selection.location + 1 + (selected as NSString).length, length: 0))
+        // The address goes in with the link editor, as the address itself is never shown in the text.
+        editLink(at: NSRange(location: selection.location, length: (selected as NSString).length + 4), isNew: true, selectsText: selection.length == 0)
+    }
+}
