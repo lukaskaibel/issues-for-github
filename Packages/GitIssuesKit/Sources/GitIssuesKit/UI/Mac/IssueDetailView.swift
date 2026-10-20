@@ -172,16 +172,15 @@ struct DescriptionView: View {
     @State private var editing = false
 
     var body: some View {
-        DescriptionBody(text: item.body, isEditable: item.isEditableContent, onSave: save, editing: $editing) { takesFocus in
-            MarkdownEditor(
-                text: item.body,
-                placeholder: item.isEditableContent ? .addDescriptionPlaceholder : .noDescription,
-                isEditable: item.isEditableContent,
-                onSave: save,
-                editing: $editing,
-                takesFocus: takesFocus
-            )
-        }
+        MarkdownEditor(
+            text: item.body,
+            placeholder: item.isEditableContent ? .addDescriptionPlaceholder : .noDescription,
+            isEditable: item.isEditableContent,
+            onSave: save,
+            editing: $editing,
+            accessibilityLabel: .description,
+            accessibilityIdentifier: "issue-description"
+        )
         .id(item.id)
     }
 
@@ -249,7 +248,7 @@ struct SubIssuesSection: View {
     @State private var adding = false
 
     var body: some View {
-        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let subs = model.orderedSubIssues(of: item)
         let showsPriority = model.project(of: item)?.priorityFieldId != nil
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 10) {
@@ -265,6 +264,7 @@ struct SubIssuesSection: View {
                         .frame(width: 64)
                 }
                 Spacer()
+                if subs.count > 1 { SubIssueOrderButton() }
                 if model.canRelate(item) {
                     // A new sub-issue, or one that exists already, as in Linear: type to find it.
                     IconButton(systemName: "plus", label: String(localized: .addSubIssueButton), size: 22) { adding = true }
@@ -288,6 +288,25 @@ struct SubIssuesSection: View {
                 .animation(Theme.spring, value: subs.map(\.id))
             }
         }
+    }
+}
+
+/// Picks the order sub-issues are listed in, for every issue: a short list that closes on the pick.
+private struct SubIssueOrderButton: View {
+    @Environment(AppModel.self) private var model
+    @State private var open = false
+
+    var body: some View {
+        IconButton(systemName: "arrow.up.arrow.down", label: String(localized: .orderSubIssuesTooltip), size: 22) { open = true }
+            .dropdown(isPresented: $open) { close in
+                SelectList(
+                    options: SubIssueOrder.allCases.map { .init(id: $0.rawValue, title: String(localized: $0.title)) },
+                    selected: model.subIssueOrder.rawValue
+                ) { id in
+                    withAnimation(Theme.spring) { model.subIssueOrder = SubIssueOrder(rawValue: id) ?? .priority }
+                    close()
+                }
+            }
     }
 }
 
@@ -323,6 +342,16 @@ private struct SubIssueRow: View {
                 .font(.system(size: 14))
                 .foregroundStyle(sub.isClosed ? Theme.textSecondary : Theme.text)
                 .lineLimit(1)
+            // Right after the title, as in the list: what has to be done first, a click away on its card's picker.
+            if let blocker = model.blockerMark(for: sub) {
+                if let boardItem, model.canRelate(boardItem) {
+                    PartButton(kind: .blockedBy, itemId: boardItem.id, help: model.blockedText(for: sub)) {
+                        BlockerFlag(mark: blocker)
+                    }
+                } else {
+                    BlockerFlag(mark: blocker).help(model.blockedText(for: sub))
+                }
+            }
             Spacer(minLength: 8)
             if showsPriority, let boardItem {
                 PartButton(kind: .priority, itemId: boardItem.id) {
@@ -421,7 +450,7 @@ struct EpicWorkSection: View {
     @State private var adding = false
 
     var body: some View {
-        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let subs = model.orderedSubIssues(of: item)
         let groups = model.subIssuesByMilestone(of: item, subs)
         let showsPriority = model.project(of: item)?.priorityFieldId != nil
         let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
@@ -439,6 +468,7 @@ struct EpicWorkSection: View {
                     }
                 }
                 Spacer()
+                if subs.count > 1 { SubIssueOrderButton() }
                 if model.canRelate(item) {
                     IconButton(systemName: "plus", label: String(localized: .addSubIssueButton), size: 22) { adding = true }
                         .dropdown(isPresented: $adding) { close in
@@ -716,31 +746,27 @@ struct CommentComposer: View {
     var item: Item
 
     @State private var draft = ""
-    @FocusState private var focused: Bool
+    @State private var focused = false
+    @State private var height: CGFloat = 22
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            ZStack(alignment: .topLeading) {
-                if draft.isEmpty {
-                    Text(.leaveCommentPlaceholder)
-                        .font(.system(size: 14))
-                        .foregroundStyle(Theme.textTertiary)
-                        .padding(.leading, 5)
-                        .allowsHitTesting(false)
-                }
-                TextEditor(text: $draft)
-                    .font(.system(size: 14))
-                    .scrollContentBackground(.hidden)
-                    .scrollIndicators(.never)
-                    .focused($focused)
-                    .frame(minHeight: 18, maxHeight: 220)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .onKeyPress(.escape) {
-                        focused = false
-                        return .handled
-                    }
+            // Markdown as it will look on GitHub, growing with the text up to a point and then scrolling.
+            ScrollView {
+                MarkdownEditor(
+                    draft: $draft,
+                    placeholder: .leaveCommentPlaceholder,
+                    editing: $focused,
+                    onSubmit: send,
+                    accessibilityLabel: .leaveCommentPlaceholder,
+                    accessibilityIdentifier: "comment-field"
+                )
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
             }
-            .padding(.vertical, 11)
+            .scrollIndicators(.never)
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(height: min(max(height, 18), 220))
+            .padding(.vertical, 9)
             Button(action: send) {
                 Image(systemName: "arrow.up")
                     .font(.system(size: 13, weight: .bold))

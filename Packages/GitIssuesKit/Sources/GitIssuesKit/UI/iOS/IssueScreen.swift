@@ -318,16 +318,16 @@ private struct DescriptionEditor: View {
     @Binding var editing: Bool
 
     var body: some View {
-        // A tap on a drawn description shows the text, and a second tap puts the caret where it lands.
-        DescriptionBody(text: item.body, isEditable: item.isEditableContent, onSave: save, editing: $editing) { _ in
-            MarkdownTextEditor(
-                text: item.body,
-                placeholder: item.isEditableContent ? .addDescriptionPlaceholder : .noDescription,
-                isEditable: item.isEditableContent,
-                onSave: save,
-                editing: $editing
-            )
-        }
+        // Drawn as on GitHub, and a tap puts the caret where it lands.
+        MarkdownEditor(
+            text: item.body,
+            placeholder: item.isEditableContent ? .addDescriptionPlaceholder : .noDescription,
+            isEditable: item.isEditableContent,
+            onSave: save,
+            editing: $editing,
+            accessibilityLabel: .description,
+            accessibilityIdentifier: "issue-description"
+        )
         .id(item.id)
     }
 
@@ -474,7 +474,7 @@ private struct PropertyChips: View {
                 Button {
                     picker = .blockedBy
                 } label: {
-                    PropertyChip(text: String(localized: .blockedChip)) { BlockedIcon(size: 11) }
+                    PropertyChip(text: model.blockedChipText(for: item)) { BlockedIcon(size: 11) }
                 }
                 .buttonStyle(PlainPressStyle())
                 .accessibilityLabel(model.tooltip(.blockedBy, for: item))
@@ -890,7 +890,7 @@ private struct MobileSubIssues: View {
     var item: Item
 
     var body: some View {
-        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let subs = model.orderedSubIssues(of: item)
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Text(.subIssues).font(.sectionTitle)
@@ -905,6 +905,7 @@ private struct MobileSubIssues: View {
                         .frame(width: 64)
                 }
                 Spacer()
+                if subs.count > 1 { MobileSubIssueOrderMenu() }
                 // A new sub-issue, or an issue that exists already.
                 Menu {
                     Button {
@@ -949,7 +950,7 @@ private struct MobileEpicWork: View {
     var item: Item
 
     var body: some View {
-        let subs = item.contentId.map { model.detail(for: $0).subIssues } ?? []
+        let subs = model.orderedSubIssues(of: item)
         let groups = model.subIssuesByMilestone(of: item, subs)
         let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
         VStack(alignment: .leading, spacing: 12) {
@@ -962,6 +963,7 @@ private struct MobileEpicWork: View {
                         .monospacedDigit()
                 }
                 Spacer()
+                if subs.count > 1 { MobileSubIssueOrderMenu() }
                 Menu {
                     Button {
                         navigation.sheet = .newIssue(NewIssueContext(projectId: item.projectId, parentItemId: item.id))
@@ -1039,6 +1041,35 @@ private struct MobileEpicWork: View {
     }
 }
 
+/// Picks the order sub-issues are listed in, for every issue.
+private struct MobileSubIssueOrderMenu: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Menu {
+            Picker(selection: Binding(
+                get: { model.subIssueOrder },
+                set: { order in withAnimation(Theme.spring) { model.subIssueOrder = order } }
+            )) {
+                ForEach(SubIssueOrder.allCases, id: \.self) { order in
+                    Text(order.title).tag(order)
+                }
+            } label: {
+                Text(.orderBy)
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.subheadline.weight(.medium))
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
+        }
+        .foregroundStyle(Theme.textSecondary)
+        .accessibilityLabel(.orderSubIssuesTooltip)
+        .accessibilityIdentifier("sub-order")
+    }
+}
+
 private struct MobileSubIssueRow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openRoute) private var openRoute
@@ -1075,6 +1106,10 @@ private struct MobileSubIssueRow: View {
                         .font(.subheadline)
                         .foregroundStyle(sub.isClosed ? Theme.textSecondary : Theme.text)
                         .lineLimit(1)
+                    if let blocker = model.blockerMark(for: sub) {
+                        BlockerFlag(mark: blocker, size: 13)
+                            .accessibilityLabel(model.blockedText(for: sub))
+                    }
                     Spacer(minLength: 8)
                     if boardItem == nil, sub.url != nil {
                         Image(systemName: "arrow.up.right")
@@ -1350,21 +1385,32 @@ private struct CommentComposer: View {
     var item: Item
     @State private var draft = ""
     @State private var sent = 0
-    @FocusState private var focused: Bool
+    @State private var height = EditorStyle.lineHeight
     /// The round send button, 6 points inside the field's corner, as on the Mac.
     @ScaledMetric(relativeTo: .body) private var buttonSize: CGFloat = 32
 
     var body: some View {
         let empty = draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         HStack(alignment: .bottom, spacing: 0) {
-            TextField(.leaveCommentPlaceholder, text: $draft, axis: .vertical)
-                .lineLimit(1...6)
-                .focused($focused)
-                // ⌘↵ sends, as on the Mac; Return alone starts a new line.
-                .screenKey(.sendComment, "\r", modifiers: .command, isActive: focused) { send() }
-                .accessibilityIdentifier("comment-field")
-                .padding(.leading, 16)
-                .padding(.vertical, 11)
+            // Markdown as it will look on GitHub, growing with the text up to six lines and then scrolling. ⌘↵
+            // sends, as on the Mac; Return alone starts a new line.
+            ScrollView {
+                MarkdownEditor(
+                    draft: $draft,
+                    placeholder: .leaveCommentPlaceholder,
+                    onSubmit: send,
+                    submitTitle: .sendComment,
+                    accessibilityLabel: .leaveCommentPlaceholder,
+                    accessibilityIdentifier: "comment-field"
+                )
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+            }
+            .scrollIndicators(.never)
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(height: min(max(height, EditorStyle.lineHeight), EditorStyle.lineHeight * 6))
+            .padding(.leading, 16)
+            // One line is as tall as the send button's corner, as with a plain text field.
+            .padding(.vertical, max(6, (buttonSize + 12 - EditorStyle.lineHeight) / 2))
             Button(action: send) {
                 Image(systemName: "arrow.up")
                     .font(.subheadline.weight(.bold))

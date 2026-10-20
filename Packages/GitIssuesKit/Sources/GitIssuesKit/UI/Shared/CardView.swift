@@ -6,6 +6,9 @@ struct CardModel: Equatable {
     var priority: PriorityLevel
     var showsPriority: Bool
     var due: DueBadge?
+    /// What blocks it, when an open issue does; and that as VoiceOver reads it.
+    var blocker: BlockerMark?
+    var spokenBlocker: String?
     /// How many sub-issues hang under the card in its column, folded or not; nil when none do.
     var nested: Int?
     var folded = false
@@ -26,11 +29,14 @@ extension AppModel {
     /// What a card shows; `nesting` is its column's, for the sub-issues hanging under it.
     func cardModel(for item: Item, in nesting: Nesting? = nil, showsMilestone: Bool = true) -> CardModel {
         let chips = showsMilestone ? fieldChips(of: item, in: item.projectId.map { .project($0) }) : []
+        let blocker = blockerMark(for: item)
         return CardModel(
             item: item,
             priority: priorityLevel(of: item),
             showsPriority: project(of: item)?.priorityFieldId != nil,
             due: dueBadge(for: item),
+            blocker: blocker,
+            spokenBlocker: blocker.map { _ in tooltip(.blockedBy, for: item) },
             nested: nesting?.nestedCounts[item.id],
             folded: nesting?.folded.contains(item.id) ?? false,
             showsParent: nesting.map { $0.namesParent(of: item) } ?? (item.parentNumber != nil),
@@ -84,7 +90,8 @@ struct CardView: View, Equatable {
         .frame(width: width, height: Self.height(titleHeight: titleHeight))
         .accessibilityElement()
         .accessibilityLabel(
-            "\(card.item.displayNumber) \(card.item.title)" + (card.due.map { ", \($0.tooltip)" } ?? "")
+            "\(card.item.displayNumber) \(card.item.title)" + (card.spokenBlocker.map { ", \($0)" } ?? "")
+                + (card.due.map { ", \($0.tooltip)" } ?? "")
                 + (card.item.parentNumber.map { number in
                     ", " + String(localized: card.parentIsEpic
                         ? .epicTooltip(epic: card.item.parentTitle ?? "#\(number)") : .subIssueOf(number: "#\(number)"))
@@ -269,6 +276,8 @@ enum CardText: Hashable {
     case parent(number: Int, title: String?, epic: Bool)
     case title(String)
     case due(String, DueTone)
+    /// The flag of a blocked issue, with the blocker's number once it is known.
+    case blocker(String?)
     case label(String)
     case moreLabels(Int)
     case progress(done: Int, of: Int)
@@ -278,7 +287,7 @@ enum CardText: Hashable {
     case symbol(Symbol)
 
     enum Symbol: Hashable {
-        case pullRequest, blocked, iteration, date, textField, urgent
+        case pullRequest, iteration, date, textField, urgent
     }
 
     var text: Text {
@@ -294,6 +303,10 @@ enum CardText: Hashable {
             Text(title).font(.system(size: CardView.titleSize, weight: .medium)).foregroundStyle(Theme.text)
         case .due(let label, let tone):
             Text("\(Image(systemName: "calendar")) \(label)").font(.system(size: CardView.chipSize)).foregroundStyle(tone.color)
+        case .blocker(let blocker):
+            (blocker.map { Text("\(Image(systemName: "flag.fill")) \($0)").font(.system(size: CardView.chipSize)).monospacedDigit() }
+                ?? Text(Image(systemName: "flag.fill")).font(.system(size: CardView.chipSize - 2, weight: .medium)))
+                .foregroundStyle(Theme.blocked)
         case .label(let name):
             Text(name).font(.system(size: CardView.chipSize, weight: .medium)).foregroundStyle(Theme.textBody)
         case .moreLabels(let count):
@@ -306,8 +319,6 @@ enum CardText: Hashable {
             Text(initials).font(.system(size: 8, weight: .bold)).foregroundStyle(Color(hex: 0x111214))
         case .symbol(.pullRequest):
             Text(Image(systemName: "arrow.triangle.pull")).font(.system(size: 10, weight: .medium)).foregroundStyle(Theme.textTertiary)
-        case .symbol(.blocked):
-            Text(Image(systemName: "flag.fill")).font(.system(size: CardView.chipSize - 2, weight: .medium)).foregroundStyle(Theme.blocked)
         case .symbol(.iteration):
             Text(Image(systemName: "arrow.triangle.2.circlepath")).font(.system(size: CardView.chipSize - 3, weight: .semibold)).foregroundStyle(Theme.textTertiary)
         case .symbol(.date):
@@ -323,6 +334,7 @@ enum CardText: Hashable {
     var room: CGSize? {
         switch self {
         case .number, .due, .progress: CGSize(width: 200, height: 40)
+        case .blocker(let blocker): blocker == nil ? nil : CGSize(width: 200, height: 40)
         case .parent: CGSize(width: 600, height: 40)
         case .label, .chip: CGSize(width: 400, height: 40)
         case .moreLabels: CGSize(width: 100, height: 40)
@@ -451,12 +463,16 @@ private struct CardPainter {
         // The due date comes last but always shows, so labels make room for it.
         let dueChip = card.due.map { due in text(.due(due.label, due.tone)) }
         let limit = size.width - padding.width - (dueChip.map { $0.width + 14 + 6 } ?? 0)
-        // Blocked by an open issue: a red flag first, so labels never push it off the card.
-        if item.blockedByCount > 0 {
-            let rect = CGRect(x: x, y: bottomY - 10, width: 26, height: 20)
+        // Blocked by an open issue: a red flag with the issue to finish first, before the labels, so they never push
+        // it off the card.
+        if let blocker = card.blocker {
+            // Until this device knows which issue blocks it, the flag shows alone.
+            let flag = text(.blocker(blocker.text))
+            let width = blocker.text == nil ? 26 : flag.width + 14
+            let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
             part(.blockedBy, rect)
             chip(rect, hovered: hovered(.blockedBy))
-            context.draw(text(.symbol(.blocked)).text, at: CGPoint(x: rect.midX, y: bottomY), anchor: .center)
+            context.draw(flag.text, at: CGPoint(x: rect.midX, y: bottomY), anchor: .center)
             x = rect.maxX + 6
         }
         var shown = 0

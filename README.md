@@ -108,11 +108,11 @@ so your team sees it there; GitHub's dates have no time of day, and the reminder
 
 Descriptions are Markdown, edited in place: click and type. It types like a notes app: `⌘B` turns bold on and off,
 Return continues a list and leaves bold text, `-` starts a bullet and `- []` a checkbox, and a style's marks are kept
-and deleted as a pair; a change of style eases in, and lines keep their height whatever they hold. One with a
-table, a checklist, code or a Mermaid diagram is drawn the way GitHub draws it, with checkboxes that tick; a click on
-the text brings up the Markdown. Sub-issues come
-with a progress bar, and the plus beside them adds a new one or an issue that exists already. What blocks the issue and
-what it blocks are listed below; a blocked issue carries a red flag on its card. Comments sit below, with the field
+and deleted as a pair; a change of style eases in. Sub-issues come
+with a progress bar, the most urgent first and the done ones last, and the plus beside them adds a new one or an issue
+that exists already. What blocks the issue and what it blocks are listed below. A blocked issue carries a red flag
+with the number of the issue to finish first, as in `#5`, on its card, its list row and its line among its parent's
+sub-issues. Comments sit below, with the field
 for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
 inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arrows in the toolbar.
 
@@ -120,6 +120,23 @@ inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arr
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">
   <img alt="An issue with its description, six sub-issues of which four are done, the issue it blocks, and its properties in the inspector beside it" src="Design/screenshots/issue-light.webp">
 </picture>
+
+### Markdown that reads as GitHub draws it
+
+A description always looks the way GitHub draws it, also while you write it: headings, lists, checklists that tick,
+quotes and GitHub's alerts, code in colour, tables, Mermaid diagrams and maths. The Markdown shows only next to the
+caret, faintly, and folds away when you move on, so a click puts the caret right where you clicked in the finished
+text. A click into a table, a diagram or a formula brings up its source, with the diagram or formula drawn under it as
+you type. Lists continue on Return, Tab nests them, and `⌘B`, `⌘I`, `⌘L` and the rest of the Format menu work as in
+Notes. Comments are drawn the same way, and so is what you write in the comment field and a new issue. A link's address
+hides behind a small pencil, and a code block has a button to copy it.
+
+<!-- Taken in the next picture run (Tools/readme-images.sh, scene "markdown"):
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/markdown-dark.webp">
+  <img alt="Issue #16 with its description drawn as on GitHub: a checklist with three of four boxes ticked, a Tip alert, a table and a Mermaid diagram, and the caret in the word bold with its stars showing faintly beside it" src="Design/screenshots/markdown-light.webp">
+</picture>
+-->
 
 ### An inbox for what changed
 
@@ -267,10 +284,11 @@ The interface uses the system's own parts.
   "…" menu filters it, groups it by status, project, priority or due date and orders it; its filter shows as a line
   under the title.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
-  place (Markdown is styled as you type; tables, checklists, code and Mermaid diagrams are drawn until you tap them).
-  The bar above the keyboard turns bold, italics, code, bullets and checklists on and off, and on its left buttons
-  come in for what the caret is in: its style, which a tap takes off, the line's checkbox, moving a list item in or
-  out, and opening a link. The properties are glass chips under the title, the sub-issues a checklist, the comments a conversation, and the
+  place, the Markdown drawn as on GitHub while you write, with a bar above the keyboard as in Notes (its Aa opens the
+  Format panel); on its left, buttons come in for what the caret is in: its style, which a tap takes off, the line's
+  checkbox, moving a list item in or out, and opening a link. The properties are glass chips under the title, the
+  sub-issues a checklist (by priority, or another order from the arrows beside its plus), the comments a conversation,
+  and the
   comment field stays at the bottom as in Messages. A project's board on iPad stands its columns on soft grey lanes,
   as on the Mac.
 - **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
@@ -279,7 +297,8 @@ The interface uses the system's own parts.
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
   work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
-  their picker ready to type in; Return picks the first match.
+  their picker ready to type in; Return picks the first match. While writing, the Mac's Format shortcuts work too
+  (⌘B, ⌘I, ⇧⌘H, ⇧⌘L and the others), listed while you hold ⌘.
 - **Sample data:** "Explore with Sample Data" on the sign-in screen shows two sample projects without a GitHub account.
   Nothing there is sent anywhere.
 - **In the background:** changes made just before locking the phone are still sent, and iOS refreshes the app now and
@@ -293,8 +312,10 @@ The interface uses the system's own parts.
   own filter, and grouped by status, project, priority or due date.
 - **Every issue of your repositories**, also those on none of your boards, which one click puts on one.
 - **Sub-issues and blockers.** Put any issue under another one, add issues that exist already as sub-issues, and mark
-  which issues block which, with a red flag on blocked cards. Sub-issues with their parent's status hang under it on
-  the board and in the list, and a parent is done when its last sub-issue is.
+  which issues block which; a blocked issue carries a red flag that names what blocks it, on its card and in its
+  parent's sub-issues. Sub-issues with their parent's status hang under it on the board and in the list, and a parent
+  is done when its last sub-issue is. An issue lists its sub-issues by priority, or by status, newest first or in
+  GitHub's order.
 - **Milestones, epics and a roadmap.** A board's milestones with their own board and progress, epics whose
   sub-issues are the work, and a roadmap of the epics over the milestones, on a timeline or as a list. Completing a
   milestone closes it on GitHub and moves what is left to the next one.
@@ -313,8 +334,9 @@ The interface uses the system's own parts.
 - **Status columns are yours to shape.** Add, rename, recolour and remove columns from the board, and drag a column
   by its header to move it; they are the project's Status field on GitHub. In the list, drag a section by its header
   to arrange the list your way (that order is a preference on your Mac and leaves GitHub alone).
-- **GitHub's Markdown.** Headings, lists, code, tables, checklists that tick and Mermaid diagrams, drawn natively
-  in the app's type and colours, and typed as in a notes app.
+- **GitHub's Markdown, always drawn.** Headings, lists, checklists that tick, alerts, code in colour, tables, Mermaid
+  diagrams and maths, drawn natively in the app's type and colours while you write them, and typed as in a notes app:
+  the Markdown shows only next to the caret. In descriptions, comments, the comment field, new issues and milestones.
 - **Keyboard first.** Single keys change status, priority, assignee, labels and the due date. Back and forward work
   like a browser: ⌘[ and ⌘], the side buttons of a mouse, or a two-finger swipe.
 - **Due dates and reminders.** The day an issue is due, typed in a few words or picked in a month, and a notification
@@ -346,6 +368,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Sub-issues, labels, assignees, comments | The native GitHub features |
 | A label typed into the picker | A new label in the issue's repository, in one of GitHub's colours |
 | Sub-issues hanging under their parent | Only how the app arranges them; GitHub's order and fields stay as they are |
+| The order of an issue's sub-issues | Only how the app lists them, kept on each device; GitHub's order stays as it is |
 | A parent done with its last sub-issue | The parent's status moves to the done column and it is closed, as if you had moved it there |
 | Blocked by and blocking | GitHub's issue dependencies |
 | Milestone | GitHub's milestones of the board's repositories; those of the same name are one, and a repository gets a copy when an issue of it goes in |
@@ -540,7 +563,8 @@ right-click it for everything at once. The right-click menu takes the keys at on
 inside a submenu, `↑` `↓` to move, `→` to open a submenu or picker, `Return` to pick and `Esc` to close. A pick closes
 the dropdown, and so does a second click on what opened it; for several assignees or labels, tick the checkbox at the
 start of each row, or hold Shift while you click or press Return. The sub-issue count lists the sub-issues, whose
-status, priority and assignee change right there too, and the red flag of a blocked issue lists what blocks it. In the
+status, priority and assignee change right there too. The red flag of a blocked issue names the issue that blocks it,
+`#5`, with `+1` for each further one, and lists them all when clicked, also beside a sub-issue in its parent. In the
 list, click a section header to fold it; Option-click folds them all.
 
 Sub-issues with the same status as their parent hang under it, indented; click the arrow beside the parent, or
@@ -549,7 +573,10 @@ click there changes the parent. When you finish the last open sub-issue, the par
 Sub-issues turns that off.
 
 In an issue, the plus beside the sub-issues adds one: type to find an issue by title or number, or pick
-**New sub-issue…** to create one with what you typed. Right-click an issue for **Set Parent Issue…**, **Add
+**New sub-issue…** to create one with what you typed. The arrows beside the plus order the sub-issues, in every issue:
+by **Priority** (the most urgent first, those without one after them), **Status** (work in progress first),
+**Newest First** or **GitHub's Order**. In all but GitHub's order the done ones go last. They start out by priority,
+and the list a card's sub-issue count opens follows the same order. Right-click an issue for **Set Parent Issue…**, **Add
 Sub-issue** and **Mark As** (blocked by, blocking). These pickers find issues the same way; picking a checked one takes
 it away again. The issue's inspector has Parent, Blocked by and Blocking rows that open the same pickers, and the ✕ that
 shows when you point at a blocker in the issue takes it away.
@@ -578,19 +605,26 @@ A view of one iteration has the cycle over its issues; the arrows beside it show
 filter until you save it. On a roadmap view's timeline, click a group to fold it and an issue's name to open it;
 **Display** switches between timeline, board and list.
 
-A description with a table, a checklist, code or a Mermaid diagram is drawn as on GitHub. Click a checkbox to tick it;
-click anywhere else to edit the Markdown, and `Esc` or `⌘↵` draws it again.
+A description is drawn as on GitHub and edited right there. Click a checkbox to tick it, a link to open it, and
+anywhere else to type: the Markdown of what the caret is in shows faintly beside it. Click into a table, a diagram or a
+formula to edit its source, with the diagram or formula drawn under it as you type; when the caret leaves, it is drawn
+again. The pencil after a link changes its address, and the button in the corner of a code block copies the code.
+`Esc` or `⌘↵` leaves the description, which saves it; it is also saved a moment after you stop typing.
 
-While writing a description (also on iPad with a keyboard):
+While writing a description, a comment or a new issue (also on iPad with a keyboard):
 
 | Key | Action |
-|---|---|
-| `⌘B` `⌘I` `⌘E` `⌘⇧X` | Bold, italics, code, strikethrough: on, or off inside it. At the end of a style it leaves it, just behind it goes back in |
-| `⌘⇧7` `⌘⇧8` `⌘⇧9` | Numbered list, bullets, checklist for the line or the selected lines, or back to text |
+| --- | --- |
+| `⌘B` `⌘I` `⇧⌘X` `⌘E` | Bold, italics, strikethrough, code: on, or off inside it. At the end of a style it leaves it, just behind it goes back in; at a caret in a word, the word |
+| `⌘L` | Link: the selected text, or a new one, and its address in a popover |
+| `⇧⌘T` `⇧⌘H` `⇧⌘J` `⇧⌘B` | Title, heading, subheading, body |
+| `⇧⌘L` `⇧⌘7` `⇧⌘9` `⌘'` | Checklist, bulleted list, numbered list, quote |
+| `⇧⌘U` | Tick or untick the checkbox |
 | `Return` | Continues a list or quote; on an empty item ends it. At the end of bold text, leaves it for the next line |
-| `Tab` `⇧Tab` | Moves a list item in, under the one above, and out |
+| `Tab` `⇧Tab`, or `⌥⌘]` `⌥⌘[` | Nest or un-nest a list item; in code, indent |
 | `-` at the start of a line | A bullet, with its space; `- []` makes a checkbox |
 | `Delete` | Behind a style, deletes its letters and keeps its marks until the last one; into a mark, takes the style off; into a list marker, the marker |
+| `*` `_` `` ` `` `~` with text selected | Put that mark around the selected words, line by line |
 
 On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. A parent takes the
 sub-issues hanging under it along within its column, and other cards land before or after them, never in between. In the list, drag a
@@ -638,9 +672,9 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap the plus beside an issue's sub-issues | A new sub-issue, or an issue that exists already |
 | Tap the status circle of a sub-issue | Pick its status; Open or Closed for one on none of your boards |
 | Pull down | Sync with GitHub now |
-| Tap the description | Edit it in place; the bar above the keyboard turns bold, italics, code, bullets and checklists on and off and adds links |
+| Tap the description | Edit it in place, drawn as on GitHub; the bar above the keyboard has Aa for the Format panel, a checklist, a link, undo and redo, and more formatting on its next page |
 | Tap a button on the left of the keyboard bar | Take off the style the caret is in, tick the line's checkbox, move a list item in or out, open the link |
-| Tap a drawn description (table, checklist, code, diagram) | Show its Markdown; tap again to edit. Tap a checkbox to tick it |
+| Tap a checkbox, a link, a table or a diagram in a description | Tick it, open it, or edit its source |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
 | Tap the milestone chip of an issue | Put it into another milestone, or a new one |
 | Touch and hold an epic's bar on the roadmap, then drag (iPad) | Move the epic and its unfinished issues to another milestone, or to Later |
@@ -662,7 +696,9 @@ Cycles of their own beyond a view of one iteration, linked pull requests, file u
 notifications on screen for new Inbox entries are planned but not built. Also good to know in 1.0:
 
 - Pull requests and draft issues appear on the board and can be moved, but their text is read-only.
-- Images in descriptions of private repositories may not load.
+- Images in descriptions of private repositories may not load, and pictures can't be pasted into a description: GitHub
+  has no way for apps to upload them.
+- VoiceOver reads a description's tables and diagrams as their Markdown; its checkboxes it reads and ticks.
 - A view's order among the others, and its columns, grouping and sorting once it exists, can't be changed from the
   app: GitHub's API doesn't take them. A roadmap view's bars can't be dragged to other dates yet, the iPhone shows a
   roadmap view as a list, and board swimlanes aren't drawn.
@@ -679,7 +715,8 @@ Packages/GitIssuesKit/
     Resources/               The String Catalog: every text the app shows, in nine languages
     Store/                   The local SQLite database (GRDB), and the sample data
     Sync/                    Sync engine, queued changes, three-way text merge
-    UI/Shared/               The model and every action, design tokens, glyphs, Markdown, the board's cards
+    UI/Shared/               The model and every action, design tokens, glyphs, the board's cards
+    UI/Editor/               The Markdown editor, from Notebook: parsing, styling, layout, tables, diagrams, maths
     UI/Mac/                  The Mac's window, sidebar, AppKit issue table, palette, dropdowns and keys
     UI/iOS/                  The iPhone and iPad tabs, lists, issue screen, sheets, search and sign-in
   Sources/gi-cli/            Command-line tool for exercising sync without the UI
@@ -693,7 +730,7 @@ Tools/                       The app icon, release builds, iOS tests, App Store 
 fastlane/                    App Store releases: lanes, the listing's texts and the age rating
 ```
 
-Everything under `UI/Shared` and below `API`, `Model`, `Store` and `Sync` runs on all three devices, so a change there
+Everything under `UI/Shared` and `UI/Editor` and below `API`, `Model`, `Store` and `Sync` runs on all three devices, so a change there
 applies everywhere. `UI/Mac` and `UI/iOS` are compiled for their platform only.
 
 Every text the app shows is in `Packages/GitIssuesKit/Sources/GitIssuesKit/Resources/Localizable.xcstrings`, in
@@ -749,11 +786,11 @@ only fixes what's broken.
 
 ## Acknowledgements
 
-Built with [GRDB](https://github.com/groue/GRDB.swift), [MarkdownUI](https://github.com/gonzalezreal/swift-markdown-ui)
-with [swift-cmark](https://github.com/swiftlang/swift-cmark), and
+Built with [GRDB](https://github.com/groue/GRDB.swift),
 [BeautifulMermaid](https://github.com/lukilabs/beautiful-mermaid-swift), which lays diagrams out with
-[elk-swift](https://github.com/lukilabs/elk-swift) (Eclipse Public License 2.0; its source is at that link). The
-interaction design is inspired by [Linear](https://linear.app).
+[elk-swift](https://github.com/lukilabs/elk-swift) (Eclipse Public License 2.0; its source is at that link), and
+[SwiftMath](https://github.com/mgriebling/SwiftMath). The Markdown editor comes from
+[Notebook](https://github.com/lukaskaibel/notebook). The interaction design is inspired by [Linear](https://linear.app).
 
 Issues is an independent project and is not affiliated with, endorsed by, or sponsored by GitHub or Linear.
 

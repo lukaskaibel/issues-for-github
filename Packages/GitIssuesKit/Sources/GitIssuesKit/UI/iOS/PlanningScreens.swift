@@ -303,6 +303,7 @@ struct MilestoneEditorSheet: View {
     @State private var name = ""
     @State private var due: CalendarDay?
     @State private var descr = ""
+    @State private var editingDescription = false
     @State private var choosingDate = false
     @State private var prepared = false
     @FocusState private var nameFocused: Bool
@@ -316,9 +317,16 @@ struct MilestoneEditorSheet: View {
                         .focused($nameFocused)
                         .submitLabel(.done)
                         .accessibilityIdentifier("milestone-name")
-                    TextField(.milestoneDescriptionPlaceholder, text: $descr, axis: .vertical)
-                        .lineLimit(3...)
-                        .accessibilityIdentifier("milestone-description")
+                    MarkdownEditor(
+                        draft: $descr,
+                        placeholder: .milestoneDescriptionPlaceholder,
+                        editing: $editingDescription,
+                        accessibilityLabel: .milestoneDescriptionPlaceholder,
+                        accessibilityIdentifier: "milestone-description"
+                    )
+                    .frame(minHeight: EditorStyle.lineHeight * 3, alignment: .top)
+                    // A tap below the text puts the caret at its end.
+                    .background { Color.clear.contentShape(.rect).onTapGesture { editingDescription = true } }
                 }
                 Section {
                     Button {

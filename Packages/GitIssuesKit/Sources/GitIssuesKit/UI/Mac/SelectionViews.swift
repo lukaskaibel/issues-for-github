@@ -286,7 +286,7 @@ struct PropertyChipRow: View {
                         PropertyButton(kind: .blockedBy, item: item) {
                             Chip {
                                 BlockedIcon(size: 9)
-                                Text(.blockedChip)
+                                Text(model.blockedChipText(for: item))
                             }
                         }
                         .padding(.leading, -8)

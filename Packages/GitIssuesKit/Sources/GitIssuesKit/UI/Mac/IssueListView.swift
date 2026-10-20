@@ -48,6 +48,7 @@ struct IssueListView: View {
                                     showsStatus: !item.isOnBoard || model.project(of: item)?.statusFieldId != nil,
                                     projectTitle: showsProject ? place(of: item, groupsByProject: groupsByProject) : nil,
                                     due: model.dueBadge(for: item),
+                                    blocker: model.blockerMark(for: item),
                                     selected: model.isSelected(item.id),
                                     selecting: !model.selectedIds.isEmpty,
                                     nest: section.nesting.place(of: item.id),

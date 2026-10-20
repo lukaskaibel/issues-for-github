@@ -131,6 +131,8 @@ for theme in dark light; do
   shot "board-$theme"
   # The issue with its properties in the inspector beside it, whether or not the inspector was last left open.
   say "inspector on" "open 9"; sleep 1.5; shot "issue-$theme"
+  # Issue #16's description, drawn as on GitHub, with the caret in "bold": its stars show beside it, faintly.
+  say "close" "open 16"; sleep 2; say "mdfocus issue-description" "mdcaret old**"; sleep 1.2; shot "markdown-$theme"
   # The board takes the focus back once the issue and its inspector are gone; focus #9 only after that.
   say "close"; sleep 1; say "focus 9" "overlay palette"; sleep 1.2; shot "palette-$theme"
   say "overlay due 9"; sleep 1.2; shot "due-$theme"
