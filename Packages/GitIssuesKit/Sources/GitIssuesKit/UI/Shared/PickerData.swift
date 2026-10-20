@@ -420,10 +420,10 @@ extension AppModel {
         return String(localized: text)
     }
 
-    /// Sub-issues of an issue that are on the same board, in board order.
+    /// Sub-issues of an issue that are on the same board, in the order its page lists them.
     func subIssueItems(of item: Item) -> [Item] {
         guard let contentId = item.contentId else { return [] }
-        return allItems.filter { $0.projectId == item.projectId && $0.parentId == contentId }
+        return ordered(subIssues: allItems.filter { $0.projectId == item.projectId && $0.parentId == contentId }, of: contentId)
     }
 
     func pick(_ kind: PickerKind, id: String, for item: Item) {

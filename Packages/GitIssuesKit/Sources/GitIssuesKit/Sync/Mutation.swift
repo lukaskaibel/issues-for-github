@@ -553,7 +553,7 @@ extension Mutation {
                 try SubIssue(
                     id: m.contentId, parentId: parentId, number: m.createdNumber ?? 0, title: m.title, state: "OPEN",
                     repo: m.repo, url: m.createdUrl, position: count, assignees: m.assignees,
-                    milestoneId: m.milestoneId, milestoneTitle: m.milestoneTitle
+                    milestoneId: m.milestoneId, milestoneTitle: m.milestoneTitle, createdAt: m.createdAt
                 ).insert(db)
             }
 

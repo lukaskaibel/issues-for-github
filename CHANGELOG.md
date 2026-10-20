@@ -6,6 +6,14 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and
+  those without a priority after them, with the done ones at the bottom. The arrows beside the plus over them order
+  them by status, newest first or in GitHub's order instead; the choice holds for every issue on that device, and the
+  list a card's sub-issue count opens follows it too. Before, they were always in GitHub's order, which is mostly the
+  order they were added in.
+
 ### Changed
 
 - **Markdown that reads as GitHub draws it, while you write it.** Descriptions, comments, the comment field, new
