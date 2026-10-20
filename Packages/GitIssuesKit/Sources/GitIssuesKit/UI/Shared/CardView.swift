@@ -156,10 +156,201 @@ final class CardRegionStore: @unchecked Sendable {
     }
 }
 
+/// What painting a card needs again and again, kept from one paint to the next: the theme's colours, which follow the
+/// appearance and are worked out through NSAppearance each time, and the texts, resolved and measured once. Working
+/// them out was most of the time a card took to paint, on every hover change and for every card scrolled into view.
+/// Kept apart for each look a card can be painted in, so a change of appearance, contrast, scale or text settings
+/// paints with fresh ones. Cards are painted on the main thread; the lock keeps the store safe all the same.
+final class CardPaintCache: @unchecked Sendable {
+    static let shared = CardPaintCache()
+
+    /// What the environment changes about the colours and texts of a card.
+    struct Look: Hashable {
+        var colorScheme: ColorScheme
+        var contrast: ColorSchemeContrast
+        var displayScale: CGFloat
+        var locale: String
+        var layoutDirection: LayoutDirection
+        var legibilityWeight: LegibilityWeight?
+        var dynamicTypeSize: DynamicTypeSize
+
+        init(_ environment: EnvironmentValues) {
+            colorScheme = environment.colorScheme
+            contrast = environment.colorSchemeContrast
+            displayScale = environment.displayScale
+            locale = environment.locale.identifier
+            layoutDirection = environment.layoutDirection
+            legibilityWeight = environment.legibilityWeight
+            dynamicTypeSize = environment.dynamicTypeSize
+        }
+    }
+
+    /// A text ready to draw, and how wide it is where the painter measures it.
+    struct Kept {
+        var text: GraphicsContext.ResolvedText
+        var width: CGFloat
+    }
+
+    private struct ColorKey: Hashable {
+        var ink: CardInk
+        var look: Look
+    }
+
+    private struct TextKey: Hashable {
+        var text: CardText
+        var look: Look
+    }
+
+    private let lock = NSLock()
+    private var colors: [ColorKey: Color] = [:]
+    private var texts: [TextKey: Kept] = [:]
+    /// Titles and numbers come and go with the issues, so past this many the texts start over.
+    private let limit = 6000
+
+    func color(_ ink: CardInk, look: Look, in context: GraphicsContext) -> Color {
+        let key = ColorKey(ink: ink, look: look)
+        lock.lock()
+        defer { lock.unlock() }
+        if let color = colors[key] { return color }
+        let color = Color(ink.color.resolve(in: context.environment))
+        colors[key] = color
+        return color
+    }
+
+    func text(_ text: CardText, look: Look, in context: GraphicsContext) -> Kept {
+        let key = TextKey(text: text, look: look)
+        lock.lock()
+        defer { lock.unlock() }
+        if let kept = texts[key] { return kept }
+        let resolved = context.resolve(text.text)
+        let kept = Kept(text: resolved, width: text.room.map { resolved.measure(in: $0).width } ?? 0)
+        if texts.count >= limit { texts.removeAll(keepingCapacity: true) }
+        texts[key] = kept
+        return kept
+    }
+}
+
+/// A colour a card is painted with, named so that it can be kept once worked out.
+enum CardInk: Hashable {
+    case card, cardHover, cardLifted, selectionFill
+    case cardBorder, cardHoverBorder, cardLiftedBorder, selectionBorder
+    case partHover, textSecondary, textTertiary, textBody, barOff, urgent, epic
+    case milestone(MilestoneMark)
+    case label(hex: String)
+    case option(String)
+
+    var color: Color {
+        switch self {
+        case .card: Theme.card
+        case .cardHover: Theme.cardHover
+        case .cardLifted: Theme.cardLifted
+        case .selectionFill: Theme.selectionFill
+        case .cardBorder: Theme.cardBorder
+        case .cardHoverBorder: Theme.cardHoverBorder
+        case .cardLiftedBorder: Theme.cardLiftedBorder
+        case .selectionBorder: Theme.selectionBorder
+        case .partHover: Theme.partHover
+        case .textSecondary: Theme.textSecondary
+        case .textTertiary: Theme.textTertiary
+        case .textBody: Theme.textBody
+        case .barOff: Theme.barOff
+        case .urgent: Theme.urgent
+        case .epic: Theme.epic
+        case .milestone(let mark): mark.color
+        case .label(let hex): Theme.labelColor(hex)
+        case .option(let name): Theme.optionColor(name) ?? Theme.textTertiary
+        }
+    }
+}
+
+/// A text on a card, named by what it shows so that it can be kept once resolved.
+enum CardText: Hashable {
+    case number(String, lifted: Bool)
+    case parent(number: Int, title: String?, epic: Bool)
+    case title(String)
+    case due(String, DueTone)
+    case label(String)
+    case moreLabels(Int)
+    case progress(done: Int, of: Int)
+    /// A milestone or a field's value.
+    case chip(String)
+    case initials(String)
+    case symbol(Symbol)
+
+    enum Symbol: Hashable {
+        case pullRequest, blocked, iteration, date, textField, urgent
+    }
+
+    var text: Text {
+        switch self {
+        case .number(let number, let lifted):
+            Text(number).font(.system(size: CardView.metaSize)).monospacedDigit()
+                .foregroundStyle(lifted ? Theme.textSecondary : Theme.textTertiary)
+        case .parent(let number, let title, let epic):
+            // An epic is named by its icon and title, like a project in Linear; another parent by its number.
+            (epic ? Text(title ?? "#\(number)") : Text("\(Image(systemName: "arrow.turn.left.up")) #\(number) \(title ?? "")"))
+                .font(.system(size: CardView.metaSize)).foregroundStyle(Theme.textTertiary)
+        case .title(let title):
+            Text(title).font(.system(size: CardView.titleSize, weight: .medium)).foregroundStyle(Theme.text)
+        case .due(let label, let tone):
+            Text("\(Image(systemName: "calendar")) \(label)").font(.system(size: CardView.chipSize)).foregroundStyle(tone.color)
+        case .label(let name):
+            Text(name).font(.system(size: CardView.chipSize, weight: .medium)).foregroundStyle(Theme.textBody)
+        case .moreLabels(let count):
+            Text("+\(count)").font(.system(size: CardView.chipSize)).foregroundStyle(Theme.textSecondary)
+        case .progress(let done, let total):
+            Text("\(done)/\(total)").font(.system(size: CardView.chipSize)).monospacedDigit().foregroundStyle(Theme.textSecondary)
+        case .chip(let value):
+            Text(value).font(.system(size: CardView.chipSize)).foregroundStyle(Theme.textSecondary)
+        case .initials(let initials):
+            Text(initials).font(.system(size: 8, weight: .bold)).foregroundStyle(Color(hex: 0x111214))
+        case .symbol(.pullRequest):
+            Text(Image(systemName: "arrow.triangle.pull")).font(.system(size: 10, weight: .medium)).foregroundStyle(Theme.textTertiary)
+        case .symbol(.blocked):
+            Text(Image(systemName: "flag.fill")).font(.system(size: CardView.chipSize - 2, weight: .medium)).foregroundStyle(Theme.blocked)
+        case .symbol(.iteration):
+            Text(Image(systemName: "arrow.triangle.2.circlepath")).font(.system(size: CardView.chipSize - 3, weight: .semibold)).foregroundStyle(Theme.textTertiary)
+        case .symbol(.date):
+            Text(Image(systemName: "calendar")).font(.system(size: CardView.chipSize - 2)).foregroundStyle(Theme.textTertiary)
+        case .symbol(.textField):
+            Text(Image(systemName: "text.alignleft")).font(.system(size: CardView.chipSize - 3)).foregroundStyle(Theme.textTertiary)
+        case .symbol(.urgent):
+            Text("!").font(.system(size: 10, weight: .heavy, design: .rounded)).foregroundStyle(Theme.onColor)
+        }
+    }
+
+    /// The room the painter measures it in; nil for texts drawn without being measured.
+    var room: CGSize? {
+        switch self {
+        case .number, .due, .progress: CGSize(width: 200, height: 40)
+        case .parent: CGSize(width: 600, height: 40)
+        case .label, .chip: CGSize(width: 400, height: 40)
+        case .moreLabels: CGSize(width: 100, height: 40)
+        case .title, .initials, .symbol: nil
+        }
+    }
+}
+
 private struct CardPainter {
     var context: GraphicsContext
     var size: CGSize
     var titleHeight: CGFloat
+    private let look: CardPaintCache.Look
+
+    init(context: GraphicsContext, size: CGSize, titleHeight: CGFloat) {
+        self.context = context
+        self.size = size
+        self.titleHeight = titleHeight
+        look = CardPaintCache.Look(context.environment)
+    }
+
+    private func ink(_ ink: CardInk) -> Color {
+        CardPaintCache.shared.color(ink, look: look, in: context)
+    }
+
+    private func text(_ text: CardText) -> CardPaintCache.Kept {
+        CardPaintCache.shared.text(text, look: look, in: context)
+    }
 
     func draw(_ view: CardView) {
         let card = view.card
@@ -176,8 +367,8 @@ private struct CardPainter {
         }
         defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts, fold: fold, number: numberRect) } }
         let outline = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5), cornerRadius: CardView.cornerRadius, style: .continuous)
-        let fill = view.lifted ? Theme.cardLifted : view.selected ? Theme.selectionFill : (view.highlighted ? Theme.cardHover : Theme.card)
-        let border = view.lifted ? Theme.cardLiftedBorder : view.selected ? Theme.selectionBorder : (view.highlighted ? Theme.cardHoverBorder : Theme.cardBorder)
+        let fill = ink(view.lifted ? .cardLifted : view.selected ? .selectionFill : (view.highlighted ? .cardHover : .card))
+        let border = ink(view.lifted ? .cardLiftedBorder : view.selected ? .selectionBorder : (view.highlighted ? .cardHoverBorder : .cardBorder))
         context.fill(outline, with: .color(fill))
         context.stroke(outline, with: .color(border), lineWidth: view.selected && !view.lifted ? 1.5 : 1)
 
@@ -190,39 +381,28 @@ private struct CardPainter {
             let rect = CGRect(x: x - 3, y: topY - 7, width: 14, height: 14)
             fold = rect
             if view.hoveringFold, !view.lifted {
-                context.fill(Path(roundedRect: rect.insetBy(dx: -2, dy: -2), cornerRadius: 5), with: .color(Theme.partHover))
+                context.fill(Path(roundedRect: rect.insetBy(dx: -2, dy: -2), cornerRadius: 5), with: .color(ink(.partHover)))
             }
             context.stroke(
                 Self.foldArrow(folded: card.folded, center: CGPoint(x: rect.midX, y: rect.midY)),
-                with: .color(Theme.textSecondary), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
+                with: .color(ink(.textSecondary)), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
             )
             x = rect.maxX + 5
         }
-        let number = context.resolve(
-            Text(item.displayNumber).font(.system(size: CardView.metaSize)).monospacedDigit()
-                .foregroundStyle(view.lifted ? Theme.textSecondary : Theme.textTertiary)
-        )
-        context.draw(number, at: CGPoint(x: x, y: topY), anchor: .leading)
-        let numberWidth = number.measure(in: CGSize(width: 200, height: 40)).width
-        numberRect = CGRect(x: x, y: topY - 8, width: numberWidth, height: 16)
-        x += numberWidth + 6
+        let number = text(.number(item.displayNumber, lifted: view.lifted))
+        context.draw(number.text, at: CGPoint(x: x, y: topY), anchor: .leading)
+        numberRect = CGRect(x: x, y: topY - 8, width: number.width, height: 16)
+        x += number.width + 6
         if item.kind == .pullRequest {
-            context.draw(
-                Text(Image(systemName: "arrow.triangle.pull")).font(.system(size: 10, weight: .medium)).foregroundStyle(Theme.textTertiary),
-                at: CGPoint(x: x, y: topY), anchor: .leading
-            )
+            context.draw(text(.symbol(.pullRequest)).text, at: CGPoint(x: x, y: topY), anchor: .leading)
             x += 16
         }
         if card.showsParent, let parentNumber = item.parentNumber {
             let avatars = item.kind == .draft ? 0 : 18 + CGFloat(max(min(item.assignees.count, 3), 1) - 1) * 13
             let room = size.width - padding.width - avatars - 10 - x
-            // An epic is named by its icon and title, like a project in Linear; another parent by its number.
-            let label = card.parentIsEpic
-                ? Text(item.parentTitle ?? "#\(parentNumber)")
-                : Text("\(Image(systemName: "arrow.turn.left.up")) #\(parentNumber) \(item.parentTitle ?? "")")
-            let text = context.resolve(label.font(.system(size: CardView.metaSize)).foregroundStyle(Theme.textTertiary))
+            let label = text(.parent(number: parentNumber, title: item.parentTitle, epic: card.parentIsEpic))
             let icon: CGFloat = card.parentIsEpic ? 15 : 0
-            let width = min(text.measure(in: CGSize(width: 600, height: 40)).width, room - 12 - icon)
+            let width = min(label.width, room - 12 - icon)
             if width >= 48 {
                 let rect = CGRect(x: x - 2, y: topY - 9, width: width + 12 + icon, height: 18)
                 let kind: PickerKind = card.parentIsEpic ? .epic : .parent
@@ -230,11 +410,11 @@ private struct CardPainter {
                 if hovered(kind) { chip(rect, hovered: true) }
                 if card.parentIsEpic {
                     context.stroke(
-                        PlanningGlyph.layers(in: CGRect(x: rect.minX + 5, y: topY - 6, width: 12, height: 12)), with: .color(Theme.epic),
+                        PlanningGlyph.layers(in: CGRect(x: rect.minX + 5, y: topY - 6, width: 12, height: 12)), with: .color(ink(.epic)),
                         style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round)
                     )
                 }
-                context.draw(text, in: CGRect(x: rect.minX + 6 + icon, y: topY - 8, width: width, height: 16))
+                context.draw(label.text, in: CGRect(x: rect.minX + 6 + icon, y: topY - 8, width: width, height: 16))
             }
         }
         var avatarRing = fill
@@ -245,8 +425,8 @@ private struct CardPainter {
             part(.assignees, rect)
             if hovered(.assignees) {
                 let halo = rect.insetBy(dx: -3, dy: -3)
-                context.fill(Path(roundedRect: halo, cornerRadius: halo.height / 2), with: .color(Theme.partHover))
-                avatarRing = Theme.partHover
+                avatarRing = ink(.partHover)
+                context.fill(Path(roundedRect: halo, cornerRadius: halo.height / 2), with: .color(avatarRing))
                 if item.assignees.isEmpty { drawUnassigned(in: rect) }
             }
         }
@@ -254,7 +434,7 @@ private struct CardPainter {
 
         // Title, wrapped to at most three lines.
         let titleRect = CGRect(x: padding.width, y: padding.height + 18 + 6, width: size.width - 2 * padding.width, height: titleHeight)
-        context.draw(Text(item.title).font(.system(size: CardView.titleSize, weight: .medium)).foregroundStyle(Theme.text), in: titleRect)
+        context.draw(text(.title(item.title)).text, in: titleRect)
 
         // Bottom line: priority, labels, sub-issue progress.
         let bottomY = titleRect.maxY + 6 + 10
@@ -263,29 +443,20 @@ private struct CardPainter {
             let rect = CGRect(x: x, y: bottomY - 7, width: 14, height: 14)
             part(.priority, rect)
             if hovered(.priority) {
-                context.fill(Path(roundedRect: rect.insetBy(dx: -4, dy: -4), cornerRadius: 5), with: .color(Theme.partHover))
+                context.fill(Path(roundedRect: rect.insetBy(dx: -4, dy: -4), cornerRadius: 5), with: .color(ink(.partHover)))
             }
             drawPriority(card.priority, x: x, midY: bottomY)
             x += 14 + 6
         }
         // The due date comes last but always shows, so labels make room for it.
-        var dueChip: (text: GraphicsContext.ResolvedText, width: CGFloat)?
-        if let due = card.due {
-            let text = context.resolve(
-                Text("\(Image(systemName: "calendar")) \(due.label)").font(.system(size: CardView.chipSize)).foregroundStyle(due.tone.color)
-            )
-            dueChip = (text, text.measure(in: CGSize(width: 200, height: 40)).width + 14)
-        }
-        let limit = size.width - padding.width - (dueChip.map { $0.width + 6 } ?? 0)
+        let dueChip = card.due.map { due in text(.due(due.label, due.tone)) }
+        let limit = size.width - padding.width - (dueChip.map { $0.width + 14 + 6 } ?? 0)
         // Blocked by an open issue: a red flag first, so labels never push it off the card.
         if item.blockedByCount > 0 {
             let rect = CGRect(x: x, y: bottomY - 10, width: 26, height: 20)
             part(.blockedBy, rect)
             chip(rect, hovered: hovered(.blockedBy))
-            context.draw(
-                Text(Image(systemName: "flag.fill")).font(.system(size: CardView.chipSize - 2, weight: .medium)).foregroundStyle(Theme.blocked),
-                at: CGPoint(x: rect.midX, y: bottomY), anchor: .center
-            )
+            context.draw(text(.symbol(.blocked)).text, at: CGPoint(x: rect.midX, y: bottomY), anchor: .center)
             x = rect.maxX + 6
         }
         var shown = 0
@@ -293,39 +464,37 @@ private struct CardPainter {
         var labelLayout: [(label: LabelRef, text: GraphicsContext.ResolvedText, rect: CGRect)] = []
         var labelX = x
         for label in item.labels.prefix(2) {
-            let text = context.resolve(Text(label.name).font(.system(size: CardView.chipSize, weight: .medium)).foregroundStyle(Theme.textBody))
-            let width = text.measure(in: CGSize(width: 400, height: 40)).width + 7 + 7 + 5 + 7
+            let name = text(.label(label.name))
+            let width = name.width + 7 + 7 + 5 + 7
             guard labelX + width <= limit else { break }
-            labelLayout.append((label, text, CGRect(x: labelX, y: bottomY - 10, width: width, height: 20)))
+            labelLayout.append((label, name.text, CGRect(x: labelX, y: bottomY - 10, width: width, height: 20)))
             labelX += width + 6
         }
         if item.kind != .draft, let first = labelLayout.first, let last = labelLayout.last {
             part(.labels, first.rect.union(last.rect))
         }
-        for (label, text, rect) in labelLayout {
-            let color = Theme.labelColor(label.color)
+        for (label, name, rect) in labelLayout {
+            let color = ink(.label(hex: label.color))
             let capsule = Path(roundedRect: rect, cornerRadius: rect.height / 2)
             context.fill(capsule, with: .color(color.opacity(hovered(.labels) ? 0.24 : 0.14)))
             context.fill(Path(ellipseIn: CGRect(x: rect.minX + 7, y: bottomY - 3.5, width: 7, height: 7)), with: .color(color))
-            context.draw(text, at: CGPoint(x: rect.minX + 19, y: bottomY), anchor: .leading)
+            context.draw(name, at: CGPoint(x: rect.minX + 19, y: bottomY), anchor: .leading)
             x = rect.maxX + 6
             shown += 1
         }
         if item.labels.count > shown, shown > 0 {
-            let text = context.resolve(Text("+\(item.labels.count - shown)").font(.system(size: CardView.chipSize)).foregroundStyle(Theme.textSecondary))
-            let width = text.measure(in: CGSize(width: 100, height: 40)).width + 14
+            let more = text(.moreLabels(item.labels.count - shown))
+            let width = more.width + 14
             if x + width <= limit {
                 let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
                 chip(rect)
-                context.draw(text, at: CGPoint(x: rect.minX + 7, y: bottomY), anchor: .leading)
+                context.draw(more.text, at: CGPoint(x: rect.minX + 7, y: bottomY), anchor: .leading)
                 x = rect.maxX + 6
             }
         }
         if item.subTotal > 0 {
-            let text = context.resolve(
-                Text("\(item.subCompleted)/\(item.subTotal)").font(.system(size: CardView.chipSize)).monospacedDigit().foregroundStyle(Theme.textSecondary)
-            )
-            let width = text.measure(in: CGSize(width: 200, height: 40)).width + 7 + 11 + 4 + 7
+            let progress = text(.progress(done: item.subCompleted, of: item.subTotal))
+            let width = progress.width + 7 + 11 + 4 + 7
             if x + width <= limit {
                 let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
                 part(.subIssues, rect)
@@ -336,17 +505,17 @@ private struct CardPainter {
                 glyph.addLine(to: CGPoint(x: origin.x + 2.3, y: origin.y + 5.5))
                 glyph.addQuadCurve(to: CGPoint(x: origin.x + 4.1, y: origin.y + 7.3), control: CGPoint(x: origin.x + 2.3, y: origin.y + 7.3))
                 glyph.addLine(to: CGPoint(x: origin.x + 6, y: origin.y + 7.3))
-                context.stroke(glyph, with: .color(Theme.textSecondary), style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
+                context.stroke(glyph, with: .color(ink(.textSecondary)), style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
                 context.stroke(
                     Path(ellipseIn: CGRect(x: origin.x + 6.2, y: origin.y + 5.8, width: 3.1, height: 3.1)),
-                    with: .color(Theme.textSecondary), lineWidth: 1.2
+                    with: .color(ink(.textSecondary)), lineWidth: 1.2
                 )
-                context.draw(text, at: CGPoint(x: rect.minX + 7 + 11 + 4, y: bottomY), anchor: .leading)
+                context.draw(progress.text, at: CGPoint(x: rect.minX + 7 + 11 + 4, y: bottomY), anchor: .leading)
                 x = rect.maxX + 6
             }
         }
         if let dueChip {
-            let rect = CGRect(x: x, y: bottomY - 10, width: dueChip.width, height: 20)
+            let rect = CGRect(x: x, y: bottomY - 10, width: dueChip.width + 14, height: 20)
             part(.dueDate, rect)
             chip(rect, hovered: hovered(.dueDate))
             context.draw(dueChip.text, at: CGPoint(x: rect.minX + 7, y: bottomY), anchor: .leading)
@@ -354,8 +523,8 @@ private struct CardPainter {
         }
         // The milestone last: it is the same for many cards, so it gives way to what tells them apart.
         if let milestone = card.milestone {
-            let text = context.resolve(Text(milestone).font(.system(size: CardView.chipSize)).foregroundStyle(Theme.textSecondary))
-            let textWidth = min(text.measure(in: CGSize(width: 400, height: 40)).width, 110)
+            let name = text(.chip(milestone))
+            let textWidth = min(name.width, 110)
             let width = 7 + 10 + 5 + textWidth + 7
             if x + width <= size.width - padding.width {
                 let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
@@ -363,7 +532,7 @@ private struct CardPainter {
                 chip(rect, hovered: hovered(.milestone))
                 let diamond = CGRect(x: rect.minX + 7, y: bottomY - 5, width: 10, height: 10)
                 let outline = PlanningGlyph.diamond(in: diamond, inset: 1.1)
-                let color = card.milestoneMark.color
+                let color = ink(.milestone(card.milestoneMark))
                 switch card.milestoneMark {
                 case .completed:
                     context.fill(outline, with: .color(color))
@@ -373,39 +542,31 @@ private struct CardPainter {
                 case .upcoming, .none:
                     context.stroke(outline, with: .color(color), lineWidth: 1.3)
                 }
-                context.draw(text, in: CGRect(x: rect.minX + 7 + 10 + 5, y: bottomY - 8, width: textWidth, height: 16))
+                context.draw(name.text, in: CGRect(x: rect.minX + 7 + 10 + 5, y: bottomY - 8, width: textWidth, height: 16))
                 x = rect.maxX + 6
             }
         }
         // The project's own fields the view shows, after everything else, as far as there is room.
         for field in card.chips {
-            let text = context.resolve(Text(field.text).font(.system(size: CardView.chipSize)).foregroundStyle(Theme.textSecondary))
-            let textWidth = min(text.measure(in: CGSize(width: 400, height: 40)).width, 110)
+            let value = text(.chip(field.text))
+            let textWidth = min(value.width, 110)
             let width = 7 + 10 + 5 + textWidth + 7
             guard x + width <= size.width - padding.width else { break }
             let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
             chip(rect)
             let icon = CGRect(x: rect.minX + 7, y: bottomY - 5, width: 10, height: 10)
+            let center = CGPoint(x: icon.midX, y: icon.midY)
             switch field.icon {
             case .option(let color):
-                context.fill(Path(ellipseIn: icon.insetBy(dx: 1.5, dy: 1.5)), with: .color(Theme.optionColor(color) ?? Theme.textTertiary))
+                context.fill(Path(ellipseIn: icon.insetBy(dx: 1.5, dy: 1.5)), with: .color(ink(.option(color))))
             case .iteration:
-                context.draw(
-                    Text(Image(systemName: "arrow.triangle.2.circlepath")).font(.system(size: CardView.chipSize - 3, weight: .semibold)).foregroundStyle(Theme.textTertiary),
-                    at: CGPoint(x: icon.midX, y: icon.midY), anchor: .center
-                )
+                context.draw(text(.symbol(.iteration)).text, at: center, anchor: .center)
             case .date:
-                context.draw(
-                    Text(Image(systemName: "calendar")).font(.system(size: CardView.chipSize - 2)).foregroundStyle(Theme.textTertiary),
-                    at: CGPoint(x: icon.midX, y: icon.midY), anchor: .center
-                )
+                context.draw(text(.symbol(.date)).text, at: center, anchor: .center)
             case .text:
-                context.draw(
-                    Text(Image(systemName: "text.alignleft")).font(.system(size: CardView.chipSize - 3)).foregroundStyle(Theme.textTertiary),
-                    at: CGPoint(x: icon.midX, y: icon.midY), anchor: .center
-                )
+                context.draw(text(.symbol(.textField)).text, at: center, anchor: .center)
             }
-            context.draw(text, in: CGRect(x: rect.minX + 7 + 10 + 5, y: bottomY - 8, width: textWidth, height: 16))
+            context.draw(value.text, in: CGRect(x: rect.minX + 7 + 10 + 5, y: bottomY - 8, width: textWidth, height: 16))
             x = rect.maxX + 6
         }
     }
@@ -429,29 +590,26 @@ private struct CardPainter {
     /// writes them; under the pointer they light up as the button they are.
     private func chip(_ rect: CGRect, hovered: Bool = false) {
         guard hovered else { return }
-        context.fill(Path(roundedRect: rect, cornerRadius: rect.height / 2), with: .color(Theme.partHover))
+        context.fill(Path(roundedRect: rect, cornerRadius: rect.height / 2), with: .color(ink(.partHover)))
     }
 
     /// Where an avatar would be: a dashed circle, shown when pointing at an unassigned issue's avatar spot.
     private func drawUnassigned(in rect: CGRect) {
         let circle = CGRect(x: rect.maxX - 18, y: rect.midY - 9, width: 18, height: 18).insetBy(dx: 1.5, dy: 1.5)
-        context.stroke(Path(ellipseIn: circle), with: .color(Theme.textTertiary), style: StrokeStyle(lineWidth: 1.2, dash: [2.2, 2]))
+        context.stroke(Path(ellipseIn: circle), with: .color(ink(.textTertiary)), style: StrokeStyle(lineWidth: 1.2, dash: [2.2, 2]))
     }
 
     private func drawPriority(_ level: PriorityLevel, x: CGFloat, midY: CGFloat) {
         if level == .urgent {
             let rect = CGRect(x: x + 1, y: midY - 6, width: 12, height: 12)
-            context.fill(Path(roundedRect: rect, cornerRadius: 3), with: .color(Theme.urgent))
-            context.draw(
-                Text("!").font(.system(size: 10, weight: .heavy, design: .rounded)).foregroundStyle(Theme.onColor),
-                at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center
-            )
+            context.fill(Path(roundedRect: rect, cornerRadius: 3), with: .color(ink(.urgent)))
+            context.draw(text(.symbol(.urgent)).text, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
             return
         }
         let bars: [(CGFloat, Bool)] = [(4, level >= .low), (7, level >= .medium), (10, level >= .high)]
         for (index, bar) in bars.enumerated() {
             let rect = CGRect(x: x + CGFloat(index) * 5, y: midY + 6 - bar.0, width: 3, height: bar.0)
-            context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(bar.1 ? Theme.textBody : Theme.barOff))
+            context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(ink(bar.1 ? .textBody : .barOff)))
         }
     }
 
@@ -471,11 +629,7 @@ private struct CardPainter {
                 clipped.draw(Image(platformImage: image).interpolation(.high), in: rect)
             } else {
                 context.fill(Path(ellipseIn: rect), with: .color(Avatar.color(for: person.login)))
-                context.draw(
-                    Text(String(person.login.prefix(2)).uppercased())
-                        .font(.system(size: 8, weight: .bold)).foregroundStyle(Color(hex: 0x111214)),
-                    at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center
-                )
+                context.draw(text(.initials(String(person.login.prefix(2)).uppercased())).text, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
             }
         }
     }

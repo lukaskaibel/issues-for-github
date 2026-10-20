@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "boardsweep", "pointer", "rendercards"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -257,6 +257,18 @@ enum DebugRemote {
             if numbers.count == 3 {
                 MenuTiming.sweep(main: bits.first == "main", x: numbers[0], from: numbers[1], to: numbers[2], model: model, log: log)
             }
+        case "boardsweep":
+            // boardsweep <x> <y from> <y to>: times the pointer going up and down a column of the board on screen, from
+            // the window's top left; with `-demo.copies 10` a column holds about a hundred cards.
+            let numbers = argument.split(separator: " ").compactMap { Double($0) }
+            if numbers.count == 3 {
+                MenuTiming.sweepBoard(x: numbers[0], from: numbers[1], to: numbers[2], model: model, log: log)
+            }
+        case "pointer":
+            // pointer <x> <y>: the app's own pointer to that point of the main window, from its top left, where it stays
+            // for a snapshot with a card lit up under it.
+            let numbers = argument.split(separator: " ").compactMap { Double($0) }
+            if numbers.count == 2 { MenuTiming.point(NSPoint(x: numbers[0], y: numbers[1]), model: model) }
         case "menutiming":
             // menutiming <number> sweep [row] | plain | submenu <row> <times> | open: times the issue's right-click menu
             // under a pointer the app moves itself (see MenuTiming). show | panels | hover <level> <x> <y> |
@@ -850,6 +862,10 @@ enum DebugRemote {
                 }
             }
             log("rendered hover states")
+        case "rendercards":
+            // rendercards <folder>: the board's first cards in every look they can have, one picture per look and
+            // appearance, to compare two builds pixel by pixel.
+            renderCards(model: model, folder: argument)
         case "comment":
             if let item = model.openItem { model.addComment(to: item, body: argument) }
         case "notice":
@@ -959,6 +975,7 @@ enum DebugRemote {
         }
         let clip = scrollView.contentView
         var times: [Double] = []
+        var cpuTimes: [Double] = []
         var y: CGFloat = 0
         let step: CGFloat = 40
         var steps = 0
@@ -967,6 +984,7 @@ enum DebugRemote {
             MainActor.assumeIsolated {
                 let limit = max(0, document.frame.height - clip.bounds.height)
                 let start = CACurrentMediaTime()
+                let cpuStart = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
                 y = min(y + step, limit)
                 clip.scroll(to: NSPoint(x: 0, y: y))
                 scrollView.reflectScrolledClipView(clip)
@@ -974,20 +992,58 @@ enum DebugRemote {
                 root.displayIfNeeded()
                 CATransaction.flush()
                 times.append((CACurrentMediaTime() - start) * 1000)
+                cpuTimes.append(Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - cpuStart) / 1e6)
                 steps += 1
                 if y >= limit || steps > 600 {
                     timer.invalidate()
                     let sorted = times.sorted()
                     let average = times.reduce(0, +) / Double(max(times.count, 1))
                     let p95 = sorted.isEmpty ? 0 : sorted[Int(Double(sorted.count - 1) * 0.95)]
+                    // The main thread's own CPU time: where it is lower, the step waited for the render server.
+                    let cpuSorted = cpuTimes.sorted()
+                    let cpuAverage = cpuTimes.reduce(0, +) / Double(max(cpuTimes.count, 1))
+                    let cpuP95 = cpuSorted.isEmpty ? 0 : cpuSorted[Int(Double(cpuSorted.count - 1) * 0.95)]
                     log(String(
-                        format: "scrolltest %@: %d steps over %.0f pt, avg %.1f ms, p95 %.1f ms, max %.1f ms, over 8 ms: %d, over 16 ms: %d",
+                        format: "scrolltest %@: %d steps over %.0f pt, avg %.1f ms, p95 %.1f ms, max %.1f ms, over 8 ms: %d, over 16 ms: %d; cpu avg %.1f ms, p95 %.1f ms, max %.1f ms, over 8 ms: %d",
                         label, times.count, limit, average, p95, sorted.last ?? 0,
-                        times.filter { $0 > 8 }.count, times.filter { $0 > 16 }.count
+                        times.filter { $0 > 8 }.count, times.filter { $0 > 16 }.count,
+                        cpuAverage, cpuP95, cpuSorted.last ?? 0, cpuTimes.filter { $0 > 8 }.count
                     ))
                 }
             }
         }
+    }
+
+    private static func renderCards(model: AppModel, folder: String) {
+        let dark = NSApp.effectiveAppearance.isDark
+        let cards = model.columns.flatMap { column in column.items.map { (column, $0) } }.prefix(60)
+        struct Look { var name: String; var highlighted = false; var selected = false; var lifted = false; var part: PickerKind?; var fold = false }
+        var looks = [Look(name: "plain"), Look(name: "hover", highlighted: true), Look(name: "selected", selected: true),
+                     Look(name: "selected-hover", highlighted: true, selected: true), Look(name: "lifted", lifted: true),
+                     Look(name: "fold", highlighted: true, fold: true)]
+        for kind in [PickerKind.priority, .labels, .subIssues, .assignees, .dueDate, .milestone, .blockedBy, .parent, .epic] {
+            looks.append(Look(name: "part-\(kind)", highlighted: true, part: kind))
+        }
+        for look in looks {
+            let renderer = ImageRenderer(content:
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(cards), id: \.1.id) { column, item in
+                        CardView(card: model.cardModel(for: item, in: column.nesting), width: 232, highlighted: look.highlighted,
+                                 selected: look.selected, lifted: look.lifted, avatarVersion: model.avatarVersion,
+                                 hoveredPart: look.part, hoveringFold: look.fold)
+                    }
+                }
+                .padding(10)
+                .background(Theme.lane)
+                .environment(\.colorScheme, dark ? .dark : .light)
+            )
+            renderer.scale = 2
+            if let image = renderer.cgImage {
+                let file = URL(fileURLWithPath: folder).appendingPathComponent("\(dark ? "dark" : "light")-\(look.name).png")
+                try? NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])?.write(to: file)
+            }
+        }
+        log("rendercards: \(looks.count) looks of \(cards.count) cards")
     }
 
     private static func findDescription(in view: NSView?) -> MarkdownTextView? {

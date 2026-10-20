@@ -213,6 +213,26 @@ public enum DemoData {
         "demo-milestone-\(title)"
     }
 
+    /// The issues as they are, or in debug builds launched with `-demo.copies <n>` that many times over, numbered on
+    /// in thousands: a board with columns of a hundred cards, to time hovering and scrolling a long one.
+    private static func longBoard(_ issues: [IssueSpec]) -> [IssueSpec] {
+        #if DEBUG
+        let copies = max(1, UserDefaults.standard.integer(forKey: "demo.copies"))
+        #else
+        let copies = 1
+        #endif
+        return (0..<copies).flatMap { copy in
+            issues.map { spec in
+                var issue = spec
+                let shift = copy * 1000
+                issue.number += shift
+                issue.parent = issue.parent.map { $0 + shift }
+                issue.blockedBy = issue.blockedBy.map { $0 + shift }
+                return issue
+            }
+        }
+    }
+
     private static func seed(_ db: Database) throws {
         try KV.setViewer(db, viewer)
         let now = Date()
@@ -226,7 +246,7 @@ public enum DemoData {
                 url: "https://github.com/\(app.repo)/milestone/\(milestone.number)"
             ).insert(db)
         }
-        for (spec, issues) in [(app, appIssues), (site, siteIssues)] {
+        for (spec, issues) in [(app, longBoard(appIssues)), (site, siteIssues)] {
             try Project(
                 id: spec.id, ownerLogin: "acme", ownerIsOrg: true, number: spec.number, title: spec.title,
                 url: "https://github.com/orgs/acme/projects/\(spec.number)", closed: false, viewerCanUpdate: true,
