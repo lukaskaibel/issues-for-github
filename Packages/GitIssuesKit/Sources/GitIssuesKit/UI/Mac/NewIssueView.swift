@@ -12,10 +12,11 @@ struct NewIssueView: View {
     @State private var restored = false
     @State private var created = false
     @FocusState private var focus: Field?
+    @State private var editingBody = false
+    @State private var bodyHeight: CGFloat = 110
 
     private enum Field {
         case title
-        case body
     }
 
     var body: some View {
@@ -66,25 +67,27 @@ struct NewIssueView: View {
                     .font(.system(size: 21, weight: .semibold))
                     .focused($focus, equals: .title)
                     .focusOnAppear()
-                    .onSubmit { focus = .body }
+                    .onSubmit { editingBody = true }
 
-                ZStack(alignment: .topLeading) {
-                    if draft.body.isEmpty {
-                        Text(.addDescriptionPlaceholder)
-                            .font(.system(size: 14))
-                            .foregroundStyle(Theme.textTertiary)
-                            .allowsHitTesting(false)
-                    }
-                    TextEditor(text: $draft.body)
-                        .font(.system(size: 14))
-                        .lineSpacing(3)
-                        .scrollContentBackground(.hidden)
-                        .scrollIndicators(.never)
-                        .focused($focus, equals: .body)
-                        .frame(height: 110)
-                        // TextEditor insets its text by 5 pt; pull it back so it lines up with the title.
-                        .padding(.leading, -5)
+                // The description as it will look on GitHub, growing with the text up to a point and then scrolling.
+                ScrollView {
+                    MarkdownEditor(
+                        draft: $draft.body,
+                        placeholder: .addDescriptionPlaceholder,
+                        editing: $editingBody,
+                        onSubmit: create,
+                        onEscape: { model.overlay = nil },
+                        accessibilityLabel: .description,
+                        accessibilityIdentifier: "new-description"
+                    )
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bodyHeight = $0 }
+                    // A click below the text puts the caret at its end.
+                    .frame(minHeight: 110, alignment: .top)
+                    .background { Color.clear.contentShape(.rect).onTapGesture { editingBody = true } }
                 }
+                .scrollIndicators(.never)
+                .scrollBounceBehavior(.basedOnSize)
+                .frame(height: min(max(bodyHeight, 110), 360))
             }
             .padding(.horizontal, 18)
             .padding(.top, 14)
@@ -204,7 +207,7 @@ struct NewIssueView: View {
         }
         .task {
             try? await Task.sleep(for: .milliseconds(300))
-            if focus == nil { focus = .title }
+            if focus == nil, !editingBody { focus = .title }
         }
         .onExitCommand { model.overlay = nil }
     }

@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "picksub", "recents", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "picksub", "recents", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mainmenu"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -295,6 +295,82 @@ enum DebugRemote {
             } else {
                 log("focusdesc: no description")
             }
+        case "mdfocus":
+            // mdfocus <accessibility identifier>: the caret at the end of that Markdown editor (issue-description, comment-field).
+            if let editor = markdownEditor(argument) {
+                editor.window?.makeFirstResponder(editor)
+                editor.setSelectedRange(NSRange(location: (editor.string as NSString).length, length: 0))
+            }
+        case "mdtype":
+            // mdtype <text>: typed into the Markdown editor with the focus, "\n" as Return.
+            guard let editor = markdownEditor(nil) else { break }
+            for (index, piece) in argument.components(separatedBy: "\\n").enumerated() {
+                if index > 0 { editor.doCommand(by: #selector(NSResponder.insertNewline(_:))) }
+                for character in piece { editor.insertText(String(character), replacementRange: editor.selectedRange()) }
+            }
+        case "mdkey":
+            // mdkey <selector>: deleteBackward, insertTab, insertBacktab, cancelOperation, moveDown, … in the editor with the focus.
+            markdownEditor(nil)?.doCommand(by: NSSelectorFromString(argument + ":"))
+        case "mdformat":
+            // mdformat <action>: a Format menu command, such as toggleBoldface or makeChecklist.
+            NSApp.sendAction(NSSelectorFromString(argument + ":"), to: MarkdownFocus.shared.textView, from: nil)
+        case "mdcaret":
+            // mdcaret <text>: the caret before the first place this text is in the editor with the focus.
+            if let editor = markdownEditor(nil) {
+                let found = (editor.string as NSString).range(of: argument)
+                if found.location != NSNotFound { editor.setSelectedRange(NSRange(location: found.location, length: 0)) }
+            }
+        case "mdclick":
+            // mdclick <identifier> <text> [@ <dx> <dy>]: a click on the first character of the text in that editor, or on
+            // what is drawn in its place (a checkbox, a table), at dx, dy from its top-left corner (the middle without).
+            let target = argument.components(separatedBy: " @ ")
+            let bits = target[0].split(separator: " ", maxSplits: 1).map(String.init)
+            let offset = target.count > 1 ? target[1].split(separator: " ").compactMap { Double($0) } : []
+            guard bits.count == 2, let editor = markdownEditor(bits[0]), let controller = editor.controller, let window = editor.window else { break }
+            let found = (editor.string as NSString).range(of: bits[1])
+            guard found.location != NSNotFound else { break }
+            let origin = editor.textContainerOrigin
+            let layout = controller.layoutManager
+            var rect = layout.rect(forObjectAt: found.location, origin: origin) ?? {
+                let glyph = layout.glyphIndexForCharacter(at: found.location)
+                return layout.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: controller.container).offsetBy(dx: origin.x, dy: origin.y)
+            }()
+            if let object = layout.object(at: found.location), object.isBlock {
+                // A table or diagram: its whole box, from the top of its line.
+                let line = layout.lineFragmentRect(forGlyphAt: layout.glyphIndexForCharacter(at: found.location), effectiveRange: nil)
+                rect = NSRect(x: rect.minX, y: line.minY + origin.y + 6, width: rect.width, height: line.height)
+            }
+            let local = offset.count == 2 ? NSPoint(x: rect.minX + offset[0], y: rect.minY + offset[1]) : NSPoint(x: rect.midX, y: rect.midY)
+            let point = editor.convert(local, to: nil)
+            func event(_ type: NSEvent.EventType) -> NSEvent? {
+                NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                                   windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1)
+            }
+            // As a window does before it hands a click on.
+            if window.firstResponder !== editor { window.makeFirstResponder(editor) }
+            if let up = event(.leftMouseUp) { NSApp.postEvent(up, atStart: false) }
+            if let down = event(.leftMouseDown) { editor.mouseDown(with: down) }
+            while NSApp.nextEvent(matching: [.leftMouseUp], until: .distantPast, inMode: .default, dequeue: true) != nil {}
+        case "mainmenu":
+            // mainmenu <title>: the items of a menu in the menu bar, and whether each can be chosen.
+            NSApp.mainMenu?.update()
+            if let menu = NSApp.mainMenu?.items.first(where: { $0.title == argument })?.submenu {
+                // SwiftUI fills its menus in when they are about to open.
+                menu.delegate?.menuNeedsUpdate?(menu)
+                menu.update()
+                log("mainmenu \(argument) (typing: \(MarkdownFocus.shared.isEditing)): " + menu.items.map { "\($0.title)=\($0.isEnabled ? "on" : "off")" }.joined(separator: ", "))
+            } else {
+                log("mainmenu: no \(argument) in " + (NSApp.mainMenu?.items.map(\.title).joined(separator: ", ") ?? "-"))
+            }
+        case "mddump":
+            // mddump [identifier]: the editor's text, selection, open block and size.
+            guard let editor = markdownEditor(argument.isEmpty ? nil : argument), let controller = editor.controller else {
+                log("mddump: no editor")
+                break
+            }
+            let frame = editor.convert(editor.bounds, to: nil)
+            log("mddump id=\(editor.accessibilityIdentifier()) focused=\(controller.isFocused) selection=\(controller.selection) block=\(controller.activeBlock.map(String.init) ?? "-") revealed=\(controller.revealed) frame=\(Int(frame.minX)),\(Int(frame.minY)) \(Int(frame.width))x\(Int(frame.height)) content=\(Int(controller.contentHeight(forWidth: editor.bounds.width))) scrollTop=\(editor.enclosingScrollView.map { Int($0.contentView.bounds.minY) }.map(String.init) ?? "no scroll view") insets=\(editor.enclosingScrollView.map { "\($0.contentInsets.top),\($0.contentInsets.bottom) safe=\($0.safeAreaInsets.top),\($0.safeAreaInsets.bottom) clip=\($0.contentView.contentInsets.bottom) frame=\(Int($0.frame.height)) doc=\(Int($0.documentView?.frame.height ?? 0))" } ?? "-")")
+            log("mddump text=\(controller.text.replacingOccurrences(of: "\n", with: "\\n"))")
         case "keycmd":
             // keycmd <character>: a menu shortcut such as ⌘N.
             if let character = argument.first {
@@ -1002,6 +1078,19 @@ enum DebugRemote {
                 }
             }
         }
+    }
+
+    /// The Markdown editor with this accessibility identifier in the main window, or without one the editor that has the
+    /// keyboard focus.
+    private static func markdownEditor(_ identifier: String?) -> MarkdownTextView? {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }) else { return nil }
+        guard let identifier, !identifier.isEmpty else { return window.firstResponder as? MarkdownTextView }
+        func find(_ view: NSView) -> MarkdownTextView? {
+            if let editor = view as? MarkdownTextView, editor.accessibilityIdentifier() == identifier { return editor }
+            for subview in view.subviews { if let found = find(subview) { return found } }
+            return nil
+        }
+        return window.contentView.flatMap(find)
     }
 
     private static func findDescription(in view: NSView?) -> MarkdownTextView? {
