@@ -170,8 +170,11 @@ struct IssueRow: View {
                     Text(repo)
                 }
             }
-            if item.blockedByCount > 0 {
-                MobileChip { BlockedIcon(size: 9) }
+            if let blocker = model.blockerMark(for: item) {
+                MobileChip(tint: Theme.blocked) {
+                    BlockedIcon(size: 9)
+                    if let text = blocker.text { Text(text).monospacedDigit() }
+                }
             }
             if item.subTotal > 0 {
                 MobileChip {
@@ -222,7 +225,7 @@ struct IssueRow: View {
         }
         if let nested, folded { parts.append(String(localized: .unfoldSubIssuesTooltip(count: nested))) }
         if let priority = model.priorityOption(of: item)?.name { parts.append(String(localized: .priorityLevelSpoken(priority: priority))) }
-        if item.blockedByCount > 0 { parts.append(String(localized: .blockedSpoken)) }
+        if item.blockedByCount > 0 { parts.append(model.tooltip(.blockedBy, for: item)) }
         if !item.labels.isEmpty {
             parts.append(String(localized: .labelsSpoken(labels: item.labels.map(\.name).joined(separator: ", "))))
         }

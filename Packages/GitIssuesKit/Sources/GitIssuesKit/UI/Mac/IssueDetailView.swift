@@ -350,6 +350,16 @@ private struct SubIssueRow: View {
                 .font(.system(size: 14))
                 .foregroundStyle(sub.isClosed ? Theme.textSecondary : Theme.text)
                 .lineLimit(1)
+            // Right after the title, as in the list: what has to be done first, a click away on its card's picker.
+            if let blocker = model.blockerMark(for: sub) {
+                if let boardItem, model.canRelate(boardItem) {
+                    PartButton(kind: .blockedBy, itemId: boardItem.id, help: model.blockedText(for: sub)) {
+                        BlockerFlag(mark: blocker)
+                    }
+                } else {
+                    BlockerFlag(mark: blocker).help(model.blockedText(for: sub))
+                }
+            }
             Spacer(minLength: 8)
             if showsPriority, let boardItem {
                 PartButton(kind: .priority, itemId: boardItem.id) {

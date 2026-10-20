@@ -64,6 +64,8 @@ public struct RemoteIssueDetail: Sendable {
     public var subIssues: [SubIssue]
     /// Issues this one is blocked by, and issues it blocks.
     public var links: [LinkedIssue] = []
+    /// What blocks each of its sub-issues, for their rows to say so.
+    public var subBlockers: [LinkedIssue] = []
 }
 
 public struct CreatedIssue: Sendable {
@@ -373,13 +375,14 @@ public final class GitHubAPI: Sendable {
                     var assignees: Nodes<PersonDTO>?
                     var milestone: MilestoneRefDTO?
                     var createdAt: Date?
+                    var blockedBy: Nodes<LinkDTO>?
                 }
                 var title: String?
                 var body: String?
                 var comments: Nodes<CommentDTO>?
                 var subIssues: Nodes<SubDTO>?
-                var blockedBy: Nodes<SubDTO>?
-                var blocking: Nodes<SubDTO>?
+                var blockedBy: Nodes<LinkDTO>?
+                var blocking: Nodes<LinkDTO>?
             }
             var node: Node?
         }
@@ -392,7 +395,8 @@ public final class GitHubAPI: Sendable {
               subIssues(first: 100) { nodes { id number title state stateReason url createdAt
                 repository { id nameWithOwner }
                 assignees(first: 3) { nodes { id login name avatarUrl } }
-                milestone { id title } } }
+                milestone { id title }
+                blockedBy(first: 10) { nodes { id number title state stateReason url repository { id nameWithOwner } } } } }
               blockedBy(first: 50) { nodes { id number title state stateReason url repository { id nameWithOwner } } }
               blocking(first: 50) { nodes { id number title state stateReason url repository { id nameWithOwner } } }
             }
@@ -420,15 +424,41 @@ public final class GitHubAPI: Sendable {
         }
         var links: [LinkedIssue] = []
         for (relation, nodes) in [(LinkedIssue.Relation.blockedBy, node.blockedBy), (.blocking, node.blocking)] {
-            links += (nodes?.items ?? []).enumerated().map { index, other in
-                LinkedIssue(
-                    id: other.id, issueId: contentId, relation: relation, number: other.number, title: other.title,
-                    state: other.state, stateReason: other.stateReason, repo: other.repository?.nameWithOwner,
-                    url: other.url, position: index
-                )
+            links += (nodes?.items ?? []).enumerated().map { index, other in other.link(of: contentId, relation, position: index) }
+        }
+        let subBlockers = (node.subIssues?.items ?? []).flatMap { sub in
+            (sub.blockedBy?.items ?? []).enumerated().map { index, other in other.link(of: sub.id, .blockedBy, position: index) }
+        }
+        return RemoteIssueDetail(
+            title: node.title ?? "", body: node.body ?? "", comments: comments, subIssues: subs, links: links, subBlockers: subBlockers
+        )
+    }
+
+    /// The issues that block each of these. GitHub counts an issue's blockers with its card but doesn't say which
+    /// they are, and a card names the one to finish first.
+    public func blockers(of contentIds: [String]) async throws -> [String: [LinkedIssue]] {
+        struct Response: Decodable {
+            struct Node: Decodable {
+                var id: String?
+                var blockedBy: Nodes<LinkDTO>?
+            }
+            var nodes: [Node?]
+        }
+        let query = """
+        query($ids: [ID!]!) {
+          nodes(ids: $ids) { ... on Issue { id
+            blockedBy(first: 20) { nodes { id number title state stateReason url repository { id nameWithOwner } } } } }
+        }
+        """
+        var result: [String: [LinkedIssue]] = [:]
+        for chunk in contentIds.chunked(into: 50) {
+            let response: Response = try await client.run(query, variables: ["ids": chunk], allowPartial: true)
+            for node in response.nodes.compactMap({ $0 }) {
+                guard let id = node.id else { continue }
+                result[id] = (node.blockedBy?.items ?? []).enumerated().map { index, other in other.link(of: id, .blockedBy, position: index) }
             }
         }
-        return RemoteIssueDetail(title: node.title ?? "", body: node.body ?? "", comments: comments, subIssues: subs, links: links)
+        return result
     }
 
     /// Current title and body, fetched right before sending a text edit to catch concurrent changes.
@@ -902,6 +932,24 @@ struct ActorDTO: Decodable {
 struct RepoDTO: Decodable {
     var id: String
     var nameWithOwner: String
+}
+
+/// Another issue, as an issue's blockers or the issues it blocks list it.
+struct LinkDTO: Decodable {
+    var id: String
+    var number: Int
+    var title: String
+    var state: String
+    var stateReason: String?
+    var url: String?
+    var repository: RepoDTO?
+
+    func link(of issueId: String, _ relation: LinkedIssue.Relation, position: Int) -> LinkedIssue {
+        LinkedIssue(
+            id: id, issueId: issueId, relation: relation, number: number, title: title, state: state,
+            stateReason: stateReason, repo: repository?.nameWithOwner, url: url, position: position
+        )
+    }
 }
 
 struct PersonDTO: Decodable {

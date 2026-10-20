@@ -111,8 +111,9 @@ Descriptions are Markdown, edited in place: click and type. It types like a note
 Return continues a list and leaves bold text, `-` starts a bullet and `- []` a checkbox, and a style's marks are kept
 and deleted as a pair; a change of style eases in. Sub-issues come
 with a progress bar, the most urgent first and the done ones last, and the plus beside them adds a new one or an issue
-that exists already. What blocks the issue and
-what it blocks are listed below; a blocked issue carries a red flag on its card. Comments sit below, with the field
+that exists already. What blocks the issue and what it blocks are listed below. A blocked issue carries a red flag
+with the number of the issue to finish first, as in `#5`, on its card, its list row and its line among its parent's
+sub-issues. Comments sit below, with the field
 for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
 inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arrows in the toolbar.
 
@@ -312,9 +313,10 @@ The interface uses the system's own parts.
   own filter, and grouped by status, project, priority or due date.
 - **Every issue of your repositories**, also those on none of your boards, which one click puts on one.
 - **Sub-issues and blockers.** Put any issue under another one, add issues that exist already as sub-issues, and mark
-  which issues block which, with a red flag on blocked cards. Sub-issues with their parent's status hang under it on
-  the board and in the list, and a parent is done when its last sub-issue is. An issue lists its sub-issues by
-  priority, or by status, newest first or in GitHub's order.
+  which issues block which; a blocked issue carries a red flag that names what blocks it, on its card and in its
+  parent's sub-issues. Sub-issues with their parent's status hang under it on the board and in the list, and a parent
+  is done when its last sub-issue is. An issue lists its sub-issues by priority, or by status, newest first or in
+  GitHub's order.
 - **Milestones, epics and a roadmap.** A board's milestones with their own board and progress, epics whose
   sub-issues are the work, and a roadmap of the epics over the milestones, on a timeline or as a list. Completing a
   milestone closes it on GitHub and moves what is left to the next one.
@@ -564,8 +566,9 @@ submenu, `↑` `↓` to move, `→` to open a submenu or picker, `Return` to pic
 dropdown, and so does a second click on what opened it; for several assignees or labels, tick the checkbox at the start
 of each row, or hold Shift while you click or press Return. The pickers for parent, epic, blockers, labels and assignees
 list your last three choices first, above a line, with the light on the latest, so `Return` repeats it. The sub-issue
-count lists the sub-issues, whose status, priority and assignee change right there too, and the red flag of a blocked
-issue lists what blocks it. In the list, click a section header to fold it; Option-click folds them all.
+count lists the sub-issues, whose status, priority and assignee change right there too. The red flag of a blocked issue
+names the issue that blocks it, `#5`, with `+1` for each further one, and lists them all when clicked, also beside a
+sub-issue in its parent. In the list, click a section header to fold it; Option-click folds them all.
 
 Sub-issues with the same status as their parent hang under it, indented; click the arrow beside the parent, or
 right-click it, to fold them in or out. A sub-issue whose parent has another status names its parent instead, and a
