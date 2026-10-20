@@ -217,7 +217,8 @@ public enum DemoData {
     }
 
     /// The issues as they are, or in debug builds launched with `-demo.copies <n>` that many times over, numbered on
-    /// in thousands: a board with columns of a hundred cards, to time hovering and scrolling a long one.
+    /// in thousands and titled apart as a real board's are: columns of a hundred cards, to time hovering and scrolling
+    /// a long one.
     private static func longBoard(_ issues: [IssueSpec]) -> [IssueSpec] {
         #if DEBUG
         let copies = max(1, UserDefaults.standard.integer(forKey: "demo.copies"))
@@ -229,6 +230,7 @@ public enum DemoData {
                 var issue = spec
                 let shift = copy * 1000
                 issue.number += shift
+                if copy > 0 { issue.title += " (\(copy + 1))" }
                 issue.parent = issue.parent.map { $0 + shift }
                 issue.blockedBy = issue.blockedBy.map { $0 + shift }
                 return issue

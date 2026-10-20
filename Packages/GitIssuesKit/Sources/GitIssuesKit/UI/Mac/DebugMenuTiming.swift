@@ -195,10 +195,16 @@ enum MenuTiming {
                 }
             }
         }
+        CardPaintTiming.reset()
         run.finish(log) { samples in
             "boardsweep: " + summary((samples["change"] ?? []) + (samples["same"] ?? []))
-                + "; \(cards.count) times onto one of \(Set(cards).count) cards"
+                + "; \(cards.count) times onto one of \(Set(cards).count) cards; " + paintedCards()
         }
+    }
+
+    /// "37 cards painted, 0.62 ms each", since the timing was last reset.
+    static func paintedCards() -> String {
+        String(format: "%d cards painted, %.2f ms each", CardPaintTiming.count, CardPaintTiming.milliseconds / Double(max(CardPaintTiming.count, 1)))
     }
 
     // MARK: Steps

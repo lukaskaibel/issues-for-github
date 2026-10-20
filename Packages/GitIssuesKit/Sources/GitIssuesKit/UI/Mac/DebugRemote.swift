@@ -1052,6 +1052,7 @@ enum DebugRemote {
         let clip = scrollView.contentView
         var times: [Double] = []
         var cpuTimes: [Double] = []
+        CardPaintTiming.reset()
         var y: CGFloat = 0
         let step: CGFloat = 40
         var steps = 0
@@ -1084,7 +1085,7 @@ enum DebugRemote {
                         label, times.count, limit, average, p95, sorted.last ?? 0,
                         times.filter { $0 > 8 }.count, times.filter { $0 > 16 }.count,
                         cpuAverage, cpuP95, cpuSorted.last ?? 0, cpuTimes.filter { $0 > 8 }.count
-                    ))
+                    ) + "; " + MenuTiming.paintedCards())
                 }
             }
         }

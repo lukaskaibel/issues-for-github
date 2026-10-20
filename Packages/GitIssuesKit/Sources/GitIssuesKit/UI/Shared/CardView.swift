@@ -85,6 +85,10 @@ struct CardView: View, Equatable {
     var body: some View {
         let titleHeight = Self.titleHeight(card.item.title, width: width - 2 * Self.padding.width)
         Canvas { context, size in
+            #if DEBUG
+            let began = clock_gettime_nsec_np(CLOCK_UPTIME_RAW)
+            defer { CardPaintTiming.add(since: began) }
+            #endif
             CardPainter(context: context, size: size, titleHeight: titleHeight).draw(self)
         }
         .frame(width: width, height: Self.height(titleHeight: titleHeight))
@@ -125,6 +129,24 @@ struct CardView: View, Equatable {
         return height
     }
 }
+
+#if DEBUG
+/// How many cards were painted and how long that took, for the debug remote's board timing.
+enum CardPaintTiming {
+    nonisolated(unsafe) private(set) static var count = 0
+    nonisolated(unsafe) private(set) static var milliseconds: Double = 0
+
+    static func add(since began: UInt64) {
+        count += 1
+        milliseconds += Double(clock_gettime_nsec_np(CLOCK_UPTIME_RAW) - began) / 1e6
+    }
+
+    static func reset() {
+        count = 0
+        milliseconds = 0
+    }
+}
+#endif
 
 /// Where the clickable parts of each card were last drawn, in the card's own coordinates.
 final class CardRegionStore: @unchecked Sendable {
@@ -234,6 +256,14 @@ final class CardPaintCache: @unchecked Sendable {
         if texts.count >= limit { texts.removeAll(keepingCapacity: true) }
         texts[key] = kept
         return kept
+    }
+
+    /// Starts over, as a test does to paint a card from nothing.
+    func removeAll() {
+        lock.lock()
+        defer { lock.unlock() }
+        colors.removeAll()
+        texts.removeAll()
     }
 }
 
