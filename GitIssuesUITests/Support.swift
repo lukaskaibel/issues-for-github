@@ -53,6 +53,11 @@ class AppTestCase: XCTestCase {
         app.buttons[label].firstMatch
     }
 
+    /// Markdown drawn in a text view (a comment, a description) that holds this text.
+    func textShowing(_ text: String) -> XCUIElement {
+        app.textViews.matching(NSPredicate(format: "value CONTAINS %@", text)).firstMatch
+    }
+
     /// A row of a picker sheet, by the name it starts with. Its circle, which picks without closing the sheet,
     /// is `element("check-<name>")`.
     func pickerRow(_ name: String) -> XCUIElement {
@@ -79,6 +84,18 @@ class AppTestCase: XCTestCase {
         let predicate = NSPredicate { object, _ in ((object as? XCUIElement)?.value as? String) == value }
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
         XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed, "\(String(describing: element.value)) is not \(value ?? "nil")", file: file, line: line)
+    }
+
+    func waitForValue(_ element: XCUIElement, containing text: String, _ timeout: TimeInterval = 6, file: StaticString = #filePath, line: UInt = #line) {
+        let predicate = NSPredicate { object, _ in ((object as? XCUIElement)?.value as? String)?.contains(text) == true }
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed, "\(String(describing: element.value)) lacks \(text)", file: file, line: line)
+    }
+
+    func waitForValue(_ element: XCUIElement, lacking text: String, _ timeout: TimeInterval = 6, file: StaticString = #filePath, line: UInt = #line) {
+        let predicate = NSPredicate { object, _ in ((object as? XCUIElement)?.value as? String)?.contains(text) != true }
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed, "\(String(describing: element.value)) still has \(text)", file: file, line: line)
     }
 
     func waitForValue(_ element: XCUIElement, notEqualTo value: String?, _ timeout: TimeInterval = 6, file: StaticString = #filePath, line: UInt = #line) {

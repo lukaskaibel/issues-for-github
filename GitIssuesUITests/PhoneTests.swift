@@ -24,6 +24,60 @@ final class PhoneTests: AppTestCase {
         wait(element("row-#9"))
     }
 
+    func testMyIssuesFiltersGroupsAndOrders() {
+        launch()
+        wait(app.navigationBars["My Issues"])
+        wait(element("row-#8"))
+        // Most urgent first, also across projects: #9 (Urgent) before #8 (High) in In progress.
+        XCTAssertLessThan(element("row-#9").frame.minY, element("row-#8").frame.minY)
+
+        // Grouped by project from the "…" menu; the issues on no board lead.
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        wait(button("Group by"))
+        button("Group by").tap()
+        wait(button("Project"))
+        button("Project").tap()
+        wait(element("section-No project"))
+        wait(element("section-Git Issues"))
+        snapshot("My Issues by project")
+
+        // Only what is urgent, whatever each project calls it.
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        wait(button("Filter…"))
+        button("Filter…").tap()
+        wait(app.navigationBars["Filter"])
+        button("Add Filter").tap()
+        wait(app.navigationBars["Add Filter"])
+        button("Priority").tap()
+        wait(app.navigationBars["Priority"])
+        let urgent = pickerRow("Urgent")
+        wait(urgent)
+        snapshot("My Issues filter values")
+        urgent.tap()
+        goBack()
+        goBack()
+        button("Done").tap()
+        waitForValue(element("my-issues-filter"), equalTo: "Priority is Urgent")
+        wait(element("row-#9"))
+        waitGone(element("row-#8"))
+        snapshot("My Issues, only urgent")
+
+        // One tap on the filter line, Clear Filter, and everything is back.
+        element("my-issues-filter").tap()
+        wait(button("Clear Filter"))
+        button("Clear Filter").tap()
+        button("Done").tap()
+        waitGone(element("my-issues-filter"))
+        scrollTo(element("row-#8"))
+        wait(element("row-#8"))
+
+        // Reset goes back to groups by status.
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        wait(button("Reset"))
+        button("Reset").tap()
+        wait(element("section-In progress"))
+    }
+
     func testIssuesMoveWithinTheirSection() {
         launch()
         openProjectTab("Git Issues")
@@ -82,6 +136,12 @@ final class PhoneTests: AppTestCase {
             scrollTo(row)
             row.swipeRight()
             wait(button("Done"))
+            // Scrolled up under its section's header, the row's Done is covered: bring it down and swipe again.
+            if !button("Done").isHittable {
+                app.swipeDown(velocity: .slow)
+                row.swipeRight()
+                wait(button("Done"))
+            }
             button("Done").tap()
             waitGone(button("Done"))
         }
@@ -179,6 +239,36 @@ final class PhoneTests: AppTestCase {
         waitForLabel(element("chip-labels"), containing: "sync")
     }
 
+    func testTypingALabelTheRepositoryLacksMakesIt() {
+        launch()
+        scrollTo(element("row-#13"))
+        element("row-#13").tap()
+        wait(element("chip-labels"))
+        element("chip-labels").tap()
+        let search = app.searchFields.firstMatch
+        wait(search)
+        search.tap()
+        // A label of that name, whatever its case, is picked rather than made again.
+        search.typeText("SYNC")
+        wait(pickerRow("sync"))
+        XCTAssertFalse(pickerRow("Create label").exists)
+        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "perf")
+        let create = pickerRow("Create label “perf”")
+        wait(create)
+        XCTAssertFalse(element("check-Create label “perf”").exists, "Making a label has no circle")
+        snapshot("Labels sheet, a label to make")
+        create.tap()
+        waitGone(app.navigationBars["Labels"])
+        waitForLabel(element("chip-labels"), containing: "perf")
+        // Made in the repository, it is one of its labels from now on.
+        element("chip-labels").tap()
+        wait(search)
+        search.tap()
+        search.typeText("perf")
+        wait(pickerRow("perf"))
+        XCTAssertFalse(pickerRow("Create label").exists)
+    }
+
     func testDueDateSheet() {
         launch()
         // Below #27 and #38, which are on no board and lead My Issues.
@@ -226,16 +316,26 @@ final class PhoneTests: AppTestCase {
         let description = element("issue-description")
         wait(description)
         description.tap()
-        app.typeText("Rank matches by **how close** they are.")
-        snapshot("Editing a description")
-        let done = button("Done")
+        // The bar above the keyboard, with Done in reach.
+        let done = element("writing-bar-done")
         wait(done)
+        app.typeText("Rank matches by **how close** they are.")
+        // Typed this fast, iOS takes the keys for a hardware keyboard's and puts the on-screen one away for a moment,
+        // the bar going down with it: tap once it is back.
+        _ = app.keyboards.firstMatch.waitForExistence(timeout: 3)
+        snapshot("Editing a description")
+        // Undo and redo in the bar take back the typing and bring it back.
+        button("Undo").tap()
+        waitForValue(description, lacking: "they are.")
+        button("Redo").tap()
+        waitForValue(description, containing: "they are.")
         done.tap()
+        waitGone(done)
         goBack()
         scrollTo(element("row-#17"))
         element("row-#17").tap()
         wait(element("issue-description"))
-        XCTAssertTrue(labelled("how close").waitForExistence(timeout: 4))
+        XCTAssertTrue(((element("issue-description").value as? String) ?? "").contains("Rank matches by **how close** they are."))
     }
 
     func testTypingMarkdownInADescription() {
@@ -246,12 +346,14 @@ final class PhoneTests: AppTestCase {
         let description = element("issue-description")
         wait(description)
         description.tap()
-        wait(button("Done"))
+        let done = element("writing-bar-done")
+        wait(done)
 
         // Bold from the bar; inside it a second Bold comes in on the left, which leaves it.
         button("Bold").tap()
         app.typeText("bold")
         let bold = app.buttons.matching(NSPredicate(format: "label == 'Bold'"))
+        wait(bold.element(boundBy: 1))
         XCTAssertEqual(bold.count, 2)
         bold.element(boundBy: 0).tap()
         // "-" starts a bullet, Return continues the list and ends it on an empty item, "[]" makes a checkbox.
@@ -264,7 +366,8 @@ final class PhoneTests: AppTestCase {
         waitForValue(description, equalTo: "**bold** text\n- item\n- [x] todo")
 
         // Saved: drawn as a checklist when the issue opens again, the box ticked.
-        button("Done").tap()
+        done.tap()
+        waitGone(done)
         goBack()
         scrollTo(element("row-#17"))
         element("row-#17").tap()
@@ -273,30 +376,36 @@ final class PhoneTests: AppTestCase {
         XCTAssertEqual(box.value as? String, "Checked")
     }
 
-    func testDrawnDescriptionTicksBoxesAndShowsTheText() {
+    func testDescriptionTicksBoxesAndFormatsInPlace() {
         launch()
         wait(element("row-#9"))
         scrollTo(element("row-#16"))
         element("row-#16").tap()
-        // A checklist, a table and a diagram: drawn as on GitHub, with boxes that tick.
+        // A checklist, an alert, a table and a diagram, drawn as on GitHub, with boxes that tick.
         let box = app.buttons["Images pasted from the clipboard"]
         wait(box)
         XCTAssertEqual(box.value as? String, "Unchecked")
         box.tap()
         waitForValue(box, equalTo: "Checked")
-        snapshot("Drawn description")
-
-        // A tap shows the Markdown, ticked box included; a second tap edits it.
-        labelled("drawn the way GitHub draws it").tap()
-        waitGone(box)
+        snapshot("Description drawn as on GitHub")
         let text = element("issue-description")
-        XCTAssertTrue((text.value as? String)?.contains("- [x] Images pasted from the clipboard") == true)
-        text.tap()
-        let done = button("Done")
+        XCTAssertTrue(((text.value as? String) ?? "").contains("- [x] Images pasted from the clipboard"))
+        XCTAssertFalse(element("writing-bar-done").exists, "ticking a box doesn't bring up the keyboard")
+
+        // A tap in the first line puts the caret there; the Format panel turns the line into a heading.
+        text.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.01)).tap()
+        let done = element("writing-bar-done")
         wait(done)
-        snapshot("Editing a drawn description")
+        button("Format").tap()
+        let heading = button("Heading")
+        wait(heading)
+        heading.tap()
+        waitForValue(text, containing: "## Write Markdown")
+        snapshot("Format panel")
+        button("Close").tap()
+        wait(done)
         done.tap()
-        wait(box)
+        waitGone(done)
         XCTAssertEqual(box.value as? String, "Checked")
     }
 
@@ -325,7 +434,7 @@ final class PhoneTests: AppTestCase {
         field.tap()
         field.typeText("Let's ship this on Friday.")
         element("comment-send").tap()
-        let comment = labelled("Let's ship this on Friday.")
+        let comment = textShowing("Let's ship this on Friday.")
         wait(comment)
         scrollTo(comment)
         snapshot("Comment sent")
@@ -733,7 +842,7 @@ final class PhoneTests: AppTestCase {
         XCTAssertTrue(row.label.contains("theo"), row.label)
         XCTAssertTrue(row.label.contains("labels ui"), row.label)
         row.tap()
-        wait(labelled("Cards that land outside a column"))
+        wait(textShowing("Cards that land outside a column"))
     }
 
     func testDiscardingANewIssueAsksFirst() {

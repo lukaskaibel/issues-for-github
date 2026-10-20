@@ -65,25 +65,21 @@ final class MarkdownStyleAnimator: NSObject {
         }
     }
 
-    /// Styles the text right after an edit (from `didProcessEditing`), and starts easing every character whose
-    /// look changed from how it looked to how it looks now.
+    /// Around the editor's styling of the lines in `scope` right after an edit (from `didProcessEditing`): starts
+    /// easing every character there whose look changed from how it looked to how it looks now.
     ///
     /// Not from `willProcessEditing`: what changes there counts as part of the edit, and the Mac's text view puts the
     /// caret at the end of the edit, so styling the text after the caret would throw the caret to its end.
-    func restyle(_ storage: NSTextStorage, edited: NSRange) {
+    func restyle(_ storage: NSTextStorage, edited: NSRange, scope: NSRange, styling: () -> Void) {
         let animates = Self.isEnabled && view?.window != nil
-        let before = animates ? looks(in: storage, outside: edited) : []
+        let before = animates ? looks(in: storage, scope: scope, outside: edited) : []
         stop()
         defer { kept = [] }
-        storage.beginEditing()
-        MarkdownStyler.style(storage, insideEdit: true)
-        // The edit's own fixing (an emoji's font, for one) ran before the styling, which undid it.
-        storage.fixAttributes(in: NSRange(location: 0, length: storage.length))
+        styling()
         if animates {
-            runs = changes(from: before, in: storage, edited: edited)
+            runs = changes(from: before, in: storage, edited: NSIntersectionRange(edited, scope))
             apply(0, to: storage)
         }
-        storage.endEditing()
         guard !runs.isEmpty else { return }
         self.storage = storage
         started = CACurrentMediaTime()
@@ -119,6 +115,11 @@ final class MarkdownStyleAnimator: NSObject {
         onFrame()
     }
 
+    /// Ends the animation at its end, for styling that follows at once.
+    func complete() {
+        finish()
+    }
+
     private func finish() {
         guard !runs.isEmpty else { return stop() }
         if let storage {
@@ -132,11 +133,13 @@ final class MarkdownStyleAnimator: NSObject {
 
     // MARK: Looks
 
-    /// How the text looks now, outside the part just typed or replaced, plus what the typing rules kept inside it.
-    private func looks(in storage: NSTextStorage, outside edited: NSRange) -> [(range: NSRange, look: Look)] {
+    /// How the lines about to be styled look now, outside the part just typed or replaced, plus what the typing rules
+    /// kept inside it.
+    private func looks(in storage: NSTextStorage, scope: NSRange, outside edited: NSRange) -> [(range: NSRange, look: Look)] {
         var looks: [(range: NSRange, look: Look)] = []
-        let parts = [NSRange(location: 0, length: edited.location),
-                     NSRange(location: NSMaxRange(edited), length: storage.length - NSMaxRange(edited))]
+        let scope = NSIntersectionRange(scope, NSRange(location: 0, length: storage.length))
+        let parts = [NSRange(location: scope.location, length: max(0, min(edited.location, NSMaxRange(scope)) - scope.location)),
+                     NSRange(location: max(NSMaxRange(edited), scope.location), length: max(0, NSMaxRange(scope) - max(NSMaxRange(edited), scope.location)))]
         for part in parts where part.length > 0 {
             storage.enumerateAttributes(in: part) { attributes, range, _ in
                 looks.append((range, Look(attributes)))
@@ -159,7 +162,7 @@ final class MarkdownStyleAnimator: NSObject {
         }
         let keptLocations = Set(kept.map(\.range.location))
         guard edited.length > 0, edited.length - keptLocations.count <= 12 else { return runs }
-        let muted = MarkdownStyler.mutedColor
+        let muted = EditorTheme.faint
         storage.enumerateAttributes(in: edited) { attributes, range, _ in
             let new = Look(attributes)
             guard sameColor(new.color, muted) else { return }

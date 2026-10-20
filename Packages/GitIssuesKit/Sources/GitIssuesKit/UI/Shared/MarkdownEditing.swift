@@ -73,7 +73,7 @@ enum MarkdownEditing {
         if let span = mine.last(where: { $0.range.location < caret && caret < NSMaxRange($0.range) }) {
             let inner = spans.filter { $0 != span && MarkdownSyntax.contains(span.content, $0.range) }
             if span.content.length > 0, skippingClosings(from: min(caret, NSMaxRange(span.content)), spans: inner) == NSMaxRange(span.content) {
-                return (State(text as String, caret: NSMaxRange(span.range)), nil)
+                return (leaving(span, in: document), nil)
             }
             let unwrapped = NSRange(location: span.range.location, length: span.content.length)
             return (unwrap(span, in: document, caret: caret), unwrapped)
@@ -210,6 +210,20 @@ enum MarkdownEditing {
         return State(result as String, caret: moved)
     }
 
+    /// Out of a style from the end of its text, where typing on would still be in it. Spaces typed last go out with
+    /// the caret: GitHub doesn't end a style after a space, so `**bold **` wouldn't be bold there.
+    private static func leaving(_ span: Span, in document: Document) -> State {
+        let content = document.string(span.content)
+        let core = content.replacingOccurrences(of: #"\s+$"#, with: "", options: .regularExpression)
+        let spaces = content.utf16.count - core.utf16.count
+        guard spaces > 0, !core.isEmpty else { return State(document.text as String, caret: NSMaxRange(span.range)) }
+        let trailing = NSRange(location: NSMaxRange(span.content) - spaces, length: spaces)
+        let result = NSMutableString(string: document.text)
+        result.insert(document.string(trailing), at: NSMaxRange(span.range))
+        result.deleteCharacters(in: trailing)
+        return State(result as String, caret: NSMaxRange(span.range))
+    }
+
     /// Past the closing marks that start at `position`, innermost first: from `**_bold|_**` to the end.
     private static func skippingClosings(from position: Int, spans: [Span]) -> Int {
         var position = position
@@ -337,6 +351,10 @@ enum MarkdownEditing {
         // Styles that go on after the break are closed before it and opened again after it.
         let open = spans.filter { $0.content.location < split && split < NSMaxRange($0.content) }
         var left = document.string(NSRange(location: line.range.location, length: split - line.range.location))
+        if split > caret {
+            // Leaving styles at the end of the line: spaces typed last before their marks would undo them on GitHub.
+            left = left.replacingOccurrences(of: #"[ \t]+((?:\*\*|__|~~|[*_~`])+)$"#, with: "$1", options: .regularExpression)
+        }
         var right = document.string(NSRange(location: split, length: NSMaxRange(line.range) - split))
         var reopened = ""
         if !open.isEmpty {

@@ -11,6 +11,8 @@ struct PickerSheet: View {
     /// Opened with a key on an iPad keyboard: typing goes straight to the search, and Return picks the first match.
     var focusesSearch = false
     var items: () -> [PickerItem]
+    /// A row that makes what is typed, such as a label the repository doesn't have yet.
+    var creating: ((String) -> PickerItem?)? = nil
     var onPick: (String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
@@ -19,11 +21,11 @@ struct PickerSheet: View {
 
     var body: some View {
         NavigationStack {
-            let visible = matching(query, in: items())
+            let visible = matching(query, in: items(), creating: query.isEmpty ? nil : creating?(query))
             List {
                 ForEach(visible) { item in
                     HStack(spacing: 12) {
-                        if multiple {
+                        if multiple, !item.creates {
                             Button {
                                 pick(item, keepOpen: true)
                             } label: {
@@ -161,6 +163,9 @@ struct IssuePickerSheet: View {
                 guard let item = model.item(id: itemId) else { return [] }
                 return model.pickerItems(kind, for: item)
             },
+            creating: kind == .labels ? { query in
+                model.item(id: itemId).flatMap { model.newLabelRow(query, projectId: $0.projectId, repoId: $0.repoId) }
+            } : nil,
             onPick: { id in
                 guard let item = model.item(id: itemId) else { return }
                 model.pick(kind, id: id, for: item)

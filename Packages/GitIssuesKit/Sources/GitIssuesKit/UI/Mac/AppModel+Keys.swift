@@ -98,7 +98,9 @@ extension AppModel {
             }
             return false
         }
-        if let responder = NSApp.keyWindow?.firstResponder, responder is NSTextView { return false }
+        // Text being typed in takes its keys; a comment, which is only read, leaves them to the app even when text in it
+        // is selected.
+        if let text = NSApp.keyWindow?.firstResponder as? NSTextView, text.isEditable { return false }
         // ⌘⌫ deletes the issue in focus, as in Linear. Inside a text field it keeps deleting text.
         if modifiers == .command, event.keyCode == 51, let item = actionItem, targets(for: item).count == 1 {
             requestDelete(item)
@@ -248,8 +250,8 @@ extension AppModel {
             break
         }
 
-        // F filters the view on screen, ⇧V shows how it is displayed, as in Linear.
-        if openItem == nil, currentView != nil, !event.modifierFlags.contains(.command) {
+        // F filters the view on screen or My Issues, ⇧V shows how it is displayed, as in Linear.
+        if openItem == nil, currentView != nil || scope == .myIssues, !event.modifierFlags.contains(.command) {
             if key == "f", !event.modifierFlags.contains(.shift) {
                 filterMenuRequest += 1
                 return true

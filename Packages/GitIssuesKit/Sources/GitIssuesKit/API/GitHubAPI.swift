@@ -602,6 +602,40 @@ public final class GitHubAPI: Sendable {
         }
     }
 
+    /// The repository's label of that name, whatever its case, made if it has none. Asking first means a retry, or
+    /// someone who made it meanwhile, never leads to a second one.
+    public func label(named name: String, color: String, repoId: String, repo: String) async throws -> LabelRef {
+        if let label = try await existingLabel(named: name, repoId: repoId) { return label }
+        struct RESTLabel: Decodable {
+            var node_id: String
+            var name: String
+            var color: String
+        }
+        do {
+            let (data, _) = try await client.rest("POST", "repos/\(repo)/labels", json: ["name": name, "color": color])
+            let made = try GraphQLClient.decoder.decode(RESTLabel.self, from: data)
+            return LabelRef(id: made.node_id, name: made.name, color: made.color)
+        } catch APIError.http(422, let text) {
+            // Made at the same moment somewhere else; anything else GitHub refuses stays refused.
+            if let label = try await existingLabel(named: name, repoId: repoId) { return label }
+            throw APIError.http(422, text)
+        }
+    }
+
+    private func existingLabel(named name: String, repoId: String) async throws -> LabelRef? {
+        struct Response: Decodable {
+            struct Node: Decodable {
+                var label: LabelDTO?
+            }
+            var node: Node?
+        }
+        let query = """
+        query($id: ID!, $name: String!) { node(id: $id) { ... on Repository { label(name: $name) { id name color } } } }
+        """
+        let response: Response = try await client.run(query, variables: ["id": repoId, "name": name])
+        return response.node?.label?.label
+    }
+
     /// Makes `childId` a sub-issue of `parentId`, taking it out of the parent it had.
     public func addSubIssue(parentId: String, childId: String) async throws {
         let query = """

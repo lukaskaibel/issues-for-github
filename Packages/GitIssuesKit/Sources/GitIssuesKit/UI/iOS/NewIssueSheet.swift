@@ -15,10 +15,10 @@ struct NewIssueSheet: View {
     @State private var confirmDiscard = false
     @State private var created = 0
     @FocusState private var focus: Field?
+    @State private var editingBody = false
 
     private enum Field {
         case title
-        case body
     }
 
     var body: some View {
@@ -35,18 +35,24 @@ struct NewIssueSheet: View {
                             // Return moves on to the description instead of breaking the title.
                             guard new.contains("\n") else { return }
                             draft.title = new.replacingOccurrences(of: "\n", with: "")
-                            focus = .body
+                            editingBody = true
                         }
-                        .onSubmit { focus = .body }
+                        .onSubmit { editingBody = true }
                         .accessibilityLabel(.issueTitle)
                         .accessibilityIdentifier("new-title")
-                    TextField(.addDescriptionPlaceholder, text: $draft.body, axis: .vertical)
-                        .font(.body)
-                        .foregroundStyle(Theme.textBody)
-                        .lineLimit(4...)
-                        .focused($focus, equals: .body)
-                        .accessibilityLabel(.description)
-                        .accessibilityIdentifier("new-description")
+                    // The description as it will look on GitHub.
+                    MarkdownEditor(
+                        draft: $draft.body,
+                        placeholder: .addDescriptionPlaceholder,
+                        editing: $editingBody,
+                        onSubmit: create,
+                        submitTitle: .createIssue,
+                        accessibilityLabel: .description,
+                        accessibilityIdentifier: "new-description"
+                    )
+                    .frame(minHeight: EditorStyle.lineHeight * 4, alignment: .top)
+                    // A tap below the text puts the caret at its end.
+                    .background { Color.clear.contentShape(.rect).onTapGesture { editingBody = true } }
                     if repos.isEmpty, draft.projectId != nil {
                         Label(.projectHasNoRepository, systemImage: "exclamationmark.triangle")
                             .font(.footnote)
@@ -438,6 +444,7 @@ private struct DraftPickerSheet: View {
                 prompt: kind.searchPrompt,
                 multiple: true,
                 items: items,
+                creating: kind == .labels ? { model.newLabelRow($0, projectId: draft.projectId, repoId: draft.repoId) } : nil,
                 onPick: pick
             )
         }
@@ -474,7 +481,12 @@ private struct DraftPickerSheet: View {
                 draft.assignees.append(person)
             }
         case .labels:
-            if let index = draft.labels.firstIndex(where: { $0.id == id }) {
+            if let name = AppModel.newLabelName(id) {
+                if let label = model.labelForNewIssue(named: name, projectId: draft.projectId, repoId: draft.repoId),
+                   !draft.labels.contains(where: { $0.id == label.id }) {
+                    draft.labels.append(label)
+                }
+            } else if let index = draft.labels.firstIndex(where: { $0.id == id }) {
                 draft.labels.remove(at: index)
             } else if let label = model.pickableLabels(projectId: draft.projectId, repoId: draft.repoId).first(where: { $0.id == id }) {
                 draft.labels.append(label)
