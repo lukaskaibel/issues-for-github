@@ -23306,7 +23306,7 @@
       }
     },
     "foldSubIssuesTooltip" : {
-      "comment" : "Tooltip and VoiceOver label of the small down-pointing arrow on an issue (list row, board card) whose sub-issues hang indented under it: hides them under the issue.",
+      "comment" : "Tooltip and VoiceOver label of the small down-pointing arrow on an issue (list row, board card) whose sub-issues hang indented under it: hides them under the issue. Also on a sub-issue in an issue's list of sub-issues (issue view, Mac, iPhone and iPad), whose own sub-issues show under it.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -78944,7 +78944,7 @@
       }
     },
     "subIssuesDone" : {
-      "comment" : "Tooltip and VoiceOver label of the sub-issue progress chip (shown as '2/5') on cards and rows. %(done)@ is a number already formatted, e.g. '2'; %(total)lld is how many sub-issues there are; the plural follows it. 'Sub-issue' is a GitHub term.",
+      "comment" : "Tooltip and VoiceOver label of the sub-issue progress chip (shown as '2/5') on cards and rows, and on a sub-issue with sub-issues of its own in an issue's list of sub-issues. %(done)@ is a number already formatted, e.g. '2'; %(total)lld is how many sub-issues there are; the plural follows it. 'Sub-issue' is a GitHub term.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -81752,7 +81752,7 @@
       }
     },
     "unfoldSubIssuesTooltip" : {
-      "comment" : "Tooltip and VoiceOver label of the small right-pointing arrow on an issue (list row, board card) whose sub-issues are folded under it: shows them again. %(count)lld is how many.",
+      "comment" : "Tooltip and VoiceOver label of the small right-pointing arrow on an issue (list row, board card) whose sub-issues are folded under it: shows them again. Also on a sub-issue in an issue's list of sub-issues (issue view, Mac, iPhone and iPad), whose own sub-issues it shows under it. %(count)lld is how many.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
