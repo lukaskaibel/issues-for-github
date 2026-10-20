@@ -901,6 +901,66 @@
         }
       }
     },
+    "addLinkTitle" : {
+      "comment" : "iPhone and iPad: title of the alert that asks for the web address of a new link in an issue's description or a comment.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link hinzufügen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Link"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadir enlace"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter un lien"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リンクを追加"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "링크 추가"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicionar Link"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Добавить ссылку"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加链接"
+          }
+        }
+      }
+    },
     "addPriorityField" : {
       "comment" : "iPhone and iPad: item in a project's '…' menu that adds a Priority field to the GitHub project. 'Field' is a GitHub project field (a column of data).",
       "extractionState" : "manual",
@@ -2157,6 +2217,306 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "将在 GitHub 上为此项目添加“Due date”字段。"
+          }
+        }
+      }
+    },
+    "alertCaution" : {
+      "comment" : "Title of a GitHub alert, a coloured box in an issue's description or a comment, written as > [!CAUTION]: a risk of doing something. Short, one word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorsicht"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caution"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Precaución"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attention"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "注意"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "주의"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuidado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Осторожно"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "注意"
+          }
+        }
+      }
+    },
+    "alertImportant" : {
+      "comment" : "Title of a GitHub alert, a coloured box in an issue's description or a comment, written as > [!IMPORTANT]: something the reader must know. Short, one word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wichtig"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Important"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importante"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Important"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重要"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "중요"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importante"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Важно"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重要"
+          }
+        }
+      }
+    },
+    "alertNote" : {
+      "comment" : "Title of a GitHub alert, a coloured box in an issue's description or a comment, written as > [!NOTE]: information worth knowing. Short, one word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hinweis"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nota"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remarque"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メモ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "참고"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Observação"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Примечание"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备注"
+          }
+        }
+      }
+    },
+    "alertTip" : {
+      "comment" : "Title of a GitHub alert, a coloured box in an issue's description or a comment, written as > [!TIP]: advice that helps. Short, one word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipp"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tip"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consejo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Astuce"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ヒント"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "팁"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dica"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Совет"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提示"
+          }
+        }
+      }
+    },
+    "alertWarning" : {
+      "comment" : "Title of a GitHub alert, a coloured box in an issue's description or a comment, written as > [!WARNING]: something that needs attention right away. Short, one word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warnung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warning"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advertencia"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avertissement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "警告"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "경고"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aviso"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Предупреждение"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "警告"
           }
         }
       }
@@ -8089,6 +8449,66 @@
         }
       }
     },
+    "closeFormatPanel" : {
+      "comment" : "iPhone and iPad: VoiceOver label of the × button of the Format panel, which brings the keyboard back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fermer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "閉じる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "닫기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fechar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Закрыть"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
+          }
+        }
+      }
+    },
     "closeWithEscShortcut" : {
       "comment" : "Mac, New Issue window: tooltip and VoiceOver label of the × button that closes the window (what was typed is kept for next time). (Esc) is the key that does the same; keep it.",
       "extractionState" : "manual",
@@ -8325,6 +8745,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已关闭"
+          }
+        }
+      }
+    },
+    "codeCopied" : {
+      "comment" : "Mac, VoiceOver: announced after the code of a code block was copied with the button in its corner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copied"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copié"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コピーしました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "복사됨"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопировано"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已拷贝"
           }
         }
       }
@@ -10287,6 +10767,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "拷贝分支名称（⌘⇧.）"
+          }
+        }
+      }
+    },
+    "copyCode" : {
+      "comment" : "Button in the corner of a code block (program code) in an issue's description or a comment, and item of its menu: copies the code to the clipboard.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code kopieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar código"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copier le code"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コードをコピー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "코드 복사"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar Código"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопировать код"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拷贝代码"
           }
         }
       }
@@ -13153,62 +13693,62 @@
         }
       }
     },
-    "diagram" : {
-      "comment" : "VoiceOver label of a diagram drawn from a Mermaid code block in an issue's description or comment.",
+    "diagramCouldNotBeDrawn" : {
+      "comment" : "Shown in place of a Mermaid diagram (a chart written as code) in an issue's description or a comment that has a mistake in its code or is of a kind the app can't draw.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diagramm"
+            "value" : "Dieses Diagramm konnte nicht gezeichnet werden."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diagram"
+            "value" : "This diagram couldn't be drawn."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diagrama"
+            "value" : "No se ha podido dibujar este diagrama."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diagramme"
+            "value" : "Impossible de dessiner ce diagramme."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "図"
+            "value" : "この図を描画できませんでした。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "다이어그램"
+            "value" : "이 다이어그램을 그릴 수 없습니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diagrama"
+            "value" : "Não foi possível desenhar este diagrama."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Диаграмма"
+            "value" : "Не удалось нарисовать эту диаграмму."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "示意图"
+            "value" : "无法绘制此图表。"
           }
         }
       }
@@ -13694,7 +14234,7 @@
       }
     },
     "done" : {
-      "comment" : "Button that closes a sheet or ends editing, keeping the changes (iPhone, iPad). Not the 'done' status of an issue.",
+      "comment" : "Button that closes a sheet or ends editing, keeping the changes (iPhone, iPad), and the button that keeps a link's web address in the Mac's link popover. Not the 'done' status of an issue.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -13929,6 +14469,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "拖到某个里程碑上即可规划"
+          }
+        }
+      }
+    },
+    "drawingDiagram" : {
+      "comment" : "Shown for a moment in place of a Mermaid diagram (a chart written as code) in an issue's description or a comment, while it is being drawn.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagramm wird gezeichnet …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing diagram…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dibujando el diagrama…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dessin du diagramme…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "図を描画中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다이어그램 그리는 중…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desenhando o diagrama…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рисуется диаграмма…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在绘制图表…"
           }
         }
       }
@@ -15439,66 +16039,6 @@
         }
       }
     },
-    "editDescriptionAction" : {
-      "comment" : "VoiceOver action (a verb) on an issue's description that starts editing it.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bearbeiten"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifier"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "編集"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "편집"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Изменить"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "编辑"
-          }
-        }
-      }
-    },
     "editFilterAsText" : {
       "comment" : "Last row of the filter menu: edit the view's filter in GitHub's own words (label:bug is:open).",
       "extractionState" : "manual",
@@ -15555,6 +16095,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "以文本编辑筛选条件…"
+          }
+        }
+      }
+    },
+    "editLinkTitle" : {
+      "comment" : "iPhone and iPad: title of the alert that changes the web address of a link in an issue's description or a comment, opened from the small pencil after the link.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link bearbeiten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Link"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar enlace"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifier le lien"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リンクを編集"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "링크 편집"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar Link"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Изменить ссылку"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑链接"
           }
         }
       }
@@ -22825,8 +23425,68 @@
         }
       }
     },
+    "formatBody" : {
+      "comment" : "Format menu and Format panel: text style that makes the line ordinary text again, as in Apple Notes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haupttext"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Body"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuerpo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corps de texte"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本文"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "본문"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corpo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Основной текст"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正文"
+          }
+        }
+      }
+    },
     "formatBold" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that makes the selected text bold, or takes the bold off text that has it. Also shown, tinted, at the left of the bar while the caret is in bold text.",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: makes the selected text bold, or takes the bold off text that has it. Also shown, tinted, at the left of the bar while the caret is in bold text, where a tap takes the bold off.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -22886,7 +23546,7 @@
       }
     },
     "formatBulletedList" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that turns the line into a bulleted list item (or back); also the name of the ⌘⇧8 shortcut in the iPad's list of keyboard shortcuts.",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad): turns the lines into a list with bullets (Markdown -), or back. Also the name of the ⇧⌘7 shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -22928,7 +23588,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lista com marcadores"
+            "value" : "Lista com Marcadores"
           }
         },
         "ru" : {
@@ -23006,7 +23666,7 @@
       }
     },
     "formatChecklist" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that turns the line into a checklist item (a task with a checkbox), or back. Also the name of the ⌘⇧9 shortcut in the iPad's list of keyboard shortcuts.",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: turns the line into a checklist item (a task with a checkbox), or back. Also the name of the ⇧⌘L shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23066,7 +23726,7 @@
       }
     },
     "formatCode" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that formats the selected text as code, or back. Also the name of the ⌘E shortcut in the iPad's list of keyboard shortcuts.",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: formats the selected text as code (program code, in a monospaced font), or back. Also shown, tinted, at the left of the bar while the caret is in code. Also the name of the ⌘E shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23125,8 +23785,68 @@
         }
       }
     },
+    "formatHeading" : {
+      "comment" : "Format menu and Format panel: text style that makes the line a heading (Markdown ##), as in Apple Notes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überschrift"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encabezado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En-tête"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "見出し"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "머리말"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cabeçalho"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Заголовок"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小标题"
+          }
+        }
+      }
+    },
     "formatIndent" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that moves the list item the caret is in one level in, under the item above.",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad): moves the list items one level in, under the item above (also the Tab key). Also shown at the left of the bar while the caret is in a list item that can move in.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23168,7 +23888,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aumentar recuo"
+            "value" : "Aumentar Recuo"
           }
         },
         "ru" : {
@@ -23186,7 +23906,7 @@
       }
     },
     "formatItalic" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that makes the selected text italic, or takes the italics off text that has them. Also shown, tinted, at the left of the bar while the caret is in italic text.",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: makes the selected text italic, or takes the italics off text that has them. Also shown, tinted, at the left of the bar while the caret is in italic text, where a tap takes the italics off.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23246,7 +23966,7 @@
       }
     },
     "formatLink" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that inserts a web link.",
+      "comment" : "Format menu (Mac, iPad with a keyboard), Format panel and bar above the keyboard (iPhone, iPad) while writing a description or comment: makes the selected text a web link, or puts a new link in.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23305,8 +24025,68 @@
         }
       }
     },
+    "formatMenu" : {
+      "comment" : "Menu in the menu bar (Mac, iPad with a keyboard) with the commands that format the text of a description or comment (bold, headings, lists). Also the title of the Format panel on iPhone and iPad and the VoiceOver label of its Aa button above the keyboard.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Format"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Format"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formato"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Format"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フォーマット"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포맷"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formatar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Формат"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "格式"
+          }
+        }
+      }
+    },
     "formatNumberedList" : {
-      "comment" : "iPad with a keyboard, writing an issue's description: name of the ⌘⇧7 shortcut, which turns the line into a numbered list item (or back), in the list of keyboard shortcuts.",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad): turns the lines into a numbered list (Markdown 1.), or back. Also the name of the ⇧⌘9 shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23348,7 +24128,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lista numerada"
+            "value" : "Lista Numerada"
           }
         },
         "ru" : {
@@ -23426,7 +24206,7 @@
       }
     },
     "formatOutdent" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that moves the list item the caret is in one level out.",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad): moves the list items one level out (also Shift-Tab). Also shown at the left of the bar while the caret is in a nested list item.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23468,7 +24248,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diminuir recuo"
+            "value" : "Diminuir Recuo"
           }
         },
         "ru" : {
@@ -23485,8 +24265,68 @@
         }
       }
     },
+    "formatQuote" : {
+      "comment" : "Format menu, Format panel and bar above the keyboard: turns the lines into a quote (Markdown >).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blockzitat"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block Quote"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cita en bloque"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Citation"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブロック引用"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "블록 인용"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Citação em Bloco"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цитата"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "块引用"
+          }
+        }
+      }
+    },
     "formatStrikethrough" : {
-      "comment" : "iPhone and iPad, bar above the keyboard while writing an issue's description: VoiceOver label of the button that shows the caret is in struck-through text and takes the strikethrough off; also the name of the ⌘⇧X shortcut in the iPad's list of keyboard shortcuts.",
+      "comment" : "Format menu (Mac), Format panel and bar above the keyboard (iPhone, iPad): strikes the selected text through (Markdown ~~), or back. Also shown, tinted, at the left of the bar while the caret is in struck-through text. Also the name of the ⇧⌘X shortcut in the iPad's list of keyboard shortcuts.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -23541,6 +24381,186 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "删除线"
+          }
+        }
+      }
+    },
+    "formatSubheading" : {
+      "comment" : "Format menu and Format panel: text style that makes the line a smaller heading (Markdown ###), as in Apple Notes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unterüberschrift"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subheading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subencabezado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sous-en-tête"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小見出し"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "부머리말"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subcabeçalho"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Подзаголовок"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "副标题"
+          }
+        }
+      }
+    },
+    "formatTitle" : {
+      "comment" : "Format menu and Format panel: text style that makes the line a large heading (Markdown #), as in Apple Notes. Not an issue's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Título"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タイトル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "제목"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Título"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Название"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标题"
+          }
+        }
+      }
+    },
+    "formulaCouldNotBeRead" : {
+      "comment" : "Shown in place of a mathematical formula (written in LaTeX between $$) in an issue's description or a comment that has a mistake in it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Formel konnte nicht gelesen werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This formula couldn't be read."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido leer esta fórmula."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de lire cette formule."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この数式を読み取れませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 수식을 읽을 수 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível ler esta fórmula."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось прочитать эту формулу."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法读取此公式。"
           }
         }
       }
@@ -31861,6 +32881,66 @@
         }
       }
     },
+    "linkAddress" : {
+      "comment" : "Mac: VoiceOver label of the field with a link's web address, in the popover that opens from the small pencil after a link in an issue's description or a comment.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresse"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Address"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dirección"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresse"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アドレス"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "주소"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endereço"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Адрес"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "地址"
+          }
+        }
+      }
+    },
     "linkCopied" : {
       "comment" : "Short notice (Mac, iPhone, iPad) after the GitHub web address of one issue was copied; the issue's number and title are shown below it.",
       "extractionState" : "manual",
@@ -31922,7 +33002,7 @@
       }
     },
     "linkTextPlaceholder" : {
-      "comment" : "iPhone and iPad, writing an issue's description: word put into the description as the text of a new link, in Markdown as [link](https://), and selected so the user types over it. Lowercase, one word.",
+      "comment" : "Writing a description or comment (Mac, iPhone, iPad): word put into the text as the text of a new link when nothing is selected, in Markdown as [link](https://), and selected so the user types over it. Lowercase, one word.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -32319,6 +33399,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在载入你的通知…"
+          }
+        }
+      }
+    },
+    "loadingPicture" : {
+      "comment" : "Shown in place of a picture in an issue's description or a comment while it is being downloaded from the web.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bild wird geladen …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading picture…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cargando la imagen…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chargement de l’image…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像を読み込み中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사진 불러오는 중…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carregando a imagem…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загрузка изображения…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在载入图片…"
           }
         }
       }
@@ -33279,6 +34419,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "标记为正在阻塞…"
+          }
+        }
+      }
+    },
+    "markAsChecked" : {
+      "comment" : "Format menu (Mac, iPad with a keyboard): ticks or unticks the checkbox of the checklist item the cursor is on, as in Apple Notes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als abgehakt markieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Checked"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar como seleccionado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquer comme coché"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "チェック済みにする"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "체크됨으로 표시"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar Como Marcado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отметить как выполненное"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标记为已勾选"
           }
         }
       }
@@ -43285,6 +44485,66 @@
         }
       }
     },
+    "openLink" : {
+      "comment" : "Button (a verb) in the popover (Mac) or alert (iPhone, iPad) for a link's web address in an issue's description or a comment: opens the address in the web browser.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "열기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыть"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开"
+          }
+        }
+      }
+    },
     "openNotificationSettings" : {
       "comment" : "Settings, Reminders section: button that opens the system's notification settings for the app, when notifications are turned off there.",
       "extractionState" : "manual",
@@ -45465,6 +46725,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在边栏中选择一个项目。"
+          }
+        }
+      }
+    },
+    "pictureCouldNotBeLoaded" : {
+      "comment" : "Shown in place of a picture in an issue's description or a comment that couldn't be downloaded. %(address)@ is the picture's web address (https://…), shown as it is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Bild unter %@ konnte nicht geladen werden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load the picture at %(address)@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido cargar la imagen de %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de charger l’image à l’adresse %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ の画像を読み込めませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@의 사진을 불러올 수 없습니다"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível carregar a imagem em %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось загрузить изображение по адресу %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法载入位于 %@ 的图片"
           }
         }
       }
@@ -67729,6 +69049,66 @@
         }
       }
     },
+    "removeLink" : {
+      "comment" : "Button in the popover (Mac) or alert (iPhone, iPad) for a link's web address in an issue's description or a comment: keeps the text, takes the link off it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link entfernen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Link"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar enlace"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer le lien"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リンクを削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "링크 제거"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remover Link"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить ссылку"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除链接"
+          }
+        }
+      }
+    },
     "removeRelation" : {
       "comment" : "Mac, issue view: tooltip of the × button on a row in the list of blocking or blocked issues; removes that 'blocked by' or 'blocking' link.",
       "extractionState" : "manual",
@@ -82053,6 +83433,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在等待你授权…"
+          }
+        }
+      }
+    },
+    "writingRedo" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing a description or comment: VoiceOver label of the button that redoes the change just undone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiederholen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rehacer"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rétablir"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "やり直す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실행 복귀"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refazer"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Повторить"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重做"
+          }
+        }
+      }
+    },
+    "writingUndo" : {
+      "comment" : "iPhone and iPad, bar above the keyboard while writing a description or comment: VoiceOver label of the button that undoes the last change to the text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widerrufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deshacer"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取り消す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실행 취소"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desfazer"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отменить"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "撤销"
           }
         }
       }
