@@ -976,17 +976,8 @@ private struct MobileSubIssues: View {
         let picking = model.isPickingSubIssues(of: item)
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text(.subIssues).font(.sectionTitle)
-                if !subs.isEmpty {
-                    let done = subs.filter(\.isClosed).count
-                    Text(.subIssuesProgress(done: done, total: subs.count))
-                        .font(.footnote)
-                        .foregroundStyle(Theme.textTertiary)
-                        .monospacedDigit()
-                    ProgressView(value: Double(done), total: Double(subs.count))
-                        .progressViewStyle(ThinProgressStyle())
-                        .frame(width: 64)
-                }
+                MobileSubIssuesTitle(title: .subIssues, done: subs.filter(\.isClosed).count, total: subs.count, showsBar: true)
+                    .layoutPriority(1)
                 Spacer()
                 if !picking {
                     if subs.count > 1 { MobileSubIssueOptionsMenu(item: item, order: order) }
@@ -1047,13 +1038,8 @@ private struct MobileEpicWork: View {
         let picking = model.isPickingSubIssues(of: item)
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                Text(.progress).font(.sectionTitle)
-                if !subs.isEmpty {
-                    Text(.subIssuesProgress(done: done, total: subs.count))
-                        .font(.footnote)
-                        .foregroundStyle(Theme.textTertiary)
-                        .monospacedDigit()
-                }
+                MobileSubIssuesTitle(title: .progress, done: done, total: subs.count, showsBar: false)
+                    .layoutPriority(1)
                 Spacer()
                 if !picking {
                     if subs.count > 1 { MobileSubIssueOptionsMenu(item: item, order: order) }
@@ -1138,6 +1124,47 @@ private struct MobileEpicWork: View {
         .foregroundStyle(Theme.textSecondary)
         .accessibilityLabel(.addSubIssueButton)
         .accessibilityIdentifier("sub-add")
+    }
+}
+
+/// The heading over an issue's sub-issues or an epic's progress, with how many are done and, for sub-issues, a bar.
+/// The title keeps its one line on the smallest iPhone in every language: the bar shrinks and then goes first, then
+/// the count.
+private struct MobileSubIssuesTitle: View {
+    var title: LocalizedStringResource
+    var done: Int
+    var total: Int
+    var showsBar: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(title)
+                .font(.sectionTitle)
+                .lineLimit(1)
+                .layoutPriority(1)
+            if total > 0 {
+                ViewThatFits(in: .horizontal) {
+                    if showsBar {
+                        HStack(spacing: 10) {
+                            count.layoutPriority(1)
+                            ProgressView(value: Double(done), total: Double(total))
+                                .progressViewStyle(ThinProgressStyle())
+                                .frame(minWidth: 32, maxWidth: 64)
+                        }
+                    }
+                    count
+                    Color.clear.frame(width: 0, height: 0)
+                }
+            }
+        }
+    }
+
+    private var count: some View {
+        Text(.subIssuesProgress(done: done, total: total))
+            .font(.footnote)
+            .foregroundStyle(Theme.textTertiary)
+            .monospacedDigit()
+            .lineLimit(1)
     }
 }
 

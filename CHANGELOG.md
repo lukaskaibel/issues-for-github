@@ -74,6 +74,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- The heading over an issue's sub-issues stays on one line on a small iPhone, in every language. When the row is short
+  of room, the bar beside the title gets shorter and then steps aside, and only after it "4 of 6". Before, the title
+  broke onto two lines on an iPhone SE, in English too, and in Spanish even on an iPhone 17 Pro.
 - On the Mac, cards in a long board column light up under the pointer without lagging behind it. Going from one card
   to the next used to work out every card in the column again; now only the card the pointer leaves and the one it
   enters are drawn anew, so a column of a hundred issues answers the pointer as quickly as a short one.
