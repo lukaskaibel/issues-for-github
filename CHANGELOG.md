@@ -52,6 +52,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- On the Mac, cards in a long board column light up under the pointer without lagging behind it. Going from one card
+  to the next used to work out every card in the column again; now only the card the pointer leaves and the one it
+  enters are drawn anew, so a column of a hundred issues answers the pointer as quickly as a short one.
 - On the Mac, an issue and the Inbox read cleanly under the toolbar: what scrolls up fades out just below it, as above
   the comment field, and the toolbar lies on the page's own ground. Before, the text of an issue stayed sharp under the
   toolbar and ran through its title, "#9" and the project's name; over the Inbox the toolbar had a strip of another
