@@ -73,6 +73,9 @@ All notable changes to this project are recorded here. The format follows
 - On the Mac, the pointer no longer stutters over the header above an epic's issues on the board. Its light and its
   arrow fade in and out as before, but the header used to draw its name, count and icon again on every frame of that
   fade, so the board could stop for up to a tenth of a second each time the pointer came onto a header or left it.
+- On the Mac, the pointer stutters less going down the Inbox. The notification under it lights up and shows its two
+  buttons as before, but it used to draw its avatar, its icon and every one of its texts again on every frame of that
+  fade; now it draws again only the lines that make room for the buttons, and about a third fewer frames come late.
 
 ## [1.0.0] - 2026-10-20
 

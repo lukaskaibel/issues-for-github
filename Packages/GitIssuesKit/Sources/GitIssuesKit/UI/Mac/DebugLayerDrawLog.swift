@@ -4,9 +4,9 @@ import AppKit
 import ObjectiveC
 import QuartzCore
 
-/// Which layers drew their contents, for `boardsweep`'s step-by-step series: each text SwiftUI draws (a
-/// `CGDrawingLayer`) and each Canvas or shape RenderBox draws (an `RBLayer`), with its size, where it is in the window
-/// and how long it took; "+" marks a layer not seen drawing before. A drawn layer that shows nothing new is a step
+/// Which layers drew their contents, for the step-by-step series of `boardsweep` and `menusweep`: each text SwiftUI
+/// draws (a `CGDrawingLayer`) and each Canvas or shape RenderBox draws (an `RBLayer`), with its size, where it is in the
+/// window and how long it took; "+" marks a layer not seen drawing before. A drawn layer that shows nothing new is a step
 /// spent for nothing, and on screen it also waits for the window server to let go of the layer's last picture.
 ///
 /// From the first sweep on, both classes' drawing methods are replaced with ones that call the original and, while a
