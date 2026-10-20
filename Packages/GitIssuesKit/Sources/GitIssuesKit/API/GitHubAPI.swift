@@ -837,7 +837,7 @@ enum GQL {
     /// A sub-issue in its parent's list, with how far its own sub-issues are.
     static let subIssueFields = """
     fragment SubIssueFields on Issue {
-      id number title state stateReason url
+      id number title state stateReason url createdAt
       repository { id nameWithOwner }
       assignees(first: 3) { nodes { id login name avatarUrl } }
       milestone { id title }
@@ -968,6 +968,7 @@ struct SubIssueDTO: Decodable {
     var repository: RepoDTO?
     var assignees: Nodes<PersonDTO>?
     var milestone: MilestoneRefDTO?
+    var createdAt: Date?
     var subIssuesSummary: Summary?
 
     func subIssue(parentId: String, position: Int) -> SubIssue {
@@ -975,7 +976,7 @@ struct SubIssueDTO: Decodable {
             id: id, parentId: parentId, number: number, title: title, state: state,
             stateReason: stateReason, repo: repository?.nameWithOwner, url: url, position: position,
             assignees: (assignees?.items ?? []).map(\.person),
-            milestoneId: milestone?.id, milestoneTitle: milestone?.title,
+            milestoneId: milestone?.id, milestoneTitle: milestone?.title, createdAt: createdAt,
             subTotal: subIssuesSummary?.total, subCompleted: subIssuesSummary?.completed
         )
     }
