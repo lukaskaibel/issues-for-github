@@ -122,6 +122,7 @@ extension AppModel {
         // Dropped among another epic's issues, it joins that epic.
         if let joined = landing.epic, joined != itemEpic, canRelate(item), let summary = item.summary,
            let epic = issue(contentId: joined), canRelate(epic) {
+            noteRecent(.parent, joined)
             mutations.append(.setParent(.init(
                 child: summary, parentId: joined, parentNumber: epic.number, parentTitle: epic.title, base: item.parentId
             )))
@@ -276,12 +277,14 @@ extension AppModel {
     func toggleAssignee(_ item: Item, _ person: Person) {
         guard item.kind != .draft, let contentId = item.contentId else { return }
         let assigned = item.assignees.contains { $0.id == person.id }
+        if !assigned { noteRecent(.assignee, person.id) }
         perform([.editAssignees(.init(contentId: contentId, add: assigned ? [] : [person], remove: assigned ? [person] : []))])
     }
 
     func toggleLabel(_ item: Item, _ label: LabelRef) {
         guard item.kind != .draft, let contentId = item.contentId else { return }
         let has = item.labels.contains { $0.id == label.id }
+        if !has { noteRecent(.label, label.name) }
         perform([.editLabels(.init(contentId: contentId, add: has ? [] : [label], remove: has ? [label] : []))])
     }
 

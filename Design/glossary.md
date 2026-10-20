@@ -79,6 +79,7 @@ Only English uses Title Case; every other language writes menus and buttons as i
 | command palette | Befehlspalette | palette de commandes | paleta de comandos | paleta de comandos | палитра команд | コマンドパレット | 命令面板 | 명령 팔레트 |
 | sample data | Beispieldaten | données d'exemple | datos de ejemplo | dados de exemplo | демонстрационные данные | サンプルデータ | 示例数据 | 샘플 데이터 |
 | queued (change waiting to be sent) | wartet | en attente | en cola | na fila | в очереди | 送信待ち | 待发送 | 전송 대기 |
+| select / select all / deselect all (pick several) | auswählen / alle auswählen / alle abwählen | sélectionner / tout sélectionner / tout désélectionner | seleccionar / seleccionar todo / deseleccionar todo | selecionar / selecionar tudo / desmarcar tudo | выбрать / выбрать все / снять выбор | 選択 / すべてを選択 / すべての選択を解除 | 选择 / 全选 / 取消全选 | 선택 / 모두 선택 / 모두 선택 해제 |
 
 ## Grammar to watch
 

@@ -8,11 +8,11 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
-- **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and
-  those without a priority after them, with the done ones at the bottom. The arrows beside the plus over them order
-  them by status, newest first or in GitHub's order instead; the choice holds for every issue on that device, and the
-  list a card's sub-issue count opens follows it too. Before, they were always in GitHub's order, which is mostly the
-  order they were added in.
+- **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and those
+  without a priority after them, with the done ones at the bottom. The arrows beside the plus over them (on iPhone and
+  iPad, the "…" there) order them by status, newest first or in GitHub's order instead; the choice holds for every
+  issue on that device, and the list a card's sub-issue count opens follows it too. Before, they were always in
+  GitHub's order, which is mostly the order they were added in.
 - **A blocked issue says what blocks it.** The red flag on a blocked issue's card and list row now carries the number
   of the issue to finish first, as in `#364`, with `+1` for each further one, and the sub-issues listed in an issue,
   which had no flag at all, carry the same. On the Mac a click on the flag lists the blockers and changes them, as on
@@ -22,6 +22,22 @@ All notable changes to this project are recorded here. The format follows
   them are done, as "1/2" next to its number, and the arrow beside its status unfolds them under it, indented and
   joined by lines as in the board's lists; theirs unfold the same way, as many levels down as GitHub has. An epic's
   issues do it too. What you unfold stays unfolded on that device. On the Mac, iPhone and iPad.
+- **Pick several sub-issues on an issue's page.** On the Mac, ⌘-click and Shift-click pick sub-issues in an issue's
+  list of sub-issues, also ones unfolded under another, as on the board and in the list. Right-click one of them and the menu changes all of them: move
+  them under another parent with Change Parent Issue…, into an epic or out of their parent, or set their status,
+  priority, assignee, labels, due date or milestone. Their status, priority and assignee buttons and the single keys
+  act on all of them too, and `Esc` lets them go before it leaves the issue.
+- **Pick several sub-issues on iPhone and iPad.** Choose **Select** in the "…" beside the plus over an issue's
+  sub-issues, or in one's long-press menu, and a circle stands where each status circle was, as in Mail; a tap then
+  picks a sub-issue instead of opening it, also one unfolded under another. **Change Parent Issue…** in the bar at the
+  bottom moves all picked ones under another parent, and the "…" beside it, like the long-press menu of a picked one,
+  sets their status, priority, assignee, labels, due date or milestone, or moves them into an epic or out of their
+  parent. Select All and ✓ are at the top. On iPad, ⌘-click and Shift-click with a pointer pick sub-issues straight
+  away, S, P, A, L, D and I then change all of them, and `Esc` lets them go.
+- **Pickers offer what you chose last.** The issue you just made a parent is at the top of the parent picker for the
+  next issue, above a line, and Return picks it again. The same goes for epics, blocked by and blocking, labels and
+  assignees, also in a new issue, on the Mac, iPhone and iPad: up to three of your latest choices come first. Rows no
+  longer move while you tick several labels or people in a picker that stays open.
 
 ### Changed
 
@@ -44,6 +60,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- The heading over an issue's sub-issues stays on one line on a small iPhone, in every language. When the row is short
+  of room, the bar beside the title gets shorter and then steps aside, and only after it "4 of 6". Before, the title
+  broke onto two lines on an iPhone SE, in English too, and in Spanish even on an iPhone 17 Pro.
 - On the Mac, cards in a long board column light up under the pointer without lagging behind it. Going from one card
   to the next used to work out every card in the column again; now only the card the pointer leaves and the one it
   enters are drawn anew, so a column of a hundred issues answers the pointer as quickly as a short one.

@@ -269,6 +269,26 @@ final class PhoneTests: AppTestCase {
         XCTAssertFalse(pickerRow("Create label").exists)
     }
 
+    func testRecentChoicesComeFirst() {
+        // As if "sync" had just been added to another issue: it leads the sheet, apart from the rest.
+        launch(["-recentPicks", "{ label = (sync); }"])
+        scrollTo(element("row-#13"))
+        element("row-#13").tap()
+        wait(element("chip-labels"))
+        element("chip-labels").tap()
+        let sync = pickerRow("sync")
+        wait(sync)
+        XCTAssertLessThan(sync.frame.minY, pickerRow("auth").frame.minY, "The label picked last comes first")
+        snapshot("Labels sheet with the recent one first")
+
+        // Picking several keeps the rows where they are, although "bug" is now the latest choice.
+        let place = pickerRow("bug").frame.minY
+        element("check-bug").tap()
+        _ = XCTWaiter.wait(for: [expectation(description: "The list settles")], timeout: 0.8)
+        XCTAssertEqual(pickerRow("bug").frame.minY, place, accuracy: 1, "A picked row stays put")
+        XCTAssertLessThan(sync.frame.minY, pickerRow("bug").frame.minY)
+    }
+
     func testDueDateSheet() {
         launch()
         // Below #27 and #38, which are on no board and lead My Issues.
@@ -576,6 +596,148 @@ final class PhoneTests: AppTestCase {
         waitForLabel(element("sub-status-#11"), containing: "In Progress")
     }
 
+    func testPickSeveralSubIssuesAndChangeThemTogether() {
+        launch()
+        element("row-#9").tap()
+        wait(element("issue-title"))
+
+        // Select, in the "…" beside the plus, puts circles in place of the status circles; a tap then picks a
+        // sub-issue instead of opening it.
+        let options = element("sub-options")
+        scrollTo(options)
+        options.tap()
+        wait(button("Select"))
+        snapshot("Sub-issue options")
+        button("Select").tap()
+        wait(element("sub-pick-done"))
+        XCTAssertFalse(element("comment-field").exists, "The bar for the picked ones stands where the comment field was")
+        clearOfPickBar(element("sub-#12"))
+        element("sub-#10").tap()
+        element("sub-#11").tap()
+        wait(labelled("2 selected"))
+        XCTAssertTrue(element("sub-#10").isSelected)
+        XCTAssertFalse(element("sub-#12").isSelected)
+        snapshot("Picking sub-issues")
+
+        // The long-press menu of a picked one changes both.
+        element("sub-#11").press(forDuration: 1.2)
+        wait(labelled("2 issues"))
+        XCTAssertFalse(app.keyboards.firstMatch.exists, "No on-screen keyboard comes up with the menu")
+        snapshot("Menu of two picked sub-issues")
+        XCTAssertFalse(button("Open Issue").exists)
+        button("Status").tap()
+        button("In Progress").tap()
+        element("sub-pick-done").tap()
+        waitGone(element("sub-pick-done"))
+        wait(element("comment-field"))
+        waitForLabel(element("sub-status-#10"), containing: "In Progress")
+        waitForLabel(element("sub-status-#11"), containing: "In Progress")
+
+        // Select from a row's own menu starts with that row picked; the bar at the foot moves them under another
+        // parent, and with all of them gone from the list the picking ends.
+        element("sub-#12").press(forDuration: 1.2)
+        button("Select").tap()
+        wait(element("sub-pick-done"))
+        clearOfPickBar(element("sub-#23"))
+        element("sub-#23").tap()
+        wait(labelled("2 selected"))
+        element("sub-pick-parent").tap()
+        let search = app.searchFields.firstMatch
+        wait(search)
+        search.tap()
+        search.typeText("Offline")
+        let epic = labelled("Offline-first sync", type: .button)
+        wait(epic)
+        epic.tap()
+        waitGone(element("sub-#12"))
+        waitGone(element("sub-#23"))
+        waitGone(element("sub-pick-done"))
+        XCTAssertTrue(element("sub-#13").exists, "The others stay")
+
+        // Select All, then none.
+        scrollTo(options)
+        options.tap()
+        button("Select").tap()
+        element("sub-pick-all").tap()
+        wait(labelled("4 selected"))
+        XCTAssertEqual(element("sub-pick-all").label, "Deselect All")
+        element("sub-pick-all").tap()
+        wait(labelled("0 selected"))
+        // The bar settles with Select All back in place before ✓ ends the picking.
+        waitForLabel(element("sub-pick-all"), containing: "Select All")
+        element("sub-pick-done").tap()
+        waitGone(element("sub-pick-done"), 10)
+    }
+
+    func testPickSubIssuesOfAnEpic() {
+        launch()
+        scrollTo(element("row-#8"))
+        element("row-#8").tap()
+        let parent = element("chip-parent")
+        wait(parent)
+        parent.tap()
+
+        // An epic lists its issues by milestone; picking works across them, and "…" at the foot changes all.
+        let options = element("sub-options")
+        scrollTo(options)
+        options.tap()
+        button("Select").tap()
+        clearOfPickBar(element("sub-#4"))
+        element("sub-#8").tap()
+        element("sub-#15").tap()
+        wait(labelled("2 selected"))
+        snapshot("Picking an epic's sub-issues")
+        element("sub-pick-more").tap()
+        wait(labelled("2 issues"))
+        button("Priority").tap()
+        button("Low").tap()
+        element("sub-pick-done").tap()
+        waitGone(element("sub-pick-done"))
+        element("sub-#15").tap()
+        waitForLabel(element("chip-priority"), containing: "Low")
+    }
+
+    func testPickASubIssueUnfoldedUnderAnother() {
+        launch()
+        element("row-#9").tap()
+        wait(element("issue-title"))
+        // #13's own sub-issues unfold under it; one of them is picked with one listed in #9 itself.
+        let fold = element("sub-fold-#13")
+        scrollTo(fold)
+        fold.tap()
+        wait(element("sub-#29"))
+        element("sub-options").tap()
+        button("Select").tap()
+        clearOfPickBar(element("sub-#28"))
+        XCTAssertTrue(element("sub-fold-#13").exists, "The arrow stays while picking")
+        element("sub-#29").tap()
+        element("sub-#28").tap()
+        wait(labelled("2 selected"))
+        snapshot("Picking a sub-issue of a sub-issue")
+        // #29 is on no board, so its menu offers Add to Project in place of Status; Assign to Me suits both.
+        element("sub-#29").press(forDuration: 1.2)
+        wait(labelled("2 issues"))
+        XCTAssertFalse(app.keyboards.firstMatch.exists, "No on-screen keyboard comes up with the menu")
+        snapshot("Menu of a picked sub-issue of a sub-issue")
+        button("Assign to Me").tap()
+        element("sub-pick-done").tap()
+        waitGone(element("sub-pick-done"))
+        element("sub-#29").tap()
+        waitForLabel(element("chip-assignee"), containing: "jordan")
+    }
+
+    /// Moves the page up a little until the sub-issue is clear of the bar that picking brings at the foot.
+    private func clearOfPickBar(_ row: XCUIElement) {
+        let bar = element("sub-pick-parent")
+        wait(bar)
+        var drags = 0
+        while row.frame.maxY > bar.frame.minY - 16, drags < 6 {
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+                .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+            drags += 1
+        }
+    }
+
     func testSubIssuesOfASubIssueUnfoldUnderIt() {
         launch()
         element("row-#9").tap()
@@ -610,7 +772,7 @@ final class PhoneTests: AppTestCase {
         XCTAssertTrue(isAbove("13", "28"))
         XCTAssertTrue(isAbove("28", "10"))
 
-        element("sub-order").tap()
+        element("sub-options").tap()
         wait(button("Newest First"))
         snapshot("Sub-issue order")
         button("Newest First").tap()

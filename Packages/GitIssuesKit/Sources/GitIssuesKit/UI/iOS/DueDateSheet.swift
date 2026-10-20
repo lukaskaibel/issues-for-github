@@ -137,7 +137,7 @@ struct DueDateMenu: View {
         Menu {
             ForEach(DueDateParser.quickPicks(today: today), id: \.day) { pick in
                 Button {
-                    model.setDueDate(of: [model.item(id: item.id) ?? item], to: pick.day)
+                    model.setDueDate(of: current, to: pick.day)
                 } label: {
                     Label {
                         Text(pick.title ?? pick.day.mediumLabel(today: today))
@@ -153,9 +153,9 @@ struct DueDateMenu: View {
             } label: {
                 Label(.chooseADate, systemImage: "calendar.badge.plus")
             }
-            if item.dueDate != nil {
+            if model.targets(for: item).contains(where: { $0.dueDate != nil }) {
                 Button(role: .destructive) {
-                    model.setDueDate(of: [model.item(id: item.id) ?? item], to: nil)
+                    model.setDueDate(of: current, to: nil)
                 } label: {
                     Label(.removeDueDate, systemImage: "calendar.badge.minus")
                 }
@@ -168,6 +168,11 @@ struct DueDateMenu: View {
                 Image(systemName: "calendar")
             }
         }
+    }
+
+    /// The issue, or the picked ones it is among, as they are when a day is chosen.
+    private var current: [Item] {
+        model.targets(for: model.item(id: item.id) ?? item)
     }
 }
 #endif

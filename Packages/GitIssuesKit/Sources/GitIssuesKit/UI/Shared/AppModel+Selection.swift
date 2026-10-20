@@ -17,15 +17,22 @@ extension AppModel {
         Dictionary(uniqueKeysWithValues: orderedItems.enumerated().map { ($1.id, $0) })
     }
 
-    /// What shortcuts, the palette and the Issue menu act on: the open issue, else the picked issues (through
-    /// `targets(for:)`), else the issue under the pointer or keyboard focus.
+    /// What shortcuts, the palette and the Issue menu act on: the picked issues (through `targets(for:)`), on an
+    /// issue's page the sub-issues picked on it, else the open issue or the issue under the pointer or keyboard focus.
     var actionItem: Item? {
         if openItem == nil, let first = selectedItems.first { return first }
+        if openItem != nil, let first = pickedSubIssues.first { return first }
         return targetItem
     }
 
     /// The issues an action on `item` applies to: the whole selection when the item is part of it.
     func targets(for item: Item) -> [Item] {
+        if let pageId = openItemId ?? subIssuePickParentId, item.id != pageId {
+            // On an issue's page, its picked sub-issues; the board's picks behind the page don't count there.
+            guard pickedSubIssueIds.contains(item.id) else { return [item] }
+            let picked = pickedSubIssues
+            return picked.count > 1 ? picked : [item]
+        }
         guard selectedIds.count > 1, selectedIds.contains(item.id) else { return [item] }
         let items = selectedItems
         return items.isEmpty ? [item] : items
@@ -60,10 +67,68 @@ extension AppModel {
     }
 
     func clearSelection() {
+        // On an issue's page only its picked sub-issues show; the board's picks wait behind it.
+        if openItemId != nil, !pickedSubIssueIds.isEmpty {
+            pickedSubIssueIds = []
+            subIssuePickAnchor = nil
+            return
+        }
         guard !selectedIds.isEmpty || selectionAnchorId != nil else { return }
         selectedIds = []
         selectionAnchorId = nil
         selectionRange = []
+    }
+
+    // MARK: Sub-issues on an issue's page
+
+    /// The open issue's sub-issues that are picked and still under it, also ones further down that were unfolded; on
+    /// iPhone and iPad, those of the issue that is picking.
+    var pickedSubIssues: [Item] {
+        guard !pickedSubIssueIds.isEmpty,
+              let parentId = (openItem ?? subIssuePickParentId.flatMap { item(id: $0) })?.contentId else { return [] }
+        let below = descendants(of: [parentId]).subtracting([parentId])
+        return allItems.filter { pickedSubIssueIds.contains($0.id) && below.contains($0.contentId ?? "") }
+    }
+
+    /// iPhone and iPad: Select on an issue's sub-issues, or on one of them, which is then picked already.
+    func startPickingSubIssues(of parent: Item, with first: Item? = nil) {
+        if subIssuePickParentId != parent.id {
+            pickedSubIssueIds = []
+            subIssuePickAnchor = nil
+            subIssuePickParentId = parent.id
+        }
+        if let first, !pickedSubIssueIds.contains(first.id) { toggleSubIssuePick(first) }
+    }
+
+    /// Done, or leaving the issue: the circles go and nothing stays picked.
+    func endPickingSubIssues() {
+        subIssuePickParentId = nil
+        pickedSubIssueIds = []
+        subIssuePickAnchor = nil
+    }
+
+    func isPickingSubIssues(of item: Item) -> Bool {
+        subIssuePickParentId == item.id
+    }
+
+    /// Select All, and Deselect All with none.
+    func pickSubIssues(_ ids: [String]) {
+        pickedSubIssueIds = Set(ids)
+        subIssuePickAnchor = ids.first
+    }
+
+    /// ⌘-click on a sub-issue: picks it or puts it back.
+    func toggleSubIssuePick(_ item: Item) {
+        if pickedSubIssueIds.contains(item.id) { pickedSubIssueIds.remove(item.id) } else { pickedSubIssueIds.insert(item.id) }
+        subIssuePickAnchor = item.id
+    }
+
+    /// Shift-click on a sub-issue: everything from the last click to this one, in `order` as they are listed.
+    func extendSubIssuePick(to item: Item, in order: [String]) {
+        let anchor = subIssuePickAnchor.flatMap { order.contains($0) ? $0 : nil } ?? item.id
+        guard let from = order.firstIndex(of: anchor), let to = order.firstIndex(of: item.id) else { return }
+        pickedSubIssueIds = Set(order[min(from, to)...max(from, to)])
+        subIssuePickAnchor = anchor
     }
 
     // MARK: Acting on several issues
@@ -124,6 +189,7 @@ extension AppModel {
                     ?? newLabel(named: name, projectId: item.projectId, repoId: repoId, repo: item.repo, making: &mutations)
             else { continue }
             labels[repoId] = label
+            noteRecent(.label, label.name)
             if !item.labels.contains(where: { $0.name.caseInsensitiveCompare(label.name) == .orderedSame }) {
                 mutations.append(.editLabels(.init(contentId: contentId, add: [label], remove: [])))
             }
@@ -137,6 +203,7 @@ extension AppModel {
         var mutations: [Mutation] = []
         let label = newLabel(named: name, projectId: projectId, repoId: repoId, repo: nil, making: &mutations)
         perform(mutations)
+        noteRecent(.label, label?.name)
         return label
     }
 
