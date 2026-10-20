@@ -865,7 +865,11 @@ enum DebugRemote {
             // picksub <number> [<number>…]: picks sub-issues of the open issue, as ⌘-click on their rows does;
             // picksub to <number> picks the run up to it, as Shift-click does.
             let bits = argument.split(separator: " ").map(String.init)
-            let order = model.openItem?.contentId.map { model.detail(for: $0).subIssues.compactMap { model.item(contentId: $0.id)?.id } } ?? []
+            let order = model.openItem.flatMap { open in
+                open.contentId.map { id in
+                    model.subIssueLines(model.orderedSubIssues(of: open), in: model.detail(for: id)).compactMap { model.item(contentId: $0.sub.id)?.id }
+                }
+            } ?? []
             if bits.first == "to", let target = bits.dropFirst().first.flatMap({ item($0, model) }) {
                 model.extendSubIssuePick(to: target, in: order)
             } else {

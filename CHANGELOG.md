@@ -23,7 +23,7 @@ All notable changes to this project are recorded here. The format follows
   joined by lines as in the board's lists; theirs unfold the same way, as many levels down as GitHub has. An epic's
   issues do it too. What you unfold stays unfolded on that device. On the Mac, iPhone and iPad.
 - **Pick several sub-issues on an issue's page.** On the Mac, ⌘-click and Shift-click pick sub-issues in an issue's
-  list of sub-issues, as on the board and in the list. Right-click one of them and the menu changes all of them: move
+  list of sub-issues, also ones unfolded under another, as on the board and in the list. Right-click one of them and the menu changes all of them: move
   them under another parent with Change Parent Issue…, into an epic or out of their parent, or set their status,
   priority, assignee, labels, due date or milestone. Their status, priority and assignee buttons and the single keys
   act on all of them too, and `Esc` lets them go before it leaves the issue.
