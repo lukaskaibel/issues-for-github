@@ -35,8 +35,9 @@ struct SelectionBar: View {
                 BarAction(kind: .status, item: first, title: .status, key: "S") {
                     StatusIcon(glyph: sameStatus ? model.glyph(of: first) : .none, size: 13)
                 }
-                if model.project(of: first)?.priorityFieldId != nil {
-                    BarAction(kind: .priority, item: first, title: .priority, key: "P") {
+                // Picks from several projects: the priority of those that have one, by its name.
+                if let ranked = items.first(where: { model.project(of: $0)?.priorityFieldId != nil }) {
+                    BarAction(kind: .priority, item: ranked, title: .priority, key: "P") {
                         PriorityIcon(level: samePriority ? model.priorityLevel(of: first) : .none)
                     }
                 }

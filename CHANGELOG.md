@@ -127,6 +127,8 @@ All notable changes to this project are recorded here. The format follows
 - In a sorted view the Mac list no longer opens a gap for a drop within a section, and iPhone and iPad no longer let
   you drag rows in groups by another field than Status; `⌥↑` and `⌥↓` in the list move an issue within its section.
 - Fold All and Unfold All in one view no longer reset the folds of the project's other views.
+- With issues from several projects picked, as in My Issues, Priority and `P` are there when any of them has a
+  priority, not only when the first one does.
 - A column name typed into Add Column is kept when you click elsewhere.
 - Hiding the project at the top of the sidebar works from the Inbox, My Issues, its milestones and its roadmap too.
 - `⌘S` isn't offered for a view while offline or while it is being saved, and the palette no longer offers Unsubscribe

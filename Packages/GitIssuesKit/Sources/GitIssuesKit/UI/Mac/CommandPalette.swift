@@ -356,9 +356,9 @@ private struct RootPalette: View {
             list.append(PaletteCommand(id: "status", title: item.isOnBoard ? .changeStatusCommand : .addToProjectCommand, section: section, icon: AnyView(StatusIcon(glyph: model.glyph(of: item))), keys: ["S"]) {
                 model.overlay = .palette(.status(itemId: item.id))
             })
-            if model.project(of: item)?.priorityFieldId != nil {
+            if let ranked = targets.first(where: { model.project(of: $0)?.priorityFieldId != nil }) {
                 list.append(PaletteCommand(id: "priority", title: .setPriorityCommand, section: section, icon: AnyView(PriorityIcon(level: .high)), keys: ["P"]) {
-                    model.overlay = .palette(.priority(itemId: item.id))
+                    model.overlay = .palette(.priority(itemId: ranked.id))
                 })
             }
             if item.kind != .draft {

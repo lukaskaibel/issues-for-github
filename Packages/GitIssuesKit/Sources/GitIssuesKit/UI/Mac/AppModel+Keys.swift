@@ -295,8 +295,9 @@ extension AppModel {
         case "s":
             overlay = .palette(.status(itemId: item.id))
         case "p":
-            guard project(of: item)?.priorityFieldId != nil else { return false }
-            overlay = .palette(.priority(itemId: item.id))
+            // Of picks from several projects, those that have a priority.
+            guard let ranked = targets(for: item).first(where: { project(of: $0)?.priorityFieldId != nil }) else { return false }
+            overlay = .palette(.priority(itemId: ranked.id))
         case "a":
             guard item.kind != .draft else { return false }
             overlay = .palette(.assignees(itemId: item.id))
