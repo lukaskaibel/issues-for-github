@@ -36265,6 +36265,66 @@
         }
       }
     },
+    "milestoneNameTaken" : {
+      "comment" : "Mac and iPhone/iPad, milestone editor: note at the bottom (Mac) or under the fields (iPhone, iPad) while the typed name is that of another open milestone of the board; Create or Save is off then. %(name)@ is the typed name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es gibt schon einen offenen Meilenstein namens „%@“."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There is an open milestone named “%(name)@” already."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya hay un hito abierto llamado “%@”."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un jalon ouvert nommé « %@ » existe déjà."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」という名前の未完了のマイルストーンがすでにあります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” 이름의 열린 마일스톤이 이미 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Já existe um marco aberto chamado “%@”."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открытая веха «%@» уже есть."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已有名为“%@”的未完成里程碑。"
+          }
+        }
+      }
+    },
     "milestoneOptions" : {
       "comment" : "Accessibility label and tooltip of the … menu of a milestone.",
       "extractionState" : "manual",

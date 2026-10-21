@@ -113,7 +113,8 @@ All notable changes to this project are recorded here. The format follows
   Forward work again after closing an issue in a project with views; deleting a sub-issue opened from its parent goes
   back to the parent.
 - The milestone picker no longer takes the first digit you type as a shortcut when milestones are versions ("0.4"),
-  and a name typed there becomes the name of **New Milestone…**, on the Mac, iPhone and iPad.
+  and a name typed there becomes the name of **New Milestone…**, on the Mac, iPhone and iPad. The milestone editor
+  says why Create is off when an open milestone has that name already.
 - An issue's Epic row is offered only where picking an epic doesn't take the issue from another parent, and not in
   projects without epics.
 - On iPhone and iPad, sub-issues listed in an issue show their assignees as just changed.
