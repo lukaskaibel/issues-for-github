@@ -227,6 +227,7 @@ public final class AppModel {
     private(set) var projectLooks: ProjectLooks
 
     // Derived from the above for the current scope.
+    /// The columns the board shows, without those you hid. The list has every status: see `listColumns`.
     private(set) var columns: [BoardColumn] = []
     private(set) var sections: [ListSection] = []
     private(set) var glyphs: [String: StatusGlyph] = [:]
@@ -1201,7 +1202,7 @@ public final class AppModel {
         if let scope {
             newSections = sections(for: scope)
             switch scope {
-            case .project, .milestone: newColumns = columns(for: scope)
+            case .project, .milestone: newColumns = shownColumns(for: scope)
             default: break
             }
         }

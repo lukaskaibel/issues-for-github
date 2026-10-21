@@ -422,6 +422,34 @@ extension AppModel {
 
     // MARK: Columns
 
+    /// Moves a status column to `index` among `shown`, the status columns a board shows in their order, and saves the
+    /// order. Columns the board leaves out (hidden ones, a milestone's empty backlog) keep their places and stay:
+    /// saving only the columns on screen would delete the others on GitHub.
+    func moveColumn(_ id: String, among shown: [String], to index: Int, projectId: String) {
+        let options = statusOptions(projectId: projectId)
+        let order = Self.columnOrder(options.map(\.id), moving: id, among: shown, to: index)
+        guard order != options.map(\.id) else { return }
+        withAnimation(Theme.spring) {
+            saveColumns(projectId: projectId, order.compactMap { id in options.first { $0.id == id }?.remote })
+        }
+    }
+
+    /// Every status in its new order: `id` at `index` among the shown ones without it, right after the shown
+    /// column before it (or right before the one after it).
+    static func columnOrder(_ all: [String], moving id: String, among shown: [String], to index: Int) -> [String] {
+        let others = shown.filter { $0 != id }
+        let index = min(max(index, 0), others.count)
+        var order = all.filter { $0 != id }
+        if index > 0, let after = order.firstIndex(of: others[index - 1]) {
+            order.insert(id, at: after + 1)
+        } else if index < others.count, let before = order.firstIndex(of: others[index]) {
+            order.insert(id, at: before)
+        } else {
+            order.append(id)
+        }
+        return order
+    }
+
     /// Saves a new set of status columns. Shown at once; rolled back if GitHub refuses.
     func saveColumns(projectId: String, _ newOptions: [RemoteOption]) {
         guard let fieldId = projects.first(where: { $0.id == projectId })?.statusFieldId else { return }

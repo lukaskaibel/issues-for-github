@@ -309,3 +309,33 @@ struct ViewTypesTests {
         #expect(picked.start == nil && picked.end == nil)
     }
 }
+
+@Suite("Columns you hide on a board")
+@MainActor
+struct HiddenColumnsTests {
+    @Test("Moving a column among those shown keeps the ones the board leaves out, in their places")
+    func columnOrder() {
+        let all = ["backlog", "todo", "doing", "review", "done"]
+        // Backlog and Review hidden: Done moves left past Doing, Review stays after Doing.
+        #expect(AppModel.columnOrder(all, moving: "done", among: ["todo", "doing", "done"], to: 1) == ["backlog", "todo", "done", "doing", "review"])
+        // Todo to the far left goes before the first shown column, after the hidden Backlog.
+        #expect(AppModel.columnOrder(all, moving: "doing", among: ["todo", "doing", "done"], to: 0) == ["backlog", "doing", "todo", "review", "done"])
+        // To the end, after the last shown column.
+        #expect(AppModel.columnOrder(all, moving: "todo", among: ["todo", "doing", "done"], to: 2) == ["backlog", "doing", "review", "done", "todo"])
+        // Nothing hidden: a plain move.
+        #expect(AppModel.columnOrder(all, moving: "backlog", among: all, to: 2) == ["todo", "doing", "backlog", "review", "done"])
+        #expect(Set(AppModel.columnOrder(all, moving: "review", among: ["review"], to: 0)) == Set(all))
+    }
+
+    @Test("Display choices saved before columns could be hidden still read, and hidden columns are kept")
+    func storedDisplay() throws {
+        let old = try JSONDecoder().decode(ViewDisplay.self, from: Data(#"{"layout":"board","columnFieldId":"F-ws"}"#.utf8))
+        #expect(old.hiddenColumnIds == nil)
+        #expect(old.columnFieldId == "F-ws")
+
+        let hiding = ViewDisplay(hiddenColumnIds: ["done", "F-ws/w1"])
+        #expect(!hiding.isEmpty)
+        let read = try JSONDecoder().decode(ViewDisplay.self, from: JSONEncoder().encode(hiding))
+        #expect(read == hiding)
+    }
+}

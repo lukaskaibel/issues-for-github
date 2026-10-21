@@ -319,6 +319,27 @@ struct GroupIcon: View {
     }
 }
 
+/// The icon before a board column's name: its status, or for a column of another field its option's colour or an
+/// iteration.
+struct ColumnIcon: View {
+    var column: BoardColumn
+    var size: CGFloat = 14
+
+    var body: some View {
+        if let value = column.value {
+            if let dot = column.dot {
+                GroupIcon(icon: .dot(dot), size: size)
+            } else if value.value?.iterationId != nil {
+                GroupIcon(icon: .iteration(current: column.detail == String(localized: .currentIteration)), size: size)
+            } else {
+                StatusIcon(glyph: column.glyph, size: size)
+            }
+        } else {
+            StatusIcon(glyph: column.glyph, size: size)
+        }
+    }
+}
+
 /// GitHub's iterations, its cycles: two arrows going round.
 struct IterationIcon: View {
     var size: CGFloat = 14

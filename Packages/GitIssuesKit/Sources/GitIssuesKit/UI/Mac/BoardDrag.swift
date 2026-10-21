@@ -405,13 +405,11 @@ final class BoardDrag {
             withTransaction(transaction) {
                 let columns = model.columns
                 if current.to != current.from, let projectId = model.currentProjectId {
-                    var ids = columns.compactMap { $0.option?.id }
+                    // Among the columns on screen; those the board leaves out keep their places.
+                    let shown = columns.compactMap { $0.option?.id }
                     let offset = columns.first?.option == nil ? 1 : 0
-                    if ids.indices.contains(current.from - offset), current.to - offset <= ids.count - 1 {
-                        let moved = ids.remove(at: current.from - offset)
-                        ids.insert(moved, at: current.to - offset)
-                        let options = model.statusOptions(projectId: projectId)
-                        model.saveColumns(projectId: projectId, ids.compactMap { id in options.first { $0.id == id }?.remote })
+                    if shown.indices.contains(current.from - offset), current.to - offset <= shown.count - 1 {
+                        model.moveColumn(shown[current.from - offset], among: shown, to: current.to - offset, projectId: projectId)
                     }
                 }
                 column = nil

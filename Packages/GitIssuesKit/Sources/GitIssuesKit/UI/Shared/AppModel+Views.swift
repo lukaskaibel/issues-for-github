@@ -25,6 +25,8 @@ struct ViewDisplay: Codable, Equatable {
     var groupFieldId: String?
     var sort: [ViewSort]?
     var visibleFieldIds: [String]?
+    /// The board's columns you hid, by their ids. Only here: hiding a column changes nothing on GitHub.
+    var hiddenColumnIds: [String]?
 
     var isEmpty: Bool { self == ViewDisplay() }
 }
@@ -236,6 +238,7 @@ extension AppModel {
         if display.groupFieldId == view.groupByFieldId { display.groupFieldId = nil }
         if display.sort == view.sortBy { display.sort = nil }
         if display.visibleFieldIds == view.visibleFieldIds { display.visibleFieldIds = nil }
+        if display.hiddenColumnIds?.isEmpty == true { display.hiddenColumnIds = nil }
         viewDisplays[view.id] = display.isEmpty ? nil : display
         rebuild()
     }
@@ -273,6 +276,43 @@ extension AppModel {
         changeDisplay(of: view) { $0.visibleFieldIds = shown }
     }
 
+    /// The columns of a view's board you hid.
+    func hiddenColumnIds(of view: ProjectView) -> Set<String> {
+        Set(display(of: view).hiddenColumnIds ?? [])
+    }
+
+    /// Hides a column of a view's board, or shows it again. Its cards leave the board with it, and a selection or the
+    /// keyboard focus on them goes.
+    func setColumn(_ columnId: String, hidden: Bool, of view: ProjectView) {
+        var ids = display(of: view).hiddenColumnIds ?? []
+        ids.removeAll { $0 == columnId }
+        if hidden { ids.append(columnId) }
+        withAnimation(Theme.spring) {
+            changeDisplay(of: view) { $0.hiddenColumnIds = ids }
+        }
+        guard hidden else { return }
+        let gone = Set(columns(projectId: view.projectId).filter { $0.id == columnId }.flatMap(\.nesting.members).map(\.id))
+        selectedIds.subtract(gone)
+        if let focused = focusedItemId, gone.contains(focused) { focusedItemId = nil }
+        if let hovered = hoveredItemId, gone.contains(hovered) { hoveredItemId = nil }
+    }
+
+    /// The columns a board shows: a view's, without those you hid. A milestone's board shows every column.
+    func shownColumns(for scope: Scope) -> [BoardColumn] {
+        let all = columns(for: scope)
+        guard case .project(let projectId) = scope, let view = currentView(projectId: projectId) else { return all }
+        let hidden = hiddenColumnIds(of: view)
+        return hidden.isEmpty ? all : all.filter { !hidden.contains($0.id) }
+    }
+
+    /// The columns you hid on the board of a project's open view, in the board's order, with their cards.
+    func hiddenColumns(projectId: String) -> [BoardColumn] {
+        guard let view = currentView(projectId: projectId) else { return [] }
+        let hidden = hiddenColumnIds(of: view)
+        guard !hidden.isEmpty else { return [] }
+        return columns(projectId: projectId).filter { hidden.contains($0.id) }
+    }
+
     func resetDisplay(of view: ProjectView) {
         viewDisplays[view.id] = nil
         followLayout(of: view)
@@ -294,7 +334,7 @@ extension AppModel {
     /// Whether some of your display choices stay yours, because GitHub can't change them in an existing view.
     func displayStaysYours(_ view: ProjectView) -> Bool {
         let display = display(of: view)
-        return display.columnFieldId != nil || display.groupFieldId != nil || display.sort != nil
+        return display.columnFieldId != nil || display.groupFieldId != nil || display.sort != nil || display.hiddenColumnIds != nil
     }
 
     // MARK: Filter

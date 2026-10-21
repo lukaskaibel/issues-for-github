@@ -33,10 +33,16 @@ struct BoardView: View {
                         .zIndex(lifted ? 1 : 0)
                     }
                     .animation(Theme.spring, value: drag.column?.to)
-                    // A milestone's board shows the board's columns; they are changed on the board itself.
-                    if model.currentProject?.viewerCanUpdate == true, model.currentMilestoneTitle == nil, columns.allSatisfy({ $0.value == nil }) {
-                        AddColumnButton()
-                            .frame(width: 180, alignment: .leading)
+                    if showsTrailing {
+                        VStack(alignment: .leading, spacing: 14) {
+                            if showsAddColumn {
+                                AddColumnButton()
+                            }
+                            if let projectId = model.currentProjectId, model.currentView != nil {
+                                HiddenColumnsList(projectId: projectId)
+                            }
+                        }
+                        .frame(width: 180, alignment: .leading)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -98,10 +104,20 @@ struct BoardView: View {
         }
     }
 
+    /// A milestone's board shows the board's columns; they are changed on the board itself.
+    private var showsAddColumn: Bool {
+        model.currentProject?.viewerCanUpdate == true && model.currentMilestoneTitle == nil && model.columns.allSatisfy { $0.value == nil }
+    }
+
+    /// After the columns: Add Column, and the columns you hid.
+    private var showsTrailing: Bool {
+        showsAddColumn || model.currentView != nil && model.currentProjectId.map { !model.hiddenColumns(projectId: $0).isEmpty } == true
+    }
+
     private func columnWidth(available: CGFloat, count: Int) -> CGFloat {
         guard count > 0 else { return 280 }
-        let addColumn: CGFloat = model.currentProject?.viewerCanUpdate == true && model.currentMilestoneTitle == nil ? 192 : 0
-        let fitted = (available - 32 - addColumn - CGFloat(count - 1) * 12) / CGFloat(count)
+        let trailing: CGFloat = showsTrailing ? 192 : 0
+        let fitted = (available - 32 - trailing - CGFloat(count - 1) * 12) / CGFloat(count)
         return min(max(fitted, 248), 320)
     }
 
@@ -704,18 +720,7 @@ struct ColumnHeader: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            if let value = column.value {
-                // A column of another field: its option's colour, or an iteration.
-                if let dot = column.dot {
-                    GroupIcon(icon: .dot(dot))
-                } else if value.value?.iterationId != nil {
-                    GroupIcon(icon: .iteration(current: column.detail == String(localized: .currentIteration)))
-                } else {
-                    StatusIcon(glyph: column.glyph)
-                }
-            } else {
-                StatusIcon(glyph: column.glyph)
-            }
+            ColumnIcon(column: column)
             if renaming {
                 TextField(.columnNamePlaceholder, text: $name)
                     .textFieldStyle(.plain)
@@ -741,7 +746,7 @@ struct ColumnHeader: View {
             }
             Spacer(minLength: 0)
 
-            if canEdit, column.option != nil {
+            if canEdit && column.option != nil || model.currentView != nil {
                 GlassMenuButton(label: .columnOptions, size: CGSize(width: 22, height: 22)) {
                     columnMenu(includingNewIssue: false)
                 }
@@ -792,6 +797,11 @@ struct ColumnHeader: View {
         statuses.firstIndex { $0.id == column.id } ?? 0
     }
 
+    /// The status columns the board shows, which Move Left and Move Right step through.
+    private var shownStatuses: [String] {
+        model.columns.compactMap { $0.option?.id }
+    }
+
     private func startRename() {
         name = column.title
         renaming = true
@@ -815,12 +825,10 @@ struct ColumnHeader: View {
     }
 
     private func move(_ delta: Int) {
-        guard let projectId = model.currentProjectId else { return }
-        var options = statuses.map(\.remote)
-        let destination = position + delta
-        guard options.indices.contains(position), options.indices.contains(destination) else { return }
-        options.swapAt(position, destination)
-        withAnimation(Theme.spring) { model.saveColumns(projectId: projectId, options) }
+        let shown = shownStatuses
+        guard let projectId = model.currentProjectId, let index = shown.firstIndex(of: column.id),
+              shown.indices.contains(index + delta) else { return }
+        model.moveColumn(column.id, among: shown, to: index + delta, projectId: projectId)
     }
 
     private func delete() {
@@ -833,10 +841,11 @@ struct ColumnHeader: View {
 }
 
 extension ColumnHeader {
-    /// Rename, colour, move and delete the column, and a new issue in it, as a menu in glass.
+    /// Rename, colour, move, hide and delete the column, and a new issue in it, as a menu in glass.
     func columnMenu(includingNewIssue: Bool) -> NSMenu {
         let menu = MenuBuilder()
-        if canEdit, column.option != nil {
+        let editable = canEdit && column.option != nil
+        if editable {
             menu.item(.renameEllipsis, "pencil") { startRename() }
             menu.submenu(.colour, "paintpalette") { colours in
                 for color in Defaults.optionColors {
@@ -848,9 +857,19 @@ extension ColumnHeader {
                 }
             }
             menu.divider()
-            menu.item(.moveLeft, "arrow.left", enabled: position != 0) { move(-1) }
-            menu.item(.moveRight, "arrow.right", enabled: position != statuses.count - 1) { move(1) }
+            let shown = shownStatuses
+            menu.item(.moveLeft, "arrow.left", enabled: shown.first != column.id) { move(-1) }
+            menu.item(.moveRight, "arrow.right", enabled: shown.last != column.id) { move(1) }
             menu.divider()
+        }
+        // Hidden here only, for a view's board; one column always stays.
+        if let view = model.currentView {
+            menu.item(.hideColumn, "eye.slash", enabled: model.columns.count > 1) { [model, id = column.id] in
+                model.setColumn(id, hidden: true, of: view)
+            }
+            menu.divider()
+        }
+        if editable {
             menu.item(.deleteColumnEllipsis, "trash", enabled: statuses.count > 1, destructive: true) { confirmDelete = true }
         }
         if includingNewIssue {
@@ -860,7 +879,44 @@ extension ColumnHeader {
         return menu.build()
     }
 
-    /// GitHub's name for a colour ("GRAY") as the menu shows it.
+}
+
+/// The columns you hid on the board, at its end: each with its count, shown again with a click.
+private struct HiddenColumnsList: View {
+    @Environment(AppModel.self) private var model
+    var projectId: String
+
+    var body: some View {
+        let hidden = model.hiddenColumns(projectId: projectId)
+        if !hidden.isEmpty, let view = model.currentView {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(.hiddenColumns)
+                    .font(.small)
+                    .foregroundStyle(Theme.textTertiary)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 4)
+                ForEach(hidden) { column in
+                    Button {
+                        model.setColumn(column.id, hidden: false, of: view)
+                    } label: {
+                        HStack(spacing: 8) {
+                            ColumnIcon(column: column)
+                            Text(column.title).lineLimit(1)
+                            Text("\(column.count)").foregroundStyle(Theme.textTertiary).monospacedDigit()
+                            Spacer(minLength: 0)
+                        }
+                        .font(.ui)
+                        .foregroundStyle(Theme.textSecondary)
+                        .padding(.horizontal, 8)
+                        .frame(height: 28)
+                        .hoverFill()
+                    }
+                    .buttonStyle(PlainPressStyle())
+                    .help(Text(.showColumnAgainTooltip))
+                }
+            }
+        }
+    }
 }
 
 struct AddColumnButton: View {
