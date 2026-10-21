@@ -253,12 +253,12 @@ private struct InboxRow: View {
                         .foregroundStyle(onAccent ? Color.white : Theme.text)
                         .lineLimit(1)
                     Spacer(minLength: 4)
-                    if !hovering {
-                        Text(inboxTime(entry.updatedAt, now: model.inboxClock))
-                            .font(.small)
-                            .monospacedDigit()
-                            .foregroundStyle(onAccent ? Color.white.opacity(0.8) : Theme.textTertiary)
-                    }
+                    // Gives way to the buttons; "Yesterday" is wider than they are.
+                    Text(inboxTime(entry.updatedAt, now: model.inboxClock))
+                        .font(.small)
+                        .monospacedDigit()
+                        .foregroundStyle(onAccent ? Color.white.opacity(0.8) : Theme.textTertiary)
+                        .opacity(hovering ? 0 : 1)
                 }
                 HStack(spacing: 6) {
                     InboxSubjectIcon(entry: entry, item: item, tint: onAccent ? .white : nil)
@@ -280,19 +280,26 @@ private struct InboxRow: View {
                         .lineLimit(1)
                 }
             }
-            if hovering {
-                HStack(spacing: 2) {
-                    IconButton(systemName: unread ? "circle.inset.filled" : "circle", label: String(localized: unread ? .markAsReadWithShortcut : .markAsUnreadWithShortcut), size: 24) {
-                        model.toggleRead(model.inboxTargets(for: entry))
-                    }
-                    IconButton(systemName: "archivebox", label: String(localized: .archiveWithShortcut), size: 24) {
-                        model.archive(model.inboxTargets(for: entry))
-                    }
+        }
+        // The buttons are always there and only show under the pointer, over the end of the lines on the row's colour:
+        // the lines keep their width, so a hover lays nothing out again and draws no text. Lines that made room for the
+        // buttons were drawn again on every frame of the fade, and buttons put in on hover rebuilt the row's layers.
+        .overlay(alignment: .topTrailing) {
+            HStack(spacing: 2) {
+                IconButton(systemName: unread ? "circle.inset.filled" : "circle", label: String(localized: unread ? .markAsReadWithShortcut : .markAsUnreadWithShortcut), size: 24) {
+                    model.toggleRead(model.inboxTargets(for: entry))
                 }
-                .environment(\.colorScheme, onAccent ? .dark : colorScheme)
-                .padding(.top, 2)
-                .transition(.opacity)
+                IconButton(systemName: "archivebox", label: String(localized: .archiveWithShortcut), size: 24) {
+                    model.archive(model.inboxTargets(for: entry))
+                }
             }
+            .environment(\.colorScheme, onAccent ? .dark : colorScheme)
+            .padding(.top, 2)
+            // The lines fade out under them rather than stop short.
+            .padding(.leading, 18)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .background(LinearGradient(stops: [.init(color: ground.opacity(0), location: 0), .init(color: ground, location: 18 / 68)], startPoint: .leading, endPoint: .trailing))
+            .opacity(hovering ? 1 : 0)
         }
         .padding(.leading, 4)
         .padding(.trailing, 10)
