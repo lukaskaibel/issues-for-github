@@ -1295,6 +1295,8 @@ public final class AppModel {
         focusedItemId = nil
         clearSelection()
         peekItemId = nil
+        // Picked notifications are let go too, as the board's picks are.
+        if newScope != .inbox { inboxPicked = [] }
         if let id = newScope.projectId {
             UserDefaults.standard.set(id, forKey: "selectedProject")
             lastProjectId = id
