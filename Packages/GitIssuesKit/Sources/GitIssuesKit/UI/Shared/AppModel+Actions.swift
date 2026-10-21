@@ -114,7 +114,7 @@ extension AppModel {
     /// what hangs under it. A sub-issue whose parent is in the column joins the parent's sub-issues; any other
     /// card goes in front of or after the cards that stand on their own, never between a parent and its sub-issues.
     /// Dropped between two issues of an epic's group, or right below its header (`belowEpicHeader`), it joins the epic.
-    func drop(_ item: Item, in column: BoardColumn, at index: Int, belowEpicHeader: String? = nil) {
+    func drop(_ item: Item, in column: BoardColumn, at index: Int, belowEpicHeader: String? = nil, milestone: String? = nil) {
         guard let projectId = item.projectId else { return }
         let itemEpic = epic(of: item)?.contentId
         let landing = column.landing(of: item, at: index, epic: itemEpic, belowHeader: belowEpicHeader)
@@ -128,7 +128,7 @@ extension AppModel {
             )))
         }
         // A view in an order of its own keeps it; only an unordered board has places to drop into, as on GitHub.
-        if !isOrdered(projectId: projectId), let move = placement(of: item, in: column, at: landing, projectId: projectId) {
+        if !isOrdered(projectId: projectId, milestone: milestone), let move = placement(of: item, in: column, at: landing, projectId: projectId) {
             mutations.append(move)
         }
         // A sub-issue dropped onto a folded parent would vanish into it, so the parent opens.
@@ -147,9 +147,13 @@ extension AppModel {
         return statusMutations(item, column.option)
     }
 
-    /// Whether the view open in a project has an order of its own, which dragging can't change.
-    func isOrdered(projectId: String?) -> Bool {
-        guard let view = currentView(projectId: projectId) else { return false }
+    /// Whether the board or list on screen has an order of its own, which dragging can't change: that of the
+    /// project's open view. A milestone's board and list keep the board's order, whatever the view.
+    func isOrdered(projectId: String?, milestone: String? = nil) -> Bool {
+        #if os(macOS)
+        if currentMilestoneTitle != nil { return false }
+        #endif
+        guard milestone == nil, let view = currentView(projectId: projectId) else { return false }
         return !sort(of: view).isEmpty
     }
 
@@ -189,10 +193,10 @@ extension AppModel {
     /// Drops `members`, the issues of an epic's group in a column, all of them together into a column at `index`,
     /// counted among that column's issues as shown without them. They take the column's status and keep their
     /// order, in front of or after what stands there on its own, or among the epic's issues the column has already.
-    func drop(_ group: Nesting.EpicGroup, members: [Item], in column: BoardColumn, at index: Int) {
+    func drop(_ group: Nesting.EpicGroup, members: [Item], in column: BoardColumn, at index: Int, milestone: String? = nil) {
         guard let projectId = members.first?.projectId else { return }
         let landing = column.landing(ofGroup: group.contentId, moving: Set(members.map(\.id)), at: index)
-        let placing = isOrdered(projectId: projectId) ? [] : placements(of: members, in: column, at: landing, projectId: projectId)
+        let placing = isOrdered(projectId: projectId, milestone: milestone) ? [] : placements(of: members, in: column, at: landing, projectId: projectId)
         if column.value != nil {
             withAnimation(Theme.spring) { perform(members.flatMap { columnMutations($0, column) } + placing) }
             return
@@ -400,13 +404,11 @@ extension AppModel {
     func delete(_ item: Item) {
         deletionCandidate = nil
         let wasCurrent = openItemId == item.id || cursorId == item.id
-        if openItemId == item.id { closeDetail() }
-        // The keyboard carries on from the issue after it (or before it, at the end), so deleting doesn't send
-        // you back to the top.
-        let order = wasCurrent ? orderedItems : []
-        let next = order.firstIndex { $0.id == item.id }.flatMap { index in
-            order.indices.contains(index + 1) ? order[index + 1] : index > 0 ? order[index - 1] : nil
-        }
+        // Back to where it was opened from, as Escape goes: its parent, if it was opened from there.
+        if openItemId == item.id { leaveIssue() }
+        // The keyboard carries on from the issue after it in its column or section (or before it, at the end), so
+        // deleting doesn't send you back to the top.
+        let next = wasCurrent ? Self.neighbour(of: item.id, in: focusGroups) { $0 != item.id } : nil
         if focusedItemId == item.id { focusedItemId = nil }
         if hoveredItemId == item.id { hoveredItemId = nil }
         history.removeAll { $0.itemId == item.id }
@@ -417,10 +419,17 @@ extension AppModel {
                 isDraft: item.kind == .draft, label: "\(item.displayNumber) \(item.title)"
             ))])
         }
-        if let next { moveFocus(to: next.id) }
+        if let next { moveFocus(to: next) }
     }
 
     // MARK: Columns
+
+    /// How many issues of the whole project have a status, epics and those a view or milestone leaves out included:
+    /// all of them lose it when its column is deleted.
+    func issueCount(projectId: String?, statusId: String?) -> Int {
+        guard let projectId, let statusId else { return 0 }
+        return allItems.filter { $0.projectId == projectId && $0.statusId == statusId }.count
+    }
 
     /// Moves a status column to `index` among `shown`, the status columns a board shows in their order, and saves the
     /// order. Columns the board leaves out (hidden ones, a milestone's empty backlog) keep their places and stay:
@@ -554,12 +563,13 @@ extension AppModel {
         if hidden, scope == .repository(repo.id) { select(.myIssues) }
     }
 
-    /// Hides a project from the sidebar or brings it back. Hiding the one on screen moves to the next.
+    /// Hides a project from the sidebar or brings it back. Hiding the one on screen (its board, a milestone or its
+    /// roadmap) moves to the next.
     func setHidden(_ project: Project, _ hidden: Bool) {
         withAnimation(Theme.spring) {
             if hidden { hiddenProjectIds.insert(project.id) } else { hiddenProjectIds.remove(project.id) }
         }
-        guard hidden, scope == .project(project.id) else { return }
+        guard hidden, scope?.projectId == project.id else { return }
         if let next = projects.first(where: { !$0.closed && !hiddenProjectIds.contains($0.id) }) {
             select(.project(next.id))
         } else {

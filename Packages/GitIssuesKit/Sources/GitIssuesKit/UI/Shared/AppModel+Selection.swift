@@ -7,14 +7,13 @@ extension AppModel {
     /// The picked issues, in the order they read on screen.
     var selectedItems: [Item] {
         guard !selectedIds.isEmpty else { return [] }
-        return scopedItems.filter { selectedIds.contains($0.id) }.sorted { a, b in
-            let order = orderIndex
-            return (order[a.id] ?? .max) < (order[b.id] ?? .max)
-        }
+        let order = orderIndex
+        return scopedItems.filter { selectedIds.contains($0.id) }.sorted { (order[$0.id] ?? .max) < (order[$1.id] ?? .max) }
     }
 
+    /// Where each issue first reads on screen. One can read twice, such as in the groups of both its assignees.
     private var orderIndex: [String: Int] {
-        Dictionary(uniqueKeysWithValues: orderedItems.enumerated().map { ($1.id, $0) })
+        Dictionary(orderedItems.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     /// What shortcuts, the palette and the Issue menu act on: the picked issues (through `targets(for:)`), on an
@@ -33,6 +32,8 @@ extension AppModel {
             let picked = pickedSubIssues
             return picked.count > 1 ? picked : [item]
         }
+        // Nor for the issue of the page itself, though it may be one of them: the page changes only its issue.
+        if item.id == openItemId { return [item] }
         guard selectedIds.count > 1, selectedIds.contains(item.id) else { return [item] }
         let items = selectedItems
         return items.isEmpty ? [item] : items

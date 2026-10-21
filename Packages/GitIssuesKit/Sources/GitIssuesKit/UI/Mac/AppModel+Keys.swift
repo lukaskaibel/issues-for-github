@@ -20,6 +20,11 @@ extension AppModel {
         moveFocus(to: target.items[min(row, target.items.count - 1)].id)
     }
 
+    /// ↓ ↑ and J K: down or up the column on the board, else through the list, or to the next or previous issue.
+    private func stepDown(_ delta: Int) {
+        if viewMode == .board, openItem == nil, currentProjectId != nil { stepWithinColumn(delta) } else { step(delta) }
+    }
+
     private func stepWithinColumn(_ delta: Int) {
         let current = cursorId
         guard let column = columns.first(where: { column in column.items.contains { $0.id == current } }),
@@ -199,17 +204,11 @@ extension AppModel {
             pendingGoTo = nil
             switch key {
             case "b":
-                // From the Inbox or My Issues, back to the project used last.
-                if currentProjectId == nil { selectLastProject() }
-                if currentProjectId != nil {
-                    closeDetail()
-                    withAnimation(Theme.spring) { viewMode = .board }
-                }
+                // From the Inbox, My Issues, a repository or a roadmap, back to the project used last.
+                showProjectLayout(.board)
                 return true
             case "l":
-                if scope == .inbox { selectLastProject() }
-                closeDetail()
-                withAnimation(Theme.spring) { viewMode = .list }
+                showProjectLayout(.list)
                 return true
             case "m":
                 select(.myIssues)
@@ -221,11 +220,7 @@ extension AppModel {
                 overlay = .palette(.projects)
                 return true
             case "r":
-                if scopeProjectId == nil { selectLastProject() }
-                if let projectId = scopeProjectId {
-                    closeDetail()
-                    select(.roadmap(projectId))
-                }
+                showRoadmap()
                 return true
             default:
                 break
@@ -234,10 +229,10 @@ extension AppModel {
 
         switch event.keyCode {
         case 125: // down
-            if viewMode == .board, openItem == nil, currentProjectId != nil { stepWithinColumn(1) } else { step(1) }
+            stepDown(1)
             return true
         case 126: // up
-            if viewMode == .board, openItem == nil, currentProjectId != nil { stepWithinColumn(-1) } else { step(-1) }
+            stepDown(-1)
             return true
         case 123: // left
             stepColumn(-1)
@@ -279,10 +274,10 @@ extension AppModel {
             overlay = .palette(.root)
             return true
         case "j":
-            step(1)
+            stepDown(1)
             return true
         case "k":
-            step(-1)
+            stepDown(-1)
             return true
         default:
             break
@@ -362,7 +357,11 @@ extension AppModel {
         if let delta {
             if shift, let current = inboxSelected ?? visibleInbox.first {
                 // Shift with the arrows or J/K picks a run, as in the list.
-                if inboxPicked.isEmpty { inboxPicked = [current.id] }
+                if inboxPicked.isEmpty {
+                    inboxPicked = [current.id]
+                    inboxPickAnchor = current.id
+                    inboxPickRange = []
+                }
                 stepInbox(delta)
                 if let reached = inboxSelected { extendInboxPick(to: reached) }
             } else {

@@ -482,7 +482,7 @@ struct AccountDropdown: View {
             model.settingsRequest += 1
         case .signOut:
             close()
-            model.signOut()
+            model.requestSignOut()
         case .signOutEverywhere:
             close()
             model.confirmSignOutEverywhere = true

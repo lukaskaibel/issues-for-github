@@ -720,7 +720,8 @@ private struct PropertiesColumn: View {
                 }
                 let epic = model.epic(of: item)
                 let parentIsEpic = epic != nil && epic?.contentId == item.parentId
-                if model.canRelate(item), !item.isEpic {
+                // Chosen right under an epic or under nothing yet, as on the Mac; under another issue it only opens.
+                if model.canRelate(item), !item.isEpic, epic != nil || item.parentId == nil && model.hasEpics(item) {
                     row(.epic) {
                         Button {
                             // Under another issue, the epic comes with that parent: it opens instead.
@@ -1330,8 +1331,10 @@ private struct MobileSubIssueRow: View {
                             .foregroundStyle(Theme.textTertiary)
                             .accessibilityLabel(.opensOnGitHub)
                     }
-                    if !sub.assignees.isEmpty {
-                        AvatarStack(people: sub.assignees, size: 20)
+                    // The card's people, which change at once; the sub-issue's are as GitHub last sent them.
+                    let people = boardItem?.assignees ?? sub.assignees
+                    if !people.isEmpty {
+                        AvatarStack(people: people, size: 20)
                     }
                 }
                 .frame(minHeight: 44)
@@ -1734,11 +1737,17 @@ private struct MobileActivity: View {
 private struct CommentComposer: View {
     @Environment(AppModel.self) private var model
     var item: Item
-    @State private var draft = ""
+    /// What was written and not sent stays with the issue while you look elsewhere, as in Mail.
+    @State private var draft: String
     @State private var sent = 0
     @State private var height = EditorStyle.lineHeight
     /// The round send button, 6 points inside the field's corner, as on the Mac.
     @ScaledMetric(relativeTo: .body) private var buttonSize: CGFloat = 32
+
+    init(item: Item) {
+        self.item = item
+        _draft = State(initialValue: AppModel.shared.commentDrafts[item.id] ?? "")
+    }
 
     var body: some View {
         let empty = draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -1783,6 +1792,7 @@ private struct CommentComposer: View {
         .padding(.top, 8)
         .padding(.bottom, 8)
         .sensoryFeedback(.success, trigger: sent)
+        .onChange(of: draft) { _, text in model.commentDrafts[item.id] = text.isEmpty ? nil : text }
     }
 
     private func send() {

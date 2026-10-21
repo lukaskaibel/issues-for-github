@@ -492,19 +492,20 @@ private struct RootPalette: View {
                 model.select(.inbox)
             })
         }
-        if model.currentProjectId != nil || model.currentRepositoryId != nil {
+        // Wherever C makes one.
+        if !model.projects.isEmpty {
             list.append(PaletteCommand(id: "new", title: .newIssueAction, section: go, icon: symbol("plus"), keys: ["C"]) {
                 model.overlay = .newIssue(statusId: nil, parentItemId: nil)
             })
         }
-        if model.currentProjectId != nil {
+        if !model.openProjects.isEmpty {
             list.append(PaletteCommand(id: "board", title: .board, section: go, icon: symbol("rectangle.split.3x1"), keys: ["G", "B"]) {
-                model.closeDetail()
-                model.viewMode = .board
+                model.overlay = nil
+                model.showProjectLayout(.board)
             })
             list.append(PaletteCommand(id: "list", title: .list, section: go, icon: symbol("list.bullet"), keys: ["G", "L"]) {
-                model.closeDetail()
-                model.viewMode = .list
+                model.overlay = nil
+                model.showProjectLayout(.list)
             })
         }
         if model.currentView != nil || model.scope == .myIssues {
@@ -523,7 +524,7 @@ private struct RootPalette: View {
             })
         }
         if let view = model.currentView {
-            if model.filterChanged(view), model.canEditViews(projectId: view.projectId) {
+            if model.canSaveFilter(of: view) {
                 list.append(PaletteCommand(id: "save-view", title: .saveViewMenu, section: go, icon: symbol("square.and.arrow.down"), keys: ["⌘", "S"]) {
                     model.saveFilter(of: view)
                 })

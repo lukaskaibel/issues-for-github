@@ -13,6 +13,8 @@ struct PickerSheet: View {
     var items: () -> [PickerItem]
     /// A row that makes what is typed, such as a label the repository doesn't have yet.
     var creating: ((String) -> PickerItem?)? = nil
+    /// What is typed into the search, for a row such as New Milestone… to start with.
+    var onQueryChange: ((String) -> Void)? = nil
     var onPick: (String) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
@@ -49,6 +51,7 @@ struct PickerSheet: View {
                 }
             }
             .searchable(text: $query, isPresented: $searching, placement: .navigationBarDrawer(displayMode: .always), prompt: Text(prompt))
+            .onChange(of: query) { _, typed in onQueryChange?(typed) }
             .onSubmit(of: .search) {
                 if let first = visible.first { pick(first, keepOpen: false) }
             }
@@ -175,6 +178,7 @@ struct IssuePickerSheet: View {
     var kind: PickerKind
     var itemId: String
     var focusesSearch = false
+    @State private var typed = ""
 
     var body: some View {
         if kind == .dueDate {
@@ -197,8 +201,14 @@ struct IssuePickerSheet: View {
             creating: kind == .labels ? { query in
                 model.item(id: itemId).flatMap { model.newLabelRow(query, projectId: $0.projectId, repoId: $0.repoId) }
             } : nil,
+            onQueryChange: { typed = $0 },
             onPick: { id in
                 guard let item = model.item(id: itemId) else { return }
+                // A name typed to look for a milestone becomes the new one's, when none was found.
+                if id == AppModel.newMilestoneId {
+                    let name = typed.trimmingCharacters(in: .whitespacesAndNewlines)
+                    model.newIssueTitle = name.isEmpty ? nil : name
+                }
                 model.pick(kind, id: id, for: item)
             }
         )

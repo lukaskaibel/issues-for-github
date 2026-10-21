@@ -773,7 +773,8 @@ struct ColumnHeader: View {
             Button(.deleteColumn, role: .destructive) { delete() }
             Button(.cancel, role: .cancel) {}
         } message: {
-            Text(column.count == 0 ? .deleteEmptyColumnMessage : .deleteColumnMessage(count: column.count))
+            let count = model.issueCount(projectId: model.currentProjectId, statusId: column.option?.id)
+            Text(count == 0 ? .deleteEmptyColumnMessage : .deleteColumnMessage(count: count))
         }
     }
 
@@ -942,7 +943,8 @@ struct AddColumnButton: View {
                         return .handled
                     }
                     .onChange(of: focused) { _, isFocused in
-                        if !isFocused { adding = false }
+                        // Clicking elsewhere keeps what was typed, as renaming a column does; Escape lets it go.
+                        if !isFocused { commit() }
                     }
             } else {
                 Button {
@@ -966,6 +968,7 @@ struct AddColumnButton: View {
     }
 
     private func commit() {
+        guard adding else { return }
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         adding = false
         guard !trimmed.isEmpty, let projectId = model.currentProjectId else { return }

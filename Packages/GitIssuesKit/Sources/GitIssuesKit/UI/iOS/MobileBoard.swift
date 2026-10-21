@@ -100,7 +100,7 @@ struct MobileBoard: View {
             guard let group = lifted.group(model: model, projectId: projectId, milestone: milestone), !members.isEmpty else { return }
             let index = column.items.prefix(slot ?? column.items.count).filter { !lifted.ids.contains($0.id) }.count
             dropped += 1
-            withAnimation(Theme.spring) { model.drop(group, members: members, in: column, at: index) }
+            withAnimation(Theme.spring) { model.drop(group, members: members, in: column, at: index, milestone: milestone) }
             return
         }
         guard let id, let item = model.item(id: id), item.projectId == projectId else { return }
@@ -108,7 +108,7 @@ struct MobileBoard: View {
         let others = Set(column.shown(without: item).map(\.id))
         let index = column.items.prefix(slot ?? column.items.count).filter { others.contains($0.id) }.count
         dropped += 1
-        withAnimation(Theme.spring) { model.drop(item, in: column, at: index) }
+        withAnimation(Theme.spring) { model.drop(item, in: column, at: index, milestone: milestone) }
     }
 }
 
@@ -387,7 +387,7 @@ private struct MobileColumn: View {
     }
 
     private func neighbour(_ delta: Int) -> BoardColumn? {
-        let columns = milestone.map { model.columns(for: .milestone(projectId: projectId, title: $0)) } ?? model.columns(projectId: projectId)
+        let columns = model.shownColumns(for: milestone.map { .milestone(projectId: projectId, title: $0) } ?? .project(projectId))
         guard let index = columns.firstIndex(where: { $0.id == column.id }), columns.indices.contains(index + delta) else { return nil }
         return columns[index + delta]
     }
@@ -588,7 +588,9 @@ private struct MobileColumnHeader: View {
                 .accessibilityLabel(.optionsForStatus(status: column.title))
             }
             Button {
-                navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: column.option?.id, milestoneTitle: milestone))
+                // With the column's status or value, and what the view's filter asks for, as on the Mac.
+                let preset = milestone == nil ? model.newIssuePreset(projectId: projectId, column: column.value) : nil
+                navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: column.option?.id, milestoneTitle: milestone, preset: preset))
             } label: {
                 Image(systemName: "plus")
                     .font(.subheadline.weight(.medium))
@@ -613,9 +615,10 @@ private struct MobileColumnHeader: View {
         .confirmationDialog(Text(.deleteStatusQuestion(name: column.title)), isPresented: $confirmDelete, titleVisibility: .visible) {
             Button(.deleteStatus, role: .destructive) { delete() }
         } message: {
-            Text(column.count == 0
+            let count = model.issueCount(projectId: projectId, statusId: column.option?.id)
+            Text(count == 0
                  ? LocalizedStringResource.statusRemovedFromProject
-                 : .statusRemovedIssuesStay(count: column.count))
+                 : .statusRemovedIssuesStay(count: count))
         }
     }
 

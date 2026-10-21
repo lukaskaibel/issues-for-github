@@ -574,22 +574,29 @@ extension AppModel {
 // MARK: - Milestones and epics
 
 extension AppModel {
+    /// Whether number keys pick milestones by their place: not where a milestone's name starts with a digit, as a
+    /// version's does ("0.4"), since typing it would pick another one.
+    static func numbersPickMilestones(_ titles: [String]) -> Bool {
+        !titles.contains { $0.first?.isNumber == true }
+    }
+
     /// No milestone, the board's open milestones by date with the current one marked, and a new one.
     fileprivate func milestoneItems(for item: Item, targets: [Item]) -> [PickerItem] {
         let groups = milestoneGroups(for: item)
         let titles = Set(targets.map { milestoneTitle(of: $0) })
         let today = CalendarDay.today()
-        var rows = [PickerItem(
-            id: "", title: String(localized: .noMilestone), selected: titles == [nil],
-            icon: AnyView(MilestoneIcon(mark: .none)), shortcut: "0"
-        )]
         // A closed milestone shows only for issues that are in it.
         let shown = groups.filter { $0.isOpen || titles.contains($0.title) }
+        let numbered = Self.numbersPickMilestones(shown.map(\.title))
+        var rows = [PickerItem(
+            id: "", title: String(localized: .noMilestone), selected: titles == [nil],
+            icon: AnyView(MilestoneIcon(mark: .none)), shortcut: numbered ? "0" : nil
+        )]
         for (index, group) in shown.enumerated() {
             rows.append(PickerItem(
                 id: group.id, title: group.title, selected: titles == [group.title],
                 icon: AnyView(MilestoneIcon(mark: mark(of: group, projectId: item.projectId, today: today))),
-                shortcut: index < 9 ? "\(index + 1)" : nil,
+                shortcut: numbered && index < 9 ? "\(index + 1)" : nil,
                 trailing: group.due.map { day in
                     AnyView(Text(day.shortLabel(today: today)).font(.small).monospacedDigit().foregroundStyle(Theme.textTertiary))
                 }

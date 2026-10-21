@@ -110,7 +110,11 @@ struct AccountSheet: View {
                 }
                 Button(.cancel, role: .cancel) {}
             } message: {
-                Text(.signOutEverywhereExplanation)
+                if model.pendingCount > 0 {
+                    Text(.signOutDeletesUnsentChanges(count: model.pendingCount)) + Text(verbatim: " ") + Text(.signOutEverywhereExplanation)
+                } else {
+                    Text(.signOutEverywhereExplanation)
+                }
             }
         }
     }

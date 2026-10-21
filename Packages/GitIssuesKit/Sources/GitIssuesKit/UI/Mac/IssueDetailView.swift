@@ -150,6 +150,8 @@ struct TitleField: View {
             .onChange(of: focused) { _, isFocused in
                 if !isFocused { commit() }
             }
+            // Leaving with Back, the arrows or a key takes the page away without the field losing focus first.
+            .onDisappear(perform: commit)
             .onSubmit {
                 commit()
                 focused = false
@@ -839,9 +841,15 @@ struct CommentComposer: View {
     @Environment(AppModel.self) private var model
     var item: Item
 
-    @State private var draft = ""
+    /// What was written and not sent stays with the issue while you look elsewhere, as in Mail.
+    @State private var draft: String
     @State private var focused = false
     @State private var height: CGFloat = 22
+
+    init(item: Item) {
+        self.item = item
+        _draft = State(initialValue: AppModel.shared.commentDrafts[item.id] ?? "")
+    }
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -880,6 +888,7 @@ struct CommentComposer: View {
         .contentShape(Rectangle())
         .onTapGesture { focused = true }
         .glassPanel(in: RoundedRectangle(cornerRadius: 21, style: .continuous))
+        .onChange(of: draft) { _, text in model.commentDrafts[item.id] = text.isEmpty ? nil : text }
     }
 
     private var canSend: Bool {
@@ -1028,8 +1037,9 @@ struct IssueProperties: View {
             }
             let epic = model.epic(of: item)
             let parentIsEpic = epic != nil && epic?.contentId == item.parentId
-            if model.canRelate(item), !item.isEpic, epic == nil || parentIsEpic {
-                // An issue right under an epic, or under nothing yet: its epic is chosen here.
+            if model.canRelate(item), !item.isEpic, parentIsEpic || item.parentId == nil && model.hasEpics(item) {
+                // An issue right under an epic, or under nothing yet: its epic is chosen here. Under another issue,
+                // choosing one would take it from that parent.
                 row(.epic) {
                     PropertyButton(kind: .epic, item: item) {
                         if let epic {

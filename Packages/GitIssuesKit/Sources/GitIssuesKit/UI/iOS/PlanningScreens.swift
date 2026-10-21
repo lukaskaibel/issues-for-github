@@ -406,6 +406,10 @@ struct MilestoneEditorSheet: View {
             name = existing.title
             due = existing.due
             descr = existing.descr
+        } else {
+            // A name typed into the milestone picker before choosing New Milestone….
+            name = model.newIssueTitle ?? ""
+            model.newIssueTitle = nil
         }
         nameFocused = existing == nil
     }

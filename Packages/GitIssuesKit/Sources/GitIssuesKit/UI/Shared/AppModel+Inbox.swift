@@ -230,8 +230,11 @@ extension AppModel {
         } else {
             next = delta > 0 ? entries[0] : entries[entries.count - 1]
         }
-        inboxPicked = []
-        inboxPickAnchor = next.id
+        // Picks stay while moving, as in the list, so X picks one after another; without any, a run starts here.
+        if inboxPicked.isEmpty {
+            inboxPickAnchor = next.id
+            inboxPickRange = []
+        }
         selectInboxEntry(next)
         focusScrollToken += 1
     }
@@ -272,14 +275,18 @@ extension AppModel {
         if inboxPicked.isEmpty, let selected = inboxSelectedId, selected != entry.id { inboxPicked.insert(selected) }
         if inboxPicked.contains(entry.id) { inboxPicked.remove(entry.id) } else { inboxPicked.insert(entry.id) }
         inboxPickAnchor = entry.id
+        inboxPickRange = []
     }
 
-    /// Shift-click: everything from the last click to this one.
+    /// Shift-click and Shift-arrows: everything from the last click to this one, on top of what was picked before.
     func extendInboxPick(to entry: InboxEntry) {
         let order = visibleInbox.map(\.id)
-        let anchor = inboxPickAnchor ?? inboxSelectedId ?? entry.id
+        let anchor = inboxPickAnchor.flatMap { order.contains($0) ? $0 : nil } ?? inboxSelectedId ?? entry.id
         guard let from = order.firstIndex(of: anchor), let to = order.firstIndex(of: entry.id) else { return }
-        inboxPicked = Set(order[min(from, to)...max(from, to)])
+        let range = Set(order[min(from, to)...max(from, to)])
+        inboxPicked = inboxPicked.subtracting(inboxPickRange).union(range)
+        inboxPickRange = range
+        inboxPickAnchor = anchor
     }
 
     // MARK: Reading

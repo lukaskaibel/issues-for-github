@@ -35,6 +35,19 @@ extension AppModel {
     /// The issue keyboard navigation starts from: the one in the peek, else the keyboard focus, else the pointer.
     var cursorId: String? { peekItem?.id ?? focusedItemId ?? hoveredItemId }
 
+    /// The issues the keyboard focus moves among, by column or by section: what takes the focus over from one that
+    /// goes.
+    var focusGroups: [[String]] {
+        if openItem == nil, viewMode == .board, currentProjectId != nil { return columns.map { $0.items.map(\.id) } }
+        return sections.filter { !isFolded($0) }.map { $0.items.map(\.id) }
+    }
+
+    /// The issue after `id` in its column or section that `keeps`, or else the one before it; nil when none is left.
+    static func neighbour(of id: String, in groups: [[String]], keeping keeps: (String) -> Bool) -> String? {
+        guard let group = groups.first(where: { $0.contains(id) }), let index = group.firstIndex(of: id) else { return nil }
+        return group[(index + 1)...].first(where: keeps) ?? group[..<index].last(where: keeps)
+    }
+
     func moveFocus(to id: String, scroll: Bool = true) {
         hoveredItemId = nil
         focusedItemId = id
@@ -57,20 +70,37 @@ extension AppModel {
     }
 
     func position(of item: Item) -> (index: Int, count: Int)? {
-        let items = sections.flatMap(\.items)
+        let items = stepOrder
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return nil }
         return (index, items.count)
     }
 
+    /// The issues J and K go through, each once, though one can read twice (in the groups of both its assignees).
+    /// With an issue open, those of the board or list it was opened from, folded sections included, in that order.
+    private var stepOrder: [Item] {
+        let items: [Item] = if openItem == nil {
+            orderedItems
+        } else if viewMode == .board, currentProjectId != nil, !columns.isEmpty {
+            columns.flatMap(\.items)
+        } else {
+            sections.flatMap(\.items)
+        }
+        var seen = Set<String>()
+        return items.filter { seen.insert($0.id).inserted }
+    }
+
     /// Moves to the next or previous issue: opens it when an issue is open, otherwise moves the focus.
     func step(_ delta: Int) {
-        let items = openItem != nil ? sections.flatMap(\.items) : orderedItems
+        let items = stepOrder
         guard !items.isEmpty else { return }
         let currentId = openItemId ?? cursorId
         let next: Item
         if let index = items.firstIndex(where: { $0.id == currentId }) {
             next = items[min(max(index + delta, 0), items.count - 1)]
         } else {
+            // An open issue the board or list doesn't show, such as an epic or a blocker from another board, has no
+            // next one there.
+            guard openItem == nil else { return }
             next = delta > 0 ? items[0] : items[items.count - 1]
         }
         if openItem != nil {

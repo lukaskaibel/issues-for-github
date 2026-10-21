@@ -305,7 +305,8 @@ struct ItemPicker: View {
                 onQueryChange: { query = $0 },
                 onPick: { id in
                     // A title typed to look for an issue becomes the new one's, when none was picked.
-                    if id == AppModel.newSubIssueId {
+                    // A name typed to look for a milestone becomes the new one's too.
+                    if id == AppModel.newSubIssueId || id == AppModel.newMilestoneId {
                         let title = query.trimmingCharacters(in: .whitespacesAndNewlines)
                         model.newIssueTitle = title.isEmpty ? nil : title
                     }

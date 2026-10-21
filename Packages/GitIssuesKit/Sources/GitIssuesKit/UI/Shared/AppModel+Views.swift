@@ -281,8 +281,8 @@ extension AppModel {
         Set(display(of: view).hiddenColumnIds ?? [])
     }
 
-    /// Hides a column of a view's board, or shows it again. Its cards leave the board with it, and a selection or the
-    /// keyboard focus on them goes.
+    /// Hides a column of a view's board, or shows it again. Its cards leave the board with it, and picks or the
+    /// keyboard focus on them go.
     func setColumn(_ columnId: String, hidden: Bool, of view: ProjectView) {
         var ids = display(of: view).hiddenColumnIds ?? []
         ids.removeAll { $0 == columnId }
@@ -291,9 +291,9 @@ extension AppModel {
             changeDisplay(of: view) { $0.hiddenColumnIds = ids }
         }
         guard hidden else { return }
+        // The focus moves on by itself (`rebuild`); the cards stay in the list, so their picks are let go here.
         let gone = Set(columns(projectId: view.projectId).filter { $0.id == columnId }.flatMap(\.nesting.members).map(\.id))
         selectedIds.subtract(gone)
-        if let focused = focusedItemId, gone.contains(focused) { focusedItemId = nil }
         if let hovered = hoveredItemId, gone.contains(hovered) { hoveredItemId = nil }
     }
 

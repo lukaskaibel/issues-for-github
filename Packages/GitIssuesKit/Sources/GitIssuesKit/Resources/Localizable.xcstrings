@@ -75919,6 +75919,30 @@
         }
       }
     },
+    "signOutDeletesUnsentChanges" : {
+      "comment" : "Mac, iPhone and iPad: message of the question before signing out while changes made in the app wait to be sent to GitHub (offline, or GitHub not reached yet). %(count)lld is how many (1, 2, …).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "1 change hasn’t reached GitHub yet. Signing out deletes it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld changes haven’t reached GitHub yet. Signing out deletes them."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "signOutEverywhere" : {
       "comment" : "iPhone and iPad, account sheet: button that signs out of GitHub on all of the user's devices.",
       "extractionState" : "manual",

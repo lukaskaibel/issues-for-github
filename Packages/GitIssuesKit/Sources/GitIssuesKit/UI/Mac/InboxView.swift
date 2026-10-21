@@ -112,7 +112,7 @@ private struct InboxList: View {
                 title: String(localized: .inboxTokenCantReadTitle),
                 message: String(localized: .inboxTokenCantReadMessage)
             ) {
-                Button(.signInAgain) { model.signOut() }
+                Button(.signInAgain) { model.requestSignOut() }
                     .buttonStyle(SecondaryButtonStyle())
             }
         } else if model.inboxMeta.access == .unknown, model.inboxEntries.isEmpty {
@@ -353,6 +353,7 @@ private struct InboxRow: View {
         } else {
             model.inboxPicked = []
             model.inboxPickAnchor = entry.id
+            model.inboxPickRange = []
             model.selectInboxEntry(entry)
         }
     }
