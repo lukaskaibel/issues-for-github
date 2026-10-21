@@ -221,7 +221,7 @@ struct ColumnView: View {
                 )
 
             ScrollView(.vertical) {
-                LazyVStack(spacing: 8) {
+                LazyVStack(spacing: CardTreeLines.boardGap) {
                     ForEach(lines) { line in
                         switch line {
                         case .groupSlot(let group, let depth):
@@ -388,14 +388,23 @@ private struct EpicGroupHeader: View {
 
     /// The height of a line of its name, which the icon, the count and the arrow line up with.
     private static let line: CGFloat = 16
+    private static let padding: CGFloat = 4
+    private static let spacing: CGFloat = 6
+    private static let arrow: CGFloat = 20
+
+    /// Where the fold arrow is in a header with this frame: at its trailing edge, centred on the first line.
+    static func foldFrame(in frame: CGRect) -> CGRect {
+        CGRect(
+            x: frame.maxX - padding - arrow, y: frame.minY + padding + (line - arrow) / 2,
+            width: arrow, height: arrow
+        )
+    }
 
     var body: some View {
         let pointer = dragging ? nil : hover[header: group.contentId]
         let hovered = pointer != nil
         let hoveringFold = pointer?.onFold ?? false
-        HStack(alignment: .top, spacing: 6) {
-            EpicIcon(size: 12)
-                .frame(width: CardTreeLines.indent, height: Self.line)
+        HStack(alignment: .top, spacing: Self.spacing) {
             Text(group.epic.title)
                 .font(.smallMedium)
                 .foregroundStyle(Theme.text)
@@ -412,22 +421,29 @@ private struct EpicGroupHeader: View {
                 .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
                 .rotationEffect(.degrees(group.folded ? -90 : 0))
-                .frame(width: 20, height: 20)
+                .frame(width: Self.arrow, height: Self.arrow)
                 .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(hoveringFold ? Theme.hover : .clear))
-                .onGeometryChange(for: CGRect.self) { proxy in
-                    proxy.frame(in: .named(BoardDrag.space))
-                } action: { frame in
-                    drag.setHeaderFold(frame, column: columnId, epic: group.contentId)
-                }
-                .padding(.vertical, (Self.line - 20) / 2)
+                .padding(.vertical, (Self.line - Self.arrow) / 2)
                 .opacity(hovered || group.folded ? 1 : 0)
         }
-        .padding(.vertical, 4)
-        .padding(.trailing, 4)
-        .background(alignment: .topLeading) {
-            // The start of the line down to the epic's issues, from under its icon.
-            if !group.folded {
-                Rectangle().fill(Theme.treeLine).frame(width: 1).padding(.top, 19).offset(x: CardTreeLines.indent / 2 - 0.5)
+        // Room for the icon, which the Canvas behind draws.
+        .padding(.leading, CardTreeLines.indent + Self.spacing)
+        .padding(.vertical, Self.padding)
+        .padding(.trailing, Self.padding)
+        .background {
+            // The epic's icon, and the start of the line down to its issues from under the icon, in one pass.
+            Canvas { context, size in
+                if !group.folded {
+                    // On a whole device pixel, as a rectangle view is drawn.
+                    let scale = context.environment.displayScale
+                    let x = ((CardTreeLines.indent / 2 - 0.5) * scale).rounded() / scale
+                    context.fill(Path(CGRect(x: x, y: 19, width: 1, height: size.height - 19)), with: .color(Theme.treeLine))
+                }
+                let icon = CGRect(x: 2, y: Self.padding + 2, width: 12, height: 12)
+                context.stroke(
+                    PlanningGlyph.layers(in: icon), with: .color(Theme.epic),
+                    style: StrokeStyle(lineWidth: 1.4 * icon.width / 14, lineCap: .round, lineJoin: .round)
+                )
             }
         }
         .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(hovered && !hoveringFold ? Theme.hover : .clear))
@@ -442,8 +458,13 @@ private struct EpicGroupHeader: View {
         } action: { frame in
             last.frame = frame
             drag.setHeaderFrame(frame, column: columnId, epic: group.contentId, owner: owner)
+            drag.setHeaderFold(Self.foldFrame(in: frame), column: columnId, epic: group.contentId)
         }
-        .onAppear { if let frame = last.frame { drag.setHeaderFrame(frame, column: columnId, epic: group.contentId, owner: owner) } }
+        .onAppear {
+            guard let frame = last.frame else { return }
+            drag.setHeaderFrame(frame, column: columnId, epic: group.contentId, owner: owner)
+            drag.setHeaderFold(Self.foldFrame(in: frame), column: columnId, epic: group.contentId)
+        }
         .onDisappear { drag.removeHeaderFrame(column: columnId, epic: group.contentId, owner: owner) }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.epicGroupSpoken(epic: group.epic.title, count: group.count)))
@@ -488,7 +509,8 @@ private struct EpicGroupSlot: View {
 
 /// One position in a column: the card, or the dashed slot while that card is being dragged. A sub-issue card
 /// hangs in under its parent, with a line from the parent; a card with sub-issues folded into it shows the edge
-/// of a second card under it.
+/// of a second card under it. The card paints all of that itself: a long column scrolls by building a row for
+/// each card that comes into view, and every view in a row adds to that.
 private struct BoardCell: View {
     @Environment(AppModel.self) private var model
     var card: CardModel
@@ -511,24 +533,14 @@ private struct BoardCell: View {
         let isSlot = drag.active?.item.id == id
         let depth = min(isSlot ? drag.target?.depth ?? 0 : place.depth, CardTreeLines.deepest)
         let indent = CGFloat(depth) * CardTreeLines.indent
-        ZStack {
-            if isSlot {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Theme.accent.opacity(0.10))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Theme.accent.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                    )
-                    .frame(height: drag.active?.size.height ?? 80)
-            } else {
-                CardView(
-                    card: card, width: width - indent, highlighted: highlighted, selected: selected,
-                    avatarVersion: avatarVersion, hoveredPart: pointer?.part, hoveringFold: pointer?.onFold ?? false
-                )
-                .equatable()
-                .background(alignment: .top) { if card.folded { CardStackEdge() } }
-            }
-        }
+        let edge = card.folded && !isSlot
+        CardView(
+            card: card, width: width - indent, highlighted: highlighted, selected: selected,
+            avatarVersion: avatarVersion, hoveredPart: pointer?.part, hoveringFold: pointer?.onFold ?? false,
+            slotHeight: isSlot ? drag.active?.size.height ?? 80 : nil, stackEdge: edge,
+            tree: !isSlot && place.depth > 0 ? place : nil
+        )
+        .equatable()
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .named(BoardDrag.space))
         } action: { frame in
@@ -539,11 +551,8 @@ private struct BoardCell: View {
         // again, which reports no change of place.
         .onAppear { if let frame = last.frame { drag.setCardFrame(frame, for: id, owner: owner) } }
         .onDisappear { drag.removeCardFrame(for: id, owner: owner) }
-        .padding(.bottom, card.folded && !isSlot ? CardStackEdge.height : 0)
+        .padding(.bottom, edge ? CardStackEdge.height : 0)
         .padding(.leading, indent)
-        .background(alignment: .topLeading) {
-            if !isSlot, place.depth > 0 { CardTreeLines(place: place, gap: 8) }
-        }
     }
 }
 

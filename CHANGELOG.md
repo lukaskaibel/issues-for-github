@@ -76,6 +76,11 @@ All notable changes to this project are recorded here. The format follows
 - On the Mac, the pointer stutters less going down the Inbox. The notification under it lights up and shows its two
   buttons as before, but it used to draw its avatar, its icon and every one of its texts again on every frame of that
   fade; now it draws again only the lines that make room for the buttons, and about a third fewer frames come late.
+- On the Mac, a long board column scrolls more smoothly, most of all past sub-issues and epics' headers. A column
+  builds each card as it scrolls into view, and a card was up to four views: the card, the lines from its parent, the
+  edge of the sub-issues folded into it and the slot it leaves while dragged. Now the card draws all of that in one
+  go, and an epic's header has fewer parts, so scrolling misses a frame of a 120 Hz display less than half as often.
+  The board looks exactly as before.
 
 ## [1.0.0] - 2026-10-20
 

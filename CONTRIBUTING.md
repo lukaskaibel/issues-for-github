@@ -34,12 +34,14 @@ Every pull request is reviewed and merged by the maintainer; nothing lands on `m
 - **Colours and animation timings come from `UI/Theme.swift`.** Every colour needs a light and a dark value.
 - **Smoothness is a feature.** Lists and cards are drawn in one pass on purpose, and a card keeps its texts and colours
   from one paint to the next: what a new part of a card shows goes into its `CardText` or `CardInk`, so that it is kept
-  by everything it depends on. A row of a board column or a list that animates something of its own, such as the hover
-  fade of an epic's header or of a notification in the Inbox, ends with `.geometryGroup()` after what animates it:
-  otherwise each of its texts takes on the animation and is drawn again on every frame of it. If you change any of this,
-  time a board with a few hundred issues before and after: `Tools/board-timing.sh` moves the pointer over two long
-  columns and scrolls one, and keeps each step with the layers it drew in `build/board-timing/`. The debug remote's
-  `menusweep main` does the same over the window, for the Inbox.
+  by everything it depends on. A row of a board column is one view as well: the card paints what the column shows
+  around it, because a column builds a row for every card that scrolls into view and each view in a row adds to that.
+  A row of a board column or a list that animates something of its own, such as the hover fade of an epic's header or
+  of a notification in the Inbox, ends with `.geometryGroup()` after what animates it: otherwise each of its texts
+  takes on the animation and is drawn again on every frame of it. If you change any of this, time a board with a few
+  hundred issues before and after: `Tools/board-timing.sh` moves the pointer over two long columns and scrolls one, and
+  keeps each step with the layers it drew in `build/board-timing/`. The debug remote's `menusweep main` does the same
+  over the window, for the Inbox.
 - **Show what changed.** A change people will notice gets a line in `CHANGELOG.md` under "Unreleased", and the README
   follows: its feature sections, the shortcut tables, "Not there yet", and the screenshots (`Tools/readme-images.sh`
   for the Mac, `Tools/app-store-screenshots.sh` for iPhone and iPad).

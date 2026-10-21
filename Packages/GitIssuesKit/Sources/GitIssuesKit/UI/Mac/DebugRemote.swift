@@ -1056,7 +1056,8 @@ enum DebugRemote {
     }
 
     /// Scrolls the tallest scroll view top to bottom in fixed steps and reports how long each step
-    /// keeps the main thread busy. A step over 8 ms would drop a frame on a 120 Hz display.
+    /// keeps the main thread busy. A step over 8 ms would drop a frame on a 120 Hz display. Each step, with the cards
+    /// it painted, goes to `<command file>.scrolltest.tsv`.
     private static func scrollTest(label: String) {
         guard let root = NSApp.windows.first(where: { $0.isVisible })?.contentView else { return }
         var views: [NSScrollView] = []
@@ -1073,6 +1074,8 @@ enum DebugRemote {
         let clip = scrollView.contentView
         var times: [Double] = []
         var cpuTimes: [Double] = []
+        var stepPaints: [Int] = []
+        var offsets: [CGFloat] = []
         CardPaintTiming.reset()
         var y: CGFloat = 0
         let step: CGFloat = 40
@@ -1083,6 +1086,7 @@ enum DebugRemote {
                 let limit = max(0, document.frame.height - clip.bounds.height)
                 let start = CACurrentMediaTime()
                 let cpuStart = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
+                let paintsBefore = CardPaintTiming.count
                 y = min(y + step, limit)
                 clip.scroll(to: NSPoint(x: 0, y: y))
                 scrollView.reflectScrolledClipView(clip)
@@ -1091,9 +1095,20 @@ enum DebugRemote {
                 CATransaction.flush()
                 times.append((CACurrentMediaTime() - start) * 1000)
                 cpuTimes.append(Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - cpuStart) / 1e6)
+                stepPaints.append(CardPaintTiming.count - paintsBefore)
+                offsets.append(y)
                 steps += 1
                 if y >= limit || steps > 600 {
                     timer.invalidate()
+                    // Every step, next to the command file: a mean hides that the steps bringing a card or an epic's
+                    // header into view cost two or three times the others.
+                    if let base = UserDefaults.standard.string(forKey: "debugCommandFile") {
+                        let rows = times.indices.map { index in
+                            String(format: "%d\t%.0f\t%.2f\t%.2f\t%d", index, offsets[index], times[index], cpuTimes[index], stepPaints[index])
+                        }
+                        try? (["step\ty\twall ms\tcpu ms\tcards painted"] + rows).joined(separator: "\n")
+                            .write(toFile: "\(base).scrolltest.tsv", atomically: true, encoding: .utf8)
+                    }
                     let sorted = times.sorted()
                     let average = times.reduce(0, +) / Double(max(times.count, 1))
                     let p95 = sorted.isEmpty ? 0 : sorted[Int(Double(sorted.count - 1) * 0.95)]
