@@ -4904,7 +4904,7 @@
       }
     },
     "backToUsualOrder" : {
-      "comment" : "iPhone and iPad, Arrange Sections sheet: button that drops the user's own order of sections. Title case.",
+      "comment" : "iPhone and iPad, Arrange Sections sheet: button that drops the user's own order of sections. Title case. Also on the Mac: item in the right-click menu of a list section's header, shown after sections were dragged into an order of the user's own.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

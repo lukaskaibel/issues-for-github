@@ -130,6 +130,8 @@ All notable changes to this project are recorded here. The format follows
 - With issues from several projects picked, as in My Issues, Priority and `P` are there when any of them has a
   priority, not only when the first one does.
 - A column name typed into Add Column is kept when you click elsewhere.
+- On the Mac, the right-click menu of a list section's header has **Back to the Usual Order** once sections were
+  dragged into an order of your own, as iPhone and iPad have.
 - Hiding the project at the top of the sidebar works from the Inbox, My Issues, its milestones and its roadmap too.
 - `⌘S` isn't offered for a view while offline or while it is being saved, and the palette no longer offers Unsubscribe
   for due dates and your own assignments in the Inbox.

@@ -798,6 +798,14 @@ struct IssueTable: NSViewRepresentable {
             }
             all.image = MenuIcons.symbol(section.collapsed ? "chevron.down.2" : "chevron.right.2")
             menu.addItem(all)
+            // Sections dragged into an order of your own go back to the usual one, as on iPhone and iPad.
+            if !model.customListOrder().isEmpty {
+                let usual = ClosureMenuItem(String(localized: .backToUsualOrder)) { [model] in
+                    withAnimation(Theme.spring) { model.resetListOrder(in: model.scope ?? .myIssues) }
+                }
+                usual.image = MenuIcons.symbol("arrow.up.arrow.down")
+                menu.addItem(usual)
+            }
             if section.canAdd {
                 menu.addItem(.separator())
                 let add = ClosureMenuItem(String(localized: .newIssueInGroupMenu(group: section.title))) { [model] in
