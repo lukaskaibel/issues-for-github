@@ -70,6 +70,12 @@ All notable changes to this project are recorded here. The format follows
   each of its texts anew every time it was drawn, which is whenever the pointer goes onto it or leaves it and whenever
   it scrolls into view; now it keeps them, so drawing a card again takes about a quarter of the time. On the Mac the
   pointer going from card to card and a long column scrolling miss a frame of a 120 Hz display less often.
+- On the Mac, the pointer no longer stutters over the header above an epic's issues on the board. Its light and its
+  arrow fade in and out as before, but the header used to draw its name, count and icon again on every frame of that
+  fade, so the board could stop for up to a tenth of a second each time the pointer came onto a header or left it.
+- On the Mac, the pointer stutters less going down the Inbox. The notification under it lights up and shows its two
+  buttons as before, but it used to draw its avatar, its icon and every one of its texts again on every frame of that
+  fade; now it draws again only the lines that make room for the buttons, and about a third fewer frames come late.
 - On the Mac, a long board column scrolls more smoothly, most of all past sub-issues and epics' headers. A column
   builds each card as it scrolls into view, and a card was up to four views: the card, the lines from its parent, the
   edge of the sub-issues folded into it and the slot it leaves while dragged. Now the card draws all of that in one

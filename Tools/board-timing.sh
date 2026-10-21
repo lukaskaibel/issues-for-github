@@ -7,7 +7,9 @@
 # remote, so the screen may be locked. For each run it prints how long the main thread was busy per pointer step, in
 # its longest pass (one frame's work at 120 Hz) and in CPU time, apart for steps that bring another card or part under
 # the pointer, and how long a card took to paint; then the scroll test. A frame lasts 8.3 ms at 120 Hz. Run it before
-# and after a change to the board, a few times each: single runs differ by a millisecond or so.
+# and after a change to the board, a few times each: single runs differ by a millisecond or so. Each sweep's steps one
+# by one, with what was under the pointer and which layers drew, end up in build/board-timing/ (todo.tsv,
+# in-progress.tsv), to find the steps that cost.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -34,7 +36,9 @@ xcodebuild build -project GitIssues.xcodeproj -scheme GitIssues -configuration "
   || { tail -30 "$work/build.log"; exit 1; }
 
 : > "$commands"
-open -g -n "$app" --args -demo.active YES -demo.copies 10 -appearance light \
+# Without -ApplePersistenceIgnoreState, a copy that crashed once asks on every launch whether to reopen its windows,
+# and the debug remote never gets an answer.
+open -g -n "$app" --args -demo.active YES -demo.copies 10 -appearance light -ApplePersistenceIgnoreState YES \
   -AppleLanguages '(en)' -AppleLocale en_US -debugCommandFile "$commands"
 for _ in $(seq 100); do
   pid=$(pgrep -f "$app/Contents/MacOS/Issues" || true)
@@ -52,15 +56,19 @@ done
 printf '%s\n' "window 1440 900" "select Git Issues" "mode board" >> "$commands"
 sleep 3
 
-# run <title> <command> <text of its last line>
+# run <title> <command> <text of its last line> [name to keep its steps under]
+series=build/board-timing
+mkdir -p "$series"
 run() {
   : > "$commands.log"
+  rm -f "$commands".*.tsv
   printf '%s\n' "$2" >> "$commands"
   until grep -q "$3" "$commands.log"; do sleep 1; done
   sleep 0.5
   echo "$1"
   cat "$commands.log"
+  if [ -n "${4:-}" ]; then cp "$commands".*.tsv "$series/$4.tsv"; fi
 }
-run "Todo, the pointer down and up three times:" "boardsweep 640 100 880" "same cpu frames"
-run "In Progress, with sub-issues and epics' headers:" "boardsweep 900 100 880" "same cpu frames"
+run "Todo, the pointer down and up three times:" "boardsweep 640 100 880" "same cpu frames" todo
+run "In Progress, with sub-issues and epics' headers:" "boardsweep 900 100 880" "same cpu frames" in-progress
 run "The longest column scrolling, 40 points a step:" "scrolltest board" "scrolltest"
