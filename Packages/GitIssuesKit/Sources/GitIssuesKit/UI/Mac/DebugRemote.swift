@@ -471,6 +471,13 @@ enum DebugRemote {
             if bits.count == 2, let moving = model.sections.first(where: { $0.title == bits[0] }) {
                 model.moveListSection(moving.id, before: model.sections.first { $0.title == bits[1] }?.id)
             }
+        case "dragto":
+            // dragto <x> <y>: moves the pointer holding a card there, in board points; near a column's top or bottom
+            // edge the column scrolls under it.
+            let numbers = argument.split(separator: " ").compactMap { Double($0) }
+            if numbers.count == 2 {
+                model.boardDrag.changed(location: CGPoint(x: numbers[0], y: numbers[1]), start: .zero, velocity: .zero, model: model)
+            }
         case "drop":
             model.boardDrag.ended(model: model)
         case "canceldrag":
@@ -776,6 +783,8 @@ enum DebugRemote {
                     log("  header \(column.title)/\(group.epic.title) frame=\(drag.headerFrame(column: column.id, epic: group.contentId).map { "\(Int($0.minY))…\(Int($0.maxY))" } ?? "nil")")
                 }
             }
+            // Rows taller or shorter than the column first took them for, which moved the rows under them.
+            for miss in MeasuredHeights.missed { log("  height guess missed: \(miss)") }
             log("  project=\(model.currentProject?.title ?? "-") mode=\(model.viewMode.rawValue)")
             log("  columns=\(model.columns.map(\.title).joined(separator: " | ")) sections=\(model.sections.map(\.title).joined(separator: " | ")) columnDrag=\(String(describing: drag.column))")
             log("  deletion=\(model.deletionCandidate?.displayNumber ?? "-") canDelete18=\(model.scopedItems.first { $0.number == 18 }.map { model.canDelete($0) } ?? false)")
@@ -1056,7 +1065,8 @@ enum DebugRemote {
     }
 
     /// Scrolls the tallest scroll view top to bottom in fixed steps and reports how long each step
-    /// keeps the main thread busy. A step over 8 ms would drop a frame on a 120 Hz display.
+    /// keeps the main thread busy. A step over 8 ms would drop a frame on a 120 Hz display. Each step, with the cards
+    /// it painted, goes to `<command file>.scrolltest.tsv`.
     private static func scrollTest(label: String) {
         guard let root = NSApp.windows.first(where: { $0.isVisible })?.contentView else { return }
         var views: [NSScrollView] = []
@@ -1073,6 +1083,10 @@ enum DebugRemote {
         let clip = scrollView.contentView
         var times: [Double] = []
         var cpuTimes: [Double] = []
+        var stepPaints: [Int] = []
+        var offsets: [CGFloat] = []
+        // The main thread's time over the whole test: work a step leaves for later runs between the steps.
+        let testStart = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
         CardPaintTiming.reset()
         var y: CGFloat = 0
         let step: CGFloat = 40
@@ -1083,6 +1097,7 @@ enum DebugRemote {
                 let limit = max(0, document.frame.height - clip.bounds.height)
                 let start = CACurrentMediaTime()
                 let cpuStart = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
+                let paintsBefore = CardPaintTiming.count
                 y = min(y + step, limit)
                 clip.scroll(to: NSPoint(x: 0, y: y))
                 scrollView.reflectScrolledClipView(clip)
@@ -1091,9 +1106,20 @@ enum DebugRemote {
                 CATransaction.flush()
                 times.append((CACurrentMediaTime() - start) * 1000)
                 cpuTimes.append(Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - cpuStart) / 1e6)
+                stepPaints.append(CardPaintTiming.count - paintsBefore)
+                offsets.append(y)
                 steps += 1
                 if y >= limit || steps > 600 {
                     timer.invalidate()
+                    // Every step, next to the command file: a mean hides that the steps bringing a card or an epic's
+                    // header into view cost two or three times the others.
+                    if let base = UserDefaults.standard.string(forKey: "debugCommandFile") {
+                        let rows = times.indices.map { index in
+                            String(format: "%d\t%.0f\t%.2f\t%.2f\t%d", index, offsets[index], times[index], cpuTimes[index], stepPaints[index])
+                        }
+                        try? (["step\ty\twall ms\tcpu ms\tcards painted"] + rows).joined(separator: "\n")
+                            .write(toFile: "\(base).scrolltest.tsv", atomically: true, encoding: .utf8)
+                    }
                     let sorted = times.sorted()
                     let average = times.reduce(0, +) / Double(max(times.count, 1))
                     let p95 = sorted.isEmpty ? 0 : sorted[Int(Double(sorted.count - 1) * 0.95)]
@@ -1106,6 +1132,9 @@ enum DebugRemote {
                         label, times.count, limit, average, p95, sorted.last ?? 0,
                         times.filter { $0 > 8 }.count, times.filter { $0 > 16 }.count,
                         cpuAverage, cpuP95, cpuSorted.last ?? 0, cpuTimes.filter { $0 > 8 }.count
+                    ) + String(
+                        format: "; cpu between steps %.1f ms",
+                        Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - testStart) / 1e6 - cpuTimes.reduce(0, +)
                     ) + "; " + MenuTiming.paintedCards())
                 }
             }
