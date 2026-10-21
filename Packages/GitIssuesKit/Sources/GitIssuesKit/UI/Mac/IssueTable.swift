@@ -541,14 +541,6 @@ struct IssueTable: NSViewRepresentable {
             return (section.id, header, issues.count)
         }
 
-        /// Whether dropping `items` into a section by status would leave them where they are: in a view with an order of
-        /// its own, issues already in the section only snap back to their place, so such a drop isn't offered.
-        private func staysPut(_ items: [Item], in sectionId: String) -> Bool {
-            guard let first = items.first, model.isOrdered(projectId: first.projectId),
-                  let column = column(for: sectionId, of: first) else { return false }
-            return items.allSatisfy { item in column.nesting.members.contains { $0.id == item.id } }
-        }
-
         /// The column a section of a project's list shows, which a dropped issue joins.
         private func column(for sectionId: String, of item: Item) -> BoardColumn? {
             guard let projectId = item.projectId else { return nil }
@@ -578,6 +570,14 @@ struct IssueTable: NSViewRepresentable {
             guard let column = column(for: landing.sectionId, of: first) else { return false }
             model.drop(picked, in: column, at: landing.index)
             return true
+        }
+
+        /// Whether dropping `items` into a section by status would leave them where they are: in a view with an order of
+        /// its own, issues already in the section only snap back to their place, so such a drop isn't offered.
+        private func staysPut(_ items: [Item], in sectionId: String) -> Bool {
+            guard let first = items.first, model.isOrdered(projectId: first.projectId),
+                  let column = column(for: sectionId, of: first) else { return false }
+            return items.allSatisfy { item in column.nesting.members.contains { $0.id == item.id } }
         }
 
         private func section(_ id: String) -> IssueSectionModel? {
