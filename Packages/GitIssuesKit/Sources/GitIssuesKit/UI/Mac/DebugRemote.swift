@@ -471,6 +471,13 @@ enum DebugRemote {
             if bits.count == 2, let moving = model.sections.first(where: { $0.title == bits[0] }) {
                 model.moveListSection(moving.id, before: model.sections.first { $0.title == bits[1] }?.id)
             }
+        case "dragto":
+            // dragto <x> <y>: moves the pointer holding a card there, in board points; near a column's top or bottom
+            // edge the column scrolls under it.
+            let numbers = argument.split(separator: " ").compactMap { Double($0) }
+            if numbers.count == 2 {
+                model.boardDrag.changed(location: CGPoint(x: numbers[0], y: numbers[1]), start: .zero, velocity: .zero, model: model)
+            }
         case "drop":
             model.boardDrag.ended(model: model)
         case "canceldrag":
@@ -776,6 +783,8 @@ enum DebugRemote {
                     log("  header \(column.title)/\(group.epic.title) frame=\(drag.headerFrame(column: column.id, epic: group.contentId).map { "\(Int($0.minY))…\(Int($0.maxY))" } ?? "nil")")
                 }
             }
+            // Rows taller or shorter than the column first took them for, which moved the rows under them.
+            for miss in MeasuredHeights.missed { log("  height guess missed: \(miss)") }
             log("  project=\(model.currentProject?.title ?? "-") mode=\(model.viewMode.rawValue)")
             log("  columns=\(model.columns.map(\.title).joined(separator: " | ")) sections=\(model.sections.map(\.title).joined(separator: " | ")) columnDrag=\(String(describing: drag.column))")
             log("  deletion=\(model.deletionCandidate?.displayNumber ?? "-") canDelete18=\(model.scopedItems.first { $0.number == 18 }.map { model.canDelete($0) } ?? false)")
@@ -1076,6 +1085,8 @@ enum DebugRemote {
         var cpuTimes: [Double] = []
         var stepPaints: [Int] = []
         var offsets: [CGFloat] = []
+        // The main thread's time over the whole test: work a step leaves for later runs between the steps.
+        let testStart = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
         CardPaintTiming.reset()
         var y: CGFloat = 0
         let step: CGFloat = 40
@@ -1121,6 +1132,9 @@ enum DebugRemote {
                         label, times.count, limit, average, p95, sorted.last ?? 0,
                         times.filter { $0 > 8 }.count, times.filter { $0 > 16 }.count,
                         cpuAverage, cpuP95, cpuSorted.last ?? 0, cpuTimes.filter { $0 > 8 }.count
+                    ) + String(
+                        format: "; cpu between steps %.1f ms",
+                        Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - testStart) / 1e6 - cpuTimes.reduce(0, +)
                     ) + "; " + MenuTiming.paintedCards())
                 }
             }

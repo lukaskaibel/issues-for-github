@@ -106,18 +106,21 @@ struct CardView: View, Equatable {
         .frame(width: around.leading + width + around.trailing, height: around.top + height + around.bottom)
         .padding(EdgeInsets(top: -around.top, leading: -around.leading, bottom: -around.bottom, trailing: -around.trailing))
         .accessibilityElement()
-        .accessibilityLabel(
-            "\(card.item.displayNumber) \(card.item.title)" + (card.spokenBlocker.map { ", \($0)" } ?? "")
-                + (card.due.map { ", \($0.tooltip)" } ?? "")
-                + (card.item.parentNumber.map { number in
-                    ", " + String(localized: card.parentIsEpic
-                        ? .epicTooltip(epic: card.item.parentTitle ?? "#\(number)") : .subIssueOf(number: "#\(number)"))
-                } ?? "")
-                + card.spokenChips.map { ", \($0)" }.joined()
-        )
+        .accessibilityLabel(Self.spokenLabel(card))
         .accessibilityAddTraits(.isButton)
         // The slot stands in for the card being dragged.
         .accessibilityHidden(slotHeight != nil)
+    }
+
+    /// What VoiceOver reads for a card.
+    static func spokenLabel(_ card: CardModel) -> String {
+        "\(card.item.displayNumber) \(card.item.title)" + (card.spokenBlocker.map { ", \($0)" } ?? "")
+            + (card.due.map { ", \($0.tooltip)" } ?? "")
+            + (card.item.parentNumber.map { number in
+                ", " + String(localized: card.parentIsEpic
+                    ? .epicTooltip(epic: card.item.parentTitle ?? "#\(number)") : .subIssueOf(number: "#\(number)"))
+            } ?? "")
+            + card.spokenChips.map { ", \($0)" }.joined()
     }
 
     static func height(titleHeight: CGFloat) -> CGFloat {
