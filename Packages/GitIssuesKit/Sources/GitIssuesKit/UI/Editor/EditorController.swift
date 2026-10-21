@@ -36,6 +36,20 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
     var unwrapped: MarkdownUnwrapped?
     /// Eases the text into its new look after an edit: bold thickens, a heading grows, typed marks fade in.
     let styleAnimator = MarkdownStyleAnimator()
+    /// Unfolds the marks the caret comes to and folds away those it leaves.
+    let revealAnimator = MarkdownRevealAnimator()
+    /// Which marks of the lines the last edit styled again were hidden before it, for the marks it showed or hid to fold
+    /// in or out (`updateReveal`).
+    private var editedMarks: (scope: NSRange, hiddenBefore: IndexSet)?
+    /// The start of the line whose heading #s were just typed on a touch keyboard: they show until the caret leaves the
+    /// line, so you see which heading you typed.
+    var typedHeading: Int?
+    /// When Delete was last pressed in the text, which tells a key held down from one pressed again.
+    var lastDeleteBackward: CFTimeInterval = 0
+    /// For tests: marks show next to the caret as with a keyboard (true) or not, as on a touch keyboard (false).
+    var marksShowOverride: Bool? {
+        didSet { updateReveal() }
+    }
     /// What the caret is in, for the buttons on the left of the bar above the keyboard.
     let caretContext = CaretContext()
 
@@ -64,6 +78,9 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
     var onSubmit: (() -> Void)?
     /// Escape. Without it, Escape finishes editing.
     var onEscape: (() -> Void)?
+    /// Goes to the end of the title above the text, as if it were the line above: ↑ on the first line, ← or Delete
+    /// at the very start. Without it, those keys stay in the text.
+    var onBackToTitle: (() -> Void)?
     /// Opens a link that was clicked or tapped: in the browser, or wherever a test says.
     var openLink: (URL) -> Void = { Platform.open($0) }
     /// What ⌘↵ does, for the list of shortcuts a hardware keyboard shows on iPad.
@@ -120,6 +137,9 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
         textView.controller = self
         styleAnimator.view = textView
         styleAnimator.onFrame = { [weak self] in self?.layoutChanged() }
+        revealAnimator.view = textView
+        revealAnimator.onConcealed = { [weak self] ranges in self?.invalidateGlyphs(in: ranges) }
+        revealAnimator.onFrame = { [weak self] in self?.layoutChanged() }
         updateEditability()
     }
 
@@ -131,6 +151,9 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
     /// Shows a text, from the start, with nothing to undo.
     func load(text: String) {
         isLoading = true
+        revealAnimator.cancel()
+        editedMarks = nil
+        typedHeading = nil
         revealed = []
         activeBlock = nil
         lineSignatures = []
@@ -183,6 +206,7 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
         #else
         clearUndo()
         #endif
+        editedMarks = nil
         isLoading = false
         textView.textDidLoad()
         layoutChanged()
@@ -294,6 +318,7 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
         document = MarkdownParser.parse(storage.mutableString, typing: isTypingIn)
         // Keep the revealed punctuation where it was until the caret settles, moved along with the edit.
         let oldEnd = editedRange.location + editedRange.length - delta
+        let oldRevealed = revealed
         revealed = revealed.compactMap { range in
             if range.upperBound <= editedRange.location { return range }
             if range.location >= oldEnd { return range.shifted(by: delta) }
@@ -307,6 +332,7 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
             let line = document.lineIndex(containing: caret)
             if let block = document.lines[safe: line]?.block, document.blocks[block].isSwappable { activeBlock = block } else { activeBlock = nil }
         }
+        if let typed = typedHeading, typed > editedRange.location { typedHeading = typed >= oldEnd ? typed + delta : nil }
 
         let signatures = computeSignatures()
         var lines: [Int] = []
@@ -327,11 +353,18 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
         if let first = lines.min(), let last = lines.max() {
             let start = document.lines[first].fullRange.location
             let scope = NSRange(location: start, length: document.lines[last].fullRange.upperBound - start)
+            if revealAnimator.isEnabled, !isLoading {
+                editedMarks = (scope, hiddenMarks(in: scope, edited: editedRange, delta: delta, revealedBefore: oldRevealed))
+            }
+            revealAnimator.shift(edited: editedRange, delta: delta)
             styleAnimator.restyle(storage, edited: editedRange, scope: scope) {
                 MarkdownStyler.style(storage, document: document, lines: lines, environment: environment)
                 // The edit's own fixing ran before the styling, which undid it: an emoji got the text's font.
                 storage.fixAttributes(in: scope)
             }
+            revealAnimator.reapply(to: storage)
+        } else {
+            revealAnimator.shift(edited: editedRange, delta: delta)
         }
         isApplyingStyle = false
         invalidateGlyphs(of: lines)
@@ -346,6 +379,16 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
         let range = NSRange(location: start, length: min(storage.length, document.lines[last].fullRange.upperBound) - start)
         guard range.length > 0 else { return }
         pendingGlyphs = pendingGlyphs.map { NSUnionRange($0, range) } ?? range
+        flushGlyphs()
+    }
+
+    /// The lines of these ranges get their glyphs made again (marks that finished folding away hide).
+    func invalidateGlyphs(in ranges: [NSRange]) {
+        for range in ranges where range.upperBound <= storage.length {
+            let line = nsText.lineRange(for: range)
+            guard line.length > 0 else { continue }
+            pendingGlyphs = pendingGlyphs.map { NSUnionRange($0, line) } ?? line
+        }
         flushGlyphs()
     }
 
@@ -434,6 +477,7 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
         isApplyingStyle = true
         storage.beginEditing()
         MarkdownStyler.style(storage, document: document, lines: lines, environment: environment)
+        revealAnimator.reapply(to: storage)
         if let first = lines.min(), let last = lines.max(), last < document.lines.count {
             let start = document.lines[first].fullRange.location
             storage.fixAttributes(in: NSRange(location: start, length: document.lines[last].fullRange.upperBound - start))
@@ -510,14 +554,38 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
             if case .callout = found.kind, lineIndex == found.lines.lowerBound { ranges.append(line.range) }
         }
         switch line.kind {
-        case .heading(_, let marker): ranges.append(marker)
+        case .heading(_, let marker): if showsHeadingMarks(marker, of: line) { ranges.append(marker) }
         case .thematicBreak: ranges.append(line.range)
         default: break
         }
         for span in line.spans where !isAtomic(span) && span.range.touches(caret) {
+            // On a touch keyboard the bar above it shows the styles the caret is in and turns them off.
+            if !showsMarks, span.isStyle { continue }
             ranges.append(span.range)
         }
         return (merged(ranges), block)
+    }
+
+    /// Whether marks show next to the caret: with a keyboard, which reaches them with the arrow keys and deletes them
+    /// with ease (the Mac, an iPad or iPhone with a keyboard attached). On a touch keyboard the bar above it turns
+    /// styles on and off, and only marks being typed show.
+    var showsMarks: Bool {
+        if let marksShowOverride { return marksShowOverride }
+        #if os(macOS)
+        return true
+        #else
+        return HardwareKeyboard.shared.isInUse
+        #endif
+    }
+
+    /// A heading's #s show while the caret is on it with a keyboard; on a touch keyboard while they are typed, until
+    /// the caret leaves the line.
+    private func showsHeadingMarks(_ marker: NSRange, of line: MarkdownLine) -> Bool {
+        if showsMarks || typedHeading == line.range.location { return true }
+        // Without their space yet, they are being typed.
+        guard marker.length > 0 else { return false }
+        let last = nsText.character(at: marker.upperBound - 1)
+        return last != 32 && last != 9
     }
 
     private func merged(_ ranges: [NSRange]) -> [NSRange] {
@@ -534,20 +602,28 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
     }
 
     func isRevealed(_ characterIndex: Int) -> Bool {
-        var low = 0, high = revealed.count - 1
+        Self.contains(revealed, characterIndex) || revealAnimator.isConcealing(characterIndex)
+    }
+
+    /// Whether sorted ranges that don't overlap contain an index.
+    private static func contains(_ ranges: [NSRange], _ index: Int) -> Bool {
+        var low = 0, high = ranges.count - 1
         while low <= high {
             let mid = (low + high) / 2
-            let range = revealed[mid]
-            if characterIndex < range.location { high = mid - 1 } else if characterIndex >= range.upperBound { low = mid + 1 } else { return true }
+            let range = ranges[mid]
+            if index < range.location { high = mid - 1 } else if index >= range.upperBound { low = mid + 1 } else { return true }
         }
         return false
     }
 
     /// Shows the punctuation next to the caret and opens the block it is in, keeping the caret's line still on screen.
+    /// Marks that come or go fold in or out.
     func updateReveal(anchor: Int? = nil) {
         guard !isLoading, !isTracking else { return }
         let target = revealTarget()
-        guard target.ranges != revealed || target.block != activeBlock else { return }
+        let edited = editedMarks
+        editedMarks = nil
+        guard target.ranges != revealed || target.block != activeBlock || edited != nil else { return }
         let blockChanged = target.block != activeBlock
         preservingScroll(anchor: anchor) {
             let old = revealed
@@ -560,7 +636,9 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
                 if let block = target.block { lines += self.lines(of: block) }
                 restyle(lines: lines)
             }
-            for range in old + target.ranges where range.upperBound <= storage.length {
+            let folding = foldingMarks(from: old, to: revealed, edited: edited)
+            revealAnimator.animate(appearing: folding.appearing, disappearing: folding.disappearing, in: storage)
+            for range in old + target.ranges + folding.appearing + folding.disappearing where range.upperBound <= storage.length {
                 let lineRange = nsText.lineRange(for: range)
                 layoutManager.invalidateGlyphs(forCharacterRange: lineRange, changeInLength: 0, actualCharacterRange: nil)
                 layoutManager.invalidateLayout(forCharacterRange: lineRange, actualCharacterRange: nil)
@@ -568,6 +646,53 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
             }
         }
         if blockChanged { layoutChanged() }
+    }
+
+    /// The marks in the lines an edit is about to style again that were hidden before it, where they are after it.
+    /// What was typed showed as it was typed; what came in all at once (pasted, undone) counts as hidden, so it
+    /// doesn't fold away mark by mark.
+    private func hiddenMarks(in scope: NSRange, edited: NSRange, delta: Int, revealedBefore: [NSRange]) -> IndexSet {
+        var hidden = IndexSet()
+        let scope = NSIntersectionRange(scope, NSRange(location: 0, length: storage.length))
+        // Not styled yet, the new text has whatever attributes it came with: all of it counts as one or the other.
+        if edited.length > 12 { hidden.insert(integersIn: edited.location..<edited.upperBound) }
+        storage.enumerateAttribute(.markdownHidden, in: scope) { value, run, _ in
+            guard let mode = value as? Int else { return }
+            for index in run.location..<run.upperBound where !NSLocationInRange(index, edited) {
+                // Where the character was before the edit.
+                let old = index < edited.location ? index : index - delta
+                if mode == HiddenMode.always.rawValue || !(Self.contains(revealedBefore, old) || revealAnimator.isConcealing(old)) {
+                    hidden.insert(index)
+                }
+            }
+        }
+        return hidden
+    }
+
+    /// The marks that come and go between two sets of revealed ranges, and those an edit showed or hid, as runs to fold
+    /// in and out.
+    private func foldingMarks(from old: [NSRange], to new: [NSRange], edited: (scope: NSRange, hiddenBefore: IndexSet)?) -> (appearing: [NSRange], disappearing: [NSRange]) {
+        guard revealAnimator.isEnabled else { return ([], []) }
+        var candidates = IndexSet()
+        for range in old + new + [edited?.scope].compactMap({ $0 }) where range.length > 0 {
+            candidates.insert(integersIn: range.location..<min(range.upperBound, storage.length))
+        }
+        var appearing = IndexSet()
+        var disappearing = IndexSet()
+        for run in candidates.rangeView {
+            storage.enumerateAttribute(.markdownHidden, in: NSRange(location: run.lowerBound, length: run.count)) { value, range, _ in
+                guard (value as? Int) == HiddenMode.untilRevealed.rawValue else { return }
+                for index in range.location..<range.upperBound {
+                    let before = edited.map { NSLocationInRange(index, $0.scope) ? !$0.hiddenBefore.contains(index) : nil } ?? nil
+                    let shownBefore = before ?? Self.contains(old, index)
+                    let shown = Self.contains(new, index)
+                    if shown, !shownBefore { appearing.insert(index) }
+                    if !shown, shownBefore { disappearing.insert(index) }
+                }
+            }
+        }
+        func runs(_ set: IndexSet) -> [NSRange] { set.rangeView.map { NSRange(location: $0.lowerBound, length: $0.count) } }
+        return (runs(appearing), runs(disappearing))
     }
 
     // MARK: - Keeping what you look at in place
@@ -579,6 +704,9 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
         let visible = visibleRect
         guard visible.height > 0 else { change(); return }
         var index = anchor ?? selection.location
+        // Laid out first: right after an edit the lines below it may not be yet, and the caret on a new line would
+        // be measured where the line above it was (Return after a heading scrolled the page by a line).
+        layoutManager.ensureLayout(forCharacterRange: NSRange(location: 0, length: min(storage.length, index + 1)))
         var y = yPosition(of: index)
         if anchor == nil, y < visible.minY || y > visible.maxY {
             index = firstVisibleCharacter(in: visible)
@@ -634,6 +762,10 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
     func selectionChanged() {
         flushGlyphs()
         layoutManager.selectedRanges = selectedRanges
+        // The #s typed on a touch keyboard go once the caret is on another line.
+        if let typed = typedHeading, document.lines.isEmpty || document.lines[document.lineIndex(containing: selection.location)].range.location != typed {
+            typedHeading = nil
+        }
         if !isTracking { updateReveal() }
         textNeedsDisplay()
         updateCaretContext()
@@ -642,6 +774,8 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
     func textChanged() {
         flushGlyphs()
         guard !isLoading else { return }
+        // An edit that didn't move the caret: the marks it showed or hid fold in or out now.
+        if editedMarks != nil, !isTracking { updateReveal() }
         textView.textDidChangeContent()
         onTextChange()
         layoutChanged()
@@ -747,3 +881,4 @@ final class EditorController: NSObject, @preconcurrency NSTextStorageDelegate, E
         return NSRect(x: caret.minX, y: min(max(caret.minY, rect.minY), rect.maxY - height), width: caret.width, height: height)
     }
 }
+

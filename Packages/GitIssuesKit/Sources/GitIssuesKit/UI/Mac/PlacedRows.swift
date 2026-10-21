@@ -26,6 +26,22 @@ struct RowPlan: Equatable {
 
     var count: Int { tops.count }
 
+    /// The rows whose top is in a stretch of the column.
+    func rows(startingIn range: Range<CGFloat>) -> Range<Int> {
+        var low = 0, high = count
+        while low < high {
+            let middle = (low + high) / 2
+            if tops[middle] < range.lowerBound { low = middle + 1 } else { high = middle }
+        }
+        let first = low
+        high = count
+        while low < high {
+            let middle = (low + high) / 2
+            if tops[middle] < range.upperBound { low = middle + 1 } else { high = middle }
+        }
+        return first..<max(first, low)
+    }
+
     /// The rows that reach into a stretch of the column, in the column's coordinates; a row that only touches its
     /// edge doesn't.
     func rows(in range: ClosedRange<CGFloat>) -> Range<Int> {
@@ -176,8 +192,7 @@ struct PlacedRows<Row: Identifiable, Content: View, Spoken: View>: View where Ro
     var kind: (Row) -> Int
     @ViewBuilder var content: (Row) -> Content
     /// What VoiceOver finds in place of a row, as big as the row. While VoiceOver or another assistive technology is
-    /// on, every row has it, also those without a view, so that VoiceOver goes through the whole column in order, as
-    /// it does in a lazy stack; the row views, which come and go and stand in no order, are hidden from it.
+    /// on, the rows for it stand in for the row views, which come and go and stand in no order (see `spokenRows`).
     @ViewBuilder var spoken: (Row) -> Spoken
     @Environment(\.accessibilityEnabled) private var accessibilityEnabled
 
@@ -195,17 +210,35 @@ struct PlacedRows<Row: Identifiable, Content: View, Spoken: View>: View where Ro
             }
         }
         .accessibilityHidden(accessibilityEnabled)
-        .background {
-            if accessibilityEnabled {
-                PlacedRowsLayout(height: plan.height) {
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                        spoken(row)
-                            .offset(y: plan.tops[index])
+        .background(alignment: .top) {
+            if accessibilityEnabled { spokenRows }
+        }
+    }
+}
+
+extension PlacedRows {
+    /// How tall each piece of the rows for VoiceOver is.
+    static var piece: CGFloat { 600 }
+
+    /// The rows for VoiceOver, in a lazy stack as the column was: VoiceOver moves on into rows that haven't been
+    /// built yet, and scrolls the column to the one it reads. The lazy stack guesses how tall the parts it hasn't built
+    /// are, so they come in pieces of the same height, each holding the rows that start in it, placed as the row views
+    /// are: wherever VoiceOver is, its rows stand where the row views do.
+    var spokenRows: some View {
+        let pieces = Int((plan.height / Self.piece).rounded(.up))
+        return LazyVStack(spacing: 0) {
+            ForEach(0..<pieces, id: \.self) { piece in
+                let top = CGFloat(piece) * Self.piece
+                PlacedRowsLayout(height: Self.piece) {
+                    // By row, so that VoiceOver stays on its row when the rows change.
+                    ForEach(plan.rows(startingIn: top..<(top + Self.piece)).map { (index: $0, id: rows[$0].id) }, id: \.id) { row in
+                        spoken(rows[row.index])
+                            .offset(y: plan.tops[row.index] - top)
                     }
                 }
-                .allowsHitTesting(false)
             }
         }
+        .allowsHitTesting(false)
     }
 }
 

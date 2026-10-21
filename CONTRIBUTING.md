@@ -38,7 +38,9 @@ Every pull request is reviewed and merged by the maintainer; nothing lands on `m
   around it, because a column builds a row for every card that scrolls into view and each view in a row adds to that.
   A row of a board column or a list that animates something of its own, such as the hover fade of an epic's header or
   of a notification in the Inbox, ends with `.geometryGroup()` after what animates it: otherwise each of its texts
-  takes on the animation and is drawn again on every frame of it. If you change any of this, time a board with a few
+  takes on the animation and is drawn again on every frame of it. Buttons a row shows on hover are always in it and
+  only fade in, over its texts rather than beside them: buttons put in on hover rebuild the row's layers each time, and
+  texts that make room for them are drawn again on every frame. If you change any of this, time a board with a few
   hundred issues before and after: `Tools/board-timing.sh` moves the pointer over two long columns and scrolls one, and
   keeps each step with the layers it drew in `build/board-timing/`. The debug remote's `menusweep main` does the same
   over the window, for the Inbox.

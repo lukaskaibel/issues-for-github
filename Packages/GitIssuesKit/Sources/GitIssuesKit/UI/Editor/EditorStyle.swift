@@ -14,6 +14,8 @@ extension NSAttributedString.Key {
     static let markdownDecoration = NSAttributedString.Key("markdown.decoration")
     /// Where a click goes.
     static let markdownLink = NSAttributedString.Key("markdown.link")
+    /// How much of a Markdown mark shows while it folds in or out (`MarkdownRevealAnimator`): its opacity, 0 to 1.
+    static let markdownFade = NSAttributedString.Key("markdown.fade")
 }
 
 enum HiddenMode: Int {

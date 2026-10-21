@@ -14,6 +14,7 @@ struct NewIssueView: View {
     @FocusState private var focus: Field?
     @State private var editingBody = false
     @State private var bodyHeight: CGFloat = 110
+    @State private var titleLink = TitleLink()
 
     private enum Field {
         case title
@@ -67,7 +68,9 @@ struct NewIssueView: View {
                     .font(.system(size: 21, weight: .semibold))
                     .focused($focus, equals: .title)
                     .focusOnAppear()
-                    .onSubmit { editingBody = true }
+                    // Return, Tab, ↓ and → at the end go on to the start of the description.
+                    .onSubmit { titleLink.enterText() }
+                    .titleOf(titleLink) { focus = .title }
 
                 // The description as it will look on GitHub, growing with the text up to a point and then scrolling.
                 ScrollView {
@@ -77,6 +80,7 @@ struct NewIssueView: View {
                         editing: $editingBody,
                         onSubmit: create,
                         onEscape: { model.overlay = nil },
+                        titleLink: titleLink,
                         accessibilityLabel: .description,
                         accessibilityIdentifier: "new-description"
                     )
