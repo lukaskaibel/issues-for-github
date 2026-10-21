@@ -34664,7 +34664,7 @@
       }
     },
     "markAsDone" : {
-      "comment" : "iPhone and iPad: item (a verb) in the long-press menu of a sub-issue that closes it as completed. Title case, as in menus.",
+      "comment" : "iPhone and iPad: item (a verb) in the long-press menu of a sub-issue that closes it as completed. Title case, as in menus. Also (Mac, iPhone, iPad): first choice in the status picker of an issue that is on none of the user's project boards, which closes it on GitHub.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -42098,7 +42098,7 @@
       }
     },
     "nothingMatchesFilterTitle" : {
-      "comment" : "My Issues (Mac, iPhone, iPad): title of the empty list when issues are assigned to you but the filter hides all of them.",
+      "comment" : "My Issues (Mac, iPhone, iPad): title of the empty list when issues are assigned to you but the filter hides all of them. Also the title of a project view's empty list when the view's filter leaves out every issue.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -70489,6 +70489,126 @@
         }
       }
     },
+    "resetDisplayCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that takes how the user sees a view (board or list, columns, groups, order, fields, hidden columns) back to how the view is on GitHub. 'Display' as in the Display options.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Darstellung zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Display"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer visualización"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser l’affichage"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表示をリセット"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "표시 재설정"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redefinir exibição"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сбросить отображение"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重置显示"
+          }
+        }
+      }
+    },
+    "resetFilterCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that takes a view's filter, changed in the app and not saved, back to the view's filter on GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Filter"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer filtro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser le filtre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フィルタをリセット"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터 재설정"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redefinir filtro"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сбросить изменения фильтра"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重置筛选"
+          }
+        }
+      }
+    },
     "resetFilterTooltip" : {
       "comment" : "Tooltip of the Reset button of a changed view filter.",
       "extractionState" : "manual",
@@ -75923,6 +76043,24 @@
       "comment" : "Mac, iPhone and iPad: message of the question before signing out while changes made in the app wait to be sent to GitHub (offline, or GitHub not reached yet). %(count)lld is how many (1, 2, …).",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Änderung ist noch nicht auf GitHub angekommen. Beim Abmelden wird sie gelöscht."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Änderungen sind noch nicht auf GitHub angekommen. Beim Abmelden werden sie gelöscht."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -75936,6 +76074,126 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%(count)lld changes haven’t reached GitHub yet. Signing out deletes them."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cambio aún no ha llegado a GitHub. Al cerrar sesión se elimina."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cambios aún no han llegado a GitHub. Al cerrar sesión se eliminan."
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld modification n’est pas encore arrivée sur GitHub. La déconnexion la supprime."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld modifications ne sont pas encore arrivées sur GitHub. La déconnexion les supprime."
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld件の変更がまだGitHubに届いていません。サインアウトすると削除されます。"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "변경 사항 %lld개가 아직 GitHub에 전송되지 않았습니다. 로그아웃하면 삭제됩니다."
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld alteração ainda não chegou ao GitHub. Ao encerrar a sessão, ela será apagada."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld alterações ainda não chegaram ao GitHub. Ao encerrar a sessão, elas serão apagadas."
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld изменения ещё не дошли до GitHub. При выходе они будут удалены."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld изменений ещё не дошли до GitHub. При выходе они будут удалены."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld изменение ещё не дошло до GitHub. При выходе оно будет удалено."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld изменения ещё не дошли до GitHub. При выходе они будут удалены."
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld 项更改尚未同步到 GitHub。退出登录会删除这些更改。"
                 }
               }
             }
@@ -76244,7 +76502,7 @@
       }
     },
     "signOutOfGitHubQuestion" : {
-      "comment" : "iPhone and iPad, account sheet: title of the question after tapping Sign Out.",
+      "comment" : "iPhone and iPad, account sheet: title of the question after tapping Sign Out. Also on the Mac: title of the question before signing out while changes wait to be sent to GitHub.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -83645,10 +83903,58 @@
       "comment" : "Mac, iPhone and iPad: text under 'Nothing matches the filter' when a project's saved view (as on GitHub) filters out every issue of the project.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Issue des Projekts passt zum Filter dieser Ansicht."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "None of the project’s issues match this view’s filter."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ninguna incidencia del proyecto coincide con el filtro de esta vista."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun ticket du projet ne correspond au filtre de cette vue."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このビューのフィルタに一致するIssueはプロジェクトにありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프로젝트에 이 보기의 필터와 일치하는 이슈가 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma issue do projeto corresponde ao filtro desta visualização."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ни одна задача проекта не подходит под фильтр этого представления."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "项目中没有议题符合此视图的筛选条件。"
           }
         }
       }
@@ -83657,10 +83963,58 @@
       "comment" : "Mac, iPhone and iPad: text under 'Nothing matches the filter' when the user changed a view's filter here and it now filters out every issue of the project; above a Reset button.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere den Filter oder setze ihn auf den Filter der Ansicht auf GitHub zurück."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Change the filter, or reset it to the view’s filter on GitHub."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambia el filtro o vuelve al filtro de la vista en GitHub."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifiez le filtre ou revenez au filtre de la vue sur GitHub."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フィルタを変更するか、GitHub上のビューのフィルタに戻してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터를 변경하거나 GitHub에 있는 보기의 필터로 되돌리세요."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altere o filtro ou volte ao filtro da visualização no GitHub."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Измените фильтр или верните фильтр представления с GitHub."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改筛选条件，或恢复为 GitHub 上该视图的筛选条件。"
           }
         }
       }

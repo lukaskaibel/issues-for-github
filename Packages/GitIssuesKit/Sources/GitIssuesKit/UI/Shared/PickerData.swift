@@ -164,7 +164,7 @@ extension AppModel {
         let targets = targets(for: item)
         switch kind {
         case .status:
-            guard item.isOnBoard else { return addToProjectItems(for: item) }
+            guard item.isOnBoard else { return stateItems(for: item, targets: targets) + addToProjectItems(for: item) }
             return statusOptions(projectId: item.projectId).enumerated().map { index, option in
                 PickerItem(
                     id: option.id, title: option.name,
@@ -300,6 +300,8 @@ extension AppModel {
     static let existingSubIssueId = "existing-sub-issue"
     static let removeParentId = "remove-parent"
     static let newMilestoneId = "new-milestone"
+    /// Closes, or opens again, issues on no board.
+    static let toggleStateId = "toggle-state"
     /// A row that makes a label carries its name in its id.
     static let newLabelPrefix = "new-label:"
 
@@ -320,6 +322,16 @@ extension AppModel {
 
     /// For an issue on none of your boards, the status picker puts it on one: the columns of each board it can
     /// go on, named after the board when there are several. One pick adds it and sets the column.
+    /// An issue on no board has no status, but it can be closed or opened again, as on GitHub.
+    private func stateItems(for item: Item, targets: [Item]) -> [PickerItem] {
+        guard targets.allSatisfy({ $0.kind == .issue && $0.contentId != nil && !$0.isOnBoard }) else { return [] }
+        let closed = targets.allSatisfy(\.isClosed)
+        return [PickerItem(
+            id: Self.toggleStateId, title: String(localized: closed ? .reopen : .markAsDone),
+            icon: AnyView(Image(systemName: closed ? "arrow.uturn.backward.circle" : "checkmark.circle").foregroundStyle(Theme.textSecondary))
+        )]
+    }
+
     private func addToProjectItems(for item: Item) -> [PickerItem] {
         let boards = boards(toAdd: item)
         let several = boards.count > 1
@@ -436,6 +448,11 @@ extension AppModel {
         switch kind {
         case .status:
             guard current.isOnBoard else {
+                if id == Self.toggleStateId {
+                    let close = !targets.allSatisfy(\.isClosed)
+                    for target in targets where target.isClosed != close { toggleDone(target) }
+                    return
+                }
                 let parts = id.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
                 guard let project = projects.first(where: { $0.id == parts.first }) else { return }
                 let option = statusOptions(projectId: project.id).first { $0.id == parts.last }

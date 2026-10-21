@@ -855,6 +855,14 @@ struct StatusMenuItems: View {
 
     var body: some View {
         if !item.isOnBoard {
+            // Closed or opened again, as on GitHub, or put on a board.
+            if item.kind == .issue, item.contentId != nil {
+                Button {
+                    withAnimation(Theme.spring) { model.toggleDone(model.item(id: item.id) ?? item) }
+                } label: {
+                    Label(item.isClosed ? .reopen : .markAsDone, systemImage: item.isClosed ? "arrow.uturn.backward.circle" : "checkmark.circle")
+                }
+            }
             AddToProjectMenuItems(item: item)
         } else {
             picker

@@ -441,10 +441,22 @@ private struct RootPalette: View {
                     model.copyLinks(targets)
                 })
                 if !several {
-                    list.append(PaletteCommand(id: "github", title: .openOnGitHub, section: section, icon: symbol("arrow.up.right")) {
+                    list.append(PaletteCommand(id: "github", title: .openOnGitHub, section: section, icon: symbol("arrow.up.right"), keys: ["⌘", "⇧", "O"]) {
                         model.openOnGitHub(item)
                     })
                 }
+            }
+            if !several, item.branchName != nil {
+                list.append(PaletteCommand(id: "branch", title: .copyBranchName, section: section, icon: symbol("arrow.triangle.branch"), keys: ["⌘", "⇧", "."]) {
+                    model.copyBranchName(item)
+                })
+            }
+            if model.openItem != nil {
+                // The inspector beside the open issue, as its toolbar button and ⌃⌘I show and hide it.
+                let shown = UserDefaults.standard.object(forKey: "showsIssueInspector") as? Bool ?? true
+                list.append(PaletteCommand(id: "inspector", title: shown ? .hideInspector : .showInspector, section: section, icon: symbol("sidebar.right"), keys: ["⌃", "⌘", "I"]) {
+                    withAnimation(Theme.spring) { UserDefaults.standard.set(!shown, forKey: "showsIssueInspector") }
+                })
             }
         }
         if model.openItem == nil, !model.orderedItems.isEmpty {
@@ -524,6 +536,16 @@ private struct RootPalette: View {
             })
         }
         if let view = model.currentView {
+            if model.filterChanged(view) {
+                list.append(PaletteCommand(id: "reset-filter", title: .resetFilterCommand, section: go, icon: symbol("arrow.uturn.backward")) {
+                    model.resetFilter(of: view)
+                })
+            }
+            if model.displayDiffers(view) {
+                list.append(PaletteCommand(id: "reset-display", title: .resetDisplayCommand, section: go, icon: symbol("arrow.uturn.backward")) {
+                    model.resetDisplay(of: view)
+                })
+            }
             if model.canSaveFilter(of: view) {
                 list.append(PaletteCommand(id: "save-view", title: .saveViewMenu, section: go, icon: symbol("square.and.arrow.down"), keys: ["⌘", "S"]) {
                     model.saveFilter(of: view)
