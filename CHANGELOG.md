@@ -81,6 +81,11 @@ All notable changes to this project are recorded here. The format follows
   edge of the sub-issues folded into it and the slot it leaves while dragged. Now the card draws all of that in one
   go, and an epic's header has fewer parts, so scrolling misses a frame of a 120 Hz display less than half as often.
   The board looks exactly as before.
+- On the Mac, a long board column scrolls more smoothly still, past epics' headers most of all. A column measured each
+  card as it came into view and stacked it under the one before; now it knows how tall every card is before drawing
+  any, puts each in its place, and a card or header scrolling in takes over the view of one that scrolled out instead
+  of being built anew. Scrolling takes about a quarter less work and misses a frame of a 120 Hz display half as often.
+  The board looks exactly as before.
 
 ## [1.0.0] - 2026-10-20
 
