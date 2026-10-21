@@ -259,3 +259,34 @@ extension AppModel {
         loadRepoMeta(for: item)
     }
 }
+
+/// Several picked issues moved together by a drag, on the board or in the list.
+struct PickedIssues: Equatable {
+    /// The picked issues, in the order they read, folded ones included.
+    var items: [Item]
+    /// Them and the sub-issues hanging under them, which leave their place while they are carried, as a single
+    /// issue's do.
+    var moving: Set<String>
+    /// The epic they all belong to, as its node id, if they do: they then stay with its other issues.
+    var epic: String?
+
+    /// What a drag that starts on `item` carries: the picked issues among `columns`, when it is one of two or more.
+    @MainActor
+    init?(from item: Item, in columns: [BoardColumn], model: AppModel) {
+        let picked = model.selectedIds
+        guard picked.count > 1, picked.contains(item.id) else { return nil }
+        var items: [Item] = []
+        var moving = Set<String>()
+        for column in columns {
+            for member in column.nesting.members where picked.contains(member.id) {
+                items.append(member)
+                moving.formUnion(column.nesting.descendants(of: member.id).union([member.id]))
+            }
+        }
+        guard items.count > 1 else { return nil }
+        self.items = items
+        self.moving = moving
+        let epics = Set(items.map { model.epic(of: $0)?.contentId })
+        epic = epics.count == 1 ? epics.first ?? nil : nil
+    }
+}

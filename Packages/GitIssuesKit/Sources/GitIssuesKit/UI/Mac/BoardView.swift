@@ -136,15 +136,34 @@ private struct LiftedCard: View {
     var avatarVersion: Int
 
     var body: some View {
+        let picked = active.picked?.items.count
         CardView(card: card, width: active.size.width, lifted: true, avatarVersion: avatarVersion)
-            // A parent carries the sub-issues hanging under it along.
-            .background(alignment: .top) { if card.nested != nil { CardStackEdge() } }
+            // A parent carries the sub-issues hanging under it along, and a picked card the other picked ones.
+            .background(alignment: .top) { if card.nested != nil || picked != nil { CardStackEdge() } }
+            .overlay(alignment: .topTrailing) { if let picked { PickedCount(count: picked) } }
             .scaleEffect(active.lifted ? 1.03 : 1)
             .rotationEffect(.degrees(active.lifted ? 1.5 + active.tilt : 0))
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: active.tilt)
             .shadow(color: active.lifted ? Theme.shadow : .clear, radius: active.lifted ? 22 : 0, y: active.lifted ? 16 : 0)
             .offset(x: active.location.x - active.grab.width, y: active.location.y - active.grab.height)
             .allowsHitTesting(false)
+    }
+}
+
+/// How many picked cards a drag carries, on the corner of the lifted one, as the Finder counts the files it drags.
+struct PickedCount: View {
+    var count: Int
+
+    var body: some View {
+        Text("\(count)")
+            .font(.system(size: 11, weight: .semibold))
+            .monospacedDigit()
+            .foregroundStyle(.white)
+            .padding(.horizontal, 6)
+            .frame(minWidth: 20, minHeight: 20)
+            .background(Capsule().fill(Theme.accentFill))
+            .offset(x: 7, y: -7)
+            .accessibilityHidden(true)
     }
 }
 

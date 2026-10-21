@@ -80,6 +80,10 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- On the Mac, dragging one of several picked issues moves all of them, on the board and in the list. They lift off
+  together, as one card with the edge of another under it and how many there are on its corner, and land one after the
+  other where you let go, with that column's status. A message says how many moved, with Undo, and `Esc` mid-drag puts
+  them all back. Before, only the issue under the pointer moved and the others stayed where they were.
 - The heading over an issue's sub-issues stays on one line on a small iPhone, in every language. When the row is short
   of room, the bar beside the title gets shorter and then steps aside, and only after it "4 of 6". Before, the title
   broke onto two lines on an iPhone SE, in English too, and in Spanish even on an iPhone 17 Pro.

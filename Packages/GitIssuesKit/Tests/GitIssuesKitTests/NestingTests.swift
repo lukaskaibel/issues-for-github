@@ -410,4 +410,51 @@ struct EpicGroupTests {
         let landing = nesting.landing(of: Self.item(9, parent: 40), at: 0, shown: others)
         #expect(landing.row == 0)
     }
+
+    // MARK: Moving picked issues together
+
+    @Test("Picked issues of no one epic dropped in the middle of an epic's group go past the whole group")
+    func pickedPassAGroup() {
+        let (shown, nesting) = column
+        let landing = nesting.landing(ofPicked: ids(7, 8), epic: nil, parents: ["issue-7", "issue-8"], at: 2, shown: shown)
+        #expect(landing.epic == nil)
+        // Their peers: #1, the group of #40 (by #2) and #3.
+        #expect(numbers(landing.peers) == [1, 2, 3])
+        #expect(landing.rank == 2)
+        #expect(landing.depth == 0)
+        // Rows: 1, header, 2, 4, [here], 3.
+        #expect(landing.row == 4)
+    }
+
+    @Test("Picked issues of one epic dropped on the epic's group join it, one level in")
+    func pickedJoinTheirEpic() {
+        let (shown, nesting) = column
+        let landing = nesting.landing(ofPicked: ids(7, 8), epic: "issue-40", parents: [], at: 2, shown: shown)
+        #expect(landing.epic == "issue-40")
+        #expect(numbers(landing.peers) == [2, 4])
+        #expect(landing.rank == 1)
+        #expect(landing.depth == 1)
+    }
+
+    @Test("Picked issues moved within their column leave their places, and what they bring along goes too")
+    func pickedLeaveTheirPlaces() {
+        // #1 with sub-issue #5, then #2 and #3; #1 and #3 are picked, and #5 comes along under #1.
+        let (shown, nesting) = Self.arrange([Self.item(1), Self.item(2), Self.item(3), Self.item(5, parent: 1)])
+        let moving = ids(1, 3, 5)
+        let others = shown.filter { !moving.contains($0.id) }
+        #expect(nesting.rows(without: moving).map(\.id) == ["item-2"])
+        let landing = nesting.landing(ofPicked: moving, epic: nil, parents: ["issue-1", "issue-3"], at: 1, shown: others)
+        #expect(numbers(landing.peers) == [2])
+        #expect(landing.rank == 1)
+        #expect(landing.row == 1)
+    }
+
+    @Test("An issue a picked one is the parent of isn't among their peers: it will hang under it")
+    func pickedAdoptTheirSubIssues() {
+        // #6 is a sub-issue of #9, which comes from another column with #8.
+        let (shown, nesting) = Self.arrange([Self.item(1), Self.item(6, parent: 9), Self.item(2)])
+        let landing = nesting.landing(ofPicked: ids(8, 9), epic: nil, parents: ["issue-8", "issue-9"], at: 3, shown: shown)
+        #expect(numbers(landing.peers) == [1, 2])
+        #expect(landing.rank == 2)
+    }
 }

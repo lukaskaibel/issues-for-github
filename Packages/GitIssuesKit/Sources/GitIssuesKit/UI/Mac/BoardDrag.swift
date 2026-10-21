@@ -2,9 +2,9 @@
 import Observation
 import SwiftUI
 
-/// State of a card drag on the board: which card is lifted, or which epic's issues by their header, where it would
-/// land, and the geometry needed to work that out. One gesture on the whole board drives it, so the drag survives
-/// the card's view moving from one column to another.
+/// State of a card drag on the board: which card is lifted, with the other picked ones when it is one of them, or
+/// which epic's issues by their header, where it would land, and the geometry needed to work that out. One gesture on
+/// the whole board drives it, so the drag survives the card's view moving from one column to another.
 @MainActor
 @Observable
 final class BoardDrag {
@@ -15,6 +15,8 @@ final class BoardDrag {
         var item: Item
         /// The issues of an epic standing together in a column, lifted by their header to move them all.
         var group: GroupDrag?
+        /// The picked cards, lifted together by one of them.
+        var picked: PickedIssues?
         var size: CGSize
         /// Pointer offset from the card's top-left corner at pick-up.
         var grab: CGSize
@@ -157,8 +159,9 @@ final class BoardDrag {
     var isDragging: Bool { active != nil }
 
     /// Columns as they should be drawn right now: the lifted card's slot sits where it would land. The sub-issues
-    /// hanging under it go with it, so they leave their column while it is held. Lifted by their header, an epic's
-    /// issues leave too, and the column it would land in shows the slot (see `groupSlot(in:)`).
+    /// hanging under it go with it, so they leave their column while it is held, and so do the other picked cards
+    /// lifted with it. Lifted by their header, an epic's issues leave too, and the column it would land in shows the
+    /// slot (see `groupSlot(in:)`).
     func arrange(_ columns: [BoardColumn]) -> [BoardColumn] {
         guard let active, let target else { return columns }
         if let group = active.group {
@@ -173,7 +176,12 @@ final class BoardDrag {
         }
         return columns.map { column in
             var column = column
-            if column.items.contains(where: { $0.id == active.item.id }) {
+            if let picked = active.picked {
+                if column.nesting.members.contains(where: { picked.moving.contains($0.id) }) {
+                    column.nesting.rows = column.nesting.rows(without: picked.moving)
+                    column.items = column.items.filter { !picked.moving.contains($0.id) }
+                }
+            } else if column.items.contains(where: { $0.id == active.item.id }) {
                 column.nesting.rows = column.rows(without: active.item)
                 column.items = column.shown(without: active.item)
             }
@@ -216,6 +224,8 @@ final class BoardDrag {
             if let group = current.group {
                 let members = model.columns.flatMap(\.nesting.members).filter { group.ids.contains($0.id) }
                 model.drop(group.group, members: members, in: column, at: target.index)
+            } else if let picked = current.picked {
+                model.drop(picked, in: column, at: target.index)
             } else {
                 model.drop(current.item, in: column, at: target.index)
             }
@@ -241,11 +251,20 @@ final class BoardDrag {
               let column = model.columns.first(where: { column in column.items.contains { $0.id == id } }),
               let index = column.items.firstIndex(where: { $0.id == id }) else { return false }
         let item = column.items[index]
-        let row = column.nesting.rows.firstIndex { $0.id == id } ?? 0
-        origin = Target(columnId: column.id, index: index, depth: column.nesting.depth(of: id), row: row)
+        // A picked card brings the other picked ones along.
+        let picked = PickedIssues(from: item, in: model.columns, model: model)
+        if let picked {
+            // Where it stands now, counted as a drop there would count it.
+            let index = column.items[..<index].filter { !picked.moving.contains($0.id) }.count
+            let landing = column.landing(of: picked, at: index)
+            origin = Target(columnId: column.id, index: landing.slot, depth: landing.depth, row: landing.row)
+        } else {
+            let row = column.nesting.rows.firstIndex { $0.id == id } ?? 0
+            origin = Target(columnId: column.id, index: index, depth: column.nesting.depth(of: id), row: row)
+        }
         target = origin
         active = Active(
-            item: item, size: frame.size,
+            item: item, picked: picked, size: frame.size,
             grab: CGSize(width: point.x - frame.minX, height: point.y - frame.minY),
             location: point
         )
@@ -296,9 +315,10 @@ final class BoardDrag {
             }
         } completion: { [self] in
             // Removing the overlay and showing the real card must not animate: they are in the same place. An
-            // epic's issues unfold from their slot.
-            var transaction = Transaction(animation: current.group == nil ? nil : Theme.spring)
-            transaction.disablesAnimations = current.group == nil
+            // epic's issues, and picked cards, unfold from their slot.
+            let unfolds = current.group != nil || current.picked != nil
+            var transaction = Transaction(animation: unfolds ? Theme.spring : nil)
+            transaction.disablesAnimations = !unfolds
             withTransaction(transaction) {
                 active = nil
                 target = nil
@@ -320,8 +340,8 @@ final class BoardDrag {
         let candidates = model.columns.compactMap { column in columnFrames[column.id].map { (column, $0) } }
         guard let (column, _) = candidates.min(by: { distance(centre.x, to: $0.1) < distance(centre.x, to: $1.1) }) else { return }
 
-        let others = current.group.map { group in column.items.filter { !group.ids.contains($0.id) } }
-            ?? column.shown(without: current.item)
+        let moving = current.group?.ids ?? current.picked?.moving
+        let others = moving.map { moving in column.items.filter { !moving.contains($0.id) } } ?? column.shown(without: current.item)
         var index = 0
         var firstVisible: Int?
         var anyAbove = false
@@ -338,6 +358,8 @@ final class BoardDrag {
         // An epic's issues go together, among the epic's other issues where the column has some.
         let landing = if let group = current.group {
             column.landing(ofGroup: group.group.contentId, moving: group.ids, at: index)
+        } else if let picked = current.picked {
+            column.landing(of: picked, at: index)
         } else {
             column.landing(of: current.item, at: index, epic: model.epic(of: current.item)?.contentId)
         }
