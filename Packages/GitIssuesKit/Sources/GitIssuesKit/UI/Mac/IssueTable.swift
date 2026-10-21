@@ -541,6 +541,14 @@ struct IssueTable: NSViewRepresentable {
             return (section.id, header, issues.count)
         }
 
+        /// Whether dropping `items` into a section by status would leave them where they are: in a view with an order of
+        /// its own, issues already in the section only snap back to their place, so such a drop isn't offered.
+        private func staysPut(_ items: [Item], in sectionId: String) -> Bool {
+            guard let first = items.first, model.isOrdered(projectId: first.projectId),
+                  let column = column(for: sectionId, of: first) else { return false }
+            return items.allSatisfy { item in column.nesting.members.contains { $0.id == item.id } }
+        }
+
         /// The column a section of a project's list shows, which a dropped issue joins.
         private func column(for sectionId: String, of item: Item) -> BoardColumn? {
             guard let projectId = item.projectId else { return nil }
@@ -656,7 +664,8 @@ struct IssueTable: NSViewRepresentable {
             guard info.draggingSource as? NSTableView === tableView else { return [] }
             if info.draggingPasteboard.string(forType: Self.epicType) != nil {
                 // The gap opens where the epic's issues will land, together, as a whole.
-                guard let dragged = draggedGroup(info), let target = groupLanding(dragged, above: row) else { return [] }
+                guard let dragged = draggedGroup(info), let target = groupLanding(dragged, above: row),
+                      !staysPut(dragged.members, in: target.column.id) else { return [] }
                 let moving = Set(dragged.members.map(\.id))
                 let slot = target.column.landing(ofGroup: dragged.group.contentId, moving: moving, at: target.index).row
                 tableView.setDropRow(tableRow(slot, afterHeader: target.header, shown: target.column.nesting.rows(without: moving)), dropOperation: .above)
@@ -672,7 +681,7 @@ struct IssueTable: NSViewRepresentable {
                     return .move
                 }
                 // The gap opens where they will land, together.
-                guard let column = column(for: section.id, of: first) else { return [] }
+                guard !staysPut(picked.items, in: section.id), let column = column(for: section.id, of: first) else { return [] }
                 let slot = column.landing(of: picked, at: landing.index).row
                 tableView.setDropRow(tableRow(slot, afterHeader: landing.header, shown: column.nesting.rows(without: picked.moving)), dropOperation: .above)
                 return .move
@@ -687,6 +696,10 @@ struct IssueTable: NSViewRepresentable {
                 }
                 // Anywhere below the first header; in the middle of a row means just above it. The gap opens where
                 // the issue will land, which for a sub-issue is among its parent's sub-issues.
+                if let item = model.item(id: id), let landing = landing(above: max(row, 1), moving: moving(item)),
+                   staysPut([item], in: landing.sectionId) {
+                    return []
+                }
                 tableView.setDropRow(snappedDropRow(id, above: max(row, 1)), dropOperation: .above)
                 return .move
             }

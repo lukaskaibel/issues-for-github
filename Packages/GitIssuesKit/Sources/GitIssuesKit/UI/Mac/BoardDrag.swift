@@ -220,7 +220,9 @@ final class BoardDrag {
     func ended(model: AppModel) {
         defer { ignoringGesture = false }
         guard let current = active, !current.settling else { return }
-        if let target, target != origin, let column = model.columns.first(where: { $0.id == target.columnId }) {
+        // Back where it was lifted, nothing moves, unless picked cards from elsewhere come along into that column.
+        if let target, let column = model.columns.first(where: { $0.id == target.columnId }),
+           target != origin || current.picked?.items.contains(where: { item in !column.nesting.members.contains { $0.id == item.id } }) == true {
             if let group = current.group {
                 let members = model.columns.flatMap(\.nesting.members).filter { group.ids.contains($0.id) }
                 model.drop(group.group, members: members, in: column, at: target.index)
@@ -246,6 +248,8 @@ final class BoardDrag {
     }
 
     private func begin(at point: CGPoint, model: AppModel) -> Bool {
+        // A board you can only read has nothing to move, as its list hasn't.
+        guard model.currentProject?.viewerCanUpdate == true else { return false }
         if let header = header(at: point) { return begin(header, at: point, model: model) }
         guard let (id, frame) = cardFrames.first(where: { $0.value.contains(point) }),
               let column = model.columns.first(where: { column in column.items.contains { $0.id == id } }),
@@ -364,7 +368,9 @@ final class BoardDrag {
             column.landing(of: current.item, at: index, epic: model.epic(of: current.item)?.contentId)
         }
 
-        let next = Target(columnId: column.id, index: landing.slot, depth: landing.depth, row: landing.row)
+        var next = Target(columnId: column.id, index: landing.slot, depth: landing.depth, row: landing.row)
+        // In a view with an order of its own, a card can't change places within its column: the slot stays put there.
+        if let origin, column.id == origin.columnId, model.isOrdered(projectId: model.currentProjectId) { next = origin }
         if next != target {
             withAnimation(Theme.spring) { target = next }
         }
