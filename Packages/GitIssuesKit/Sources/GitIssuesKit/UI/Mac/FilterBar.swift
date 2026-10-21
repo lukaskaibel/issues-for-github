@@ -541,6 +541,34 @@ struct DisplayOptions: View {
                     }
                 }
             }
+            let hidden = mode == .board ? model.hiddenColumns(projectId: view.projectId) : []
+            if !hidden.isEmpty {
+                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(.hiddenColumns).font(.small).foregroundStyle(Theme.textSecondary)
+                    // A click shows the column on the board again.
+                    FlowLayout(spacing: 5) {
+                        ForEach(hidden) { column in
+                            Button {
+                                model.setColumn(column.id, hidden: false, of: view)
+                            } label: {
+                                HStack(spacing: 5) {
+                                    ColumnIcon(column: column, size: 12)
+                                    Text(column.title)
+                                }
+                                .font(.small)
+                                .foregroundStyle(Theme.textTertiary)
+                                .padding(.horizontal, 9)
+                                .frame(height: 22)
+                                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Theme.chipBorder, lineWidth: 1))
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainPressStyle())
+                            .help(Text(.showColumnAgainTooltip))
+                        }
+                    }
+                }
+            }
             if model.displayDiffers(view) {
                 Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
                 HStack(spacing: 8) {

@@ -24,14 +24,17 @@ struct NewIssueView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 if choosesProject {
-                    // In a repository, the issue can go on any of its boards or on none, like Linear's project chip.
+                    // In a repository, the issue can go on any of its boards or on none, like Linear's project chip;
+                    // where no board is on screen, on any of yours.
                     GlassMenuPicker {
                         let menu = MenuBuilder()
                         for project in boards {
                             menu.item(project.title, checked: draft.projectId == project.id) { selectProject(project.id) }
                         }
-                        menu.divider()
-                        menu.item(.noProject, checked: draft.projectId == nil) { selectProject(nil) }
+                        if inRepository {
+                            menu.divider()
+                            menu.item(.noProject, checked: draft.projectId == nil) { selectProject(nil) }
+                        }
                         return menu.build()
                     } label: {
                         projectChip
@@ -177,7 +180,7 @@ struct NewIssueView: View {
                 } label: {
                     HStack(spacing: 4) {
                         (repos.first { $0.id == draft.repoId }.map { Text($0.nameWithOwner) } ?? Text(.chooseRepositoryPlaceholder))
-                        if !(draft.parent != nil || repos.count < 2 || choosesProject) {
+                        if !(draft.parent != nil || repos.count < 2 || inRepository) {
                             Image(systemName: "chevron.up.chevron.down").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.textTertiary)
                         }
                     }
@@ -185,7 +188,7 @@ struct NewIssueView: View {
                     .foregroundStyle(Theme.textBody)
                 }
                 .fixedSize()
-                .disabled(draft.parent != nil || repos.count < 2 || choosesProject)
+                .disabled(draft.parent != nil || repos.count < 2 || inRepository)
                 Spacer()
                 Text("⌘↵").font(.tiny).foregroundStyle(Theme.textSecondary)
                 Button(draft.isEpic ? .createEpicButton : .createIssueMac, action: create)
@@ -225,13 +228,20 @@ struct NewIssueView: View {
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
     private var repos: [RepoRef] { model.repos(forNewIssueIn: draft.projectId, repoId: draft.repoId) }
 
-    /// A new issue started in a repository chooses its board; elsewhere the board is the one on screen.
+    /// A new issue started in a repository chooses its board, and so does one started where no board is on screen
+    /// (My Issues, the Inbox); on a board, a milestone or a roadmap it goes on that board.
     private var choosesProject: Bool {
+        draft.parent == nil && (model.currentRepositoryId != nil || model.scopeProjectId == nil)
+    }
+
+    /// Started in a repository, the issue lives there, on one of its boards or on none.
+    private var inRepository: Bool {
         model.currentRepositoryId != nil && draft.parent == nil
     }
 
     private var boards: [Project] {
-        model.currentRepositoryId.map { model.boards(ofRepository: $0) } ?? []
+        if let repoId = model.currentRepositoryId { return model.boards(ofRepository: repoId) }
+        return model.openProjects.filter { $0.viewerCanUpdate && (!model.hiddenProjectIds.contains($0.id) || $0.id == draft.projectId) }
     }
 
     @ViewBuilder
@@ -258,6 +268,8 @@ struct NewIssueView: View {
     private func selectProject(_ id: String?) {
         guard id != draft.projectId else { return }
         draft.projectId = id
+        // Outside a repository, the board's own repository comes along.
+        if !inRepository { draft.repoId = id.flatMap { model.defaultRepoId(projectId: $0) } ?? draft.repoId }
         draft.statusId = defaultStatus(projectId: id)
         draft.priorityId = nil
         if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
@@ -268,6 +280,11 @@ struct NewIssueView: View {
     private func viewPreset(projectId: String?, parent: Item?, repoScope: String?, planned: Bool) -> NewIssuePreset? {
         guard parent == nil, repoScope == nil, !planned, model.currentView != nil, projectId == model.currentProjectId else { return nil }
         return model.newIssuePreset(projectId: projectId)
+    }
+
+    /// The status the dialog was opened with; "No status" (from that column's plus) is none.
+    private func chosenStatus(_ id: String) -> String? {
+        id == BoardColumn.noStatusId ? nil : id
     }
 
     private func defaultStatus(projectId: String?) -> String? {
@@ -291,7 +308,8 @@ struct NewIssueView: View {
         } else if let repoScope {
             projectId = model.boards(ofRepository: repoScope).first?.id
         } else {
-            projectId = model.currentProjectId ?? model.projects.first { !$0.closed }?.id
+            // The board on screen, also under its roadmap; elsewhere the one open last.
+            projectId = model.scopeProjectId ?? model.sidebarProject?.id
         }
         // A sub-issue lives in its parent's repository; one started in a repository lives there.
         let repoId = parent?.repoId ?? repoScope ?? projectId.flatMap { model.defaultRepoId(projectId: $0) }
@@ -307,9 +325,9 @@ struct NewIssueView: View {
         let milestone = plan.milestoneTitle ?? model.currentMilestoneTitle
             ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
         if typed == nil, groupPreset == nil, let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id, unsent.isEpic == plan.isEpic,
-           repoScope != nil ? unsent.repoId == repoScope : unsent.projectId == projectId {
+           repoScope != nil ? unsent.repoId == repoScope : model.scopeProjectId == nil || unsent.projectId == projectId {
             draft = unsent
-            if let statusId { draft.statusId = statusId }
+            if let statusId { draft.statusId = chosenStatus(statusId) }
             if let milestone { draft.milestoneTitle = milestone }
             restored = true
             focus = .title
@@ -320,14 +338,16 @@ struct NewIssueView: View {
         var new = NewIssueDraft(projectId: projectId)
         new.parent = parent
         new.repoId = repoId
-        new.statusId = statusId ?? defaultStatus(projectId: projectId)
+        new.statusId = statusId.map(chosenStatus) ?? defaultStatus(projectId: projectId)
         new.title = typed ?? ""
+        // Begun in My Issues, it is yours, so it shows up there, as on iPhone and iPad.
+        if model.scope == .myIssues, parent == nil, let viewer = model.viewer { new.assignees = [viewer.person] }
         new.milestoneTitle = milestone
         new.isEpic = plan.isEpic
         // Begun in a view: what its filter asks for, and its column's or group's value, as on GitHub.
         if let preset = groupPreset ?? viewPreset(projectId: projectId, parent: parent, repoScope: repoScope, planned: plan != NewIssuePlan()) {
             model.apply(preset, to: &new)
-            if let statusId { new.statusId = statusId }
+            if let statusId { new.statusId = chosenStatus(statusId) }
         }
         draft = new
         focus = .title
@@ -349,8 +369,13 @@ struct NewIssueView: View {
             model.unsentNewIssue = nil
             model.overlay = nil
             model.noteIfHidden(id)
-            // The new issue takes the keyboard focus, so Return opens it and S, A or L change it right away.
-            if model.openItem == nil, model.scopedItems.contains(where: { $0.id == id }) { model.moveFocus(to: id) }
+            // The new issue takes the keyboard focus, so Return opens it and S, A or L change it right away; a folded
+            // section or parent it went into opens for it.
+            if model.openItem == nil, model.scopedItems.contains(where: { $0.id == id }) {
+                model.reveal(id)
+                // Not in a column you hid, where it doesn't show.
+                if model.orderedItems.contains(where: { $0.id == id }) { model.moveFocus(to: id) }
+            }
         }
     }
 
@@ -394,7 +419,10 @@ struct NewIssueView: View {
     private func items(_ kind: PickerKind) -> [PickerItem] {
         switch kind {
         case .status:
-            return statuses.map { option in
+            // "No status" while the issue has none, as one made in that column.
+            let none = draft.statusId == nil && draft.projectId != nil
+                ? [PickerItem(id: "", title: String(localized: .noStatus), selected: true, icon: AnyView(StatusIcon(glyph: .none)))] : []
+            return none + statuses.map { option in
                 PickerItem(id: option.id, title: option.name, selected: draft.statusId == option.id, icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id))))
             }
         case .priority:
@@ -418,14 +446,15 @@ struct NewIssueView: View {
                 )
             }, .label, key: \.title)
         case .milestone:
+            let numbered = AppModel.numbersPickMilestones(milestones.map(\.title))
             return [PickerItem(
                 id: "", title: String(localized: .noMilestone), selected: draft.milestoneTitle == nil,
-                icon: AnyView(MilestoneIcon(mark: .none)), shortcut: "0"
+                icon: AnyView(MilestoneIcon(mark: .none)), shortcut: numbered ? "0" : nil
             )] + milestones.enumerated().map { index, group in
                 PickerItem(
                     id: group.id, title: group.title, selected: draft.milestoneTitle == group.title,
                     icon: AnyView(MilestoneIcon(mark: model.mark(of: group, projectId: draft.projectId))),
-                    shortcut: index < 9 ? "\(index + 1)" : nil,
+                    shortcut: numbered && index < 9 ? "\(index + 1)" : nil,
                     trailing: group.due.map { AnyView(Text($0.shortLabel()).font(.small).foregroundStyle(Theme.textTertiary)) }
                 )
             }
@@ -437,7 +466,7 @@ struct NewIssueView: View {
     private func pick(_ kind: PickerKind, _ id: String) {
         switch kind {
         case .status:
-            draft.statusId = id
+            draft.statusId = id.isEmpty ? nil : id
         case .priority:
             draft.priorityId = id.isEmpty ? nil : id
         case .assignees:

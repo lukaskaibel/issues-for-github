@@ -277,9 +277,14 @@ extension AppModel {
     /// end, or where the project can't be changed.
     @discardableResult
     func move(_ item: Item, by delta: Int) -> Bool {
+        // On the board, its column; in the list, its section by status, whatever the board's columns are by. A group
+        // by another field has no order of its own to move in.
+        let source = viewMode == .board ? columns : item.projectId.map { listColumns(projectId: $0) } ?? []
+        if viewMode == .list, let section = sections.first(where: { $0.items.contains { $0.id == item.id } }), section.kind != .status {
+            return false
+        }
         guard let projectId = item.projectId, project(of: item)?.viewerCanUpdate == true, !isOrdered(projectId: projectId),
-              let column = (columns.contains { $0.items.contains { $0.id == item.id } } ? columns : columns(projectId: projectId))
-                .first(where: { $0.items.contains { $0.id == item.id } }),
+              let column = source.first(where: { $0.items.contains { $0.id == item.id } }),
               let index = column.items.firstIndex(where: { $0.id == item.id }) else { return false }
         var landing = column.landing(of: item, at: index, epic: epic(of: item)?.contentId)
         let rank = landing.rank + delta
@@ -429,13 +434,11 @@ extension AppModel {
     func delete(_ item: Item) {
         deletionCandidate = nil
         let wasCurrent = openItemId == item.id || cursorId == item.id
-        if openItemId == item.id { closeDetail() }
-        // The keyboard carries on from the issue after it (or before it, at the end), so deleting doesn't send
-        // you back to the top.
-        let order = wasCurrent ? orderedItems : []
-        let next = order.firstIndex { $0.id == item.id }.flatMap { index in
-            order.indices.contains(index + 1) ? order[index + 1] : index > 0 ? order[index - 1] : nil
-        }
+        // Back to where it was opened from, as Escape goes: its parent, if it was opened from there.
+        if openItemId == item.id { leaveIssue() }
+        // The keyboard carries on from the issue after it in its column or section (or before it, at the end), so
+        // deleting doesn't send you back to the top; not behind the parent's page Back went to.
+        let next = wasCurrent && openItemId == nil ? Self.neighbour(of: item.id, in: focusGroups) { $0 != item.id } : nil
         if focusedItemId == item.id { focusedItemId = nil }
         if hoveredItemId == item.id { hoveredItemId = nil }
         history.removeAll { $0.itemId == item.id }
@@ -446,10 +449,45 @@ extension AppModel {
                 isDraft: item.kind == .draft, label: "\(item.displayNumber) \(item.title)"
             ))])
         }
-        if let next { moveFocus(to: next.id) }
+        if let next { moveFocus(to: next) }
     }
 
     // MARK: Columns
+
+    /// How many issues of the whole project have a status, epics and those a view or milestone leaves out included:
+    /// all of them lose it when its column is deleted.
+    func issueCount(projectId: String?, statusId: String?) -> Int {
+        guard let projectId, let statusId else { return 0 }
+        return allItems.filter { $0.projectId == projectId && $0.statusId == statusId }.count
+    }
+
+    /// Moves a status column to `index` among `shown`, the status columns a board shows in their order, and saves the
+    /// order. Columns the board leaves out (hidden ones, a milestone's empty backlog) keep their places and stay:
+    /// saving only the columns on screen would delete the others on GitHub.
+    /// `animated: false` for a column dropped by hand, which is in its new place already.
+    func moveColumn(_ id: String, among shown: [String], to index: Int, projectId: String, animated: Bool = true) {
+        let options = statusOptions(projectId: projectId)
+        let order = Self.columnOrder(options.map(\.id), moving: id, among: shown, to: index)
+        guard order != options.map(\.id) else { return }
+        let save = { self.saveColumns(projectId: projectId, order.compactMap { id in options.first { $0.id == id }?.remote }) }
+        if animated { withAnimation(Theme.spring, save) } else { save() }
+    }
+
+    /// Every status in its new order: `id` at `index` among the shown ones without it, right after the shown
+    /// column before it (or right before the one after it).
+    static func columnOrder(_ all: [String], moving id: String, among shown: [String], to index: Int) -> [String] {
+        let others = shown.filter { $0 != id }
+        let index = min(max(index, 0), others.count)
+        var order = all.filter { $0 != id }
+        if index > 0, let after = order.firstIndex(of: others[index - 1]) {
+            order.insert(id, at: after + 1)
+        } else if index < others.count, let before = order.firstIndex(of: others[index]) {
+            order.insert(id, at: before)
+        } else {
+            order.append(id)
+        }
+        return order
+    }
 
     /// Saves a new set of status columns. Shown at once; rolled back if GitHub refuses.
     func saveColumns(projectId: String, _ newOptions: [RemoteOption]) {
@@ -555,12 +593,13 @@ extension AppModel {
         if hidden, scope == .repository(repo.id) { select(.myIssues) }
     }
 
-    /// Hides a project from the sidebar or brings it back. Hiding the one on screen moves to the next.
+    /// Hides a project from the sidebar or brings it back. Hiding the one on screen (its board, a milestone or its
+    /// roadmap) moves to the next.
     func setHidden(_ project: Project, _ hidden: Bool) {
         withAnimation(Theme.spring) {
             if hidden { hiddenProjectIds.insert(project.id) } else { hiddenProjectIds.remove(project.id) }
         }
-        guard hidden, scope == .project(project.id) else { return }
+        guard hidden, scope?.projectId == project.id else { return }
         if let next = projects.first(where: { !$0.closed && !hiddenProjectIds.contains($0.id) }) {
             select(.project(next.id))
         } else {
@@ -584,6 +623,8 @@ extension AppModel {
 
     func toggleSection(_ id: String, in scope: Scope? = nil) {
         guard let key = collapsedKey(scope) else { return }
+        let groups = scope == nil ? focusGroups : []
+        defer { keepFocusShown(from: groups) }
         let list = scope.map { $0 == self.scope ? sections : sections(for: $0) } ?? sections
         let byDefault = list.first { $0.id == id }.map(foldsByDefault) ?? false
         let wasFolded = isSectionCollapsed(id, in: scope, byDefault: byDefault)
@@ -605,9 +646,16 @@ extension AppModel {
     /// Option-click on a header, as in Finder: folds every section in or out, following the one clicked.
     func toggleAllSections(like id: String) {
         guard let key = collapsedKey(nil) else { return }
+        let groups = focusGroups
+        defer { keepFocusShown(from: groups) }
         let fold = !(sections.first { $0.id == id }.map { isFolded($0) } ?? isSectionCollapsed(id))
-        UserDefaults.standard.set(fold ? sections.map(\.id) : [], forKey: key)
-        UserDefaults.standard.set(fold ? [] : sections.map(\.id), forKey: "expanded." + key)
+        // Only the sections on screen: the project's other views keep their folds, which share the key.
+        let shown = Set(sections.map(\.id))
+        var folded = Set(UserDefaults.standard.stringArray(forKey: key) ?? []).subtracting(shown)
+        var unfolded = Set(UserDefaults.standard.stringArray(forKey: "expanded." + key) ?? []).subtracting(shown)
+        if fold { folded.formUnion(shown) } else { unfolded.formUnion(shown) }
+        UserDefaults.standard.set(Array(folded), forKey: key)
+        UserDefaults.standard.set(Array(unfolded), forKey: "expanded." + key)
         collapseVersion += 1
     }
 

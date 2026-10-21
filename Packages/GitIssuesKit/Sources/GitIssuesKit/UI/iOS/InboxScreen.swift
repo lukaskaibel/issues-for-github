@@ -25,7 +25,7 @@ struct InboxScreen: View {
                     message: String(localized: .inboxTokenCantReadMessage),
                     systemImage: "key"
                 ) {
-                    Button(.signInAgain) { model.signOut() }
+                    Button(.signInAgain) { model.requestSignOut() }
                         .buttonStyle(.bordered)
                 }
             } else if model.inboxMeta.access == .unknown, model.inboxEntries.isEmpty {
@@ -43,6 +43,7 @@ struct InboxScreen: View {
         .navigationTitle(.inbox)
         .navigationSubtitle(SyncSubtitle.text(model))
         .toolbar { toolbar }
+        .modifier(SignOutConfirmation(isPresented: Bindable(model).confirmSignOut))
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if let undo = model.inboxUndo {
                 MobileInboxUndo(undo: undo)

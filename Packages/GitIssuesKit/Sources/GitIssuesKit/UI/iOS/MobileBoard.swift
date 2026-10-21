@@ -20,10 +20,13 @@ struct MobileBoard: View {
     @State private var newStatus = ""
 
     var body: some View {
-        let columns = milestone.map { model.columns(for: .milestone(projectId: projectId, title: $0)) } ?? model.columns(projectId: projectId)
+        let columns = model.shownColumns(for: milestone.map { .milestone(projectId: projectId, title: $0) } ?? .project(projectId))
         let canEdit = model.projects.first { $0.id == projectId }?.viewerCanUpdate == true
+        let hidden = milestone == nil ? model.hiddenColumns(projectId: projectId) : []
+        // A milestone's board shows the board's columns; they are changed on the board itself.
+        let addsStatus = canEdit && milestone == nil && columns.allSatisfy { $0.value == nil }
         GeometryReader { proxy in
-            let width = columnWidth(available: proxy.size.width, count: columns.count, canEdit: canEdit)
+            let width = columnWidth(available: proxy.size.width, count: columns.count, trailing: addsStatus || !hidden.isEmpty)
             ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: 14) {
                     ForEach(columns) { column in
@@ -34,21 +37,27 @@ struct MobileBoard: View {
                         )
                         .frame(width: width)
                     }
-                    // A milestone's board shows the board's columns; they are changed on the board itself.
-                    if canEdit, milestone == nil {
-                        Button {
-                            newStatus = ""
-                            addingStatus = true
-                        } label: {
-                            Label(.addStatus, systemImage: "plus")
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(Theme.textSecondary)
-                                .padding(.horizontal, 12)
-                                .frame(height: 40)
-                                .contentShape(Rectangle())
+                    if addsStatus || !hidden.isEmpty {
+                        VStack(alignment: .leading, spacing: 16) {
+                            if addsStatus {
+                                Button {
+                                    newStatus = ""
+                                    addingStatus = true
+                                } label: {
+                                    Label(.addStatus, systemImage: "plus")
+                                        .font(.subheadline.weight(.medium))
+                                        .foregroundStyle(Theme.textSecondary)
+                                        .padding(.horizontal, 12)
+                                        .frame(height: 40)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .hoverEffect(.highlight)
+                            }
+                            if !hidden.isEmpty, let view = model.currentView(projectId: projectId) {
+                                MobileHiddenColumns(columns: hidden, view: view)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .hoverEffect(.highlight)
                         .frame(width: 170, alignment: .leading)
                     }
                 }
@@ -74,9 +83,9 @@ struct MobileBoard: View {
         }
     }
 
-    private func columnWidth(available: CGFloat, count: Int, canEdit: Bool) -> CGFloat {
+    private func columnWidth(available: CGFloat, count: Int, trailing: Bool) -> CGFloat {
         guard count > 0 else { return 290 }
-        let extra: CGFloat = canEdit ? 184 : 0
+        let extra: CGFloat = trailing ? 184 : 0
         let fitted = (available - 36 - extra - CGFloat(count - 1) * 14) / CGFloat(count)
         return min(max(fitted, 268), 330)
     }
@@ -100,6 +109,43 @@ struct MobileBoard: View {
         let index = column.items.prefix(slot ?? column.items.count).filter { others.contains($0.id) }.count
         dropped += 1
         withAnimation(Theme.spring) { model.drop(item, in: column, at: index, milestone: milestone) }
+    }
+}
+
+/// The columns you hid on the board, after its last column: each with its count, shown again with a tap.
+private struct MobileHiddenColumns: View {
+    @Environment(AppModel.self) private var model
+    var columns: [BoardColumn]
+    var view: ProjectView
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(.hiddenColumns)
+                .font(.footnote)
+                .foregroundStyle(Theme.textTertiary)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 4)
+            ForEach(columns) { column in
+                Button {
+                    model.setColumn(column.id, hidden: false, of: view)
+                } label: {
+                    HStack(spacing: 8) {
+                        ColumnIcon(column: column, size: 16)
+                        Text(column.title).lineLimit(1)
+                        Text("\(column.count)").monospacedDigit().foregroundStyle(Theme.textTertiary)
+                        Spacer(minLength: 0)
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .padding(.horizontal, 12)
+                    .frame(height: 40)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .hoverEffect(.highlight)
+                .accessibilityHint(Text(.showColumnAgainTooltip))
+            }
+        }
     }
 }
 
@@ -341,7 +387,7 @@ private struct MobileColumn: View {
     }
 
     private func neighbour(_ delta: Int) -> BoardColumn? {
-        let columns = milestone.map { model.columns(for: .milestone(projectId: projectId, title: $0)) } ?? model.columns(projectId: projectId)
+        let columns = model.shownColumns(for: milestone.map { .milestone(projectId: projectId, title: $0) } ?? .project(projectId))
         guard let index = columns.firstIndex(where: { $0.id == column.id }), columns.indices.contains(index + delta) else { return nil }
         return columns[index + delta]
     }
@@ -502,56 +548,36 @@ private struct MobileColumnHeader: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            StatusIcon(glyph: column.glyph, size: 16)
+            ColumnIcon(column: column, size: 16)
             Text(column.title).font(.subheadline.weight(.semibold)).lineLimit(1)
             Text("\(column.count)").font(.subheadline).monospacedDigit().foregroundStyle(Theme.textTertiary)
+            if let detail = column.detail {
+                Text(detail).font(.footnote).foregroundStyle(Theme.textTertiary).lineLimit(1)
+            }
             Spacer(minLength: 0)
-            if canEdit, let option = column.option {
+            if canEdit && column.option != nil || hidingView != nil {
                 Menu {
-                    Button {
-                        name = option.name
-                        renaming = true
-                    } label: {
-                        Label(.renameEllipsis, systemImage: "pencil")
+                    if canEdit, let option = column.option {
+                        statusItems(option)
                     }
-                    Menu {
-                        Picker(.colour, selection: Binding(
-                            get: { option.color },
-                            set: { color in edit { $0.color = color } }
-                        )) {
-                            ForEach(Defaults.optionColors, id: \.self) { color in
-                                Label {
-                                    Text(Defaults.colourName(color))
-                                } icon: {
-                                    MenuImages.label(StatusEditor.hex(color), scheme)
-                                }
-                                .tag(color)
-                            }
+                    // Hidden here only, for a view's board; one column always stays.
+                    if let view = hidingView {
+                        Button {
+                            model.setColumn(column.id, hidden: true, of: view)
+                        } label: {
+                            Label(.hideColumn, systemImage: "eye.slash")
                         }
-                        .pickerStyle(.inline)
-                    } label: {
-                        Label(.colour, systemImage: "paintpalette")
+                        .disabled(model.shownColumns(for: .project(projectId)).count <= 1)
                     }
-                    Divider()
-                    Button {
-                        move(-1)
-                    } label: {
-                        Label(.moveLeft, systemImage: "arrow.left")
+                    if canEdit, column.option != nil {
+                        Divider()
+                        Button(role: .destructive) {
+                            confirmDelete = true
+                        } label: {
+                            Label(.deleteStatusEllipsis, systemImage: "trash")
+                        }
+                        .disabled(statuses.count <= 1)
                     }
-                    .disabled(position == 0)
-                    Button {
-                        move(1)
-                    } label: {
-                        Label(.moveRight, systemImage: "arrow.right")
-                    }
-                    .disabled(position >= statuses.count - 1)
-                    Divider()
-                    Button(role: .destructive) {
-                        confirmDelete = true
-                    } label: {
-                        Label(.deleteStatusEllipsis, systemImage: "trash")
-                    }
-                    .disabled(statuses.count <= 1)
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.subheadline.weight(.medium))
@@ -562,7 +588,11 @@ private struct MobileColumnHeader: View {
                 .accessibilityLabel(.optionsForStatus(status: column.title))
             }
             Button {
-                navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: column.option?.id, milestoneTitle: milestone))
+                // With the column's status or value, and what the view's filter asks for, as on the Mac.
+                let preset = milestone == nil ? model.newIssuePreset(projectId: projectId, column: column.value) : nil
+                // "No status" is a column too: an issue made there gets none, rather than the first status.
+                let statusId = column.option?.id ?? (column.id == BoardColumn.noStatusId ? column.id : nil)
+                navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: statusId, milestoneTitle: milestone, preset: preset))
             } label: {
                 Image(systemName: "plus")
                     .font(.subheadline.weight(.medium))
@@ -587,15 +617,62 @@ private struct MobileColumnHeader: View {
         .confirmationDialog(Text(.deleteStatusQuestion(name: column.title)), isPresented: $confirmDelete, titleVisibility: .visible) {
             Button(.deleteStatus, role: .destructive) { delete() }
         } message: {
-            Text(column.count == 0
+            let count = model.issueCount(projectId: projectId, statusId: column.option?.id)
+            Text(count == 0
                  ? LocalizedStringResource.statusRemovedFromProject
-                 : .statusRemovedIssuesStay(count: column.count))
+                 : .statusRemovedIssuesStay(count: count))
         }
     }
 
     private var canEdit: Bool { model.projects.first { $0.id == projectId }?.viewerCanUpdate == true }
 
-    /// A colour GitHub offers for a status, by its name there ("GRAY", "BLUE" …).
+    /// The view whose board can hide this column: the open one, but not on a milestone's board.
+    private var hidingView: ProjectView? {
+        milestone == nil ? model.currentView(projectId: projectId) : nil
+    }
+
+    /// Rename, colour and move the status.
+    @ViewBuilder private func statusItems(_ option: FieldOption) -> some View {
+        Button {
+            name = option.name
+            renaming = true
+        } label: {
+            Label(.renameEllipsis, systemImage: "pencil")
+        }
+        Menu {
+            Picker(.colour, selection: Binding(
+                get: { option.color },
+                set: { color in edit { $0.color = color } }
+            )) {
+                ForEach(Defaults.optionColors, id: \.self) { color in
+                    Label {
+                        Text(Defaults.colourName(color))
+                    } icon: {
+                        MenuImages.label(StatusEditor.hex(color), scheme)
+                    }
+                    .tag(color)
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Label(.colour, systemImage: "paintpalette")
+        }
+        Divider()
+        let shown = shownStatuses
+        Button {
+            move(-1)
+        } label: {
+            Label(.moveLeft, systemImage: "arrow.left")
+        }
+        .disabled(shown.first == column.id)
+        Button {
+            move(1)
+        } label: {
+            Label(.moveRight, systemImage: "arrow.right")
+        }
+        .disabled(shown.last == column.id)
+        Divider()
+    }
 
     private var statuses: [FieldOption] { model.statusOptions(projectId: projectId) }
     private var position: Int { statuses.firstIndex { $0.id == column.id } ?? 0 }
@@ -607,12 +684,15 @@ private struct MobileColumnHeader: View {
         model.saveColumns(projectId: projectId, options)
     }
 
+    /// The status columns the board shows, which Move Left and Move Right step through.
+    private var shownStatuses: [String] {
+        model.shownColumns(for: milestone.map { .milestone(projectId: projectId, title: $0) } ?? .project(projectId)).compactMap { $0.option?.id }
+    }
+
     private func move(_ delta: Int) {
-        var options = statuses.map(\.remote)
-        let destination = position + delta
-        guard options.indices.contains(position), options.indices.contains(destination) else { return }
-        options.swapAt(position, destination)
-        withAnimation(Theme.spring) { model.saveColumns(projectId: projectId, options) }
+        let shown = shownStatuses
+        guard let index = shown.firstIndex(of: column.id), shown.indices.contains(index + delta) else { return }
+        model.moveColumn(column.id, among: shown, to: index + delta, projectId: projectId)
     }
 
     private func delete() {

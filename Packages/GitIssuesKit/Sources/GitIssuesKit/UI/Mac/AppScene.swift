@@ -50,28 +50,17 @@ public struct GitIssuesScene: Scene {
                     }
                     .keyboardShortcut("2", modifiers: .command)
                 } else {
-                    Button(.board) {
-                        model.closeDetail()
-                        withAnimation(Theme.spring) { model.viewMode = .board }
-                    }
-                    .keyboardShortcut("1", modifiers: .command)
-                    .disabled(model.currentProjectId == nil)
-                    Button(.list) {
-                        model.closeDetail()
-                        withAnimation(Theme.spring) { model.viewMode = .list }
-                    }
-                    .keyboardShortcut("2", modifiers: .command)
-                    .disabled(model.scope == .inbox)
+                    // From anywhere, as G B and G L do: the project used last when none is on screen.
+                    Button(.board) { model.showProjectLayout(.board) }
+                        .keyboardShortcut("1", modifiers: .command)
+                        .disabled(model.openProjects.isEmpty)
+                    Button(.list) { model.showProjectLayout(.list) }
+                        .keyboardShortcut("2", modifiers: .command)
+                        .disabled(model.openProjects.isEmpty)
                 }
                 Button(.myIssues) { model.select(.myIssues) }
                     .keyboardShortcut("3", modifiers: .command)
-                Button(.roadmap) {
-                    if model.scopeProjectId == nil { model.selectLastProject() }
-                    if let projectId = model.scopeProjectId {
-                        model.closeDetail()
-                        model.select(.roadmap(projectId))
-                    }
-                }
+                Button(.roadmap) { model.showRoadmap() }
                 .keyboardShortcut("4", modifiers: .command)
                 .disabled(model.openProjects.isEmpty)
                 Button(.inbox) { model.select(.inbox) }
@@ -91,7 +80,7 @@ public struct GitIssuesScene: Scene {
                     if let view = model.currentView { model.saveFilter(of: view) }
                 }
                 .keyboardShortcut("s", modifiers: .command)
-                .disabled(model.currentView.map { !model.filterChanged($0) || !model.canEditViews(projectId: $0.projectId) } ?? true)
+                .disabled(model.currentView.map { !model.canSaveFilter(of: $0) } ?? true)
                 Divider()
                 Button(.syncWithGitHubNow) { model.refresh() }
                     .keyboardShortcut("r", modifiers: .command)
@@ -132,6 +121,7 @@ public struct GitIssuesScene: Scene {
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.colorScheme) private var colorScheme
+    @State private var confirmSignOut = false
 
     var body: some View {
         @Bindable var model = model
@@ -183,7 +173,10 @@ struct SettingsView: View {
                     if model.isDemo {
                         Button(.leaveSampleData) { model.leaveDemo() }
                     } else if model.signedIn {
-                        Button(.signOut) { model.signOut() }
+                        Button(.signOut) {
+                            if model.pendingCount > 0 { confirmSignOut = true } else { model.signOut() }
+                        }
+                        .modifier(SignOutConfirmation(isPresented: $confirmSignOut))
                     }
                 }
             }

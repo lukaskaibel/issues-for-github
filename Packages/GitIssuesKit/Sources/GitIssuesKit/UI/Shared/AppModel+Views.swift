@@ -25,6 +25,8 @@ struct ViewDisplay: Codable, Equatable {
     var groupFieldId: String?
     var sort: [ViewSort]?
     var visibleFieldIds: [String]?
+    /// The board's columns you hid, by their ids. Only here: hiding a column changes nothing on GitHub.
+    var hiddenColumnIds: [String]?
 
     var isEmpty: Bool { self == ViewDisplay() }
 }
@@ -38,6 +40,8 @@ struct NewIssuePreset: Equatable {
     var assignees: [String] = []
     var milestoneTitle: String?
     var parentContentId: String?
+    /// Started in a group by repository: that repository.
+    var repoId: String?
     var fieldValues: [String: FieldValue] = [:]
 }
 
@@ -236,6 +240,7 @@ extension AppModel {
         if display.groupFieldId == view.groupByFieldId { display.groupFieldId = nil }
         if display.sort == view.sortBy { display.sort = nil }
         if display.visibleFieldIds == view.visibleFieldIds { display.visibleFieldIds = nil }
+        if display.hiddenColumnIds?.isEmpty == true { display.hiddenColumnIds = nil }
         viewDisplays[view.id] = display.isEmpty ? nil : display
         rebuild()
     }
@@ -273,6 +278,43 @@ extension AppModel {
         changeDisplay(of: view) { $0.visibleFieldIds = shown }
     }
 
+    /// The columns of a view's board you hid.
+    func hiddenColumnIds(of view: ProjectView) -> Set<String> {
+        Set(display(of: view).hiddenColumnIds ?? [])
+    }
+
+    /// Hides a column of a view's board, or shows it again. Its cards leave the board with it, and picks or the
+    /// keyboard focus on them go.
+    func setColumn(_ columnId: String, hidden: Bool, of view: ProjectView) {
+        var ids = display(of: view).hiddenColumnIds ?? []
+        ids.removeAll { $0 == columnId }
+        if hidden { ids.append(columnId) }
+        withAnimation(Theme.spring) {
+            changeDisplay(of: view) { $0.hiddenColumnIds = ids }
+        }
+        guard hidden else { return }
+        // The focus moves on by itself (`rebuild`); the cards stay in the list, so their picks are let go here.
+        let gone = Set(columns(projectId: view.projectId).filter { $0.id == columnId }.flatMap(\.nesting.members).map(\.id))
+        selectedIds.subtract(gone)
+        if let hovered = hoveredItemId, gone.contains(hovered) { hoveredItemId = nil }
+    }
+
+    /// The columns a board shows: a view's, without those you hid. A milestone's board shows every column.
+    func shownColumns(for scope: Scope) -> [BoardColumn] {
+        let all = columns(for: scope)
+        guard case .project(let projectId) = scope, let view = currentView(projectId: projectId) else { return all }
+        let hidden = hiddenColumnIds(of: view)
+        return hidden.isEmpty ? all : all.filter { !hidden.contains($0.id) }
+    }
+
+    /// The columns you hid on the board of a project's open view, in the board's order, with their cards.
+    func hiddenColumns(projectId: String) -> [BoardColumn] {
+        guard let view = currentView(projectId: projectId) else { return [] }
+        let hidden = hiddenColumnIds(of: view)
+        guard !hidden.isEmpty else { return [] }
+        return columns(projectId: projectId).filter { hidden.contains($0.id) }
+    }
+
     func resetDisplay(of view: ProjectView) {
         viewDisplays[view.id] = nil
         followLayout(of: view)
@@ -294,7 +336,7 @@ extension AppModel {
     /// Whether some of your display choices stay yours, because GitHub can't change them in an existing view.
     func displayStaysYours(_ view: ProjectView) -> Bool {
         let display = display(of: view)
-        return display.columnFieldId != nil || display.groupFieldId != nil || display.sort != nil
+        return display.columnFieldId != nil || display.groupFieldId != nil || display.sort != nil || display.hiddenColumnIds != nil
     }
 
     // MARK: Filter
@@ -392,6 +434,14 @@ extension AppModel {
             default: return false
             }
         }
+    }
+
+    /// The view open in a project when its filter leaves out every issue the project has: its empty list then says so,
+    /// instead of that the project has none.
+    func viewHidingEverything(projectId: String) -> ProjectView? {
+        guard let view = currentView(projectId: projectId), items(of: view).isEmpty,
+              allItems.contains(where: { $0.projectId == projectId && !$0.isEpic }) else { return nil }
+        return view
     }
 
     /// Whether an item is in a view, for saying so when a new issue isn't.
@@ -903,7 +953,8 @@ extension AppModel {
             preset.assignees = login.map { [$0] } ?? []
         case .milestone(let title)?: preset.milestoneTitle = title
         case .parent(let contentId)?: preset.parentContentId = contentId
-        case .repository?, .issueType?, nil: break
+        case .repository(let id)?: preset.repoId = id
+        case .issueType?, nil: break
         }
         return preset
     }
@@ -916,12 +967,28 @@ extension AppModel {
     }
 
     /// After an issue was made in a view: says so when the view doesn't show it, because its filter leaves it out.
+    /// On a board, also when it went into a column you hid.
     func noteIfHidden(_ itemId: String) {
-        guard let item = item(id: itemId), let projectId = item.projectId, let view = currentView(projectId: projectId),
-              !self.view(view, shows: item) else { return }
+        guard let item = item(id: itemId), let projectId = item.projectId, let view = currentView(projectId: projectId) else { return }
+        if !self.view(view, shows: item) {
+            status.post(Notice(
+                title: String(localized: .createdNotInView(number: item.displayNumber, view: view.name)),
+                message: String(localized: .createdNotInViewMessage),
+                action: .openItem(item.id)
+            ))
+            return
+        }
+        #if os(iOS)
+        // The iPhone has no board.
+        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
+        #endif
+        let hidden = hiddenColumnIds(of: view)
+        guard layout(of: view) == .board, !hidden.isEmpty,
+              let column = columns(projectId: projectId).first(where: { $0.nesting.members.contains { $0.id == item.id } }),
+              hidden.contains(column.id) else { return }
         status.post(Notice(
-            title: String(localized: .createdNotInView(number: item.displayNumber, view: view.name)),
-            message: String(localized: .createdNotInViewMessage),
+            title: String(localized: .createdInHiddenColumn(number: item.displayNumber, column: column.title)),
+            message: String(localized: .createdInHiddenColumnMessage),
             action: .openItem(item.id)
         ))
     }
@@ -944,6 +1011,10 @@ extension NewIssuePreset {
 extension AppModel {
     /// Fills a new issue with what a view's preset asks for, where the issue doesn't have a value already.
     func apply(_ preset: NewIssuePreset, to draft: inout NewIssueDraft) {
+        // The group's repository, where the board has it and the issue isn't a sub-issue, which lives with its parent.
+        if draft.parent == nil, let repoId = preset.repoId, repos(projectId: draft.projectId).contains(where: { $0.id == repoId }) {
+            draft.repoId = repoId
+        }
         if let status = preset.statusId { draft.statusId = status }
         if let priority = preset.priorityId { draft.priorityId = priority }
         if draft.milestoneTitle == nil { draft.milestoneTitle = preset.milestoneTitle }

@@ -4,8 +4,14 @@ import SwiftUI
 /// These need a connection and aren't queued, like changing a board's columns: a view is everyone's.
 extension AppModel {
     /// Saves the filter changed here to the view on GitHub.
+    /// Whether a changed filter can be saved now, as the filter bar's Save button can: GitHub reachable, and the view
+    /// not being saved already.
+    func canSaveFilter(of view: ProjectView) -> Bool {
+        filterChanged(view) && canEditViews(projectId: view.projectId) && canReachGitHub && !savingViewIds.contains(view.id)
+    }
+
     func saveFilter(of view: ProjectView) {
-        guard filterChanged(view) else { return }
+        guard filterChanged(view), !savingViewIds.contains(view.id) else { return }
         let text = filterText(of: view)
         changeView(view, failure: .viewSaveFailed(view: view.name)) { engine in
             try await engine.updateView(view.id, change: .init(filter: text))

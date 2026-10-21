@@ -658,6 +658,19 @@ struct ViewDisplayMenu: View {
                     }
                 }
             }
+            let hidden = wide && model.layout(of: view) == .board ? model.hiddenColumns(projectId: view.projectId) : []
+            if !hidden.isEmpty {
+                // A tap shows the column on the board again.
+                Section(String(localized: .hiddenColumns)) {
+                    ForEach(hidden) { column in
+                        Button {
+                            model.setColumn(column.id, hidden: false, of: view)
+                        } label: {
+                            Label(column.title, systemImage: "eye")
+                        }
+                    }
+                }
+            }
             if model.displayDiffers(view) {
                 Section {
                     if model.displayCanBeSaved(view) {

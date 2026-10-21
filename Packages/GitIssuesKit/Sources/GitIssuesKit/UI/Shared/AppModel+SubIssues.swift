@@ -134,11 +134,13 @@ extension AppModel {
     /// moves up to the issue.
     func setFolded(_ item: Item, _ folded: Bool) {
         guard let contentId = item.contentId, folded != isFolded(item) else { return }
+        let focused = focusedItemId
         withAnimation(Theme.spring) {
             if folded { foldedParents.insert(contentId) } else { foldedParents.remove(contentId) }
             rebuild()
         }
-        if let focused = focusedItemId, !orderedItems.contains(where: { $0.id == focused }) {
+        // A sub-issue in focus folded away hands the focus to its parent.
+        if let focused, !orderedItems.contains(where: { $0.id == focused }) {
             moveFocus(to: item.id)
         }
     }

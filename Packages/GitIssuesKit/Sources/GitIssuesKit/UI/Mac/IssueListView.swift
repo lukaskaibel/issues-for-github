@@ -12,6 +12,19 @@ struct IssueListView: View {
                     Button(.clearFilter) { model.setMineFilter(ProjectFilter("")) }
                         .buttonStyle(SecondaryButtonStyle())
                 }
+            } else if case .project(let projectId) = model.scope, let view = model.viewHidingEverything(projectId: projectId) {
+                // The view's filter hides every issue, which isn't the project having none.
+                let changed = model.filterChanged(view)
+                EmptyState(
+                    title: String(localized: .nothingMatchesFilterTitle),
+                    message: String(localized: changed ? .viewFilterMatchesNothingChanged : .viewFilterMatchesNothing)
+                ) {
+                    if changed {
+                        Button(.reset) { model.resetFilter(of: view) }
+                            .buttonStyle(SecondaryButtonStyle())
+                            .help(Text(.resetFilterTooltip))
+                    }
+                }
             } else {
                 EmptyState(title: emptyTitle, message: emptyMessage)
             }

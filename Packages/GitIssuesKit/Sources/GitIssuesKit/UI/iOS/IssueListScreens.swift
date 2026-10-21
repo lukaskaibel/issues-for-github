@@ -617,7 +617,8 @@ struct IssueList: View {
                                 }
                                 // Touch and hold, then drag, to give an issue a new place in its section, or an epic's
                                 // issues by their header.
-                                .onMove(perform: canMove ? { move(in: section, from: $0, to: $1) } : nil)
+                                // Only sections by status are columns of the board; a group by another field has no order.
+                                .onMove(perform: canMove && column(of: section) != nil ? { move(in: section, from: $0, to: $1) } : nil)
                             }
                         } header: {
                             SectionHeaderBand(
@@ -859,16 +860,35 @@ struct IssueList: View {
         case .roadmap:
             MobileEmptyState(title: String(localized: .roadmapEmptyTitle), message: String(localized: .roadmapEmptyMessage), systemImage: "calendar.day.timeline.left")
         case .project(let projectId):
-            MobileEmptyState(
-                title: String(localized: .noIssuesYet),
-                message: String(localized: .onlyProjectIssuesAppear),
-                systemImage: "tray"
-            ) {
-                Button(.newIssue) {
-                    navigation.sheet = .newIssue(NewIssueContext(projectId: projectId))
+            if let view = model.viewHidingEverything(projectId: projectId) {
+                // The view's filter hides every issue, which isn't the project having none.
+                let changed = model.filterChanged(view)
+                MobileEmptyState(
+                    title: String(localized: .nothingMatchesFilterTitle),
+                    message: String(localized: changed ? .viewFilterMatchesNothingChanged : .viewFilterMatchesNothing),
+                    systemImage: "line.3.horizontal.decrease.circle"
+                ) {
+                    if changed {
+                        Button(.reset) { model.resetFilter(of: view) }
+                            .buttonStyle(.bordered)
+                    }
                 }
-                .buttonStyle(.borderedProminent)
+            } else {
+                projectEmptyState(projectId)
             }
+        }
+    }
+
+    private func projectEmptyState(_ projectId: String) -> some View {
+        MobileEmptyState(
+            title: String(localized: .noIssuesYet),
+            message: String(localized: .onlyProjectIssuesAppear),
+            systemImage: "tray"
+        ) {
+            Button(.newIssue) {
+                navigation.sheet = .newIssue(NewIssueContext(projectId: projectId))
+            }
+            .buttonStyle(.borderedProminent)
         }
     }
 }

@@ -118,7 +118,13 @@ struct MilestoneEditor: View {
             Rectangle().fill(Theme.popoverBorder).frame(height: 1)
 
             HStack(spacing: 10) {
-                if let repo = repository, existing == nil {
+                if nameTaken {
+                    // Why Create is off.
+                    Text(.milestoneNameTaken(name: trimmed))
+                        .font(.small)
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(1)
+                } else if let repo = repository, existing == nil {
                     Text(.milestoneMadeIn(repository: repo.nameWithOwner))
                         .font(.small)
                         .foregroundStyle(Theme.textSecondary)
@@ -171,10 +177,14 @@ struct MilestoneEditor: View {
     }
 
     private var canSave: Bool {
-        guard !trimmed.isEmpty, let boardId else { return false }
-        // Another open milestone of that name is the same one on this board.
-        if trimmed != existing?.title, model.milestoneGroup(projectId: boardId, title: trimmed)?.isOpen == true { return false }
+        guard !trimmed.isEmpty, boardId != nil, !nameTaken else { return false }
         return existing != nil || repository != nil
+    }
+
+    /// Another open milestone of that name is the same one on this board.
+    private var nameTaken: Bool {
+        guard !trimmed.isEmpty, let boardId, trimmed != existing?.title else { return false }
+        return model.milestoneGroup(projectId: boardId, title: trimmed)?.isOpen == true
     }
 
     private func prepare() {

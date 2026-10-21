@@ -124,6 +124,11 @@ extension AppModel {
         return found
     }
 
+    /// Whether the issue's board has epics to put it into.
+    func hasEpics(_ item: Item) -> Bool {
+        item.projectId.map { !epics(projectId: $0).isEmpty } ?? false
+    }
+
     /// A board's epics in board order: those on it, and those its issues hang under even where the epic is on no board.
     func epics(projectId: String) -> [Item] {
         _ = dataVersion

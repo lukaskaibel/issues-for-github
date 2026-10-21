@@ -4904,7 +4904,7 @@
       }
     },
     "backToUsualOrder" : {
-      "comment" : "iPhone and iPad, Arrange Sections sheet: button that drops the user's own order of sections. Title case.",
+      "comment" : "iPhone and iPad, Arrange Sections sheet: button that drops the user's own order of sections. Title case. Also on the Mac: item in the right-click menu of a list section's header, shown after sections were dragged into an order of the user's own.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -11967,6 +11967,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@，由 %2$@ 创建"
+          }
+        }
+      }
+    },
+    "createdInHiddenColumn" : {
+      "comment" : "Mac and iPad: title of a message after creating an issue that went into a board column the user hid on this device, so it doesn't show on the board. number: '#123'; column: the column's name from GitHub, such as 'Done'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ ist in „%2$@“, das du ausgeblendet hast"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(number)@ is in %(column)@, which you hid"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ está en “%2$@”, que ocultaste"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ est dans « %2$@ », que vous avez masquée"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@は非表示にした列「%2$@」にあります"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@이(가) 가린 열 ‘%2$@’에 있음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ está em “%2$@”, que você ocultou"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ в колонке «%2$@», которую вы скрыли"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ 在你隐藏的列“%2$@”中"
+          }
+        }
+      }
+    },
+    "createdInHiddenColumnMessage" : {
+      "comment" : "Mac and iPad: message under '#123 is in Done, which you hid' after creating an issue in a hidden board column. The hidden columns are listed after the board's last column and in the Display options.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blende die Spalte am Ende des Boards oder unter Darstellung wieder ein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the column again from the end of the board or from Display."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuelve a mostrar la columna desde el final del tablero o desde Visualización."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Affichez de nouveau la colonne depuis la fin du tableau ou depuis Affichage."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ボードの右端か「表示」から列を再表示できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보드 끝이나 표시에서 열을 다시 표시할 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostre a coluna de novo no fim do quadro ou em Exibição."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Снова покажите колонку в конце доски или в разделе «Отображение»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可在看板末尾或“显示”中重新显示此列。"
           }
         }
       }
@@ -25063,6 +25183,66 @@
         }
       }
     },
+    "hiddenColumns" : {
+      "comment" : "Board on the Mac and iPad: heading over the columns the user hid, listed after the board's last column, and a section of the Display options with them. Clicking one shows it again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgeblendete Spalten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hidden Columns"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Columnas ocultas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colonnes masquées"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "非表示の列"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가려진 열"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colunas ocultas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скрытые колонки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐藏的列"
+          }
+        }
+      }
+    },
     "hiddenProjectsCount" : {
       "comment" : "Mac sidebar: line at the end of the list of GitHub projects that folds out the projects the user hid. %(count)lld is how many projects are hidden (1, 2, …). Short.",
       "extractionState" : "manual",
@@ -25383,6 +25563,66 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "hideColumn" : {
+      "comment" : "Board on the Mac and iPad: item in a column's menu (right-click on its header, or its '…' button) that hides the column on this device only; the project on GitHub doesn't change. Its cards leave the board with it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spalte ausblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide Column"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar columna"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer la colonne"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "列を非表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "열 가리기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar coluna"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скрыть колонку"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐藏列"
           }
         }
       }
@@ -34544,7 +34784,7 @@
       }
     },
     "markAsDone" : {
-      "comment" : "iPhone and iPad: item (a verb) in the long-press menu of a sub-issue that closes it as completed. Title case, as in menus.",
+      "comment" : "iPhone and iPad: item (a verb) in the long-press menu of a sub-issue that closes it as completed. Title case, as in menus. Also (Mac, iPhone, iPad): first choice in the status picker of an issue that is on none of the user's project boards, which closes it on GitHub.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -36141,6 +36381,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "里程碑名称，如 1.2"
+          }
+        }
+      }
+    },
+    "milestoneNameTaken" : {
+      "comment" : "Mac and iPhone/iPad, milestone editor: note at the bottom (Mac) or under the fields (iPhone, iPad) while the typed name is that of another open milestone of the board; Create or Save is off then. %(name)@ is the typed name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es gibt schon einen offenen Meilenstein namens „%@“."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There is an open milestone named “%(name)@” already."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya hay un hito abierto llamado “%@”."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un jalon ouvert nommé « %@ » existe déjà."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」という名前の未完了のマイルストーンがすでにあります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” 이름의 열린 마일스톤이 이미 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Já existe um marco aberto chamado “%@”."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открытая веха «%@» уже есть."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已有名为“%@”的未完成里程碑。"
           }
         }
       }
@@ -41978,7 +42278,7 @@
       }
     },
     "nothingMatchesFilterTitle" : {
-      "comment" : "My Issues (Mac, iPhone, iPad): title of the empty list when issues are assigned to you but the filter hides all of them.",
+      "comment" : "My Issues (Mac, iPhone, iPad): title of the empty list when issues are assigned to you but the filter hides all of them. Also the title of a project view's empty list when the view's filter leaves out every issue.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -70369,6 +70669,126 @@
         }
       }
     },
+    "resetDisplayCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that takes how the user sees a view (board or list, columns, groups, order, fields, hidden columns) back to how the view is on GitHub. 'Display' as in the Display options.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Darstellung zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Display"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer visualización"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser l’affichage"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表示をリセット"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "표시 재설정"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redefinir exibição"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сбросить отображение"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重置显示"
+          }
+        }
+      }
+    },
+    "resetFilterCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that takes a view's filter, changed in the app and not saved, back to the view's filter on GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Filter"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer filtro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser le filtre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フィルタをリセット"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터 재설정"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redefinir filtro"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сбросить изменения фильтра"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重置筛选"
+          }
+        }
+      }
+    },
     "resetFilterTooltip" : {
       "comment" : "Tooltip of the Reset button of a changed view filter.",
       "extractionState" : "manual",
@@ -74719,6 +75139,66 @@
         }
       }
     },
+    "showColumnAgainTooltip" : {
+      "comment" : "Board on the Mac and iPad: tooltip (VoiceOver hint on iPad) of a hidden column listed after the board's last column or in the Display options.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spalte wieder auf dem Board zeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show this column on the board again"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver a mostrar esta columna en el tablero"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher à nouveau cette colonne sur le tableau"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この列をボードに再表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 열을 보드에 다시 표시"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar esta coluna no quadro de novo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Снова показать эту колонку на доске"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在看板上重新显示此列"
+          }
+        }
+      }
+    },
     "showComment" : {
       "comment" : "Mac, Inbox: tooltip of a line in the list of what happened on an issue that is about a comment; a click scrolls down to that comment.",
       "extractionState" : "manual",
@@ -75739,6 +76219,168 @@
         }
       }
     },
+    "signOutDeletesUnsentChanges" : {
+      "comment" : "Mac, iPhone and iPad: message of the question before signing out while changes made in the app wait to be sent to GitHub (offline, or GitHub not reached yet). %(count)lld is how many (1, 2, …).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Änderung ist noch nicht auf GitHub angekommen. Beim Abmelden wird sie gelöscht."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Änderungen sind noch nicht auf GitHub angekommen. Beim Abmelden werden sie gelöscht."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "1 change hasn’t reached GitHub yet. Signing out deletes it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld changes haven’t reached GitHub yet. Signing out deletes them."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cambio aún no ha llegado a GitHub. Al cerrar sesión se elimina."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld cambios aún no han llegado a GitHub. Al cerrar sesión se eliminan."
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld modification n’est pas encore arrivée sur GitHub. La déconnexion la supprime."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld modifications ne sont pas encore arrivées sur GitHub. La déconnexion les supprime."
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld件の変更がまだGitHubに届いていません。サインアウトすると削除されます。"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "변경 사항 %lld개가 아직 GitHub에 전송되지 않았습니다. 로그아웃하면 삭제됩니다."
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld alteração ainda não chegou ao GitHub. Ao encerrar a sessão, ela será apagada."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld alterações ainda não chegaram ao GitHub. Ao encerrar a sessão, elas serão apagadas."
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld изменения ещё не дошли до GitHub. При выходе они будут удалены."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld изменений ещё не дошли до GitHub. При выходе они будут удалены."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld изменение ещё не дошло до GitHub. При выходе оно будет удалено."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld изменения ещё не дошли до GitHub. При выходе они будут удалены."
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld 项更改尚未同步到 GitHub。退出登录会删除这些更改。"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "signOutEverywhere" : {
       "comment" : "iPhone and iPad, account sheet: button that signs out of GitHub on all of the user's devices.",
       "extractionState" : "manual",
@@ -76040,7 +76682,7 @@
       }
     },
     "signOutOfGitHubQuestion" : {
-      "comment" : "iPhone and iPad, account sheet: title of the question after tapping Sign Out.",
+      "comment" : "iPhone and iPad, account sheet: title of the question after tapping Sign Out. Also on the Mac: title of the question before signing out while changes wait to be sent to GitHub.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -83433,6 +84075,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法删除“%@”"
+          }
+        }
+      }
+    },
+    "viewFilterMatchesNothing" : {
+      "comment" : "Mac, iPhone and iPad: text under 'Nothing matches the filter' when a project's saved view (as on GitHub) filters out every issue of the project.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Issue des Projekts passt zum Filter dieser Ansicht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None of the project’s issues match this view’s filter."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ninguna incidencia del proyecto coincide con el filtro de esta vista."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun ticket du projet ne correspond au filtre de cette vue."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このビューのフィルタに一致するIssueはプロジェクトにありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프로젝트에 이 보기의 필터와 일치하는 이슈가 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma issue do projeto corresponde ao filtro desta visualização."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ни одна задача проекта не подходит под фильтр этого представления."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "项目中没有议题符合此视图的筛选条件。"
+          }
+        }
+      }
+    },
+    "viewFilterMatchesNothingChanged" : {
+      "comment" : "Mac, iPhone and iPad: text under 'Nothing matches the filter' when the user changed a view's filter here and it now filters out every issue of the project; above a Reset button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ändere den Filter oder setze ihn auf den Filter der Ansicht auf GitHub zurück."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change the filter, or reset it to the view’s filter on GitHub."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambia el filtro o vuelve al filtro de la vista en GitHub."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifiez le filtre ou revenez au filtre de la vue sur GitHub."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フィルタを変更するか、GitHub上のビューのフィルタに戻してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터를 변경하거나 GitHub에 있는 보기의 필터로 되돌리세요."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altere o filtro ou volte ao filtro da visualização no GitHub."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Измените фильтр или верните фильтр представления с GitHub."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改筛选条件，或恢复为 GitHub 上该视图的筛选条件。"
           }
         }
       }

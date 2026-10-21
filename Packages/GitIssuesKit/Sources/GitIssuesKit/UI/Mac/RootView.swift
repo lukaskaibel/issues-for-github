@@ -50,8 +50,13 @@ public struct RootView: View {
             Button(.signOutEverywhere, role: .destructive) { model.signOut(everywhere: true) }
             Button(.cancel, role: .cancel) {}
         } message: {
-            Text(.signOutEverywhereMessage)
+            if model.pendingCount > 0 {
+                Text(.signOutDeletesUnsentChanges(count: model.pendingCount)) + Text(verbatim: " ") + Text(.signOutEverywhereMessage)
+            } else {
+                Text(.signOutEverywhereMessage)
+            }
         }
+        .modifier(SignOutConfirmation(isPresented: Bindable(model).confirmSignOut))
         .alert(Text(.shareLoginQuestion), isPresented: Bindable(model).offerLoginSharing) {
             Button(.shareLogin) { model.answerLoginSharing(true) }
                 .keyboardShortcut(.defaultAction)

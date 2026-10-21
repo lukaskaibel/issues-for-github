@@ -530,3 +530,18 @@ struct ThinProgressStyle: ProgressViewStyle {
         .animation(Theme.spring, value: configuration.fractionCompleted)
     }
 }
+
+/// "Sign out of GitHub?" while changes wait to be sent: signing out deletes them.
+struct SignOutConfirmation: ViewModifier {
+    @Environment(AppModel.self) private var model
+    @Binding var isPresented: Bool
+
+    func body(content: Content) -> some View {
+        content.confirmationDialog(Text(.signOutOfGitHubQuestion), isPresented: $isPresented) {
+            Button(.signOut, role: .destructive) { model.signOut() }
+            Button(.cancel, role: .cancel) {}
+        } message: {
+            Text(.signOutDeletesUnsentChanges(count: model.pendingCount))
+        }
+    }
+}

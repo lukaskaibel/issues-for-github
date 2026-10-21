@@ -276,12 +276,43 @@ struct IssueScreen: View {
         }
     }
 
-    /// Where the issue sits among its project's issues, in list order, for stepping through them.
+    /// Where the issue sits among the issues of the board or list it was opened from, in their order, for stepping
+    /// through them, as on the Mac. Each issue once, though one can be listed twice (in two people's groups).
     private func position(of item: Item) -> (index: Int, items: [Item])? {
-        let scope: Scope = item.projectId.map { .project($0) } ?? item.repoId.map { .repository($0) } ?? .myIssues
-        let items = model.sections(for: scope).flatMap(\.items)
+        let scope = originScope ?? item.projectId.map { .project($0) } ?? item.repoId.map { .repository($0) } ?? .myIssues
+        // A board, as the iPad shows a project or a milestone with room for one.
+        let board = switch scope {
+        case .project(let id): wide && (model.currentView(projectId: id).map { model.layout(of: $0) } ?? model.viewMode) == .board
+        case .milestone: wide && model.viewMode == .board
+        default: false
+        }
+        let listed = board ? model.shownColumns(for: scope).flatMap(\.items) : model.sections(for: scope).flatMap(\.items)
+        var seen = Set<String>()
+        let items = listed.filter { seen.insert($0.id).inserted }
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return nil }
         return (index, items)
+    }
+
+    /// The board or list the issue was opened from: the screen under it (past the issues opened on the way), else
+    /// the tab or sidebar entry it is in.
+    private var originScope: Scope? {
+        for route in navigation.path(for: navigation.tab).dropLast().reversed() {
+            switch route {
+            case .project(let id): return .project(id)
+            case .repository(let id): return .repository(id)
+            case .milestone(let projectId, let title): return .milestone(projectId: projectId, title: title)
+            case .roadmap(let id): return .roadmap(id)
+            case .issue, .inboxIssue, .statuses: continue
+            }
+        }
+        return switch navigation.tab {
+        case .myIssues: .myIssues
+        case .project(let id), .view(let id, _): .project(id)
+        case .repository(let id): .repository(id)
+        case .milestone(let projectId, let title): .milestone(projectId: projectId, title: title)
+        case .roadmap(let id): .roadmap(id)
+        case .inbox, .projects, .search: nil
+        }
     }
 
     /// The issue on screen right now, from the navigation rather than from this view, which may be on its way out.
@@ -720,7 +751,8 @@ private struct PropertiesColumn: View {
                 }
                 let epic = model.epic(of: item)
                 let parentIsEpic = epic != nil && epic?.contentId == item.parentId
-                if model.canRelate(item), !item.isEpic {
+                // Chosen right under an epic or under nothing yet, as on the Mac; under another issue it only opens.
+                if model.canRelate(item), !item.isEpic, epic != nil || item.parentId == nil && model.hasEpics(item) {
                     row(.epic) {
                         Button {
                             // Under another issue, the epic comes with that parent: it opens instead.
@@ -854,6 +886,14 @@ struct StatusMenuItems: View {
 
     var body: some View {
         if !item.isOnBoard {
+            // Closed or opened again, as on GitHub, or put on a board.
+            if item.kind == .issue, item.contentId != nil {
+                Button {
+                    withAnimation(Theme.spring) { model.toggleDone(model.item(id: item.id) ?? item) }
+                } label: {
+                    Label(item.isClosed ? .reopen : .markAsDone, systemImage: item.isClosed ? "arrow.uturn.backward.circle" : "checkmark.circle")
+                }
+            }
             AddToProjectMenuItems(item: item)
         } else {
             picker
@@ -1330,8 +1370,10 @@ private struct MobileSubIssueRow: View {
                             .foregroundStyle(Theme.textTertiary)
                             .accessibilityLabel(.opensOnGitHub)
                     }
-                    if !sub.assignees.isEmpty {
-                        AvatarStack(people: sub.assignees, size: 20)
+                    // The card's people, which change at once; the sub-issue's are as GitHub last sent them.
+                    let people = boardItem?.assignees ?? sub.assignees
+                    if !people.isEmpty {
+                        AvatarStack(people: people, size: 20)
                     }
                 }
                 .frame(minHeight: 44)
@@ -1734,11 +1776,17 @@ private struct MobileActivity: View {
 private struct CommentComposer: View {
     @Environment(AppModel.self) private var model
     var item: Item
-    @State private var draft = ""
+    /// What was written and not sent stays with the issue while you look elsewhere, as in Mail.
+    @State private var draft: String
     @State private var sent = 0
     @State private var height = EditorStyle.lineHeight
     /// The round send button, 6 points inside the field's corner, as on the Mac.
     @ScaledMetric(relativeTo: .body) private var buttonSize: CGFloat = 32
+
+    init(item: Item) {
+        self.item = item
+        _draft = State(initialValue: AppModel.shared.commentDrafts[item.id] ?? "")
+    }
 
     var body: some View {
         let empty = draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -1783,6 +1831,7 @@ private struct CommentComposer: View {
         .padding(.top, 8)
         .padding(.bottom, 8)
         .sensoryFeedback(.success, trigger: sent)
+        .onChange(of: draft) { _, text in model.commentDrafts[item.id] = text.isEmpty ? nil : text }
     }
 
     private func send() {

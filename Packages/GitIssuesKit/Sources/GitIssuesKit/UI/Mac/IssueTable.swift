@@ -431,7 +431,7 @@ struct IssueTable: NSViewRepresentable {
             case .row(let issue):
                 draggedIds = picked?.moving ?? [issue.item.id]
             case .epic(let sectionId, let group):
-                let members = model.columns.first { $0.id == sectionId }?.members(of: group) ?? []
+                let members = statusColumn(sectionId)?.members(of: group) ?? []
                 draggedIds = Set(members.map(\.id)).union([entries[row].id])
             case .header:
                 return
@@ -541,6 +541,12 @@ struct IssueTable: NSViewRepresentable {
             return (section.id, header, issues.count)
         }
 
+        /// The column by status a section of the project's list shows, hidden on the board or not.
+        private func statusColumn(_ sectionId: String) -> BoardColumn? {
+            guard let projectId = model.currentProjectId else { return nil }
+            return model.listColumns(projectId: projectId).first { $0.id == sectionId }
+        }
+
         /// The column a section of a project's list shows, which a dropped issue joins.
         private func column(for sectionId: String, of item: Item) -> BoardColumn? {
             guard let projectId = item.projectId else { return nil }
@@ -642,7 +648,7 @@ struct IssueTable: NSViewRepresentable {
 
         private func draggedGroup(_ payload: String) -> (group: Nesting.EpicGroup, members: [Item])? {
             let parts = payload.split(separator: "\u{1F}", maxSplits: 1).map(String.init)
-            guard parts.count == 2, let source = model.columns.first(where: { $0.id == parts[0] }),
+            guard parts.count == 2, let source = statusColumn(parts[0]),
                   let group = source.nesting.groups.first(where: { $0.contentId == parts[1] }) else { return nil }
             return (group, source.members(of: group))
         }
@@ -653,7 +659,7 @@ struct IssueTable: NSViewRepresentable {
             -> (column: BoardColumn, header: Int, index: Int)? {
             let moving = Set(dragged.members.map(\.id))
             guard let landing = landing(above: max(row, 1), moving: moving), section(landing.sectionId)?.kind == .status,
-                  let column = model.columns.first(where: { $0.id == landing.sectionId }) else { return nil }
+                  let column = statusColumn(landing.sectionId) else { return nil }
             return (column, landing.header, landing.index)
         }
 
@@ -870,7 +876,7 @@ struct IssueTable: NSViewRepresentable {
                 return Self.sectionMenu(section, model: model)
             }
             if entries.indices.contains(row), case .epic(let sectionId, let group) = entries[row] {
-                return EpicGroupMenu.menu(group, in: model.columns.first { $0.id == sectionId }, model: model)
+                return EpicGroupMenu.menu(group, in: statusColumn(sectionId), model: model)
             }
             guard let item = item(at: row) else { return nil }
             return ItemMenuBuilder(model: model, item: item).menu()
@@ -887,10 +893,18 @@ struct IssueTable: NSViewRepresentable {
             }
             all.image = MenuIcons.symbol(section.collapsed ? "chevron.down.2" : "chevron.right.2")
             menu.addItem(all)
+            // Sections dragged into an order of your own go back to the usual one, as on iPhone and iPad.
+            if !model.customListOrder().isEmpty {
+                let usual = ClosureMenuItem(String(localized: .backToUsualOrder)) { [model] in
+                    withAnimation(Theme.spring) { model.resetListOrder(in: model.scope ?? .myIssues) }
+                }
+                usual.image = MenuIcons.symbol("arrow.up.arrow.down")
+                menu.addItem(usual)
+            }
             if section.canAdd {
                 menu.addItem(.separator())
                 let add = ClosureMenuItem(String(localized: .newIssueInGroupMenu(group: section.title))) { [model] in
-                    model.addIssue(in: section.kind, optionId: section.optionId)
+                    model.addIssue(in: section.kind, optionId: section.optionId, sectionId: section.id)
                 }
                 add.image = MenuIcons.symbol("plus")
                 menu.addItem(add)
@@ -1858,7 +1872,7 @@ final class IssueHeaderCell: NSView {
 
     @objc private func add() {
         guard let section else { return }
-        model?.addIssue(in: section.kind, optionId: section.optionId)
+        model?.addIssue(in: section.kind, optionId: section.optionId, sectionId: section.id)
     }
 
     override func draw(_ dirtyRect: NSRect) {

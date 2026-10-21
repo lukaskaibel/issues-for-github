@@ -160,6 +160,43 @@ final class PadTests: AppTestCase {
         snapshot("Column added")
     }
 
+    /// A column hidden from its menu leaves the board on this iPad only; the list after the last column and the
+    /// Display menu bring it back.
+    func testHideAColumnAndShowItAgain() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openProject("Git Issues")
+        wait(element("column-Backlog"))
+
+        app.buttons["Options for Backlog"].tap()
+        button("Hide Column").tap()
+        waitGone(element("column-Backlog"))
+        wait(element("column-Todo"))
+
+        // Listed after the last column, with its count. The list may start off screen.
+        let hidden = labelled("Backlog", type: .button)
+        let window = app.windows.firstMatch.frame
+        var swipes = 0
+        while !window.contains(hidden.frame) && swipes < 4 {
+            element("column-In Review").swipeLeft()
+            swipes += 1
+        }
+        snapshot("Hidden column after the board")
+        hidden.tap()
+        wait(element("column-Backlog"))
+
+        app.buttons["Options for Done"].tap()
+        button("Hide Column").tap()
+        waitGone(element("column-Done"))
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        button("Display").tap()
+        let item = app.buttons["Done"].firstMatch
+        wait(item)
+        snapshot("Hidden column in Display")
+        item.tap()
+        wait(element("column-Done"))
+    }
+
     func testNewIssueInAColumn() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()

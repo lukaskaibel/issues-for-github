@@ -356,9 +356,9 @@ private struct RootPalette: View {
             list.append(PaletteCommand(id: "status", title: item.isOnBoard ? .changeStatusCommand : .addToProjectCommand, section: section, icon: AnyView(StatusIcon(glyph: model.glyph(of: item))), keys: ["S"]) {
                 model.overlay = .palette(.status(itemId: item.id))
             })
-            if model.project(of: item)?.priorityFieldId != nil {
+            if let ranked = targets.first(where: { model.project(of: $0)?.priorityFieldId != nil }) {
                 list.append(PaletteCommand(id: "priority", title: .setPriorityCommand, section: section, icon: AnyView(PriorityIcon(level: .high)), keys: ["P"]) {
-                    model.overlay = .palette(.priority(itemId: item.id))
+                    model.overlay = .palette(.priority(itemId: ranked.id))
                 })
             }
             if item.kind != .draft {
@@ -441,10 +441,22 @@ private struct RootPalette: View {
                     model.copyLinks(targets)
                 })
                 if !several {
-                    list.append(PaletteCommand(id: "github", title: .openOnGitHub, section: section, icon: symbol("arrow.up.right")) {
+                    list.append(PaletteCommand(id: "github", title: .openOnGitHub, section: section, icon: symbol("arrow.up.right"), keys: ["⌘", "⇧", "O"]) {
                         model.openOnGitHub(item)
                     })
                 }
+            }
+            if !several, item.branchName != nil {
+                list.append(PaletteCommand(id: "branch", title: .copyBranchName, section: section, icon: symbol("arrow.triangle.branch"), keys: ["⌘", "⇧", "."]) {
+                    model.copyBranchName(item)
+                })
+            }
+            if model.openItem != nil {
+                // The inspector beside the open issue, as its toolbar button and ⌃⌘I show and hide it.
+                let shown = UserDefaults.standard.object(forKey: "showsIssueInspector") as? Bool ?? true
+                list.append(PaletteCommand(id: "inspector", title: shown ? .hideInspector : .showInspector, section: section, icon: symbol("sidebar.right"), keys: ["⌃", "⌘", "I"]) {
+                    withAnimation(Theme.spring) { UserDefaults.standard.set(!shown, forKey: "showsIssueInspector") }
+                })
             }
         }
         if model.openItem == nil, !model.orderedItems.isEmpty {
@@ -475,9 +487,12 @@ private struct RootPalette: View {
                         model.snooze(entries, until: choice.date())
                     })
                 }
-                list.append(PaletteCommand(id: "inbox-unsubscribe", title: .unsubscribe, section: section, icon: symbol("bell.slash"), keys: ["⇧", "S"]) {
-                    model.unsubscribe(entries)
-                })
+                // Due dates and your own assignments aren't GitHub's notifications: nothing to unsubscribe from.
+                if entries.contains(where: { !$0.isAppMade }) {
+                    list.append(PaletteCommand(id: "inbox-unsubscribe", title: .unsubscribe, section: section, icon: symbol("bell.slash"), keys: ["⇧", "S"]) {
+                        model.unsubscribe(entries)
+                    })
+                }
             }
             list.append(PaletteCommand(id: "inbox-read-all", title: .markAllAsReadCommand, section: String(localized: .inbox), icon: symbol("circle"), keys: ["⌥", "U"]) {
                 model.markAllRead()
@@ -492,19 +507,20 @@ private struct RootPalette: View {
                 model.select(.inbox)
             })
         }
-        if model.currentProjectId != nil || model.currentRepositoryId != nil {
+        // Wherever C makes one.
+        if !model.projects.isEmpty {
             list.append(PaletteCommand(id: "new", title: .newIssueAction, section: go, icon: symbol("plus"), keys: ["C"]) {
                 model.overlay = .newIssue(statusId: nil, parentItemId: nil)
             })
         }
-        if model.currentProjectId != nil {
+        if !model.openProjects.isEmpty {
             list.append(PaletteCommand(id: "board", title: .board, section: go, icon: symbol("rectangle.split.3x1"), keys: ["G", "B"]) {
-                model.closeDetail()
-                model.viewMode = .board
+                model.overlay = nil
+                model.showProjectLayout(.board)
             })
             list.append(PaletteCommand(id: "list", title: .list, section: go, icon: symbol("list.bullet"), keys: ["G", "L"]) {
-                model.closeDetail()
-                model.viewMode = .list
+                model.overlay = nil
+                model.showProjectLayout(.list)
             })
         }
         if model.currentView != nil || model.scope == .myIssues {
@@ -523,7 +539,17 @@ private struct RootPalette: View {
             })
         }
         if let view = model.currentView {
-            if model.filterChanged(view), model.canEditViews(projectId: view.projectId) {
+            if model.filterChanged(view) {
+                list.append(PaletteCommand(id: "reset-filter", title: .resetFilterCommand, section: go, icon: symbol("arrow.uturn.backward")) {
+                    model.resetFilter(of: view)
+                })
+            }
+            if model.displayDiffers(view) {
+                list.append(PaletteCommand(id: "reset-display", title: .resetDisplayCommand, section: go, icon: symbol("arrow.uturn.backward")) {
+                    model.resetDisplay(of: view)
+                })
+            }
+            if model.canSaveFilter(of: view) {
                 list.append(PaletteCommand(id: "save-view", title: .saveViewMenu, section: go, icon: symbol("square.and.arrow.down"), keys: ["⌘", "S"]) {
                     model.saveFilter(of: view)
                 })

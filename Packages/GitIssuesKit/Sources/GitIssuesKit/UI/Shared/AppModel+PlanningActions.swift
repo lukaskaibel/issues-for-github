@@ -323,10 +323,11 @@ extension AppModel {
 
     /// The + of a group: a new issue in that status, in that epic (and the milestone on screen), or a new epic in
     /// that milestone.
-    func addIssue(in kind: ListSection.Kind, optionId: String?) {
+    func addIssue(in kind: ListSection.Kind, optionId: String?, sectionId: String? = nil) {
         switch kind {
         case .status:
-            overlay = .newIssue(statusId: optionId, parentItemId: nil)
+            // The "No status" section makes an issue without one, as that column on the board does.
+            overlay = .newIssue(statusId: optionId ?? (sectionId == BoardColumn.noStatusId ? sectionId : nil), parentItemId: nil)
         case .epic(let contentId):
             overlay = .newIssue(statusId: nil, parentItemId: contentId.flatMap { issue(contentId: $0)?.id })
         case .milestone(let title):

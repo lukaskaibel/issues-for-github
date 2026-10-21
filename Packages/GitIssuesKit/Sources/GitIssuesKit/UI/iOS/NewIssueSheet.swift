@@ -204,6 +204,10 @@ struct NewIssueSheet: View {
                 if !statuses.isEmpty {
                     Menu {
                         Picker(.status, selection: $draft.statusId) {
+                            // "No status" while the issue has none, as one made in that column.
+                            if draft.statusId == nil {
+                                Text(.noStatus).tag(String?.none)
+                            }
                             ForEach(statuses) { option in
                                 Label {
                                     Text(option.name)
@@ -374,7 +378,9 @@ struct NewIssueSheet: View {
         new.parent = parent
         // A sub-issue lives in its parent's repository; one started in a repository lives there.
         new.repoId = parent?.repoId ?? context.repoId ?? projectId.flatMap { model.defaultRepoId(projectId: $0) }
-        new.statusId = context.statusId ?? defaultStatus(projectId: projectId)
+        // "No status" (from that column's plus) is none.
+        let chosen = context.statusId.map { $0 == BoardColumn.noStatusId ? nil : $0 }
+        new.statusId = chosen ?? defaultStatus(projectId: projectId)
         if context.assignToMe, let viewer = model.viewer { new.assignees = [viewer.person] }
         // Begun in a milestone, from the roadmap, or under an issue that has a milestone.
         new.milestoneTitle = context.milestoneTitle ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
@@ -384,7 +390,7 @@ struct NewIssueSheet: View {
             ? model.newIssuePreset(projectId: projectId) : nil)
         if let preset {
             model.apply(preset, to: &new)
-            if let statusId = context.statusId { new.statusId = statusId }
+            if let chosen { new.statusId = chosen }
         }
         draft = new
         model.loadRepoMeta(projectId: projectId)
@@ -426,6 +432,8 @@ struct NewIssueSheet: View {
             created += 1
             dismiss()
             model.noteIfHidden(id)
+            // A folded parent or section it went into opens for it.
+            model.reveal(id)
         }
     }
 }

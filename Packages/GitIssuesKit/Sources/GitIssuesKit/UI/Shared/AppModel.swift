@@ -227,6 +227,7 @@ public final class AppModel {
     private(set) var projectLooks: ProjectLooks
 
     // Derived from the above for the current scope.
+    /// The columns the board shows, without those you hid. The list has every status: see `listColumns`.
     private(set) var columns: [BoardColumn] = []
     private(set) var sections: [ListSection] = []
     private(set) var glyphs: [String: StatusGlyph] = [:]
@@ -235,6 +236,8 @@ public final class AppModel {
     /// Lists and boards of every scope on screen, worked out once per change of the data.
     @ObservationIgnored private var sectionCache: [Scope: [ListSection]] = [:]
     @ObservationIgnored private var columnCache: [String: [BoardColumn]] = [:]
+    /// The scope `columns` and `sections` were last worked out for.
+    @ObservationIgnored private var builtScope: Scope?
     /// Milestones, epics and roadmaps worked out once per change of the data.
     @ObservationIgnored var planningCache = PlanningCache()
 
@@ -297,6 +300,8 @@ public final class AppModel {
     var offerLoginSharing = false
     /// Waiting for "Sign out everywhere?" to be confirmed, on the Mac.
     var confirmSignOutEverywhere = false
+    /// Signing out asks first while changes wait to be sent, which it would delete.
+    var confirmSignOut = false
     /// Bumped when a list section is folded in or out, so the list redraws.
     var collapseVersion = 0
     /// Parents (node ids) whose sub-issues are folded away under them in lists and on boards. Kept on this device.
@@ -323,6 +328,8 @@ public final class AppModel {
     @ObservationIgnored var unsentNewIssue: NewIssueDraft?
     /// A title typed into a picker before choosing to create a new issue instead, for the dialog to start with.
     @ObservationIgnored var newIssueTitle: String?
+    /// Comments written and not sent yet, by issue, while the app runs.
+    @ObservationIgnored var commentDrafts: [String: String] = [:]
     /// The milestone and kind a new issue starts with, when it is begun from a milestone or the roadmap.
     @ObservationIgnored var newIssuePlan: NewIssuePlan?
     /// What a new issue starts with when it is begun in a view's column or group.
@@ -435,6 +442,8 @@ public final class AppModel {
     /// Entries picked to act on together (⌘-click, Shift-click).
     var inboxPicked: Set<String> = []
     @ObservationIgnored var inboxPickAnchor: String?
+    /// The run the last Shift-click or Shift-arrow picked, which the next one replaces.
+    @ObservationIgnored var inboxPickRange: Set<String> = []
     /// The last archive or unsubscribe, which can be undone for a few seconds.
     var inboxUndo: InboxUndo?
     /// Bumped when a snoozed entry is due back, so the Inbox shows it.
@@ -533,6 +542,7 @@ public final class AppModel {
             MainActor.assumeIsolated { self?.appIcon.apply() }
         }
         #endif
+        if demo { seedDemoDisplays() }
         startObserving()
         restoreScope()
         scheduleInboxWake()
@@ -577,6 +587,12 @@ public final class AppModel {
     func completeSignIn() {
         signedIn = true
         startSyncing()
+    }
+
+    /// Signs out, or asks first while changes made here haven't reached GitHub yet: signing out deletes them with
+    /// everything else kept on this device.
+    func requestSignOut() {
+        if pendingCount > 0, !isDemo { confirmSignOut = true } else { signOut() }
     }
 
     /// Signs out of this device. With `everywhere`, the login shared through iCloud Keychain is removed too,
@@ -631,6 +647,11 @@ public final class AppModel {
         }
     }
 
+    /// The sample data's own display choices, for views you haven't changed: they show what can be changed.
+    private func seedDemoDisplays() {
+        for (id, display) in DemoData.displays where viewDisplays[id] == nil { viewDisplays[id] = display }
+    }
+
     func leaveDemo() {
         guard isDemo else { return }
         let old = engine
@@ -652,6 +673,7 @@ public final class AppModel {
         isDemo = demo
         personal = PersonalStore(persistent: !demo)
         projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
+        if demo { seedDemoDisplays() }
         resetNavigation()
         viewer = nil
         projects = []
@@ -903,8 +925,9 @@ public final class AppModel {
 
     /// The project the sidebar is about: the one on screen, or the one used last.
     var sidebarProject: Project? {
-        let id = scope?.projectId ?? lastProjectId
-        return openProjects.first { $0.id == id }
+        // The project on screen, hidden or not; else the one used last, unless it was hidden since.
+        if let id = scope?.projectId, let project = openProjects.first(where: { $0.id == id }) { return project }
+        return openProjects.first { $0.id == lastProjectId && !hiddenProjectIds.contains($0.id) }
             ?? openProjects.first { !hiddenProjectIds.contains($0.id) } ?? openProjects.first
     }
 
@@ -1182,6 +1205,9 @@ public final class AppModel {
     }
 
     func rebuild() {
+        // What the keyboard focus moved among, should the issue in focus leave the board or list.
+        let focused = openItemId == nil && builtScope == scope ? focusedItemId : nil
+        let groups = focused != nil ? focusGroups : []
         var map: [String: StatusGlyph] = [:]
         for project in projects {
             for (optionId, glyph) in StatusGlyph.map(for: statusOptions(projectId: project.id)) {
@@ -1201,12 +1227,27 @@ public final class AppModel {
         if let scope {
             newSections = sections(for: scope)
             switch scope {
-            case .project, .milestone: newColumns = columns(for: scope)
+            case .project, .milestone: newColumns = shownColumns(for: scope)
             default: break
             }
         }
         if columns != newColumns { columns = newColumns }
         if sections != newSections { sections = newSections }
+        builtScope = scope
+
+        // The focus moves on from an issue that left; picks and the peek let it go.
+        if focused != nil { keepFocusShown(from: groups) }
+        if !selectedIds.isEmpty || peekItemId != nil {
+            // An issue GitHub has just created keeps its pick and peek under its new id (see `follow(remaps:)`).
+            let remaps = status.idRemaps
+            let inScope = Set(scopedItems.map(\.id))
+            let kept = Set(selectedIds.map { remaps[$0] ?? $0 }).intersection(inScope)
+            if kept != selectedIds { selectedIds = kept }
+            if let peek = peekItemId {
+                let id = remaps[peek] ?? peek
+                if !inScope.contains(id) { peekItemId = nil } else if id != peek { peekItemId = id }
+            }
+        }
     }
 
     // MARK: Navigation
@@ -1232,11 +1273,25 @@ public final class AppModel {
         if let project { select(.project(project.id)) }
     }
 
-    /// The project used last, or the first one: where G then B goes from the Inbox or My Issues.
+    /// The project at the top of the sidebar, the one used last: where G then B goes from the Inbox or My Issues.
     func selectLastProject() {
-        let saved = UserDefaults.standard.string(forKey: "selectedProject")
-        let project = openProjects.first { $0.id == saved } ?? openProjects.first { !hiddenProjectIds.contains($0.id) }
-        if let project { select(.project(project.id)) }
+        if let project = sidebarProject { select(.project(project.id)) }
+    }
+
+    /// G B and G L, ⌘1 and ⌘2: the board or the list of the project on screen, or from anywhere else of the one used
+    /// last.
+    func showProjectLayout(_ mode: ViewMode) {
+        if currentProjectId == nil { selectLastProject() }
+        guard currentProjectId != nil else { return }
+        closeDetail()
+        withAnimation(Theme.spring) { viewMode = mode }
+    }
+
+    /// G R and ⌘4: the roadmap of the project on screen, or of the one used last, in one step back.
+    func showRoadmap() {
+        guard let projectId = scopeProjectId ?? sidebarProject?.id else { return }
+        closeDetail()
+        select(.roadmap(projectId))
     }
 
     func select(_ newScope: Scope) {
@@ -1245,6 +1300,8 @@ public final class AppModel {
         focusedItemId = nil
         clearSelection()
         peekItemId = nil
+        // Picked notifications are let go too, as the board's picks are.
+        if newScope != .inbox { inboxPicked = [] }
         if let id = newScope.projectId {
             UserDefaults.standard.set(id, forKey: "selectedProject")
             lastProjectId = id
@@ -1303,7 +1360,7 @@ public final class AppModel {
         guard openItemId != nil else { return }
         // Closing an issue returns to where it was opened from, so Forward brings it back.
         if !isRestoringLocation, historyIndex > 0,
-           history[historyIndex - 1] == Location(scope: scope, viewMode: viewMode, itemId: nil) {
+           history[historyIndex - 1] == Location(scope: scope, viewMode: viewMode, itemId: nil, viewId: currentView?.id) {
             goBack()
             return
         }
@@ -1318,6 +1375,14 @@ public final class AppModel {
         }
         if let id = focusedItemId, let new = remaps[id] { focusedItemId = new }
         if let id = hoveredItemId, let new = remaps[id] { hoveredItemId = new }
+        if let id = peekItemId, let new = remaps[id] { peekItemId = new }
+        for (old, new) in remaps {
+            if let draft = commentDrafts.removeValue(forKey: old) { commentDrafts[new] = draft }
+        }
+        for (old, new) in remaps where selectedIds.contains(old) {
+            selectedIds.remove(old)
+            selectedIds.insert(new)
+        }
         for index in history.indices {
             if let id = history[index].itemId, let new = remaps[id] { history[index].itemId = new }
         }

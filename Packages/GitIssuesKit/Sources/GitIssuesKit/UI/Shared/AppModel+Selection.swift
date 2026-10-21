@@ -7,22 +7,31 @@ extension AppModel {
     /// The picked issues, in the order they read on screen.
     var selectedItems: [Item] {
         guard !selectedIds.isEmpty else { return [] }
-        return scopedItems.filter { selectedIds.contains($0.id) }.sorted { a, b in
-            let order = orderIndex
-            return (order[a.id] ?? .max) < (order[b.id] ?? .max)
-        }
+        let order = orderIndex
+        return scopedItems.filter { selectedIds.contains($0.id) }.sorted { (order[$0.id] ?? .max) < (order[$1.id] ?? .max) }
     }
 
+    /// Where each issue first reads on screen. One can read twice, such as in the groups of both its assignees.
     private var orderIndex: [String: Int] {
-        Dictionary(uniqueKeysWithValues: orderedItems.enumerated().map { ($1.id, $0) })
+        Dictionary(orderedItems.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     /// What shortcuts, the palette and the Issue menu act on: the picked issues (through `targets(for:)`), on an
     /// issue's page the sub-issues picked on it, else the open issue or the issue under the pointer or keyboard focus.
     var actionItem: Item? {
+        if openItem == nil, let first = inboxPickedItems.first { return first }
         if openItem == nil, let first = selectedItems.first { return first }
         if openItem != nil, let first = pickedSubIssues.first { return first }
         return targetItem
+    }
+
+    /// The issues of the notifications picked in the Inbox, each once, while several are picked: what S, P, A, L and I
+    /// change then, as they change the picked issues of a list.
+    var inboxPickedItems: [Item] {
+        guard scope == .inbox, openItem == nil, inboxPicked.count > 1 else { return [] }
+        var seen = Set<String>()
+        return visibleInbox.filter { inboxPicked.contains($0.id) }.compactMap { inboxItem(for: $0) }
+            .filter { seen.insert($0.id).inserted }
     }
 
     /// The issues an action on `item` applies to: the whole selection when the item is part of it.
@@ -33,6 +42,11 @@ extension AppModel {
             let picked = pickedSubIssues
             return picked.count > 1 ? picked : [item]
         }
+        // Nor for the issue of the page itself, though it may be one of them: the page changes only its issue.
+        if item.id == openItemId { return [item] }
+        // In the Inbox, the issues of the picked notifications.
+        let inbox = inboxPickedItems
+        if inbox.contains(where: { $0.id == item.id }) { return inbox }
         guard selectedIds.count > 1, selectedIds.contains(item.id) else { return [item] }
         let items = selectedItems
         return items.isEmpty ? [item] : items

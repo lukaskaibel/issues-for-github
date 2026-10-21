@@ -112,7 +112,7 @@ private struct InboxList: View {
                 title: String(localized: .inboxTokenCantReadTitle),
                 message: String(localized: .inboxTokenCantReadMessage)
             ) {
-                Button(.signInAgain) { model.signOut() }
+                Button(.signInAgain) { model.requestSignOut() }
                     .buttonStyle(SecondaryButtonStyle())
             }
         } else if model.inboxMeta.access == .unknown, model.inboxEntries.isEmpty {
@@ -163,6 +163,8 @@ private struct BucketSwitch: View {
                 withAnimation(Theme.spring) {
                     model.inboxBucket = bucket
                     model.inboxPicked = []
+                    // What was shown beside the list belongs to the other half.
+                    if let selected = model.inboxSelected, !model.visibleInbox.contains(selected) { model.inboxSelectedId = nil }
                 }
             }
         )) {
@@ -353,6 +355,7 @@ private struct InboxRow: View {
         } else {
             model.inboxPicked = []
             model.inboxPickAnchor = entry.id
+            model.inboxPickRange = []
             model.selectInboxEntry(entry)
         }
     }

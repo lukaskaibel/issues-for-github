@@ -349,7 +349,10 @@ struct MilestoneEditorSheet: View {
                     }
                     .accessibilityIdentifier("milestone-due")
                 } footer: {
-                    if !assigning.isEmpty {
+                    if nameTaken {
+                        // Why Create is off.
+                        Text(.milestoneNameTaken(name: trimmed))
+                    } else if !assigning.isEmpty {
                         Text(.milestoneWillHoldIssues(count: assigning.count))
                     } else if let repo = repository, existing == nil {
                         Text(.milestoneMadeIn(repository: repo.nameWithOwner))
@@ -394,9 +397,14 @@ struct MilestoneEditorSheet: View {
     private var trimmed: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     private var canSave: Bool {
-        guard !trimmed.isEmpty, let boardId else { return false }
-        if trimmed != existing?.title, model.milestoneGroup(projectId: boardId, title: trimmed)?.isOpen == true { return false }
+        guard !trimmed.isEmpty, boardId != nil, !nameTaken else { return false }
         return existing != nil || repository != nil
+    }
+
+    /// Another open milestone of that name is the same one on this board.
+    private var nameTaken: Bool {
+        guard !trimmed.isEmpty, let boardId, trimmed != existing?.title else { return false }
+        return model.milestoneGroup(projectId: boardId, title: trimmed)?.isOpen == true
     }
 
     private func prepare() {
@@ -406,6 +414,10 @@ struct MilestoneEditorSheet: View {
             name = existing.title
             due = existing.due
             descr = existing.descr
+        } else {
+            // A name typed into the milestone picker before choosing New Milestone….
+            name = model.newIssueTitle ?? ""
+            model.newIssueTitle = nil
         }
         nameFocused = existing == nil
     }
