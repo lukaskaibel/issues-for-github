@@ -86,6 +86,9 @@ All notable changes to this project are recorded here. The format follows
   any, puts each in its place, and a card or header scrolling in takes over the view of one that scrolled out instead
   of being built anew. Scrolling takes about a quarter less work and misses a frame of a 120 Hz display half as often.
   The board looks exactly as before.
+- On the Mac, dragging an issue in the list moves it again. The drag stopped as soon as it began and left an empty
+  space where the issue had been, so the issue seemed gone until you went to another list and back. Now the issue
+  lifts off as a card and lands where you let go, and the same goes for an epic's header with its issues.
 
 ## [1.0.0] - 2026-10-20
 

@@ -411,13 +411,16 @@ struct IssueTable: NSViewRepresentable {
             forRowIndexes rowIndexes: IndexSet
         ) {
             guard let row = rowIndexes.first, entries.indices.contains(row) else { return }
-            // The issue lifts off as a card, and its row stays behind faded until it lands. An epic's header lifts
-            // off the same way, and its issues stay behind faded with it.
+            // The issue lifts off as a card, and its row closes up into the gap where it would land. An epic's header
+            // lifts off the same way, and its issues stay behind faded until they land.
             let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false)
-            if let image = (cell as? IssueRowCell)?.dragImage() ?? (cell as? EpicHeaderRowCell)?.dragImage() {
-                let frame = tableView.rect(ofRow: row)
+            if let image = (cell as? IssueRowCell)?.dragImage() ?? (cell as? EpicHeaderRowCell)?.dragImage(),
+               image.size.width > 0, image.size.height > 0 {
                 session.enumerateDraggingItems(options: [], for: tableView, classes: [NSPasteboardItem.self], searchOptions: [:]) { dragged, _, _ in
-                    dragged.setDraggingFrame(frame, contents: image)
+                    // From where the table lifted the row: by now the row has closed up and `rect(ofRow:)` has no
+                    // height, and a frame without one throws, which ends the drag before it starts and leaves the
+                    // row hidden.
+                    dragged.setDraggingFrame(NSRect(origin: dragged.draggingFrame.origin, size: image.size), contents: image)
                 }
             }
             switch entries[row] {
@@ -439,6 +442,12 @@ struct IssueTable: NSViewRepresentable {
             let ids = draggedIds
             draggedIds = []
             refreshHighlight(for: Array(ids))
+            // The table hides the dragged row while it is dragged, and the list hides none of its own: once the drag
+            // is over, every row shows again, wherever the drop has put it.
+            DispatchQueue.main.async {
+                let hidden = tableView.hiddenRowIndexes
+                if !hidden.isEmpty { tableView.unhideRows(at: hidden, withAnimation: []) }
+            }
         }
 
         /// The row after a section's last one.
