@@ -658,7 +658,8 @@ use **Add column** at the right end of the board.
 To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
 Shift-click. A bar at the bottom then sets status, priority, assignee, labels or the due date for all of them, and so
 do the usual keys, dropdowns and right-click menu. Drag one of them and they all go: on the board and in the list they
-lift off together and land one after the other where you drop them. `Esc` clears the pick. Sub-issues hanging under
+lift off together and land one after the other where you drop them. `Esc` or a click beside the issues clears the
+pick, and a plain click on an issue opens it and lets the picked ones go. Sub-issues hanging under
 their parent are picked the same way, and so are the sub-issues listed in an open issue.
 
 Right-click the project at the top of the sidebar and choose **Change Icon…** to give it one of 257 glyphs in one of

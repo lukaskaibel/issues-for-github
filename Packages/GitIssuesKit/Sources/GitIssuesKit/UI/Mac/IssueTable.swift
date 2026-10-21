@@ -771,7 +771,12 @@ struct IssueTable: NSViewRepresentable {
 
         @objc func clicked(_ sender: NSTableView) {
             let row = sender.clickedRow
-            if row >= 0, let header = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueHeaderCell {
+            // A click below the issues lets the picked ones go.
+            guard row >= 0 else {
+                model.clearSelection()
+                return
+            }
+            if let header = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueHeaderCell {
                 if let event = NSApp.currentEvent { header.click(at: header.convert(event.locationInWindow, from: nil)) }
                 return
             }
@@ -782,7 +787,7 @@ struct IssueTable: NSViewRepresentable {
                    cell.isOnFold(cell.convert(event.locationInWindow, from: nil)) {
                     model.toggleEpicGroup(group)
                 } else {
-                    model.open(group.epic)
+                    model.openFromClick(group.epic)
                 }
                 return
             }
@@ -804,12 +809,13 @@ struct IssueTable: NSViewRepresentable {
             if let event = NSApp.currentEvent,
                let cell = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell,
                let part = cell.part(at: cell.convert(event.locationInWindow, from: nil)) {
+                model.releaseSelection(unlessPicked: item)
                 Dropdown.show(below: part.rect, in: cell, model: model) { close in
                     ItemPicker(kind: part.kind, itemId: item.id, close: close)
                 }
                 return
             }
-            model.open(item)
+            model.openFromClick(item)
         }
 
         /// Highlights the part under the pointer, so it reads as clickable.

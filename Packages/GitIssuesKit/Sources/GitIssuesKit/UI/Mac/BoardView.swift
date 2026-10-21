@@ -72,6 +72,10 @@ struct BoardView: View {
                 }
             }
             .onDisappear { ContextMenus.shared.remove(drag.menuRegion) }
+            // A click on the board beside the columns' cards, on a column's header or between columns, lets the picked
+            // issues go. Clicks on cards and buttons are theirs: the innermost gesture wins.
+            .contentShape(Rectangle())
+            .onTapGesture { model.clearSelection() }
             .coordinateSpace(.named(BoardDrag.space))
             .simultaneousGesture(
                 DragGesture(minimumDistance: 4, coordinateSpace: .named(BoardDrag.space))
@@ -285,7 +289,7 @@ struct ColumnView: View {
                     // A click on an epic's header opens the epic, one on its arrow folds its issues away or shows them.
                     if let header = drag.header(at: value.location, in: column.id),
                        let group = column.nesting.groups.first(where: { $0.contentId == header.epic }) {
-                        if drag.isOnFold(value.location, of: header) { model.toggleEpicGroup(group) } else { model.open(group.epic) }
+                        if drag.isOnFold(value.location, of: header) { model.toggleEpicGroup(group) } else { model.openFromClick(group.epic) }
                         return
                     }
                     // ⌘- and Shift-clicks pick cards. Otherwise a click on a card's priority, labels, sub-issues or
@@ -298,10 +302,14 @@ struct ColumnView: View {
                         return
                     }
                     if let hit = drag.part(at: value.location, in: column.items) {
+                        model.releaseSelection(unlessPicked: hit.item)
                         let origin = drag.boardFrameInWindow.origin
                         model.showPicker(hit.kind, for: hit.item, below: hit.rect.offsetBy(dx: origin.x, dy: origin.y))
                     } else if let item = card(at: value.location) {
-                        model.open(item)
+                        model.openFromClick(item)
+                    } else {
+                        // A click beside the cards lets the picked ones go.
+                        model.clearSelection()
                     }
                 })
                 // Where the rows are on the board, which scrolling changes: cards and headers are found from it.

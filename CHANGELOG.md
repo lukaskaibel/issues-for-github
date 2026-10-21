@@ -53,6 +53,10 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- On the Mac, picked issues let go when you click elsewhere, as in the Finder: a click on the board or list beside
+  the issues clears the pick, and a plain click on another issue opens it and clears the pick too. A click on a picked
+  issue's priority, labels and the like still changes all of them; on an issue that isn't picked, it changes just
+  that one and the pick goes. Before, only `Esc` or the × in the bar at the bottom let them go.
 - **Markdown that reads as GitHub draws it, while you write it.** Descriptions, comments, the comment field, new
   issues and milestones are drawn as on GitHub at all times: headings, lists, checklists that tick, quotes, code in
   colour, tables and Mermaid diagrams, and now also GitHub's alerts (`> [!NOTE]`, Tip, Important, Warning, Caution),
