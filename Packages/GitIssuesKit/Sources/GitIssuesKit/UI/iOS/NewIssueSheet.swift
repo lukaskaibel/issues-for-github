@@ -204,6 +204,10 @@ struct NewIssueSheet: View {
                 if !statuses.isEmpty {
                     Menu {
                         Picker(.status, selection: $draft.statusId) {
+                            // "No status" while the issue has none, as one made in that column.
+                            if draft.statusId == nil {
+                                Text(.noStatus).tag(String?.none)
+                            }
                             ForEach(statuses) { option in
                                 Label {
                                     Text(option.name)

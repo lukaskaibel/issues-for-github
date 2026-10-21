@@ -412,8 +412,8 @@ extension AppModel {
         // Back to where it was opened from, as Escape goes: its parent, if it was opened from there.
         if openItemId == item.id { leaveIssue() }
         // The keyboard carries on from the issue after it in its column or section (or before it, at the end), so
-        // deleting doesn't send you back to the top.
-        let next = wasCurrent ? Self.neighbour(of: item.id, in: focusGroups) { $0 != item.id } : nil
+        // deleting doesn't send you back to the top; not behind the parent's page Back went to.
+        let next = wasCurrent && openItemId == nil ? Self.neighbour(of: item.id, in: focusGroups) { $0 != item.id } : nil
         if focusedItemId == item.id { focusedItemId = nil }
         if hoveredItemId == item.id { hoveredItemId = nil }
         history.removeAll { $0.itemId == item.id }
@@ -439,13 +439,13 @@ extension AppModel {
     /// Moves a status column to `index` among `shown`, the status columns a board shows in their order, and saves the
     /// order. Columns the board leaves out (hidden ones, a milestone's empty backlog) keep their places and stay:
     /// saving only the columns on screen would delete the others on GitHub.
-    func moveColumn(_ id: String, among shown: [String], to index: Int, projectId: String) {
+    /// `animated: false` for a column dropped by hand, which is in its new place already.
+    func moveColumn(_ id: String, among shown: [String], to index: Int, projectId: String, animated: Bool = true) {
         let options = statusOptions(projectId: projectId)
         let order = Self.columnOrder(options.map(\.id), moving: id, among: shown, to: index)
         guard order != options.map(\.id) else { return }
-        withAnimation(Theme.spring) {
-            saveColumns(projectId: projectId, order.compactMap { id in options.first { $0.id == id }?.remote })
-        }
+        let save = { self.saveColumns(projectId: projectId, order.compactMap { id in options.first { $0.id == id }?.remote }) }
+        if animated { withAnimation(Theme.spring, save) } else { save() }
     }
 
     /// Every status in its new order: `id` at `index` among the shown ones without it, right after the shown

@@ -409,7 +409,7 @@ final class BoardDrag {
                     let shown = columns.compactMap { $0.option?.id }
                     let offset = columns.first?.option == nil ? 1 : 0
                     if shown.indices.contains(current.from - offset), current.to - offset <= shown.count - 1 {
-                        model.moveColumn(shown[current.from - offset], among: shown, to: current.to - offset, projectId: projectId)
+                        model.moveColumn(shown[current.from - offset], among: shown, to: current.to - offset, projectId: projectId, animated: false)
                     }
                 }
                 column = nil

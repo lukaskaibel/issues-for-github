@@ -967,12 +967,28 @@ extension AppModel {
     }
 
     /// After an issue was made in a view: says so when the view doesn't show it, because its filter leaves it out.
+    /// On a board, also when it went into a column you hid.
     func noteIfHidden(_ itemId: String) {
-        guard let item = item(id: itemId), let projectId = item.projectId, let view = currentView(projectId: projectId),
-              !self.view(view, shows: item) else { return }
+        guard let item = item(id: itemId), let projectId = item.projectId, let view = currentView(projectId: projectId) else { return }
+        if !self.view(view, shows: item) {
+            status.post(Notice(
+                title: String(localized: .createdNotInView(number: item.displayNumber, view: view.name)),
+                message: String(localized: .createdNotInViewMessage),
+                action: .openItem(item.id)
+            ))
+            return
+        }
+        #if os(iOS)
+        // The iPhone has no board.
+        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
+        #endif
+        let hidden = hiddenColumnIds(of: view)
+        guard layout(of: view) == .board, !hidden.isEmpty,
+              let column = columns(projectId: projectId).first(where: { $0.nesting.members.contains { $0.id == item.id } }),
+              hidden.contains(column.id) else { return }
         status.post(Notice(
-            title: String(localized: .createdNotInView(number: item.displayNumber, view: view.name)),
-            message: String(localized: .createdNotInViewMessage),
+            title: String(localized: .createdInHiddenColumn(number: item.displayNumber, column: column.title)),
+            message: String(localized: .createdInHiddenColumnMessage),
             action: .openItem(item.id)
         ))
     }

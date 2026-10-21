@@ -373,7 +373,8 @@ struct NewIssueView: View {
             // section or parent it went into opens for it.
             if model.openItem == nil, model.scopedItems.contains(where: { $0.id == id }) {
                 model.reveal(id)
-                model.moveFocus(to: id)
+                // Not in a column you hid, where it doesn't show.
+                if model.orderedItems.contains(where: { $0.id == id }) { model.moveFocus(to: id) }
             }
         }
     }
@@ -418,7 +419,10 @@ struct NewIssueView: View {
     private func items(_ kind: PickerKind) -> [PickerItem] {
         switch kind {
         case .status:
-            return statuses.map { option in
+            // "No status" while the issue has none, as one made in that column.
+            let none = draft.statusId == nil && draft.projectId != nil
+                ? [PickerItem(id: "", title: String(localized: .noStatus), selected: true, icon: AnyView(StatusIcon(glyph: .none)))] : []
+            return none + statuses.map { option in
                 PickerItem(id: option.id, title: option.name, selected: draft.statusId == option.id, icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id))))
             }
         case .priority:
@@ -462,7 +466,7 @@ struct NewIssueView: View {
     private func pick(_ kind: PickerKind, _ id: String) {
         switch kind {
         case .status:
-            draft.statusId = id
+            draft.statusId = id.isEmpty ? nil : id
         case .priority:
             draft.priorityId = id.isEmpty ? nil : id
         case .assignees:

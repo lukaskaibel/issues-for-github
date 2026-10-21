@@ -11971,6 +11971,126 @@
         }
       }
     },
+    "createdInHiddenColumn" : {
+      "comment" : "Mac and iPad: title of a message after creating an issue that went into a board column the user hid on this device, so it doesn't show on the board. number: '#123'; column: the column's name from GitHub, such as 'Done'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ ist in „%2$@“, das du ausgeblendet hast"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(number)@ is in %(column)@, which you hid"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ está en “%2$@”, que ocultaste"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ est dans « %2$@ », que vous avez masquée"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@は非表示にした列「%2$@」にあります"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@이(가) 가린 열 ‘%2$@’에 있음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ está em “%2$@”, que você ocultou"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ в колонке «%2$@», которую вы скрыли"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ 在你隐藏的列“%2$@”中"
+          }
+        }
+      }
+    },
+    "createdInHiddenColumnMessage" : {
+      "comment" : "Mac and iPad: message under '#123 is in Done, which you hid' after creating an issue in a hidden board column. The hidden columns are listed after the board's last column and in the Display options.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blende die Spalte am Ende des Boards oder unter Darstellung wieder ein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the column again from the end of the board or from Display."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuelve a mostrar la columna desde el final del tablero o desde Visualización."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Affichez de nouveau la colonne depuis la fin du tableau ou depuis Affichage."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ボードの右端か「表示」から列を再表示できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보드 끝이나 표시에서 열을 다시 표시할 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostre a coluna de novo no fim do quadro ou em Exibição."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Снова покажите колонку в конце доски или в разделе «Отображение»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "可在看板末尾或“显示”中重新显示此列。"
+          }
+        }
+      }
+    },
     "createdNotInView" : {
       "comment" : "Title of a message after creating an issue in a saved view whose filter leaves the new issue out. number: '#123'; view: the view's name from GitHub, such as 'This Week'.",
       "extractionState" : "manual",

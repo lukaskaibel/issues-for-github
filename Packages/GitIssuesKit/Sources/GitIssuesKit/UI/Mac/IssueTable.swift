@@ -800,7 +800,7 @@ struct IssueTable: NSViewRepresentable {
             if section.canAdd {
                 menu.addItem(.separator())
                 let add = ClosureMenuItem(String(localized: .newIssueInGroupMenu(group: section.title))) { [model] in
-                    model.addIssue(in: section.kind, optionId: section.optionId)
+                    model.addIssue(in: section.kind, optionId: section.optionId, sectionId: section.id)
                 }
                 add.image = MenuIcons.symbol("plus")
                 menu.addItem(add)
@@ -1761,7 +1761,7 @@ final class IssueHeaderCell: NSView {
 
     @objc private func add() {
         guard let section else { return }
-        model?.addIssue(in: section.kind, optionId: section.optionId)
+        model?.addIssue(in: section.kind, optionId: section.optionId, sectionId: section.id)
     }
 
     override func draw(_ dirtyRect: NSRect) {

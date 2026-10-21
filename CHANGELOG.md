@@ -54,7 +54,8 @@ All notable changes to this project are recorded here. The format follows
 - **Hide board columns, on your device only.** A column's menu (right-click its header, or its "…"; on iPad its "…")
   has **Hide Column**: the column and its cards leave the board, and nothing changes on GitHub. Hidden columns wait at
   the right end of the board with their counts and under Display (`⇧V`), and a click brings one back. Each view keeps
-  its own; the list still shows every status, and a milestone's board every column. On the Mac and iPad.
+  its own; the list still shows every status, and a milestone's board every column. A new issue that goes into a
+  hidden column says so. On the Mac and iPad.
 - **Close an issue that's on no board.** Its status picker offers **Mark as Done**, or **Reopen** once it's closed, as
   well as the boards to put it on.
 - **More in the command palette.** New Issue wherever `C` makes one, Copy Branch Name, Show or Hide Inspector, Reset
@@ -120,8 +121,8 @@ All notable changes to this project are recorded here. The format follows
 - On iPhone and iPad, sub-issues listed in an issue show their assignees as just changed.
 - On iPad, a board by an iteration or another field shows each column's colour or iteration and dates as the Mac does,
   its plus gives the new issue that column's value, and it no longer offers Add Status.
-- An issue made with the plus of the "No status" column has no status, one made in a folded section or under a folded
-  parent shows, and one made with the plus of a repository's group starts in that repository.
+- An issue made with the plus of the "No status" column or list section has no status, one made in a folded section or
+  under a folded parent shows, and one made with the plus of a repository's group starts in that repository.
 - On the Mac, reordering cards on a milestone's board works when the project's open view is sorted.
 - A view whose filter leaves out every issue says so, with Reset for a changed filter, instead of "No issues yet".
 - iPhone and iPad no longer let you drag rows in groups by another field than Status, where they can't stay, and on
