@@ -318,6 +318,18 @@ struct Nesting: Equatable {
         return landing(moving: moving, parent: nil, area: joins ? epic : nil, at: min(max(slot, 0), shown.count), shown: shown) { _ in false }
     }
 
+    /// Where several picked issues land when they are dropped together at `slot` among `shown`, the group's issues as
+    /// shown without the ones `moving`: the picked ones and what hangs under them. When they all belong to `epic`,
+    /// they stand with its other issues here, as an epic's group does; otherwise they go in front of or after what
+    /// stands outside every epic's group. `parents` are the picked issues' node ids: issues they are the parent of
+    /// will hang under them.
+    func landing(ofPicked moving: Set<String>, epic: String?, parents: Set<String>, at slot: Int, shown: [Item]) -> Landing {
+        let joins = epic.map { epic in members.contains { !moving.contains($0.id) && epicOf[$0.id] == epic } } ?? false
+        return landing(moving: moving, parent: nil, area: joins ? epic : nil, at: min(max(slot, 0), shown.count), shown: shown) { member in
+            member.parentId.map(parents.contains) ?? false
+        }
+    }
+
     /// The rows shown without the issues `moving`: an epic's header goes too when all of its issues do.
     func rows(without moving: Set<String>) -> [Row] {
         guard !moving.isEmpty else { return rows }
@@ -457,5 +469,14 @@ extension BoardColumn {
     /// issues as shown without them.
     func landing(ofGroup epic: String, moving: Set<String>, at index: Int) -> Nesting.Landing {
         nesting.landing(ofGroup: epic, moving: moving, at: index, shown: items.filter { !moving.contains($0.id) })
+    }
+
+    /// Where several picked issues land when they are dropped together at `index` among the column's issues as shown
+    /// without `picked.moving`.
+    func landing(of picked: PickedIssues, at index: Int) -> Nesting.Landing {
+        nesting.landing(
+            ofPicked: picked.moving, epic: picked.epic, parents: Set(picked.items.compactMap(\.contentId)),
+            at: index, shown: items.filter { !picked.moving.contains($0.id) }
+        )
     }
 }

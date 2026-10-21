@@ -17,6 +17,19 @@ extension AppModel {
         return true
     }
 
+    /// A plain click on an issue opens it, and the picked issues go: the click is about this one now, as a click on
+    /// another file is in the Finder.
+    func openFromClick(_ item: Item) {
+        clearSelection()
+        open(item)
+    }
+
+    /// A plain click on a part of an issue, such as its priority or labels, opens that dropdown. On a picked issue the
+    /// dropdown changes every picked one, so they stay picked; on any other, they go.
+    func releaseSelection(unlessPicked item: Item) {
+        if !isSelected(item.id) { clearSelection() }
+    }
+
     /// The same on a sub-issue on an issue's page, among `order`, the sub-issues as listed there. One that is on
     /// GitHub only can't be changed with the others, so the click does nothing to it.
     func handleSubIssueClick(on item: Item?, in order: [String]) -> Bool {

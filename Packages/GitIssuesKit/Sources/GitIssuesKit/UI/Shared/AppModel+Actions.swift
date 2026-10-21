@@ -114,7 +114,8 @@ extension AppModel {
     /// what hangs under it. A sub-issue whose parent is in the column joins the parent's sub-issues; any other
     /// card goes in front of or after the cards that stand on their own, never between a parent and its sub-issues.
     /// Dropped between two issues of an epic's group, or right below its header (`belowEpicHeader`), it joins the epic.
-    func drop(_ item: Item, in column: BoardColumn, at index: Int, belowEpicHeader: String? = nil) {
+    /// On a milestone's board, `milestone` names it: the board keeps its own order there, whatever the open view's.
+    func drop(_ item: Item, in column: BoardColumn, at index: Int, belowEpicHeader: String? = nil, milestone: String? = nil) {
         guard let projectId = item.projectId else { return }
         let itemEpic = epic(of: item)?.contentId
         let landing = column.landing(of: item, at: index, epic: itemEpic, belowHeader: belowEpicHeader)
@@ -128,7 +129,7 @@ extension AppModel {
             )))
         }
         // A view in an order of its own keeps it; only an unordered board has places to drop into, as on GitHub.
-        if !isOrdered(projectId: projectId), let move = placement(of: item, in: column, at: landing, projectId: projectId) {
+        if !isOrdered(projectId: projectId, milestone: milestone), let move = placement(of: item, in: column, at: landing, projectId: projectId) {
             mutations.append(move)
         }
         // A sub-issue dropped onto a folded parent would vanish into it, so the parent opens.
@@ -163,12 +164,15 @@ extension AppModel {
     }
 
     /// The moves that give cards their place among `landing.peers`, one after the other in their board order, or
-    /// none when they are there already.
-    private func placements(of items: [Item], in column: BoardColumn, at landing: Nesting.Landing, projectId: String) -> [Mutation] {
+    /// none when they are there already. Cards that may stand apart, as picked ones do, are always moved: the first
+    /// one's place doesn't tell where the others are.
+    private func placements(
+        of items: [Item], in column: BoardColumn, at landing: Nesting.Landing, projectId: String, together: Bool = true
+    ) -> [Mutation] {
         let peers = landing.peers
         let items = items.sorted { $0.position < $1.position }
         guard let first = items.first, !peers.isEmpty else { return [] }
-        if column.nesting.members.contains(where: { $0.id == first.id }),
+        if together || items.count == 1, column.nesting.members.contains(where: { $0.id == first.id }),
            peers.filter({ $0.position < first.position }).count == landing.rank {
             return []
         }
@@ -193,29 +197,31 @@ extension AppModel {
     /// Drops `members`, the issues of an epic's group in a column, all of them together into a column at `index`,
     /// counted among that column's issues as shown without them. They take the column's status and keep their
     /// order, in front of or after what stands there on its own, or among the epic's issues the column has already.
-    func drop(_ group: Nesting.EpicGroup, members: [Item], in column: BoardColumn, at index: Int) {
+    func drop(_ group: Nesting.EpicGroup, members: [Item], in column: BoardColumn, at index: Int, milestone: String? = nil) {
         guard let projectId = members.first?.projectId else { return }
         let landing = column.landing(ofGroup: group.contentId, moving: Set(members.map(\.id)), at: index)
-        let placing = isOrdered(projectId: projectId) ? [] : placements(of: members, in: column, at: landing, projectId: projectId)
+        let placing = isOrdered(projectId: projectId, milestone: milestone)
+            ? [] : placements(of: members, in: column, at: landing, projectId: projectId)
         if column.value != nil {
             withAnimation(Theme.spring) { perform(members.flatMap { columnMutations($0, column) } + placing) }
             return
         }
-        moveIssues(members, of: group, to: column.option, title: column.title, placing: placing)
+        moveIssues(members, to: column.option, title: column.title, message: group.epic.title, placing: placing)
     }
 
     /// Gives `members`, the issues of an epic's group in a column, another status, as the group's menu does. They
     /// keep their places on the board, as an issue does whose status changes.
     func setStatus(of group: Nesting.EpicGroup, members: [Item], to option: FieldOption) {
         withAnimation(Theme.spring) {
-            moveIssues(members, of: group, to: option, title: option.name, placing: [])
+            moveIssues(members, to: option, title: option.name, message: group.epic.title, placing: [])
         }
     }
 
-    /// Moves an epic's issues to the column of `option`, with the `placing` moves that give them their place there.
-    /// Where their status changes, a message says how many moved, with a way to take it back.
-    private func moveIssues(_ members: [Item], of group: Nesting.EpicGroup, to option: FieldOption?, title: String, placing: [Mutation]) {
-        let changes = members.flatMap { statusMutations($0, option) }
+    /// Moves issues to the column of `option`, with the `placing` moves that give them their place there. Where their
+    /// status changes, a message says how many moved, with a way to take it back; `message` goes under it.
+    private func moveIssues(_ members: [Item], to option: FieldOption?, title: String, message: String, placing: [Mutation]) {
+        let changing = members.map { statusMutations($0, option) }
+        let changes = changing.flatMap { $0 }
         guard !changes.isEmpty || !placing.isEmpty else { return }
         // Undoing gives each issue its status, state and place back.
         var undo: [Mutation] = []
@@ -241,10 +247,29 @@ extension AppModel {
         perform(changes + placing)
         guard !changes.isEmpty else { return }
         status.post(Notice(
-            title: String(localized: .epicIssuesMovedToStatus(count: members.count, status: title)),
-            message: group.epic.title,
+            // Picked issues that were there already didn't move.
+            title: String(localized: .issuesMovedToStatus(count: changing.filter { !$0.isEmpty }.count, status: title)),
+            message: message,
             action: .undo(undo)
         ))
+    }
+
+    // MARK: Several picked issues together
+
+    /// Drops picked issues together into a column at `index`, counted among the column's issues as shown without
+    /// them and what hangs under them. They take the column's status and stand one after the other in their board
+    /// order, in front of or after what stands there on its own, or among the issues of the epic they all belong to.
+    /// A message says how many moved, with a way to take it back.
+    func drop(_ picked: PickedIssues, in column: BoardColumn, at index: Int) {
+        guard let projectId = picked.items.first?.projectId else { return }
+        let items = picked.items.filter { $0.projectId == projectId }
+        let placing = isOrdered(projectId: projectId)
+            ? [] : placements(of: items, in: column, at: column.landing(of: picked, at: index), projectId: projectId, together: false)
+        if column.value != nil {
+            withAnimation(Theme.spring) { perform(items.flatMap { columnMutations($0, column) } + placing) }
+            return
+        }
+        moveIssues(items, to: column.option, title: column.title, message: "", placing: placing)
     }
 
     /// Moves an issue one place up or down within its column, which is also its section of the list: past the

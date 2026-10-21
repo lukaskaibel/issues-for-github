@@ -78,6 +78,10 @@ struct BoardView: View {
                 }
             }
             .onDisappear { ContextMenus.shared.remove(drag.menuRegion) }
+            // A click on the board beside the columns' cards, on a column's header or between columns, lets the picked
+            // issues go. Clicks on cards and buttons are theirs: the innermost gesture wins.
+            .contentShape(Rectangle())
+            .onTapGesture { model.clearSelection() }
             .coordinateSpace(.named(BoardDrag.space))
             .simultaneousGesture(
                 DragGesture(minimumDistance: 4, coordinateSpace: .named(BoardDrag.space))
@@ -182,15 +186,34 @@ private struct LiftedCard: View {
     var avatarVersion: Int
 
     var body: some View {
+        let picked = active.picked?.items.count
         CardView(card: card, width: active.size.width, lifted: true, avatarVersion: avatarVersion)
-            // A parent carries the sub-issues hanging under it along.
-            .background(alignment: .top) { if card.nested != nil { CardStackEdge() } }
+            // A parent carries the sub-issues hanging under it along, and a picked card the other picked ones.
+            .background(alignment: .top) { if card.nested != nil || picked != nil { CardStackEdge() } }
+            .overlay(alignment: .topTrailing) { if let picked { PickedCount(count: picked) } }
             .scaleEffect(active.lifted ? 1.03 : 1)
             .rotationEffect(.degrees(active.lifted ? 1.5 + active.tilt : 0))
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: active.tilt)
             .shadow(color: active.lifted ? Theme.shadow : .clear, radius: active.lifted ? 22 : 0, y: active.lifted ? 16 : 0)
             .offset(x: active.location.x - active.grab.width, y: active.location.y - active.grab.height)
             .allowsHitTesting(false)
+    }
+}
+
+/// How many picked cards a drag carries, on the corner of the lifted one, as the Finder counts the files it drags.
+struct PickedCount: View {
+    var count: Int
+
+    var body: some View {
+        Text("\(count)")
+            .font(.system(size: 11, weight: .semibold))
+            .monospacedDigit()
+            .foregroundStyle(.white)
+            .padding(.horizontal, 6)
+            .frame(minWidth: 20, minHeight: 20)
+            .background(Capsule().fill(Theme.accentFill))
+            .offset(x: 7, y: -7)
+            .accessibilityHidden(true)
     }
 }
 
@@ -312,7 +335,7 @@ struct ColumnView: View {
                     // A click on an epic's header opens the epic, one on its arrow folds its issues away or shows them.
                     if let header = drag.header(at: value.location, in: column.id),
                        let group = column.nesting.groups.first(where: { $0.contentId == header.epic }) {
-                        if drag.isOnFold(value.location, of: header) { model.toggleEpicGroup(group) } else { model.open(group.epic) }
+                        if drag.isOnFold(value.location, of: header) { model.toggleEpicGroup(group) } else { model.openFromClick(group.epic) }
                         return
                     }
                     // ⌘- and Shift-clicks pick cards. Otherwise a click on a card's priority, labels, sub-issues or
@@ -325,10 +348,14 @@ struct ColumnView: View {
                         return
                     }
                     if let hit = drag.part(at: value.location, in: column.items) {
+                        model.releaseSelection(unlessPicked: hit.item)
                         let origin = drag.boardFrameInWindow.origin
                         model.showPicker(hit.kind, for: hit.item, below: hit.rect.offsetBy(dx: origin.x, dy: origin.y))
                     } else if let item = card(at: value.location) {
-                        model.open(item)
+                        model.openFromClick(item)
+                    } else {
+                        // A click beside the cards lets the picked ones go.
+                        model.clearSelection()
                     }
                 })
                 // Where the rows are on the board, which scrolling changes: cards and headers are found from it.

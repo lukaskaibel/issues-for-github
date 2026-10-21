@@ -100,7 +100,7 @@ struct MobileBoard: View {
             guard let group = lifted.group(model: model, projectId: projectId, milestone: milestone), !members.isEmpty else { return }
             let index = column.items.prefix(slot ?? column.items.count).filter { !lifted.ids.contains($0.id) }.count
             dropped += 1
-            withAnimation(Theme.spring) { model.drop(group, members: members, in: column, at: index) }
+            withAnimation(Theme.spring) { model.drop(group, members: members, in: column, at: index, milestone: milestone) }
             return
         }
         guard let id, let item = model.item(id: id), item.projectId == projectId else { return }
@@ -108,7 +108,7 @@ struct MobileBoard: View {
         let others = Set(column.shown(without: item).map(\.id))
         let index = column.items.prefix(slot ?? column.items.count).filter { others.contains($0.id) }.count
         dropped += 1
-        withAnimation(Theme.spring) { model.drop(item, in: column, at: index) }
+        withAnimation(Theme.spring) { model.drop(item, in: column, at: index, milestone: milestone) }
     }
 }
 
@@ -376,14 +376,14 @@ private struct MobileColumn: View {
     /// For VoiceOver, which can't drag: moves the card to the neighbouring column.
     private func step(_ item: Item, by delta: Int) {
         guard let next = neighbour(delta) else { return }
-        withAnimation(Theme.spring) { model.drop(item, in: next, at: next.items.count) }
+        withAnimation(Theme.spring) { model.drop(item, in: next, at: next.items.count, milestone: milestone) }
     }
 
     /// For VoiceOver: moves an epic's issues here to the neighbouring column.
     private func step(_ group: Nesting.EpicGroup, by delta: Int) {
         guard let next = neighbour(delta) else { return }
         let members = column.members(of: group)
-        withAnimation(Theme.spring) { model.drop(group, members: members, in: next, at: next.items.count) }
+        withAnimation(Theme.spring) { model.drop(group, members: members, in: next, at: next.items.count, milestone: milestone) }
     }
 
     private func neighbour(_ delta: Int) -> BoardColumn? {

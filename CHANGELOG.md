@@ -73,6 +73,10 @@ All notable changes to this project are recorded here. The format follows
 - Signing out asks first while changes are still waiting to reach GitHub, since it deletes them.
 - In the Inbox, `S` `P` `A` `L` `I` change the issues of all picked notifications, `⇧J` and `⇧K` pick a run, and
   moving with `J` and `K` keeps what is picked.
+- On the Mac, picked issues let go when you click elsewhere, as in the Finder: a click on the board or list beside
+  the issues clears the pick, and a plain click on another issue opens it and clears the pick too. A click on a picked
+  issue's priority, labels and the like still changes all of them; on an issue that isn't picked, it changes just
+  that one and the pick goes. Before, only `Esc` or the × in the bar at the bottom let them go.
 - **Markdown that reads as GitHub draws it, while you write it.** Descriptions, comments, the comment field, new
   issues and milestones are drawn as on GitHub at all times: headings, lists, checklists that tick, quotes, code in
   colour, tables and Mermaid diagrams, and now also GitHub's alerts (`> [!NOTE]`, Tip, Important, Warning, Caution),
@@ -136,6 +140,14 @@ All notable changes to this project are recorded here. The format follows
 - Hiding the project at the top of the sidebar works from the Inbox, My Issues, its milestones and its roadmap too.
 - `⌘S` isn't offered for a view while offline or while it is being saved, and the palette no longer offers Unsubscribe
   for due dates and your own assignments in the Inbox.
+- On the Mac, dragging one of several picked issues moves all of them, on the board and in the list. They lift off
+  together, as one card with the edge of another under it and how many there are on its corner, and land one after the
+  other where you let go, with that column's status. A message says how many moved, with Undo, and `Esc` mid-drag puts
+  them all back. Before, only the issue under the pointer moved and the others stayed where they were.
+- Dragging only offers what can change. On the Mac, a board you can only read no longer lets you lift its cards, as
+  its list already didn't, and in a view sorted by a field a card or row can't be dropped at another place in its own
+  column or section, where it used to snap back; it can still go to another column. On iPad, cards on a milestone's
+  board can be moved up and down again while the project's open view is sorted.
 - The heading over an issue's sub-issues stays on one line on a small iPhone, in every language. When the row is short
   of room, the bar beside the title gets shorter and then steps aside, and only after it "4 of 6". Before, the title
   broke onto two lines on an iPhone SE, in English too, and in Spanish even on an iPhone 17 Pro.

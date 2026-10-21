@@ -69,8 +69,8 @@ an assignee or a label opens its picker right where you clicked, ready to type i
 ### A board you can pick up
 
 Drag a card and it lifts off the board, tilts with the motion and settles with a spring, while its neighbours make
-room. Press Esc mid-drag and it goes back to where it came from. The move shows in the same frame and reaches
-GitHub in the background.
+room. Press Esc mid-drag and it goes back to where it came from. Pick several cards with ⌘-click and drag one of them,
+and they all go, together. The move shows in the same frame and reaches GitHub in the background.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/drag-dark.webp">
@@ -663,8 +663,10 @@ Columns** in Display (`⇧V`); a click shows one again, and **Reset** there brin
 
 To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
 Shift-click. A bar at the bottom then sets status, priority, assignee, labels or the due date for all of them, and so
-do the usual keys, dropdowns and right-click menu. `Esc` clears the pick. Sub-issues hanging under their parent are
-picked the same way, and so are the sub-issues listed in an open issue.
+do the usual keys, dropdowns and right-click menu. Drag one of them and they all go: on the board and in the list they
+lift off together and land one after the other where you drop them. `Esc` or a click beside the issues clears the
+pick, and a plain click on an issue opens it and lets the picked ones go. Sub-issues hanging under
+their parent are picked the same way, and so are the sub-issues listed in an open issue.
 
 Right-click the project at the top of the sidebar and choose **Change Icon…** to give it one of 257 glyphs in one of
 GitHub's eight colours; until then it is GitHub's table in grey. The glyphs come in groups such as Work, Code,
