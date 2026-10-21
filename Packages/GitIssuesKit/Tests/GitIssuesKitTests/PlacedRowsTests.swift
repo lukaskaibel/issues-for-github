@@ -32,6 +32,16 @@ struct PlacedRowsTests {
         #expect(plan.rows(in: -500 ... -10).isEmpty)
     }
 
+    @Test("The rows starting in a stretch are those whose top is in it")
+    func rowsStartingInAStretch() {
+        let plan = Self.plan
+        #expect(plan.rows(startingIn: 0..<600) == 0..<6)
+        #expect(plan.rows(startingIn: 600..<1200) == 6..<10)
+        #expect(plan.rows(startingIn: 1..<108) == 1..<1)
+        #expect(plan.rows(startingIn: 108..<109) == 1..<2)
+        #expect(plan.rows(startingIn: 1200..<1800).isEmpty)
+    }
+
     /// The row each view shows.
     private func shown(_ window: RowWindow) -> [String?] {
         (0..<window.slotCount).map { window[slot: $0] }
