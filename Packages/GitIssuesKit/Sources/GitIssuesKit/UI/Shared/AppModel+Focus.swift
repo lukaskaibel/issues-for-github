@@ -55,9 +55,14 @@ extension AppModel {
     /// moved out of the view, folded away or in a hidden column, hands the focus to its neighbour, as a deleted one
     /// does.
     func keepFocusShown(from groups: [[String]]) {
-        guard let focused = focusedItemId, openItem == nil else { return }
+        guard let focused = focusedItemId, openItemId == nil else { return }
         let shown = Set(orderedItems.map(\.id))
         guard !shown.contains(focused) else { return }
+        // An issue GitHub has just created keeps the focus under its new id.
+        if let new = status.idRemaps[focused], shown.contains(new) {
+            focusedItemId = new
+            return
+        }
         focusedItemId = Self.neighbour(of: focused, in: groups) { shown.contains($0) }
     }
 

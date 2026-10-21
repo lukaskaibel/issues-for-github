@@ -589,14 +589,14 @@ public final class AppModel {
         startSyncing()
     }
 
-    /// Signs out of this device. With `everywhere`, the login shared through iCloud Keychain is removed too,
-    /// which signs out the user's other devices as well.
     /// Signs out, or asks first while changes made here haven't reached GitHub yet: signing out deletes them with
     /// everything else kept on this device.
     func requestSignOut() {
         if pendingCount > 0, !isDemo { confirmSignOut = true } else { signOut() }
     }
 
+    /// Signs out of this device. With `everywhere`, the login shared through iCloud Keychain is removed too,
+    /// which signs out the user's other devices as well.
     func signOut(everywhere: Bool = false) {
         if isDemo {
             leaveDemo()
@@ -1206,7 +1206,7 @@ public final class AppModel {
 
     func rebuild() {
         // What the keyboard focus moved among, should the issue in focus leave the board or list.
-        let focused = openItem == nil && builtScope == scope ? focusedItemId : nil
+        let focused = openItemId == nil && builtScope == scope ? focusedItemId : nil
         let groups = focused != nil ? focusGroups : []
         var map: [String: StatusGlyph] = [:]
         for project in projects {
@@ -1238,9 +1238,15 @@ public final class AppModel {
         // The focus moves on from an issue that left; picks and the peek let it go.
         if focused != nil { keepFocusShown(from: groups) }
         if !selectedIds.isEmpty || peekItemId != nil {
+            // An issue GitHub has just created keeps its pick and peek under its new id (see `follow(remaps:)`).
+            let remaps = status.idRemaps
             let inScope = Set(scopedItems.map(\.id))
-            if !selectedIds.isSubset(of: inScope) { selectedIds.formIntersection(inScope) }
-            if let peek = peekItemId, !inScope.contains(peek) { peekItemId = nil }
+            let kept = Set(selectedIds.map { remaps[$0] ?? $0 }).intersection(inScope)
+            if kept != selectedIds { selectedIds = kept }
+            if let peek = peekItemId {
+                let id = remaps[peek] ?? peek
+                if !inScope.contains(id) { peekItemId = nil } else if id != peek { peekItemId = id }
+            }
         }
     }
 
@@ -1267,8 +1273,7 @@ public final class AppModel {
         if let project { select(.project(project.id)) }
     }
 
-    /// The project used last, or the first one: where G then B goes from the Inbox or My Issues.
-    /// The project at the top of the sidebar: the one used last.
+    /// The project at the top of the sidebar, the one used last: where G then B goes from the Inbox or My Issues.
     func selectLastProject() {
         if let project = sidebarProject { select(.project(project.id)) }
     }
