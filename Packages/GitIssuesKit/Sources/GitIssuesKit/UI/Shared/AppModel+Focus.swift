@@ -61,6 +61,19 @@ extension AppModel {
         focusedItemId = Self.neighbour(of: focused, in: groups) { shown.contains($0) }
     }
 
+    /// Shows a new issue where it landed: its parent's sub-issues unfolded, and on the Mac its section of the list.
+    func reveal(_ id: String) {
+        guard let new = allItems.first(where: { $0.id == id }) else { return }
+        if let parentId = new.parentId, let parent = item(contentId: parentId), isFolded(parent) { setFolded(parent, false) }
+        #if os(macOS)
+        // The list on screen; iPhone and iPad keep a list per screen, whose sections fold where they are.
+        if viewMode == .list || currentProjectId == nil,
+           let section = sections.first(where: { $0.nesting.members.contains { $0.id == id } }), isFolded(section) {
+            withAnimation(Theme.spring) { toggleSection(section.id) }
+        }
+        #endif
+    }
+
     func moveFocus(to id: String, scroll: Bool = true) {
         hoveredItemId = nil
         focusedItemId = id

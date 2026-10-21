@@ -487,9 +487,12 @@ private struct RootPalette: View {
                         model.snooze(entries, until: choice.date())
                     })
                 }
-                list.append(PaletteCommand(id: "inbox-unsubscribe", title: .unsubscribe, section: section, icon: symbol("bell.slash"), keys: ["⇧", "S"]) {
-                    model.unsubscribe(entries)
-                })
+                // Due dates and your own assignments aren't GitHub's notifications: nothing to unsubscribe from.
+                if entries.contains(where: { !$0.isAppMade }) {
+                    list.append(PaletteCommand(id: "inbox-unsubscribe", title: .unsubscribe, section: section, icon: symbol("bell.slash"), keys: ["⇧", "S"]) {
+                        model.unsubscribe(entries)
+                    })
+                }
             }
             list.append(PaletteCommand(id: "inbox-read-all", title: .markAllAsReadCommand, section: String(localized: .inbox), icon: symbol("circle"), keys: ["⌥", "U"]) {
                 model.markAllRead()

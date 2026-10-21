@@ -40,6 +40,8 @@ struct NewIssuePreset: Equatable {
     var assignees: [String] = []
     var milestoneTitle: String?
     var parentContentId: String?
+    /// Started in a group by repository: that repository.
+    var repoId: String?
     var fieldValues: [String: FieldValue] = [:]
 }
 
@@ -951,7 +953,8 @@ extension AppModel {
             preset.assignees = login.map { [$0] } ?? []
         case .milestone(let title)?: preset.milestoneTitle = title
         case .parent(let contentId)?: preset.parentContentId = contentId
-        case .repository?, .issueType?, nil: break
+        case .repository(let id)?: preset.repoId = id
+        case .issueType?, nil: break
         }
         return preset
     }
@@ -992,6 +995,10 @@ extension NewIssuePreset {
 extension AppModel {
     /// Fills a new issue with what a view's preset asks for, where the issue doesn't have a value already.
     func apply(_ preset: NewIssuePreset, to draft: inout NewIssueDraft) {
+        // The group's repository, where the board has it and the issue isn't a sub-issue, which lives with its parent.
+        if draft.parent == nil, let repoId = preset.repoId, repos(projectId: draft.projectId).contains(where: { $0.id == repoId }) {
+            draft.repoId = repoId
+        }
         if let status = preset.statusId { draft.statusId = status }
         if let priority = preset.priorityId { draft.priorityId = priority }
         if draft.milestoneTitle == nil { draft.milestoneTitle = preset.milestoneTitle }

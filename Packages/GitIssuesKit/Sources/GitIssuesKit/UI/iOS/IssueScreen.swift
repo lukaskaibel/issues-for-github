@@ -276,12 +276,43 @@ struct IssueScreen: View {
         }
     }
 
-    /// Where the issue sits among its project's issues, in list order, for stepping through them.
+    /// Where the issue sits among the issues of the board or list it was opened from, in their order, for stepping
+    /// through them, as on the Mac. Each issue once, though one can be listed twice (in two people's groups).
     private func position(of item: Item) -> (index: Int, items: [Item])? {
-        let scope: Scope = item.projectId.map { .project($0) } ?? item.repoId.map { .repository($0) } ?? .myIssues
-        let items = model.sections(for: scope).flatMap(\.items)
+        let scope = originScope ?? item.projectId.map { .project($0) } ?? item.repoId.map { .repository($0) } ?? .myIssues
+        // A board, as the iPad shows a project or a milestone with room for one.
+        let board = switch scope {
+        case .project(let id): wide && (model.currentView(projectId: id).map { model.layout(of: $0) } ?? model.viewMode) == .board
+        case .milestone: wide && model.viewMode == .board
+        default: false
+        }
+        let listed = board ? model.shownColumns(for: scope).flatMap(\.items) : model.sections(for: scope).flatMap(\.items)
+        var seen = Set<String>()
+        let items = listed.filter { seen.insert($0.id).inserted }
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return nil }
         return (index, items)
+    }
+
+    /// The board or list the issue was opened from: the screen under it (past the issues opened on the way), else
+    /// the tab or sidebar entry it is in.
+    private var originScope: Scope? {
+        for route in navigation.path(for: navigation.tab).dropLast().reversed() {
+            switch route {
+            case .project(let id): return .project(id)
+            case .repository(let id): return .repository(id)
+            case .milestone(let projectId, let title): return .milestone(projectId: projectId, title: title)
+            case .roadmap(let id): return .roadmap(id)
+            case .issue, .inboxIssue, .statuses: continue
+            }
+        }
+        return switch navigation.tab {
+        case .myIssues: .myIssues
+        case .project(let id), .view(let id, _): .project(id)
+        case .repository(let id): .repository(id)
+        case .milestone(let projectId, let title): .milestone(projectId: projectId, title: title)
+        case .roadmap(let id): .roadmap(id)
+        case .inbox, .projects, .search: nil
+        }
     }
 
     /// The issue on screen right now, from the navigation rather than from this view, which may be on its way out.

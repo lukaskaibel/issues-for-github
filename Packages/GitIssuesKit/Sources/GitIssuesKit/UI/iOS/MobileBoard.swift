@@ -590,7 +590,9 @@ private struct MobileColumnHeader: View {
             Button {
                 // With the column's status or value, and what the view's filter asks for, as on the Mac.
                 let preset = milestone == nil ? model.newIssuePreset(projectId: projectId, column: column.value) : nil
-                navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: column.option?.id, milestoneTitle: milestone, preset: preset))
+                // "No status" is a column too: an issue made there gets none, rather than the first status.
+                let statusId = column.option?.id ?? (column.id == BoardColumn.noStatusId ? column.id : nil)
+                navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: statusId, milestoneTitle: milestone, preset: preset))
             } label: {
                 Image(systemName: "plus")
                     .font(.subheadline.weight(.medium))

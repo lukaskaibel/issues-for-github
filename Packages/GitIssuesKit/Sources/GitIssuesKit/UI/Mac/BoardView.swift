@@ -832,7 +832,8 @@ struct ColumnHeader: View {
         } else if model.currentView != nil {
             model.newIssuePreset = model.newIssuePreset(projectId: model.currentProjectId)
         }
-        model.overlay = .newIssue(statusId: column.option?.id, parentItemId: nil)
+        // "No status" is a column too: an issue made there gets none, rather than the first status.
+        model.overlay = .newIssue(statusId: column.option?.id ?? (column.id == BoardColumn.noStatusId ? column.id : nil), parentItemId: nil)
     }
 
     private var statuses: [FieldOption] {

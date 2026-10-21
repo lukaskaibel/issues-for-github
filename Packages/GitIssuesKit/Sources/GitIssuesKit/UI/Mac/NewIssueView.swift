@@ -282,6 +282,11 @@ struct NewIssueView: View {
         return model.newIssuePreset(projectId: projectId)
     }
 
+    /// The status the dialog was opened with; "No status" (from that column's plus) is none.
+    private func chosenStatus(_ id: String) -> String? {
+        id == BoardColumn.noStatusId ? nil : id
+    }
+
     private func defaultStatus(projectId: String?) -> String? {
         let options = model.statusOptions(projectId: projectId)
         return options.first { $0.statusCategory == .unstarted }?.id
@@ -322,7 +327,7 @@ struct NewIssueView: View {
         if typed == nil, groupPreset == nil, let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id, unsent.isEpic == plan.isEpic,
            repoScope != nil ? unsent.repoId == repoScope : model.scopeProjectId == nil || unsent.projectId == projectId {
             draft = unsent
-            if let statusId { draft.statusId = statusId }
+            if let statusId { draft.statusId = chosenStatus(statusId) }
             if let milestone { draft.milestoneTitle = milestone }
             restored = true
             focus = .title
@@ -333,7 +338,7 @@ struct NewIssueView: View {
         var new = NewIssueDraft(projectId: projectId)
         new.parent = parent
         new.repoId = repoId
-        new.statusId = statusId ?? defaultStatus(projectId: projectId)
+        new.statusId = statusId.map(chosenStatus) ?? defaultStatus(projectId: projectId)
         new.title = typed ?? ""
         // Begun in My Issues, it is yours, so it shows up there, as on iPhone and iPad.
         if model.scope == .myIssues, parent == nil, let viewer = model.viewer { new.assignees = [viewer.person] }
@@ -342,7 +347,7 @@ struct NewIssueView: View {
         // Begun in a view: what its filter asks for, and its column's or group's value, as on GitHub.
         if let preset = groupPreset ?? viewPreset(projectId: projectId, parent: parent, repoScope: repoScope, planned: plan != NewIssuePlan()) {
             model.apply(preset, to: &new)
-            if let statusId { new.statusId = statusId }
+            if let statusId { new.statusId = chosenStatus(statusId) }
         }
         draft = new
         focus = .title
@@ -364,8 +369,12 @@ struct NewIssueView: View {
             model.unsentNewIssue = nil
             model.overlay = nil
             model.noteIfHidden(id)
-            // The new issue takes the keyboard focus, so Return opens it and S, A or L change it right away.
-            if model.openItem == nil, model.scopedItems.contains(where: { $0.id == id }) { model.moveFocus(to: id) }
+            // The new issue takes the keyboard focus, so Return opens it and S, A or L change it right away; a folded
+            // section or parent it went into opens for it.
+            if model.openItem == nil, model.scopedItems.contains(where: { $0.id == id }) {
+                model.reveal(id)
+                model.moveFocus(to: id)
+            }
         }
     }
 

@@ -163,6 +163,8 @@ private struct BucketSwitch: View {
                 withAnimation(Theme.spring) {
                     model.inboxBucket = bucket
                     model.inboxPicked = []
+                    // What was shown beside the list belongs to the other half.
+                    if let selected = model.inboxSelected, !model.visibleInbox.contains(selected) { model.inboxSelectedId = nil }
                 }
             }
         )) {
