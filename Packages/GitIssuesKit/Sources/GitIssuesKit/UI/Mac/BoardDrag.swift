@@ -443,4 +443,80 @@ final class BoardDrag {
         return 2 + strength * 14
     }
 }
+/// Where a column's rows go, and the part of each that the board finds by its frame: a card, the slot a card would
+/// land in, or an epic's header.
+struct ColumnLayout: Equatable {
+    struct Row: Equatable {
+        enum Part: Equatable {
+            /// A card, or the slot for the card being dragged, or for an epic's issues, by the item's id.
+            case card(String)
+            /// An epic's header, by the epic's node id.
+            case header(String)
+        }
+
+        var part: Part
+        var indent: CGFloat
+        /// The card's or the header's own height, without what the row has under it.
+        var height: CGFloat
+    }
+
+    var plan = RowPlan()
+    var rows: [Row] = []
+    var width: CGFloat = 0
+}
+
+/// Where a column's cards and epic headers are on the board, for the pointer, clicks and drags, worked out from
+/// where the column places its rows and how far it is scrolled. As with a lazy stack, only the rows on screen are
+/// told to the board: only those can be pointed at.
+@MainActor
+final class ColumnFrames {
+    var layout = ColumnLayout()
+    /// The rows' top left corner on the board, which moves as the column scrolls.
+    var origin: CGPoint?
+    /// The part of the board the rows show in.
+    var clip: CGRect?
+    private let owner = UUID()
+    private var cards: Set<String> = []
+    private var headers: Set<String> = []
+
+    /// The part of the rows on screen, from their top.
+    var visible: ClosedRange<CGFloat>? {
+        guard let origin, let clip else { return nil }
+        return (clip.minY - origin.y)...max(clip.minY - origin.y, clip.maxY - origin.y)
+    }
+
+    func update(_ drag: BoardDrag, column: String) {
+        guard let origin, let visible else { return }
+        var cards = Set<String>()
+        var headers = Set<String>()
+        for index in layout.plan.rows(in: visible) where layout.rows.indices.contains(index) {
+            let row = layout.rows[index]
+            let frame = CGRect(
+                x: origin.x + row.indent, y: origin.y + layout.plan.tops[index],
+                width: layout.width - row.indent, height: row.height
+            )
+            switch row.part {
+            case .card(let id):
+                drag.setCardFrame(frame, for: id, owner: owner)
+                cards.insert(id)
+            case .header(let epic):
+                drag.setHeaderFrame(frame, column: column, epic: epic, owner: owner)
+                drag.setHeaderFold(BoardDrag.epicFoldFrame(in: frame), column: column, epic: epic)
+                headers.insert(epic)
+            }
+        }
+        for id in self.cards where !cards.contains(id) { drag.removeCardFrame(for: id, owner: owner) }
+        for epic in self.headers where !headers.contains(epic) { drag.removeHeaderFrame(column: column, epic: epic, owner: owner) }
+        self.cards = cards
+        self.headers = headers
+    }
+
+    /// Takes the column's cards and headers off the board, when the column goes away.
+    func clear(_ drag: BoardDrag, column: String) {
+        for id in cards { drag.removeCardFrame(for: id, owner: owner) }
+        for epic in headers { drag.removeHeaderFrame(column: column, epic: epic, owner: owner) }
+        cards = []
+        headers = []
+    }
+}
 #endif
