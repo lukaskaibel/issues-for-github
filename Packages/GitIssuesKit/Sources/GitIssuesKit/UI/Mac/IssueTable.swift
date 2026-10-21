@@ -389,6 +389,8 @@ struct IssueTable: NSViewRepresentable {
         /// An epic's header, as its section's id and the epic's, which brings the epic's issues there along.
         static let epicType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.epic-group")
         static let sectionType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.section")
+        /// A picked issue, which brings the other picked ones along.
+        static let pickedType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.picked")
 
         func tableView(_ tableView: NSTableView, pasteboardWriterForRow row: Int) -> NSPasteboardWriting? {
             guard entries.indices.contains(row) else { return nil }
@@ -398,7 +400,7 @@ struct IssueTable: NSViewRepresentable {
                 item.setString(section.id, forType: Self.sectionType)
             case .row(let issue):
                 guard canMoveRows else { return nil }
-                item.setString(issue.item.id, forType: Self.itemType)
+                item.setString(issue.item.id, forType: picked(from: issue.item.id) == nil ? Self.itemType : Self.pickedType)
             case .epic(let sectionId, let group):
                 guard canMoveRows, section(sectionId)?.kind == .status else { return nil }
                 item.setString("\(sectionId)\u{1F}\(group.contentId)", forType: Self.epicType)
@@ -413,19 +415,21 @@ struct IssueTable: NSViewRepresentable {
             guard let row = rowIndexes.first, entries.indices.contains(row) else { return }
             // The issue lifts off as a card, and its row closes up into the gap where it would land. An epic's header
             // lifts off the same way, and its issues stay behind faded until they land.
-            let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false)
-            if let image = (cell as? IssueRowCell)?.dragImage() ?? (cell as? EpicHeaderRowCell)?.dragImage(),
-               image.size.width > 0, image.size.height > 0 {
+            // A picked issue lifts off with the others picked: the edge of a second card under it and how many there
+            // are, and their rows stay behind faded.
+            let picked: PickedIssues? = if case .row(let issue) = entries[row] { self.picked(from: issue.item.id) } else { nil }
+            if let (image, above) = liftedImage(row, in: tableView, picked: picked) {
                 session.enumerateDraggingItems(options: [], for: tableView, classes: [NSPasteboardItem.self], searchOptions: [:]) { dragged, _, _ in
                     // From where the table lifted the row: by now the row has closed up and `rect(ofRow:)` has no
                     // height, and a frame without one throws, which ends the drag before it starts and leaves the
                     // row hidden.
-                    dragged.setDraggingFrame(NSRect(origin: dragged.draggingFrame.origin, size: image.size), contents: image)
+                    let origin = dragged.draggingFrame.origin
+                    dragged.setDraggingFrame(NSRect(origin: NSPoint(x: origin.x, y: origin.y - above), size: image.size), contents: image)
                 }
             }
             switch entries[row] {
             case .row(let issue):
-                draggedIds = [issue.item.id]
+                draggedIds = picked?.moving ?? [issue.item.id]
             case .epic(let sectionId, let group):
                 let members = model.columns.first { $0.id == sectionId }?.members(of: group) ?? []
                 draggedIds = Set(members.map(\.id)).union([entries[row].id])
@@ -461,6 +465,59 @@ struct IssueTable: NSViewRepresentable {
         /// Rows where a section may be dropped: in front of each header, or after the last row.
         private var sectionBoundaries: [Int] {
             entries.indices.filter { if case .header = entries[$0] { return true } else { return false } } + [entries.count]
+        }
+
+        /// The card a row lifts off as, with how far it reaches above the row: for a picked issue, with the others
+        /// picked with it.
+        func liftedImage(_ row: Int, in tableView: NSTableView, picked: PickedIssues?) -> (image: NSImage, above: CGFloat)? {
+            let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false)
+            guard let image = (cell as? IssueRowCell)?.dragImage() ?? (cell as? EpicHeaderRowCell)?.dragImage(),
+                  image.size.width > 0, image.size.height > 0 else { return nil }
+            return picked.map { Self.stacked(image, count: $0.items.count, appearance: tableView.effectiveAppearance) } ?? (image, 0)
+        }
+
+        /// A row's card with the edge of a second one under it and, on its corner, how many issues the drag carries,
+        /// as the board shows picked cards lifted together; with how far it reaches above the row.
+        private static func stacked(_ card: NSImage, count: Int, appearance: NSAppearance) -> (image: NSImage, above: CGFloat) {
+            let badge = NSAttributedString(string: "\(count)", attributes: [
+                .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold), .foregroundColor: NSColor.white,
+            ])
+            let above: CGFloat = 6, below = CardStackEdge.height - 1
+            let size = NSSize(width: card.size.width, height: card.size.height + above + below)
+            let image = NSImage(size: size, flipped: true) { _ in
+                let row = NSRect(x: 0, y: above, width: card.size.width, height: card.size.height)
+                let outline = row.insetBy(dx: IssueTable.inset, dy: 1)
+                let edge = NSBezierPath(
+                    roundedRect: outline.insetBy(dx: 6, dy: 0).offsetBy(dx: 0, dy: CardStackEdge.height).insetBy(dx: 0.5, dy: 0.5),
+                    xRadius: 7, yRadius: 7
+                )
+                let width = max(20, badge.size().width + 12)
+                let pill = NSRect(x: outline.maxX + 7 - width, y: outline.minY - 7, width: width, height: 20)
+                appearance.performAsCurrentDrawingAppearance {
+                    NSColor(Theme.card).setFill()
+                    edge.fill()
+                    NSColor(Theme.cardBorder).setStroke()
+                    edge.stroke()
+                }
+                card.draw(in: row, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+                appearance.performAsCurrentDrawingAppearance {
+                    NSColor(Theme.accentFill).setFill()
+                    NSBezierPath(roundedRect: pill, xRadius: 10, yRadius: 10).fill()
+                }
+                badge.draw(at: NSPoint(x: pill.midX - badge.size().width / 2, y: pill.midY - badge.size().height / 2))
+                return true
+            }
+            return (image, above)
+        }
+
+        /// The picked issues a drag that starts on issue `id` carries: all of them, when it is one of two or more.
+        func picked(from id: String) -> PickedIssues? {
+            guard let item = model.item(id: id), let projectId = item.projectId else { return nil }
+            return PickedIssues(from: item, in: model.listColumns(projectId: projectId), model: model)
+        }
+
+        private func picked(_ info: NSDraggingInfo) -> PickedIssues? {
+            info.draggingPasteboard.string(forType: Self.pickedType).flatMap(picked(from:))
         }
 
         /// The issue being dragged and the sub-issues hanging under it, which come along.
@@ -501,6 +558,26 @@ struct IssueTable: NSViewRepresentable {
             guard let column = column(for: landing.sectionId, of: item) else { return false }
             model.drop(item, in: column, at: landing.index)
             return true
+        }
+
+        /// Picked issues dropped above `row` go there together: into a section by status as on the board, into a
+        /// group of another kind each one that can go there.
+        func dropPicked(_ picked: PickedIssues, above row: Int) -> Bool {
+            guard let first = picked.items.first, let landing = landing(above: row, moving: picked.moving) else { return false }
+            if let section = section(landing.sectionId), section.kind != .status {
+                return model.dropPlanned(picked.items, into: section.kind, scope: model.scope)
+            }
+            guard let column = column(for: landing.sectionId, of: first) else { return false }
+            model.drop(picked, in: column, at: landing.index)
+            return true
+        }
+
+        /// Whether dropping `items` into a section by status would leave them where they are: in a view with an order of
+        /// its own, issues already in the section only snap back to their place, so such a drop isn't offered.
+        private func staysPut(_ items: [Item], in sectionId: String) -> Bool {
+            guard let first = items.first, model.isOrdered(projectId: first.projectId),
+                  let column = column(for: sectionId, of: first) else { return false }
+            return items.allSatisfy { item in column.nesting.members.contains { $0.id == item.id } }
         }
 
         private func section(_ id: String) -> IssueSectionModel? {
@@ -587,10 +664,26 @@ struct IssueTable: NSViewRepresentable {
             guard info.draggingSource as? NSTableView === tableView else { return [] }
             if info.draggingPasteboard.string(forType: Self.epicType) != nil {
                 // The gap opens where the epic's issues will land, together, as a whole.
-                guard let dragged = draggedGroup(info), let target = groupLanding(dragged, above: row) else { return [] }
+                guard let dragged = draggedGroup(info), let target = groupLanding(dragged, above: row),
+                      !staysPut(dragged.members, in: target.column.id) else { return [] }
                 let moving = Set(dragged.members.map(\.id))
                 let slot = target.column.landing(ofGroup: dragged.group.contentId, moving: moving, at: target.index).row
                 tableView.setDropRow(tableRow(slot, afterHeader: target.header, shown: target.column.nesting.rows(without: moving)), dropOperation: .above)
+                return .move
+            }
+            if let picked = picked(info) {
+                guard let first = picked.items.first, let landing = landing(above: max(row, 1), moving: picked.moving),
+                      let section = section(landing.sectionId) else { return [] }
+                // Other groups take in at their end those of them that can go there.
+                if section.kind != .status {
+                    guard picked.items.contains(where: { model.canDropPlanned($0, into: section.kind) }) else { return [] }
+                    tableView.setDropRow(end(of: section.id), dropOperation: .above)
+                    return .move
+                }
+                // The gap opens where they will land, together.
+                guard !staysPut(picked.items, in: section.id), let column = column(for: section.id, of: first) else { return [] }
+                let slot = column.landing(of: picked, at: landing.index).row
+                tableView.setDropRow(tableRow(slot, afterHeader: landing.header, shown: column.nesting.rows(without: picked.moving)), dropOperation: .above)
                 return .move
             }
             if let id = info.draggingPasteboard.string(forType: Self.itemType) {
@@ -603,6 +696,10 @@ struct IssueTable: NSViewRepresentable {
                 }
                 // Anywhere below the first header; in the middle of a row means just above it. The gap opens where
                 // the issue will land, which for a sub-issue is among its parent's sub-issues.
+                if let item = model.item(id: id), let landing = landing(above: max(row, 1), moving: moving(item)),
+                   staysPut([item], in: landing.sectionId) {
+                    return []
+                }
                 tableView.setDropRow(snappedDropRow(id, above: max(row, 1)), dropOperation: .above)
                 return .move
             }
@@ -618,6 +715,7 @@ struct IssueTable: NSViewRepresentable {
             if let payload = info.draggingPasteboard.string(forType: Self.epicType) {
                 return dropGroup(payload, above: row)
             }
+            if let picked = picked(info) { return dropPicked(picked, above: row) }
             guard let id = info.draggingPasteboard.string(forType: Self.sectionType) else { return false }
             var target: String?
             if entries.indices.contains(row), case .header(let section) = entries[row] { target = section.id }
@@ -686,7 +784,12 @@ struct IssueTable: NSViewRepresentable {
 
         @objc func clicked(_ sender: NSTableView) {
             let row = sender.clickedRow
-            if row >= 0, let header = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueHeaderCell {
+            // A click below the issues lets the picked ones go.
+            guard row >= 0 else {
+                model.clearSelection()
+                return
+            }
+            if let header = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueHeaderCell {
                 if let event = NSApp.currentEvent { header.click(at: header.convert(event.locationInWindow, from: nil)) }
                 return
             }
@@ -697,7 +800,7 @@ struct IssueTable: NSViewRepresentable {
                    cell.isOnFold(cell.convert(event.locationInWindow, from: nil)) {
                     model.toggleEpicGroup(group)
                 } else {
-                    model.open(group.epic)
+                    model.openFromClick(group.epic)
                 }
                 return
             }
@@ -719,12 +822,13 @@ struct IssueTable: NSViewRepresentable {
             if let event = NSApp.currentEvent,
                let cell = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell,
                let part = cell.part(at: cell.convert(event.locationInWindow, from: nil)) {
+                model.releaseSelection(unlessPicked: item)
                 Dropdown.show(below: part.rect, in: cell, model: model) { close in
                     ItemPicker(kind: part.kind, itemId: item.id, close: close)
                 }
                 return
             }
-            model.open(item)
+            model.openFromClick(item)
         }
 
         /// Highlights the part under the pointer, so it reads as clickable.
@@ -1186,13 +1290,20 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     /// The row as a card lifted off the list, to drag around.
     func dragImage() -> NSImage? {
         guard let content = bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
-        // Without the hover fill and checkbox, which belong to the pointer, not to the issue.
-        let wasHighlighted = highlighted, wasHovered = hoveredPart
+        // Without the hover fill and checkbox, which belong to the pointer, not to the issue, nor the accent fill of a
+        // picked row: lifted, it is a card like any other, as on the board.
+        let wasHighlighted = highlighted, wasHovered = hoveredPart, wasRow = row
+        if var lifted = row, lifted.selected || lifted.selecting {
+            lifted.selected = false
+            lifted.selecting = false
+            configure(lifted, highlighted: false)
+        }
         highlighted = false
         hoveredPart = nil
         drawsTree = false
         cacheDisplay(in: bounds, to: content)
         drawsTree = true
+        if let wasRow { configure(wasRow, highlighted: wasHighlighted) }
         highlighted = wasHighlighted
         hoveredPart = wasHovered
         needsDisplay = true

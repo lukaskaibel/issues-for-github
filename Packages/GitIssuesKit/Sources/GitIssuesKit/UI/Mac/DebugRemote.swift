@@ -554,7 +554,8 @@ enum DebugRemote {
                 if bits.count > 1, bits[1] == "fold" { model.toggleEpicGroup(group) } else { model.open(group.epic) }
             }
         case "listdrop", "dragimage":
-            // listdrop <number> <row>: drops the issue in the list above that row, as a drag would.
+            // listdrop <number> <row>: drops the issue in the list above that row, as a drag would, with the other
+            // picked ones when it is picked.
             // dragimage <number> <path>: the card an issue's row lifts off as, as a PNG.
             let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
             guard bits.count == 2, let item = item(bits[0], model),
@@ -566,10 +567,14 @@ enum DebugRemote {
             }
             guard let table = find(root), let coordinator = table.coordinator else { break }
             if parts.first == "listdrop", let row = Int(bits[1]) {
-                log("listdrop: \(coordinator.dropItem(item.id, above: row))")
+                if let picked = coordinator.picked(from: item.id) {
+                    log("listdrop: \(picked.items.count) picked: \(coordinator.dropPicked(picked, above: row))")
+                } else {
+                    log("listdrop: \(coordinator.dropItem(item.id, above: row))")
+                }
             } else if let row = (0..<table.numberOfRows).first(where: { coordinator.item(at: $0)?.id == item.id }),
-                      let cell = table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell,
-                      let image = cell.dragImage(), let tiff = image.tiffRepresentation,
+                      let image = coordinator.liftedImage(row, in: table, picked: coordinator.picked(from: item.id))?.image,
+                      let tiff = image.tiffRepresentation,
                       let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
                 try? png.write(to: URL(fileURLWithPath: bits[1]))
             }

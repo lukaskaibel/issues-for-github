@@ -302,6 +302,25 @@ extension AppModel {
         }
     }
 
+    /// Drops several picked issues into such a group: those of them that can go there.
+    @discardableResult
+    func dropPlanned(_ items: [Item], into kind: ListSection.Kind, scope: Scope?) -> Bool {
+        let items = items.filter { canDropPlanned($0, into: kind) }
+        guard !items.isEmpty else { return false }
+        switch kind {
+        case .epic(let contentId):
+            setParent(of: items, to: contentId.flatMap { issue(contentId: $0) })
+            return true
+        case .group(let key):
+            let mutations = items.flatMap { groupMutations($0, into: key) }
+            guard !mutations.isEmpty else { return false }
+            withAnimation(Theme.spring) { perform(mutations) }
+            return true
+        case .status, .milestone, .mine:
+            return items.map { dropPlanned($0, into: kind, scope: scope) }.contains(true)
+        }
+    }
+
     /// The + of a group: a new issue in that status, in that epic (and the milestone on screen), or a new epic in
     /// that milestone.
     func addIssue(in kind: ListSection.Kind, optionId: String?) {
