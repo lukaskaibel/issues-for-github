@@ -297,7 +297,8 @@ The interface uses the system's own parts.
   as in Messages. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
   unfolded ones too, then move them all under another parent with the bar at the bottom, or change their status,
   priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its columns on
-  soft grey lanes, as on the Mac.
+  soft grey lanes, as on the Mac; a column's "…" hides it on that iPad, and the hidden ones wait at the end of the
+  board and under Display in the project's "…", a tap away from coming back.
 - **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
   projects, changes the icon and opens your account, then its views, its next milestones and roadmap, and its repositories, each an entry. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
   drop (touch and hold, then drag). A milestone opens as the board's columns or a list, the roadmap as the timeline,
@@ -341,8 +342,9 @@ The interface uses the system's own parts.
 - **Careful with other people's work.** Changes are sent field by field, descriptions edited in two places are
   merged, and when a merge isn't possible nothing is overwritten: you choose.
 - **Status columns are yours to shape.** Add, rename, recolour and remove columns from the board, and drag a column
-  by its header to move it; they are the project's Status field on GitHub. In the list, drag a section by its header
-  to arrange the list your way (that order is a preference on your Mac and leaves GitHub alone).
+  by its header to move it; they are the project's Status field on GitHub. Hide a column you don't need to see, such
+  as Done, on your device alone. In the list, drag a section by its header to arrange the list your way (that order is
+  a preference on your Mac and leaves GitHub alone).
 - **GitHub's Markdown, always drawn.** Headings, lists, checklists that tick, alerts, code in colour, tables, Mermaid
   diagrams and maths, drawn natively in the app's type and colours while you write them, and typed as in a notes app:
   the Markdown shows only next to the caret, and on the touch keyboard not even there. In descriptions, comments, the
@@ -392,6 +394,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | A changed filter, before Save | Kept on your device, as GitHub keeps unsaved changes in your browser |
 | Board or list and the fields shown | The view's layout and visible fields, saved with **Save for Everyone** |
 | Other columns, groups or order | Yours alone: GitHub sets a view's columns, grouping and sorting only when it is made |
+| A hidden column | Yours alone, on each device: the column and its issues stay on GitHub for everyone |
 | My Issues' filter, groups and order | Yours alone, on each device: GitHub has no view of everything assigned to you |
 | Iteration on a card or row | The project's Iteration field, or any single-select field the view shows |
 | A group's progress ("4/6") | The view's issues in it that are done, of all; a view grouped by parent issue, milestone or iteration |
@@ -568,8 +571,8 @@ In the Inbox:
 | `⇧S` | Unsubscribe: GitHub tells you about it again only if you're mentioned or comment |
 | `S` `P` `A` `L` `I` | Change the issue, as anywhere else |
 
-`⌘`-click and Shift-click pick several notifications to read, snooze or archive together. Right-click one for
-everything at once.
+`X` or `⌘`-click picks a notification, `⇧J` `⇧K` or Shift-click a run of them, to read, snooze or archive together;
+`S` `P` `A` `L` `I` then change all of their issues, and `Esc` lets them go. Right-click one for everything at once.
 
 Click an issue's priority, status, labels, assignees, due date or sub-issue count to change it in place, or right-click
 it for everything at once. The right-click menu takes the keys at once: type to find an entry, also one inside a
@@ -652,8 +655,11 @@ On the board, drag cards between and within columns; press `Esc` mid-drag to put
 sub-issues hanging under it along within its column, and other cards land before or after them, never in between. In the list, drag a
 row up or down within its section, or into another section to change its status; My Issues mixes projects, so its
 rows aren't dragged there: `⇧V` sets their order. Drag a column by its
-header to reorder it, double-click its name to rename it, right-click it for its menu (rename, colour, delete), and
-use **Add column** at the right end of the board.
+header to reorder it, double-click its name to rename it, right-click it for its menu (rename, colour, hide, delete),
+and use **Add column** at the right end of the board. **Hide Column** takes a column and its cards off the board on
+this device only, for the view you're in; the project on GitHub doesn't change, and the list still shows every status.
+Hidden columns are listed at the right end of the board, with how many issues each holds, and under **Hidden
+Columns** in Display (`⇧V`); a click shows one again, and **Reset** there brings them all back.
 
 To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
 Shift-click. A bar at the bottom then sets status, priority, assignee, labels or the due date for all of them, and so

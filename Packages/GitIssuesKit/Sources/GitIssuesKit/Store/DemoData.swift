@@ -70,6 +70,11 @@ public enum DemoData {
         site.id: ProjectLook(glyph: ProjectGlyph(key: "globe") ?? .table, color: "GREEN"),
     ]
 
+    /// How views show on this device to start with: This Week's board without Backlog, which a cycle leaves empty.
+    static var displays: [String: ViewDisplay] {
+        ["\(app.id)-view-week": ViewDisplay(hiddenColumnIds: [optionId(app, "Backlog")])]
+    }
+
     // MARK: Issues
 
     private struct IssueSpec {

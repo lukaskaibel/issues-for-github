@@ -51,8 +51,27 @@ All notable changes to this project are recorded here. The format follows
   of the description instead of going on to delete the title. In a new issue or milestone, Return in the title now
   goes to the start of the description too, rather than its end.
 
+- **Hide board columns, on your device only.** A column's menu (right-click its header, or its "…"; on iPad its "…")
+  has **Hide Column**: the column and its cards leave the board, and nothing changes on GitHub. Hidden columns wait at
+  the right end of the board with their counts and under Display (`⇧V`), and a click brings one back. Each view keeps
+  its own; the list still shows every status, and a milestone's board every column. On the Mac and iPad.
+- **Close an issue that's on no board.** Its status picker offers **Mark as Done**, or **Reopen** once it's closed, as
+  well as the boards to put it on.
+- **More in the command palette.** New Issue wherever `C` makes one, Copy Branch Name, Show or Hide Inspector, Reset
+  Filter and Reset Display for a changed view, and the keys of Open on GitHub.
+
 ### Changed
 
+- On a board, `J` and `K` go up and down the column, as `↑` and `↓` do. With an issue open they step through the board
+  or list it was opened from, in the order you see, on iPad too.
+- `G` `B`, `G` `L`, `⌘1` and `⌘2` go to the board or list of the project you used last from anywhere, My Issues and
+  the Inbox included, as `G` `R` goes to its roadmap (now in one step back).
+- On the Mac, a new issue started where no board is on screen goes to the project at the top of the sidebar, and its
+  board can be changed in the dialog; started in My Issues, it is assigned to you, as on iPhone and iPad. A new epic
+  from a roadmap goes on that roadmap's board.
+- Signing out asks first while changes are still waiting to reach GitHub, since it deletes them.
+- In the Inbox, `S` `P` `A` `L` `I` change the issues of all picked notifications, `⇧J` and `⇧K` pick a run, and
+  moving with `J` and `K` keeps what is picked.
 - **Markdown that reads as GitHub draws it, while you write it.** Descriptions, comments, the comment field, new
   issues and milestones are drawn as on GitHub at all times: headings, lists, checklists that tick, quotes, code in
   colour, tables and Mermaid diagrams, and now also GitHub's alerts (`> [!NOTE]`, Tip, Important, Warning, Caution),
@@ -80,6 +99,37 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- The Mac app no longer quits when you pick two issues in a list grouped by people (such as the Team view), and `J`
+  no longer loops back up in it when an issue is listed under two people.
+- Moving a column on a milestone's board, by dragging or with Move Left and Right, no longer deletes the project's
+  empty Backlog columns that the milestone leaves out, which took the status of every issue in them.
+- Deleting a column says how many issues of the whole project lose their status, not only the ones on screen.
+- Issues picked on the board or in the list no longer change along with the one you open; picks of issues that leave
+  the list (deleted, or filtered out) are let go, and so is a peek.
+- When the issue in focus leaves the board or list, after a change of status, assignee or milestone or a fold, the
+  focus goes to the issue next to it. On the Mac the board scrolls to keep the issue in focus in sight.
+- A comment you started writing is still there when you come back to the issue.
+- On the Mac, a title you were typing is kept when you leave the issue with Back, the arrows or a key; Back and
+  Forward work again after closing an issue in a project with views; deleting a sub-issue opened from its parent goes
+  back to the parent.
+- The milestone picker no longer takes the first digit you type as a shortcut when milestones are versions ("0.4"),
+  and a name typed there becomes the name of **New Milestone…**, on the Mac, iPhone and iPad.
+- An issue's Epic row is offered only where picking an epic doesn't take the issue from another parent, and not in
+  projects without epics.
+- On iPhone and iPad, sub-issues listed in an issue show their assignees as just changed.
+- On iPad, a board by an iteration or another field shows each column's colour or iteration and dates as the Mac does,
+  its plus gives the new issue that column's value, and it no longer offers Add Status.
+- An issue made with the plus of the "No status" column has no status, one made in a folded section or under a folded
+  parent shows, and one made with the plus of a repository's group starts in that repository.
+- Reordering cards on a milestone's board works when the project's open view is sorted.
+- A view whose filter leaves out every issue says so, with Reset for a changed filter, instead of "No issues yet".
+- In a sorted view the Mac list no longer opens a gap for a drop within a section, and iPhone and iPad no longer let
+  you drag rows in groups by another field than Status; `⌥↑` and `⌥↓` in the list move an issue within its section.
+- Fold All and Unfold All in one view no longer reset the folds of the project's other views.
+- A column name typed into Add Column is kept when you click elsewhere.
+- Hiding the project at the top of the sidebar works from the Inbox, My Issues, its milestones and its roadmap too.
+- `⌘S` isn't offered for a view while offline or while it is being saved, and the palette no longer offers Unsubscribe
+  for due dates and your own assignments in the Inbox.
 - The heading over an issue's sub-issues stays on one line on a small iPhone, in every language. When the row is short
   of room, the bar beside the title gets shorter and then steps aside, and only after it "4 of 6". Before, the title
   broke onto two lines on an iPhone SE, in English too, and in Spanish even on an iPhone 17 Pro.

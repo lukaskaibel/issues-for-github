@@ -542,6 +542,7 @@ public final class AppModel {
             MainActor.assumeIsolated { self?.appIcon.apply() }
         }
         #endif
+        if demo { seedDemoDisplays() }
         startObserving()
         restoreScope()
         scheduleInboxWake()
@@ -646,6 +647,11 @@ public final class AppModel {
         }
     }
 
+    /// The sample data's own display choices, for views you haven't changed: they show what can be changed.
+    private func seedDemoDisplays() {
+        for (id, display) in DemoData.displays where viewDisplays[id] == nil { viewDisplays[id] = display }
+    }
+
     func leaveDemo() {
         guard isDemo else { return }
         let old = engine
@@ -667,6 +673,7 @@ public final class AppModel {
         isDemo = demo
         personal = PersonalStore(persistent: !demo)
         projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
+        if demo { seedDemoDisplays() }
         resetNavigation()
         viewer = nil
         projects = []
