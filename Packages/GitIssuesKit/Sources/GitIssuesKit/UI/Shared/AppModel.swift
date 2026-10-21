@@ -1228,14 +1228,8 @@ public final class AppModel {
         if sections != newSections { sections = newSections }
         builtScope = scope
 
-        // An issue that left (moved out of the view, folded away, in a hidden column) hands the focus to its
-        // neighbour, as a deleted one does; picks and the peek let it go.
-        if let focused {
-            let shown = Set(orderedItems.map(\.id))
-            if !shown.contains(focused) {
-                focusedItemId = Self.neighbour(of: focused, in: groups) { shown.contains($0) }
-            }
-        }
+        // The focus moves on from an issue that left; picks and the peek let it go.
+        if focused != nil { keepFocusShown(from: groups) }
         if !selectedIds.isEmpty || peekItemId != nil {
             let inScope = Set(scopedItems.map(\.id))
             if !selectedIds.isSubset(of: inScope) { selectedIds.formIntersection(inScope) }

@@ -42,10 +42,23 @@ extension AppModel {
         return sections.filter { !isFolded($0) }.map { $0.items.map(\.id) }
     }
 
-    /// The issue after `id` in its column or section that `keeps`, or else the one before it; nil when none is left.
+    /// The issue after `id` in its column or section that `keeps`, or else the one before it; with none left there,
+    /// the first of the next column or section, or the last of the one before.
     static func neighbour(of id: String, in groups: [[String]], keeping keeps: (String) -> Bool) -> String? {
-        guard let group = groups.first(where: { $0.contains(id) }), let index = group.firstIndex(of: id) else { return nil }
-        return group[(index + 1)...].first(where: keeps) ?? group[..<index].last(where: keeps)
+        guard let place = groups.firstIndex(where: { $0.contains(id) }), let index = groups[place].firstIndex(of: id) else { return nil }
+        let group = groups[place]
+        if let near = group[(index + 1)...].first(where: keeps) ?? group[..<index].last(where: keeps) { return near }
+        return groups[(place + 1)...].joined().first(where: keeps) ?? Array(groups[..<place].joined()).last(where: keeps)
+    }
+
+    /// After the board or list changed under the keyboard focus (`groups` is how it was): an issue no longer shown,
+    /// moved out of the view, folded away or in a hidden column, hands the focus to its neighbour, as a deleted one
+    /// does.
+    func keepFocusShown(from groups: [[String]]) {
+        guard let focused = focusedItemId, openItem == nil else { return }
+        let shown = Set(orderedItems.map(\.id))
+        guard !shown.contains(focused) else { return }
+        focusedItemId = Self.neighbour(of: focused, in: groups) { shown.contains($0) }
     }
 
     func moveFocus(to id: String, scroll: Bool = true) {

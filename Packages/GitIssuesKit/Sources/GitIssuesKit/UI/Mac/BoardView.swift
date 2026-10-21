@@ -100,6 +100,7 @@ struct BoardView: View {
             .onChange(of: model.dragCancelToken) {
                 drag.cancel(model: model)
             }
+            .background(FocusWatcher { reveal($0, width: proxy.size.width) })
             .task(id: model.scope) { await model.preloadAvatars() }
         }
     }
@@ -121,6 +122,22 @@ struct BoardView: View {
         return min(max(fitted, 248), 320)
     }
 
+    /// Scrolls the board sideways to the column of the card the keyboard moved to, when it is out of sight.
+    private func reveal(_ id: String, width: CGFloat) {
+        guard let column = model.columns.first(where: { $0.items.contains { $0.id == id } }),
+              let frame = model.boardDrag.columnFrames[column.id] else { return }
+        let margin: CGFloat = 16
+        var next = metrics.offset
+        if frame.minX < margin {
+            next += frame.minX - margin
+        } else if frame.maxX > width - margin {
+            next += frame.maxX - width + margin
+        }
+        next = min(max(next, 0), metrics.maxOffset)
+        guard next != metrics.offset else { return }
+        withAnimation(Theme.quick) { scroll.scrollTo(x: next) }
+    }
+
     /// Scrolls the board sideways while a card is held near its left or right edge.
     private func autoScroll(width: CGFloat) {
         let drag = model.boardDrag
@@ -136,6 +153,19 @@ struct BoardView: View {
         guard next != metrics.offset else { return }
         scroll.scrollTo(x: next)
         drag.retarget(model: model)
+    }
+}
+
+/// Hands the issue the keyboard moved to to `reveal`, without the view it is in watching the focus: columns aren't
+/// worked out again on every key.
+private struct FocusWatcher: View {
+    @Environment(AppModel.self) private var model
+    var reveal: (String) -> Void
+
+    var body: some View {
+        Color.clear.onChange(of: model.focusScrollToken) {
+            if let id = model.focusedItemId { reveal(id) }
+        }
     }
 }
 
@@ -343,6 +373,21 @@ struct ColumnView: View {
             frames.clear(drag, column: column.id)
         }
         .onChange(of: drag.tick) { autoScroll() }
+        .background(FocusWatcher { reveal($0, in: layout) })
+    }
+
+    /// Scrolls the column to the card the keyboard moved to, when it is out of sight.
+    private func reveal(_ id: String, in layout: ColumnLayout) {
+        guard let index = layout.rows.firstIndex(where: { $0.part == .card(id) }), layout.plan.tops.indices.contains(index),
+              let clip = frames.clip else { return }
+        let top = layout.plan.tops[index]
+        let bottom = top + layout.rows[index].height
+        let margin: CGFloat = 8
+        if top < metrics.offset + margin {
+            withAnimation(Theme.quick) { scroll.scrollTo(y: max(top - margin, 0)) }
+        } else if bottom > metrics.offset + clip.height - margin {
+            withAnimation(Theme.quick) { scroll.scrollTo(y: min(bottom - clip.height + margin, metrics.maxOffset)) }
+        }
     }
 
     @ViewBuilder private func row(_ line: Line, width: CGFloat) -> some View {

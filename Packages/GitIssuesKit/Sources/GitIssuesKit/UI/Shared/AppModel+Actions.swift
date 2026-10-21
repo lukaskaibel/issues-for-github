@@ -252,9 +252,14 @@ extension AppModel {
     /// end, or where the project can't be changed.
     @discardableResult
     func move(_ item: Item, by delta: Int) -> Bool {
+        // On the board, its column; in the list, its section by status, whatever the board's columns are by. A group
+        // by another field has no order of its own to move in.
+        let source = viewMode == .board ? columns : item.projectId.map { listColumns(projectId: $0) } ?? []
+        if viewMode == .list, let section = sections.first(where: { $0.items.contains { $0.id == item.id } }), section.kind != .status {
+            return false
+        }
         guard let projectId = item.projectId, project(of: item)?.viewerCanUpdate == true, !isOrdered(projectId: projectId),
-              let column = (columns.contains { $0.items.contains { $0.id == item.id } } ? columns : columns(projectId: projectId))
-                .first(where: { $0.items.contains { $0.id == item.id } }),
+              let column = source.first(where: { $0.items.contains { $0.id == item.id } }),
               let index = column.items.firstIndex(where: { $0.id == item.id }) else { return false }
         var landing = column.landing(of: item, at: index, epic: epic(of: item)?.contentId)
         let rank = landing.rank + delta
@@ -593,6 +598,8 @@ extension AppModel {
 
     func toggleSection(_ id: String, in scope: Scope? = nil) {
         guard let key = collapsedKey(scope) else { return }
+        let groups = scope == nil ? focusGroups : []
+        defer { keepFocusShown(from: groups) }
         let list = scope.map { $0 == self.scope ? sections : sections(for: $0) } ?? sections
         let byDefault = list.first { $0.id == id }.map(foldsByDefault) ?? false
         let wasFolded = isSectionCollapsed(id, in: scope, byDefault: byDefault)
@@ -614,9 +621,16 @@ extension AppModel {
     /// Option-click on a header, as in Finder: folds every section in or out, following the one clicked.
     func toggleAllSections(like id: String) {
         guard let key = collapsedKey(nil) else { return }
+        let groups = focusGroups
+        defer { keepFocusShown(from: groups) }
         let fold = !(sections.first { $0.id == id }.map { isFolded($0) } ?? isSectionCollapsed(id))
-        UserDefaults.standard.set(fold ? sections.map(\.id) : [], forKey: key)
-        UserDefaults.standard.set(fold ? [] : sections.map(\.id), forKey: "expanded." + key)
+        // Only the sections on screen: the project's other views keep their folds, which share the key.
+        let shown = Set(sections.map(\.id))
+        var folded = Set(UserDefaults.standard.stringArray(forKey: key) ?? []).subtracting(shown)
+        var unfolded = Set(UserDefaults.standard.stringArray(forKey: "expanded." + key) ?? []).subtracting(shown)
+        if fold { folded.formUnion(shown) } else { unfolded.formUnion(shown) }
+        UserDefaults.standard.set(Array(folded), forKey: key)
+        UserDefaults.standard.set(Array(unfolded), forKey: "expanded." + key)
         collapseVersion += 1
     }
 

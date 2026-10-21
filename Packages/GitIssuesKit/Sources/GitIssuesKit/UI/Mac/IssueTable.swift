@@ -607,6 +607,15 @@ struct IssueTable: NSViewRepresentable {
                     tableView.setDropRow(end(of: section.id), dropOperation: .above)
                     return .move
                 }
+                // In a view in an order of its own, an issue goes into another section, at the place the order gives
+                // it; within its own section there is no place to move it to, as on iPhone and iPad.
+                if let item = model.item(id: id), model.isOrdered(projectId: item.projectId),
+                   let landing = landing(above: max(row, 1), moving: moving(item)) {
+                    guard let column = column(for: landing.sectionId, of: item),
+                          !column.nesting.members.contains(where: { $0.id == item.id }) else { return [] }
+                    tableView.setDropRow(end(of: landing.sectionId), dropOperation: .above)
+                    return .move
+                }
                 // Anywhere below the first header; in the middle of a row means just above it. The gap opens where
                 // the issue will land, which for a sub-issue is among its parent's sub-issues.
                 tableView.setDropRow(snappedDropRow(id, above: max(row, 1)), dropOperation: .above)

@@ -434,6 +434,14 @@ extension AppModel {
         }
     }
 
+    /// The view open in a project when its filter leaves out every issue the project has: its empty list then says so,
+    /// instead of that the project has none.
+    func viewHidingEverything(projectId: String) -> ProjectView? {
+        guard let view = currentView(projectId: projectId), items(of: view).isEmpty,
+              allItems.contains(where: { $0.projectId == projectId && !$0.isEpic }) else { return nil }
+        return view
+    }
+
     /// Whether an item is in a view, for saying so when a new issue isn't.
     func view(_ view: ProjectView, shows item: Item) -> Bool {
         guard let context = filterContext(projectId: view.projectId) else { return true }

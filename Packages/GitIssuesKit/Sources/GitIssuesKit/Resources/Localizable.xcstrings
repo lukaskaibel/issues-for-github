@@ -83641,6 +83641,30 @@
         }
       }
     },
+    "viewFilterMatchesNothing" : {
+      "comment" : "Mac, iPhone and iPad: text under 'Nothing matches the filter' when a project's saved view (as on GitHub) filters out every issue of the project.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None of the project’s issues match this view’s filter."
+          }
+        }
+      }
+    },
+    "viewFilterMatchesNothingChanged" : {
+      "comment" : "Mac, iPhone and iPad: text under 'Nothing matches the filter' when the user changed a view's filter here and it now filters out every issue of the project; above a Reset button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change the filter, or reset it to the view’s filter on GitHub."
+          }
+        }
+      }
+    },
     "viewModePicker" : {
       "comment" : "iPad, project screen: name of the switch between Board and List (read by VoiceOver; title of the choice in the '…' menu). A noun: how the issues are shown.",
       "extractionState" : "manual",
