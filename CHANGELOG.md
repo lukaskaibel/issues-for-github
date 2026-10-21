@@ -122,10 +122,10 @@ All notable changes to this project are recorded here. The format follows
   its plus gives the new issue that column's value, and it no longer offers Add Status.
 - An issue made with the plus of the "No status" column has no status, one made in a folded section or under a folded
   parent shows, and one made with the plus of a repository's group starts in that repository.
-- Reordering cards on a milestone's board works when the project's open view is sorted.
+- On the Mac, reordering cards on a milestone's board works when the project's open view is sorted.
 - A view whose filter leaves out every issue says so, with Reset for a changed filter, instead of "No issues yet".
-- In a sorted view the Mac list no longer opens a gap for a drop within a section, and iPhone and iPad no longer let
-  you drag rows in groups by another field than Status; `⌥↑` and `⌥↓` in the list move an issue within its section.
+- iPhone and iPad no longer let you drag rows in groups by another field than Status, where they can't stay, and on
+  the Mac `⌥↑` and `⌥↓` in the list move an issue within its section.
 - Fold All and Unfold All in one view no longer reset the folds of the project's other views.
 - With issues from several projects picked, as in My Issues, Priority and `P` are there when any of them has a
   priority, not only when the first one does.

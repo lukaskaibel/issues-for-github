@@ -100,7 +100,7 @@ struct MobileBoard: View {
             guard let group = lifted.group(model: model, projectId: projectId, milestone: milestone), !members.isEmpty else { return }
             let index = column.items.prefix(slot ?? column.items.count).filter { !lifted.ids.contains($0.id) }.count
             dropped += 1
-            withAnimation(Theme.spring) { model.drop(group, members: members, in: column, at: index, milestone: milestone) }
+            withAnimation(Theme.spring) { model.drop(group, members: members, in: column, at: index) }
             return
         }
         guard let id, let item = model.item(id: id), item.projectId == projectId else { return }
@@ -108,7 +108,7 @@ struct MobileBoard: View {
         let others = Set(column.shown(without: item).map(\.id))
         let index = column.items.prefix(slot ?? column.items.count).filter { others.contains($0.id) }.count
         dropped += 1
-        withAnimation(Theme.spring) { model.drop(item, in: column, at: index, milestone: milestone) }
+        withAnimation(Theme.spring) { model.drop(item, in: column, at: index) }
     }
 }
 
