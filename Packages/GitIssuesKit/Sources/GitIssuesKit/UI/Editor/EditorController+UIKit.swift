@@ -26,6 +26,10 @@ extension EditorController: UITextViewDelegate, UIGestureRecognizerDelegate, UIT
         let tap = UITapGestureRecognizer(target: self, action: #selector(tapped(_:)))
         tap.delegate = self
         view.addGestureRecognizer(tap)
+
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillChange(_:)), name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillChange(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardAttachmentChanged), name: HardwareKeyboard.didChange, object: nil)
     }
 
     // MARK: - What the shared editor asks of the text view
@@ -260,6 +264,24 @@ extension EditorController: UITextViewDelegate, UIGestureRecognizerDelegate, UIT
     }
 
     // MARK: - The keyboard
+
+    /// Whether the touch keyboard is on screen, which decides whether marks show next to the caret: told by the editor
+    /// being typed in, whose bar above the keyboard is all that shows of it with a keyboard attached.
+    @objc func keyboardWillChange(_ notification: Notification) {
+        let hiding = notification.name == UIResponder.keyboardWillHideNotification
+        guard hiding || isFocused, let window = textView.window,
+              let end = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return }
+        let keyboard = window.convert(end, from: window.screen.coordinateSpace)
+        // Taller than the bar above it: the touch keyboard, not just the bar a keyboard with keys leaves.
+        let bar = textView.inputAccessoryView?.bounds.height ?? 0
+        HardwareKeyboard.shared.isTouchKeyboardShown = !hiding && keyboard.intersects(window.bounds) && keyboard.height - bar > 120
+    }
+
+    /// A keyboard was attached or taken away, or the touch keyboard came or went: marks show next to the caret with
+    /// one, and not without.
+    @objc func keyboardAttachmentChanged() {
+        updateReveal()
+    }
 
     /// Keeps the line being typed on visible, scrolling the page it sits in when the keyboard covers it.
     func scrollCaretIntoView() {

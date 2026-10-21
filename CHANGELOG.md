@@ -38,6 +38,18 @@ All notable changes to this project are recorded here. The format follows
   next issue, above a line, and Return picks it again. The same goes for epics, blocked by and blocking, labels and
   assignees, also in a new issue, on the Mac, iPhone and iPad: up to three of your latest choices come first. Rows no
   longer move while you tick several labels or people in a picker that stays open.
+- **Bold typed with its stars, headings typed with their #s.** Typing `**` (or `~~`) where a style can start puts in
+  the closing pair too, with the caret between them, so you type straight into bold; typing the closing stars yourself
+  steps over them, a space right after `**` leaves plain stars (`2 ** 3`), and a star in the empty pair makes bold
+  italics. Text typed right after `##` gets the space a heading needs, so `##Plan` becomes the heading Plan, and so
+  does a line you type `##` in front of; one `#` is left alone, as it may be an issue's number. Return on a heading
+  without text turns it back into body text, and Return at the start of a heading puts an empty line above it.
+- **From the title into the description and back with the keys.** Tab, ↓ on the title's last line and → at its end go
+  to the start of the description; ↑ on the description's first line, and ← or Delete at its very start, go back to
+  the end of the title, as between lines. On an issue's page, in the Inbox, in a new issue and in a milestone, on the
+  Mac and on iPhone or iPad with a keyboard (Delete also on the touch keyboard). Holding Delete down stops at the start
+  of the description instead of going on to delete the title. In a new issue or milestone, Return in the title now
+  goes to the start of the description too, rather than its end.
 
 ### Changed
 
@@ -57,6 +69,14 @@ All notable changes to this project are recorded here. The format follows
   Format panel in place of the keyboard, next to a checklist, a link, undo, redo and more formatting, with Done beside
   it, and the buttons for where the caret is stay on its left. VoiceOver reads each checkbox with its item and whether
   it is ticked, and ticks it.
+- **Markdown marks depend on how you type, and fold in and out.** With a keyboard (the Mac, or an iPad or iPhone with
+  one attached), the marks of a style show next to the caret as before, so the arrow keys reach them and Delete takes
+  them, and a heading's `#`s show while the caret is on it. On the touch keyboard they stay hidden, and the buttons on
+  the left of the bar above the keyboard show the style you're in: a tap at the end of bold text puts the caret inside
+  its stars, so typing goes on in bold, as in Notes; Delete behind hidden stars takes the letter you can see and keeps
+  the style, and bold that loses its last letter goes entirely; the caret never rests between hidden marks; and a
+  heading's `#`s show only while you type them, until you leave the line. Marks no longer pop in and out: they unfold
+  as the caret arrives and fold away behind it, the text beside them sliding along (at once with Reduce Motion).
 
 ### Fixed
 
@@ -73,6 +93,7 @@ All notable changes to this project are recorded here. The format follows
 - On the Mac, the pointer no longer stutters over the header above an epic's issues on the board. Its light and its
   arrow fade in and out as before, but the header used to draw its name, count and icon again on every frame of that
   fade, so the board could stop for up to a tenth of a second each time the pointer came onto a header or left it.
+- Return at the end of a heading that ends a description no longer scrolls the page by a line.
 - On the Mac, the pointer goes down the Inbox smoothly. The notification under it lights up and shows its two buttons
   as before, but the buttons now lie over the end of its lines, which fade out under them, instead of the lines moving
   aside. The row used to draw its avatar, its icon and every line again on every frame of that fade and build the

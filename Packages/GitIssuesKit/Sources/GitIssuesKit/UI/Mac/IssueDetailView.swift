@@ -8,6 +8,7 @@ import SwiftUI
 struct IssueDetailView: View {
     @Environment(AppModel.self) private var model
     var item: Item
+    @State private var titleLink = TitleLink()
 
     var body: some View {
         ScrollView {
@@ -17,10 +18,10 @@ struct IssueDetailView: View {
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     ParentLink(item: item)
-                    TitleField(item: item)
+                    TitleField(item: item, link: titleLink)
                     IssueSubline(item: item)
                 }
-                DescriptionView(item: item)
+                DescriptionView(item: item, titleLink: titleLink)
                 if item.kind == .issue {
                     if item.isEpic {
                         EpicWorkSection(item: item)
@@ -118,6 +119,8 @@ private struct IssueSubline: View {
 struct TitleField: View {
     @Environment(AppModel.self) private var model
     var item: Item
+    /// The description below, which the keys go on to.
+    var link: TitleLink?
     @State private var title = ""
     @FocusState private var focused: Bool
 
@@ -139,6 +142,7 @@ struct TitleField: View {
             .textFieldStyle(.plain)
             .font(.system(size: 26, weight: .bold))
             .focused($focused)
+            .titleOf(link) { focused = true }
             .onAppear { title = item.title }
             .onChange(of: item.title) { _, new in
                 if !focused { title = new }
@@ -169,6 +173,7 @@ struct TitleField: View {
 struct DescriptionView: View {
     @Environment(AppModel.self) private var model
     var item: Item
+    var titleLink: TitleLink?
     @State private var editing = false
 
     var body: some View {
@@ -178,6 +183,7 @@ struct DescriptionView: View {
             isEditable: item.isEditableContent,
             onSave: save,
             editing: $editing,
+            titleLink: titleLink,
             accessibilityLabel: .description,
             accessibilityIdentifier: "issue-description"
         )

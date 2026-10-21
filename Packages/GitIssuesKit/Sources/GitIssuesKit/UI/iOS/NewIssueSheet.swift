@@ -16,6 +16,7 @@ struct NewIssueSheet: View {
     @State private var created = 0
     @FocusState private var focus: Field?
     @State private var editingBody = false
+    @State private var titleLink = TitleLink()
 
     private enum Field {
         case title
@@ -32,12 +33,14 @@ struct NewIssueSheet: View {
                         .focused($focus, equals: .title)
                         .submitLabel(.next)
                         .onChange(of: draft.title) { _, new in
-                            // Return moves on to the description instead of breaking the title.
+                            // Return moves on to the start of the description instead of breaking the title.
                             guard new.contains("\n") else { return }
                             draft.title = new.replacingOccurrences(of: "\n", with: "")
-                            editingBody = true
+                            titleLink.enterText()
                         }
-                        .onSubmit { editingBody = true }
+                        .onSubmit { titleLink.enterText() }
+                        // So do Tab, ↓ and → at the end on a keyboard.
+                        .titleOf(titleLink) { focus = .title }
                         .accessibilityLabel(.issueTitle)
                         .accessibilityIdentifier("new-title")
                     // The description as it will look on GitHub.
@@ -47,6 +50,7 @@ struct NewIssueSheet: View {
                         editing: $editingBody,
                         onSubmit: create,
                         submitTitle: .createIssue,
+                        titleLink: titleLink,
                         accessibilityLabel: .description,
                         accessibilityIdentifier: "new-description"
                     )

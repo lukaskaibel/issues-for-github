@@ -197,6 +197,7 @@ extension EditorController: NSTextViewDelegate {
             insert("\n")
             return true
         case #selector(NSResponder.deleteBackward(_:)):
+            defer { lastDeleteBackward = CACurrentMediaTime() }
             return deleteBackward()
         case #selector(NSResponder.deleteForward(_:)):
             return deleteForward()
@@ -204,6 +205,10 @@ extension EditorController: NSTextViewDelegate {
             return indent(by: 1)
         case #selector(NSResponder.insertBacktab(_:)):
             return indent(by: -1)
+        case #selector(NSResponder.moveUp(_:)):
+            return moveUpIntoTitle()
+        case #selector(NSResponder.moveLeft(_:)):
+            return moveBackIntoTitle()
         case #selector(NSResponder.cancelOperation(_:)):
             if let escape = onEscape { escape() } else { finishEditing() }
             return true

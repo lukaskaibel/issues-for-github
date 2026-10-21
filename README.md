@@ -108,8 +108,9 @@ so your team sees it there; GitHub's dates have no time of day, and the reminder
 ### Issues that read well
 
 Descriptions are Markdown, edited in place: click and type. It types like a notes app: `⌘B` turns bold on and off,
-Return continues a list and leaves bold text, `-` starts a bullet and `- []` a checkbox, and a style's marks are kept
-and deleted as a pair; a change of style eases in. Sub-issues come
+`**` brings its closing pair and `##` makes a heading, Return continues a list and leaves bold text, `-` starts a
+bullet and `- []` a checkbox, and a style's marks are kept and deleted as a pair; a change of style eases in. Tab and
+↓ go from the title into the description, and ↑ at its top goes back. Sub-issues come
 with a progress bar, the most urgent first and the done ones last, and the plus beside them adds a new one or an issue
 that exists already. A sub-issue with sub-issues of its own says how many of them are done, and the arrow beside it
 unfolds them under it, level by level, as a tree. What blocks the issue and what it blocks are listed below. A blocked
@@ -127,8 +128,8 @@ inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arr
 
 A description always looks the way GitHub draws it, also while you write it: headings, lists, checklists that tick,
 quotes and GitHub's alerts, code in colour, tables, Mermaid diagrams and maths. The Markdown shows only next to the
-caret, faintly, and folds away when you move on, so a click puts the caret right where you clicked in the finished
-text. A click into a table, a diagram or a formula brings up its source, with the diagram or formula drawn under it as
+caret, faintly: it unfolds as the caret arrives and folds away when you move on, so a click puts the caret right where
+you clicked in the finished text. A click into a table, a diagram or a formula brings up its source, with the diagram or formula drawn under it as
 you type. Lists continue on Return, Tab nests them, and `⌘B`, `⌘I`, `⌘L` and the rest of the Format menu work as in
 Notes. Comments are drawn the same way, and so is what you write in the comment field and a new issue. A link's address
 hides behind a small pencil, and a code block has a button to copy it.
@@ -288,7 +289,9 @@ The interface uses the system's own parts.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
   place, the Markdown drawn as on GitHub while you write, with a bar above the keyboard as in Notes (its Aa opens the
   Format panel); on its left, buttons come in for what the caret is in: its style, which a tap takes off, the line's
-  checkbox, moving a list item in or out, and opening a link. The properties are glass chips under the title, the
+  checkbox, moving a list item in or out, and opening a link. On the touch keyboard the stars of bold and the other
+  styles' marks stay hidden, as in Notes: a tap at the end of bold text types on in bold, and Delete takes the letter
+  you see. The properties are glass chips under the title, the
   sub-issues a checklist (by priority, or another order from the "…" beside its plus; the arrow beside one with
   sub-issues of its own unfolds them under it), the comments a conversation, and the comment field stays at the bottom
   as in Messages. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
@@ -302,7 +305,8 @@ The interface uses the system's own parts.
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
   work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
   their picker ready to type in; Return picks the first match. While writing, the Mac's Format shortcuts work too
-  (⌘B, ⌘I, ⇧⌘H, ⇧⌘L and the others), listed while you hold ⌘. With a pointer, ⌘-click and Shift-click pick several
+  (⌘B, ⌘I, ⇧⌘H, ⇧⌘L and the others), listed while you hold ⌘, the Markdown shows next to the caret as on the Mac, and
+  Tab and the arrow keys go between an issue's title and its description. With a pointer, ⌘-click and Shift-click pick several
   sub-issues in an issue, as on the Mac; the keys then change all of them, and Esc lets them go.
 - **Sample data:** "Explore with Sample Data" on the sign-in screen shows two sample projects without a GitHub account.
   Nothing there is sent anywhere.
@@ -341,7 +345,8 @@ The interface uses the system's own parts.
   to arrange the list your way (that order is a preference on your Mac and leaves GitHub alone).
 - **GitHub's Markdown, always drawn.** Headings, lists, checklists that tick, alerts, code in colour, tables, Mermaid
   diagrams and maths, drawn natively in the app's type and colours while you write them, and typed as in a notes app:
-  the Markdown shows only next to the caret. In descriptions, comments, the comment field, new issues and milestones.
+  the Markdown shows only next to the caret, and on the touch keyboard not even there. In descriptions, comments, the
+  comment field, new issues and milestones.
 - **Keyboard first.** Single keys change status, priority, assignee, labels and the due date, and pickers offer your
   last choices first, so a run of similar changes takes one key each. Back and forward work like a browser: ⌘[ and ⌘],
   the side buttons of a mouse, or a two-finger swipe.
@@ -634,9 +639,12 @@ While writing a description, a comment or a new issue (also on iPad with a keybo
 | `⇧⌘T` `⇧⌘H` `⇧⌘J` `⇧⌘B` | Title, heading, subheading, body |
 | `⇧⌘L` `⇧⌘7` `⇧⌘9` `⌘'` | Checklist, bulleted list, numbered list, quote |
 | `⇧⌘U` | Tick or untick the checkbox |
-| `Return` | Continues a list or quote; on an empty item ends it. At the end of bold text, leaves it for the next line |
+| `Return` | Continues a list or quote; on an empty item ends it. At the end of bold text, leaves it for the next line. On a heading without text, takes the heading off; at the start of a heading, puts a line above it |
 | `Tab` `⇧Tab`, or `⌥⌘]` `⌥⌘[` | Nest or un-nest a list item; in code, indent |
 | `-` at the start of a line | A bullet, with its space; `- []` makes a checkbox |
+| `**` `~~` | Bold or strikethrough with its closing pair, the caret between; the closing marks you type are stepped over, and a space right after leaves plain stars |
+| `##` at the start of a line | A heading, with its space: `##Plan` becomes the heading Plan, and so does `##` typed in front of a line; one `#` stays as it is |
+| `Tab` `↓` `→` in the title, `↑` `←` `Delete` at the start of the description | Into the description, at its start (`↓` from the title's last line, `→` from its end), and back to the end of the title |
 | `Delete` | Behind a style, deletes its letters and keeps its marks until the last one; into a mark, takes the style off; into a list marker, the marker |
 | `*` `_` `` ` `` `~` with text selected | Put that mark around the selected words, line by line |
 
@@ -694,6 +702,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Pull down | Sync with GitHub now |
 | Tap the description | Edit it in place, drawn as on GitHub; the bar above the keyboard has Aa for the Format panel, a checklist, a link, undo and redo, and more formatting on its next page |
 | Tap a button on the left of the keyboard bar | Take off the style the caret is in, tick the line's checkbox, move a list item in or out, open the link |
+| Tap at the end of bold text | Type on in bold: on the touch keyboard its stars stay hidden, and Delete takes the letter you see and keeps the bold |
 | Tap a checkbox, a link, a table or a diagram in a description | Tick it, open it, or edit its source |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
 | Tap the milestone chip of an issue | Put it into another milestone, or a new one |
