@@ -104,7 +104,7 @@ so your team sees it there; GitHub's dates have no time of day, and the reminder
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/due-date-dark.webp">
-  <img alt="The due date picker: Today, Tomorrow, Friday, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
+  <img alt="The due date picker: Today, Tomorrow, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
 </picture>
 
 ### Issues that read well
@@ -136,12 +136,10 @@ you type. Lists continue on Return, Tab nests them, and `⌘B`, `⌘I`, `⌘L` a
 Notes. Comments are drawn the same way, and so is what you write in the comment field and a new issue. A link's address
 hides behind a small pencil, and a code block has a button to copy it.
 
-<!-- Taken in the next picture run (Tools/readme-images.sh, scene "markdown"):
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/markdown-dark.webp">
   <img alt="Issue #16 with its description drawn as on GitHub: a checklist with three of four boxes ticked, a Tip alert, a table and a Mermaid diagram, and the caret in the word bold with its stars showing faintly beside it" src="Design/screenshots/markdown-light.webp">
 </picture>
--->
 
 ### An inbox for what changed
 
