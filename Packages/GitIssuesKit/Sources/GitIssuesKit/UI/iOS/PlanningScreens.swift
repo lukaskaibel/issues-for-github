@@ -26,7 +26,7 @@ struct MilestoneScreen: View {
                 ProjectLoading()
             } else if wide, model.viewMode == .board {
                 VStack(spacing: 0) {
-                    if let group { MilestoneSummaryCard(projectId: projectId, group: group).padding(.horizontal, 18).padding(.top, 8) }
+                    if let group { MilestoneSummaryCard(projectId: projectId, group: group, onBoard: true).padding(.horizontal, 18).padding(.top, 8) }
                     MobileBoard(projectId: projectId, milestone: title)
                 }
             } else {
@@ -82,6 +82,8 @@ struct MilestoneSummaryCard: View {
     @Environment(MobileNavigation.self) private var navigation
     var projectId: String
     var group: MilestoneGroup
+    /// Over the board it is a card like the board's own, on their grey; over a list a grey one.
+    var onBoard = false
 
     var body: some View {
         let progress = model.progress(projectId: projectId, milestone: group.title)
@@ -130,7 +132,11 @@ struct MilestoneSummaryCard: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.groupHeader))
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(onBoard ? Theme.card : Theme.groupHeader)
+                .shadow(color: onBoard ? Theme.cardShadow : .clear, radius: CardView.shadow.radius, y: CardView.shadow.y)
+        )
     }
 
     private func isReady(progress: Roadmap.Count, today: CalendarDay) -> Bool {

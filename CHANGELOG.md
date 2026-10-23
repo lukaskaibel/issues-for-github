@@ -64,10 +64,10 @@ All notable changes to this project are recorded here. The format follows
 ### Changed
 
 - **A quieter board.** The cards stand on a grey board without a border, each on a soft shadow, and the columns
-  without the grey lanes; the gap between them sets them apart. A label on a card is a dot in its colour and its
-  name, no longer a tinted pill, and the milestone and the epic a card belongs to are grey, so that colour is left for
-  what needs you: a date that's due, an urgent issue, a blocker. The card under the pointer rises a little, and a
-  column's + shows while the pointer is in that column. On the Mac and iPad.
+  without the grey lanes; the gap between them sets them apart. A label on a card is a dot in its colour and its name,
+  no longer a tinted pill, and the milestone and the epic a card belongs to are grey, so that colour is left for what
+  needs you: a date that's due, an urgent issue, a blocker. On the Mac and iPad. On the Mac, the card under the
+  pointer rises a little, and a column's + shows while the pointer is in that column.
 - On a board, `J` and `K` go up and down the column, as `↑` and `↓` do. With an issue open they step through the board
   or list it was opened from, in the order you see, on iPad too.
 - `G` `B`, `G` `L`, `⌘1` and `⌘2` go to the board or list of the project you used last from anywhere, My Issues and

@@ -9,6 +9,8 @@ struct ViewBar: View {
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.wideLayout) private var wide
     var projectId: String
+    /// The page's own ground, which the bar continues: white over a list, the board's grey over a board.
+    var ground = Theme.panel
 
     var body: some View {
         let current = model.currentView(projectId: projectId)
@@ -65,7 +67,7 @@ struct ViewBar: View {
         }
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.panel)
+        .background(ground)
     }
 }
 
