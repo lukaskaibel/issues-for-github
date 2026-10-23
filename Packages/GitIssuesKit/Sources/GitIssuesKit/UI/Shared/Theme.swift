@@ -30,7 +30,7 @@ enum Theme {
     })
     /// The edge of a second card peeking out under one whose sub-issues are folded into it: a shade darker, as the
     /// notifications behind the first one in a stack are.
-    static let cardBehind = Color(light: 0xE9E9ED, dark: 0x242427)
+    static let cardBehind = Color(light: 0xE4E4E9, dark: 0x242427)
 
     static let hover = Color(light: 0xEDEDF0, dark: 0x2C2C2F)
     static let selected = Color(light: 0xEBEBEF, dark: 0x2F2F33)
