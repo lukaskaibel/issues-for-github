@@ -26,7 +26,7 @@ enum Theme {
     })
     /// The deeper shadow of a card under the pointer or the keyboard, which seems to rise towards it.
     static let cardRaisedShadow = Color(platformColor: .dynamic { isDark in
-        PlatformColor.black.withAlphaComponent(isDark ? 0.5 : 0.1)
+        PlatformColor.black.withAlphaComponent(isDark ? 0.5 : 0.11)
     })
     /// The edge of a second card peeking out under one whose sub-issues are folded into it: a shade darker, as the
     /// notifications behind the first one in a stack are.

@@ -169,6 +169,9 @@ struct ContentPanel: View {
                         // Another view's board starts at its beginning, not where the last one was scrolled to.
                         BoardView()
                             .id(model.currentView?.id)
+                            // The board's grey goes on under the toolbar. With a bar over the board, as a view's filter
+                            // or a milestone's description, the toolbar would draw a band of its own with a line under it.
+                            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
                             .transition(.opacity)
                     } else {
                         IssueListView()

@@ -85,7 +85,7 @@ struct MobileBoard: View {
 
     /// Between columns, which leave room beside their cards for the cards' shadows as well: 22 points from the cards
     /// of one column to the next.
-    static let spacing: CGFloat = 10
+    static let spacing: CGFloat = 14
 
     private func columnWidth(available: CGFloat, count: Int, trailing: Bool) -> CGFloat {
         guard count > 0 else { return 290 }

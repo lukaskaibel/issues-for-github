@@ -112,7 +112,7 @@ struct BoardView: View {
 
     /// Between columns, which leave room beside their cards for the cards' shadows as well: 20 points from the cards
     /// of one column to the next.
-    static let spacing: CGFloat = 8
+    static let spacing: CGFloat = 12
 
     /// A milestone's board shows the board's columns; they are changed on the board itself.
     private var showsAddColumn: Bool {

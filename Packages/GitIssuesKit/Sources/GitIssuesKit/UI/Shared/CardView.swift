@@ -79,10 +79,12 @@ struct CardView: View, Equatable {
     static let cornerRadius: CGFloat = 12
     /// A card stands on the board on a soft shadow rather than inside a border, and on a deeper one under the pointer.
     static let shadow = (radius: CGFloat(1.5), y: CGFloat(0.75))
-    static let raisedShadow = (radius: CGFloat(4), y: CGFloat(2))
-    /// How far the deeper shadow reaches past the card, which the Canvas makes room for. A board column leaves this
-    /// much room beside its cards, or its scroll view would cut the shadow off.
-    static let shadowRoom = EdgeInsets(top: 4, leading: 6, bottom: 9, trailing: 6)
+    static let raisedShadow = (radius: CGFloat(2.5), y: CGFloat(1.5))
+    /// How far the shadows reach past the card, which the Canvas makes room for: no further, as the room is part of
+    /// every card's layer. With room for a wider shadow, a long column took a millisecond longer per scroll step, and
+    /// so did growing the room for the card under the pointer, which cards scrolling under it keep changing. A board
+    /// column leaves this much room beside its cards, or its scroll view would cut the shadow off.
+    static let shadowRoom = EdgeInsets(top: 2, leading: 4, bottom: 5, trailing: 4)
     #if os(macOS)
     static let titleSize: CGFloat = 13
     static let lineHeight: CGFloat = 16
@@ -134,16 +136,16 @@ struct CardView: View, Equatable {
     }
 
     /// How far the Canvas, which clips, reaches past the card for what is drawn around it: its shadow, the gutter and
-    /// the gap above for the lines from a parent, and the edge of the card under it; for the slot, its dashes, which
-    /// straddle its outline. The same however the card is drawn, so that the pointer coming and going changes no
-    /// layout. A lifted card has the shadow of the lift instead.
+    /// the gap above for the lines from a parent, and the edge of the card under it with its own shadow; for the slot,
+    /// its dashes, which straddle its outline. A lifted card has the shadow of the lift instead. The card lays out at
+    /// its own size all the same.
     private var surroundings: (leading: CGFloat, top: CGFloat, bottom: CGFloat, trailing: CGFloat) {
         guard slotHeight == nil else { return (1, 1, 1, 1) }
         let room = lifted ? EdgeInsets() : Self.shadowRoom
         let gutter = tree.map { CGFloat(min($0.depth, CardTreeLines.deepest)) * CardTreeLines.indent } ?? 0
         return (
             max(gutter, room.leading), max(tree == nil ? 0 : CardTreeLines.boardGap, room.top),
-            max(stackEdge ? CardStackEdge.height : 0, room.bottom), room.trailing
+            stackEdge ? CardStackEdge.height + Self.shadowRoom.bottom : room.bottom, room.trailing
         )
     }
 
@@ -308,7 +310,7 @@ final class CardPaintCache: @unchecked Sendable {
 /// A colour a card is painted with, named so that it can be kept once worked out.
 enum CardInk: Hashable {
     case card, cardHover, cardLifted, selectionFill, cardBehind
-    case cardShadow, cardRaisedShadow, selectionBorder
+    case cardShadow, cardRaisedShadow, cardOutline, selectionBorder
     case partHover, textSecondary, textTertiary, textBody, barOff, urgent, treeLine
     case milestone(MilestoneMark)
     case label(hex: String)
@@ -323,6 +325,7 @@ enum CardInk: Hashable {
         case .cardBehind: Theme.cardBehind
         case .cardShadow: Theme.cardShadow
         case .cardRaisedShadow: Theme.cardRaisedShadow
+        case .cardOutline: Theme.cardLiftedBorder
         case .selectionBorder: Theme.selectionBorder
         case .partHover: Theme.partHover
         case .textSecondary: Theme.textSecondary
@@ -468,6 +471,10 @@ private struct CardPainter {
         if view.selected && !view.lifted {
             let ring = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.75, dy: 0.75), cornerRadius: CardView.cornerRadius - 0.75, style: .continuous)
             context.stroke(ring, with: .color(ink(.selectionBorder)), lineWidth: 1.5)
+        } else if look.contrast == .increased {
+            // With Increase Contrast on, a shadow is too faint an edge: the card gets its outline back, as controls do.
+            let outline = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5), cornerRadius: CardView.cornerRadius - 0.5, style: .continuous)
+            context.stroke(outline, with: .color(ink(.cardOutline)), lineWidth: 1)
         }
 
         // Top line: the arrow that folds the sub-issues under the card, number, pull-request mark, the parent of a
