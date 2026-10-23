@@ -13,23 +13,24 @@ struct BoardView: View {
             let width = columnWidth(available: proxy.size.width, count: columns.count)
 
             ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: 12) {
+                HStack(alignment: .top, spacing: Self.spacing) {
                     ForEach(Array(columns.enumerated()), id: \.element.id) { index, column in
                         let lifted = drag.column?.id == column.id
                         ColumnView(
                             column: column, width: width, drag: drag,
-                            onHeaderDrag: { translation in drag.dragColumn(column, translation: translation, step: width + 12, model: model) },
+                            onHeaderDrag: { translation in drag.dragColumn(column, translation: translation, step: width + Self.spacing, model: model) },
                             onHeaderDrop: { drag.dropColumn(model: model) }
                         )
                         .frame(width: width)
                         .background {
+                            // A column lifted by its header floats over the board on a piece of it.
                             if lifted {
-                                RoundedRectangle(cornerRadius: ColumnView.laneRadius, style: .continuous)
-                                    .fill(Theme.lane)
+                                RoundedRectangle(cornerRadius: ColumnView.liftedRadius, style: .continuous)
+                                    .fill(Theme.board)
                                     .shadow(color: Theme.shadow, radius: 20, y: 10)
                             }
                         }
-                        .offset(x: drag.columnOffset(index, step: width + 12))
+                        .offset(x: drag.columnOffset(index, step: width + Self.spacing))
                         .zIndex(lifted ? 1 : 0)
                     }
                     .animation(Theme.spring, value: drag.column?.to)
@@ -47,7 +48,7 @@ struct BoardView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
-                .padding(.bottom, 16)
+                // The columns reach the window's bottom edge, where their cards scroll out of sight.
                 .frame(height: proxy.size.height, alignment: .top)
             }
             .scrollIndicators(.never)
@@ -109,6 +110,10 @@ struct BoardView: View {
         }
     }
 
+    /// Between columns, which leave room beside their cards for the cards' shadows as well: 20 points from the cards
+    /// of one column to the next.
+    static let spacing: CGFloat = 8
+
     /// A milestone's board shows the board's columns; they are changed on the board itself.
     private var showsAddColumn: Bool {
         model.currentProject?.viewerCanUpdate == true && model.currentMilestoneTitle == nil && model.columns.allSatisfy { $0.value == nil }
@@ -122,7 +127,7 @@ struct BoardView: View {
     private func columnWidth(available: CGFloat, count: Int) -> CGFloat {
         guard count > 0 else { return 280 }
         let trailing: CGFloat = showsTrailing ? 192 : 0
-        let fitted = (available - 32 - trailing - CGFloat(count - 1) * 12) / CGFloat(count)
+        let fitted = (available - 32 - trailing - CGFloat(count - 1) * Self.spacing) / CGFloat(count)
         return min(max(fitted, 248), 320)
     }
 
@@ -253,9 +258,13 @@ struct ColumnView: View {
     /// How tall epic headers are, which only their views know.
     @State private var measured = MeasuredHeights()
 
-    /// Each column stands in a soft lane, as Reminders sets its columns apart, with the cards inset in it.
-    static let laneRadius: CGFloat = 18
-    static let laneInset: CGFloat = 8
+    /// The columns stand on the board's grey without lanes; the gap between them sets them apart. Their cards stay
+    /// this far in from the column's edges, inside its scroll view, which would otherwise cut off their shadows.
+    static let inset = CardView.shadowRoom.leading
+    /// The corners of a column lifted by its header.
+    static let liftedRadius: CGFloat = 18
+    /// Pointing anywhere in the column shows the button for a new issue in it.
+    @State private var inside = ColumnInside()
 
     /// A row of the column as drawn: an issue, an epic's header, or the slot where an epic's lifted issues land.
     private enum Line: Identifiable {
@@ -288,11 +297,12 @@ struct ColumnView: View {
     }
 
     var body: some View {
-        let width = width - 2 * Self.laneInset
+        let width = width - 2 * Self.inset
         let lines = lines
         let layout = layout(of: lines, width: width)
-        VStack(spacing: 6) {
-            ColumnHeader(column: column)
+        VStack(spacing: 6 - CardView.shadowRoom.top) {
+            ColumnHeader(column: column, inside: inside)
+                .padding(.horizontal, Self.inset)
                 // Drag the header sideways to move the whole column.
                 .gesture(
                     DragGesture(minimumDistance: 6, coordinateSpace: .named(BoardDrag.space))
@@ -365,6 +375,9 @@ struct ColumnView: View {
                     frames.origin = origin
                     placeRows()
                 }
+                // Room for the shadows of the cards, around where the column places them.
+                .padding(.horizontal, Self.inset)
+                .padding(.top, CardView.shadowRoom.top)
             }
             .scrollIndicators(.never)
             .scrollPosition($scroll)
@@ -380,12 +393,9 @@ struct ColumnView: View {
                 frames.clip = frame
                 placeRows()
             }
-            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: Self.laneRadius - Self.laneInset, bottomTrailingRadius: Self.laneRadius - Self.laneInset, style: .continuous))
         }
-        .padding(.horizontal, Self.laneInset)
         .padding(.top, 4)
-        .padding(.bottom, Self.laneInset)
-        .background(RoundedRectangle(cornerRadius: Self.laneRadius, style: .continuous).fill(Theme.lane))
+        .onHover { inside.pointer = $0 }
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .named(BoardDrag.space))
         } action: { frame in
@@ -780,9 +790,17 @@ private struct BoardCell: View {
 
 // MARK: - Column header and editing
 
+/// Whether the pointer is anywhere in a column. Only the column's header reads it, so the pointer coming and going
+/// doesn't work the column's cards out again.
+@MainActor @Observable
+final class ColumnInside {
+    var pointer = false
+}
+
 struct ColumnHeader: View {
     @Environment(AppModel.self) private var model
     var column: BoardColumn
+    var inside: ColumnInside
 
     @State private var hovering = false
     @State private var renaming = false
@@ -825,10 +843,11 @@ struct ColumnHeader: View {
                 .opacity(hovering ? 1 : 0)
             }
 
+            // Out of sight until the pointer is in the column: a "+" over every column is noise on a quiet board.
             IconButton(systemName: "plus", label: String(localized: .newIssueInColumnTooltip(column: column.title)), size: 22) {
                 newIssue()
             }
-            .opacity(hovering ? 1 : 0.55)
+            .opacity(inside.pointer || hovering ? 1 : 0)
         }
         .padding(.leading, 6)
         .padding(.trailing, 2)
@@ -836,6 +855,7 @@ struct ColumnHeader: View {
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
         .animation(Theme.quick, value: hovering)
+        .animation(Theme.quick, value: inside.pointer)
         // The same options on a right-click, as anywhere else in the app.
         .glassContextMenu { columnMenu(includingNewIssue: true) }
         .confirmationDialog(

@@ -77,6 +77,12 @@ struct CardView: View, Equatable {
     static let padding = CGSize(width: 12, height: 10)
     /// Rounder than a button, as Reminders' cards and Apple's grouped rows are.
     static let cornerRadius: CGFloat = 12
+    /// A card stands on the board on a soft shadow rather than inside a border, and on a deeper one under the pointer.
+    static let shadow = (radius: CGFloat(1.5), y: CGFloat(0.75))
+    static let raisedShadow = (radius: CGFloat(4), y: CGFloat(2))
+    /// How far the deeper shadow reaches past the card, which the Canvas makes room for. A board column leaves this
+    /// much room beside its cards, or its scroll view would cut the shadow off.
+    static let shadowRoom = EdgeInsets(top: 4, leading: 6, bottom: 9, trailing: 6)
     #if os(macOS)
     static let titleSize: CGFloat = 13
     static let lineHeight: CGFloat = 16
@@ -127,13 +133,18 @@ struct CardView: View, Equatable {
         padding.height + 18 + 6 + titleHeight + 6 + 20 + padding.height
     }
 
-    /// How far the Canvas, which clips, reaches past the card for what is drawn around it: the gutter and the gap
-    /// above for the lines from a parent, and the edge of the card under it; for the slot, its dashes, which straddle
-    /// its outline.
+    /// How far the Canvas, which clips, reaches past the card for what is drawn around it: its shadow, the gutter and
+    /// the gap above for the lines from a parent, and the edge of the card under it; for the slot, its dashes, which
+    /// straddle its outline. The same however the card is drawn, so that the pointer coming and going changes no
+    /// layout. A lifted card has the shadow of the lift instead.
     private var surroundings: (leading: CGFloat, top: CGFloat, bottom: CGFloat, trailing: CGFloat) {
         guard slotHeight == nil else { return (1, 1, 1, 1) }
+        let room = lifted ? EdgeInsets() : Self.shadowRoom
         let gutter = tree.map { CGFloat(min($0.depth, CardTreeLines.deepest)) * CardTreeLines.indent } ?? 0
-        return (gutter, tree == nil ? 0 : CardTreeLines.boardGap, stackEdge ? CardStackEdge.height : 0, 0)
+        return (
+            max(gutter, room.leading), max(tree == nil ? 0 : CardTreeLines.boardGap, room.top),
+            max(stackEdge ? CardStackEdge.height : 0, room.bottom), room.trailing
+        )
     }
 
     private static let titleFont = PlatformFont.systemFont(ofSize: titleSize, weight: .medium)
@@ -296,9 +307,9 @@ final class CardPaintCache: @unchecked Sendable {
 
 /// A colour a card is painted with, named so that it can be kept once worked out.
 enum CardInk: Hashable {
-    case card, cardHover, cardLifted, selectionFill
-    case cardBorder, cardHoverBorder, cardLiftedBorder, selectionBorder
-    case partHover, textSecondary, textTertiary, textBody, barOff, urgent, epic, treeLine
+    case card, cardHover, cardLifted, selectionFill, cardBehind
+    case cardShadow, cardRaisedShadow, selectionBorder
+    case partHover, textSecondary, textTertiary, textBody, barOff, urgent, treeLine
     case milestone(MilestoneMark)
     case label(hex: String)
     case option(String)
@@ -309,9 +320,9 @@ enum CardInk: Hashable {
         case .cardHover: Theme.cardHover
         case .cardLifted: Theme.cardLifted
         case .selectionFill: Theme.selectionFill
-        case .cardBorder: Theme.cardBorder
-        case .cardHoverBorder: Theme.cardHoverBorder
-        case .cardLiftedBorder: Theme.cardLiftedBorder
+        case .cardBehind: Theme.cardBehind
+        case .cardShadow: Theme.cardShadow
+        case .cardRaisedShadow: Theme.cardRaisedShadow
         case .selectionBorder: Theme.selectionBorder
         case .partHover: Theme.partHover
         case .textSecondary: Theme.textSecondary
@@ -319,7 +330,6 @@ enum CardInk: Hashable {
         case .textBody: Theme.textBody
         case .barOff: Theme.barOff
         case .urgent: Theme.urgent
-        case .epic: Theme.epic
         case .treeLine: Theme.treeLine
         case .milestone(let mark): mark.color
         case .label(let hex): Theme.labelColor(hex)
@@ -366,7 +376,7 @@ enum CardText: Hashable {
                 ?? Text(Image(systemName: "flag.fill")).font(.system(size: CardView.chipSize - 2, weight: .medium)))
                 .foregroundStyle(Theme.blocked)
         case .label(let name):
-            Text(name).font(.system(size: CardView.chipSize, weight: .medium)).foregroundStyle(Theme.textBody)
+            Text(name).font(.system(size: CardView.chipSize)).foregroundStyle(Theme.textSecondary)
         case .moreLabels(let count):
             Text("+\(count)").font(.system(size: CardView.chipSize)).foregroundStyle(Theme.textSecondary)
         case .progress(let done, let total):
@@ -443,11 +453,22 @@ private struct CardPainter {
         if let tree = view.tree { drawTree(tree, edge: view.stackEdge) }
         if view.stackEdge { drawStackEdge() }
         defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts, fold: fold, number: numberRect) } }
-        let outline = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.5, dy: 0.5), cornerRadius: CardView.cornerRadius, style: .continuous)
+        let shape = Path(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: CardView.cornerRadius, style: .continuous)
         let fill = ink(view.lifted ? .cardLifted : view.selected ? .selectionFill : (view.highlighted ? .cardHover : .card))
-        let border = ink(view.lifted ? .cardLiftedBorder : view.selected ? .selectionBorder : (view.highlighted ? .cardHoverBorder : .cardBorder))
-        context.fill(outline, with: .color(fill))
-        context.stroke(outline, with: .color(border), lineWidth: view.selected && !view.lifted ? 1.5 : 1)
+        if view.lifted {
+            context.fill(shape, with: .color(fill))
+        } else {
+            // No border: the card stands on a soft shadow, and seems to rise under the pointer.
+            let shadow = view.highlighted ? CardView.raisedShadow : CardView.shadow
+            context.drawLayer { layer in
+                layer.addFilter(.shadow(color: ink(view.highlighted ? .cardRaisedShadow : .cardShadow), radius: shadow.radius, y: shadow.y))
+                layer.fill(shape, with: .color(fill))
+            }
+        }
+        if view.selected && !view.lifted {
+            let ring = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.75, dy: 0.75), cornerRadius: CardView.cornerRadius - 0.75, style: .continuous)
+            context.stroke(ring, with: .color(ink(.selectionBorder)), lineWidth: 1.5)
+        }
 
         // Top line: the arrow that folds the sub-issues under the card, number, pull-request mark, the parent of a
         // sub-issue whose parent is elsewhere, and assignees on the right. A board belongs to one project, so the
@@ -485,9 +506,10 @@ private struct CardPainter {
                 let kind: PickerKind = card.parentIsEpic ? .epic : .parent
                 part(kind, rect)
                 if hovered(kind) { chip(rect, hovered: true) }
+                // In the grey of the epic's name: the epic's own colour is for its header and the roadmap.
                 if card.parentIsEpic {
                     context.stroke(
-                        PlanningGlyph.layers(in: CGRect(x: rect.minX + 5, y: topY - 6, width: 12, height: 12)), with: .color(ink(.epic)),
+                        PlanningGlyph.layers(in: CGRect(x: rect.minX + 5, y: topY - 6, width: 12, height: 12)), with: .color(ink(.textTertiary)),
                         style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round)
                     )
                 }
@@ -525,6 +547,9 @@ private struct CardPainter {
             drawPriority(card.priority, x: x, midY: bottomY)
             x += 14 + 6
         }
+        // A part that starts the line moves out by its padding, so that what it shows lines up with the title and
+        // only its highlight reaches past.
+        func start(_ x: CGFloat) -> CGFloat { x == padding.width ? x - 7 : x }
         // The due date comes last but always shows, so labels make room for it.
         let dueChip = card.due.map { due in text(.due(due.label, due.tone)) }
         let limit = size.width - padding.width - (dueChip.map { $0.width + 14 + 6 } ?? 0)
@@ -534,7 +559,7 @@ private struct CardPainter {
             // Until this device knows which issue blocks it, the flag shows alone.
             let flag = text(.blocker(blocker.text))
             let width = blocker.text == nil ? 26 : flag.width + 14
-            let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
+            let rect = CGRect(x: start(x), y: bottomY - 10, width: width, height: 20)
             part(.blockedBy, rect)
             chip(rect, hovered: hovered(.blockedBy))
             context.draw(flag.text, at: CGPoint(x: rect.midX, y: bottomY), anchor: .center)
@@ -543,7 +568,7 @@ private struct CardPainter {
         var shown = 0
         // Labels are measured first, so the highlight can sit behind all of them.
         var labelLayout: [(label: LabelRef, text: GraphicsContext.ResolvedText, rect: CGRect)] = []
-        var labelX = x
+        var labelX = start(x)
         for label in item.labels.prefix(2) {
             let name = text(.label(label.name))
             let width = name.width + 7 + 7 + 5 + 7
@@ -552,13 +577,14 @@ private struct CardPainter {
             labelX += width + 6
         }
         if item.kind != .draft, let first = labelLayout.first, let last = labelLayout.last {
-            part(.labels, first.rect.union(last.rect))
+            let labels = first.rect.union(last.rect)
+            part(.labels, labels)
+            chip(labels, hovered: hovered(.labels))
         }
+        // A label is a dot in its colour and its name, as Reminders writes its tags, rather than a tinted pill: a
+        // board of pills is a board of coloured blobs.
         for (label, name, rect) in labelLayout {
-            let color = ink(.label(hex: label.color))
-            let capsule = Path(roundedRect: rect, cornerRadius: rect.height / 2)
-            context.fill(capsule, with: .color(color.opacity(hovered(.labels) ? 0.24 : 0.14)))
-            context.fill(Path(ellipseIn: CGRect(x: rect.minX + 7, y: bottomY - 3.5, width: 7, height: 7)), with: .color(color))
+            context.fill(Path(ellipseIn: CGRect(x: rect.minX + 7, y: bottomY - 3.5, width: 7, height: 7)), with: .color(ink(.label(hex: label.color))))
             context.draw(name, at: CGPoint(x: rect.minX + 19, y: bottomY), anchor: .leading)
             x = rect.maxX + 6
             shown += 1
@@ -576,8 +602,8 @@ private struct CardPainter {
         if item.subTotal > 0 {
             let progress = text(.progress(done: item.subCompleted, of: item.subTotal))
             let width = progress.width + 7 + 11 + 4 + 7
-            if x + width <= limit {
-                let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
+            if start(x) + width <= limit {
+                let rect = CGRect(x: start(x), y: bottomY - 10, width: width, height: 20)
                 part(.subIssues, rect)
                 chip(rect, hovered: hovered(.subIssues))
                 let origin = CGPoint(x: rect.minX + 7, y: bottomY - 5.5)
@@ -596,7 +622,7 @@ private struct CardPainter {
             }
         }
         if let dueChip {
-            let rect = CGRect(x: x, y: bottomY - 10, width: dueChip.width + 14, height: 20)
+            let rect = CGRect(x: start(x), y: bottomY - 10, width: dueChip.width + 14, height: 20)
             part(.dueDate, rect)
             chip(rect, hovered: hovered(.dueDate))
             context.draw(dueChip.text, at: CGPoint(x: rect.minX + 7, y: bottomY), anchor: .leading)
@@ -607,13 +633,15 @@ private struct CardPainter {
             let name = text(.chip(milestone))
             let textWidth = min(name.width, 110)
             let width = 7 + 10 + 5 + textWidth + 7
-            if x + width <= size.width - padding.width {
-                let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
+            if start(x) + width <= size.width - padding.width {
+                let rect = CGRect(x: start(x), y: bottomY - 10, width: width, height: 20)
                 part(.milestone, rect)
                 chip(rect, hovered: hovered(.milestone))
                 let diamond = CGRect(x: rect.minX + 7, y: bottomY - 5, width: 10, height: 10)
                 let outline = PlanningGlyph.diamond(in: diamond, inset: 1.1)
-                let color = ink(.milestone(card.milestoneMark))
+                // Grey, as the same milestone repeats down the board; its shape still tells the current one, and only
+                // a milestone past its date keeps its colour.
+                let color = ink(card.milestoneMark == .late ? .milestone(.late) : .textTertiary)
                 switch card.milestoneMark {
                 case .completed:
                     context.fill(outline, with: .color(color))
@@ -632,8 +660,8 @@ private struct CardPainter {
             let value = text(.chip(field.text))
             let textWidth = min(value.width, 110)
             let width = 7 + 10 + 5 + textWidth + 7
-            guard x + width <= size.width - padding.width else { break }
-            let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
+            guard start(x) + width <= size.width - padding.width else { break }
+            let rect = CGRect(x: start(x), y: bottomY - 10, width: width, height: 20)
             chip(rect)
             let icon = CGRect(x: rect.minX + 7, y: bottomY - 5, width: 10, height: 10)
             let center = CGPoint(x: icon.midX, y: icon.midY)
@@ -655,9 +683,11 @@ private struct CardPainter {
     /// What `CardStackEdge` draws behind a card: a second card's edge, 6 points in on each side and 5 points lower.
     private func drawStackEdge() {
         let rect = CGRect(x: 6, y: CardStackEdge.height, width: size.width - 12, height: size.height)
-        let shape = RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous)
-        context.fill(shape.path(in: rect), with: .color(ink(.card)))
-        context.stroke(shape.inset(by: 0.5).path(in: rect), with: .color(ink(.cardBorder)), lineWidth: 1)
+        let shape = RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous).path(in: rect)
+        context.drawLayer { layer in
+            layer.addFilter(.shadow(color: ink(.cardShadow), radius: CardView.shadow.radius, y: CardView.shadow.y))
+            layer.fill(shape, with: .color(ink(.cardBehind)))
+        }
     }
 
     /// What `CardTreeLines` draws in the gutter left of a sub-issue card and through the gap above it.
@@ -692,8 +722,8 @@ private struct CardPainter {
         return path
     }
 
-    /// The quiet parts of a card (due date, sub-issues, milestone, fields) are text with a symbol, as Reminders
-    /// writes them; under the pointer they light up as the button they are.
+    /// The quiet parts of a card (labels, due date, sub-issues, milestone, fields) are text with a symbol, as
+    /// Reminders writes them; under the pointer they light up as the button they are.
     private func chip(_ rect: CGRect, hovered: Bool = false) {
         guard hovered else { return }
         context.fill(Path(roundedRect: rect, cornerRadius: rect.height / 2), with: .color(ink(.partHover)))
@@ -826,7 +856,6 @@ struct EpicGroupCard: View {
         .padding(.vertical, CardView.padding.height)
         .frame(width: width, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous).fill(Theme.cardLifted))
-        .overlay(RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous).strokeBorder(Theme.cardLiftedBorder, lineWidth: 1))
         .background(alignment: .top) { CardStackEdge() }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.epicGroupSpoken(epic: group.epic.title, count: group.count)))
@@ -838,8 +867,8 @@ struct CardStackEdge: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous)
-            .fill(Theme.card)
-            .overlay(RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous).strokeBorder(Theme.cardBorder, lineWidth: 1))
+            .fill(Theme.cardBehind)
+            .shadow(color: Theme.cardShadow, radius: CardView.shadow.radius, y: CardView.shadow.y)
             .padding(.horizontal, 6)
             .offset(y: Self.height)
             .accessibilityHidden(true)

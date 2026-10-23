@@ -33,7 +33,8 @@ struct MilestoneScreen: View {
                 IssueList(scope: .milestone(projectId: projectId, title: title))
             }
         }
-        .background(Theme.panel)
+        // Under the board, the grey its cards stand on.
+        .background(group != nil && wide && model.viewMode == .board ? Theme.board : Theme.panel)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .modifier(EditorRole(active: wide))

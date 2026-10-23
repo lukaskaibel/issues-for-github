@@ -366,7 +366,8 @@ struct ProjectScreen: View {
                 ViewBar(projectId: projectId)
             }
         }
-        .background(Theme.panel)
+        // White pages, and under the board the grey its cards stand on, under the bars above it too.
+        .background(project != nil && wide && mode == .board && !(model.currentView(projectId: projectId).map { model.showsTimeline($0) } ?? false) ? Theme.board : Theme.panel)
         .navigationTitle(project?.title ?? String(localized: .project))
         .navigationBarTitleDisplayMode(.inline)
         .modifier(ProjectSwitcher(projectId: projectId, regular: wide))

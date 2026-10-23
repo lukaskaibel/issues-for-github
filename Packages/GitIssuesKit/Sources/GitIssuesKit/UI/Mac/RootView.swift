@@ -206,7 +206,13 @@ struct ContentPanel: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.panel.ignoresSafeArea())
+        // White pages, and under the board the grey its cards stand on, under the toolbar and the filter too.
+        .background {
+            let grey = onBoard && openItem == nil
+            (grey ? Theme.board : Theme.panel)
+                .ignoresSafeArea()
+                .animation(Theme.overlay, value: grey)
+        }
         .overlay { SwipeIndicator() }
         .animation(Theme.overlay, value: model.openItemId)
         .navigationTitle(title(openItem))
@@ -234,6 +240,14 @@ struct ContentPanel: View {
                 clock = Date()
             }
         }
+    }
+
+    /// Whether the page is a board, or about to be one while its project loads.
+    private var onBoard: Bool {
+        guard model.viewMode == .board, model.currentProjectId != nil, let scope = model.scope, scope != .inbox else { return false }
+        if case .roadmap = scope { return false }
+        if case .milestone(let projectId, let title) = scope { return model.milestoneGroup(projectId: projectId, title: title) != nil }
+        return !(model.currentView.map { model.showsTimeline($0) } ?? false)
     }
 
     /// The window's title, as Mail names the mailbox: the view, the issue or the place on screen.
