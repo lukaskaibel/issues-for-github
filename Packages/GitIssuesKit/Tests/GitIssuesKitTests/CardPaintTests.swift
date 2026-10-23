@@ -51,7 +51,7 @@ struct CardPaintTests {
                 }
             }
             .padding(10)
-            .background(Theme.lane)
+            .background(Theme.board)
             .environment(\.colorScheme, dark ? .dark : .light)
         )
         renderer.scale = 2
@@ -131,7 +131,7 @@ struct CardPaintTests {
                 }
             }
             .padding(10)
-            .background(Theme.lane)
+            .background(Theme.board)
             .environment(\.colorScheme, dark ? .dark : .light)
         )
         renderer.scale = 2

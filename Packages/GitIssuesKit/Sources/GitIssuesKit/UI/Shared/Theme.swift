@@ -8,19 +8,29 @@ enum Theme {
     static let panelBorder = Color(light: 0xE5E5EA, dark: 0x2E2E31)
     static let groupHeader = Color(light: 0xF4F4F6, dark: 0x252527)
     static let rowSeparator = Color(light: 0xEDEDF0, dark: 0x2A2A2D)
-    /// Behind a board column, as Reminders sets its columns apart: a soft lane instead of lines.
+    /// A soft grey block on a white page, such as an activity in the Inbox.
     static let lane = Color(light: 0xF4F4F6, dark: 0x242427)
+    /// Behind the whole board, as Apple's grouped lists stand on grey: its white cards need no border on it, and its
+    /// columns no lanes.
+    static let board = Color(light: 0xF3F3F5, dark: 0x19191B)
 
     static let card = Color(light: 0xFFFFFF, dark: 0x2C2C2F)
     static let cardBorder = Color(light: 0xE4E4E9, dark: 0x37373B)
-    static let cardHover = Color(light: 0xFCFCFD, dark: 0x313135)
+    static let cardHover = Color(light: 0xFCFCFD, dark: 0x343438)
     static let cardHoverBorder = Color(light: 0xD1D1D6, dark: 0x48484D)
     static let cardLifted = Color(light: 0xFFFFFF, dark: 0x343438)
     static let cardLiftedBorder = Color(light: 0xC7C7CC, dark: 0x4A4A4F)
-    /// The soft shadow a card stands on, in place of a border.
+    /// The soft shadow a board card stands on, in place of a border.
     static let cardShadow = Color(platformColor: .dynamic { isDark in
         PlatformColor.black.withAlphaComponent(isDark ? 0.4 : 0.07)
     })
+    /// The deeper shadow of a card under the pointer or the keyboard, which seems to rise towards it.
+    static let cardRaisedShadow = Color(platformColor: .dynamic { isDark in
+        PlatformColor.black.withAlphaComponent(isDark ? 0.5 : 0.11)
+    })
+    /// The edge of a second card peeking out under one whose sub-issues are folded into it: a shade darker, as the
+    /// notifications behind the first one in a stack are.
+    static let cardBehind = Color(light: 0xE4E4E9, dark: 0x242427)
 
     static let hover = Color(light: 0xEDEDF0, dark: 0x2C2C2F)
     static let selected = Color(light: 0xEBEBEF, dark: 0x2F2F33)

@@ -28,7 +28,7 @@ struct MobileBoard: View {
         GeometryReader { proxy in
             let width = columnWidth(available: proxy.size.width, count: columns.count, trailing: addsStatus || !hidden.isEmpty)
             ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: 14) {
+                HStack(alignment: .top, spacing: Self.spacing) {
                     ForEach(columns) { column in
                         MobileColumn(
                             projectId: projectId, milestone: milestone, column: column, width: width,
@@ -67,7 +67,7 @@ struct MobileBoard: View {
             }
             .scrollIndicators(.hidden)
         }
-        .background(Theme.panel)
+        .background(Theme.board)
         .sensoryFeedback(.impact(weight: .medium), trigger: dropped)
         .alert(.newStatus, isPresented: $addingStatus) {
             TextField(.statusNamePlaceholder, text: $newStatus)
@@ -83,10 +83,14 @@ struct MobileBoard: View {
         }
     }
 
+    /// Between columns, which leave room beside their cards for the cards' shadows as well: 22 points from the cards
+    /// of one column to the next.
+    static let spacing: CGFloat = 14
+
     private func columnWidth(available: CGFloat, count: Int, trailing: Bool) -> CGFloat {
         guard count > 0 else { return 290 }
         let extra: CGFloat = trailing ? 184 : 0
-        let fitted = (available - 36 - extra - CGFloat(count - 1) * 14) / CGFloat(count)
+        let fitted = (available - 36 - extra - CGFloat(count - 1) * Self.spacing) / CGFloat(count)
         return min(max(fitted, 268), 330)
     }
 
@@ -222,8 +226,9 @@ private struct MobileColumn: View {
 
     var body: some View {
         let space = "column-\(column.id)"
-        VStack(spacing: 6) {
+        VStack(spacing: 6 - CardView.shadowRoom.top) {
             MobileColumnHeader(projectId: projectId, milestone: milestone, column: column)
+                .padding(.horizontal, Self.inset)
             ScrollView(.vertical) {
                 LazyVStack(spacing: 8) {
                     ForEach(Array(column.nesting.rows.enumerated()), id: \.element.id) { index, row in
@@ -241,6 +246,9 @@ private struct MobileColumn: View {
                         gap
                     }
                 }
+                // Room for the cards' shadows, which the scroll view would cut off.
+                .padding(.horizontal, Self.inset)
+                .padding(.top, CardView.shadowRoom.top)
                 .padding(.bottom, 80)
                 .animation(Theme.spring, value: target)
                 .animation(Theme.spring, value: column.nesting.rows.map(\.id))
@@ -248,7 +256,6 @@ private struct MobileColumn: View {
             .scrollIndicators(.hidden)
             .coordinateSpace(.named(space))
             .frame(maxHeight: .infinity)
-            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 10, bottomTrailingRadius: 10, style: .continuous))
             .accessibilityIdentifier("column-\(column.title)")
             .sensoryFeedback(.selection, trigger: foldFeedback)
             .onDrop(of: [.plainText, .url], delegate: ColumnDrop(
@@ -256,15 +263,16 @@ private struct MobileColumn: View {
                 target: $target, dragging: $dragging, onDrop: onDrop
             ))
         }
-        // Each column stands in a soft lane, as Reminders sets its columns apart, with the cards inset in it.
-        .padding(.horizontal, 8)
+        // The columns stand on the board's grey without lanes, and reach the bottom edge, where their cards scroll out
+        // of sight.
         .padding(.top, 4)
-        .padding(.bottom, 8)
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Theme.lane))
     }
 
-    /// The cards' width inside the lane.
-    private var inner: CGFloat { width - 16 }
+    /// How far in from the column's edges its cards are, for their shadows.
+    static let inset = CardView.shadowRoom.leading
+
+    /// The cards' width in the column.
+    private var inner: CGFloat { width - 2 * Self.inset }
 
     /// Where the gap shows among all of the column's rows, the dragged card included.
     private var gapPosition: Int? {

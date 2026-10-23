@@ -343,6 +343,8 @@ struct ProjectScreen: View {
         // Board or list as this project's open view has it. A project the iPad keeps ready in another sidebar entry
         // mustn't follow a switch made in this one.
         let mode = model.currentView(projectId: projectId).map { model.layout(of: $0) } ?? model.viewMode
+        let onBoard = project != nil && wide && mode == .board && !(model.currentView(projectId: projectId).map { model.showsTimeline($0) } ?? false)
+        let ground = onBoard ? Theme.board : Theme.panel
         Group {
             if project == nil {
                 MobileEmptyState(title: String(localized: .projectGoneTitle), message: String(localized: .projectGoneMessage), systemImage: "questionmark.square.dashed")
@@ -363,10 +365,11 @@ struct ProjectScreen: View {
         // The project's saved views, and the open one's filter, over its list or board.
         .safeAreaInset(edge: .top, spacing: 0) {
             if project != nil, !model.views(projectId: projectId).isEmpty, !model.isLoading(projectId: projectId) {
-                ViewBar(projectId: projectId)
+                ViewBar(projectId: projectId, ground: ground)
             }
         }
-        .background(Theme.panel)
+        // White pages, and under the board the grey its cards stand on, under the bars above it too.
+        .background(ground)
         .navigationTitle(project?.title ?? String(localized: .project))
         .navigationBarTitleDisplayMode(.inline)
         .modifier(ProjectSwitcher(projectId: projectId, regular: wide))
