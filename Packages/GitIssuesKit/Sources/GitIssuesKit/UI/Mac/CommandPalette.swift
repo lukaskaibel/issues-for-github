@@ -61,17 +61,11 @@ struct CommandPalette: View {
                             selected: model.scope == .project(project.id),
                             icon: AnyView(ProjectIcon(projectId: project.id))
                         )
-                    } + planningItems + model.boardRepositories.map { repo in
-                        PickerItem(
-                            id: Self.repositoryPrefix + repo.id, title: repo.shortName, subtitle: repo.nameWithOwner,
-                            selected: model.scope == .repository(repo.id),
-                            icon: AnyView(RepositoryIcon().foregroundStyle(Theme.textSecondary))
-                        )
-                    },
+                    } + planningItems,
                     width: 640, maxRows: 10, fieldFont: .system(size: 17), large: true,
                     onPick: { id in
-                        if id.hasPrefix(Self.repositoryPrefix) {
-                            model.select(.repository(String(id.dropFirst(Self.repositoryPrefix.count))))
+                        if id.hasPrefix(Self.allIssuesPrefix) {
+                            model.select(.allIssues(String(id.dropFirst(Self.allIssuesPrefix.count))))
                         } else if id.hasPrefix(Self.roadmapPrefix) {
                             model.select(.roadmap(String(id.dropFirst(Self.roadmapPrefix.count))))
                         } else if id.hasPrefix(Self.milestonePrefix) {
@@ -90,14 +84,22 @@ struct CommandPalette: View {
         .glassPanel(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
-    private static let repositoryPrefix = "repository:"
+    private static let allIssuesPrefix = "all:"
     private static let milestonePrefix = "milestone:"
     private static let roadmapPrefix = "roadmap:"
 
-    /// Every open board's open milestones and its roadmap, to jump to.
+    /// Every open board's All Issues, open milestones and roadmap, to jump to. All Issues also comes up for the names
+    /// of the board's repositories.
     private var planningItems: [PickerItem] {
         model.openProjects.flatMap { project -> [PickerItem] in
-            guard model.hasPlanning(projectId: project.id) else { return [] }
+            let repos = model.repos(projectId: project.id).map(\.shortName)
+            let all = PickerItem(
+                id: Self.allIssuesPrefix + project.id, title: String(localized: .allIssues),
+                subtitle: ([project.title] + repos).joined(separator: " · "),
+                selected: model.scope == .allIssues(project.id),
+                icon: AnyView(Image(systemName: "rectangle.stack").foregroundStyle(Theme.textSecondary))
+            )
+            guard model.hasPlanning(projectId: project.id) else { return [all] }
             let milestones = model.openMilestoneGroups(projectId: project.id).map { group in
                 PickerItem(
                     id: Self.milestonePrefix + project.id + "\u{1F}" + group.title, title: group.title,
@@ -111,7 +113,7 @@ struct CommandPalette: View {
                 selected: model.scope == .roadmap(project.id),
                 icon: AnyView(RoadmapIcon().foregroundStyle(Theme.textSecondary))
             )
-            return milestones + [roadmap]
+            return [all] + milestones + [roadmap]
         }
     }
 
@@ -602,6 +604,11 @@ private struct RootPalette: View {
         list.append(PaletteCommand(id: "mine", title: .myIssues, section: go, icon: symbol("scope"), keys: ["G", "M"]) {
             model.select(.myIssues)
         })
+        if model.sidebarProject != nil {
+            list.append(PaletteCommand(id: "all-issues", title: .allIssues, section: go, icon: symbol("rectangle.stack"), keys: ["G", "A"]) {
+                model.showAllIssues()
+            })
+        }
         list.append(PaletteCommand(id: "projects", title: .switchProjectCommand, section: go, icon: symbol("square.stack"), keys: ["G", "P"]) {
             model.overlay = .palette(.projects)
         })

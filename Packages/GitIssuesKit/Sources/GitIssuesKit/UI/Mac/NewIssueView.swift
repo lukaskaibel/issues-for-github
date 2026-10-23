@@ -24,14 +24,14 @@ struct NewIssueView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 if choosesProject {
-                    // In a repository, the issue can go on any of its boards or on none, like Linear's project chip;
-                    // where no board is on screen, on any of yours.
+                    // In All Issues, the issue can go on the board or on none, like Linear's project chip; where no
+                    // board is on screen, on any of yours.
                     GlassMenuPicker {
                         let menu = MenuBuilder()
                         for project in boards {
                             menu.item(project.title, checked: draft.projectId == project.id) { selectProject(project.id) }
                         }
-                        if inRepository {
+                        if inAllIssues {
                             menu.divider()
                             menu.item(.noProject, checked: draft.projectId == nil) { selectProject(nil) }
                         }
@@ -180,7 +180,7 @@ struct NewIssueView: View {
                 } label: {
                     HStack(spacing: 4) {
                         (repos.first { $0.id == draft.repoId }.map { Text($0.nameWithOwner) } ?? Text(.chooseRepositoryPlaceholder))
-                        if !(draft.parent != nil || repos.count < 2 || inRepository) {
+                        if !(draft.parent != nil || repos.count < 2) {
                             Image(systemName: "chevron.up.chevron.down").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.textTertiary)
                         }
                     }
@@ -188,7 +188,7 @@ struct NewIssueView: View {
                     .foregroundStyle(Theme.textBody)
                 }
                 .fixedSize()
-                .disabled(draft.parent != nil || repos.count < 2 || inRepository)
+                .disabled(draft.parent != nil || repos.count < 2)
                 Spacer()
                 Text("⌘↵").font(.tiny).foregroundStyle(Theme.textSecondary)
                 Button(draft.isEpic ? .createEpicButton : .createIssueMac, action: create)
@@ -226,21 +226,25 @@ struct NewIssueView: View {
         return groups.filter(\.isOpen)
     }
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
-    private var repos: [RepoRef] { model.repos(forNewIssueIn: draft.projectId, repoId: draft.repoId) }
-
-    /// A new issue started in a repository chooses its board, and so does one started where no board is on screen
-    /// (My Issues, the Inbox); on a board, a milestone or a roadmap it goes on that board.
-    private var choosesProject: Bool {
-        draft.parent == nil && (model.currentRepositoryId != nil || model.scopeProjectId == nil)
+    /// The board's repositories, also for an issue started on none in All Issues.
+    private var repos: [RepoRef] {
+        if inAllIssues, let id = model.allIssuesProjectId { return model.repos(projectId: id) }
+        return model.repos(forNewIssueIn: draft.projectId, repoId: draft.repoId)
     }
 
-    /// Started in a repository, the issue lives there, on one of its boards or on none.
-    private var inRepository: Bool {
-        model.currentRepositoryId != nil && draft.parent == nil
+    /// A new issue started in All Issues chooses between the board and none, and one started where no board is on
+    /// screen (My Issues, the Inbox) chooses its board; on a board, a milestone or a roadmap it goes on that board.
+    private var choosesProject: Bool {
+        draft.parent == nil && (inAllIssues || model.scopeProjectId == nil)
+    }
+
+    /// Started in All Issues, the issue goes on the board or on none, in one of the board's repositories.
+    private var inAllIssues: Bool {
+        model.allIssuesProjectId != nil && draft.parent == nil
     }
 
     private var boards: [Project] {
-        if let repoId = model.currentRepositoryId { return model.boards(ofRepository: repoId) }
+        if let id = model.allIssuesProjectId { return model.openProjects.filter { $0.id == id && $0.viewerCanUpdate } }
         return model.openProjects.filter { $0.viewerCanUpdate && (!model.hiddenProjectIds.contains($0.id) || $0.id == draft.projectId) }
     }
 
@@ -252,7 +256,7 @@ struct NewIssueView: View {
                 Text(project.title)
             } else {
                 RepositoryIcon(size: 10)
-                (repos.first.map { Text($0.shortName) } ?? Text(.noProject))
+                ((repos.first { $0.id == draft.repoId } ?? repos.first).map { Text($0.shortName) } ?? Text(.noProject))
             }
             if choosesProject {
                 Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.textTertiary)
@@ -268,17 +272,17 @@ struct NewIssueView: View {
     private func selectProject(_ id: String?) {
         guard id != draft.projectId else { return }
         draft.projectId = id
-        // Outside a repository, the board's own repository comes along.
-        if !inRepository { draft.repoId = id.flatMap { model.defaultRepoId(projectId: $0) } ?? draft.repoId }
+        // Another board brings its own repository along; in All Issues the issue stays in the one chosen.
+        if !inAllIssues { draft.repoId = id.flatMap { model.defaultRepoId(projectId: $0) } ?? draft.repoId }
         draft.statusId = defaultStatus(projectId: id)
         draft.priorityId = nil
         if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
         if let id { model.loadRepoMeta(projectId: id) }
     }
 
-    /// What a new issue starts with in the view on screen; none for sub-issues, issues of a repository and planned ones.
-    private func viewPreset(projectId: String?, parent: Item?, repoScope: String?, planned: Bool) -> NewIssuePreset? {
-        guard parent == nil, repoScope == nil, !planned, model.currentView != nil, projectId == model.currentProjectId else { return nil }
+    /// What a new issue starts with in the view on screen; none for sub-issues and planned ones.
+    private func viewPreset(projectId: String?, parent: Item?, planned: Bool) -> NewIssuePreset? {
+        guard parent == nil, !planned, model.currentView != nil, projectId == model.currentProjectId else { return nil }
         return model.newIssuePreset(projectId: projectId)
     }
 
@@ -300,19 +304,11 @@ struct NewIssueView: View {
 
     private func prepare() {
         let parent = parentItemId.flatMap { id in model.allItems.first { $0.id == id } }
-        let repoScope = model.currentRepositoryId
-        let projectId: String?
-        if let parent {
-            // A sub-issue goes where its parent is, on its board or on none.
-            projectId = parent.projectId
-        } else if let repoScope {
-            projectId = model.boards(ofRepository: repoScope).first?.id
-        } else {
-            // The board on screen, also under its roadmap; elsewhere the one open last.
-            projectId = model.scopeProjectId ?? model.sidebarProject?.id
-        }
-        // A sub-issue lives in its parent's repository; one started in a repository lives there.
-        let repoId = parent?.repoId ?? repoScope ?? projectId.flatMap { model.defaultRepoId(projectId: $0) }
+        // A sub-issue goes where its parent is, on its board or on none; any other on the board on screen, also under
+        // its roadmap or in its All Issues, and elsewhere on the one open last.
+        let projectId: String? = if let parent { parent.projectId } else { model.scopeProjectId ?? model.sidebarProject?.id }
+        // A sub-issue lives in its parent's repository.
+        let repoId = parent?.repoId ?? projectId.flatMap { model.defaultRepoId(projectId: $0) }
         // A title typed into the sub-issue picker starts a fresh issue rather than last time's.
         let typed = model.newIssueTitle
         model.newIssueTitle = nil
@@ -324,8 +320,10 @@ struct NewIssueView: View {
         model.newIssuePlan = nil
         let milestone = plan.milestoneTitle ?? model.currentMilestoneTitle
             ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
+        // In All Issues, also one left on no board in one of its repositories.
+        let onNoBoardHere = parent == nil && unsent(onNoBoardIn: model.allIssuesProjectId)
         if typed == nil, groupPreset == nil, let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id, unsent.isEpic == plan.isEpic,
-           repoScope != nil ? unsent.repoId == repoScope : model.scopeProjectId == nil || unsent.projectId == projectId {
+           model.scopeProjectId == nil || unsent.projectId == projectId || onNoBoardHere {
             draft = unsent
             if let statusId { draft.statusId = chosenStatus(statusId) }
             if let milestone { draft.milestoneTitle = milestone }
@@ -345,7 +343,7 @@ struct NewIssueView: View {
         new.milestoneTitle = milestone
         new.isEpic = plan.isEpic
         // Begun in a view: what its filter asks for, and its column's or group's value, as on GitHub.
-        if let preset = groupPreset ?? viewPreset(projectId: projectId, parent: parent, repoScope: repoScope, planned: plan != NewIssuePlan()) {
+        if let preset = groupPreset ?? viewPreset(projectId: projectId, parent: parent, planned: plan != NewIssuePlan()) {
             model.apply(preset, to: &new)
             if let statusId { new.statusId = chosenStatus(statusId) }
         }
@@ -353,6 +351,12 @@ struct NewIssueView: View {
         focus = .title
         model.loadRepoMeta(projectId: projectId)
         if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
+    }
+
+    /// Whether the issue left unsent was on no board, in a repository of this board.
+    private func unsent(onNoBoardIn projectId: String?) -> Bool {
+        guard let projectId, let unsent = model.unsentNewIssue, unsent.projectId == nil else { return false }
+        return model.repos(projectId: projectId).contains { $0.id == unsent.repoId }
     }
 
     private func selectRepo(_ id: String) {

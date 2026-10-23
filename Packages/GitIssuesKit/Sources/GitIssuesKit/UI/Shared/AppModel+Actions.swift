@@ -527,7 +527,7 @@ extension AppModel {
         switch scope ?? self.scope {
         case .project(let id): "listOrder.\(id)"
         case .myIssues: "listOrder.mine"
-        case .repository(let id): "listOrder.repository.\(id)"
+        case .allIssues(let id): "listOrder.all.\(id)"
         case .milestone(let id, let title): "listOrder.milestone.\(id).\(title)"
         case .roadmap(let id): "listOrder.roadmap.\(id)"
         case .inbox, nil: nil
@@ -578,23 +578,15 @@ extension AppModel {
         switch scope ?? self.scope {
         case .project(let id): "collapsed.\(id)"
         case .myIssues: "collapsed.mine"
-        case .repository(let id): "collapsed.repository.\(id)"
+        case .allIssues(let id): "collapsed.all.\(id)"
         case .milestone(let id, let title): "collapsed.milestone.\(id).\(title)"
         case .roadmap(let id): "collapsed.roadmap.\(id)"
         case .inbox, nil: nil
         }
     }
 
-    /// Hides a repository from the sidebar or brings it back. Hiding the one on screen goes to My Issues.
-    func setHidden(_ repo: RepoRef, _ hidden: Bool) {
-        withAnimation(Theme.spring) {
-            if hidden { hiddenRepositoryIds.insert(repo.id) } else { hiddenRepositoryIds.remove(repo.id) }
-        }
-        if hidden, scope == .repository(repo.id) { select(.myIssues) }
-    }
-
-    /// Hides a project from the sidebar or brings it back. Hiding the one on screen (its board, a milestone or its
-    /// roadmap) moves to the next.
+    /// Hides a project from the sidebar or brings it back. Hiding the one on screen (its board, a milestone, its
+    /// roadmap or All Issues) moves to the next.
     func setHidden(_ project: Project, _ hidden: Bool) {
         withAnimation(Theme.spring) {
             if hidden { hiddenProjectIds.insert(project.id) } else { hiddenProjectIds.remove(project.id) }

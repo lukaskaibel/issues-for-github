@@ -199,12 +199,12 @@ extension AppModel {
             }
         }
 
-        // Two-key "go to" sequences: G then B, L, M or P.
+        // Two-key "go to" sequences: G then B, L, M, I, A, P or R.
         if let started = pendingGoTo, Date().timeIntervalSince(started) < 1.2 {
             pendingGoTo = nil
             switch key {
             case "b":
-                // From the Inbox, My Issues, a repository or a roadmap, back to the project used last.
+                // From the Inbox, My Issues, All Issues or a roadmap, back to the project used last.
                 showProjectLayout(.board)
                 return true
             case "l":
@@ -215,6 +215,9 @@ extension AppModel {
                 return true
             case "i":
                 select(.inbox)
+                return true
+            case "a":
+                showAllIssues()
                 return true
             case "p":
                 overlay = .palette(.projects)

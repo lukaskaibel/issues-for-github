@@ -279,7 +279,7 @@ struct IssueScreen: View {
     /// Where the issue sits among the issues of the board or list it was opened from, in their order, for stepping
     /// through them, as on the Mac. Each issue once, though one can be listed twice (in two people's groups).
     private func position(of item: Item) -> (index: Int, items: [Item])? {
-        let scope = originScope ?? item.projectId.map { .project($0) } ?? item.repoId.map { .repository($0) } ?? .myIssues
+        let scope = originScope ?? item.projectId.map { .project($0) } ?? model.noBoardHome(of: item)
         // A board, as the iPad shows a project or a milestone with room for one.
         let board = switch scope {
         case .project(let id): wide && (model.currentView(projectId: id).map { model.layout(of: $0) } ?? model.viewMode) == .board
@@ -299,7 +299,7 @@ struct IssueScreen: View {
         for route in navigation.path(for: navigation.tab).dropLast().reversed() {
             switch route {
             case .project(let id): return .project(id)
-            case .repository(let id): return .repository(id)
+            case .allIssues(let id): return .allIssues(id)
             case .milestone(let projectId, let title): return .milestone(projectId: projectId, title: title)
             case .roadmap(let id): return .roadmap(id)
             case .issue, .inboxIssue, .statuses: continue
@@ -308,7 +308,7 @@ struct IssueScreen: View {
         return switch navigation.tab {
         case .myIssues: .myIssues
         case .project(let id), .view(let id, _): .project(id)
-        case .repository(let id): .repository(id)
+        case .allIssues(let id): .allIssues(id)
         case .milestone(let projectId, let title): .milestone(projectId: projectId, title: title)
         case .roadmap(let id): .roadmap(id)
         case .inbox, .projects, .search: nil

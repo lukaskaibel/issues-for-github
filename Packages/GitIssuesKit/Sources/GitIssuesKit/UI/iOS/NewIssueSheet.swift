@@ -118,8 +118,8 @@ struct NewIssueSheet: View {
                             }
                         }
                     }
-                    if context.repoId != nil {
-                        // Started in a repository, the issue can also stay on no board, like in Linear.
+                    if context.inAllIssues {
+                        // Started in All Issues, the issue can also stay on no board, like in Linear.
                         Divider()
                         Button {
                             selectProject(nil)
@@ -136,7 +136,7 @@ struct NewIssueSheet: View {
                         if let project {
                             ProjectIcon(projectId: project.id, size: 11)
                             Text(project.title)
-                        } else if context.repoId != nil {
+                        } else if context.inAllIssues {
                             Text(.noProject)
                         } else {
                             Text(.chooseAProject)
@@ -156,7 +156,7 @@ struct NewIssueSheet: View {
                     }
                 }
             }
-            if context.repoId != nil || (draft.projectId == nil && draft.parent != nil), let repo = repos.first {
+            if draft.projectId == nil && draft.parent != nil, let repo = repos.first {
                 contextChip {
                     RepositoryIcon(size: 10)
                     Text(repo.shortName)
@@ -340,16 +340,20 @@ struct NewIssueSheet: View {
     private var project: Project? { model.projects.first { $0.id == draft.projectId } }
     private var statuses: [FieldOption] { model.statusOptions(projectId: draft.projectId) }
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
-    private var repos: [RepoRef] { model.repos(forNewIssueIn: draft.projectId, repoId: draft.repoId) }
+    /// The board's repositories, also for an issue started on none in All Issues.
+    private var repos: [RepoRef] {
+        if context.inAllIssues, draft.parent == nil, let id = context.projectId { return model.repos(projectId: id) }
+        return model.repos(forNewIssueIn: draft.projectId, repoId: draft.repoId)
+    }
     /// The open milestones the issue can start in: its board's, or its repository's on no board.
     private var milestones: [MilestoneGroup] {
         let groups = draft.projectId.map { model.milestoneGroups(projectId: $0) } ?? model.milestoneGroups(repoId: draft.repoId)
         return groups.filter(\.isOpen)
     }
 
-    /// The boards a new issue can go on: a repository's, when it was started in one, or else every open board.
+    /// The boards a new issue can go on: the one whose All Issues it was started in, or else every open board.
     private var projectChoices: [Project] {
-        context.repoId.map { model.boards(ofRepository: $0) } ?? model.openProjects
+        context.inAllIssues ? model.openProjects.filter { $0.id == context.projectId } : model.openProjects
     }
 
     private var hasContent: Bool {
@@ -365,19 +369,12 @@ struct NewIssueSheet: View {
         guard !prepared else { return }
         prepared = true
         let parent = context.parentItemId.flatMap { model.item(id: $0) }
-        let projectId: String?
-        if let parent {
-            // A sub-issue goes where its parent is, on its board or on none.
-            projectId = parent.projectId
-        } else if let repoId = context.repoId {
-            projectId = model.boards(ofRepository: repoId).first?.id
-        } else {
-            projectId = context.projectId ?? model.openProjects.first?.id
-        }
+        // A sub-issue goes where its parent is, on its board or on none.
+        let projectId: String? = if let parent { parent.projectId } else { context.projectId ?? model.openProjects.first?.id }
         var new = NewIssueDraft(projectId: projectId)
         new.parent = parent
-        // A sub-issue lives in its parent's repository; one started in a repository lives there.
-        new.repoId = parent?.repoId ?? context.repoId ?? projectId.flatMap { model.defaultRepoId(projectId: $0) }
+        // A sub-issue lives in its parent's repository.
+        new.repoId = parent?.repoId ?? projectId.flatMap { model.defaultRepoId(projectId: $0) }
         // "No status" (from that column's plus) is none.
         let chosen = context.statusId.map { $0 == BoardColumn.noStatusId ? nil : $0 }
         new.statusId = chosen ?? defaultStatus(projectId: projectId)
@@ -386,7 +383,7 @@ struct NewIssueSheet: View {
         new.milestoneTitle = context.milestoneTitle ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
         new.isEpic = context.isEpic
         // Begun in a view, its group or its column: what the view's filter asks for, and the group's value.
-        let preset = context.preset ?? (parent == nil && context.repoId == nil && context.milestoneTitle == nil && !context.isEpic
+        let preset = context.preset ?? (parent == nil && !context.inAllIssues && context.milestoneTitle == nil && !context.isEpic
             ? model.newIssuePreset(projectId: projectId) : nil)
         if let preset {
             model.apply(preset, to: &new)
@@ -412,8 +409,8 @@ struct NewIssueSheet: View {
         draft.priorityId = nil
         if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
         model.loadRepoMeta(projectId: id)
-        // In a repository, every choice keeps it, and with it the people and labels picked.
-        guard context.repoId == nil, let id else { return }
+        // In All Issues, the board and none keep the repository chosen, and with it the people and labels picked.
+        guard !context.inAllIssues, let id else { return }
         draft.repoId = model.defaultRepoId(projectId: id)
         // People and labels belong to a repository, so choices made for another one no longer apply.
         draft.assignees = []

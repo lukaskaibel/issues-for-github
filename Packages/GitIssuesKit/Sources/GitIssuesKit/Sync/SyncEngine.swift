@@ -9,7 +9,7 @@ public actor SyncEngine {
     public nonisolated let status: SyncStatus
 
     private var activeProjectId: String?
-    private var activeRepoId: String?
+    private var activeRepoIds: [String] = []
     private var watchedIssueId: String?
     private var pollInterval: TimeInterval = 15
 
@@ -120,11 +120,11 @@ public actor SyncEngine {
         kick()
     }
 
-    /// The repository on screen, whose issues are kept as fresh as the board on screen.
-    public func setActiveRepository(_ id: String?) {
-        guard activeRepoId != id else { return }
-        activeRepoId = id
-        if id != nil { kick() }
+    /// The repositories of the All Issues on screen, whose issues are kept as fresh as the board on screen.
+    public func setActiveRepositories(_ ids: [String]) {
+        guard activeRepoIds != ids else { return }
+        activeRepoIds = ids
+        if !ids.isEmpty { kick() }
     }
 
     public func setWatchedIssue(_ contentId: String?) {
@@ -711,8 +711,8 @@ public actor SyncEngine {
         }
     }
 
-    /// The repository on screen every cycle, one other repository per cycle, at most once a minute each, and the
-    /// issues assigned to you elsewhere every five minutes.
+    /// The repositories of All Issues on screen every cycle, one other repository per cycle, at most once a minute
+    /// each, and the issues assigned to you elsewhere every five minutes.
     private func pullRepositories() async throws {
         let repos = try await boardRepositories()
         func read(_ repoId: String) async throws {
@@ -723,11 +723,11 @@ public actor SyncEngine {
                 lastRepoPull[repoId] = Date()
             }
         }
-        if let activeRepoId, repos.contains(activeRepoId),
-           lastRepoPull[activeRepoId].map({ Date().timeIntervalSince($0) >= pollInterval - 1 }) ?? true {
-            try await read(activeRepoId)
+        for repoId in activeRepoIds where repos.contains(repoId)
+            && lastRepoPull[repoId].map({ Date().timeIntervalSince($0) >= pollInterval - 1 }) ?? true {
+            try await read(repoId)
         }
-        if let next = repos.first(where: { $0 != activeRepoId && (lastRepoPull[$0].map { Date().timeIntervalSince($0) > 60 } ?? true) }) {
+        if let next = repos.first(where: { !activeRepoIds.contains($0) && (lastRepoPull[$0].map { Date().timeIntervalSince($0) > 60 } ?? true) }) {
             try await read(next)
         }
         if lastAssignedPull.map({ Date().timeIntervalSince($0) > 300 }) ?? true {

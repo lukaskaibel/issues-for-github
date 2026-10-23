@@ -946,6 +946,41 @@ final class PhoneTests: AppTestCase {
         snapshot("Statuses")
     }
 
+    func testAllIssuesListsIssuesOnNoBoardAndMakesThem() {
+        launch()
+        app.tabBars.buttons["Projects"].tap()
+        // Under the project, with how many open issues of its repository are on no board.
+        let all = element("all-issues-Git Issues")
+        wait(all)
+        waitForLabel(all, containing: "4 on no board")
+        snapshot("Projects with All Issues")
+        all.tap()
+        wait(app.navigationBars["All Issues"])
+        // The issues on no board lead, the board's follow.
+        wait(element("row-#27"))
+        wait(element("row-#5"))
+        snapshot("All Issues")
+
+        // A new issue from here goes on the board, or on none.
+        element("compose-button").tap()
+        let title = element("new-title")
+        wait(title)
+        let project = labelled("Project: Git Issues", type: .button)
+        wait(project)
+        project.tap()
+        let none = button("No project")
+        wait(none)
+        none.tap()
+        wait(labelled("Project: none", type: .button))
+        title.typeText("Crash report from a beta tester")
+        button("Create").tap()
+        waitGone(title)
+        wait(labelled("Crash report from a beta tester"), 8)
+
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        waitForLabel(element("all-issues-Git Issues"), containing: "5 on no board")
+    }
+
     func testProjectIconFromTheProjectMenu() {
         launch()
         openProjectTab("Git Issues")

@@ -29,7 +29,7 @@ struct BoardColumn: Identifiable, Equatable {
 }
 
 struct ListSection: Identifiable, Equatable {
-    /// The group of issues on no board in My Issues and a repository's list, whichever way they are grouped. Ids stay
+    /// The group of issues on no board in My Issues and All Issues, whichever way they are grouped. Ids stay
     /// the same in every language: folded sections and the order of sections are kept by them.
     static let noProjectId = "No project"
 
@@ -167,8 +167,9 @@ enum RoadmapZoom: String, CaseIterable {
 enum Scope: Hashable, Codable {
     case project(String)
     case myIssues
-    /// Every issue of a repository, on a board or not. The id is the repository's.
-    case repository(String)
+    /// A board's issues and those of its repositories that are on no board, which wait for a place on one. The id is
+    /// the board's.
+    case allIssues(String)
     case inbox
     /// The issues of a board in one milestone, by its title: the milestones of that name in the board's repositories.
     case milestone(projectId: String, title: String)
@@ -178,9 +179,9 @@ enum Scope: Hashable, Codable {
     /// The board the scope belongs to.
     var projectId: String? {
         switch self {
-        case .project(let id), .roadmap(let id): id
+        case .project(let id), .roadmap(let id), .allIssues(let id): id
         case .milestone(let id, _): id
-        case .myIssues, .repository, .inbox: nil
+        case .myIssues, .inbox: nil
         }
     }
 }
@@ -236,6 +237,7 @@ public final class AppModel {
     /// Lists and boards of every scope on screen, worked out once per change of the data.
     @ObservationIgnored private var sectionCache: [Scope: [ListSection]] = [:]
     @ObservationIgnored private var columnCache: [String: [BoardColumn]] = [:]
+    @ObservationIgnored private var noBoardCounts: [String: Int] = [:]
     /// The scope `columns` and `sections` were last worked out for.
     @ObservationIgnored private var builtScope: Scope?
     /// Milestones, epics and roadmaps worked out once per change of the data.
@@ -348,7 +350,7 @@ public final class AppModel {
     var roadmapZoom: RoadmapZoom = RoadmapZoom(rawValue: UserDefaults.standard.string(forKey: "roadmap.zoom") ?? "") ?? .months {
         didSet { UserDefaults.standard.set(roadmapZoom.rawValue, forKey: "roadmap.zoom") }
     }
-    /// The project opened last, which the sidebar shows while the Inbox, My Issues or a repository is on screen.
+    /// The project opened last, which the sidebar shows while the Inbox or My Issues is on screen.
     var lastProjectId: String? = UserDefaults.standard.string(forKey: "selectedProject")
     /// The view open in each project, by project id.
     var selectedViewIds: [String: String] = UserDefaults.standard.dictionary(forKey: "views.selected") as? [String: String] ?? [:] {
@@ -389,10 +391,6 @@ public final class AppModel {
     /// Projects tucked away in the sidebar. They can still be found in the command palette.
     var hiddenProjectIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenProjects") ?? []) {
         didSet { UserDefaults.standard.set(Array(hiddenProjectIds), forKey: "hiddenProjects") }
-    }
-    /// Repositories tucked away in the sidebar, like hidden projects.
-    var hiddenRepositoryIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenRepositories") ?? []) {
-        didSet { UserDefaults.standard.set(Array(hiddenRepositoryIds), forKey: "hiddenRepositories") }
     }
     var overlay: Overlay? {
         didSet {
@@ -875,33 +873,14 @@ public final class AppModel {
         currentProjectId.flatMap { id in projects.first { $0.id == id } }
     }
 
-    var currentRepositoryId: String? {
-        if case .repository(let id) = scope { return id }
+    /// The board whose All Issues is on screen.
+    var allIssuesProjectId: String? {
+        if case .allIssues(let id) = scope { return id }
         return nil
-    }
-
-    var currentRepository: RepoRef? {
-        currentRepositoryId.flatMap(repository(id:))
     }
 
     func repository(id: String) -> RepoRef? {
         repos.first { $0.id == id }
-    }
-
-    /// Repositories in the sidebar: those your open boards use, by name. Their issues are all read, so the ones
-    /// on none of your boards show up too.
-    var boardRepositories: [RepoRef] {
-        let open = Set(openProjects.map(\.id))
-        var seen = Set<String>()
-        return repos
-            .filter { open.contains($0.projectId) && seen.insert($0.id).inserted }
-            .sorted { $0.shortName.localizedCaseInsensitiveCompare($1.shortName) == .orderedAscending }
-    }
-
-    /// A repository's name, with its owner when another one in the sidebar has the same name.
-    func displayName(of repo: RepoRef) -> String {
-        let twins = boardRepositories.filter { $0.shortName.caseInsensitiveCompare(repo.shortName) == .orderedSame }
-        return twins.count > 1 ? repo.nameWithOwner : repo.shortName
     }
 
     /// True until the open project has been fetched from GitHub once.
@@ -909,10 +888,15 @@ public final class AppModel {
         scopeProjectId.flatMap { id in projects.first { $0.id == id } }.map { $0.lastSyncedAt == nil } ?? false
     }
 
-    /// True until the repository on screen has been read from GitHub once since the app started.
-    var isLoadingRepository: Bool {
-        guard let id = currentRepositoryId, !isDemo else { return false }
-        return !status.readRepositories.contains(id)
+    /// True until the repositories of the All Issues on screen have each been read from GitHub once since the app
+    /// started.
+    var isLoadingAllIssues: Bool {
+        allIssuesProjectId.map { isLoading(allIssuesOf: $0) } ?? false
+    }
+
+    func isLoading(allIssuesOf projectId: String) -> Bool {
+        guard !isDemo else { return false }
+        return isLoading(projectId: projectId) || repos(projectId: projectId).contains { !status.readRepositories.contains($0.id) }
     }
 
     func isLoading(projectId: String) -> Bool {
@@ -948,20 +932,34 @@ public final class AppModel {
             return mineItems()
         case .inbox:
             return []
-        case .repository(let id):
-            // An issue on two boards is one issue here. Issues closed long ago stay on their boards only.
+        case .allIssues(let id):
+            let repoIds = Set(repos(projectId: id).map(\.id))
             let cutoff = Date().addingTimeInterval(-SyncEngine.closedIssueWindow)
-            var seen = Set<String>()
-            return allItems.filter { item in
-                guard item.repoId == id, item.kind == .issue, !item.isEpic else { return false }
-                if item.isClosed, let closed = item.closedAt, closed < cutoff { return false }
-                return seen.insert(item.contentId ?? item.id).inserted
-            }
+            return allItems.filter { Self.isInAllIssues($0, projectId: id, repoIds: repoIds, closedAfter: cutoff) }
         case .milestone(let id, let title):
             return allItems.filter { $0.projectId == id && !$0.isEpic && milestoneTitle(of: $0) == title }
         case .roadmap(let id):
             return epics(projectId: id)
         }
+    }
+
+    /// Whether All Issues of a board lists an item: everything on the board, and the issues of its repositories that
+    /// are on no board. Issues on another board belong there; those on none closed long ago aren't read, so they
+    /// aren't listed either. Epics are planned on the roadmap, as on the board.
+    nonisolated static func isInAllIssues(_ item: Item, projectId: String, repoIds: Set<String>, closedAfter cutoff: Date) -> Bool {
+        guard !item.isEpic else { return false }
+        if item.projectId == projectId { return true }
+        guard item.projectId == nil, item.kind == .issue, let repoId = item.repoId, repoIds.contains(repoId) else { return false }
+        return !(item.isClosed && (item.closedAt.map { $0 < cutoff } ?? false))
+    }
+
+    /// How many open issues of a board's repositories are on no board: the quiet count beside its All Issues.
+    func countOnNoBoard(projectId: String) -> Int {
+        _ = dataVersion
+        if let cached = noBoardCounts[projectId] { return cached }
+        let count = items(in: .allIssues(projectId)).filter { !$0.isOnBoard && !isDone($0) }.count
+        noBoardCounts[projectId] = count
+        return count
     }
 
     /// Items of the current scope, in board order.
@@ -1057,7 +1055,8 @@ public final class AppModel {
     /// they are empty: its issues are planned already.
     func columns(for scope: Scope) -> [BoardColumn] {
         _ = dataVersion
-        guard let projectId = scope.projectId else { return [] }
+        // All Issues is a list only.
+        guard let projectId = scope.projectId, scope != .allIssues(projectId) else { return [] }
         let key: String
         var view: ProjectView?
         switch scope {
@@ -1113,17 +1112,6 @@ public final class AppModel {
         var result: [ListSection] = []
         switch scope {
         case .project(let projectId):
-            // The list leads with what is being worked on, like Linear does.
-            func rank(_ column: BoardColumn) -> Int {
-                guard let option = column.option else { return 3 }
-                switch option.statusCategory {
-                case .started: return 0
-                case .unstarted: return 1
-                case .backlog: return 2
-                case .completed: return 4
-                case .canceled: return 5
-                }
-            }
             if let view = currentView(projectId: projectId), let grouped = groupedSections(of: view) {
                 result = grouped
                 break
@@ -1132,21 +1120,24 @@ public final class AppModel {
             let statusBoard = currentView(projectId: projectId) == nil
                 ? columns(projectId: projectId)
                 : statusColumns(projectId: projectId, items: items(in: scope))
-            let ordered = statusBoard.enumerated().sorted { a, b in
-                let ra = rank(a.element), rb = rank(b.element)
-                if ra != rb { return ra < rb }
-                // Within "started", later columns (closer to done) come first.
-                return ra == 0 ? a.offset > b.offset : a.offset < b.offset
-            }.map(\.element)
-            result = ordered.filter { !$0.items.isEmpty }.map {
-                ListSection(id: $0.id, title: $0.title, glyph: $0.glyph, option: $0.option, items: $0.items, nesting: $0.nesting)
+            result = listSections(statusBoard)
+
+        case .allIssues(let projectId):
+            // Every status of the board, whatever its views show, after the issues on no board, which wait for a
+            // place on it.
+            let items = items(in: scope)
+            let onNoBoard = items.filter { !$0.isOnBoard }
+            if !onNoBoard.isEmpty {
+                let (shown, nesting) = Nesting.arrange(onNoBoard, folded: foldedParents)
+                result.append(ListSection(
+                    id: ListSection.noProjectId, title: String(localized: .noProject), glyph: .noProject, option: nil,
+                    items: shown, nesting: nesting
+                ))
             }
+            result += listSections(statusColumns(projectId: projectId, items: items.filter(\.isOnBoard)))
 
         case .myIssues:
             result = mineSections(items(in: scope))
-
-        case .repository:
-            result = groupedByKindOfStatus(items(in: scope))
 
         case .milestone:
             result = groupedByEpic(items(in: scope))
@@ -1168,6 +1159,30 @@ public final class AppModel {
         }
         sectionCache[scope] = result
         return result
+    }
+
+    /// A board's columns as the list's sections, empty ones left out. The list leads with what is being worked on,
+    /// like Linear does.
+    private func listSections(_ columns: [BoardColumn]) -> [ListSection] {
+        func rank(_ column: BoardColumn) -> Int {
+            guard let option = column.option else { return 3 }
+            switch option.statusCategory {
+            case .started: return 0
+            case .unstarted: return 1
+            case .backlog: return 2
+            case .completed: return 4
+            case .canceled: return 5
+            }
+        }
+        let ordered = columns.enumerated().sorted { a, b in
+            let ra = rank(a.element), rb = rank(b.element)
+            if ra != rb { return ra < rb }
+            // Within "started", later columns (closer to done) come first.
+            return ra == 0 ? a.offset > b.offset : a.offset < b.offset
+        }.map(\.element)
+        return ordered.filter { !$0.items.isEmpty }.map {
+            ListSection(id: $0.id, title: $0.title, glyph: $0.glyph, option: $0.option, items: $0.items, nesting: $0.nesting)
+        }
     }
 
     /// Issues from several boards, grouped by what their status means. Issues on none of your boards lead, since
@@ -1217,6 +1232,7 @@ public final class AppModel {
         if glyphs != map { glyphs = map }
         sectionCache = [:]
         columnCache = [:]
+        noBoardCounts = [:]
         filterContexts = [:]
         mineRulesCache = nil
         planningCache = PlanningCache()
@@ -1260,7 +1276,7 @@ public final class AppModel {
             return
         }
         let saved = UserDefaults.standard.string(forKey: "selectedProject")
-        // A milestone or the roadmap of that project, if that was on screen last.
+        // A milestone, the roadmap or All Issues of that project, if that was on screen last.
         if let data = UserDefaults.standard.data(forKey: "selectedPlanning"),
            let planning = try? JSONDecoder().decode(Scope.self, from: data),
            let projectId = planning.projectId, projectId == saved, projects.contains(where: { $0.id == projectId && !$0.closed }) {
@@ -1271,6 +1287,14 @@ public final class AppModel {
             ?? projects.first { !$0.closed && !hiddenProjectIds.contains($0.id) }
             ?? projects.first { !$0.closed } ?? projects.first
         if let project { select(.project(project.id)) }
+    }
+
+    /// Where an issue on no board is listed: All Issues of a board that uses its repository, the one in the sidebar
+    /// first; else My Issues, as an issue of a repository none of your boards use is known because it is yours.
+    func noBoardHome(of item: Item) -> Scope {
+        let boards = openProjects.filter { project in repos.contains { $0.projectId == project.id && $0.id == item.repoId } }
+        let board = boards.first { $0.id == sidebarProject?.id } ?? boards.first
+        return board.map { .allIssues($0.id) } ?? .myIssues
     }
 
     /// The project at the top of the sidebar, the one used last: where G then B goes from the Inbox or My Issues.
@@ -1285,6 +1309,13 @@ public final class AppModel {
         guard currentProjectId != nil else { return }
         closeDetail()
         withAnimation(Theme.spring) { viewMode = mode }
+    }
+
+    /// G A: All Issues of the project on screen, or of the one used last.
+    func showAllIssues() {
+        guard let projectId = scopeProjectId ?? sidebarProject?.id else { return }
+        closeDetail()
+        select(.allIssues(projectId))
     }
 
     /// G R and ⌘4: the roadmap of the project on screen, or of the one used last, in one step back.
@@ -1308,12 +1339,12 @@ public final class AppModel {
             setActiveProject(id)
         }
         switch newScope {
-        case .milestone, .roadmap:
+        case .milestone, .roadmap, .allIssues:
             UserDefaults.standard.set(try? JSONEncoder().encode(newScope), forKey: "selectedPlanning")
         default:
             UserDefaults.standard.removeObject(forKey: "selectedPlanning")
         }
-        setActiveRepository(currentRepositoryId)
+        setActiveRepositories(allIssuesProjectId.map { repos(projectId: $0).map(\.id) } ?? [])
         UserDefaults.standard.set(newScope == .inbox, forKey: "inbox.selected")
         if newScope == .inbox { inboxAppeared() }
         rebuild()
@@ -1328,10 +1359,10 @@ public final class AppModel {
         Task { await engine.setActiveProject(id) }
     }
 
-    /// The repository on screen, whose issues are read as often as the board on screen.
-    func setActiveRepository(_ id: String?) {
+    /// The repositories of the All Issues on screen, whose issues are read as often as the board on screen.
+    func setActiveRepositories(_ ids: [String]) {
         let engine = self.engine
-        Task { await engine.setActiveRepository(id) }
+        Task { await engine.setActiveRepositories(ids) }
     }
 
     /// Opens an issue. Its comments and sub-issues load when its view appears (see `detailAppeared`).
@@ -1458,9 +1489,9 @@ public final class AppModel {
         peekItemId = nil
         overlay = nil
         #if os(macOS)
-        let home: Scope? = item.projectId.map { .project($0) } ?? item.repoId.map { .repository($0) }
+        let home: Scope = item.projectId.map { .project($0) } ?? noBoardHome(of: item)
         let listed = scope.map { items(in: $0).contains { $0.id == item.id } } ?? false
-        if !listed, let home { select(home) }
+        if !listed { select(home) }
         open(item)
         NSApp.activate()
         mainWindow?.makeKeyAndOrderFront(nil)

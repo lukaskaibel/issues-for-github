@@ -68,6 +68,14 @@ All notable changes to this project are recorded here. The format follows
   no longer a tinted pill, and the milestone and the epic a card belongs to are grey, so that colour is left for what
   needs you: a date that's due, an urgent issue, a blocker. On the Mac and iPad. On the Mac, the card under the
   pointer rises a little, and a column's + shows while the pointer is in that column.
+- **All Issues instead of Repositories.** The sidebar's Repositories section is gone. In its place **All Issues** heads
+  a project's views on the Mac and iPad, and sits under each project in the iPhone's Projects tab: the board's issues by
+  status, after every issue of its repositories that is on no board, under No project. The number beside it says how
+  many of those are open, so an issue someone opened straight in a repository doesn't wait unseen. A new issue started
+  there goes on the board or, if you choose, on none; where a project has several repositories, each row names its
+  own. On the Mac, `G` then `A` opens it, and the project switcher finds it by the project's or a repository's name.
+  Before, each repository had a row of its own whose list mostly repeated the board, with issues of other boards mixed
+  in.
 - On a board, `J` and `K` go up and down the column, as `↑` and `↓` do. With an issue open they step through the board
   or list it was opened from, in the order you see, on iPad too.
 - `G` `B`, `G` `L`, `⌘1` and `⌘2` go to the board or list of the project you used last from anywhere, My Issues and

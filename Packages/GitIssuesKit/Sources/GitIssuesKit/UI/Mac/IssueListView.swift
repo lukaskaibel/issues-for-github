@@ -30,9 +30,10 @@ struct IssueListView: View {
             }
         } else {
             // Where rows come from several boards, each says which; an issue on none says its repository. My Issues
-            // grouped by project says it in the groups.
+            // grouped by project says it in the groups. All Issues of a board with several repositories says each
+            // row's.
             let showsProject = model.scope == .myIssues
-                || model.currentRepositoryId.map { model.boards(ofRepository: $0).count > 1 } ?? false
+                || model.allIssuesProjectId.map { model.repos(projectId: $0).count > 1 } ?? false
             let groupsByProject = model.scope == .myIssues && model.mineDisplay.grouping == .project
             let canEdit = model.scopeProjectId.flatMap { id in model.projects.first { $0.id == id } }?.viewerCanUpdate == true
             let canAdd = model.scopeProjectId != nil && (model.currentProjectId != nil || canEdit)
@@ -49,7 +50,8 @@ struct IssueListView: View {
                         id: section.id, collapsed: model.isFolded(section),
                         title: section.title, glyph: section.glyph, icon: icon(of: section), detail: section.detail,
                         optionId: section.option?.id, kind: section.kind,
-                        canAdd: canAdd, count: section.count,
+                        // A new issue in All Issues goes on the board, so not into the issues on none.
+                        canAdd: canAdd && section.id != ListSection.noProjectId, count: section.count,
                         lines: model.isFolded(section) ? [] : section.nesting.rows.map { row -> IssueLine in
                             switch row {
                             case .epic(let group):
@@ -81,8 +83,9 @@ struct IssueListView: View {
                         load: mostOpen > 0 ? CGFloat(section.progress.map { $0.total - $0.done } ?? 0) / CGFloat(mostOpen) : 0
                     )
                 },
-                // My Issues mixes projects, so there is no one order to put an issue into.
-                canMoveRows: canEdit,
+                // My Issues mixes projects, so there is no one order to put an issue into; All Issues mixes the board
+                // with issues on none.
+                canMoveRows: canEdit && model.allIssuesProjectId == nil,
                 focusedId: model.focusedItemId,
                 focusScrollToken: model.focusScrollToken,
                 avatarVersion: model.avatarVersion,
@@ -96,8 +99,9 @@ struct IssueListView: View {
         }
     }
 
-    /// Which board a row is on, or for an issue on none in My Issues, its repository.
+    /// Which board a row is on, or for an issue on none in My Issues, its repository; in All Issues, its repository.
     private func place(of item: Item, groupsByProject: Bool) -> String? {
+        if model.allIssuesProjectId != nil { return item.repoShortName }
         if let project = model.project(of: item) { return groupsByProject ? nil : project.title }
         return model.scope == .myIssues ? item.repoShortName : nil
     }
@@ -115,14 +119,14 @@ struct IssueListView: View {
     private var emptyTitle: String {
         if case .milestone(_, let title) = model.scope { return String(localized: .milestoneEmptyTitle(milestone: title)) }
         if model.scope == .myIssues { return String(localized: .nothingAssignedTitle) }
-        if model.currentRepositoryId != nil { return String(localized: model.isLoadingRepository ? .lookingForIssues : .noOpenIssues) }
+        if model.allIssuesProjectId != nil { return String(localized: model.isLoadingAllIssues ? .lookingForIssues : .noIssuesYet) }
         return String(localized: .noIssuesYet)
     }
 
     private var emptyMessage: String {
         if case .milestone = model.scope { return String(localized: .milestoneEmptyMessage) }
         if model.scope == .myIssues { return String(localized: .myIssuesEmptyMessage) }
-        if model.currentRepositoryId != nil { return String(localized: .repositoryEmptyMessage) }
+        if model.allIssuesProjectId != nil { return String(localized: .allIssuesEmptyMessage) }
         return String(localized: .projectEmptyMessage)
     }
 }

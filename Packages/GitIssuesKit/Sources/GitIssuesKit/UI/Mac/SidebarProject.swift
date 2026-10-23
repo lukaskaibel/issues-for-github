@@ -2,8 +2,8 @@
 import AppKit
 import SwiftUI
 
-/// One project at a time in the sidebar, under its menu at the top: the project's views, its next milestones with the
-/// roadmap, and its repositories, each a section of the list.
+/// One project at a time in the sidebar, under its menu at the top: All Issues and the project's views, then its next
+/// milestones with the roadmap, each a section of the list.
 struct SidebarProject: View {
     @Environment(AppModel.self) private var model
     var project: Project
@@ -17,16 +17,6 @@ struct SidebarProject: View {
                     MilestoneRow(projectId: project.id, group: group, current: current)
                 }
                 RoadmapRow(projectId: project.id, current: current)
-            }
-        }
-        let repos = model.boardRepositories.filter { repo in model.repos(projectId: project.id).contains { $0.id == repo.id } }
-        if !repos.isEmpty {
-            // Like the teams in Linear: every issue of a repository, whether it is on a board or not.
-            Section(String(localized: .repositories)) {
-                ForEach(repos.filter { !model.hiddenRepositoryIds.contains($0.id) }) { repo in
-                    RepositoryRow(repo: repo, hidden: false, current: current)
-                }
-                HiddenRepositories(repos: repos.filter { model.hiddenRepositoryIds.contains($0.id) }, current: current)
             }
         }
     }
@@ -171,8 +161,8 @@ struct HiddenProjectsMenu: View {
 
 // MARK: - Views
 
-/// The project's views, in GitHub's order, and a row for a new one. A click opens a view, a double-click renames it,
-/// right-click for the rest.
+/// All Issues first, as Linear's team starts with its issues, then the project's views, in GitHub's order, and a row
+/// for a new one. A click opens a view, a double-click renames it, right-click for the rest.
 private struct SidebarViews: View {
     @Environment(AppModel.self) private var model
     var project: Project
@@ -188,6 +178,7 @@ private struct SidebarViews: View {
         let views = model.views(projectId: project.id)
         let canEdit = model.canEditViews(projectId: project.id)
         Section(String(localized: .views)) {
+            AllIssuesRow(projectId: project.id, current: current)
             if views.isEmpty {
                 // Until GitHub's views have been read: the board, as before there were views.
                 let row = SidebarSelection.board(project.id)

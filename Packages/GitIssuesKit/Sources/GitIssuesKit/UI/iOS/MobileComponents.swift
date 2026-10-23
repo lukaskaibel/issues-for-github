@@ -13,6 +13,8 @@ struct IssueRow: View {
     /// Whether such a row names its project, or only the repository of an issue on no board: My Issues grouped by
     /// project says it in the group.
     var namesBoard = true
+    /// Whether such a row names its repository rather than its board: in All Issues of a board with several.
+    var namesRepository = false
     /// Part of the title to highlight, for search results.
     var highlight: String? = nil
     /// How the row hangs under a parent in its group.
@@ -158,12 +160,12 @@ struct IssueRow: View {
                 }
                 .frame(maxWidth: 160, alignment: .leading)
             }
-            if showsProject, namesBoard, let project = model.project(of: item) {
+            if showsProject, namesBoard, !namesRepository, let project = model.project(of: item) {
                 HStack(spacing: 5) {
                     ProjectIcon(projectId: project.id, size: 10)
                     Text(project.title)
                 }
-            } else if showsProject, !item.isOnBoard, let repo = item.repoShortName {
+            } else if showsProject, !item.isOnBoard || namesRepository, let repo = item.repoShortName {
                 // On no board: where the issue lives instead.
                 HStack(spacing: 4) {
                     RepositoryIcon(size: 9)
@@ -238,7 +240,7 @@ struct IssueRow: View {
         }
         if showsEpic, let epic { parts.append(String(localized: .epicTooltip(epic: epic.title))) }
         parts += chips.map(model.spokenChip)
-        if showsProject, let place = item.isOnBoard ? (namesBoard ? model.project(of: item)?.title : nil) : item.repoShortName {
+        if showsProject, let place = item.isOnBoard && !namesRepository ? (namesBoard ? model.project(of: item)?.title : nil) : item.repoShortName {
             parts.append(place)
         }
         return parts.joined(separator: ", ")

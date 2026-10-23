@@ -175,13 +175,12 @@ struct MainTabs: View {
             }
             .customizationID("myIssues")
             if wide, let project = sidebarProject {
-                // One project at a time, as on the Mac: a switch to another, then its views, milestones and
-                // repositories.
+                // One project at a time, as on the Mac: a switch to another, then All Issues and its views, and its
+                // milestones.
                 viewSection(project)
                 if model.hasPlanning(projectId: project.id) {
                     planningSection(project)
                 }
-                repositorySection(project)
             } else {
                 Tab(.projects, systemImage: "square.stack", value: MobileTab.projects) {
                     TabStack(tab: .projects) { ProjectsScreen() }
@@ -272,9 +271,16 @@ struct MainTabs: View {
         model.openProjects.first { $0.id == navigation.sidebarProjectId } ?? model.openProjects.first
     }
 
-    /// The project's views, each an entry.
+    /// All Issues first, with how many are on no board as a quiet count, then the project's views, each an entry.
     private func viewSection(_ project: Project) -> some TabContent<MobileTab> {
         TabSection(.views) {
+            Tab(value: MobileTab.allIssues(project.id)) {
+                TabStack(tab: .allIssues(project.id)) { AllIssuesScreen(projectId: project.id) }
+            } label: {
+                Label(.allIssues, systemImage: "rectangle.stack")
+            }
+            .badge(model.countOnNoBoard(projectId: project.id))
+            .customizationID("allIssues.\(project.id)")
             ForEach(model.views(projectId: project.id)) { view in
                 let tab = MobileTab.view(projectId: project.id, viewId: view.id)
                 Tab(value: tab) {
@@ -331,21 +337,6 @@ struct MainTabs: View {
             .customizationID("roadmap.\(project.id)")
         }
         .customizationID("milestoneSection")
-    }
-
-    /// Like the teams in Linear: every issue of a repository of the project, whether it is on a board or not.
-    private func repositorySection(_ project: Project) -> some TabContent<MobileTab> {
-        TabSection(.repositories) {
-            ForEach(model.boardRepositories.filter { repo in model.repos(projectId: project.id).contains { $0.id == repo.id } }) { repo in
-                Tab(value: MobileTab.repository(repo.id)) {
-                    TabStack(tab: .repository(repo.id)) { RepositoryScreen(repoId: repo.id) }
-                } label: {
-                    Label(model.displayName(of: repo), systemImage: "book.closed")
-                }
-                .customizationID("repository.\(repo.id)")
-            }
-        }
-        .customizationID("repositorySection")
     }
 
     /// A view's layout, as the sidebar's icons are images.
@@ -409,7 +400,7 @@ struct RouteDestination: View {
     var body: some View {
         switch route {
         case .project(let id): ProjectScreen(projectId: id)
-        case .repository(let id): RepositoryScreen(repoId: id)
+        case .allIssues(let id): AllIssuesScreen(projectId: id)
         case .issue(let id): IssueScreen(itemId: id)
         case .inboxIssue(let entry, let item): IssueScreen(itemId: item, inboxEntryId: entry)
         case .statuses(let id): StatusEditor(projectId: id)
@@ -599,15 +590,14 @@ extension MobileNavigation {
     /// The project on screen in the selected tab, so a new issue goes there.
     var currentProjectId: String? {
         switch tab {
-        case .project(let id), .roadmap(let id): return id
+        case .project(let id), .roadmap(let id), .allIssues(let id): return id
         case .milestone(let id, _), .view(let id, _): return id
         default: break
         }
         for route in path(for: tab).reversed() {
             switch route {
-            case .project(let id), .roadmap(let id): return id
+            case .project(let id), .roadmap(let id), .allIssues(let id): return id
             case .milestone(let id, _): return id
-            case .repository: return nil
             default: continue
             }
         }
@@ -621,19 +611,20 @@ extension MobileNavigation {
         return nil
     }
 
-    /// The repository on screen in the selected tab, so a new issue is created in it.
-    var currentRepositoryId: String? {
-        if case .repository(let id) = tab { return id }
+    /// Whether a project's All Issues is the screen in front in the selected tab, so a new issue may go on no board.
+    var inAllIssues: Bool {
         for route in path(for: tab).reversed() {
-            if case .repository(let id) = route { return id }
-            if case .project = route { return nil }
+            if case .allIssues = route { return true }
+            if case .issue = route { continue }
+            return false
         }
-        return nil
+        if case .allIssues = tab { return true }
+        return false
     }
 
-    /// Where the compose button starts a new issue: the project or repository on screen, or My Issues.
+    /// Where the compose button starts a new issue: the project on screen, or My Issues.
     var newIssueContext: NewIssueContext {
-        NewIssueContext(projectId: currentProjectId, repoId: currentRepositoryId, assignToMe: tab == .myIssues, milestoneTitle: currentMilestoneTitle)
+        NewIssueContext(projectId: currentProjectId, inAllIssues: inAllIssues, assignToMe: tab == .myIssues, milestoneTitle: currentMilestoneTitle)
     }
 }
 
@@ -685,6 +676,12 @@ struct MobileCommands: Commands {
             Button(.myIssues) { navigation?.tab = .myIssues }
                 .keyboardShortcut("3", modifiers: .command)
                 .disabled(unavailable)
+            Button(.allIssues) {
+                guard let navigation, let projectId = navigation.currentProjectId ?? navigation.sidebarProjectId ?? model.openProjects.first?.id
+                else { return }
+                navigation.showAllIssues(projectId, regular: navigation.regular)
+            }
+            .disabled(unavailable || model.openProjects.isEmpty)
             Button(.roadmap) {
                 guard let navigation, let projectId = navigation.currentProjectId ?? model.openProjects.first?.id else { return }
                 if navigation.regular {

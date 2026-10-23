@@ -67,6 +67,7 @@ Only English uses Title Case; every other language writes menus and buttons as i
 | closed as not planned | als „nicht geplant“ geschlossen | fermé comme non prévu | cerrada como no planificada | fechada como não planejada | закрыта как незапланированная | 対応予定なしでクローズ | 以“不计划”关闭 | 계획 없음으로 닫힘 |
 | blocked by / blocking | blockiert durch / blockierend | bloqué par / bloquant | bloqueada por / bloquea | bloqueada por / bloqueia | заблокирована / блокирует | ブロック元 / ブロック先 | 被阻塞 / 正在阻塞 | 차단됨 / 차단 중 |
 | Inbox | Eingang | Réception | Entrada | Entrada | Входящие | 受信トレイ | 收件箱 | 수신함 |
+| My Issues / All Issues | Meine Issues / Alle Issues | Mes tickets / Tous les tickets | Mis incidencias / Todas las incidencias | Minhas issues / Todas as issues | Мои задачи / Все задачи | 自分のIssue / すべてのIssue | 我的议题 / 所有议题 | 내 이슈 / 모든 이슈 |
 | notification | Mitteilung | notification | notificación | notificação | уведомление | 通知 | 通知 | 알림 |
 | archive | archivieren | archiver | archivar | arquivar | архивировать | アーカイブ | 归档 | 보관 |
 | snooze | zurückstellen | mettre en attente | posponer | adiar | отложить | スヌーズ | 稍后提醒 | 다시 알림 |

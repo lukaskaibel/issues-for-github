@@ -137,7 +137,8 @@ for theme in dark light; do
   say "close"; sleep 1; say "focus 9" "overlay palette"; sleep 1.2; shot "palette-$theme"
   say "overlay due 9"; sleep 1.2; shot "due-$theme"
   say "overlay none" "focus" "mode list"; sleep 1.2; shot "list-$theme"
-  say "select repo git-issues"; sleep 1.2; shot "repository-$theme"
+  # All Issues of the project: the issues on no board first, with their count in the sidebar.
+  say "select all"; sleep 1.2; shot "all-issues-$theme"
   # My Issues grouped by project, done issues filtered out, with its Display options open.
   say "select mine" "display reset" "filter -status:done" "display group project"; sleep 1.2
   say "menu display"; sleep 1; shot "my-issues-$theme"

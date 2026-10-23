@@ -190,10 +190,13 @@ offers it on its light page, on graphite or as a white card on indigo. Each foll
 
 ### Every issue, on a board or not
 
-An issue someone opened straight in a repository isn't lost because nobody put it on a board. The sidebar lists the
-repositories of the project you're in, like the teams in Linear, and each shows all its issues, grouped by status like
-My Issues. Those on no board come first, under **No project**: click the circle with the plus (or press `S`), pick a
-column, and the issue is on the board. My Issues shows everything assigned to you, on a board or not.
+An issue someone opened straight in a repository isn't lost because nobody put it on a board. **All Issues**, at the
+top of the project's views in the sidebar (`G` then `A`), lists the board's issues by status together with every issue
+of its repositories that is on no board, like a team's issues in Linear. Those on no board come first, under
+**No project**, and the quiet number beside All Issues says how many of them are open: click the circle with the plus
+(or press `S`), pick a column, and the issue is on the board. A new issue started there can stay on no board. Where a
+project has several repositories, each row names its own. My Issues shows everything assigned to you, on a board or
+not.
 
 ### My Issues, in the order you need
 
@@ -211,10 +214,12 @@ so what you choose stays on your device.
 </picture>
 -->
 
+<!-- The picture follows in the shared picture run (Tools/readme-images.sh, scene "all-issues").
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/repository-dark.webp">
-  <img alt="A repository in the sidebar, with its issues as a list: four under No project at the top, then In progress with two sub-issues under their parent, and Todo" src="Design/screenshots/repository-light.webp">
+  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/all-issues-dark.webp">
+  <img alt="All Issues of a project, with 4 beside it in the sidebar: five issues under No project at the top, then In Review and In Progress with sub-issues under their parent" src="Design/screenshots/all-issues-light.webp">
 </picture>
+-->
 
 ### Milestones, epics and a roadmap
 
@@ -236,7 +241,7 @@ there with everything left to do, drag a milestone's diamond to change its day. 
 ### A project's views, in the sidebar
 
 The sidebar is about one project at a time, as Linear's is about one workspace: the project sits at its top with an
-icon you pick, its menu switches to another, and under it are the project's views as GitHub has them, such as "This week" or open bugs by area, then its milestones and its repositories. A view
+icon you pick, its menu switches to another, and under it are All Issues and the project's views as GitHub has them, such as "This week" or open bugs by area, then its milestones. A view
 shows what its filter finds, as a board or as a list grouped the way GitHub groups it. The filter is a row of chips
 over the issues, as in Linear: press `F` to add one for a status, a person, a label, a milestone, an iteration or any field
 of the project, click a chip to change it. A changed filter stays yours until you press `⌘S`, which saves it to the
@@ -275,9 +280,9 @@ The interface uses the system's own parts.
   <img alt="Three iPhones: an issue with its properties as chips, the menu on a long press, and a new issue being typed" src="Design/screenshots/iphone-light.webp">
 </picture>
 
-- **iPhone:** a list per project, per repository and My Issues, grouped by status, with sections that fold and
-  headers that stay pinned. Tabs for the Inbox (with its count), My Issues, Projects (with the repositories below the
-  projects) and Search. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and
+- **iPhone:** a list per project, each project's All Issues and My Issues, grouped by status, with sections that fold
+  and headers that stay pinned. Tabs for the Inbox (with its count), My Issues, Projects (with All Issues under each
+  project, and how many of its issues are on no board) and Search. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and
   hold for the same menu as the Mac's right-click, and drag after holding to give an issue a new place in its section.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
   A board's next milestones and its roadmap are listed under it in Projects; a milestone is a list grouped by epic,
@@ -300,7 +305,7 @@ The interface uses the system's own parts.
   grey without borders or lanes, as on the Mac; a column's "…" hides it on that iPad, and the hidden ones wait at the end of the
   board and under Display in the project's "…", a tap away from coming back.
 - **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
-  projects, changes the icon and opens your account, then its views, its next milestones and roadmap, and its repositories, each an entry. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
+  projects, changes the icon and opens your account, then All Issues and its views, and its next milestones and roadmap, each an entry. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
   drop (touch and hold, then drag). A milestone opens as the board's columns or a list, the roadmap as the timeline,
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
@@ -320,7 +325,8 @@ The interface uses the system's own parts.
 
 - **Board and list** for every GitHub Project you can see, plus **My Issues**: everything assigned to you, with its
   own filter, and grouped by status, project, priority or due date.
-- **Every issue of your repositories**, also those on none of your boards, which one click puts on one.
+- **All Issues** of a project: its board's issues and those of its repositories on no board, which one click puts on
+  the board.
 - **Sub-issues and blockers.** Put any issue under another one, add issues that exist already as sub-issues, and mark
   which issues block which; a blocked issue carries a red flag that names what blocks it, on its card and in its
   parent's sub-issues. Sub-issues with their parent's status hang under it on the board and in the list, and a parent
@@ -376,7 +382,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Due date | A date field of the project named **Due date**, *Due*, *Deadline* or *Target date* (the app adds one the first time you set a date) |
 | Reminders | Notifications each of your devices schedules itself from the due dates; nothing on GitHub |
 | Card order | The item's position in the project |
-| Repositories in the sidebar | The repositories linked to the project, and those its issues come from |
+| All Issues | The project's items, and the issues of its repositories (those linked to the project, and those its issues come from) that are in no project |
 | No project | An issue that is in none of your projects; adding it to one is GitHub's *Add to project* |
 | Sub-issues, labels, assignees, comments | The native GitHub features |
 | A label typed into the picker | A new label in the issue's repository, in one of GitHub's colours |
@@ -404,8 +410,8 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | A project's icon | Nothing on GitHub, which has no icons for projects: the glyph and colour you pick are kept in iCloud, for you alone |
 | Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there. Due issues, and assignments your own account made outside the app (found in the issues' timelines), are the app's own entries, read and archived in iCloud |
 
-Boards show the issues in their project; a repository shows all its open issues and those closed in the last four
-weeks, on a board or not. My Issues shows the open issues assigned to you anywhere on GitHub. The Inbox also shows
+Boards show the issues in their project; All Issues adds the open issues of its repositories that are on no board
+and those of them closed in the last four weeks. My Issues shows the open issues assigned to you anywhere on GitHub. The Inbox also shows
 issues and pull requests from other repositories that GitHub tells you about, and can put them on a board. What a
 column means (backlog, in progress, done, cancelled) is inferred from its name, since GitHub stores only the label.
 
@@ -549,7 +555,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `⇧V` | Display options of the view: board or list, columns, groups, order and the fields shown; of My Issues: groups and order |
 | `⌘S` | Save the view's changed filter to GitHub, for everyone |
 | `⌃Tab` `⌃⇧Tab` | Next or previous view of the project |
-| `G` then `B` / `L` / `M` / `I` / `P` / `R` | Go to board, list, My Issues, the Inbox, switch project or repository, or the roadmap |
+| `G` then `B` / `L` / `M` / `A` / `I` / `P` / `R` | Go to board, list, My Issues, All Issues, the Inbox, switch project, or the roadmap |
 | `⌘1` `⌘2` `⌘3` `⌘4` | Board, list, My Issues, roadmap (on the roadmap `⌘1` and `⌘2` switch timeline and list) |
 | `⌘↵` | Save a description, send a comment, create the issue |
 | `⌘⇧C` / `⌘⇧O` | Copy the issue's GitHub link / open it on GitHub |
@@ -614,7 +620,7 @@ an epic's bar onto another milestone, or down to Later, and its unfinished issue
 diamond sideways to change its day; Months and Quarters set how much time fits. In the roadmap's list, drag an epic
 into another milestone's group. An epic's page shows its sub-issues by milestone, with a plus for a new one in each.
 
-Click the project at the top of the sidebar to switch to another; its views, milestones and repositories follow.
+Click the project at the top of the sidebar to switch to another; its All Issues, views and milestones follow.
 **Go to View…** in the command palette opens any view of any project. Click a filter chip's property, comparison or
 values to change them, and its cross to remove it; **Edit Filter as Text…** at the end of the filter menu takes
 GitHub's own filter words. A dot beside a view means its filter is changed here and not saved; **Reset** takes it
@@ -675,8 +681,8 @@ group ("sport"). A colour keeps the picker open, a glyph closes it, and the arro
 **Change Project Icon…** in the command palette opens it as well. GitHub has no icons for projects, so the icon is kept in iCloud: your Mac, iPhone and iPad show the
 same one, and nobody else sees it.
 
-Right-click the project at the top of the sidebar, or a repository, to hide it; hidden projects wait under "hidden"
-in the project's menu, hidden repositories, folded away, at the end of their list. The project's menu is also where
+Right-click the project at the top of the sidebar to hide it; hidden projects wait under "hidden" in the project's
+menu. The project's menu is also where
 your account is, as in Linear: who is signed in, Sync Now, changes still waiting to be sent, appearance, settings and
 signing out. It works with the arrow keys like any menu.
 
