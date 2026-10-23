@@ -454,7 +454,7 @@ enum DebugRemote {
             if bits.count == 3, let steps = Double(bits[1]),
                let column = model.columns.first(where: { $0.title.caseInsensitiveCompare(bits[2]) == .orderedSame }),
                let frame = model.boardDrag.columnFrames[column.id] {
-                let step = frame.width + 12
+                let step = frame.width + BoardView.spacing
                 var tick = 0
                 dragTimer?.invalidate()
                 dragTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { timer in
@@ -1180,7 +1180,7 @@ enum DebugRemote {
                     }
                 }
                 .padding(10)
-                .background(Theme.lane)
+                .background(Theme.board)
                 .environment(\.colorScheme, dark ? .dark : .light)
             )
             renderer.scale = 2

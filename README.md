@@ -68,9 +68,11 @@ an assignee or a label opens its picker right where you clicked, ready to type i
 
 ### A board you can pick up
 
-Drag a card and it lifts off the board, tilts with the motion and settles with a spring, while its neighbours make
-room. Press Esc mid-drag and it goes back to where it came from. Pick several cards with ⌘-click and drag one of them,
-and they all go, together. The move shows in the same frame and reaches GitHub in the background.
+The board is quiet: white cards on grey, without borders or lanes, labels as a dot and a name, and colour only where
+something needs you, such as a date that's due, an urgent issue or a blocker. Drag a card and it lifts off the board,
+tilts with the motion and settles with a spring, while its neighbours make room. Press Esc mid-drag and it goes back
+to where it came from. Pick several cards with ⌘-click and drag one of them, and they all go, together. The move shows
+in the same frame and reaches GitHub in the background.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/drag-dark.webp">
@@ -102,7 +104,7 @@ so your team sees it there; GitHub's dates have no time of day, and the reminder
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/due-date-dark.webp">
-  <img alt="The due date picker: Today, Tomorrow, Friday, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
+  <img alt="The due date picker: Today, Tomorrow, Next week and In two weeks above a month to click a day in" src="Design/screenshots/due-date-light.webp">
 </picture>
 
 ### Issues that read well
@@ -134,12 +136,10 @@ you type. Lists continue on Return, Tab nests them, and `⌘B`, `⌘I`, `⌘L` a
 Notes. Comments are drawn the same way, and so is what you write in the comment field and a new issue. A link's address
 hides behind a small pencil, and a code block has a button to copy it.
 
-<!-- Taken in the next picture run (Tools/readme-images.sh, scene "markdown"):
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/markdown-dark.webp">
   <img alt="Issue #16 with its description drawn as on GitHub: a checklist with three of four boxes ticked, a Tip alert, a table and a Mermaid diagram, and the caret in the word bold with its stars showing faintly beside it" src="Design/screenshots/markdown-light.webp">
 </picture>
--->
 
 ### An inbox for what changed
 
@@ -301,8 +301,8 @@ The interface uses the system's own parts.
   sub-issues of its own unfolds them under it), the comments a conversation, and the comment field stays at the bottom
   as in Messages. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
   unfolded ones too, then move them all under another parent with the bar at the bottom, or change their status,
-  priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its columns on
-  soft grey lanes, as on the Mac; a column's "…" hides it on that iPad, and the hidden ones wait at the end of the
+  priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its cards on
+  grey without borders or lanes, as on the Mac; a column's "…" hides it on that iPad, and the hidden ones wait at the end of the
   board and under Display in the project's "…", a tap away from coming back.
 - **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
   projects, changes the icon and opens your account, then All Issues and its views, and its next milestones and roadmap, each an entry. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and

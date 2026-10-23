@@ -63,6 +63,11 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **A quieter board.** The cards stand on a grey board without a border, each on a soft shadow, and the columns
+  without the grey lanes; the gap between them sets them apart. A label on a card is a dot in its colour and its name,
+  no longer a tinted pill, and the milestone and the epic a card belongs to are grey, so that colour is left for what
+  needs you: a date that's due, an urgent issue, a blocker. On the Mac and iPad. On the Mac, the card under the
+  pointer rises a little, and a column's + shows while the pointer is in that column.
 - **All Issues instead of Repositories.** The sidebar's Repositories section is gone. In its place **All Issues** heads
   a project's views on the Mac and iPad, and sits under each project in the iPhone's Projects tab: the board's issues by
   status, after every issue of its repositories that is on no board, under No project. The number beside it says how
