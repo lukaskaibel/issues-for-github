@@ -139,7 +139,11 @@ struct ProjectsScreen: View {
                                     Label(.changeIconEllipsis, systemImage: "paintpalette")
                                 }
                             }
-                            // Its next milestones and its roadmap right under it, as in the iPad's sidebar.
+                            // All Issues, its next milestones and its roadmap right under it, as in the iPad's sidebar.
+                            NavigationLink(value: Route.allIssues(project.id)) {
+                                AllIssuesListRow(projectId: project.id)
+                            }
+                            .accessibilityIdentifier("all-issues-\(project.title)")
                             if model.hasPlanning(projectId: project.id) {
                                 ForEach(model.sidebarMilestones(projectId: project.id)) { group in
                                     NavigationLink(value: Route.milestone(projectId: project.id, title: group.title)) {
@@ -155,17 +159,6 @@ struct ProjectsScreen: View {
                                     .accessibilityElement(children: .combine)
                                 }
                                 .accessibilityIdentifier("roadmap-\(project.title)")
-                            }
-                        }
-                    }
-                    let repos = model.boardRepositories
-                    if !repos.isEmpty {
-                        // Like the teams in Linear: every issue of a repository, whether it is on a board or not.
-                        Section(.repositories) {
-                            ForEach(repos) { repo in
-                                NavigationLink(value: Route.repository(repo.id)) {
-                                    RepositoryRow(repo: repo)
-                                }
                             }
                         }
                     }
@@ -241,91 +234,76 @@ private struct MilestoneListRow: View {
     }
 }
 
-private struct RepositoryRow: View {
+/// All Issues under its board in the Projects tab, with how many of them are on no board as a quiet count.
+private struct AllIssuesListRow: View {
     @Environment(AppModel.self) private var model
-    var repo: RepoRef
+    var projectId: String
 
     var body: some View {
-        let open = model.items(in: .repository(repo.id)).filter { !model.isDone($0) }.count
+        let onNoBoard = model.countOnNoBoard(projectId: projectId)
         HStack(spacing: 12) {
-            RepositoryIcon(size: 15)
+            Image(systemName: "rectangle.stack")
+                .font(.system(size: 14))
                 .foregroundStyle(Theme.textSecondary)
                 .frame(width: 18)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(repo.shortName).font(.body.weight(.medium)).foregroundStyle(Theme.text)
-                Text(.ownerOpenIssueCount(owner: String(repo.nameWithOwner.dropLast(repo.shortName.count + 1)), count: open))
-                    .font(.footnote)
+            Text(.allIssues).foregroundStyle(Theme.text)
+            Spacer(minLength: 8)
+            if onNoBoard > 0 {
+                Text(onNoBoard, format: .number)
+                    .font(.subheadline)
+                    .monospacedDigit()
                     .foregroundStyle(Theme.textSecondary)
+                    .accessibilityLabel(Text(.noBoardCount(count: onNoBoard)))
             }
         }
-        .padding(.vertical, 4)
+        .padding(.leading, 30)
         .accessibilityElement(children: .combine)
     }
 }
 
-/// Every issue of a repository, on a board or not, as a list grouped like My Issues.
-struct RepositoryScreen: View {
+/// A project's All Issues: its board's issues and those of its repositories on no board, as a list by status with
+/// the issues on no board first.
+struct AllIssuesScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.wideLayout) private var wide
-    var repoId: String
+    var projectId: String
 
     var body: some View {
-        let repo = model.repository(id: repoId)
-        Group {
-            if repo == nil {
-                MobileEmptyState(title: String(localized: .repositoryGoneTitle), message: String(localized: .repositoryGoneMessage), systemImage: "questionmark.square.dashed")
-            } else {
-                IssueList(scope: .repository(repoId))
-            }
-        }
-        .background(Theme.panel)
-        .navigationTitle(repo.map { model.displayName(of: $0) } ?? String(localized: .repository))
-        .navigationBarTitleDisplayMode(.inline)
-        .modifier(EditorRole(active: wide))
-        .toolbar {
-            if wide, let repo {
-                // As a project's header on a wide iPad: on the leading edge, the owner before the name.
-                ToolbarItem(placement: .principal) {
-                    HStack(spacing: 8) {
-                        RepositoryIcon(size: 13).foregroundStyle(Theme.textSecondary)
-                        let owner = Text(repo.nameWithOwner.dropLast(repo.shortName.count)).foregroundStyle(Theme.textSecondary)
-                        Text("\(owner)\(Text(repo.shortName).foregroundStyle(Theme.text))")
-                            .font(.headline)
-                            .lineLimit(1)
-                    }
-                }
-                .sharedBackgroundVisibility(.hidden)
-            }
-            ToolbarItemGroup(placement: .primaryAction) {
-                Menu {
-                    Button {
-                        navigation.sheet = .arrangeSections(.repository(repoId))
-                    } label: {
-                        Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
-                    }
-                    Divider()
-                    Button {
-                        model.refresh()
-                    } label: {
-                        Label(.syncNow, systemImage: "arrow.triangle.2.circlepath")
-                    }
-                    if let url = repo?.url {
+        let project = model.projects.first { $0.id == projectId }
+        IssueList(scope: .allIssues(projectId))
+            .background(Theme.panel)
+            .navigationTitle(.allIssues)
+            .navigationSubtitle(project?.title ?? "")
+            .navigationBarTitleDisplayMode(.inline)
+            .modifier(EditorRole(active: wide))
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Menu {
                         Button {
-                            Platform.open(url)
+                            navigation.sheet = .arrangeSections(.allIssues(projectId))
                         } label: {
-                            Label(.openOnGitHub, systemImage: "arrow.up.right.square")
+                            Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
                         }
+                        Divider()
+                        Button {
+                            model.refresh()
+                        } label: {
+                            Label(.syncNow, systemImage: "arrow.triangle.2.circlepath")
+                        }
+                    } label: {
+                        Label(.options, systemImage: "ellipsis")
                     }
-                } label: {
-                    Label(.options, systemImage: "ellipsis")
+                    NewIssueButton(context: NewIssueContext(projectId: projectId, inAllIssues: true))
                 }
-                NewIssueButton(context: NewIssueContext(repoId: repoId))
             }
-        }
-        .onAppear { model.setActiveRepository(repoId) }
-        .onDisappear { model.setActiveRepository(nil) }
-        .task(id: model.dataVersion) { await model.preloadAvatars(for: .repository(repoId)) }
+            .onAppear {
+                model.setActiveProject(projectId)
+                navigation.rememberProject(projectId)
+                model.setActiveRepositories(model.repos(projectId: projectId).map(\.id))
+            }
+            .onDisappear { model.setActiveRepositories([]) }
+            .task(id: model.dataVersion) { await model.preloadAvatars(for: .allIssues(projectId)) }
     }
 }
 
@@ -663,6 +641,7 @@ struct IssueList: View {
         } label: {
             IssueRow(
                 item: item, showsProject: showsProject, namesBoard: !(scope == .myIssues && model.mineDisplay.grouping == .project),
+                namesRepository: isAllIssues,
                 place: section.nesting.place(of: item.id), nested: nested,
                 folded: folded,
                 // Under its parent or its epic's header, the parent goes without saying.
@@ -765,11 +744,17 @@ struct IssueList: View {
         model.drop(item, in: column, at: index, belowEpicHeader: header)
     }
 
-    /// Where rows come from several boards, each says which; an issue on none says its repository.
+    private var isAllIssues: Bool {
+        if case .allIssues = scope { return true }
+        return false
+    }
+
+    /// Where rows come from several boards, each says which; an issue on none says its repository. All Issues of a
+    /// board with several repositories says each row's.
     private var showsProject: Bool {
         switch scope {
         case .myIssues: true
-        case .repository(let id): model.boards(ofRepository: id).count > 1
+        case .allIssues(let id): model.repos(projectId: id).count > 1
         case .project, .inbox, .milestone, .roadmap: false
         }
     }
@@ -831,20 +816,20 @@ struct IssueList: View {
                     systemImage: "scope"
                 )
             }
-        case .repository(let repoId):
-            if model.status.readRepositories.contains(repoId) || model.isDemo {
+        case .allIssues(let projectId):
+            if model.isLoading(allIssuesOf: projectId) {
+                MobileEmptyState(title: String(localized: .loadingIssues), message: String(localized: .fetchingRepositories), showsProgress: true)
+            } else {
                 MobileEmptyState(
-                    title: String(localized: .noOpenIssues),
-                    message: String(localized: .recentlyClosedShowToo),
-                    systemImage: "tray"
+                    title: String(localized: .noIssuesYet),
+                    message: String(localized: .noBoardIssuesShowToo),
+                    systemImage: "rectangle.stack"
                 ) {
                     Button(.newIssue) {
-                        navigation.sheet = .newIssue(NewIssueContext(repoId: repoId))
+                        navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, inAllIssues: true))
                     }
                     .buttonStyle(.borderedProminent)
                 }
-            } else {
-                MobileEmptyState(title: String(localized: .loadingIssues), message: String(localized: .fetchingRepository), showsProgress: true)
             }
         case .milestone(let projectId, let title):
             MobileEmptyState(

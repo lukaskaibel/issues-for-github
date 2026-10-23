@@ -66,10 +66,9 @@ enum DebugRemote {
                 model.select(.myIssues)
             } else if argument == "inbox" {
                 model.select(.inbox)
-            } else if argument.hasPrefix("repo "), let repo = model.boardRepositories.first(where: {
-                $0.nameWithOwner.localizedCaseInsensitiveContains(argument.dropFirst(5))
-            }) {
-                model.select(.repository(repo.id))
+            } else if argument == "all" {
+                // select all: All Issues of the project in the sidebar.
+                model.showAllIssues()
             } else if argument.hasPrefix("milestone "), let projectId = model.scopeProjectId {
                 // select milestone <title>: a milestone of the board on screen.
                 model.select(.milestone(projectId: projectId, title: String(argument.dropFirst(10))))

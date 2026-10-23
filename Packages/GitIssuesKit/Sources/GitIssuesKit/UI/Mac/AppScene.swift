@@ -60,6 +60,8 @@ public struct GitIssuesScene: Scene {
                 }
                 Button(.myIssues) { model.select(.myIssues) }
                     .keyboardShortcut("3", modifiers: .command)
+                Button(.allIssues) { model.showAllIssues() }
+                    .disabled(model.openProjects.isEmpty)
                 Button(.roadmap) { model.showRoadmap() }
                 .keyboardShortcut("4", modifiers: .command)
                 .disabled(model.openProjects.isEmpty)

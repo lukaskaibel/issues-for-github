@@ -108,9 +108,6 @@ private struct PageControls: View {
                 if model.scope == .myIssues {
                     MyIssuesToolbarButtons()
                 }
-                if let repo = model.currentRepository, repo.url != nil {
-                    RepositoryGitHubButton(repo: repo)
-                }
                 if model.showsPriorityFieldButton, let project = model.currentProject {
                     Button {
                         model.addPriorityField(projectId: project.id)
@@ -178,7 +175,7 @@ extension AppModel {
     fileprivate func hasPageControls(openItem: Item?) -> Bool {
         if openItem != nil || scope == .inbox { return true }
         return roadmapScopeProjectId != nil || milestoneScope != nil || currentView != nil || scope == .myIssues
-            || currentRepository?.url != nil || showsPriorityFieldButton
+            || showsPriorityFieldButton
     }
 }
 
@@ -375,26 +372,6 @@ private struct MyIssuesToolbarButtons: View {
                 MyIssuesDisplayOptions(close: close)
             }
         }
-    }
-}
-
-private struct RepositoryGitHubButton: View {
-    let repo: RepoRef
-
-    var body: some View {
-        Button {
-            if let url = repo.url { Platform.open(url) }
-        } label: {
-            HStack(spacing: 5) {
-                Text(.openOnGitHub)
-                Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .help(Text(.openRepositoryOnGitHubTooltip(repository: repo.nameWithOwner)))
     }
 }
 #endif

@@ -247,8 +247,8 @@ struct ContentPanel: View {
             return String(localized: .myIssues)
         case .inbox:
             return String(localized: .inbox)
-        case .repository:
-            return model.currentRepository?.shortName ?? "Issues"
+        case .allIssues:
+            return String(localized: .allIssues)
         case .milestone(_, let title):
             return title
         case .roadmap:
@@ -271,9 +271,9 @@ struct ContentPanel: View {
             return "\(project.title) · \(sync)"
         case .milestone(let projectId, _), .roadmap(let projectId):
             return model.projects.first { $0.id == projectId }?.title ?? sync
-        case .repository:
-            guard let repo = model.currentRepository else { return sync }
-            return "\(repo.nameWithOwner.dropLast(repo.shortName.count + 1)) · \(sync)"
+        case .allIssues(let projectId):
+            guard let project = model.projects.first(where: { $0.id == projectId }) else { return sync }
+            return "\(project.title) · \(sync)"
         case .inbox:
             let unread = model.inboxUnreadCount
             return unread > 0 ? String(localized: .unreadCount(count: unread)) : sync

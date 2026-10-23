@@ -204,4 +204,44 @@ struct IssuesWithoutProjectTests {
         }
         #expect(try looseNumbers(db).isEmpty)
     }
+
+    // MARK: All Issues
+
+    /// An item for All Issues of board P1, whose repositories are R1 and R2.
+    private static func listed(
+        _ number: Int, on project: String?, repoId: String = "R1", kind: ItemKind = .issue, closedDaysAgo: Double? = nil,
+        epic: Bool = false
+    ) -> Bool {
+        let now = Date()
+        let item = Item(
+            id: "item-\(number)", projectId: project, kind: kind, position: Double(number), contentId: "issue-\(number)",
+            number: number, title: "Issue \(number)", body: "", state: closedDaysAgo == nil ? "OPEN" : "CLOSED",
+            repoId: repoId, repo: "octo/\(repoId)", closedAt: closedDaysAgo.map { now.addingTimeInterval(-$0 * 86_400) },
+            labels: epic ? [LabelRef(id: "L-epic", name: "epic", color: "ffffff")] : []
+        )
+        return AppModel.isInAllIssues(
+            item, projectId: projectId, repoIds: ["R1", "R2"], closedAfter: now.addingTimeInterval(-SyncEngine.closedIssueWindow)
+        )
+    }
+
+    @Test("All Issues lists the board and the issues of its repositories on no board")
+    func allIssuesListsTheBoardAndIssuesOnNoBoard() {
+        #expect(Self.listed(1, on: Self.projectId))
+        #expect(Self.listed(2, on: Self.projectId, repoId: "R9"), "a card from a repository the board doesn't list stays")
+        #expect(Self.listed(3, on: Self.projectId, kind: .pullRequest), "a pull request on the board stays")
+        #expect(Self.listed(4, on: nil))
+        #expect(Self.listed(5, on: nil, repoId: "R2"))
+        #expect(Self.listed(6, on: nil, closedDaysAgo: 3))
+        #expect(Self.listed(7, on: Self.projectId, closedDaysAgo: 90), "the board keeps what it keeps")
+    }
+
+    @Test("All Issues leaves out other boards, other repositories, old closed issues on no board and epics")
+    func allIssuesLeavesOutTheRest() {
+        #expect(!Self.listed(1, on: "P2"))
+        #expect(!Self.listed(2, on: nil, repoId: "R9"))
+        #expect(!Self.listed(3, on: nil, closedDaysAgo: 90))
+        #expect(!Self.listed(4, on: nil, kind: .pullRequest))
+        #expect(!Self.listed(5, on: Self.projectId, epic: true))
+        #expect(!Self.listed(6, on: nil, epic: true))
+    }
 }

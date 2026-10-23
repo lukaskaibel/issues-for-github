@@ -2,7 +2,7 @@
 import GRDB
 import SwiftUI
 
-/// What the sidebar can select: a place, a view of the project, one of its milestones, its roadmap or a repository.
+/// What the sidebar can select: a place, the project's issues, one of its views or milestones, or its roadmap.
 enum SidebarSelection: Hashable {
     case inbox
     case myIssues
@@ -11,12 +11,12 @@ enum SidebarSelection: Hashable {
     case view(projectId: String, viewId: String)
     case milestone(projectId: String, title: String)
     case roadmap(String)
-    case repository(String)
+    case allIssues(String)
 }
 
-/// The system's sidebar, as in Notes and Mail: the project at the top with its menu, the Inbox and My Issues, then the
-/// project's views, its next milestones with the roadmap, and its repositories. One project at a time, as Linear shows
-/// one workspace.
+/// The system's sidebar, as in Notes and Mail: the project at the top with its menu, the Inbox and My Issues, then
+/// All Issues and the project's views, and its next milestones with the roadmap. One project at a time, as Linear
+/// shows one workspace.
 struct Sidebar: View {
     @Environment(AppModel.self) private var model
 
@@ -59,7 +59,7 @@ struct Sidebar: View {
                     Label(String(localized: .newIssueAction), systemImage: "square.and.pencil")
                 }
                 .help(Text(.newIssueShortcutTooltip))
-                .disabled(model.currentProjectId == nil && model.currentRepositoryId == nil && model.projects.isEmpty)
+                .disabled(model.projects.isEmpty)
             }
         }
     }
@@ -73,7 +73,7 @@ struct Sidebar: View {
             if let view = model.currentView { .view(projectId: id, viewId: view.id) } else { .board(id) }
         case .milestone(let projectId, let title): .milestone(projectId: projectId, title: title)
         case .roadmap(let id): .roadmap(id)
-        case .repository(let id): .repository(id)
+        case .allIssues(let id): .allIssues(id)
         case nil: nil
         }
     }
@@ -90,7 +90,7 @@ struct Sidebar: View {
             case .view(_, let viewId): if let view = model.view(id: viewId) { model.show(view) }
             case .milestone(let projectId, let title): model.select(.milestone(projectId: projectId, title: title))
             case .roadmap(let id): model.select(.roadmap(id))
-            case .repository(let id): model.select(.repository(id))
+            case .allIssues(let id): model.select(.allIssues(id))
             }
         }
     }
@@ -197,60 +197,22 @@ struct RoadmapRow: View {
     }
 }
 
-/// One repository in the sidebar. Right-click to hide it, copy its link or open it on GitHub.
-struct RepositoryRow: View {
+/// All Issues of the sidebar's project: its board's issues and those of its repositories on no board, with how many
+/// of them are on no board as a quiet count, as the Inbox counts what is unread.
+struct AllIssuesRow: View {
     @Environment(AppModel.self) private var model
-    var repo: RepoRef
-    var hidden: Bool
+    var projectId: String
     var current: SidebarSelection?
 
     var body: some View {
-        let row = SidebarSelection.repository(repo.id)
-        Label {
-            Text(model.displayName(of: repo)).lineLimit(1)
-                .foregroundStyle(hidden ? .tertiary : .primary)
-        } icon: {
-            Image(systemName: "book.closed").opacity(hidden ? 0.5 : 1)
-        }
-        .help(repo.nameWithOwner)
-        .glassSidebarMenu { [model, repo, hidden] in
-            let menu = MenuBuilder()
-            if hidden {
-                menu.item(.showInSidebar, "eye") { model.setHidden(repo, false) }
-            } else {
-                menu.item(.hideFromSidebar, "eye.slash") { model.setHidden(repo, true) }
-            }
-            if let url = repo.url {
-                menu.divider()
-                menu.item(.copyLink, "link") { model.copyLink(url.absoluteString, for: repo.nameWithOwner) }
-                menu.item(.openOnGitHub, "arrow.up.right.square") { NSWorkspace.shared.open(url) }
-            }
-            return menu.build()
-        }
-        .sidebarReselect(row, current: current)
-        .tag(row)
-    }
-}
-
-/// Hidden repositories fold away under one quiet row at the end of their list.
-struct HiddenRepositories: View {
-    var repos: [RepoRef]
-    var current: SidebarSelection?
-    @State private var expanded = false
-
-    var body: some View {
-        if !repos.isEmpty {
-            DisclosureGroup(isExpanded: $expanded) {
-                ForEach(repos) { repo in
-                    RepositoryRow(repo: repo, hidden: true, current: current)
-                }
-            } label: {
-                Text(.hiddenRepositoriesCount(count: repos.count))
-                    .foregroundStyle(Theme.textTertiary)
-                    .help(Text(expanded ? .foldHiddenRepositoriesAway : .showHiddenRepositories))
-            }
-            .selectionDisabled()
-        }
+        let row = SidebarSelection.allIssues(projectId)
+        let onNoBoard = model.countOnNoBoard(projectId: projectId)
+        Label { Text(.allIssues) } icon: { Image(systemName: "rectangle.stack") }
+            .badge(onNoBoard)
+            .help(Text(.allIssuesShortcutTooltip))
+            .accessibilityValue(onNoBoard > 0 ? String(localized: .noBoardCount(count: onNoBoard)) : "")
+            .sidebarReselect(row, current: current)
+            .tag(row)
     }
 }
 

@@ -383,6 +383,26 @@ final class PadTests: AppTestCase {
         wait(element("card-#9"))
     }
 
+    func testAllIssuesHeadsTheProjectInTheSidebar() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openProject("Website")
+        let all = app.cells.matching(NSPredicate(format: "label BEGINSWITH %@", "All Issues")).firstMatch
+        wait(all)
+        all.tap()
+        wait(app.navigationBars["All Issues"])
+        // #37 is in the website's repository but on no board; #31 is on the board.
+        wait(element("row-#37"))
+        wait(element("row-#31"))
+        XCTAssertFalse(element("row-#27").exists, "an issue of another project's repository stays out")
+        snapshot("iPad All Issues")
+
+        app.buttons["New issue"].firstMatch.tap()
+        wait(element("new-title"))
+        XCTAssertTrue(labelled("Project: Website", type: .button).exists)
+        button("Cancel").tap()
+    }
+
     func testProjectIconFromTheSidebar() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()

@@ -2641,6 +2641,186 @@
         }
       }
     },
+    "allIssues" : {
+      "comment" : "Sidebar entry (Mac, iPad), row under each project in the iPhone Projects tab, menu item, command and window title: one project's list of issues, those on its board together with the issues of its repositories that are on no board at all. Parallel to 'My Issues'. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Issues"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas las incidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous les tickets"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのIssue"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 이슈"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas as issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Все задачи"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所有议题"
+          }
+        }
+      }
+    },
+    "allIssuesEmptyMessage" : {
+      "comment" : "Mac: message under the title of a project's empty All Issues list. C is the key for a new issue; keep it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drücke C, um eins zu erstellen. Issues der Repositories dieses Projekts, die auf keinem Board sind, erscheinen hier auch."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Press C to create one. Issues of this project's repositories that are on no board show up here too."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pulsa C para crear una. Aquí también aparecen las incidencias de los repositorios de este proyecto que no están en ningún tablero."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appuyez sur C pour en créer un. Les tickets des dépôts de ce projet qui ne sont sur aucun tableau s’affichent aussi ici."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cを押すとIssueを作成できます。どのボードにもない、このプロジェクトのリポジトリのIssueもここに表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "C 키를 눌러 이슈를 생성하세요. 어느 보드에도 없는 이 프로젝트 저장소의 이슈도 여기에 표시됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pressione C para criar uma. Issues dos repositórios deste projeto que não estão em nenhum quadro também aparecem aqui."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите C, чтобы создать задачу. Задачи из репозиториев этого проекта, которых нет ни на одной доске, тоже показываются здесь."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按 C 创建一个议题。此项目的仓库中不在任何看板上的议题也会显示在这里。"
+          }
+        }
+      }
+    },
+    "allIssuesShortcutTooltip" : {
+      "comment" : "Mac sidebar: tooltip of the All Issues row. 'G then A' means pressing the G key and then the A key: keep the letters, translate 'then'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Issues des Boards und die seiner Repositories, die auf keinem Board sind (G, dann A)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The board's issues and those of its repositories on no board (G then A)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las incidencias del tablero y las de sus repositorios que no están en ningún tablero (G y luego A)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les tickets du tableau et ceux de ses dépôts qui ne sont sur aucun tableau (G puis A)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ボードのIssueと、どのボードにもないリポジトリのIssue（Gの次にA）"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보드의 이슈와 어느 보드에도 없는 저장소의 이슈(G 다음 A)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As issues do quadro e as dos seus repositórios que não estão em nenhum quadro (G e depois A)"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Задачи доски и задачи её репозиториев, которых нет ни на одной доске (G, затем A)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "看板上的议题，以及其仓库中不在任何看板上的议题（先按 G 再按 A）"
+          }
+        }
+      }
+    },
     "allowNotifications" : {
       "comment" : "Settings, Reminders section: button that asks the system for permission to show notifications.",
       "extractionState" : "manual",
@@ -20323,62 +20503,62 @@
         }
       }
     },
-    "fetchingRepository" : {
-      "comment" : "iPhone and iPad: line under 'Loading issues…' on a repository's screen.",
+    "fetchingRepositories" : {
+      "comment" : "iPhone and iPad: line under 'Loading issues…' in a project's All Issues while its repositories are read for the first time.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dieses Repository wird von GitHub abgerufen."
+            "value" : "Die Repositories dieses Projekts werden von GitHub abgerufen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fetching this repository from GitHub."
+            "value" : "Fetching this project's repositories from GitHub."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Obteniendo este repositorio de GitHub."
+            "value" : "Obteniendo los repositorios de este proyecto de GitHub."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Récupération de ce dépôt depuis GitHub."
+            "value" : "Récupération des dépôts de ce projet depuis GitHub."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "このリポジトリをGitHubから取得しています。"
+            "value" : "このプロジェクトのリポジトリをGitHubから取得しています。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "GitHub에서 이 저장소를 가져오는 중입니다."
+            "value" : "GitHub에서 이 프로젝트의 저장소를 가져오는 중입니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Obtendo este repositório do GitHub."
+            "value" : "Obtendo os repositórios deste projeto do GitHub."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Репозиторий загружается с GitHub."
+            "value" : "Репозитории этого проекта загружаются с GitHub."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在从 GitHub 获取此仓库。"
+            "value" : "正在从 GitHub 获取此项目的仓库。"
           }
         }
       }
@@ -23203,66 +23383,6 @@
         }
       }
     },
-    "foldHiddenRepositoriesAway" : {
-      "comment" : "Mac sidebar: tooltip of the line that folds the hidden GitHub repositories back in, while they are shown.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ausgeblendete Repositories einklappen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fold hidden repositories away"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Contraer los repositorios ocultos"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Replier les dépôts masqués"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "非表示のリポジトリを折りたたむ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "가려진 저장소 접기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recolher repositórios ocultos"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Свернуть скрытые репозитории"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "收起隐藏的仓库"
-          }
-        }
-      }
-    },
     "foldSubIssuesMenuItem" : {
       "comment" : "Menu item (Mac right-click menu, iPhone and iPad menus) of an issue whose sub-issues hang indented under it in the list or on the board: hides them under the issue. Title case as a Mac menu item.",
       "extractionState" : "manual",
@@ -25245,168 +25365,6 @@
     },
     "hiddenProjectsCount" : {
       "comment" : "Mac sidebar: line at the end of the list of GitHub projects that folds out the projects the user hid. %(count)lld is how many projects are hidden (1, 2, …). Short.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld ausgeblendet"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld ausgeblendet"
-                }
-              }
-            }
-          }
-        },
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%(count)lld hidden"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%(count)lld hidden"
-                }
-              }
-            }
-          }
-        },
-        "es" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld oculto"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld ocultos"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld masqué"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld masqués"
-                }
-              }
-            }
-          }
-        },
-        "ja" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "非表示（%lld）"
-                }
-              }
-            }
-          }
-        },
-        "ko" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld개 가려짐"
-                }
-              }
-            }
-          }
-        },
-        "pt-BR" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld oculto"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld ocultos"
-                }
-              }
-            }
-          }
-        },
-        "ru" : {
-          "variations" : {
-            "plural" : {
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Скрыто: %lld"
-                }
-              },
-              "many" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Скрыто: %lld"
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Скрыто: %lld"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Скрыто: %lld"
-                }
-              }
-            }
-          }
-        },
-        "zh-Hans" : {
-          "variations" : {
-            "plural" : {
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld 个已隐藏"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "hiddenRepositoriesCount" : {
-      "comment" : "Mac sidebar: line at the end of the list of GitHub repositories that folds out the repositories the user hid. %(count)lld is how many repositories are hidden (1, 2, …). Short.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -40657,6 +40615,228 @@
         }
       }
     },
+    "noBoardCount" : {
+      "comment" : "Mac and iPad sidebar, iPhone Projects tab: VoiceOver value of the All Issues entry, read after its name, for the quiet number beside it. %(count)lld is how many open issues of the project's repositories are on no project board (1, 2, …).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld auf keinem Board"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld auf keinem Board"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld on no board"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld on no board"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld en ningún tablero"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld en ningún tablero"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld sur aucun tableau"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld sur aucun tableau"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "ボードにない%lld件"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "보드에 없는 이슈 %lld개"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld em nenhum quadro"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld em nenhum quadro"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld не на доске"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld не на доске"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld не на доске"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld не на доске"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld 个不在看板上"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "noBoardIssuesShowToo" : {
+      "comment" : "iPhone and iPad: explanation under the title of a project's empty All Issues list.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues der Repositories dieses Projekts, die auf keinem Board sind, erscheinen hier auch."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues of this project's repositories that are on no board show up here too."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aquí también aparecen las incidencias de los repositorios de este proyecto que no están en ningún tablero."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les tickets des dépôts de ce projet qui ne sont sur aucun tableau s’affichent aussi ici."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "どのボードにもない、このプロジェクトのリポジトリのIssueもここに表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "어느 보드에도 없는 이 프로젝트 저장소의 이슈도 여기에 표시됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues dos repositórios deste projeto que não estão em nenhum quadro também aparecem aqui."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Задачи из репозиториев этого проекта, которых нет ни на одной доске, тоже показываются здесь."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此项目的仓库中不在任何看板上的议题也会显示在这里。"
+          }
+        }
+      }
+    },
     "noCommentsYet" : {
       "comment" : "iPhone and iPad, issue screen: shown under the 'Activity' heading when the issue has no comments.",
       "extractionState" : "manual",
@@ -41373,66 +41553,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未选择通知"
-          }
-        }
-      }
-    },
-    "noOpenIssues" : {
-      "comment" : "iPhone and iPad: title of a repository's empty list.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keine offenen Issues"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No open issues"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No hay incidencias abiertas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun ticket ouvert"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "オープンなIssueはありません"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "열린 이슈 없음"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nenhuma issue aberta"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нет открытых задач"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "没有未关闭的议题"
           }
         }
       }
@@ -45141,66 +45261,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "打开父议题"
-          }
-        }
-      }
-    },
-    "openRepositoryOnGitHubTooltip" : {
-      "comment" : "Mac: tooltip of the 'Open on GitHub' button at the top of a repository's list of issues. %(repository)@ is the owner and name, e.g. 'apple/swift'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ auf GitHub öffnen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open %(repository)@ on GitHub"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir %@ en GitHub"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvrir %@ sur GitHub"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHubで%@を開く"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GitHub에서 %@ 열기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir %@ no GitHub"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Открыть %@ на GitHub"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在 GitHub 上打开 %@"
           }
         }
       }
@@ -68269,66 +68329,6 @@
         }
       }
     },
-    "recentlyClosedShowToo" : {
-      "comment" : "iPhone and iPad: explanation under 'No open issues' on a repository's screen.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Issues, die in den letzten vier Wochen geschlossen wurden, erscheinen hier auch."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Issues closed in the last four weeks show up here too."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aquí también aparecen las incidencias cerradas en las últimas cuatro semanas."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les tickets fermés au cours des quatre dernières semaines s’affichent aussi ici."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "過去4週間にクローズされたIssueもここに表示されます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "최근 4주 동안 닫힌 이슈도 여기에 표시됩니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Issues fechadas nas últimas quatro semanas também aparecem aqui."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Задачи, закрытые за последние четыре недели, тоже показываются здесь."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "过去四周内关闭的议题也会显示在这里。"
-          }
-        }
-      }
-    },
     "remindAgainNextMorning" : {
       "comment" : "Settings, Reminders section: switch for a second reminder the morning after the due date, if the issue is still open.",
       "extractionState" : "manual",
@@ -70305,186 +70305,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "仓库"
-          }
-        }
-      }
-    },
-    "repositoryEmptyMessage" : {
-      "comment" : "Mac: message under the title of a repository's empty list. C is the key for a new issue; keep it.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Drücke C, um eins zu erstellen. Issues, die in den letzten vier Wochen geschlossen wurden, erscheinen hier auch."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Press C to create one. Issues closed in the last four weeks show up here too."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pulsa C para crear una. Aquí también aparecen las incidencias cerradas en las últimas cuatro semanas."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Appuyez sur C pour en créer un. Les tickets fermés au cours des quatre dernières semaines s’affichent aussi ici."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cを押すとIssueを作成できます。過去4週間にクローズされたIssueもここに表示されます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "C 키를 눌러 이슈를 생성하세요. 최근 4주 동안 닫힌 이슈도 여기에 표시됩니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pressione C para criar uma. Issues fechadas nas últimas quatro semanas também aparecem aqui."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нажмите C, чтобы создать задачу. Задачи, закрытые за последние четыре недели, тоже показываются здесь."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "按 C 创建一个议题。过去四周内关闭的议题也会显示在这里。"
-          }
-        }
-      }
-    },
-    "repositoryGoneMessage" : {
-      "comment" : "iPhone and iPad: explanation under 'This repository is gone'.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keines deiner offenen Boards verwendet es noch."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "None of your open boards use it any more."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ya no lo usa ninguno de tus tableros abiertos."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun de vos tableaux ouverts ne l’utilise plus."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "開いているボードで使われなくなりました。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "열려 있는 보드 중 이 저장소를 사용하는 보드가 더 이상 없습니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nenhum dos seus quadros abertos o usa mais."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Его больше не использует ни одна из ваших открытых досок."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你未关闭的看板都已不再使用它。"
-          }
-        }
-      }
-    },
-    "repositoryGoneTitle" : {
-      "comment" : "iPhone and iPad: title of the empty screen of a repository that no open board uses any more.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dieses Repository gibt es nicht mehr"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This repository is gone"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este repositorio ya no está disponible"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ce dépôt n’existe plus"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "このリポジトリは見つかりません"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이 저장소는 더 이상 없습니다"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este repositório não está mais disponível"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Этого репозитория больше нет"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此仓库已不可用"
           }
         }
       }
@@ -75375,66 +75195,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示议题"
-          }
-        }
-      }
-    },
-    "showHiddenRepositories" : {
-      "comment" : "Mac sidebar: tooltip of the line that folds out the GitHub repositories the user hid.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ausgeblendete Repositories anzeigen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show hidden repositories"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar repositorios ocultos"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Afficher les dépôts masqués"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "非表示のリポジトリを表示"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "가려진 저장소 보기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar repositórios ocultos"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Показать скрытые репозитории"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示隐藏的仓库"
           }
         }
       }
