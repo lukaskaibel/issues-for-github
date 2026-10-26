@@ -223,10 +223,24 @@ class AppTestCase: XCTestCase {
 
     /// Opens a project from its row in the iPad sidebar, which lists every project: it opens on its open view.
     func openPadProject(_ title: String) {
-        let row = sidebarEntry(title)
-        wait(row)
-        row.tap()
+        tapSidebarEntry(title)
         wait(app.navigationBars[title])
+    }
+
+    /// Taps an entry of the iPad sidebar, scrolling the sidebar to it first: under every project's row, the open
+    /// project's milestones and roadmap can be below the bottom of the screen.
+    func tapSidebarEntry(_ title: String) {
+        let entry = sidebarEntry(title)
+        wait(entry)
+        let screen = app.windows.firstMatch.frame.insetBy(dx: 0, dy: 40)
+        var swipes = 0
+        while !screen.contains(entry.frame) && swipes < 4 {
+            // On the Projects heading, which never opens anything.
+            let heading = app.cells["projectSection"]
+            heading.exists ? heading.swipeUp() : entry.swipeUp()
+            swipes += 1
+        }
+        entry.tap()
     }
 
     /// An entry of the iPad sidebar, by its name: a view, a milestone, the roadmap or a repository.

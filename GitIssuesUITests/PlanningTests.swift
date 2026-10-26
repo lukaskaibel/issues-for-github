@@ -313,9 +313,7 @@ final class PadPlanningTests: AppTestCase {
     }
 
     private func openSidebarEntry(_ title: String) {
-        let entry = app.cells.matching(NSPredicate(format: "label == %@", title)).firstMatch
-        wait(entry)
-        entry.tap()
+        tapSidebarEntry(title)
     }
 
     func testAMilestoneShowsTheBoardsColumns() {
