@@ -894,12 +894,36 @@ final class PhoneTests: AppTestCase {
 
     // MARK: Search and projects
 
+    /// Home, under everything else: the Inbox and My Issues as tiles with their counts, then the projects.
+    func testHomeLeadsToTheInboxMyIssuesAndTheProjects() {
+        launch(["-mobile.tab", "home"])
+        let inbox = element("home-inbox")
+        wait(inbox)
+        waitForValue(inbox, equalTo: "8")
+        wait(labelled("Git Issues", type: .button))
+        wait(labelled("Website", type: .button))
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
+        snapshot("Home")
+
+        inbox.tap()
+        wait(element("inbox-row-25"))
+        goHome()
+        element("home-my-issues").tap()
+        wait(element("row-#9"))
+        goHome()
+        labelled("Git Issues", type: .button).tap()
+        wait(element("strip-In Progress"))
+        // New Issue at the foot starts in the project on screen.
+        element("compose-button").tap()
+        wait(element("new-title"))
+        XCTAssertTrue(labelled("Project: Git Issues", type: .button).exists)
+        button("Cancel").tap()
+    }
+
     func testSearchFindsIssuesAndProjects() {
         launch()
-        app.tabBars.buttons["Search"].firstMatch.tap()
-        let field = app.searchFields.firstMatch
-        wait(field)
-        field.tap()
+        // The field at the foot of My Issues looks through every project.
+        let field = openSearch()
         field.typeText("drag")
         wait(element("row-#9"))
         snapshot("Search results")
@@ -914,7 +938,7 @@ final class PhoneTests: AppTestCase {
 
     func testProjectsSwitchingAndSettings() {
         launch()
-        app.tabBars.buttons["Projects"].tap()
+        goHome()
         let website = labelled("Website", type: .button)
         wait(website)
         snapshot("Projects")
@@ -956,12 +980,13 @@ final class PhoneTests: AppTestCase {
 
     func testAllIssuesListsIssuesOnNoBoardAndMakesThem() {
         launch()
-        app.tabBars.buttons["Projects"].tap()
-        // Under the project, with how many open issues of its repository are on no board.
-        let all = element("all-issues-Git Issues")
+        openProjectTab("Git Issues")
+        // In the project's title menu, with how many open issues of its repository are on no board.
+        openTitleMenu("Git Issues")
+        let all = allIssuesItem
         wait(all)
-        waitForLabel(all, containing: "4 on no board")
-        snapshot("Projects with All Issues")
+        XCTAssertTrue(all.label.contains("4 on no board"), all.label)
+        snapshot("All Issues in the project's menu")
         all.tap()
         wait(app.navigationBars["All Issues"])
         // The issues on no board lead, the board's follow.
@@ -985,8 +1010,9 @@ final class PhoneTests: AppTestCase {
         waitGone(title)
         wait(labelled("Crash report from a beta tester"), 8)
 
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        waitForLabel(element("all-issues-Git Issues"), containing: "5 on no board")
+        goBack()
+        openTitleMenu("Git Issues")
+        waitForLabel(allIssuesItem, containing: "5 on no board")
     }
 
     func testProjectIconFromTheProjectMenu() {
@@ -1012,8 +1038,8 @@ final class PhoneTests: AppTestCase {
         button("Flask").images.firstMatch.tap()
         waitGone(app.navigationBars["Project Icon"])
 
-        // A long press on the project in the Projects tab opens it too, and the choice is kept.
-        app.tabBars.buttons["Projects"].tap()
+        // A long press on the project on Home opens it too, and the choice is kept.
+        goHome()
         labelled("Git Issues", type: .button).press(forDuration: 1)
         button("Change Icon…").tap()
         wait(app.navigationBars["Project Icon"])
@@ -1148,8 +1174,9 @@ final class PhoneTests: AppTestCase {
         app.navigationBars.buttons["Options"].tap()
         button("Arrange Sections…").tap()
         wait(app.navigationBars["Arrange Sections"])
-        let todo = reorderHandle(in: cell("Todo"))
-        let first = reorderHandle(in: app.cells.firstMatch)
+        // The grips by their names: the list under the sheet has cells named like these.
+        let todo = app.buttons["Reorder Todo"]
+        let first = app.buttons["Reorder In Review"]
         wait(todo)
         todo.press(forDuration: 0.6, thenDragTo: first)
         scrollTo(button("Back to the Usual Order"), in: app.collectionViews.firstMatch)
@@ -1176,10 +1203,7 @@ final class PhoneTests: AppTestCase {
 
     func testSearchOpensAProject() {
         launch()
-        app.tabBars.buttons["Search"].firstMatch.tap()
-        let field = app.searchFields.firstMatch
-        wait(field)
-        field.tap()
+        let field = openSearch()
         field.typeText("web")
         let website = labelled("Website", type: .button)
         wait(website)
@@ -1192,6 +1216,8 @@ final class PhoneTests: AppTestCase {
 
     func testAccountAppearanceAndQueue() {
         launch()
+        // Your picture is at the top of Home.
+        goHome()
         element("account-button").tap()
         wait(app.navigationBars["Account"])
         snapshot("Account")
@@ -1202,11 +1228,13 @@ final class PhoneTests: AppTestCase {
         wait(labelled("Everything is saved to GitHub"))
         goBack()
         button("Done").tap()
-        wait(element("row-#9"))
+        wait(element("home-inbox"))
     }
 
     func testAppIconChoice() {
         launch()
+        // Your picture is at the top of Home.
+        goHome()
         element("account-button").tap()
         wait(app.navigationBars["Account"])
         let graphite = button("Graphite")
@@ -1222,6 +1250,8 @@ final class PhoneTests: AppTestCase {
 
     func testLeavingSampleDataShowsSignIn() {
         launch()
+        // Your picture is at the top of Home.
+        goHome()
         element("account-button").tap()
         wait(app.navigationBars["Account"])
         let leave = button("Leave Sample Data")
@@ -1258,6 +1288,11 @@ final class PhoneTests: AppTestCase {
     }
 
     /// A row of a list, by the text of one of its parts.
+    /// All Issues in the menu of a project's title, whose second line says how many are on no board.
+    private var allIssuesItem: XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "All Issues")).firstMatch
+    }
+
     private func cell(_ text: String) -> XCUIElement {
         app.cells.containing(NSPredicate(format: "label == %@", text)).firstMatch
     }
@@ -1282,8 +1317,9 @@ final class PhoneTests: AppTestCase {
         launch()
         let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'row-'")).firstMatch
         wait(row)
-        // Even where a large iPhone is wide, it keeps its tabs and lists.
-        XCTAssertTrue(app.tabBars.buttons["Projects"].exists)
+        // Even where a large iPhone is wide, it keeps its one stack and lists, with search at the foot.
+        XCTAssertTrue(app.searchFields.firstMatch.exists)
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
         snapshot("Landscape, My Issues")
         row.tap()
         wait(element("issue-title"))

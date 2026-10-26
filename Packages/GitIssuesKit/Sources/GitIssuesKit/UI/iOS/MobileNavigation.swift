@@ -1,11 +1,13 @@
 #if os(iOS)
 import SwiftUI
 
-/// The tabs of the app. On the iPhone: Inbox, My Issues, Projects and Search in the tab bar. On the iPad the same
-/// tabs form a sidebar, where every project is an entry of its own, as on the Mac.
+/// Where the app is. On the iPad: the entries of the sidebar, where every project is one of its own, then its views
+/// and milestones. On the iPhone, which has no tab bar: Home (`projects` with nothing pushed), or the Inbox, My Issues
+/// or search opened on top of it, each with the screens opened from there.
 enum MobileTab: Hashable {
     case inbox
     case myIssues
+    /// Home on the iPhone, with the projects and their screens pushed onto it.
     case projects
     case project(String)
     /// A project's All Issues, at the top of its entries in the iPad sidebar.
@@ -20,6 +22,10 @@ enum MobileTab: Hashable {
 
 /// A screen pushed onto a tab's navigation stack.
 enum Route: Hashable, Codable {
+    /// The Inbox, My Issues and search, opened from the iPhone's Home: the first screen of their tab's stack.
+    case inbox
+    case myIssues
+    case search
     case project(String)
     /// A project's All Issues.
     case allIssues(String)
@@ -97,7 +103,7 @@ final class MobileNavigation {
     var tab: MobileTab {
         didSet {
             guard tab != oldValue else { return }
-            Self.saveTab(tab)
+            saveTab()
             if let id = Self.projectId(of: tab) { sidebarProjectId = id }
         }
     }
@@ -108,7 +114,10 @@ final class MobileNavigation {
     /// On a wide iPad the Inbox shows the selected entry's issue beside the list; this is that issue.
     var inboxRootItemId: String?
     var myIssuesPath: [Route] = []
-    var projectsPath: [Route] = []
+    var projectsPath: [Route] = [] {
+        // Home or a project: where the iPhone opens next time.
+        didSet { if tab == .projects, projectsPath.isEmpty != oldValue.isEmpty { saveTab() } }
+    }
     var projectPaths: [String: [Route]] = [:]
     var allIssuesPaths: [String: [Route]] = [:]
     /// The stacks of milestones' and roadmaps' entries in the iPad sidebar.
@@ -138,27 +147,57 @@ final class MobileNavigation {
     init() {
         let saved = UserDefaults.standard.string(forKey: Self.tabKey)
         tab = switch saved {
+        case "inbox": .inbox
         case "myIssues": .myIssues
-        case "projects": .projects
         case "search": .search
-        // The Inbox comes first, as in Linear.
-        default: .inbox
+        // Projects come first: the iPhone's Home, the iPad's project used last.
+        default: .projects
         }
-        // The iPhone opens the Projects tab on the project used last.
-        if let project = UserDefaults.standard.string(forKey: Self.projectKey) {
+        // Where it was left: on the project used last, unless that was Home.
+        if saved == "projects", let project = UserDefaults.standard.string(forKey: Self.projectKey) {
             projectsPath = [.project(project)]
         }
     }
 
-    private static func saveTab(_ tab: MobileTab) {
+    private func saveTab() {
         let value: String = switch tab {
         case .inbox: "inbox"
         case .myIssues: "myIssues"
-        case .projects, .project, .allIssues, .milestone, .roadmap, .view: "projects"
-        case .search: "search"
+        case .projects: projectsPath.isEmpty ? "home" : "projects"
+        case .project, .allIssues, .milestone, .roadmap, .view: "projects"
+        // The iPhone's search is a field on its screens, and comes back as Home.
+        case .search: regular ? "search" : "home"
         }
-        UserDefaults.standard.set(value, forKey: tabKey)
-        if case .project(let id) = tab { UserDefaults.standard.set(id, forKey: projectKey) }
+        UserDefaults.standard.set(value, forKey: Self.tabKey)
+        if case .project(let id) = tab { UserDefaults.standard.set(id, forKey: Self.projectKey) }
+    }
+
+    /// The iPhone's one stack: Home at its root, and the Inbox, My Issues or search, when one of them is open, as the
+    /// first screen on it.
+    var phonePath: [Route] {
+        switch tab {
+        case .inbox: [.inbox] + inboxPath
+        case .myIssues: [.myIssues] + myIssuesPath
+        case .search: [.search] + searchPath
+        default: projectsPath
+        }
+    }
+
+    func setPhonePath(_ path: [Route]) {
+        switch path.first {
+        case .inbox?:
+            inboxPath = Array(path.dropFirst())
+            tab = .inbox
+        case .myIssues?:
+            myIssuesPath = Array(path.dropFirst())
+            tab = .myIssues
+        case .search?:
+            searchPath = Array(path.dropFirst())
+            tab = .search
+        default:
+            projectsPath = path
+            tab = .projects
+        }
     }
 
     func path(for tab: MobileTab) -> [Route] {
@@ -224,8 +263,15 @@ final class MobileNavigation {
         pickerRequest = PickerRequest(itemId: id, kind: kind)
     }
 
-    /// Goes back one screen in the selected tab (⌘[ on an iPad keyboard).
+    /// Goes back one screen in the selected tab (⌘[ on an iPad keyboard); on the iPhone, as far as Home.
     func pop() {
+        if !regular {
+            var path = phonePath
+            guard !path.isEmpty else { return }
+            path.removeLast()
+            setPhonePath(path)
+            return
+        }
         var path = path(for: tab)
         guard !path.isEmpty else { return }
         path.removeLast()
@@ -237,7 +283,7 @@ final class MobileNavigation {
         UserDefaults.standard.set(id, forKey: Self.projectKey)
     }
 
-    /// Opens a project: in its own sidebar entry on a wide iPad window, inside the Projects tab otherwise.
+    /// Opens a project: in its own sidebar entry on a wide iPad window, on Home otherwise.
     func showProject(_ id: String, regular: Bool) {
         UserDefaults.standard.set(id, forKey: Self.projectKey)
         if regular {
@@ -248,14 +294,13 @@ final class MobileNavigation {
         }
     }
 
-    /// Opens a project's All Issues: in its own sidebar entry on a wide iPad window, inside the Projects tab
-    /// otherwise.
+    /// Opens a project's All Issues: in its own sidebar entry on a wide iPad window, on its project otherwise.
     func showAllIssues(_ projectId: String, regular: Bool) {
         UserDefaults.standard.set(projectId, forKey: Self.projectKey)
         if regular {
             tab = .allIssues(projectId)
         } else {
-            projectsPath = [.allIssues(projectId)]
+            projectsPath = [.project(projectId), .allIssues(projectId)]
             tab = .projects
         }
     }
@@ -273,7 +318,7 @@ final class MobileNavigation {
             projectsPath = [.project(id)] + (projectPaths[id] ?? [])
             tab = .projects
         } else if !regular, case .allIssues(let id) = tab {
-            projectsPath = [.allIssues(id)] + (allIssuesPaths[id] ?? [])
+            projectsPath = [.project(id), .allIssues(id)] + (allIssuesPaths[id] ?? [])
             tab = .projects
         } else if !regular, case .milestone(let projectId, let title) = tab {
             projectsPath = [.project(projectId), .milestone(projectId: projectId, title: title)] + (planningPaths[Self.planningKey(tab)] ?? [])

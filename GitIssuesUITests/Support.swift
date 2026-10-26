@@ -104,8 +104,8 @@ class AppTestCase: XCTestCase {
         XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed, "Still \(value ?? "nil")", file: file, line: line)
     }
 
-    /// Scrolls the list until the element is on screen and clear of the tab bar and of an issue's comment field,
-    /// which lists and issues scroll under.
+    /// Scrolls the list until the element is on screen and clear of the bars at the foot of the screen and of an
+    /// issue's comment field, which lists and issues scroll under.
     func scrollTo(_ element: XCUIElement, in container: XCUIElement? = nil, maxSwipes: Int = 8) {
         var swipes = 0
         while !(element.exists && element.isHittable && !behindTabBar(element) && !behindCommentField(element)) && swipes < maxSwipes {
@@ -114,9 +114,12 @@ class AppTestCase: XCTestCase {
         }
     }
 
+    /// Under the iPad's tab bar, or the iPhone's search and New Issue at the foot of the screen.
     private func behindTabBar(_ element: XCUIElement) -> Bool {
-        let bar = app.tabBars.firstMatch
-        return bar.exists && bar.frame.height > 0 && element.frame.maxY > bar.frame.minY - 8
+        let foot = app.windows.firstMatch.frame.maxY - 140
+        return [app.tabBars.firstMatch, app.toolbars.firstMatch].contains { bar in
+            bar.exists && bar.frame.height > 0 && bar.frame.minY > foot && element.frame.maxY > bar.frame.minY - 8
+        }
     }
 
     /// Under the comment field at the bottom of an issue, where a touch may reach the field instead.
@@ -181,13 +184,34 @@ class AppTestCase: XCTestCase {
         XCTAssertFalse(alert.exists, "The alert stayed", file: file, line: line)
     }
 
-    /// Opens a project from the Projects tab of the iPhone.
+    /// Goes back to the iPhone's Home, at the root of its one stack, from wherever the app is.
+    func goHome() {
+        let home = element("home-inbox")
+        var steps = 0
+        while !home.exists && steps < 6 {
+            goBack()
+            steps += 1
+            _ = home.waitForExistence(timeout: 2)
+        }
+        wait(home)
+    }
+
+    /// Opens a project from the iPhone's Home.
     func openProjectTab(_ title: String) {
-        app.tabBars.buttons["Projects"].tap()
+        goHome()
         let row = labelled(title, type: .button)
         wait(row)
         row.tap()
         wait(app.navigationBars[title])
+    }
+
+    /// Puts the cursor in the search field at the foot of the iPhone screen in front.
+    @discardableResult
+    func openSearch() -> XCUIElement {
+        let field = app.searchFields.firstMatch
+        wait(field)
+        field.tap()
+        return field
     }
 
     /// Opens the menu of a project's title on the iPhone: the project's views, then the projects to switch to.
@@ -197,14 +221,11 @@ class AppTestCase: XCTestCase {
         title.tap()
     }
 
-    /// Opens a project in the iPad sidebar: its switcher lists the projects, and the project opens on its open view.
+    /// Opens a project from its row in the iPad sidebar, which lists every project: it opens on its open view.
     func openPadProject(_ title: String) {
-        let switcher = element("project-switcher")
-        wait(switcher)
-        switcher.tap()
-        let item = app.buttons[title].firstMatch
-        wait(item)
-        item.tap()
+        let row = sidebarEntry(title)
+        wait(row)
+        row.tap()
         wait(app.navigationBars[title])
     }
 

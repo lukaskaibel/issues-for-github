@@ -7,33 +7,32 @@ final class PhonePlanningTests: AppTestCase {
         try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad, "iPhone layout")
     }
 
+    /// Opens a milestone, or the roadmap, from the menu of the board's title.
     private func openMilestone(_ title: String) {
-        app.tabBars.buttons["Projects"].tap()
-        let row = element("milestone-\(title)")
-        wait(row)
-        row.tap()
+        openProjectTab("Git Issues")
+        openTitleMenu("Git Issues")
+        let item = button(title)
+        wait(item)
+        item.tap()
         wait(app.navigationBars[title])
     }
 
     private func openRoadmap() {
-        app.tabBars.buttons["Projects"].tap()
-        let row = element("roadmap-Git Issues")
-        wait(row)
-        row.tap()
-        wait(app.navigationBars["Roadmap"])
+        openMilestone("Roadmap")
     }
 
-    func testTheNextMilestonesAndTheRoadmapAreUnderTheirBoard() {
+    func testTheNextMilestonesAndTheRoadmapAreInTheBoardsMenu() {
         launch()
-        app.tabBars.buttons["Projects"].tap()
-        wait(element("milestone-0.3"))
-        wait(element("milestone-0.4"))
-        wait(element("roadmap-Git Issues"))
+        openProjectTab("Git Issues")
+        openTitleMenu("Git Issues")
+        wait(button("0.3"))
+        wait(button("0.4"))
+        wait(button("Roadmap"))
         // Only the next two; the roadmap has the rest.
-        XCTAssertFalse(element("milestone-1.0").exists)
+        XCTAssertFalse(button("1.0").exists)
         // Completed milestones don't show.
-        XCTAssertFalse(element("milestone-0.2").exists)
-        snapshot("Projects with milestones")
+        XCTAssertFalse(button("0.2").exists)
+        snapshot("The board's menu with milestones")
     }
 
     func testAMilestoneListsItsIssuesByEpic() {
@@ -299,8 +298,10 @@ final class PhonePlanningTests: AppTestCase {
         snapshot("Milestone completed")
         undo.tap()
         waitGone(element("row-#9"))
+        // 0.3 is one of the board's next milestones again.
         goBack()
-        wait(element("milestone-0.3"))
+        openTitleMenu("Git Issues")
+        wait(button("0.3"))
     }
 }
 

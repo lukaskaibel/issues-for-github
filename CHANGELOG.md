@@ -70,6 +70,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **Projects first on iPhone and iPad.** The iPhone has no tab bar any more: it opens where you left it, usually a
+  project's board, and ‹ leads to Home, which has the Inbox and My Issues as two tiles with their counts, as Reminders
+  has Today and Scheduled, and every project under them. Search and New Issue are at the foot of each screen, as in
+  Notes, and the search looks through every project. The menu of a project's title has its All Issues, views, next
+  milestones and roadmap, and the other projects. On the iPad the sidebar lists every project, a tap each, with the
+  Inbox, My Issues and Search above them and the open project's views and milestones below; your account is at its
+  top in place of the project switcher.
 - **A quieter board.** The cards stand on a grey board without a border, each on a soft shadow, and the columns
   without the grey lanes; the gap between them sets them apart. A label on a card is a dot in its colour and its name,
   no longer a tinted pill, and the milestone and the epic a card belongs to are grey, so that colour is left for what

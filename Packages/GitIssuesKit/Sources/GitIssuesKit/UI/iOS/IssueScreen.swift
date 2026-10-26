@@ -302,7 +302,8 @@ struct IssueScreen: View {
             case .allIssues(let id): return .allIssues(id)
             case .milestone(let projectId, let title): return .milestone(projectId: projectId, title: title)
             case .roadmap(let id): return .roadmap(id)
-            case .issue, .inboxIssue, .statuses: continue
+            // The iPhone's Inbox, My Issues and search head their own stacks, never one of these paths.
+            case .issue, .inboxIssue, .statuses, .inbox, .myIssues, .search: continue
             }
         }
         return switch navigation.tab {

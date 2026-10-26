@@ -42,6 +42,9 @@ final class PhoneViewsTests: AppTestCase {
         button("This Week").tap()
         waitForValue(element("view-filter"), equalTo: "Iteration is Current")
         wait(element("card-#9"))
+        // A board switched to opens on its work in progress, the column the strip raises.
+        XCTAssertTrue(element("strip-In Progress").isSelected)
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(element("card-#9").frame), "In Progress is on screen")
         // Two of the four in Todo are planned for the next cycle, not this one.
         waitForLabel(element("strip-Todo"), containing: "Todo, 2 issues")
         snapshot("This Week")
@@ -313,6 +316,8 @@ final class PadViewsTests: AppTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()
         openPadProject("Git Issues")
+        // Every project has a row, over the entries of the one open.
+        wait(sidebarEntry("Website"))
         wait(sidebarEntry("Board"))
         wait(sidebarEntry("Release Plan"))
         wait(sidebarEntry("0.3"))

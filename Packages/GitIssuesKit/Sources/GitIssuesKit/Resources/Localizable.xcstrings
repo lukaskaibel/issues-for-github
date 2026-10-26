@@ -2642,7 +2642,7 @@
       }
     },
     "allIssues" : {
-      "comment" : "Sidebar entry (Mac, iPad), row under each project in the iPhone Projects tab, menu item, command and window title: one project's list of issues, those on its board together with the issues of its repositories that are on no board at all. Parallel to 'My Issues'. Short.",
+      "comment" : "Sidebar entry (Mac, iPad), first item of the menu of a project's title on iPhone, menu item, command and window title: one project's list of issues, those on its board together with the issues of its repositories that are on no board at all. Parallel to 'My Issues'. Short.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -3237,6 +3237,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App 图标"
+          }
+        }
+      }
+    },
+    "appName" : {
+      "comment" : "iPhone: title of the first screen, Home, with the Inbox, My Issues and the projects. The app's name, which stays the same in every language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
           }
         }
       }
@@ -8810,7 +8870,7 @@
       }
     },
     "closedProjects" : {
-      "comment" : "iPhone, Projects tab: heading above the GitHub projects that were closed (an adjective, about several projects).",
+      "comment" : "iPhone, Home: heading above the GitHub projects that were closed (an adjective, about several projects).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -36968,7 +37028,7 @@
       }
     },
     "milestones" : {
-      "comment" : "Sidebar heading above the next milestones of the project chosen in the sidebar, and its roadmap.",
+      "comment" : "Sidebar heading, and section of the menu of a project's title on iPhone, above the next milestones of the project and its roadmap.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -40616,7 +40676,7 @@
       }
     },
     "noBoardCount" : {
-      "comment" : "Mac and iPad sidebar, iPhone Projects tab: VoiceOver value of the All Issues entry, read after its name, for the quiet number beside it. %(count)lld is how many open issues of the project's repositories are on no project board (1, 2, …).",
+      "comment" : "Mac and iPad sidebar: VoiceOver value of the All Issues entry, read after its name, for the quiet number beside it; on iPhone, the second line of All Issues in the menu of a project's title. %(count)lld is how many open issues of the project's repositories are on no project board (1, 2, …).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -65510,7 +65570,7 @@
       }
     },
     "projects" : {
-      "comment" : "Heading above the list of GitHub projects (sidebar section, iPhone tab, group of search results).",
+      "comment" : "Heading above the list of GitHub projects (sidebar section, the iPhone's Home, the menu of a project's title on iPhone, group of search results).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -68270,7 +68330,7 @@
       }
     },
     "recentIssues" : {
-      "comment" : "iPhone and iPad, search tab: heading above the issues opened last, shown before anything is typed. Short.",
+      "comment" : "iPhone and iPad, search: heading above the issues opened last, shown before anything is typed. Short.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -71852,7 +71912,7 @@
       }
     },
     "search" : {
-      "comment" : "iPhone and iPad: title of the search tab, and the iPad Go menu item (⌘K) that opens it with the cursor in the search field. The name of a place.",
+      "comment" : "iPad: title of the search entry in the sidebar, and the Go menu item (⌘K) that opens search with the cursor in the search field; iPhone: title of the search screen ⌘K opens. The name of a place.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -72332,7 +72392,7 @@
       }
     },
     "searchPrompt" : {
-      "comment" : "iPhone and iPad, search tab: placeholder in the empty search field; says what can be searched for.",
+      "comment" : "iPhone and iPad: placeholder in the empty search field (at the foot of the iPhone's screens); says what can be searched for.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -84200,7 +84260,7 @@
       }
     },
     "views" : {
-      "comment" : "Sidebar heading above the saved views of the project chosen in the sidebar (a GitHub project's views: Board, This Week…).",
+      "comment" : "Sidebar heading, and section of the menu of a project's title on iPhone, above the saved views of the project (a GitHub project's views: Board, This Week…).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

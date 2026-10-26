@@ -21,7 +21,7 @@ EN EL MAC
 • Descripciones como en GitHub, con tablas, listas de tareas que se marcan y diagramas Mermaid
 
 EN EL IPHONE Y EL IPAD
-• En el iPhone, pestañas para Entrada, Mis incidencias, tus proyectos y la búsqueda, y el tablero columna a columna; en el iPad, una barra lateral y el tablero con arrastrar y soltar
+• En el iPhone, tus proyectos con Entrada y Mis incidencias en una pantalla de inicio, y el tablero columna a columna; en el iPad, todos los proyectos en la barra lateral y el tablero con arrastrar y soltar
 • Desliza a la derecha para completar una incidencia y a la izquierda para asignártela o eliminarla
 • Mantén el dedo sobre una incidencia para cambiar su estado, prioridad, responsable, etiquetas, hito, incidencia principal o bloqueos, o arrástrala
 • Los hitos y la hoja de ruta, que en el iPad se ve como cronograma

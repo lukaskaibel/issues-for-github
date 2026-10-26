@@ -1,20 +1,85 @@
 #if os(iOS)
 import SwiftUI
 
-/// The search tab, in the role of the Mac's command palette: issues in every project by title or number, and
-/// projects by name. Without a query it shows the issues opened last.
+/// Search on its own screen, in the role of the Mac's command palette: in the iPad's sidebar, and on the iPhone for ⌘K
+/// from a keyboard. Issues in every project by title or number, and projects by name; without a query, the issues
+/// opened last.
 struct SearchScreen: View {
-    @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
-    @Environment(\.openRoute) private var openRoute
-    @Environment(\.wideLayout) private var wide
     @FocusState private var focused: Bool
     /// The last request for the cursor (⌘K) that was answered.
     @State private var answeredFocusRequest = 0
 
     var body: some View {
         @Bindable var navigation = navigation
-        let trimmed = navigation.searchQuery.trimmingCharacters(in: .whitespaces)
+        SearchResults(query: navigation.searchQuery)
+            .navigationTitle(.search)
+            .searchable(text: $navigation.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: Text(.searchPrompt))
+            .searchFocused($focused)
+            // Also when ⌘K opened this tab for the first time, so the field wasn't there yet when it was asked for.
+            .task(id: navigation.searchFocusRequest) {
+                guard navigation.searchFocusRequest != answeredFocusRequest else { return }
+                answeredFocusRequest = navigation.searchFocusRequest
+                try? await Task.sleep(for: .milliseconds(150))
+                focused = true
+            }
+    }
+}
+
+/// The iPhone's search at the foot of its screens, as in Notes and Notebook, beside New Issue in the accent's glass:
+/// while the field is in use, what it finds covers the screen. Each screen keeps its own query.
+struct PhoneSearchBar: ViewModifier {
+    @Environment(\.wideLayout) private var wide
+    /// Where New Issue starts a new issue from this screen.
+    var context: NewIssueContext
+    @State private var query = ""
+
+    func body(content: Content) -> some View {
+        if wide {
+            content
+        } else {
+            SearchCover(query: query) { content }
+                .searchable(text: $query, prompt: Text(.searchPrompt))
+                .toolbar {
+                    DefaultToolbarItem(kind: .search, placement: .bottomBar)
+                    ToolbarSpacer(.fixed, placement: .bottomBar)
+                    ToolbarItem(placement: .bottomBar) {
+                        NewIssueButton(context: context, prominent: true)
+                    }
+                }
+        }
+    }
+}
+
+/// A screen under the iPhone's search field: what the field finds, over the screen, while it is in use.
+private struct SearchCover<Content: View>: View {
+    @Environment(\.isSearching) private var searching
+    var query: String
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        content
+            .overlay {
+                if searching {
+                    SearchResults(query: query)
+                        .transition(.opacity)
+                }
+            }
+            .animation(Theme.quick, value: searching)
+    }
+}
+
+/// What a search finds: issues in every project by title or number, and projects by name. Without a query, the
+/// issues opened last and the projects.
+struct SearchResults: View {
+    @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
+    @Environment(\.openRoute) private var openRoute
+    @Environment(\.wideLayout) private var wide
+    var query: String
+
+    var body: some View {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
         List {
             if trimmed.isEmpty {
                 let recent = RecentIssues.ids.compactMap { model.item(id: $0) }
@@ -59,16 +124,6 @@ struct SearchScreen: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Theme.panel)
-        .navigationTitle(.search)
-        .searchable(text: $navigation.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: Text(.searchPrompt))
-        .searchFocused($focused)
-        // Also when ⌘K opened this tab for the first time, so the field wasn't there yet when it was asked for.
-        .task(id: navigation.searchFocusRequest) {
-            guard navigation.searchFocusRequest != answeredFocusRequest else { return }
-            answeredFocusRequest = navigation.searchFocusRequest
-            try? await Task.sleep(for: .milliseconds(150))
-            focused = true
-        }
         .scrollDismissesKeyboard(.immediately)
     }
 
@@ -115,7 +170,7 @@ struct SearchScreen: View {
         }
     }
 
-    /// A project: opened inside this tab on the iPhone, and in its own sidebar entry on a wide iPad.
+    /// A project: opened on the iPhone's stack, and in its own sidebar entry on a wide iPad.
     @ViewBuilder
     private func projectRow(_ project: Project) -> some View {
         let label = HStack(spacing: 12) {
@@ -134,8 +189,13 @@ struct SearchScreen: View {
             .buttonStyle(RowButtonStyle())
             .listRowBackground(Theme.panel)
         } else {
-            NavigationLink(value: Route.project(project.id)) { label }
-                .listRowBackground(Theme.panel)
+            Button {
+                openRoute(.project(project.id))
+            } label: {
+                label.contentShape(Rectangle())
+            }
+            .buttonStyle(RowButtonStyle())
+            .listRowBackground(Theme.panel)
         }
     }
 }

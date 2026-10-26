@@ -23,9 +23,12 @@ final class ScreenshotTests: AppTestCase {
 
     func testPhone() throws {
         try XCTSkipIf(isPad, "iPhone screenshots")
-        launchForScreenshots()
+        launchForScreenshots(["-mobile.tab", "home"])
+        wait(element("home-inbox"))
+        shot("2-home")
+
+        element("home-my-issues").tap()
         wait(element("row-#9"))
-        shot("2-my-issues")
 
         element("row-#9").tap()
         wait(element("issue-title"))
@@ -54,10 +57,7 @@ final class ScreenshotTests: AppTestCase {
         waitGone(title)
         Thread.sleep(forTimeInterval: 0.8)
 
-        app.tabBars.buttons["Search"].firstMatch.tap()
-        let field = app.searchFields.firstMatch
-        wait(field)
-        field.tap()
+        let field = openSearch()
         field.typeText("drag")
         wait(element("row-#9"))
         shot("7-search")
