@@ -25,15 +25,15 @@ final class ScreenshotTests: AppTestCase {
         try XCTSkipIf(isPad, "iPhone screenshots")
         launchForScreenshots()
         wait(element("row-#9"))
-        shot("1-my-issues")
+        shot("2-my-issues")
 
         element("row-#9").tap()
         wait(element("issue-title"))
-        shot("2-issue")
+        shot("3-issue")
 
         element("chip-status").tap()
         wait(button("In Review"))
-        shot("3-status")
+        shot("4-status")
         // A tap outside closes the menu without reaching what is underneath.
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.6)).tap()
         waitGone(button("In Review"))
@@ -41,14 +41,14 @@ final class ScreenshotTests: AppTestCase {
 
         element("row-#8").press(forDuration: 1.2)
         wait(button("Status"))
-        shot("4-menu")
+        shot("5-menu")
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()
 
         element("compose-button").tap()
         let title = element("new-title")
         wait(title)
         title.typeText("Haptic feedback when a card lands")
-        shot("5-new-issue")
+        shot("6-new-issue")
         button("Cancel").tap()
         button("Discard").tap()
         waitGone(title)
@@ -60,22 +60,33 @@ final class ScreenshotTests: AppTestCase {
         field.tap()
         field.typeText("drag")
         wait(element("row-#9"))
-        shot("6-search")
+        shot("7-search")
     }
 
     func testPhoneInbox() throws {
         try XCTSkipIf(isPad, "iPhone screenshots")
         launchForScreenshots(["-mobile.tab", "inbox"])
         wait(element("inbox-row-25"))
-        shot("8-inbox")
+        shot("9-inbox")
+    }
+
+    /// The board first: what the iPhone has that GitHub's own app hasn't.
+    func testPhoneBoard() throws {
+        try XCTSkipIf(isPad, "iPhone screenshots")
+        launchForScreenshots()
+        openProjectTab("Git Issues")
+        wait(element("strip-In Progress"))
+        wait(element("card-#9"))
+        shot("1-board")
     }
 
     func testPhoneDark() throws {
         try XCTSkipIf(isPad, "iPhone screenshots")
         launchForScreenshots(["-appearance", "dark"])
         openProjectTab("Git Issues")
-        wait(element("section-In Progress"))
-        shot("7-project-dark")
+        element("strip-Todo").tap()
+        wait(element("card-#25"))
+        shot("8-board-dark")
     }
 
     func testPad() throws {

@@ -268,7 +268,7 @@ issues' start and target dates, their iterations or their milestones.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/devices-dark.webp">
-  <img alt="Issues on iPad with the board and the sidebar, and on iPhone with a list grouped by status" src="Design/screenshots/devices-light.webp">
+  <img alt="Issues on iPad with the board and the sidebar, and on iPhone with the board, one column at a time" src="Design/screenshots/devices-light.webp">
 </picture>
 
 The iPhone and iPad app is the same app as the Mac's, built from the same project: sync, offline queue, conflict
@@ -280,15 +280,19 @@ The interface uses the system's own parts.
   <img alt="Three iPhones: an issue with its properties as chips, the menu on a long press, and a new issue being typed" src="Design/screenshots/iphone-light.webp">
 </picture>
 
-- **iPhone:** a list per project, each project's All Issues and My Issues, grouped by status, with sections that fold
-  and headers that stay pinned. Tabs for the Inbox (with its count), My Issues, Projects (with All Issues under each
+- **iPhone:** a project's board one column at a time, with every column and its count in a strip over it: swipe, or
+  tap the strip, to turn to another column. Touch and hold a card and drop it on a column in the strip to move it
+  there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards.
+  Lists for the views that are lists, and each project's All Issues and My Issues, grouped by status, with sections that
+  fold and headers that stay pinned. Tabs for the Inbox (with its count), My Issues, Projects (with All Issues under each
   project, and how many of its issues are on no board) and Search. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and
   hold for the same menu as the Mac's right-click, and drag after holding to give an issue a new place in its section.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
   A board's next milestones and its roadmap are listed under it in Projects; a milestone is a list grouped by epic,
   the roadmap a list of epics by milestone. A project's views are capsules over its list, with the open one's filter
-  as a line under them; tap the line to change the filter, touch and hold a view for its menu. A view's groups show
-  their progress or each person's load, and a view of one iteration has the cycle on top, as on the Mac. My Issues'
+  as a line under them (over a board, they are in the menu of the project's title, which names the open one under
+  it, and Display in the project's "…" turns a view into a list or back); tap the line to change the filter, touch
+  and hold a view for its menu. A view's groups show their progress or each person's load, and a view of one iteration has the cycle on top, as on the Mac. My Issues'
   "…" menu filters it, groups it by status, project, priority or due date and orders it; its filter shows as a line
   under the title.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
@@ -719,9 +723,11 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap at the end of bold text | Type on in bold: on the touch keyboard its stars stay hidden, and Delete takes the letter you see and keeps the bold |
 | Tap a checkbox, a link, a table or a diagram in a description | Tick it, open it, or edit its source |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
+| Swipe sideways on a board, or tap a column in the strip over it (iPhone) | Turn to that column |
+| Touch and hold a card, then drop it on a column in the strip (iPhone) | Move it there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards |
 | Tap the milestone chip of an issue | Put it into another milestone, or a new one |
 | Touch and hold an epic's bar on the roadmap, then drag (iPad) | Move the epic and its unfinished issues to another milestone, or to Later |
-| Tap a view over a project (iPhone), or in the sidebar (iPad) | Open it |
+| Tap a view over a project's list or in the menu of its title (iPhone), or in the sidebar (iPad) | Open it |
 | Touch and hold a view (iPhone) | Filter, rename, duplicate, open on GitHub, delete |
 | Tap the filter line under the views | Change the filter; **Save for Everyone** puts it on GitHub, **Reset** takes it back |
 | "…" in My Issues | Filter it, group it by status, project, priority or due date, and order it; a tap on its filter line changes the filter, **Clear Filter** takes it away |

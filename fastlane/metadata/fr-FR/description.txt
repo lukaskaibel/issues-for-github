@@ -21,7 +21,7 @@ SUR MAC
 • Descriptions affichées comme sur GitHub, avec tableaux, cases à cocher et diagrammes Mermaid
 
 SUR IPHONE ET IPAD
-• Sur iPhone, des onglets pour Réception, Mes tickets, vos projets et la recherche ; sur iPad, une barre latérale et le tableau en glisser-déposer
+• Sur iPhone, des onglets pour Réception, Mes tickets, vos projets et la recherche, et le tableau colonne par colonne ; sur iPad, une barre latérale et le tableau en glisser-déposer
 • Balayez vers la droite pour terminer un ticket, vers la gauche pour vous l’assigner ou le supprimer
 • Maintenez le doigt sur un ticket pour changer statut, priorité, responsable, étiquettes, jalon, parent ou blocages, ou pour le déplacer
 • Les jalons et la feuille de route, qui s’affiche en chronologie sur iPad

@@ -190,6 +190,13 @@ class AppTestCase: XCTestCase {
         wait(app.navigationBars[title])
     }
 
+    /// Opens the menu of a project's title on the iPhone: the project's views, then the projects to switch to.
+    func openTitleMenu(_ project: String) {
+        let title = app.navigationBars.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", project)).firstMatch
+        wait(title)
+        title.tap()
+    }
+
     /// Opens a project in the iPad sidebar: its switcher lists the projects, and the project opens on its open view.
     func openPadProject(_ title: String) {
         let switcher = element("project-switcher")

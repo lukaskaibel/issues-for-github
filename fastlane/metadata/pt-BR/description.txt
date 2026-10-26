@@ -21,7 +21,7 @@ NO MAC
 • Descrições exibidas como no GitHub, com tabelas, checklists que você pode marcar e diagramas Mermaid
 
 NO IPHONE E NO IPAD
-• No iPhone, abas para a Entrada, Minhas issues, seus projetos e a busca; no iPad, uma barra lateral e o quadro com arrastar e soltar
+• No iPhone, abas para a Entrada, Minhas issues, seus projetos e a busca, e o quadro coluna por coluna; no iPad, uma barra lateral e o quadro com arrastar e soltar
 • Deslize para a direita para concluir uma issue, e para a esquerda para atribuí-la a você ou apagá-la
 • Toque e segure uma issue para alterar status, prioridade, responsável, etiquetas, marco, issue principal ou bloqueios, ou arraste-a para outro lugar
 • Os marcos e o roteiro, que no iPad aparece como linha do tempo

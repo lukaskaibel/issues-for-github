@@ -8,6 +8,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **The board on iPhone.** A board view shows as a board on the iPhone now, one column at a time across the screen,
+  with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and
+  hold a card and the strip becomes a target for each column: let go on one and the card goes first in that column;
+  hold it there a moment and the board turns to that column, to place the card among the cards there. Over the board
+  the project's views are in the menu of its title, which names the open one under it, and Display in the project's
+  "…" turns a view into a list or back, picks its columns and shows hidden columns again, as on the iPad. Before, the
+  iPhone showed every view as a list; a milestone still is one, grouped by epic.
 - **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and those
   without a priority after them, with the done ones at the bottom. The arrows beside the plus over them (on iPhone and
   iPad, the "…" there) order them by status, newest first or in GitHub's order instead; the choice holds for every

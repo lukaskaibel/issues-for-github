@@ -197,6 +197,8 @@ final class PhonePlanningTests: AppTestCase {
     func testAnEpicsIssuesStandTogetherUnderItsHeaderFoldAndOpenIt() {
         launch()
         openProjectTab("Git Issues")
+        // The board view, as a list.
+        showLayout("List")
         element("section-In Review").tap()
         waitGone(element("row-#5"))
         let header = element("epic-group-Offline-first sync")
@@ -235,6 +237,8 @@ final class PhonePlanningTests: AppTestCase {
     func testAnEpicsHeaderMovesItsIssuesToAnotherStatus() {
         launch()
         openProjectTab("Git Issues")
+        // The board view, as a list.
+        showLayout("List")
         let header = element("epic-group-Offline-first sync")
         wait(header)
         openCardMenu(header, showing: "Move Issues To")
@@ -256,6 +260,8 @@ final class PhonePlanningTests: AppTestCase {
     func testAnIssueDroppedAmongAnEpicsIssuesJoinsTheEpic() {
         launch()
         openProjectTab("Git Issues")
+        // The board view, as a list.
+        showLayout("List")
         element("section-In Review").tap()
         waitGone(element("row-#5"))
         let moving = element("row-#7")

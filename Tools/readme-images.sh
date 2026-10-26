@@ -17,7 +17,7 @@ python3 -c "import PIL, numpy" 2>/dev/null || { echo "Needs Pillow and NumPy: pi
 for tool in ffmpeg img2webp; do
   command -v $tool >/dev/null || { echo "Needs $tool: brew install ffmpeg webp" >&2; exit 1; }
 done
-[ -f Design/screenshots/app-store/iphone/1-my-issues.png ] || { echo "Run Tools/app-store-screenshots.sh first." >&2; exit 1; }
+[ -f Design/screenshots/app-store/iphone/1-board.png ] || { echo "Run Tools/app-store-screenshots.sh first." >&2; exit 1; }
 
 echo "Building…"
 xcodebuild -project GitIssues.xcodeproj -scheme GitIssues -configuration Debug -destination 'platform=macOS,arch=arm64' \
