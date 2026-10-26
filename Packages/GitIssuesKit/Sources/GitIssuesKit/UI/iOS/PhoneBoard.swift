@@ -26,9 +26,12 @@ struct PhoneBoard: View {
     @State private var dropped = 0
     @State private var turned = 0
 
+    /// The column to open on.
+    private var start: String?
+
     init(projectId: String, page: String?) {
         self.projectId = projectId
-        _page = State(initialValue: page)
+        start = page
     }
 
     /// From the edge of the screen to a column's cards, with the column's own room for their shadows: as far in as
@@ -101,6 +104,11 @@ struct PhoneBoard: View {
             guard !Task.isCancelled, hot == column else { return }
             turned += 1
             withAnimation(Theme.spring) { page = column }
+        }
+        // Set once the columns are there: given before, the scroll view showed the first column under another one's
+        // name in the strip when a view was switched to.
+        .onAppear {
+            if page == nil { page = start ?? Self.firstPage(of: columns) }
         }
         .onChange(of: page) { _, id in
             if let id { navigation.boardPages[Self.pageKey(model: model, projectId: projectId)] = id }
