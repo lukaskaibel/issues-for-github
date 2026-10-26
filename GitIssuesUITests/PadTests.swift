@@ -367,9 +367,8 @@ final class PadTests: AppTestCase {
         XCTAssertTrue(labelled("Project: Website", type: .button).exists)
         button("Cancel").tap()
 
-        // The account is in the menu of the project at the top of the sidebar, as in Linear.
-        element("project-switcher").tap()
-        button("Settings…").tap()
+        // The account is at the top of the sidebar, over the projects.
+        element("sidebar-account").tap()
         wait(app.navigationBars["Account"])
         snapshot("iPad account")
         button("Done").tap()
@@ -408,7 +407,8 @@ final class PadTests: AppTestCase {
         launch()
         openProject("Git Issues")
         wait(element("card-#9"))
-        element("project-switcher").tap()
+        // From the project's menu; its row in the sidebar takes the new icon.
+        app.navigationBars.buttons["Options"].firstMatch.tap()
         button("Change Icon…").tap()
         wait(app.navigationBars["Project Icon"])
         XCTAssertTrue(button("Blue").isSelected)

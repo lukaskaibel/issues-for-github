@@ -13,9 +13,6 @@ struct MyIssuesScreen: View {
             .navigationTitle(.myIssues)
             .navigationSubtitle(SyncSubtitle.text(model))
             .toolbar {
-                if !wide {
-                    ToolbarItem(placement: .topBarLeading) { AccountButton() }
-                }
                 ToolbarItemGroup(placement: .primaryAction) {
                     Menu {
                         MyIssuesDisplayMenu()
@@ -33,9 +30,10 @@ struct MyIssuesScreen: View {
                     } label: {
                         Label(.options, systemImage: "ellipsis")
                     }
-                    NewIssueButton(context: NewIssueContext(assignToMe: true))
+                    if wide { NewIssueButton(context: NewIssueContext(assignToMe: true)) }
                 }
             }
+            .modifier(PhoneSearchBar(context: NewIssueContext(assignToMe: true)))
             .task(id: model.dataVersion) { await model.preloadAvatars(for: .myIssues) }
     }
 }
@@ -107,160 +105,6 @@ struct MyIssuesFilterSheet: View {
     }
 }
 
-// MARK: - Projects
-
-/// The Projects tab on the iPhone: every project, the one used last opened on top of it.
-struct ProjectsScreen: View {
-    @Environment(AppModel.self) private var model
-    @Environment(MobileNavigation.self) private var navigation
-
-    var body: some View {
-        let open = model.openProjects
-        let closed = model.projects.filter(\.closed)
-        Group {
-            if model.projects.isEmpty {
-                MobileEmptyState(
-                    title: model.status.phase == .offline ? String(localized: .youreOffline) : String(localized: .lookingForProjects),
-                    message: String(localized: .noProjectsMessage),
-                    systemImage: "square.stack",
-                    showsProgress: model.status.phase != .offline
-                )
-            } else {
-                List {
-                    Section {
-                        ForEach(open) { project in
-                            NavigationLink(value: Route.project(project.id)) {
-                                ProjectRow(project: project)
-                            }
-                            .contextMenu {
-                                Button {
-                                    navigation.sheet = .projectIcon(project.id)
-                                } label: {
-                                    Label(.changeIconEllipsis, systemImage: "paintpalette")
-                                }
-                            }
-                            // All Issues, its next milestones and its roadmap right under it, as in the iPad's sidebar.
-                            NavigationLink(value: Route.allIssues(project.id)) {
-                                AllIssuesListRow(projectId: project.id)
-                            }
-                            .accessibilityIdentifier("all-issues-\(project.title)")
-                            if model.hasPlanning(projectId: project.id) {
-                                ForEach(model.sidebarMilestones(projectId: project.id)) { group in
-                                    NavigationLink(value: Route.milestone(projectId: project.id, title: group.title)) {
-                                        MilestoneListRow(projectId: project.id, group: group)
-                                    }
-                                }
-                                NavigationLink(value: Route.roadmap(project.id)) {
-                                    HStack(spacing: 12) {
-                                        RoadmapIcon(size: 16).foregroundStyle(Theme.textSecondary).frame(width: 18)
-                                        Text(.roadmap).foregroundStyle(Theme.text)
-                                    }
-                                    .padding(.leading, 30)
-                                    .accessibilityElement(children: .combine)
-                                }
-                                .accessibilityIdentifier("roadmap-\(project.title)")
-                            }
-                        }
-                    }
-                    if !closed.isEmpty {
-                        Section(.closedProjects) {
-                            ForEach(closed) { project in
-                                NavigationLink(value: Route.project(project.id)) {
-                                    ProjectRow(project: project)
-                                }
-                            }
-                        }
-                    }
-                }
-                .listStyle(.insetGrouped)
-                .scrollContentBackground(.hidden)
-                .background(Theme.window)
-                .refreshable { await model.refreshAndWait() }
-            }
-        }
-        .navigationTitle(.projects)
-        .navigationSubtitle(SyncSubtitle.text(model))
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) { AccountButton() }
-            ToolbarItem(placement: .primaryAction) { NewIssueButton(context: NewIssueContext()) }
-        }
-    }
-}
-
-private struct ProjectRow: View {
-    @Environment(AppModel.self) private var model
-    var project: Project
-
-    var body: some View {
-        let items = model.allItems.filter { $0.projectId == project.id && !$0.isEpic }
-        let open = items.filter { !(model.statusOption(of: $0)?.statusCategory.isClosed ?? $0.isClosed) }.count
-        HStack(spacing: 12) {
-            ProjectIcon(projectId: project.id, size: 18)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(project.title).font(.body.weight(.medium)).foregroundStyle(Theme.text)
-                Text(project.lastSyncedAt == nil ? project.ownerLogin : String(localized: .ownerOpenIssueCount(owner: project.ownerLogin, count: open)))
-                    .font(.footnote)
-                    .foregroundStyle(Theme.textSecondary)
-            }
-        }
-        .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// A milestone under its board in the Projects tab: its diamond, its name and when it is due.
-private struct MilestoneListRow: View {
-    @Environment(AppModel.self) private var model
-    var projectId: String
-    var group: MilestoneGroup
-
-    var body: some View {
-        let today = CalendarDay.today()
-        HStack(spacing: 12) {
-            MilestoneIcon(mark: model.mark(of: group, projectId: projectId), size: 15)
-                .frame(width: 18)
-            Text(group.title).foregroundStyle(Theme.text)
-            Spacer(minLength: 8)
-            if let due = group.due {
-                Text(due.shortLabel(today: today))
-                    .font(.subheadline)
-                    .monospacedDigit()
-                    .foregroundStyle(due < today ? Theme.overdue : Theme.textSecondary)
-            }
-        }
-        .padding(.leading, 30)
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("milestone-\(group.title)")
-    }
-}
-
-/// All Issues under its board in the Projects tab, with how many of them are on no board as a quiet count.
-private struct AllIssuesListRow: View {
-    @Environment(AppModel.self) private var model
-    var projectId: String
-
-    var body: some View {
-        let onNoBoard = model.countOnNoBoard(projectId: projectId)
-        HStack(spacing: 12) {
-            Image(systemName: "rectangle.stack")
-                .font(.system(size: 14))
-                .foregroundStyle(Theme.textSecondary)
-                .frame(width: 18)
-            Text(.allIssues).foregroundStyle(Theme.text)
-            Spacer(minLength: 8)
-            if onNoBoard > 0 {
-                Text(onNoBoard, format: .number)
-                    .font(.subheadline)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.textSecondary)
-                    .accessibilityLabel(Text(.noBoardCount(count: onNoBoard)))
-            }
-        }
-        .padding(.leading, 30)
-        .accessibilityElement(children: .combine)
-    }
-}
-
 /// A project's All Issues: its board's issues and those of its repositories on no board, as a list by status with
 /// the issues on no board first.
 struct AllIssuesScreen: View {
@@ -294,9 +138,10 @@ struct AllIssuesScreen: View {
                     } label: {
                         Label(.options, systemImage: "ellipsis")
                     }
-                    NewIssueButton(context: NewIssueContext(projectId: projectId, inAllIssues: true))
+                    if wide { NewIssueButton(context: NewIssueContext(projectId: projectId, inAllIssues: true)) }
                 }
             }
+            .modifier(PhoneSearchBar(context: NewIssueContext(projectId: projectId, inAllIssues: true)))
             .onAppear {
                 model.setActiveProject(projectId)
                 navigation.rememberProject(projectId)
@@ -399,9 +244,10 @@ struct ProjectScreen: View {
                 if let project {
                     ProjectOptionsMenu(project: project, showsViewMode: !(wide && roomy))
                 }
-                NewIssueButton(context: NewIssueContext(projectId: projectId))
+                if wide { NewIssueButton(context: NewIssueContext(projectId: projectId)) }
             }
         }
+        .modifier(PhoneSearchBar(context: NewIssueContext(projectId: projectId)))
         .onAppear {
             model.setActiveProject(projectId)
             navigation.rememberProject(projectId)
@@ -429,12 +275,13 @@ private struct ViewSubtitle: ViewModifier {
     }
 }
 
-/// On the iPhone the title's menu has the project's views, then the other projects to switch to. A wide iPad lists
-/// both in its sidebar, so there the header sits on the leading edge with the Board and List switch beside it, as on
-/// the Mac.
+/// On the iPhone the title's menu has everything of the project: All Issues and its views, its next milestones with
+/// the roadmap, then the other projects to switch to. A wide iPad lists all of it in its sidebar, so there the header
+/// sits on the leading edge with the Board and List switch beside it, as on the Mac.
 private struct ProjectSwitcher: ViewModifier {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
+    @Environment(\.openRoute) private var openRoute
     var projectId: String
     var regular: Bool
 
@@ -443,19 +290,41 @@ private struct ProjectSwitcher: ViewModifier {
             content.toolbarRole(.editor)
         } else {
             content.toolbarTitleMenu {
-                let views = model.views(projectId: projectId)
-                if !views.isEmpty {
-                    Section(String(localized: .views)) {
-                        ForEach(views) { view in
-                            Button {
-                                withAnimation(Theme.spring) { model.show(view) }
-                            } label: {
-                                if view.id == model.currentView(projectId: projectId)?.id {
-                                    Label(view.name, systemImage: "checkmark")
-                                } else {
-                                    Text(view.name)
-                                }
+                Section(String(localized: .views)) {
+                    // How many of its issues are on no board, as the item's second line.
+                    let onNoBoard = model.countOnNoBoard(projectId: projectId)
+                    Button {
+                        openRoute(.allIssues(projectId))
+                    } label: {
+                        Text(.allIssues)
+                        if onNoBoard > 0 { Text(.noBoardCount(count: onNoBoard)) }
+                        Image(systemName: "rectangle.stack")
+                    }
+                    ForEach(model.views(projectId: projectId)) { view in
+                        Button {
+                            withAnimation(Theme.spring) { model.show(view) }
+                        } label: {
+                            if view.id == model.currentView(projectId: projectId)?.id {
+                                Label(view.name, systemImage: "checkmark")
+                            } else {
+                                Text(view.name)
                             }
+                        }
+                    }
+                }
+                if model.hasPlanning(projectId: projectId) {
+                    Section(String(localized: .milestones)) {
+                        ForEach(model.sidebarMilestones(projectId: projectId)) { group in
+                            Button {
+                                openRoute(.milestone(projectId: projectId, title: group.title))
+                            } label: {
+                                Label(group.title, systemImage: "diamond")
+                            }
+                        }
+                        Button {
+                            openRoute(.roadmap(projectId))
+                        } label: {
+                            Label(.roadmap, systemImage: "chart.bar.xaxis")
                         }
                     }
                 }
@@ -960,15 +829,22 @@ struct NewIssueButton: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     var context: NewIssueContext
+    /// In the accent's glass, at the foot of an iPhone screen, as Notes and Notebook show New Note.
+    var prominent = false
 
     var body: some View {
-        Button {
+        let button = Button {
             navigation.sheet = .newIssue(context)
         } label: {
             Label(.newIssue, systemImage: "square.and.pencil")
         }
         .accessibilityIdentifier("compose-button")
         .disabled(model.openProjects.isEmpty)
+        if prominent {
+            button.buttonStyle(.glassProminent)
+        } else {
+            button
+        }
     }
 }
 

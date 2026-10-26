@@ -280,15 +280,18 @@ The interface uses the system's own parts.
   <img alt="Three iPhones: an issue with its properties as chips, the menu on a long press, and a new issue being typed" src="Design/screenshots/iphone-light.webp">
 </picture>
 
-- **iPhone:** a project's board one column at a time, with every column and its count in a strip over it: swipe, or
-  tap the strip, to turn to another column. Touch and hold a card and drop it on a column in the strip to move it
+- **iPhone:** no tab bar: the app opens where you left it, usually a project's board, and ‹ leads to Home, which has
+  the Inbox and My Issues as two tiles with their counts, as Reminders has Today and Scheduled, and every project under
+  them. Search and New Issue are at the foot of each screen, as in Notes. A project's board shows one column at a
+  time, with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and hold a card and drop it on a column in the strip to move it
   there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards.
   Lists for the views that are lists, and each project's All Issues and My Issues, grouped by status, with sections that
-  fold and headers that stay pinned. Tabs for the Inbox (with its count), My Issues, Projects (with All Issues under each
-  project, and how many of its issues are on no board) and Search. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and
-  hold for the same menu as the Mac's right-click, and drag after holding to give an issue a new place in its section.
+  fold and headers that stay pinned. The menu of a project's title has All Issues (with how many of its issues are on
+  no board), its views, its next milestones with the roadmap, and the other projects. Swipe right to mark an issue
+  done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
+  and drag after holding to give an issue a new place in its section.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
-  A board's next milestones and its roadmap are listed under it in Projects; a milestone is a list grouped by epic,
+  A milestone is a list grouped by epic,
   the roadmap a list of epics by milestone. A project's views are capsules over its list, with the open one's filter
   as a line under them (over a board, they are in the menu of the project's title, which names the open one under
   it, and Display in the project's "…" turns a view into a list or back); tap the line to change the filter, touch
@@ -308,8 +311,8 @@ The interface uses the system's own parts.
   priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its cards on
   grey without borders or lanes, as on the Mac; a column's "…" hides it on that iPad, and the hidden ones wait at the end of the
   board and under Display in the project's "…", a tap away from coming back.
-- **iPad:** the tabs become a sidebar, as on the Mac: the project at the top with its icon, whose menu switches
-  projects, changes the icon and opens your account, then All Issues and its views, and its next milestones and roadmap, each an entry. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
+- **iPad:** a sidebar with your account at the top, the Inbox, My Issues and Search, then every project, each a tap
+  away, and under them the entries of the project open: All Issues and its views, and its next milestones and roadmap. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
   drop (touch and hold, then drag). A milestone opens as the board's columns or a list, the roadmap as the timeline,
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
@@ -733,8 +736,12 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | "…" in My Issues | Filter it, group it by status, project, priority or due date, and order it; a tap on its filter line changes the filter, **Clear Filter** takes it away |
 | Tap ‹ or › beside a view's cycle | The cycle before or after, until you save it |
 | Tap the plus after the views (iPhone), or New View… in the project's "…" menu | A new view, starting from the one open |
-| Tap the project at the top of the sidebar (iPad) | Switch to another project, change its icon, sync, or open your account and settings |
-| Change Icon… in a project's "…" menu, or touch and hold it in Projects (iPhone) | Its glyph and colour: 257 glyphs in groups, with a search field; a colour keeps the sheet open, a glyph closes it |
+| Tap ‹ (iPhone) | Back, as far as Home: the Inbox and My Issues as tiles with their counts, then your projects |
+| Tap the search field at the foot of a screen (iPhone) | Search issues in every project by title or number, and projects by name; before you type, the issues you opened last |
+| Tap a project's title (iPhone) | All Issues, its views, its next milestones and the roadmap, and the other projects |
+| Tap a project in the sidebar (iPad) | Open it on its open view; its All Issues, views and milestones show under the projects |
+| Tap your picture at the top of the sidebar (iPad) | Your account, Sync Now and the settings |
+| Change Icon… in a project's "…" menu, or touch and hold it on Home (iPhone) | Its glyph and colour: 257 glyphs in groups, with a search field; a colour keeps the sheet open, a glyph closes it |
 | Swipe right in the Inbox | Read, or unread |
 | Swipe left in the Inbox | Archive, or snooze |
 | Touch and hold in the Inbox | Read, snooze, archive, unsubscribe, and the issue's status, priority, assignee and labels |
@@ -767,7 +774,8 @@ Packages/GitIssuesKit/
     UI/Shared/               The model and every action, design tokens, glyphs, the board's cards
     UI/Editor/               The Markdown editor, from Notebook: parsing, styling, layout, tables, diagrams, maths
     UI/Mac/                  The Mac's window, sidebar, AppKit issue table, palette, dropdowns and keys
-    UI/iOS/                  The iPhone and iPad tabs, lists, issue screen, sheets, search and sign-in
+    UI/iOS/                  The iPhone's Home and the iPad's sidebar, lists, boards, issue screen, sheets, search
+                             and sign-in
   Sources/gi-cli/            Command-line tool for exercising sync without the UI
   Tests/                     Unit tests
 Config/                      Build settings, Info.plist and entitlements

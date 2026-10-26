@@ -43,6 +43,7 @@ struct InboxScreen: View {
         .navigationTitle(.inbox)
         .navigationSubtitle(SyncSubtitle.text(model))
         .toolbar { toolbar }
+        .modifier(PhoneSearchBar(context: NewIssueContext()))
         .modifier(SignOutConfirmation(isPresented: Bindable(model).confirmSignOut))
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if let undo = model.inboxUndo {
@@ -176,9 +177,6 @@ struct InboxScreen: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        if !wide {
-            ToolbarItem(placement: .topBarLeading) { AccountButton() }
-        }
         ToolbarItem(placement: .primaryAction) {
             Menu {
                 Button {

@@ -21,7 +21,7 @@ AUF DEM MAC
 • Beschreibungen wie auf GitHub, mit Tabellen, abhakbaren Checklisten und Mermaid-Diagrammen
 
 AUF IPHONE UND IPAD
-• Auf dem iPhone der Eingang, „Meine Issues“, deine Projekte und die Suche als Tabs und das Board Spalte für Spalte; auf dem iPad eine Seitenleiste und das Board mit Drag & Drop
+• Auf dem iPhone deine Projekte mit Eingang und „Meine Issues“ auf einer Startseite, das Board Spalte für Spalte; auf dem iPad alle Projekte in der Seitenleiste und das Board mit Drag & Drop
 • Nach rechts wischen markiert ein Issue als erledigt, nach links weist du es dir zu oder löschst es
 • Issue gedrückt halten: Status, Priorität, Zuständige, Labels, Meilenstein, übergeordnetes Issue oder Blocker ändern oder es verschieben
 • Meilensteine und die Roadmap, auf dem iPad als Zeitleiste

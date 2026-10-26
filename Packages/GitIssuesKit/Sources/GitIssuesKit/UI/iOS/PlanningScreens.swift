@@ -65,9 +65,10 @@ struct MilestoneScreen: View {
                 if let group {
                     MilestoneOptionsMenu(projectId: projectId, group: group, showsViewMode: wide && !roomy)
                 }
-                NewIssueButton(context: NewIssueContext(projectId: projectId, milestoneTitle: title))
+                if wide { NewIssueButton(context: NewIssueContext(projectId: projectId, milestoneTitle: title)) }
             }
         }
+        .modifier(PhoneSearchBar(context: NewIssueContext(projectId: projectId, milestoneTitle: title)))
         .onAppear {
             model.setActiveProject(projectId)
             navigation.rememberProject(projectId)
@@ -454,6 +455,11 @@ enum PlanningImages {
 
     static func roadmap(_ scheme: ColorScheme) -> UIImage {
         image("roadmap", scheme) { RoadmapIcon(size: 17).foregroundStyle(Theme.textSecondary) }
+    }
+
+    /// A project's glyph in its colour, for its row in the sidebar.
+    static func project(_ look: ProjectLook, _ scheme: ColorScheme) -> UIImage {
+        image("project-\(look.glyph.systemName)-\(look.color)", scheme) { ProjectGlyphImage(look: look, size: 19) }
     }
 
     private static func image<Content: View>(_ key: String, _ scheme: ColorScheme, @ViewBuilder _ content: () -> Content) -> UIImage {

@@ -316,6 +316,8 @@ final class PadViewsTests: AppTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()
         openPadProject("Git Issues")
+        // Every project has a row, over the entries of the one open.
+        wait(sidebarEntry("Website"))
         wait(sidebarEntry("Board"))
         wait(sidebarEntry("Release Plan"))
         wait(sidebarEntry("0.3"))
