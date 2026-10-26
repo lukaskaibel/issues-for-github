@@ -116,15 +116,15 @@ light.paste(dark, (0, 0), Image.fromarray((mask * 255).astype(np.uint8), "L"))
 webp(light, "list-appearance")
 
 print("iPhone and iPad")
-for theme, pad_shot, phone_shot in [("light", "ipad/1-board", "iphone/1-my-issues"),
-                                    ("dark", "ipad/5-board-dark", "iphone/7-project-dark")]:
+for theme, pad_shot, phone_shot in [("light", "ipad/1-board", "iphone/1-board"),
+                                    ("dark", "ipad/5-board-dark", "iphone/8-board-dark")]:
     ipad = scaled(device(f"{store}/{pad_shot}.png", "ipad"), 0.62)
     phone = scaled(device(f"{store}/{phone_shot}.png", "iphone"), 0.43)
     ix, iy = 170, 140
     hx, hy = ix + ipad.width - round(phone.width * 0.55), iy + ipad.height - phone.height + 150
     size = (hx + phone.width + 170, max(iy + ipad.height, hy + phone.height) + 150)
     webp(layout([(ipad, (ix, iy)), (phone, (hx, hy))], size, theme, 1800), f"devices-{theme}")
-phones = [scaled(device(f"{store}/iphone/{s}.png", "iphone"), 0.42) for s in ["2-issue", "4-menu", "5-new-issue"]]
+phones = [scaled(device(f"{store}/iphone/{s}.png", "iphone"), 0.42) for s in ["3-issue", "5-menu", "6-new-issue"]]
 gap, px, py = 80, 150, 120
 size = (sum(p.width for p in phones) + gap * (len(phones) - 1) + 2 * px, phones[0].height + 2 * py + 30)
 for theme in ["light", "dark"]:
@@ -139,7 +139,7 @@ S = 2  # drawn at 2x, saved at 1280 x 640
 canvas = backdrop((1280 * S, 640 * S), "dark").convert("RGBA")
 mac = scaled(window("board-dark"), 0.62)
 canvas = shadow_onto(canvas, mac, (640 * S, 150 * S), "dark", rim=True)
-phone = scaled(device(f"{store}/iphone/7-project-dark.png", "iphone"), 0.165 * S)
+phone = scaled(device(f"{store}/iphone/8-board-dark.png", "iphone"), 0.165 * S)
 canvas = shadow_onto(canvas, phone, (585 * S, 268 * S), "dark")
 icon = Image.open("Packages/GitIssuesKit/Sources/GitIssuesKit/Resources/icon-card-dark.png").convert("RGBA")
 canvas.alpha_composite(icon.resize((176 * S, 176 * S), Image.LANCZOS), (66 * S, 128 * S))

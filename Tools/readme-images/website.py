@@ -21,8 +21,8 @@ def save(img, name, **options):
     print(f"  {out}/{name}")
 
 
-for theme, pad_shot, phone_shot in [("light", "ipad/1-board", "iphone/1-my-issues"),
-                                    ("dark", "ipad/5-board-dark", "iphone/7-project-dark")]:
+for theme, pad_shot, phone_shot in [("light", "ipad/1-board", "iphone/1-board"),
+                                    ("dark", "ipad/5-board-dark", "iphone/8-board-dark")]:
     save(scaled(device(f"{store}/{pad_shot}.png", "ipad"), 0.62), f"ipad-{theme}.webp", quality=86, method=6)
     save(scaled(device(f"{store}/{phone_shot}.png", "iphone"), 0.46), f"iphone-{theme}.webp", quality=86, method=6)
 

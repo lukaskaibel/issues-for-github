@@ -2,8 +2,8 @@
 import SwiftUI
 
 /// Over a project's list or board: its saved views as capsules, the open one filled, and under them the open view's
-/// filter. Touch and hold a view for its menu. A wide iPad lists the views in its sidebar, so there only the filter
-/// shows, and only when there is one.
+/// filter. Touch and hold a view for its menu. A wide iPad lists the views in its sidebar, and over the iPhone's board
+/// they are in the title's menu, so there only the filter shows, and only when there is one.
 struct ViewBar: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
@@ -11,19 +11,22 @@ struct ViewBar: View {
     var projectId: String
     /// The page's own ground, which the bar continues: white over a list, the board's grey over a board.
     var ground = Theme.panel
+    var showsViews = true
 
     var body: some View {
         let current = model.currentView(projectId: projectId)
         let showsFilter = current.map { !model.filter(of: $0).isEmpty || model.filterChanged($0) } ?? false
-        if !wide || showsFilter {
+        if pills || showsFilter {
             bar(current: current)
         }
     }
 
+    private var pills: Bool { !wide && showsViews }
+
     private func bar(current: ProjectView?) -> some View {
         let views = model.views(projectId: projectId)
         return VStack(alignment: .leading, spacing: 8) {
-            if !wide {
+            if pills {
                 ScrollViewReader { proxy in
                     ScrollView(.horizontal) {
                         HStack(spacing: 6) {
@@ -598,7 +601,8 @@ struct NewViewSheet: View {
 
 // MARK: - Display and the view's menu
 
-/// The Display part of a project's menu: board or list on a wide iPad, columns, groups, order and the fields shown.
+/// The Display part of a project's menu: board, list or a wide iPad's timeline, columns, groups, order and the fields
+/// shown.
 struct ViewDisplayMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(\.wideLayout) private var wide
@@ -606,21 +610,20 @@ struct ViewDisplayMenu: View {
 
     var body: some View {
         Menu {
-            if wide {
-                if view.layout == .roadmap {
-                    Picker(.layout, selection: Binding(get: { model.shape(of: view) }, set: { model.setShape($0, of: view) })) {
-                        Label(.timeline, systemImage: "chart.bar.xaxis").tag(ViewShape.timeline)
-                        Label(.board, systemImage: "rectangle.split.3x1").tag(ViewShape.board)
-                        Label(.list, systemImage: "list.bullet").tag(ViewShape.list)
-                    }
-                } else {
-                    Picker(.layout, selection: Binding(get: { model.layout(of: view) }, set: { model.showLayout($0, projectId: view.projectId) })) {
-                        Label(.board, systemImage: "rectangle.split.3x1").tag(ViewMode.board)
-                        Label(.list, systemImage: "list.bullet").tag(ViewMode.list)
-                    }
+            // The iPhone shows a roadmap as a list or a board, having no room for its timeline.
+            if wide, view.layout == .roadmap {
+                Picker(.layout, selection: Binding(get: { model.shape(of: view) }, set: { model.setShape($0, of: view) })) {
+                    Label(.timeline, systemImage: "chart.bar.xaxis").tag(ViewShape.timeline)
+                    Label(.board, systemImage: "rectangle.split.3x1").tag(ViewShape.board)
+                    Label(.list, systemImage: "list.bullet").tag(ViewShape.list)
+                }
+            } else {
+                Picker(.layout, selection: Binding(get: { model.layout(of: view) }, set: { model.showLayout($0, projectId: view.projectId) })) {
+                    Label(.board, systemImage: "rectangle.split.3x1").tag(ViewMode.board)
+                    Label(.list, systemImage: "list.bullet").tag(ViewMode.list)
                 }
             }
-            if wide, model.layout(of: view) == .board {
+            if model.layout(of: view) == .board {
                 Picker(.columns, selection: Binding(get: { model.columnField(of: view)?.id }, set: { model.setColumnField($0, of: view) })) {
                     ForEach(model.columnChoices(projectId: view.projectId)) { Text($0.name).tag(Optional($0.id)) }
                 }
@@ -660,7 +663,7 @@ struct ViewDisplayMenu: View {
                     }
                 }
             }
-            let hidden = wide && model.layout(of: view) == .board ? model.hiddenColumns(projectId: view.projectId) : []
+            let hidden = model.layout(of: view) == .board ? model.hiddenColumns(projectId: view.projectId) : []
             if !hidden.isEmpty {
                 // A tap shows the column on the board again.
                 Section(String(localized: .hiddenColumns)) {

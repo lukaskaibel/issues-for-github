@@ -1,8 +1,8 @@
 import XCTest
 
 /// A project's saved views on the iPhone, on the sample data: the board "Git Issues" has the views Board, This Week
-/// (this cycle's issues), By Area (open issues grouped by the Area field), Bugs and Sync, Release Plan (a roadmap by
-/// milestone), Epics (sub-issues grouped by their parent) and Team (open issues grouped by assignee).
+/// (this cycle's issues, a board), By Area (open issues grouped by the Area field), Bugs and Sync, Release Plan (a
+/// roadmap by milestone), Epics (sub-issues grouped by their parent) and Team (open issues grouped by assignee).
 final class PhoneViewsTests: AppTestCase {
     override func setUpWithError() throws {
         try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad, "iPhone layout")
@@ -10,7 +10,13 @@ final class PhoneViewsTests: AppTestCase {
 
     private func openView(_ name: String) {
         let pill = element("view-\(name)")
-        wait(pill)
+        // Over a board the views are in the title's menu.
+        guard pill.waitForExistence(timeout: 2) else {
+            openTitleMenu("Git Issues")
+            wait(button(name))
+            button(name).tap()
+            return
+        }
         // The capsules scroll sideways; the later ones are off screen at first.
         let screen = app.windows.firstMatch.frame
         var swipes = 0
@@ -25,21 +31,28 @@ final class PhoneViewsTests: AppTestCase {
     func testAViewShowsWhatItsFilterFinds() {
         launch()
         openProjectTab("Git Issues")
-        wait(element("view-Board"))
-        wait(element("view-This Week"))
-        XCTAssertTrue(element("view-Board").isSelected)
-        snapshot("Views over the project")
+        // A board view opens as a board: the views are in the title's menu, which names the open one under it.
+        wait(element("strip-In Progress"))
+        XCTAssertFalse(element("view-Board").exists)
+        openTitleMenu("Git Issues")
+        wait(button("This Week"))
+        wait(button("Website"))
+        snapshot("Views in the title's menu")
 
-        openView("This Week")
+        button("This Week").tap()
         waitForValue(element("view-filter"), equalTo: "Iteration is Current")
-        wait(element("row-#9"))
-        // Planned for the next cycle, not this one.
-        waitGone(element("row-#14"))
+        wait(element("card-#9"))
+        // Two of the four in Todo are planned for the next cycle, not this one.
+        waitForLabel(element("strip-Todo"), containing: "Todo, 2 issues")
         snapshot("This Week")
 
         openView("Bugs and Sync")
         wait(element("row-#25"))
         waitGone(element("row-#9"))
+        // Over a list, the views are capsules again.
+        wait(element("view-Bugs and Sync"))
+        XCTAssertTrue(element("view-Bugs and Sync").isSelected)
+        snapshot("Views over the project")
     }
 
     func testAViewGroupsByItsField() {
@@ -87,6 +100,8 @@ final class PhoneViewsTests: AppTestCase {
         launch()
         openProjectTab("Git Issues")
         openView("This Week")
+        // As a list, whose capsule says when its filter differs from the one saved.
+        showLayout("List")
         let cycle = element("cycle")
         wait(cycle)
         wait(cycle.staticTexts["Cycle 4"])
@@ -153,6 +168,7 @@ final class PhoneViewsTests: AppTestCase {
         launch()
         openProjectTab("Git Issues")
         openView("This Week")
+        showLayout("List")
         // After the last of the views.
         app.scrollViews.containing(.button, identifier: "view-This Week").firstMatch.swipeLeft()
         element("new-view").tap()
@@ -173,6 +189,8 @@ final class PhoneViewsTests: AppTestCase {
     func testRenamingAndDeletingAView() {
         launch()
         openProjectTab("Git Issues")
+        // A list view, over which the views are capsules.
+        openView("By Area")
         let pill = element("view-Bugs and Sync")
         wait(pill)
         pill.press(forDuration: 1.2)
@@ -194,6 +212,93 @@ final class PhoneViewsTests: AppTestCase {
         confirmAlert(confirm, with: "Delete View")
         waitGone(element("view-Bugs"))
         wait(element("view-By Area"))
+    }
+}
+
+/// The board on the iPhone, on the sample data: a board view shows one column at a time, with every column and its
+/// count in a strip over it. The board "Git Issues" has the columns Backlog, Todo, In Progress, In Review and Done.
+final class PhoneBoardTests: AppTestCase {
+    override func setUpWithError() throws {
+        try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad, "iPhone layout")
+    }
+
+    func testTheBoardShowsOneColumnAtATime() {
+        launch()
+        openProjectTab("Git Issues")
+        // It opens on the work in progress.
+        let progress = element("strip-In Progress")
+        wait(progress)
+        XCTAssertTrue(progress.isSelected)
+        wait(element("card-#9"))
+        snapshot("iPhone board")
+
+        // A tap on the strip turns to another column.
+        let todo = element("strip-Todo")
+        todo.tap()
+        wait(element("card-#17"))
+        waitUntil(todo.isSelected, "Todo is the column on screen")
+        snapshot("Todo")
+
+        // A swipe turns to the next.
+        element("column-Todo").swipeLeft()
+        waitUntil(progress.isSelected, "In Progress is the column on screen")
+
+        // Board or list is the view's, in the Display part of the project's menu.
+        showLayout("List")
+        wait(element("section-In Progress"))
+        wait(element("view-Board"))
+        waitGone(progress)
+        showLayout("Board")
+        wait(progress)
+    }
+
+    func testACardDroppedOnTheStripGoesFirstInThatColumn() {
+        launch()
+        openProjectTab("Git Issues")
+        let card = element("card-#7")
+        wait(card)
+        waitForLabel(element("strip-In Review"), containing: "In Review, 3 issues")
+        // Lifted, the card turns the strip into a target for each column; In Review's is the fourth of five.
+        drag(card, toTarget: 3, holding: 0.3)
+        waitForLabel(element("strip-In Review"), containing: "In Review, 4 issues")
+        waitForLabel(element("strip-In Progress"), containing: "In Progress, 5 issues")
+        snapshot("Dropped on In Review")
+    }
+
+    func testACardHeldOverAColumnTurnsTheBoardToIt() {
+        launch()
+        openProjectTab("Git Issues")
+        let card = element("card-#7")
+        wait(card)
+        // Held over Done's target, the last of five, the board turns to Done, and the card lands first there.
+        drag(card, toTarget: 4, holding: 1.6)
+        let done = element("strip-Done")
+        waitUntil(done.isSelected, "Done is the column on screen")
+        wait(card)
+        let first = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'card-#'"))
+            .allElementsBoundByIndex.filter { $0.frame.minX >= 0 && $0.frame.maxX <= app.windows.firstMatch.frame.maxX }
+            .min { $0.frame.minY < $1.frame.minY }
+        XCTAssertEqual(first?.identifier, "card-#7")
+        snapshot("Turned to Done")
+    }
+
+    /// Touches and holds a card until it lifts, drags it up to the target of a column over the strip, holds it
+    /// there, and lets go. The targets share the width equally, 12 points in from the edges with 6 between them.
+    private func drag(_ card: XCUIElement, toTarget index: Int, holding seconds: TimeInterval) {
+        let width = app.windows.firstMatch.frame.width
+        let count = 5.0
+        let step = (width - 24 + 6) / count
+        let x = 12 + step * (CGFloat(index) + 0.5) - 3
+        let y = element("strip-In Progress").frame.midY
+        let end = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: x, dy: y))
+        // Moving slowly lets the drag take over from the card's menu before the finger arrives.
+        card.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .press(forDuration: 1.0, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: seconds)
+    }
+
+    private func waitUntil(_ condition: @autoclosure @escaping () -> Bool, _ message: String, file: StaticString = #filePath, line: UInt = #line) {
+        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in condition() }, object: nil)
+        XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: 6), .completed, message, file: file, line: line)
     }
 }
 

@@ -21,7 +21,7 @@ ON THE MAC
 • Descriptions drawn as on GitHub, with tables, checklists that tick and Mermaid diagrams
 
 ON IPHONE AND IPAD
-• On iPhone, the Inbox, My Issues, your projects and search as tabs; on iPad, a sidebar and the board with drag and drop
+• On iPhone, the Inbox, My Issues, your projects and search as tabs, and the board one column at a time; on iPad, a sidebar and the board with drag and drop
 • Swipe right to mark an issue done, swipe left to assign it to yourself or delete it
 • Touch and hold an issue to change its status, priority, assignee, labels, milestone, parent or blockers, or drag it to a new place
 • Milestones and the roadmap, which is a timeline on iPad

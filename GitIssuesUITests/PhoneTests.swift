@@ -81,6 +81,8 @@ final class PhoneTests: AppTestCase {
     func testIssuesMoveWithinTheirSection() {
         launch()
         openProjectTab("Git Issues")
+        // The board view, as a list.
+        showLayout("List")
         // With In Review folded, all of In Progress is on screen without scrolling.
         element("section-In Review").tap()
         waitGone(element("row-#5"))
@@ -106,6 +108,8 @@ final class PhoneTests: AppTestCase {
     func testSubIssuesHangUnderTheirParentAndFold() {
         launch()
         openProjectTab("Git Issues")
+        // The board view, as a list.
+        showLayout("List")
         element("section-In Review").tap()
         waitGone(element("row-#5"))
         let parent = element("row-#9")
@@ -129,6 +133,8 @@ final class PhoneTests: AppTestCase {
     func testFinishingTheLastSubIssueFinishesItsParent() {
         launch()
         openProjectTab("Git Issues")
+        // The board view, as a list.
+        showLayout("List")
         element("section-In Review").tap()
         waitGone(element("row-#5"))
         for number in ["#13", "#28"] {
@@ -914,6 +920,8 @@ final class PhoneTests: AppTestCase {
         snapshot("Projects")
         website.tap()
         wait(app.navigationBars["Website"])
+        // Its board as a list, which offers the field it lacks.
+        showLayout("List")
         wait(labelled("No Priority field"))
         snapshot("Website without priority")
         button("Add").tap()
@@ -1024,6 +1032,8 @@ final class PhoneTests: AppTestCase {
     func testNewIssueInASectionWithEveryProperty() {
         launch()
         openProjectTab("Git Issues")
+        // The board view, as a list.
+        showLayout("List")
         element("add-In Progress").tap()
         let title = element("new-title")
         wait(title)
@@ -1123,15 +1133,17 @@ final class PhoneTests: AppTestCase {
         dialog.tap()
         waitGone(app.buttons["Backlog"])
 
-        // The list shows the new statuses.
+        // The board shows the new statuses.
         goBack()
-        wait(element("section-Review"))
-        XCTAssertFalse(element("section-Backlog").exists)
+        wait(element("strip-Review"))
+        XCTAssertFalse(element("strip-Backlog").exists)
     }
 
     func testArrangeSectionsAndReset() {
         launch()
         openProjectTab("Git Issues")
+        // The board view, as a list.
+        showLayout("List")
         wait(element("section-In Progress"))
         app.navigationBars.buttons["Options"].tap()
         button("Arrange Sections…").tap()
@@ -1173,7 +1185,7 @@ final class PhoneTests: AppTestCase {
         wait(website)
         website.tap()
         wait(app.navigationBars["Website"])
-        wait(element("row-#31"))
+        wait(element("card-#31"))
     }
 
     // MARK: Account

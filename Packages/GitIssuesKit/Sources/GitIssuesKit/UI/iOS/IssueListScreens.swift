@@ -307,7 +307,7 @@ struct AllIssuesScreen: View {
     }
 }
 
-/// One project: its list, or on a wide iPad also its board.
+/// One project: its list or its board, the iPad's columns side by side, the iPhone's one at a time.
 struct ProjectScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
@@ -321,7 +321,10 @@ struct ProjectScreen: View {
         // Board or list as this project's open view has it. A project the iPad keeps ready in another sidebar entry
         // mustn't follow a switch made in this one.
         let mode = model.currentView(projectId: projectId).map { model.layout(of: $0) } ?? model.viewMode
-        let onBoard = project != nil && wide && mode == .board && !(model.currentView(projectId: projectId).map { model.showsTimeline($0) } ?? false)
+        // The iPhone has no room for a timeline, and a board needs columns to show.
+        let phoneBoard = project != nil && !wide && mode == .board && !model.isLoading(projectId: projectId)
+            && !model.shownColumns(for: .project(projectId)).isEmpty
+        let onBoard = phoneBoard || project != nil && wide && mode == .board && !(model.currentView(projectId: projectId).map { model.showsTimeline($0) } ?? false)
         let ground = onBoard ? Theme.board : Theme.panel
         Group {
             if project == nil {
@@ -334,21 +337,26 @@ struct ProjectScreen: View {
             } else if wide, mode == .board {
                 MobileBoard(projectId: projectId)
                     .id(model.currentView(projectId: projectId)?.id)
+            } else if phoneBoard {
+                PhoneBoard(projectId: projectId, page: PhoneBoard.page(model: model, navigation: navigation, projectId: projectId))
+                    .id(model.currentView(projectId: projectId)?.id)
             } else {
                 // Another view starts at its top, not where the last one was scrolled to.
                 IssueList(scope: .project(projectId))
                     .id(model.currentView(projectId: projectId)?.id)
             }
         }
-        // The project's saved views, and the open one's filter, over its list or board.
+        // The project's saved views, and the open one's filter, over its list or board. Over the iPhone's board the
+        // strip of columns takes the views' place, and the open view is named under the title, whose menu has them.
         .safeAreaInset(edge: .top, spacing: 0) {
             if project != nil, !model.views(projectId: projectId).isEmpty, !model.isLoading(projectId: projectId) {
-                ViewBar(projectId: projectId, ground: ground)
+                ViewBar(projectId: projectId, ground: ground, showsViews: !phoneBoard)
             }
         }
         // White pages, and under the board the grey its cards stand on, under the bars above it too.
         .background(ground)
         .navigationTitle(project?.title ?? String(localized: .project))
+        .modifier(ViewSubtitle(name: phoneBoard ? model.currentView(projectId: projectId)?.name : nil))
         .navigationBarTitleDisplayMode(.inline)
         .modifier(ProjectSwitcher(projectId: projectId, regular: wide))
         .toolbar {
@@ -389,7 +397,7 @@ struct ProjectScreen: View {
             }
             ToolbarItemGroup(placement: .primaryAction) {
                 if let project {
-                    ProjectOptionsMenu(project: project, showsViewMode: wide && !roomy)
+                    ProjectOptionsMenu(project: project, showsViewMode: !(wide && roomy))
                 }
                 NewIssueButton(context: NewIssueContext(projectId: projectId))
             }
@@ -412,8 +420,18 @@ struct EditorRole: ViewModifier {
     }
 }
 
-/// On the iPhone the title switches to another project. A wide iPad lists the projects in its sidebar, so there
-/// the header sits on the leading edge with the Board and List switch beside it, as on the Mac.
+/// The open view's name under the title, where the bar of views gives way to the board's columns.
+private struct ViewSubtitle: ViewModifier {
+    var name: String?
+
+    func body(content: Content) -> some View {
+        if let name { content.navigationSubtitle(name) } else { content }
+    }
+}
+
+/// On the iPhone the title's menu has the project's views, then the other projects to switch to. A wide iPad lists
+/// both in its sidebar, so there the header sits on the leading edge with the Board and List switch beside it, as on
+/// the Mac.
 private struct ProjectSwitcher: ViewModifier {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
@@ -425,14 +443,32 @@ private struct ProjectSwitcher: ViewModifier {
             content.toolbarRole(.editor)
         } else {
             content.toolbarTitleMenu {
-                ForEach(model.openProjects) { other in
-                    Button {
-                        navigation.showProject(other.id, regular: false)
-                    } label: {
-                        if other.id == projectId {
-                            Label(other.title, systemImage: "checkmark")
-                        } else {
-                            Text(other.title)
+                let views = model.views(projectId: projectId)
+                if !views.isEmpty {
+                    Section(String(localized: .views)) {
+                        ForEach(views) { view in
+                            Button {
+                                withAnimation(Theme.spring) { model.show(view) }
+                            } label: {
+                                if view.id == model.currentView(projectId: projectId)?.id {
+                                    Label(view.name, systemImage: "checkmark")
+                                } else {
+                                    Text(view.name)
+                                }
+                            }
+                        }
+                    }
+                }
+                Section(String(localized: .projects)) {
+                    ForEach(model.openProjects) { other in
+                        Button {
+                            navigation.showProject(other.id, regular: false)
+                        } label: {
+                            if other.id == projectId {
+                                Label(other.title, systemImage: "checkmark")
+                            } else {
+                                Text(other.title)
+                            }
                         }
                     }
                 }

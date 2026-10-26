@@ -94,25 +94,29 @@ struct MobileBoard: View {
         return min(max(fitted, 268), 330)
     }
 
-    /// Lands a card at `slot` among all of the column's cards, itself included, or at the end without one. An
-    /// epic's issues lifted by their header land there together.
     private func move(_ id: String?, to column: BoardColumn, at slot: Int?) {
         target = nil
         dragging = nil
+        if Self.land(id, in: column, at: slot, model: model, projectId: projectId, milestone: milestone) { dropped += 1 }
+    }
+
+    /// Lands a card at `slot` among all of the column's cards, itself included, or at the end without one. An
+    /// epic's issues lifted by their header land there together. False when the drag carried nothing of this board.
+    @discardableResult
+    static func land(_ id: String?, in column: BoardColumn, at slot: Int?, model: AppModel, projectId: String, milestone: String?) -> Bool {
         if let id, let lifted = DraggedGroup(id) {
             let members = model.columns(projectId: projectId).flatMap(\.nesting.members).filter { lifted.ids.contains($0.id) }
-            guard let group = lifted.group(model: model, projectId: projectId, milestone: milestone), !members.isEmpty else { return }
+            guard let group = lifted.group(model: model, projectId: projectId, milestone: milestone), !members.isEmpty else { return false }
             let index = column.items.prefix(slot ?? column.items.count).filter { !lifted.ids.contains($0.id) }.count
-            dropped += 1
             withAnimation(Theme.spring) { model.drop(group, members: members, in: column, at: index, milestone: milestone) }
-            return
+            return true
         }
-        guard let id, let item = model.item(id: id), item.projectId == projectId else { return }
+        guard let id, let item = model.item(id: id), item.projectId == projectId else { return false }
         // The model counts the place among the column's other cards, without the sub-issues the card brings along.
         let others = Set(column.shown(without: item).map(\.id))
         let index = column.items.prefix(slot ?? column.items.count).filter { others.contains($0.id) }.count
-        dropped += 1
         withAnimation(Theme.spring) { model.drop(item, in: column, at: index, milestone: milestone) }
+        return true
     }
 }
 
@@ -209,7 +213,9 @@ final class CardFrames {
     var frames: [String: CGRect] = [:]
 }
 
-private struct MobileColumn: View {
+/// One column of the board: its header, and its cards in a scroll of their own, taking cards dropped on it. The
+/// iPad's board puts them side by side, the iPhone's one at a time.
+struct MobileColumn: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.openRoute) private var openRoute
@@ -496,7 +502,7 @@ private struct ColumnDrop: DropDelegate {
 
 /// Marks a card being dragged as one of this app's, visible to this app only, and carries which card it is, so a
 /// drop moves the card that was dragged, from this window or another. Text dragged in from another app has no mark.
-private enum CardDragMark {
+enum CardDragMark {
     static let typeIdentifier = "com.lukaskbl.GitIssues.card"
 
     /// The card lifted last, in any window: which card a drag carries while it hovers, as its data can only be read
