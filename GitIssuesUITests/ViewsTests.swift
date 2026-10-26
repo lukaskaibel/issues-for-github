@@ -42,6 +42,9 @@ final class PhoneViewsTests: AppTestCase {
         button("This Week").tap()
         waitForValue(element("view-filter"), equalTo: "Iteration is Current")
         wait(element("card-#9"))
+        // A board switched to opens on its work in progress, the column the strip raises.
+        XCTAssertTrue(element("strip-In Progress").isSelected)
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(element("card-#9").frame), "In Progress is on screen")
         // Two of the four in Todo are planned for the next cycle, not this one.
         waitForLabel(element("strip-Todo"), containing: "Todo, 2 issues")
         snapshot("This Week")
