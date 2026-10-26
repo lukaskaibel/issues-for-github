@@ -280,9 +280,9 @@ struct IssueScreen: View {
     /// through them, as on the Mac. Each issue once, though one can be listed twice (in two people's groups).
     private func position(of item: Item) -> (index: Int, items: [Item])? {
         let scope = originScope ?? item.projectId.map { .project($0) } ?? model.noBoardHome(of: item)
-        // A board, as the iPad shows a project or a milestone with room for one.
+        // A board, as a project shows one, or a milestone on an iPad with room for one.
         let board = switch scope {
-        case .project(let id): wide && (model.currentView(projectId: id).map { model.layout(of: $0) } ?? model.viewMode) == .board
+        case .project(let id): (model.currentView(projectId: id).map { model.layout(of: $0) } ?? model.viewMode) == .board
         case .milestone: wide && model.viewMode == .board
         default: false
         }

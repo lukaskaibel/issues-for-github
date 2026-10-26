@@ -119,6 +119,8 @@ final class MobileNavigation {
     var searchQuery = ""
     /// Bumped to ask the search tab to put the cursor in its field (⌘K).
     var searchFocusRequest = 0
+    /// The column the iPhone's board of a project's view was left on, by `PhoneBoard.pageKey`, to come back to it.
+    var boardPages: [String: String] = [:]
     /// Whether the window is wide enough for the sidebar and the board.
     private(set) var regular = false
     /// A property picker asked for from the keyboard, for the issue on screen; that issue's screen shows it.
