@@ -351,9 +351,11 @@ struct NewIssueSheet: View {
         return groups.filter(\.isOpen)
     }
 
-    /// The boards a new issue can go on: the one whose All Issues it was started in, or else every open board.
+    /// The boards a new issue can go on: the one whose All Issues it was started in, or else every open board but
+    /// those you hid, unless it is on one of them.
     private var projectChoices: [Project] {
-        context.inAllIssues ? model.openProjects.filter { $0.id == context.projectId } : model.openProjects
+        if context.inAllIssues { return model.openProjects.filter { $0.id == context.projectId } }
+        return model.openProjects.filter { !model.hiddenProjectIds.contains($0.id) || $0.id == draft.projectId }
     }
 
     private var hasContent: Bool {
@@ -370,7 +372,7 @@ struct NewIssueSheet: View {
         prepared = true
         let parent = context.parentItemId.flatMap { model.item(id: $0) }
         // A sub-issue goes where its parent is, on its board or on none.
-        let projectId: String? = if let parent { parent.projectId } else { context.projectId ?? model.openProjects.first?.id }
+        let projectId: String? = if let parent { parent.projectId } else { context.projectId ?? (model.shownProjects.first ?? model.openProjects.first)?.id }
         var new = NewIssueDraft(projectId: projectId)
         new.parent = parent
         // A sub-issue lives in its parent's repository.

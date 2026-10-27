@@ -59,6 +59,8 @@ public final class SyncStatus {
     public var idRemaps: [String: String] = [:]
     /// Repositories whose issues have been read at least once since the app started.
     public var readRepositories: Set<String> = []
+    /// Projects GitHub wouldn't let the app read since it started: nothing is loading for them.
+    public var unreadableProjects: Set<String> = []
 
     public init() {}
 

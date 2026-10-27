@@ -585,18 +585,31 @@ extension AppModel {
         }
     }
 
-    /// Hides a project from the sidebar or brings it back. Hiding the one on screen (its board, a milestone, its
-    /// roadmap or All Issues) moves to the next.
+    /// Hides a project from the sidebar (and the iPhone's Home) or brings it back. On the Mac, hiding the one on
+    /// screen (its board, a milestone, its roadmap or All Issues) moves to the next; the iPad's sidebar does that
+    /// itself.
     func setHidden(_ project: Project, _ hidden: Bool) {
         withAnimation(Theme.spring) {
             if hidden { hiddenProjectIds.insert(project.id) } else { hiddenProjectIds.remove(project.id) }
         }
+        #if os(macOS)
         guard hidden, scope?.projectId == project.id else { return }
         if let next = projects.first(where: { !$0.closed && !hiddenProjectIds.contains($0.id) }) {
             select(.project(next.id))
         } else {
             select(.myIssues)
         }
+        #endif
+    }
+
+    /// The open projects not hidden, and those hidden: what the sidebar (and the iPhone's Home) lists, and what waits
+    /// under "hidden".
+    var shownProjects: [Project] {
+        openProjects.filter { !hiddenProjectIds.contains($0.id) }
+    }
+
+    var hiddenProjects: [Project] {
+        openProjects.filter { hiddenProjectIds.contains($0.id) }
     }
 
     /// Sections folded in, in the list. Kept per project on this device.

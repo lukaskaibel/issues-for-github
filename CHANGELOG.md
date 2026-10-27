@@ -68,6 +68,11 @@ All notable changes to this project are recorded here. The format follows
   the right end of the board with their counts and under Display (`⇧V`), and a click brings one back. Each view keeps
   its own; the list still shows every status, and a milestone's board every column. A new issue that goes into a
   hidden column says so. On the Mac and iPad.
+- **Hide projects on iPhone and iPad too.** Touch and hold a project on the iPhone's Home, or swipe it to the left, for
+  **Hide Project**: it moves into a folded line at the end of the list, "1 hidden", which unfolds to show it again. On
+  the iPad the same in the sidebar is **Hide from Sidebar**, with the same line at the end of the projects; a hidden
+  project you open stays in the sidebar while it is open. A hidden project also opens from search; new issues no
+  longer offer it. As on the Mac, this is for your device alone.
 - **Close an issue that's on no board.** Its status picker offers **Mark as Done**, or **Reopen** once it's closed, as
   well as the boards to put it on.
 - **More in the command palette.** New Issue wherever `C` makes one, Copy Branch Name, Show or Hide Inspector, Reset
@@ -139,6 +144,11 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- My Issues says when it is still loading, and fills sooner. Right after signing in, the app fetches your projects
+  one by one, and until then My Issues said "Nothing assigned to you" and Home counted 0. Now the line under the title
+  reads "Loading issues from 3 projects…" until the last one is in. While none of your issues have come in yet, My
+  Issues shows a spinner, or says you're offline. On the iPhone's Home the My Issues tile shows a spinner instead of
+  0. The projects also come right after each other now, instead of one every 15 seconds.
 - The Mac app no longer quits when you pick two issues in a list grouped by people (such as the Team view), and `J`
   no longer loops back up in it when an issue is listed under two people.
 - Moving a column on a milestone's board, by dragging or with Move Left and Right, no longer deletes the project's

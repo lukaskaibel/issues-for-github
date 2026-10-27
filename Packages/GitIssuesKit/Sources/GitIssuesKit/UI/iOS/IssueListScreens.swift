@@ -297,6 +297,26 @@ struct ProjectLoading: View {
     }
 }
 
+/// My Issues before your projects have each been fetched once, as right after signing in: they come one by one, and
+/// their issues with them.
+private struct MyIssuesLoading: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        switch model.status.phase {
+        case .offline:
+            MobileEmptyState(title: String(localized: .youreOffline), message: String(localized: .myIssuesLoadsWhenOnline), systemImage: "wifi.slash")
+        case .failed(let message):
+            MobileEmptyState(title: String(localized: .syncProblem), message: message, systemImage: "exclamationmark.triangle") {
+                Button(.tryAgain) { model.refresh() }
+                    .buttonStyle(.bordered)
+            }
+        default:
+            MobileEmptyState(title: String(localized: .loadingIssues), message: String(localized: .myIssuesLoadingMessage), showsProgress: true)
+        }
+    }
+}
+
 /// The "…" menu of a project: on one of its views, that view's part first; on the iPhone's page of the project, only
 /// the project's.
 struct ProjectOptionsMenu: View {
@@ -657,6 +677,8 @@ struct IssueList: View {
                     Button(.clearFilter) { model.setMineFilter(ProjectFilter("")) }
                         .buttonStyle(.bordered)
                 }
+            } else if model.isLoadingMyIssues {
+                MyIssuesLoading()
             } else {
                 MobileEmptyState(
                     title: String(localized: .nothingAssignedTitle),

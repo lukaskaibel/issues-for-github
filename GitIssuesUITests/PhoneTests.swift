@@ -1002,6 +1002,20 @@ final class PhoneTests: AppTestCase {
         waitGone(element("pin-0.4"))
     }
 
+    /// While your projects are still being fetched, as right after signing in, the screens say so under their title.
+    func testScreensSayWhileProjectsAreStillLoading() {
+        launch(["-mobile.tab", "home", "-demo.loadingProjects", "3"])
+        wait(element("home-my-issues"))
+        wait(labelled("Loading issues from 3 projects…"))
+        // What has come in so far is counted already.
+        waitForValue(element("home-my-issues"), equalTo: "12")
+        snapshot("Home while projects load")
+        element("home-my-issues").tap()
+        wait(element("row-#9"))
+        wait(labelled("Loading issues from 3 projects…"))
+        snapshot("My Issues while projects load")
+    }
+
     func testSearchFindsIssuesAndProjects() {
         launch()
         // The field at the foot of My Issues looks through every project.
@@ -1058,6 +1072,38 @@ final class PhoneTests: AppTestCase {
         confirmAlert(alert, with: "Add")
         wait(labelled("QA", type: .button))
         snapshot("Statuses")
+    }
+
+    /// A project hidden on Home waits folded at the end of the list, and still opens from there, with its page under it.
+    func testHideAProjectOnHomeAndShowItAgain() {
+        launch(["-mobile.tab", "home"])
+        let website = labelled("Website", type: .button)
+        wait(website)
+        website.press(forDuration: 1.2)
+        wait(button("Hide Project"))
+        button("Hide Project").tap()
+        let hidden = element("home-hidden-projects")
+        wait(hidden)
+        XCTAssertTrue(hidden.label.contains("1 hidden"), hidden.label)
+        waitGone(website)
+        snapshot("Home with a hidden project")
+
+        // Unfolded, it opens as any project does.
+        hidden.tap()
+        wait(website)
+        website.tap()
+        wait(app.navigationBars.staticTexts["Website"])
+        goBack()
+        wait(element("page-All Issues"))
+
+        // Still unfolded on Home, a swipe shows it again.
+        goHome()
+        wait(website)
+        website.swipeLeft()
+        wait(button("Show Project"))
+        button("Show Project").tap()
+        waitGone(hidden)
+        wait(website)
     }
 
     func testAllIssuesListsIssuesOnNoBoardAndMakesThem() {

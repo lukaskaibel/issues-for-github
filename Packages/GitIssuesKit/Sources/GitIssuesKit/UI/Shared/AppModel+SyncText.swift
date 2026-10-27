@@ -4,7 +4,8 @@ extension AppModel {
     /// One line on the state of syncing, e.g. "Synced 2 min ago" or "Offline · 3 queued".
     func syncLine(at now: Date = Date()) -> String {
         let pending = pendingCount
-        if isDemo, status.phase != .syncing {
+        let loading = projectsStillLoading
+        if isDemo, status.phase != .syncing, loading == 0 {
             #if DEBUG
             // App Store screenshots show the sample data the way a real account looks.
             if UserDefaults.standard.bool(forKey: "screenshotMode") { return String(localized: .syncedJustNow) }
@@ -13,7 +14,8 @@ extension AppModel {
         }
         switch status.phase {
         case .syncing:
-            return pending > 0 ? String(localized: .syncingChanges(count: pending)) : String(localized: .syncing)
+            if pending > 0 { return String(localized: .syncingChanges(count: pending)) }
+            return loading > 0 ? String(localized: .loadingProjects(count: loading)) : String(localized: .syncing)
         case .offline:
             return pending > 0 ? String(localized: .offlineQueued(count: pending)) : String(localized: .offline)
         case .failed:
@@ -22,6 +24,8 @@ extension AppModel {
             return String(localized: .signedOut)
         case .idle:
             if pending > 0 { return String(localized: .changesQueued(count: pending)) }
+            // Between rounds too: the projects not fetched yet come one per round.
+            if loading > 0 { return String(localized: .loadingProjects(count: loading)) }
             guard let date = status.lastSyncedAt else { return String(localized: .notSyncedYet) }
             let seconds = now.timeIntervalSince(date)
             if seconds < 45 { return String(localized: .syncedJustNow) }

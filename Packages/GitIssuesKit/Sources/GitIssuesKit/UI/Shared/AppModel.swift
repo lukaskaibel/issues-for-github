@@ -903,6 +903,23 @@ public final class AppModel {
         projects.first { $0.id == projectId }.map { $0.lastSyncedAt == nil } ?? false
     }
 
+    /// How many open projects haven't been fetched from GitHub yet. After signing in the app fetches them one by
+    /// one, and My Issues lacks their issues until then.
+    var projectsStillLoading: Int {
+        #if DEBUG
+        // The sample data never loads; UI tests make it look as if it did.
+        if isDemo { return UserDefaults.standard.integer(forKey: "demo.loadingProjects") }
+        #endif
+        guard !isDemo, signedIn else { return 0 }
+        return openProjects.filter { $0.lastSyncedAt == nil && !status.unreadableProjects.contains($0.id) }.count
+    }
+
+    /// True while My Issues may still be missing issues: before your projects are known, and until each of them has
+    /// been fetched once.
+    var isLoadingMyIssues: Bool {
+        projectsStillLoading > 0 || (!isDemo && signedIn && viewer == nil && status.lastSyncedAt == nil)
+    }
+
     var openItem: Item? {
         openItemId.flatMap { id in allItems.first { $0.id == id } }
     }
