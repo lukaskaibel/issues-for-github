@@ -1,7 +1,7 @@
 # App Store listing
 
 The Mac, iPhone and iPad apps are one App Store app (`com.lukaskbl.GitIssues`, universal purchase), released with
-fastlane (see "Releasing to the App Store" in the README). fastlane uploads:
+fastlane (see [Releasing](#releasing) below). fastlane uploads:
 
 - the texts in `fastlane/metadata`: name, subtitle, description, keywords, promotional text, URLs, categories,
   copyright and the notes for App Review;
@@ -60,6 +60,43 @@ Japanese (`ja`), Korean (`ko`) and Chinese (`zh-Hans`), the languages the app sp
 
 The first version has none. From the second version on, write it in `fastlane/metadata/en-US/release_notes.txt`, for
 users, from the changelog, and translate it into `release_notes.txt` in every other language's folder.
+
+## Releasing
+
+Releases go through [fastlane](https://fastlane.tools), for the Mac, iPhone and iPad together. It signs in to App Store
+Connect with an API key, so there are no Apple ID prompts, and signs the builds with your team's Apple Distribution
+certificate from the keychain and App Store profiles it fetches with the key. The first Mac build also creates a Mac
+Installer Distribution certificate for the package; macOS then asks once whether it may be used (Always Allow). Once:
+
+1. Create the app in App Store Connect for iOS and macOS with the bundle identifier `com.lukaskbl.GitIssues`, and set
+   the few things fastlane can't ([Once, in App Store Connect](#once-in-app-store-connect) lists them).
+2. Copy `fastlane/.env.secret.example` to `fastlane/.env.secret` and fill in the API key and the contact for App Review.
+3. Set `GITHUB_CLIENT_ID` in `Config/Local.xcconfig`, so the builds offer "Sign in with GitHub".
+4. Run `bundle install`.
+
+Then:
+
+```bash
+bundle exec fastlane screenshots   # the App Store screenshots of the iPhone, iPad and Mac apps, on the sample data
+bundle exec fastlane beta          # build the Mac, iPhone and iPad apps and upload them to TestFlight
+bundle exec fastlane submit        # submit those builds for review once they're tested in TestFlight
+bundle exec fastlane release       # or all in one: build, upload texts and screenshots, and submit
+```
+
+The texts are in `fastlane/metadata`; `bundle exec fastlane metadata` uploads them with the screenshots and nothing
+else. `bundle exec fastlane ios <lane>` or `mac <lane>` does one platform. The Mac's App Store build runs in the App
+Sandbox, as the Mac App Store requires, and leaves out the GitHub CLI sign-in, which can't work there; **Product ›
+Archive** in Xcode makes the same build. Without an API key, `Tools/testflight.sh` and `Tools/testflight-mac.sh` upload
+a build with the Apple ID under Xcode › Settings › Accounts.
+
+Every change to the app on `main` also goes to TestFlight by itself, for the iPhone and iPad and for the Mac:
+[`.github/workflows/testflight.yml`](../.github/workflows/testflight.yml) runs `bundle exec fastlane ios beta` and
+`mac beta` on GitHub side by side, signed with certificates made for it (the workflow lists the secrets it needs). There
+the Mac app is signed for the App Store from the start, so the Macs GitHub runs it on don't have to be registered with
+the team. A TestFlight build carries the version it's on its way to and the date and time in Germany: once `v0.3.0` is
+tagged, `0.4.0 (2026.1017.1047)` is the build of 17 October 2026 at 10:47. Its "What to Test" names the commit. So a
+release goes: set its version in `Config/Shared.xcconfig`, let the builds of it reach TestFlight, `submit`, and tag it
+after.
 
 ## A new version
 
