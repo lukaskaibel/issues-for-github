@@ -157,6 +157,8 @@ struct MainTabs: View {
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.wideLayout) private var wide
     @Environment(\.colorScheme) private var scheme
+    /// Whether the iPad sidebar has the projects you hid unfolded at the end of the list.
+    @State private var hiddenOpen = false
 
     var body: some View {
         Group {
@@ -207,6 +209,10 @@ struct MainTabs: View {
                 navigation.tab = .view(projectId: projectId, viewId: view.id)
             }
         }
+        // With the last hidden project shown again, the next one hidden starts folded away.
+        .onChange(of: model.hiddenProjectIds.isEmpty) { _, none in
+            if none { hiddenOpen = false }
+        }
         .onChange(of: wide, initial: true) { _, wide in
             navigation.adapt(regular: wide)
             // The iPhone's Home has no entry of its own in the sidebar: the project used last opens instead.
@@ -232,7 +238,9 @@ struct MainTabs: View {
             }
             .customizationID("myIssues")
             TabSection(.projects) {
-                ForEach(model.openProjects) { project in
+                // The ones you hid at the end, where they unfold.
+                ForEach(model.shownProjects + model.hiddenProjects) { project in
+                    let hidden = model.hiddenProjectIds.contains(project.id)
                     Tab(value: MobileTab.project(project.id)) {
                         TabStack(tab: .project(project.id)) { ProjectScreen(projectId: project.id) }
                     } label: {
@@ -243,9 +251,44 @@ struct MainTabs: View {
                         }
                     }
                     .customizationID("project.\(project.id)")
+                    .contextMenu {
+                        Button {
+                            navigation.sheet = .projectIcon(project.id)
+                        } label: {
+                            Label(.changeIconEllipsis, systemImage: "paintpalette")
+                        }
+                        Button {
+                            setHidden(project, !hidden)
+                        } label: {
+                            Label(hidden ? .showInSidebar : .hideFromSidebar, systemImage: hidden ? "eye" : "eye.slash")
+                        }
+                    }
+                    .swipeActions(edge: .trailing) {
+                        Button {
+                            setHidden(project, !hidden)
+                        } label: {
+                            Label(hidden ? .showInSidebar : .hideFromSidebar, systemImage: hidden ? "eye" : "eye.slash")
+                        }
+                        .tint(hidden ? Theme.accentFill : Color(white: 0.45))
+                    }
+                    // A hidden project stays in the TabView, so it can still be opened, but leaves the list unless it
+                    // is unfolded or on screen.
+                    .hidden(hidden && !hiddenOpen && sidebarProject?.id != project.id)
                 }
             }
             .customizationID("projectSection")
+            .sectionActions {
+                // A line at the end of the list that folds the projects you hid out and in again, as on the Mac and
+                // the iPhone's Home. (A menu here wouldn't open: the sidebar shows a section's actions as buttons.)
+                let hidden = model.hiddenProjects
+                if !hidden.isEmpty {
+                    Button {
+                        withAnimation(Theme.spring) { hiddenOpen.toggle() }
+                    } label: {
+                        Label(String(localized: .hiddenProjectsCount(count: hidden.count)), systemImage: hiddenOpen ? "eye" : "eye.slash")
+                    }
+                }
+            }
             if let project = sidebarProject {
                 viewSection(project)
                 if model.hasPlanning(projectId: project.id) {
@@ -283,9 +326,21 @@ struct MainTabs: View {
         }
     }
 
-    /// The project the sidebar is about: the one on screen, or the one used last.
+    /// The project the sidebar is about: the one on screen, hidden or not; else the one used last, unless it was hidden
+    /// since.
     private var sidebarProject: Project? {
-        model.openProjects.first { $0.id == navigation.sidebarProjectId } ?? model.openProjects.first
+        let open = model.openProjects
+        if let id = MobileNavigation.projectId(of: navigation.tab), let project = open.first(where: { $0.id == id }) { return project }
+        return open.first { $0.id == navigation.sidebarProjectId && !model.hiddenProjectIds.contains($0.id) }
+            ?? model.shownProjects.first ?? open.first
+    }
+
+    /// Hides a project from the sidebar or shows it again. Hiding the one on screen moves on to the next one listed,
+    /// as on the Mac, or to My Issues when there is none.
+    private func setHidden(_ project: Project, _ hidden: Bool) {
+        model.setHidden(project, hidden)
+        guard hidden, MobileNavigation.projectId(of: navigation.tab) == project.id else { return }
+        navigation.tab = model.shownProjects.first.map { .project($0.id) } ?? .myIssues
     }
 
     /// Under the project's name: All Issues first, with how many are on no board as a quiet count, then the project's

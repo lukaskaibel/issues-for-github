@@ -244,17 +244,44 @@ public actor SyncEngine {
     var activeProject: String? { activeProjectId }
 
     /// Other projects are refreshed one per cycle, at most every five minutes each, so "My Issues" stays usable.
+    /// Those never fetched, as right after signing in, come first and in rounds right after each other, so My Issues
+    /// fills within moments instead of one project per poll; your changes still go out at the start of each round.
     private func pullOneBackgroundProject() async throws {
-        let ids = try await db.reader.read {
-            try String.fetchAll($0, sql: "SELECT id FROM project WHERE closed = 0")
+        let (ids, unfetched) = try await db.reader.read { db in
+            (
+                try String.fetchAll(db, sql: "SELECT id FROM project WHERE closed = 0"),
+                try String.fetchSet(db, sql: "SELECT id FROM project WHERE closed = 0 AND lastSyncedAt IS NULL")
+            )
         }
-        guard let next = ids.first(where: { $0 != activeProjectId && age(of: $0) > 300 }) else { return }
+        guard let pick = Self.nextBackgroundProject(
+            open: ids, unfetched: unfetched, active: activeProjectId, age: { self.age(of: $0) }
+        ) else { return }
+        let next = pick.next
         do {
             try await pull(projectId: next)
         } catch let error as APIError where !error.isTransient {
-            // A project we cannot read should not stop everything else from syncing.
+            // A project we cannot read should not stop everything else from syncing, nor look as if it were loading.
             lastPull[next] = Date()
+            await markUnreadable(next)
         }
+        // The next round starts without waiting for the poll.
+        if pick.more { kicked = true }
+    }
+
+    /// The project to refresh in the background this round, those never fetched first, and whether more of those wait
+    /// after it. The board on screen has its own pull, and a project is read at most every five minutes, also one that
+    /// couldn't be read.
+    static func nextBackgroundProject(
+        open ids: [String], unfetched: Set<String>, active: String?, age: (String) -> TimeInterval
+    ) -> (next: String, more: Bool)? {
+        let due = ids.filter { $0 != active && age($0) > 300 }
+        guard let next = due.first(where: unfetched.contains) ?? due.first else { return nil }
+        return (next, due.contains { $0 != next && unfetched.contains($0) })
+    }
+
+    @MainActor
+    private func markUnreadable(_ projectId: String) {
+        status.unreadableProjects.insert(projectId)
     }
 
     @MainActor

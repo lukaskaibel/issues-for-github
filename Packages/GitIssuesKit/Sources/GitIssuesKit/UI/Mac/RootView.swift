@@ -393,6 +393,26 @@ struct ProjectLoadingState: View {
     }
 }
 
+/// My Issues until your projects have each been fetched once, as right after signing in: they come one by one, and
+/// their issues with them.
+struct MyIssuesLoadingState: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        switch model.status.phase {
+        case .offline:
+            EmptyState(title: String(localized: .youreOffline), message: String(localized: .myIssuesLoadsWhenOnline))
+        case .failed(let message):
+            EmptyState(title: String(localized: .syncProblem), message: message) {
+                Button(.tryAgain) { model.refresh() }
+                    .buttonStyle(SecondaryButtonStyle())
+            }
+        default:
+            EmptyState(title: String(localized: .loadingIssues), message: String(localized: .myIssuesLoadingMessage), showsProgress: true)
+        }
+    }
+}
+
 /// Dimmed backdrop plus whichever modal is open: command palette or new issue.
 struct OverlayHost: View {
     @Environment(AppModel.self) private var model

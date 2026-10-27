@@ -3,14 +3,17 @@ import SwiftUI
 
 /// The iPhone's first screen, as Reminders opens on its lists: the Inbox and My Issues as two tiles with their counts,
 /// and under them every project, which opens on its board or list. The app comes back to the screen it was left on,
-/// so Home is where a project's back button leads more than where the day starts.
+/// so Home is where a project's back button leads more than where the day starts. Projects you hid wait folded at the
+/// end of the list, as on the Mac.
 struct HomeScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.openRoute) private var openRoute
+    @State private var hiddenOpen = false
 
     var body: some View {
-        let open = model.openProjects
+        let open = model.shownProjects
+        let hidden = model.hiddenProjects
         let closed = model.projects.filter(\.closed)
         List {
             Section {
@@ -19,7 +22,7 @@ struct HomeScreen: View {
                         openRoute(.inbox)
                     }
                     .accessibilityIdentifier("home-inbox")
-                    HomeTile(title: .myIssues, systemImage: "scope", tint: Theme.urgent, count: openAssignedCount) {
+                    HomeTile(title: .myIssues, systemImage: "scope", tint: Theme.urgent, count: openAssignedCount, loading: model.isLoadingMyIssues) {
                         openRoute(.myIssues)
                     }
                     .accessibilityIdentifier("home-my-issues")
@@ -39,16 +42,21 @@ struct HomeScreen: View {
                     .listRowBackground(Color.clear)
                 }
                 ForEach(open) { project in
-                    NavigationLink(value: Route.project(project.id)) {
-                        ProjectRow(project: project)
-                    }
-                    .contextMenu {
-                        Button {
-                            navigation.sheet = .projectIcon(project.id)
-                        } label: {
-                            Label(.changeIconEllipsis, systemImage: "paintpalette")
+                    projectLink(project, hidden: false)
+                }
+                if !hidden.isEmpty {
+                    DisclosureGroup(isExpanded: $hiddenOpen) {
+                        ForEach(hidden) { project in
+                            projectLink(project, hidden: true)
+                        }
+                    } label: {
+                        Label {
+                            Text(.hiddenProjectsCount(count: hidden.count)).foregroundStyle(Theme.textSecondary)
+                        } icon: {
+                            Image(systemName: "eye.slash").foregroundStyle(Theme.textSecondary)
                         }
                     }
+                    .accessibilityIdentifier("home-hidden-projects")
                 }
             } header: {
                 Text(.projects)
@@ -75,6 +83,34 @@ struct HomeScreen: View {
         .modifier(PhoneSearchBar(context: NewIssueContext()))
     }
 
+    /// An open project's row: a tap opens it; touch and hold, or swipe left, to hide it or show it again.
+    private func projectLink(_ project: Project, hidden: Bool) -> some View {
+        NavigationLink(value: Route.project(project.id)) {
+            ProjectRow(project: project)
+                .opacity(hidden ? 0.6 : 1)
+        }
+        .contextMenu {
+            Button {
+                navigation.sheet = .projectIcon(project.id)
+            } label: {
+                Label(.changeIconEllipsis, systemImage: "paintpalette")
+            }
+            Button {
+                model.setHidden(project, !hidden)
+            } label: {
+                Label(hidden ? .showProject : .hideProject, systemImage: hidden ? "eye" : "eye.slash")
+            }
+        }
+        .swipeActions(edge: .trailing) {
+            Button {
+                model.setHidden(project, !hidden)
+            } label: {
+                Label(hidden ? .showProject : .hideProject, systemImage: hidden ? "eye" : "eye.slash")
+            }
+            .tint(hidden ? Theme.accentFill : Color(white: 0.45))
+        }
+    }
+
     /// What My Issues has left to do: its issues through its filter, without the done ones.
     private var openAssignedCount: Int {
         model.mineItems().filter { !(model.statusOption(of: $0)?.statusCategory.isClosed ?? $0.isClosed) }.count
@@ -88,6 +124,8 @@ private struct HomeTile: View {
     var systemImage: String
     var tint: Color
     var count: Int
+    /// Still fetching what the count is of: with nothing found so far, a spinner stands in for the 0.
+    var loading = false
     var action: () -> Void
     @ScaledMetric(relativeTo: .body) private var circle: CGFloat = 32
 
@@ -101,10 +139,14 @@ private struct HomeTile: View {
                         .frame(width: circle, height: circle)
                         .background(Circle().fill(tint))
                     Spacer(minLength: 8)
-                    Text(count, format: .number)
-                        .font(.title.weight(.bold))
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.text)
+                    if loading, count == 0 {
+                        ProgressView()
+                    } else {
+                        Text(count, format: .number)
+                            .font(.title.weight(.bold))
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.text)
+                    }
                 }
                 Text(title)
                     .font(.subheadline.weight(.semibold))
@@ -120,7 +162,7 @@ private struct HomeTile: View {
         .buttonStyle(PlainPressStyle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(title))
-        .accessibilityValue(Text(count, format: .number))
+        .accessibilityValue(loading && count == 0 ? Text(.loadingIssues) : Text(count, format: .number))
         .accessibilityAddTraits(.isButton)
     }
 }
