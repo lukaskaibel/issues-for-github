@@ -9,6 +9,10 @@ struct HomeScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.openRoute) private var openRoute
+    /// How many issues each pinned view or milestone has open, by its key. Counted while Home is on screen only, as on
+    /// a project's page: Home stays under every screen.
+    @State private var pinCounts: [String: Int] = [:]
+    @State private var onScreen = false
 
     var body: some View {
         let open = model.openProjects
@@ -25,7 +29,7 @@ struct HomeScreen: View {
                     }
                     .accessibilityIdentifier("home-my-issues")
                     ForEach(HomePins.shared.keys.compactMap { model.entry(pinned: $0) }) { entry in
-                        PinTile(entry: entry)
+                        PinTile(entry: entry, count: entry.counted ? pinCounts[entry.key] ?? 0 : nil)
                     }
                 }
                 .listRowInsets(EdgeInsets())
@@ -73,6 +77,23 @@ struct HomeScreen: View {
             ToolbarItem(placement: .topBarLeading) { AccountButton() }
         }
         .modifier(PhoneSearchBar(context: NewIssueContext()))
+        .onAppear {
+            onScreen = true
+            recountPins()
+        }
+        .onDisappear { onScreen = false }
+        .onChange(of: model.dataVersion) { _, _ in
+            if onScreen { recountPins() }
+        }
+        .onChange(of: HomePins.shared.keys) { _, _ in recountPins() }
+    }
+
+    private func recountPins() {
+        var fresh: [String: Int] = [:]
+        for entry in HomePins.shared.keys.compactMap({ model.entry(pinned: $0) }) {
+            fresh[entry.key] = model.openCount(of: entry)
+        }
+        if fresh != pinCounts { pinCounts = fresh }
     }
 
     /// What My Issues has left to do: its issues through its filter, without the done ones.
@@ -132,11 +153,12 @@ private struct PinTile: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     var entry: ProjectEntry
+    /// How many of its issues are open; none for the roadmap.
+    var count: Int?
     @ScaledMetric(relativeTo: .body) private var circle: CGFloat = 32
 
     var body: some View {
         let project = model.projects.first { $0.id == entry.projectId }
-        let count = model.openCount(of: entry)
         let title = model.title(of: entry)
         Button {
             open()

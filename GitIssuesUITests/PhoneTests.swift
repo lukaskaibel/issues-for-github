@@ -1258,7 +1258,12 @@ final class PhoneTests: AppTestCase {
         let todo = app.buttons["Reorder Todo"]
         let first = app.buttons["Reorder In Review"]
         wait(todo)
-        todo.press(forDuration: 0.6, thenDragTo: first)
+        // Into the top half of the first row, slowly and held there: dropped on its middle, the row could land on
+        // either side of it, and a busy simulator could lift the finger before the drag took over.
+        todo.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(
+            forDuration: 0.6, thenDragTo: first.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1)),
+            withVelocity: .slow, thenHoldForDuration: 0.5
+        )
         scrollTo(button("Back to the Usual Order"), in: app.collectionViews.firstMatch)
         wait(button("Back to the Usual Order"))
         snapshot("Sections rearranged")

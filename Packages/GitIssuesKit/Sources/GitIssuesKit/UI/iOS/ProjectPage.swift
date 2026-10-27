@@ -11,6 +11,12 @@ struct ProjectPage: View {
     var projectId: String
     /// New View was chosen here: the view it makes opens once it's there.
     @State private var awaitingNewView = false
+    /// How many issues each entry has open, by its key, and how many are on no board. Counted while the page is on
+    /// screen only: under a view it would count every view's issues again at each change made there, which held up
+    /// the screen in front, even a drag in its sheets.
+    @State private var counts: [String: Int] = [:]
+    @State private var noBoard = 0
+    @State private var onScreen = false
 
     var body: some View {
         let project = model.projects.first { $0.id == projectId }
@@ -31,8 +37,14 @@ struct ProjectPage: View {
         }
         .modifier(PhoneSearchBar(context: NewIssueContext(projectId: projectId)))
         .onAppear {
+            onScreen = true
+            recount()
             model.setActiveProject(projectId)
             navigation.rememberProject(projectId)
+        }
+        .onDisappear { onScreen = false }
+        .onChange(of: model.dataVersion) { _, _ in
+            if onScreen { recount() }
         }
         .onChange(of: model.views(projectId: projectId).map(\.id)) { old, new in
             // The view New View made is the open one now.
@@ -49,9 +61,11 @@ struct ProjectPage: View {
         let views = model.views(projectId: projectId)
         return List {
             Section(String(localized: .views)) {
-                PageRow(entry: .allIssues(projectId), note: noBoardNote) { openRoute(.allIssues(projectId)) }
+                PageRow(entry: .allIssues(projectId), note: noBoardNote, count: count(.allIssues(projectId))) {
+                    openRoute(.allIssues(projectId))
+                }
                 ForEach(views) { view in
-                    PageRow(entry: .view(view)) {
+                    PageRow(entry: .view(view), count: count(.view(view))) {
                         model.show(view)
                         openRoute(.project(projectId))
                     }
@@ -82,11 +96,12 @@ struct ProjectPage: View {
             if model.hasPlanning(projectId: projectId) {
                 Section(String(localized: .milestones)) {
                     ForEach(model.sidebarMilestones(projectId: projectId)) { group in
-                        PageRow(entry: .milestone(projectId: projectId, title: group.title), note: dueNote(group)) {
+                        let entry = ProjectEntry.milestone(projectId: projectId, title: group.title)
+                        PageRow(entry: entry, note: dueNote(group), count: count(entry)) {
                             openRoute(.milestone(projectId: projectId, title: group.title))
                         }
                     }
-                    PageRow(entry: .roadmap(projectId)) { openRoute(.roadmap(projectId)) }
+                    PageRow(entry: .roadmap(projectId), count: nil) { openRoute(.roadmap(projectId)) }
                 }
             }
         }
@@ -97,8 +112,26 @@ struct ProjectPage: View {
 
     /// How many of the project's issues are on no board, under All Issues.
     private var noBoardNote: String? {
-        let count = model.countOnNoBoard(projectId: projectId)
-        return count > 0 ? String(localized: .noBoardCount(count: count)) : nil
+        noBoard > 0 ? String(localized: .noBoardCount(count: noBoard)) : nil
+    }
+
+    private func count(_ entry: ProjectEntry) -> Int? {
+        counts[entry.key]
+    }
+
+    /// Counts the open issues of All Issues, the views and the milestones listed.
+    private func recount() {
+        var entries = [ProjectEntry.allIssues(projectId)] + model.views(projectId: projectId).map { ProjectEntry.view($0) }
+        if model.hasPlanning(projectId: projectId) {
+            entries += model.sidebarMilestones(projectId: projectId).map { .milestone(projectId: projectId, title: $0.title) }
+        }
+        var fresh: [String: Int] = [:]
+        for entry in entries {
+            fresh[entry.key] = model.openCount(of: entry)
+        }
+        if fresh != counts { counts = fresh }
+        let onNoBoard = model.countOnNoBoard(projectId: projectId)
+        if onNoBoard != noBoard { noBoard = onNoBoard }
     }
 
     /// When a milestone is due, under its name.
@@ -113,12 +146,13 @@ private struct PageRow: View {
     @Environment(AppModel.self) private var model
     var entry: ProjectEntry
     var note: String?
+    var count: Int?
     var open: () -> Void
 
     var body: some View {
         let pinned = HomePins.shared.contains(entry)
         Button(action: open) {
-            PageRowLabel(icon: nil, entry: entry, title: model.title(of: entry), note: note, count: model.openCount(of: entry))
+            PageRowLabel(icon: nil, entry: entry, title: model.title(of: entry), note: note, count: count)
         }
         .accessibilityIdentifier("page-\(model.title(of: entry))")
         .accessibilityValue(spokenState(pinned: pinned))
@@ -285,6 +319,11 @@ enum ProjectEntry: Identifiable, Hashable {
         case .milestone(let projectId, _): projectId
         }
     }
+
+    /// Whether it shows a count: the roadmap shows epics, not issues to count.
+    var counted: Bool {
+        if case .roadmap = self { false } else { true }
+    }
 }
 
 extension AppModel {
@@ -325,7 +364,7 @@ extension AppModel {
         case .allIssues(let id):
             return items(in: .allIssues(id)).filter { !isDone($0) }.count
         case .view(let view):
-            return items(of: view).filter { !isDone($0) }.count
+            return matchingItems(of: view).filter { !isDone($0) }.count
         case .milestone(let projectId, let title):
             let progress = progress(projectId: projectId, milestone: title)
             return progress.total - progress.done
