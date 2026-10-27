@@ -280,23 +280,24 @@ The interface uses the system's own parts.
   <img alt="Three iPhones: an issue with its properties as chips, the menu on a long press, and a new issue being typed" src="Design/screenshots/iphone-light.webp">
 </picture>
 
-- **iPhone:** no tab bar: the app opens where you left it, usually a project's board, and ‹ leads to Home, which has
-  the Inbox and My Issues as two tiles with their counts, as Reminders has Today and Scheduled, and every project under
-  them. Touch and hold a project there, or swipe it left, to hide it: hidden ones wait folded at the end of the list,
-  as on the Mac. Search and New Issue are at the foot of each screen, as in Notes. A project's board shows one column at a
+- **iPhone:** no tab bar: the app opens where you left it, usually a project's board. ‹ leads to the project's page
+  (All Issues with how many of its issues are on no board, its views with how many of their issues are open, its next
+  milestones with when they are due, and the roadmap), as Mail has its mailboxes under the Inbox, and ‹ again to Home,
+  which has the Inbox and My Issues as two tiles with their counts, as Reminders has Today and Scheduled, what you
+  pinned from the projects' pages as more tiles, and every project under them. Touch and hold a project there, or swipe
+  it left, to hide it: hidden ones wait folded at the end of the list, as on the Mac. A project opens on the view you
+  used last, which names the screen with the project under it. Search and New Issue are at the foot of each screen, as
+  in Notes. A project's board shows one column at a
   time, with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and hold a card and drop it on a column in the strip to move it
   there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards.
   Lists for the views that are lists, and each project's All Issues and My Issues, grouped by status, with sections that
-  fold and headers that stay pinned. The menu of a project's title has All Issues (with how many of its issues are on
-  no board), its views, its next milestones with the roadmap, and the other projects. Swipe right to mark an issue
-  done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
+  fold and headers that stay pinned. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
   and drag after holding to give an issue a new place in its section.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
   A milestone is a list grouped by epic,
-  the roadmap a list of epics by milestone. A project's views are capsules over its list, with the open one's filter
-  as a line under them (over a board, they are in the menu of the project's title, which names the open one under
-  it, and Display in the project's "…" turns a view into a list or back); tap the line to change the filter, touch
-  and hold a view for its menu. A view's groups show their progress or each person's load, and a view of one iteration has the cycle on top, as on the Mac. My Issues'
+  the roadmap a list of epics by milestone. The open view's filter is a line over its list or board; tap it to change
+  the filter, and Display in the project's "…" turns a view into a list or back. Touch and hold a view on the
+  project's page for its menu. A view's groups show their progress or each person's load, and a view of one iteration has the cycle on top, as on the Mac. My Issues'
   "…" menu filters it, groups it by status, project, priority or due date and orders it; its filter shows as a line
   under the title.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
@@ -736,15 +737,16 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold a card, then drop it on a column in the strip (iPhone) | Move it there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards |
 | Tap the milestone chip of an issue | Put it into another milestone, or a new one |
 | Touch and hold an epic's bar on the roadmap, then drag (iPad) | Move the epic and its unfinished issues to another milestone, or to Later |
-| Tap a view over a project's list or in the menu of its title (iPhone), or in the sidebar (iPad) | Open it |
-| Touch and hold a view (iPhone) | Filter, rename, duplicate, open on GitHub, delete |
-| Tap the filter line under the views | Change the filter; **Save for Everyone** puts it on GitHub, **Reset** takes it back |
+| Tap a view on the project's page (iPhone), or in the sidebar (iPad) | Open it |
+| Touch and hold a view on the project's page (iPhone) | Pin, filter, rename, duplicate, open on GitHub, delete |
+| Swipe right on a view, milestone, All Issues or the roadmap on the project's page, or Pin in its "…" (iPhone) | Pin it to Home as a tile with its count; touch and hold the tile to unpin it |
+| Tap the filter line over a view | Change the filter; **Save for Everyone** puts it on GitHub, **Reset** takes it back |
 | "…" in My Issues | Filter it, group it by status, project, priority or due date, and order it; a tap on its filter line changes the filter, **Clear Filter** takes it away |
 | Tap ‹ or › beside a view's cycle | The cycle before or after, until you save it |
-| Tap the plus after the views (iPhone), or New View… in the project's "…" menu | A new view, starting from the one open |
-| Tap ‹ (iPhone) | Back, as far as Home: the Inbox and My Issues as tiles with their counts, then your projects |
+| New View… on the project's page (iPhone), or in the project's "…" menu | A new view, starting from the one open |
+| Tap a project on Home (iPhone) | Open it on the view used last, with the project's page a step back |
+| Tap ‹ (iPhone) | Back: from a project's view, milestone or roadmap to the project's page, from there to Home, with the Inbox, My Issues and your pins as tiles, then your projects |
 | Tap the search field at the foot of a screen (iPhone) | Search issues in every project by title or number, and projects by name; before you type, the issues you opened last |
-| Tap a project's title (iPhone) | All Issues, its views, its next milestones and the roadmap, and the other projects |
 | Tap a project in the sidebar (iPad) | Open it on its open view; its All Issues, views and milestones show under the projects |
 | Tap your picture at the top of the sidebar (iPad) | Your account, Sync Now and the settings |
 | Change Icon… in a project's "…" menu, or touch and hold it on Home (iPhone) | Its glyph and colour: 257 glyphs in groups, with a search field; a colour keeps the sheet open, a glyph closes it |

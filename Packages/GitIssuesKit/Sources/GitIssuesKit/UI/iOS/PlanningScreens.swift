@@ -36,6 +36,7 @@ struct MilestoneScreen: View {
         // Under the board, the grey its cards stand on.
         .background(group != nil && wide && model.viewMode == .board ? Theme.board : Theme.panel)
         .navigationTitle(title)
+        .modifier(ProjectSubtitle(title: wide ? nil : model.projects.first { $0.id == projectId }?.title))
         .navigationBarTitleDisplayMode(.inline)
         .modifier(EditorRole(active: wide))
         .toolbar {
@@ -150,6 +151,7 @@ struct MilestoneSummaryCard: View {
 struct MilestoneOptionsMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
+    @Environment(\.wideLayout) private var wide
     var projectId: String
     var group: MilestoneGroup
     var showsViewMode = false
@@ -169,6 +171,8 @@ struct MilestoneOptionsMenu: View {
             } label: {
                 Label(.editMilestoneEllipsis, systemImage: "pencil")
             }
+            // Home's pins are the iPhone's.
+            if !wide { PinMenuItem(entry: .milestone(projectId: projectId, title: group.title)) }
             if group.isOpen {
                 Button {
                     model.milestoneToComplete = MilestoneRef(projectId: projectId, title: group.title)
@@ -239,6 +243,7 @@ struct RoadmapScreen: View {
         }
         .background(Theme.panel)
         .navigationTitle(Text(.roadmap))
+        .modifier(ProjectSubtitle(title: wide ? nil : model.projects.first { $0.id == projectId }?.title))
         .navigationBarTitleDisplayMode(.inline)
         .modifier(EditorRole(active: wide))
         .toolbar {

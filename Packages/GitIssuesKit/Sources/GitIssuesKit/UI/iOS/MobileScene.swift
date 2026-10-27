@@ -116,6 +116,7 @@ struct MobileRoot: View {
             guard let move else { return }
             model.milestoneMove = nil
             navigation.follow(move)
+            HomePins.shared.follow(move)
         }
         // Initial too: without a token the first sync fails before this view is on screen.
         .onChange(of: model.status.phase, initial: true) { _, phase in
@@ -439,7 +440,8 @@ struct MainTabs: View {
 }
 
 /// The iPhone's one stack, without a tab bar: Home at its root, the screen the app was left on opened on top. Back from
-/// the Inbox, My Issues or a project leads Home.
+/// the Inbox, My Issues or a project's page leads Home; back from a project's view, milestone or roadmap leads to the
+/// project's page first.
 struct PhoneStack: View {
     @Environment(MobileNavigation.self) private var navigation
 
@@ -493,6 +495,7 @@ struct RouteDestination: View {
         case .statuses(let id): StatusEditor(projectId: id)
         case .milestone(let projectId, let title): MilestoneScreen(projectId: projectId, title: title)
         case .roadmap(let projectId): RoadmapScreen(projectId: projectId)
+        case .projectPage(let id): ProjectPage(projectId: id)
         }
     }
 }
@@ -618,7 +621,7 @@ extension MobileNavigation {
         }
         for route in path(for: tab).reversed() {
             switch route {
-            case .project(let id), .roadmap(let id), .allIssues(let id): return id
+            case .project(let id), .roadmap(let id), .allIssues(let id), .projectPage(let id): return id
             case .milestone(let id, _): return id
             default: continue
             }

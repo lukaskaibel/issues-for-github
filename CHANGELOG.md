@@ -11,10 +11,15 @@ All notable changes to this project are recorded here. The format follows
 - **The board on iPhone.** A board view shows as a board on the iPhone now, one column at a time across the screen,
   with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and
   hold a card and the strip becomes a target for each column: let go on one and the card goes first in that column;
-  hold it there a moment and the board turns to that column, to place the card among the cards there. Over the board
-  the project's views are in the menu of its title, which names the open one under it, and Display in the project's
-  "…" turns a view into a list or back, picks its columns and shows hidden columns again, as on the iPad. Before, the
-  iPhone showed every view as a list; a milestone still is one, grouped by epic.
+  hold it there a moment and the board turns to that column, to place the card among the cards there. Display in the
+  project's "…" turns a view into a list or back, picks its columns and shows hidden columns again, as on the iPad.
+  Before, the iPhone showed every view as a list; a milestone still is one, grouped by epic.
+- **Pins on the iPhone's Home.** Swipe right on a view, a milestone, All Issues or the roadmap on a project's page,
+  or choose **Pin** when you touch and hold it or in its "…" menu, and it shows on Home as a tile next to the Inbox and
+  My Issues, as Reminders shows Today and Scheduled: the project's colour, how many of its issues are open, its name
+  and the project's. A tap opens it, with the project's page a step back; touch and hold the tile to unpin it. A
+  pinned milestone follows it when it is renamed, or completed with its open issues moved on. Pins stay on that
+  iPhone.
 - **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and those
   without a priority after them, with the done ones at the bottom. The arrows beside the plus over them (on iPhone and
   iPad, the "…" there) order them by status, newest first or in GitHub's order instead; the choice holds for every
@@ -66,9 +71,8 @@ All notable changes to this project are recorded here. The format follows
 - **Hide projects on iPhone and iPad too.** Touch and hold a project on the iPhone's Home, or swipe it to the left, for
   **Hide Project**: it moves into a folded line at the end of the list, "1 hidden", which unfolds to show it again. On
   the iPad the same in the sidebar is **Hide from Sidebar**, with the same line at the end of the projects; a hidden
-  project you open stays in the sidebar while it is open. A hidden project also opens from search and from the
-  "hidden" submenu of a project's title on iPhone; new issues no longer offer it. As on the Mac, this is for your
-  device alone.
+  project you open stays in the sidebar while it is open. A hidden project also opens from search; new issues no
+  longer offer it. As on the Mac, this is for your device alone.
 - **Close an issue that's on no board.** Its status picker offers **Mark as Done**, or **Reopen** once it's closed, as
   well as the boards to put it on.
 - **More in the command palette.** New Issue wherever `C` makes one, Copy Branch Name, Show or Hide Inspector, Reset
@@ -79,8 +83,11 @@ All notable changes to this project are recorded here. The format follows
 - **Projects first on iPhone and iPad.** The iPhone has no tab bar any more: it opens where you left it, usually a
   project's board, and ‹ leads to Home, which has the Inbox and My Issues as two tiles with their counts, as Reminders
   has Today and Scheduled, and every project under them. Search and New Issue are at the foot of each screen, as in
-  Notes, and the search looks through every project. The menu of a project's title has its All Issues, views, next
-  milestones and roadmap, and the other projects. On the iPad the sidebar lists every project, a tap each, with the
+  Notes, and the search looks through every project. A project opens on the view you used last, which names the
+  screen with the project under it, and ‹ leads first to the project's own page, as Mail has its mailboxes under the
+  Inbox: All Issues with how many issues are on no board, the views with how many of their issues are open, the next
+  milestones with when they are due, and the roadmap; touch and hold a view there for its menu. That page takes the
+  place of the capsules of views over a list. On the iPad the sidebar lists every project, a tap each, with the
   Inbox, My Issues and Search above them and the open project's views and milestones below; your account is at its
   top in place of the project switcher.
 - **A quieter board.** The cards stand on a grey board without a border, each on a soft shadow, and the columns

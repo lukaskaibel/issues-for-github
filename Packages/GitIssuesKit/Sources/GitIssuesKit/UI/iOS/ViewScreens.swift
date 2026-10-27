@@ -1,65 +1,19 @@
 #if os(iOS)
 import SwiftUI
 
-/// Over a project's list or board: its saved views as capsules, the open one filled, and under them the open view's
-/// filter. Touch and hold a view for its menu. A wide iPad lists the views in its sidebar, and over the iPhone's board
-/// they are in the title's menu, so there only the filter shows, and only when there is one.
+/// Over a project's list or board: the open view's filter, and a cycle's progress for a view of one iteration. It
+/// shows only when the view has a filter; the project's views are on the iPhone's page of the project and in the
+/// iPad's sidebar.
 struct ViewBar: View {
     @Environment(AppModel.self) private var model
-    @Environment(MobileNavigation.self) private var navigation
     @Environment(\.wideLayout) private var wide
     var projectId: String
     /// The page's own ground, which the bar continues: white over a list, the board's grey over a board.
     var ground = Theme.panel
-    var showsViews = true
 
     var body: some View {
-        let current = model.currentView(projectId: projectId)
-        let showsFilter = current.map { !model.filter(of: $0).isEmpty || model.filterChanged($0) } ?? false
-        if pills || showsFilter {
-            bar(current: current)
-        }
-    }
-
-    private var pills: Bool { !wide && showsViews }
-
-    private func bar(current: ProjectView?) -> some View {
-        let views = model.views(projectId: projectId)
-        return VStack(alignment: .leading, spacing: 8) {
-            if pills {
-                ScrollViewReader { proxy in
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 6) {
-                            ForEach(views) { view in
-                                ViewPill(view: view, selected: view.id == current?.id)
-                                    .id(view.id)
-                            }
-                            if model.canEditViews(projectId: projectId) {
-                                Button {
-                                    navigation.sheet = .newView(projectId: projectId, sourceViewId: current?.id, duplicate: false)
-                                } label: {
-                                    Image(systemName: "plus")
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(Theme.textSecondary)
-                                        .frame(width: 32, height: 32)
-                                        .background(Circle().fill(Theme.card))
-                                        .overlay(Circle().strokeBorder(Theme.cardBorder, lineWidth: 1))
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel(.newViewTooltip)
-                                .accessibilityIdentifier("new-view")
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                    }
-                    .scrollIndicators(.never)
-                    .onAppear { if let current { proxy.scrollTo(current.id, anchor: .center) } }
-                    .onChange(of: current?.id) { _, id in
-                        if let id { withAnimation(Theme.spring) { proxy.scrollTo(id, anchor: .center) } }
-                    }
-                }
-            }
-            if let current {
+        if let current = model.currentView(projectId: projectId), !model.filter(of: current).isEmpty || model.filterChanged(current) {
+            VStack(alignment: .leading, spacing: 8) {
                 ViewFilterLine(view: current)
                 // A view of one iteration says which, when, and how far it is, as Linear's cycles.
                 if let pinned = model.pinnedIteration(of: current) {
@@ -67,43 +21,10 @@ struct ViewBar: View {
                         .padding(.horizontal, 16)
                 }
             }
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(ground)
         }
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(ground)
-    }
-}
-
-/// One saved view: a tap opens it.
-private struct ViewPill: View {
-    @Environment(AppModel.self) private var model
-    @Environment(MobileNavigation.self) private var navigation
-    var view: ProjectView
-    var selected: Bool
-
-    var body: some View {
-        Button {
-            withAnimation(Theme.spring) { model.show(view) }
-        } label: {
-            HStack(spacing: 6) {
-                ViewLayoutGlyph(view: view)
-                Text(view.name).lineLimit(1)
-                if model.filterChanged(view) {
-                    Circle().fill(selected ? Theme.onColor : Theme.accent).frame(width: 6, height: 6)
-                }
-            }
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(selected ? Theme.onColor : Theme.text)
-            .padding(.horizontal, 13)
-            .frame(height: 32)
-            .background(Capsule().fill(selected ? Theme.accentFill : Theme.card))
-            .overlay(Capsule().strokeBorder(selected ? .clear : Theme.cardBorder, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityValue(model.filterChanged(view) ? Text(.filterChangedSpoken) : Text(verbatim: ""))
-        .accessibilityIdentifier("view-\(view.name)")
-        .contextMenu { ViewMenuItems(view: view) }
     }
 }
 

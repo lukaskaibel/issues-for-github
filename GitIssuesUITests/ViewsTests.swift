@@ -8,38 +8,25 @@ final class PhoneViewsTests: AppTestCase {
         try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad, "iPhone layout")
     }
 
+    /// Opens a view from the project's page, a step back from the view on screen.
     private func openView(_ name: String) {
-        let pill = element("view-\(name)")
-        // Over a board the views are in the title's menu.
-        guard pill.waitForExistence(timeout: 2) else {
-            openTitleMenu("Git Issues")
-            wait(button(name))
-            button(name).tap()
-            return
-        }
-        // The capsules scroll sideways; the later ones are off screen at first.
-        let screen = app.windows.firstMatch.frame
-        var swipes = 0
-        while pill.frame.maxX > screen.maxX - 8 && swipes < 4 {
-            app.scrollViews.containing(.button, identifier: "view-Board").firstMatch.swipeLeft()
-            swipes += 1
-        }
-        pill.tap()
-        XCTAssertTrue(pill.isSelected, "\(name) isn't the open view")
+        openFromProjectPage("Git Issues", name)
     }
 
     func testAViewShowsWhatItsFilterFinds() {
         launch()
         openProjectTab("Git Issues")
-        // A board view opens as a board: the views are in the title's menu, which names the open one under it.
+        // The project opens on its open view, which names the screen; its views are on the project's page under it.
         wait(element("strip-In Progress"))
-        XCTAssertFalse(element("view-Board").exists)
-        openTitleMenu("Git Issues")
-        wait(button("This Week"))
-        wait(button("Website"))
-        snapshot("Views in the title's menu")
+        wait(app.navigationBars["Board"])
+        openProjectPage("Git Issues")
+        // Each with how many of its issues are open.
+        waitForLabel(element("page-This Week"), containing: "9")
+        wait(element("page-Bugs and Sync"))
+        snapshot("Views on the project's page")
 
-        button("This Week").tap()
+        element("page-This Week").tap()
+        wait(app.navigationBars["This Week"])
         waitForValue(element("view-filter"), equalTo: "Iteration is Current")
         wait(element("card-#9"))
         // A board switched to opens on its work in progress, the column the strip raises.
@@ -52,10 +39,12 @@ final class PhoneViewsTests: AppTestCase {
         openView("Bugs and Sync")
         wait(element("row-#25"))
         waitGone(element("row-#9"))
-        // Over a list, the views are capsules again.
-        wait(element("view-Bugs and Sync"))
-        XCTAssertTrue(element("view-Bugs and Sync").isSelected)
-        snapshot("Views over the project")
+        snapshot("Bugs and Sync")
+
+        // The view opened last is the one the project opens on from Home.
+        goHome()
+        openProjectTab("Git Issues")
+        wait(app.navigationBars["Bugs and Sync"])
     }
 
     func testAViewGroupsByItsField() {
@@ -103,7 +92,6 @@ final class PhoneViewsTests: AppTestCase {
         launch()
         openProjectTab("Git Issues")
         openView("This Week")
-        // As a list, whose capsule says when its filter differs from the one saved.
         showLayout("List")
         let cycle = element("cycle")
         wait(cycle)
@@ -117,16 +105,19 @@ final class PhoneViewsTests: AppTestCase {
         // Planned for the next cycle.
         wait(element("row-#14"))
         waitGone(element("row-#9"))
-        // Another cycle is a changed filter, as on GitHub, until it is saved.
-        waitForValue(element("view-This Week"), equalTo: "Filter changed")
+        // Another cycle is a changed filter, as on GitHub, until it is saved; the project's page says so too.
+        goBack()
+        waitForValue(element("page-This Week"), equalTo: "Filter changed")
+        element("page-This Week").tap()
 
         // Back to the one under way: the view as saved again.
         element("cycle-previous").tap()
         waitForValue(element("view-filter"), equalTo: "Iteration is Current")
         wait(cycle.staticTexts["Cycle 4"])
         wait(element("row-#9"))
-        waitForValue(element("view-This Week"), notEqualTo: "Filter changed")
         XCTAssertFalse(button("Save").exists)
+        goBack()
+        waitForValue(element("page-This Week"), notEqualTo: "Filter changed")
     }
 
     func testAChangedFilterStaysUntilSavedOrReset() {
@@ -153,7 +144,6 @@ final class PhoneViewsTests: AppTestCase {
         button("Done").tap()
 
         waitForValue(element("view-filter"), equalTo: "Label is any of bug, sync, ui, Open or closed is Open")
-        waitForValue(element("view-Bugs and Sync"), equalTo: "Filter changed")
         wait(element("row-#9"))
         wait(button("Save"))
         snapshot("Changed filter over the list")
@@ -172,9 +162,10 @@ final class PhoneViewsTests: AppTestCase {
         openProjectTab("Git Issues")
         openView("This Week")
         showLayout("List")
-        // After the last of the views.
-        app.scrollViews.containing(.button, identifier: "view-This Week").firstMatch.swipeLeft()
-        element("new-view").tap()
+        // After the last of the views on the project's page.
+        openProjectPage("Git Issues")
+        scrollTo(element("page-new-view"))
+        element("page-new-view").tap()
         let name = app.textFields["View name"]
         wait(name)
         // The open view's filter comes along, to change before creating.
@@ -183,20 +174,21 @@ final class PhoneViewsTests: AppTestCase {
         name.typeText("Cycle")
         button("Create").tap()
         waitGone(name)
-        wait(element("view-Cycle"))
-        XCTAssertTrue(element("view-Cycle").isSelected)
+        // The new view opens.
+        wait(app.navigationBars["Cycle"])
         waitForValue(element("view-filter"), equalTo: "Iteration is Current")
         wait(element("row-#9"))
+        goBack()
+        wait(element("page-Cycle"))
     }
 
     func testRenamingAndDeletingAView() {
         launch()
-        openProjectTab("Git Issues")
-        // A list view, over which the views are capsules.
-        openView("By Area")
-        let pill = element("view-Bugs and Sync")
-        wait(pill)
-        pill.press(forDuration: 1.2)
+        // Touch and hold a view on the project's page for its menu.
+        openProjectPage("Git Issues")
+        let row = element("page-Bugs and Sync")
+        wait(row)
+        row.press(forDuration: 1.2)
         wait(button("Rename"))
         snapshot("View menu")
         button("Rename").tap()
@@ -205,16 +197,16 @@ final class PhoneViewsTests: AppTestCase {
         let field = alert.textFields.firstMatch
         replaceText(of: field, with: "Bugs")
         confirmAlert(alert, with: "Save")
-        wait(element("view-Bugs"))
+        wait(element("page-Bugs"))
 
-        element("view-Bugs").press(forDuration: 1.2)
+        element("page-Bugs").press(forDuration: 1.2)
         wait(button("Delete View…"))
         button("Delete View…").tap()
         let confirm = app.alerts.firstMatch
         wait(confirm)
         confirmAlert(confirm, with: "Delete View")
-        waitGone(element("view-Bugs"))
-        wait(element("view-By Area"))
+        waitGone(element("page-Bugs"))
+        wait(element("page-By Area"))
     }
 }
 
@@ -249,7 +241,6 @@ final class PhoneBoardTests: AppTestCase {
         // Board or list is the view's, in the Display part of the project's menu.
         showLayout("List")
         wait(element("section-In Progress"))
-        wait(element("view-Board"))
         waitGone(progress)
         showLayout("Board")
         wait(progress)

@@ -404,6 +404,11 @@ extension AppModel {
 
     /// The items of a project a view shows, in its order. Epics stay on the roadmap, unless the filter asks for them.
     func items(of view: ProjectView) -> [Item] {
+        sorted(matchingItems(of: view), by: sort(of: view))
+    }
+
+    /// The items a view shows, in no particular order: enough to count them.
+    func matchingItems(of view: ProjectView) -> [Item] {
         let all = allItems.filter { $0.projectId == view.projectId }
         guard let context = filterContext(projectId: view.projectId) else { return all }
         let text = filterText(of: view)
@@ -421,7 +426,7 @@ extension AppModel {
             if let known { shown = shown.filter { known.contains($0.id) || $0.isLocalOnly } }
         }
         if !Self.asksForEpics(filter) { shown = shown.filter { !$0.isEpic } }
-        return sorted(shown, by: sort(of: view))
+        return shown
     }
 
     /// Whether a filter asks for epics by name: the label or the issue type.
