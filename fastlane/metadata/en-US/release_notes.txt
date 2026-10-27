@@ -1,19 +1,18 @@
-The biggest update yet: plan with milestones, epics and a roadmap, open your project's views from GitHub, and use Issues in nine languages, in a new look built like Mail and Notes.
+The board comes to iPhone, your projects come first on iPhone and iPad, and the board is quieter everywhere.
 
-• Milestones: a board's next ones in the sidebar, each with its issues, how much is done and the day it's due. Complete one and move what's left to the next
-• Epics: issues whose sub-issues are their work. On the board an epic's issues stand together under its name; drag the name to move them all
-• A roadmap: your epics as bars over the milestones, by month or quarter. Drag a bar to move an epic and its issues to another milestone
-• Your project's views from GitHub in the sidebar, as a board or a list, with filters as chips. Grouped by milestone or parent, a view shows how far each group is; a view of the current iteration shows its days left; a roadmap view is a timeline
-• Milestones, views and the roadmap on iPhone and iPad too; the roadmap is a list on iPhone and a timeline on iPad
-• A new look: on the Mac, the window of Mail and Notes in Liquid Glass, an inspector beside the issue, and right-click menus with a search field. On iPhone and iPad, issues with glass chips and comments as a conversation
-• A refined app icon, also on graphite or indigo, and an icon of your choice for each project
-• Nine languages: English, German, French, Spanish, Portuguese, Russian, Japanese, Korean and Chinese, following your device's language
-• The Inbox: your GitHub notifications, with the issue right beside them. Read, archive and snooze with a key or a swipe; github.com and your other devices agree
-• Due dates with reminders: pick a day or type it, such as "in 3 days", and on the day your Mac, iPhone and iPad remind you
-• Sub-issues hang under their parent; finish the last one and the parent is done too. Mark what blocks what
-• Every issue, on a board or not: your repositories in the sidebar, with the issues on no board one click from going onto one
-• My Issues your way: filter it and group it by project, status, priority or due date, with the most urgent first
-• Descriptions drawn as on GitHub: tables, checklists that tick, code and Mermaid diagrams
-• Writing Markdown as in a notes app: bold, italics and code turn on and off, lists go on with Return, and on iPhone and iPad the bar above the keyboard has buttons for where the caret is
-• Fewer clicks: picking a status, person or label closes the picker
-• Fixed: turning an iPad to landscape could quit the app, and on the Mac a two-finger swipe no longer goes back by accident
+• The board on iPhone: one column at a time, with every column and its count in a strip over it. Swipe or tap the strip to turn to another column; touch and hold a card and drop it on a column in the strip
+• Projects first: on iPhone the tab bar is gone, and the app opens where you left off. ‹ leads to the project's page, with All Issues, its views, its next milestones and the roadmap, and on to all your projects under the Inbox and My Issues
+• Pins: swipe right on a view, a milestone or the roadmap, and it stands next to the Inbox and My Issues with how many of its issues are open
+• On iPad, the sidebar lists every project, with the open one's views and milestones under it
+• A quieter board: cards on grey without borders, labels as a dot and a name, and colour left for what needs you: a due date, an urgent issue, a blocker
+• All Issues in place of Repositories: a project's issues together with those on no board, and how many of those are open
+• Sub-issues of sub-issues unfold as a tree, listed by priority or in the order you pick
+• A blocked issue names what blocks it, as #364 on its flag
+• Pick several sub-issues and change them at once: ⌘-click and Shift-click on the Mac and iPad, Select on iPhone and iPad
+• On the Mac, dragging one of several picked issues moves all of them
+• Pickers offer the parents, epics, labels and people you chose last
+• Hide board columns or projects you don't need, on your device only
+• Markdown drawn as on GitHub while you write it, now with alerts, formulas, footnotes and pictures. Its marks show only next to the caret, and on iPhone and iPad the bar above the keyboard is glass, as in Notes
+• Typing ** starts bold with its closing stars, and ## a heading; Tab and the arrow keys go from the title into the description and back
+• On the Mac, long boards and the Inbox follow the pointer and scroll smoothly
+• Fixed: My Issues says while your projects are still loading, dragging in the Mac's list works again, and many smaller things
