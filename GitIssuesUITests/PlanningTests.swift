@@ -7,32 +7,37 @@ final class PhonePlanningTests: AppTestCase {
         try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad, "iPhone layout")
     }
 
-    /// Opens a milestone, or the roadmap, from the menu of the board's title.
+    /// Opens a milestone, or the roadmap, from the project's page.
     private func openMilestone(_ title: String) {
-        openProjectTab("Git Issues")
-        openTitleMenu("Git Issues")
-        let item = button(title)
-        wait(item)
-        item.tap()
-        wait(app.navigationBars[title])
+        openFromProjectPage("Git Issues", title)
     }
 
     private func openRoadmap() {
         openMilestone("Roadmap")
     }
 
-    func testTheNextMilestonesAndTheRoadmapAreInTheBoardsMenu() {
+    func testTheNextMilestonesAndTheRoadmapAreOnTheProjectsPage() {
         launch()
-        openProjectTab("Git Issues")
-        openTitleMenu("Git Issues")
-        wait(button("0.3"))
-        wait(button("0.4"))
-        wait(button("Roadmap"))
+        openProjectPage("Git Issues")
+        let current = element("page-0.3")
+        scrollTo(current)
+        // With when it is due and how many of its issues are open.
+        waitForLabel(current, containing: "Due")
+        wait(element("page-0.4"))
+        scrollTo(element("page-Roadmap"))
+        wait(element("page-Roadmap"))
         // Only the next two; the roadmap has the rest.
-        XCTAssertFalse(button("1.0").exists)
+        XCTAssertFalse(element("page-1.0").exists)
         // Completed milestones don't show.
-        XCTAssertFalse(button("0.2").exists)
-        snapshot("The board's menu with milestones")
+        XCTAssertFalse(element("page-0.2").exists)
+        snapshot("The project's page with milestones")
+
+        // A milestone opens over the page, with the project under its name.
+        element("page-0.4").tap()
+        wait(app.navigationBars["0.4"])
+        wait(app.navigationBars.staticTexts["Git Issues"])
+        goBack()
+        wait(element("page-0.4"))
     }
 
     func testAMilestoneListsItsIssuesByEpic() {
@@ -298,10 +303,11 @@ final class PhonePlanningTests: AppTestCase {
         snapshot("Milestone completed")
         undo.tap()
         waitGone(element("row-#9"))
-        // 0.3 is one of the board's next milestones again.
+        // 0.3 is one of the board's next milestones again, on the project's page under the screen.
         goBack()
-        openTitleMenu("Git Issues")
-        wait(button("0.3"))
+        wait(app.navigationBars["Git Issues"])
+        scrollTo(element("page-0.3"))
+        wait(element("page-0.3"))
     }
 }
 

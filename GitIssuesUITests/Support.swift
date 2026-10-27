@@ -196,13 +196,35 @@ class AppTestCase: XCTestCase {
         wait(home)
     }
 
-    /// Opens a project from the iPhone's Home.
+    /// Opens a project from the iPhone's Home: it opens on its open view, which names the screen, with the project's
+    /// name under it and the project's page under the screen.
     func openProjectTab(_ title: String) {
         goHome()
-        let row = labelled(title, type: .button)
+        // Its row, not a pinned tile, whose label starts with what was pinned.
+        let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", title)).firstMatch
         wait(row)
         row.tap()
-        wait(app.navigationBars[title])
+        wait(app.navigationBars.staticTexts[title])
+    }
+
+    /// Opens the iPhone's page of a project, with its views, milestones and roadmap: from one of its screens, Back;
+    /// from anywhere else, the project from Home, then Back.
+    func openProjectPage(_ title: String) {
+        let page = app.navigationBars[title]
+        if page.exists, element("page-All Issues").exists { return }
+        if !app.navigationBars.staticTexts[title].exists { openProjectTab(title) }
+        goBack()
+        wait(page)
+        wait(element("page-All Issues"))
+    }
+
+    /// Opens one of a project's views, a milestone, All Issues or the roadmap from the project's page.
+    func openFromProjectPage(_ project: String, _ entry: String) {
+        openProjectPage(project)
+        let row = element("page-\(entry)")
+        scrollTo(row)
+        row.tap()
+        wait(app.navigationBars[entry])
     }
 
     /// Puts the cursor in the search field at the foot of the iPhone screen in front.
@@ -212,13 +234,6 @@ class AppTestCase: XCTestCase {
         wait(field)
         field.tap()
         return field
-    }
-
-    /// Opens the menu of a project's title on the iPhone: the project's views, then the projects to switch to.
-    func openTitleMenu(_ project: String) {
-        let title = app.navigationBars.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", project)).firstMatch
-        wait(title)
-        title.tap()
     }
 
     /// Opens a project from its row in the iPad sidebar, which lists every project: it opens on its open view.

@@ -129,6 +129,8 @@ struct AllIssuesScreen: View {
                         } label: {
                             Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
                         }
+                        // Home's pins are the iPhone's.
+                        if !wide { PinMenuItem(entry: .allIssues(projectId)) }
                         Divider()
                         Button {
                             model.refresh()
@@ -191,19 +193,20 @@ struct ProjectScreen: View {
                     .id(model.currentView(projectId: projectId)?.id)
             }
         }
-        // The project's saved views, and the open one's filter, over its list or board. Over the iPhone's board the
-        // strip of columns takes the views' place, and the open view is named under the title, whose menu has them.
+        // The open view's filter over its list or board. The iPhone lists the project's views on its page, under
+        // this screen; the iPad in its sidebar.
         .safeAreaInset(edge: .top, spacing: 0) {
             if project != nil, !model.views(projectId: projectId).isEmpty, !model.isLoading(projectId: projectId) {
-                ViewBar(projectId: projectId, ground: ground, showsViews: !phoneBoard)
+                ViewBar(projectId: projectId, ground: ground)
             }
         }
         // White pages, and under the board the grey its cards stand on, under the bars above it too.
         .background(ground)
-        .navigationTitle(project?.title ?? String(localized: .project))
-        .modifier(ViewSubtitle(name: phoneBoard ? model.currentView(projectId: projectId)?.name : nil))
+        // On the iPhone the open view names the screen and the project is under it, as Back leads to the project's page.
+        .navigationTitle(!wide ? model.currentView(projectId: projectId)?.name ?? project?.title ?? "" : project?.title ?? String(localized: .project))
+        .modifier(ProjectSubtitle(title: !wide && model.currentView(projectId: projectId) != nil ? project?.title : nil))
         .navigationBarTitleDisplayMode(.inline)
-        .modifier(ProjectSwitcher(projectId: projectId, regular: wide))
+        .modifier(EditorRole(active: wide))
         .toolbar {
             // A window narrower than this has the tab bar floating in the middle of the bar, next to the header.
             let roomy = windowWidth >= 950
@@ -266,83 +269,12 @@ struct EditorRole: ViewModifier {
     }
 }
 
-/// The open view's name under the title, where the bar of views gives way to the board's columns.
-private struct ViewSubtitle: ViewModifier {
-    var name: String?
+/// The project's name under the title of one of its screens on the iPhone.
+struct ProjectSubtitle: ViewModifier {
+    var title: String?
 
     func body(content: Content) -> some View {
-        if let name { content.navigationSubtitle(name) } else { content }
-    }
-}
-
-/// On the iPhone the title's menu has everything of the project: All Issues and its views, its next milestones with
-/// the roadmap, then the other projects to switch to. A wide iPad lists all of it in its sidebar, so there the header
-/// sits on the leading edge with the Board and List switch beside it, as on the Mac.
-private struct ProjectSwitcher: ViewModifier {
-    @Environment(AppModel.self) private var model
-    @Environment(MobileNavigation.self) private var navigation
-    @Environment(\.openRoute) private var openRoute
-    var projectId: String
-    var regular: Bool
-
-    func body(content: Content) -> some View {
-        if regular {
-            content.toolbarRole(.editor)
-        } else {
-            content.toolbarTitleMenu {
-                Section(String(localized: .views)) {
-                    // How many of its issues are on no board, as the item's second line.
-                    let onNoBoard = model.countOnNoBoard(projectId: projectId)
-                    Button {
-                        openRoute(.allIssues(projectId))
-                    } label: {
-                        Text(.allIssues)
-                        if onNoBoard > 0 { Text(.noBoardCount(count: onNoBoard)) }
-                        Image(systemName: "rectangle.stack")
-                    }
-                    ForEach(model.views(projectId: projectId)) { view in
-                        Button {
-                            withAnimation(Theme.spring) { model.show(view) }
-                        } label: {
-                            if view.id == model.currentView(projectId: projectId)?.id {
-                                Label(view.name, systemImage: "checkmark")
-                            } else {
-                                Text(view.name)
-                            }
-                        }
-                    }
-                }
-                if model.hasPlanning(projectId: projectId) {
-                    Section(String(localized: .milestones)) {
-                        ForEach(model.sidebarMilestones(projectId: projectId)) { group in
-                            Button {
-                                openRoute(.milestone(projectId: projectId, title: group.title))
-                            } label: {
-                                Label(group.title, systemImage: "diamond")
-                            }
-                        }
-                        Button {
-                            openRoute(.roadmap(projectId))
-                        } label: {
-                            Label(.roadmap, systemImage: "chart.bar.xaxis")
-                        }
-                    }
-                }
-                Section(String(localized: .projects)) {
-                    ForEach(model.openProjects) { other in
-                        Button {
-                            navigation.showProject(other.id, regular: false)
-                        } label: {
-                            if other.id == projectId {
-                                Label(other.title, systemImage: "checkmark")
-                            } else {
-                                Text(other.title)
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        if let title { content.navigationSubtitle(title) } else { content }
     }
 }
 
@@ -365,18 +297,22 @@ struct ProjectLoading: View {
     }
 }
 
-/// The "…" menu of a project.
-private struct ProjectOptionsMenu: View {
+/// The "…" menu of a project: on one of its views, that view's part first; on the iPhone's page of the project, only
+/// the project's.
+struct ProjectOptionsMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.openRoute) private var openRoute
+    @Environment(\.wideLayout) private var wide
     var project: Project
     /// Board and List, when the bar has no room for them beside the project's name.
     var showsViewMode = false
+    /// The open view's part and arranging the sections: off on the project's page, which shows no view.
+    var showsView = true
 
     var body: some View {
         Menu {
-            if let view = model.currentView(projectId: project.id) {
+            if showsView, let view = model.currentView(projectId: project.id) {
                 // The open view: how it shows, its filter, a new one, and its own menu.
                 ViewDisplayMenu(view: view)
                 Menu {
@@ -391,6 +327,8 @@ private struct ProjectOptionsMenu: View {
                         Label(.newViewEllipsis, systemImage: "plus.rectangle.on.rectangle")
                     }
                 }
+                // Home's pins are the iPhone's.
+                if !wide { PinMenuItem(entry: .view(view)) }
                 Divider()
             } else if showsViewMode {
                 Picker(.viewModePicker, selection: Bindable(model).viewMode) {
@@ -400,10 +338,12 @@ private struct ProjectOptionsMenu: View {
                 .pickerStyle(.inline)
                 Divider()
             }
-            Button {
-                navigation.sheet = .arrangeSections(.project(project.id))
-            } label: {
-                Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
+            if showsView {
+                Button {
+                    navigation.sheet = .arrangeSections(.project(project.id))
+                } label: {
+                    Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
+                }
             }
             Button {
                 navigation.sheet = .projectIcon(project.id)

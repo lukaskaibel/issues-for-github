@@ -3,7 +3,8 @@ import SwiftUI
 
 /// Where the app is. On the iPad: the entries of the sidebar, where every project is one of its own, then its views
 /// and milestones. On the iPhone, which has no tab bar: Home (`projects` with nothing pushed), or the Inbox, My Issues
-/// or search opened on top of it, each with the screens opened from there.
+/// or search opened on top of it, each with the screens opened from there. A project there is its page with its
+/// views and milestones, and whichever of them is open on top of it.
 enum MobileTab: Hashable {
     case inbox
     case myIssues
@@ -26,9 +27,13 @@ enum Route: Hashable, Codable {
     case inbox
     case myIssues
     case search
+    /// A project's open view.
     case project(String)
     /// A project's All Issues.
     case allIssues(String)
+    /// The iPhone's page of a project: All Issues, its views, its next milestones and the roadmap. It is under every
+    /// one of them, however they were opened.
+    case projectPage(String)
     case issue(String)
     case statuses(String)
     case milestone(projectId: String, title: String)
@@ -115,8 +120,15 @@ final class MobileNavigation {
     var inboxRootItemId: String?
     var myIssuesPath: [Route] = []
     var projectsPath: [Route] = [] {
-        // Home or a project: where the iPhone opens next time.
-        didSet { if tab == .projects, projectsPath.isEmpty != oldValue.isEmpty { saveTab() } }
+        didSet {
+            // A project's view, All Issues, milestone or roadmap opened from Home, a pin, a link or where the app was
+            // left has the project's page under it, so Back leads there before Home.
+            if let first = projectsPath.first, let id = Self.pageProject(of: first) {
+                projectsPath.insert(.projectPage(id), at: 0)
+            }
+            // Home, a project's page or a project: where the iPhone opens next time.
+            if tab == .projects, Self.place(of: projectsPath) != Self.place(of: oldValue) { saveTab() }
+        }
     }
     var projectPaths: [String: [Route]] = [:]
     var allIssuesPaths: [String: [Route]] = [:]
@@ -153,9 +165,29 @@ final class MobileNavigation {
         // Projects come first: the iPhone's Home, the iPad's project used last.
         default: .projects
         }
-        // Where it was left: on the project used last, unless that was Home.
-        if saved == "projects", let project = UserDefaults.standard.string(forKey: Self.projectKey) {
-            projectsPath = [.project(project)]
+        // Where it was left: on the project used last, its page or its open view, unless that was Home.
+        if let project = UserDefaults.standard.string(forKey: Self.projectKey) {
+            // Set in here, the path doesn't put the page under the project itself.
+            if saved == "projects" { projectsPath = [.projectPage(project), .project(project)] }
+            if saved == "projectPage" { projectsPath = [.projectPage(project)] }
+        }
+    }
+
+    /// The project whose page goes under a screen opened first on Home's stack.
+    private static func pageProject(of route: Route) -> String? {
+        switch route {
+        case .project(let id), .allIssues(let id), .roadmap(let id): id
+        case .milestone(let id, _): id
+        default: nil
+        }
+    }
+
+    /// Where on Home's stack the iPhone is, as saved for next time.
+    private static func place(of path: [Route]) -> String {
+        switch path.first {
+        case nil: "home"
+        case .projectPage? where path.count == 1: "projectPage"
+        default: "projects"
         }
     }
 
@@ -163,7 +195,7 @@ final class MobileNavigation {
         let value: String = switch tab {
         case .inbox: "inbox"
         case .myIssues: "myIssues"
-        case .projects: projectsPath.isEmpty ? "home" : "projects"
+        case .projects: Self.place(of: projectsPath)
         case .project, .allIssues, .milestone, .roadmap, .view: "projects"
         // The iPhone's search is a field on its screens, and comes back as Home.
         case .search: regular ? "search" : "home"
@@ -283,7 +315,8 @@ final class MobileNavigation {
         UserDefaults.standard.set(id, forKey: Self.projectKey)
     }
 
-    /// Opens a project: in its own sidebar entry on a wide iPad window, on Home otherwise.
+    /// Opens a project on its open view: in its own sidebar entry on a wide iPad window, on Home otherwise, over the
+    /// project's page.
     func showProject(_ id: String, regular: Bool) {
         UserDefaults.standard.set(id, forKey: Self.projectKey)
         if regular {
@@ -300,7 +333,7 @@ final class MobileNavigation {
         if regular {
             tab = .allIssues(projectId)
         } else {
-            projectsPath = [.project(projectId), .allIssues(projectId)]
+            projectsPath = [.allIssues(projectId)]
             tab = .projects
         }
     }
@@ -308,23 +341,30 @@ final class MobileNavigation {
     /// Moves between the iPad sidebar and the tab bar when the window changes width, keeping the project open.
     func adapt(regular: Bool) {
         self.regular = regular
-        if regular, tab == .projects, case .project(let id)? = projectsPath.first {
-            projectPaths[id] = Array(projectsPath.dropFirst())
+        // The iPad's sidebar lists what the iPhone's page of a project has.
+        let onPage = projectsPath.first.flatMap { route -> String? in
+            if case .projectPage(let id) = route { id } else { nil }
+        }
+        let path = onPage == nil ? projectsPath : Array(projectsPath.dropFirst())
+        if regular, tab == .projects, case .project(let id)? = path.first {
+            projectPaths[id] = Array(path.dropFirst())
             tab = .project(id)
-        } else if regular, tab == .projects, case .allIssues(let id)? = projectsPath.first {
-            allIssuesPaths[id] = Array(projectsPath.dropFirst())
+        } else if regular, tab == .projects, case .allIssues(let id)? = path.first {
+            allIssuesPaths[id] = Array(path.dropFirst())
             tab = .allIssues(id)
+        } else if regular, tab == .projects, let id = onPage {
+            tab = .project(id)
         } else if !regular, case .project(let id) = tab {
             projectsPath = [.project(id)] + (projectPaths[id] ?? [])
             tab = .projects
         } else if !regular, case .allIssues(let id) = tab {
-            projectsPath = [.project(id), .allIssues(id)] + (allIssuesPaths[id] ?? [])
+            projectsPath = [.allIssues(id)] + (allIssuesPaths[id] ?? [])
             tab = .projects
         } else if !regular, case .milestone(let projectId, let title) = tab {
-            projectsPath = [.project(projectId), .milestone(projectId: projectId, title: title)] + (planningPaths[Self.planningKey(tab)] ?? [])
+            projectsPath = [.milestone(projectId: projectId, title: title)] + (planningPaths[Self.planningKey(tab)] ?? [])
             tab = .projects
         } else if !regular, case .roadmap(let projectId) = tab {
-            projectsPath = [.project(projectId), .roadmap(projectId)] + (planningPaths[Self.planningKey(tab)] ?? [])
+            projectsPath = [.roadmap(projectId)] + (planningPaths[Self.planningKey(tab)] ?? [])
             tab = .projects
         } else if !regular, case .view(let projectId, _) = tab {
             projectsPath = [.project(projectId)] + (projectPaths[projectId] ?? [])

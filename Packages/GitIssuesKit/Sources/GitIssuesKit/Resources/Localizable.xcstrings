@@ -2642,7 +2642,7 @@
       }
     },
     "allIssues" : {
-      "comment" : "Sidebar entry (Mac, iPad), first item of the menu of a project's title on iPhone, menu item, command and window title: one project's list of issues, those on its board together with the issues of its repositories that are on no board at all. Parallel to 'My Issues'. Short.",
+      "comment" : "Sidebar entry (Mac, iPad), first entry of a project's page on iPhone, menu item, command and window title: one project's list of issues, those on its board together with the issues of its repositories that are on no board at all. Parallel to 'My Issues'. Short.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -16160,7 +16160,7 @@
       }
     },
     "dueOn" : {
-      "comment" : "Tooltip and VoiceOver text of an issue's due date that is still ahead (cards, rows, issue details). %(date)@ is a long date, e.g. 'Friday, 9 October 2026'. Also: iPhone and iPad, new issue sheet: VoiceOver label of the due date button. %(date)@ is the day, such as “Friday, 9 October”.",
+      "comment" : "Tooltip and VoiceOver text of an issue's due date that is still ahead (cards, rows, issue details). %(date)@ is a long date, e.g. 'Friday, 9 October 2026'. Also: iPhone and iPad, new issue sheet: VoiceOver label of the due date button. %(date)@ is the day, such as “Friday, 9 October”. Also: iPhone, a project's page: the line under a milestone, with a short date such as '5 Nov'.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -20864,7 +20864,7 @@
       }
     },
     "filterChangedSpoken" : {
-      "comment" : "VoiceOver, iPhone and iPad: said after a saved view's name when its filter was changed on this device and not saved to GitHub yet.",
+      "comment" : "VoiceOver, iPhone and iPad: said after a saved view's name (iPad sidebar, a project's page on iPhone) when its filter was changed on this device and not saved to GitHub yet.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -25059,6 +25059,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "前往"
+          }
+        }
+      }
+    },
+    "goToProject" : {
+      "comment" : "iPhone: item of the menu of a pinned tile on the app's first screen; opens the page of the project the pinned view or milestone belongs to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Projekt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go to Project"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ir al proyecto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aller au projet"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プロジェクトへ移動"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프로젝트로 이동"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ir para o projeto"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перейти к проекту"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前往项目"
           }
         }
       }
@@ -37028,7 +37088,7 @@
       }
     },
     "milestones" : {
-      "comment" : "Sidebar heading, and section of the menu of a project's title on iPhone, above the next milestones of the project and its roadmap.",
+      "comment" : "Sidebar heading, and section of a project's page on iPhone, above the next milestones of the project and its roadmap.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -40676,7 +40736,7 @@
       }
     },
     "noBoardCount" : {
-      "comment" : "Mac and iPad sidebar: VoiceOver value of the All Issues entry, read after its name, for the quiet number beside it; on iPhone, the second line of All Issues in the menu of a project's title. %(count)lld is how many open issues of the project's repositories are on no project board (1, 2, …).",
+      "comment" : "Mac and iPad sidebar: VoiceOver value of the All Issues entry, read after its name, for the quiet number beside it; on iPhone, the second line of All Issues on a project's page. %(count)lld is how many open issues of the project's repositories are on no project board (1, 2, …).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -47385,6 +47445,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法载入位于 %@ 的图片"
+          }
+        }
+      }
+    },
+    "pin" : {
+      "comment" : "iPhone: menu item and swipe action on an entry of a project's page (a view, a milestone, All Issues, the roadmap), and in the … menu of such a screen. Pinning puts it as a tile on the app's first screen, next to the Inbox and My Issues. Same verb as pinning a conversation in Messages.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anheften"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fijar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épingler"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ピンで固定"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "고정"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fixar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Закрепить"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "置顶"
+          }
+        }
+      }
+    },
+    "pinnedSpoken" : {
+      "comment" : "VoiceOver, iPhone: said after the name of a view, milestone, All Issues or roadmap on a project's page when it is pinned to the app's first screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angeheftet"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pinned"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fijado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épinglé"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ピンで固定済み"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "고정됨"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fixado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Закреплено"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已置顶"
           }
         }
       }
@@ -65570,7 +65750,7 @@
       }
     },
     "projects" : {
-      "comment" : "Heading above the list of GitHub projects (sidebar section, the iPhone's Home, the menu of a project's title on iPhone, group of search results).",
+      "comment" : "Heading above the list of GitHub projects (sidebar section, the iPhone's Home, group of search results).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -82675,6 +82855,66 @@
         }
       }
     },
+    "unpin" : {
+      "comment" : "iPhone: the opposite of Pin, on something already pinned to the app's first screen (its tile there, its row on the project's page, its … menu).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loslösen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unpin"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dejar de fijar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Désépingler"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ピンを外す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "고정 해제"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desafixar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открепить"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消置顶"
+          }
+        }
+      }
+    },
     "unreadCount" : {
       "comment" : "Mac sidebar: VoiceOver value of the Inbox row, read after its name. %(count)lld is the number of unread notifications (1, 2, …).",
       "extractionState" : "manual",
@@ -84260,7 +84500,7 @@
       }
     },
     "views" : {
-      "comment" : "Sidebar heading, and section of the menu of a project's title on iPhone, above the saved views of the project (a GitHub project's views: Board, This Week…).",
+      "comment" : "Sidebar heading, and section of a project's page on iPhone, above the saved views of the project (a GitHub project's views: Board, This Week…).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

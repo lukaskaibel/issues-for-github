@@ -920,6 +920,88 @@ final class PhoneTests: AppTestCase {
         button("Cancel").tap()
     }
 
+    /// A project opens on its open view, with the project's page under it: Back leads to the page, Back again Home.
+    func testAProjectOpensOnItsViewWithItsPageUnderIt() {
+        launch(["-mobile.tab", "home"])
+        openProjectTab("Git Issues")
+        wait(app.navigationBars["Board"])
+        wait(element("strip-In Progress"))
+
+        goBack()
+        wait(app.navigationBars["Git Issues"])
+        wait(element("page-All Issues"))
+        wait(element("page-This Week"))
+        // One search field and New Issue at the foot, whichever screen is in front.
+        XCTAssertEqual(app.searchFields.count, 1)
+        snapshot("Project's page")
+
+        element("page-Bugs and Sync").tap()
+        wait(app.navigationBars["Bugs and Sync"])
+        wait(app.navigationBars.staticTexts["Git Issues"])
+        wait(element("row-#25"))
+        XCTAssertEqual(app.searchFields.count, 1)
+        goBack()
+        wait(element("page-Bugs and Sync"))
+        goBack()
+        wait(element("home-inbox"))
+
+        // Opened again, on the view used last, and still with its page under it.
+        openProjectTab("Git Issues")
+        wait(app.navigationBars["Bugs and Sync"])
+        XCTAssertEqual(app.searchFields.count, 1)
+        goBack()
+        wait(app.navigationBars["Git Issues"])
+    }
+
+    /// A view, a milestone, All Issues or the roadmap pinned from the project's page shows as a tile on Home.
+    func testPinnedViewsAndMilestonesAreTilesOnHome() {
+        launch(["-mobile.tab", "home"])
+        openProjectPage("Git Issues")
+        let week = element("page-This Week")
+        wait(week)
+        week.press(forDuration: 1.2)
+        wait(button("Pin"))
+        snapshot("Pin in a view's menu")
+        button("Pin").tap()
+        waitForValue(week, equalTo: "Pinned")
+
+        // A swipe to the right pins too: all the way at once, or with the button it uncovers.
+        let milestone = element("page-0.4")
+        scrollTo(milestone)
+        milestone.swipeRight()
+        if button("Pin").waitForExistence(timeout: 2) { button("Pin").tap() }
+        waitForValue(milestone, equalTo: "Pinned")
+
+        goBack()
+        let tile = element("pin-This Week")
+        wait(tile)
+        waitForValue(tile, equalTo: "9")
+        wait(element("pin-0.4"))
+        snapshot("Pins on Home")
+
+        // A tile opens what was pinned, over its project's page.
+        tile.tap()
+        wait(app.navigationBars["This Week"])
+        wait(element("strip-In Progress"))
+        goBack()
+        wait(app.navigationBars["Git Issues"])
+
+        // And the view's own menu unpins it.
+        element("page-This Week").tap()
+        wait(app.navigationBars["This Week"])
+        app.navigationBars.buttons["Options"].tap()
+        wait(button("Unpin"))
+        button("Unpin").tap()
+        goHome()
+        waitGone(element("pin-This Week"))
+
+        // Touch and hold a tile to unpin it there.
+        element("pin-0.4").press(forDuration: 1.2)
+        wait(button("Unpin"))
+        button("Unpin").tap()
+        waitGone(element("pin-0.4"))
+    }
+
     func testSearchFindsIssuesAndProjects() {
         launch()
         // The field at the foot of My Issues looks through every project.
@@ -943,7 +1025,7 @@ final class PhoneTests: AppTestCase {
         wait(website)
         snapshot("Projects")
         website.tap()
-        wait(app.navigationBars["Website"])
+        wait(app.navigationBars.staticTexts["Website"])
         // Its board as a list, which offers the field it lacks.
         showLayout("List")
         wait(labelled("No Priority field"))
@@ -951,12 +1033,12 @@ final class PhoneTests: AppTestCase {
         button("Add").tap()
         waitGone(labelled("No Priority field"), 8)
 
-        // Switching project from the title menu.
-        app.navigationBars["Website"].buttons["Website"].tap()
-        wait(button("Git Issues"))
-        snapshot("Project title menu")
-        button("Git Issues").tap()
-        wait(app.navigationBars["Git Issues"])
+        // Another project is a step further back: its page, then Home.
+        goBack()
+        wait(app.navigationBars["Website"])
+        goBack()
+        wait(element("home-inbox"))
+        openProjectTab("Git Issues")
 
         // Sections in a different order.
         app.navigationBars.buttons["Options"].tap()
@@ -980,13 +1062,12 @@ final class PhoneTests: AppTestCase {
 
     func testAllIssuesListsIssuesOnNoBoardAndMakesThem() {
         launch()
-        openProjectTab("Git Issues")
-        // In the project's title menu, with how many open issues of its repository are on no board.
-        openTitleMenu("Git Issues")
-        let all = allIssuesItem
+        // First on the project's page, with how many open issues of its repository are on no board.
+        openProjectPage("Git Issues")
+        let all = element("page-All Issues")
         wait(all)
         XCTAssertTrue(all.label.contains("4 on no board"), all.label)
-        snapshot("All Issues in the project's menu")
+        snapshot("All Issues on the project's page")
         all.tap()
         wait(app.navigationBars["All Issues"])
         // The issues on no board lead, the board's follow.
@@ -1011,8 +1092,7 @@ final class PhoneTests: AppTestCase {
         wait(labelled("Crash report from a beta tester"), 8)
 
         goBack()
-        openTitleMenu("Git Issues")
-        waitForLabel(allIssuesItem, containing: "5 on no board")
+        waitForLabel(element("page-All Issues"), containing: "5 on no board")
     }
 
     func testProjectIconFromTheProjectMenu() {
@@ -1208,7 +1288,7 @@ final class PhoneTests: AppTestCase {
         let website = labelled("Website", type: .button)
         wait(website)
         website.tap()
-        wait(app.navigationBars["Website"])
+        wait(app.navigationBars.staticTexts["Website"])
         wait(element("card-#31"))
     }
 
@@ -1289,10 +1369,6 @@ final class PhoneTests: AppTestCase {
 
     /// A row of a list, by the text of one of its parts.
     /// All Issues in the menu of a project's title, whose second line says how many are on no board.
-    private var allIssuesItem: XCUIElement {
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "All Issues")).firstMatch
-    }
-
     private func cell(_ text: String) -> XCUIElement {
         app.cells.containing(NSPredicate(format: "label == %@", text)).firstMatch
     }
