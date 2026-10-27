@@ -1002,6 +1002,14 @@ final class PhoneTests: AppTestCase {
         waitGone(element("pin-0.4"))
     }
 
+    /// Opened straight on Home, as when the app was left there, the tiles count their issues at once. (They said 0 until
+    /// Home was left and shown again.)
+    func testPinsAreCountedWhenTheAppOpensOnHome() {
+        launch(["-mobile.tab", "home", "-mobile.pins", #"("view:demo-project-app-view-week", "milestone:demo-project-app\U001F0.3")"#])
+        waitForValue(element("pin-This Week"), equalTo: "9")
+        waitForValue(element("pin-0.3"), equalTo: "11")
+    }
+
     /// While your projects are still being fetched, as right after signing in, the screens say so under their title.
     func testScreensSayWhileProjectsAreStillLoading() {
         launch(["-mobile.tab", "home", "-demo.loadingProjects", "3"])
