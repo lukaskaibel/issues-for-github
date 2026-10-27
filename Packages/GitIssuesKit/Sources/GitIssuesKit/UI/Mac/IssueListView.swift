@@ -25,6 +25,8 @@ struct IssueListView: View {
                             .help(Text(.resetFilterTooltip))
                     }
                 }
+            } else if model.scope == .myIssues, model.isLoadingMyIssues {
+                MyIssuesLoadingState()
             } else {
                 EmptyState(title: emptyTitle, message: emptyMessage)
             }

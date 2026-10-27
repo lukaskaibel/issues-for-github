@@ -329,18 +329,31 @@ private struct ProjectSwitcher: ViewModifier {
                     }
                 }
                 Section(String(localized: .projects)) {
-                    ForEach(model.openProjects) { other in
-                        Button {
-                            navigation.showProject(other.id, regular: false)
+                    // The projects you hid wait in a submenu, as in the Mac's project menu; the one on screen stays.
+                    ForEach(model.openProjects.filter { $0.id == projectId || !model.hiddenProjectIds.contains($0.id) }) { other in
+                        projectButton(other)
+                    }
+                    let hidden = model.hiddenProjects.filter { $0.id != projectId }
+                    if !hidden.isEmpty {
+                        Menu {
+                            ForEach(hidden) { other in projectButton(other) }
                         } label: {
-                            if other.id == projectId {
-                                Label(other.title, systemImage: "checkmark")
-                            } else {
-                                Text(other.title)
-                            }
+                            Label(String(localized: .hiddenProjectsCount(count: hidden.count)), systemImage: "eye.slash")
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private func projectButton(_ other: Project) -> some View {
+        Button {
+            navigation.showProject(other.id, regular: false)
+        } label: {
+            if other.id == projectId {
+                Label(other.title, systemImage: "checkmark")
+            } else {
+                Text(other.title)
             }
         }
     }
@@ -361,6 +374,26 @@ struct ProjectLoading: View {
             }
         default:
             MobileEmptyState(title: String(localized: .loadingIssues), message: String(localized: .fetchingProject), showsProgress: true)
+        }
+    }
+}
+
+/// My Issues before your projects have each been fetched once, as right after signing in: they come one by one, and
+/// their issues with them.
+private struct MyIssuesLoading: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        switch model.status.phase {
+        case .offline:
+            MobileEmptyState(title: String(localized: .youreOffline), message: String(localized: .myIssuesLoadsWhenOnline), systemImage: "wifi.slash")
+        case .failed(let message):
+            MobileEmptyState(title: String(localized: .syncProblem), message: message, systemImage: "exclamationmark.triangle") {
+                Button(.tryAgain) { model.refresh() }
+                    .buttonStyle(.bordered)
+            }
+        default:
+            MobileEmptyState(title: String(localized: .loadingIssues), message: String(localized: .myIssuesLoadingMessage), showsProgress: true)
         }
     }
 }
@@ -717,6 +750,8 @@ struct IssueList: View {
                     Button(.clearFilter) { model.setMineFilter(ProjectFilter("")) }
                         .buttonStyle(.bordered)
                 }
+            } else if model.isLoadingMyIssues {
+                MyIssuesLoading()
             } else {
                 MobileEmptyState(
                     title: String(localized: .nothingAssignedTitle),

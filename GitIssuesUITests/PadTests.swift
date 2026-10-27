@@ -382,6 +382,52 @@ final class PadTests: AppTestCase {
         wait(element("card-#9"))
     }
 
+    /// A hidden project leaves the sidebar for the menu beside its Projects heading, and comes back while it's open.
+    func testHideAProjectFromTheSidebar() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        let website = sidebarEntry("Website")
+        wait(website)
+        website.press(forDuration: 1.2)
+        wait(button("Hide from Sidebar"))
+        button("Hide from Sidebar").tap()
+        waitGone(website)
+        let hidden = sidebarEntry("1 hidden")
+        wait(hidden)
+        snapshot("iPad sidebar with a hidden project")
+
+        // "1 hidden" at the end of the projects unfolds it; opened, it stays in the sidebar while it's on screen.
+        hidden.tap()
+        wait(website)
+        snapshot("iPad sidebar with the hidden project unfolded")
+        website.tap()
+        wait(app.navigationBars["Website"])
+        // Folded again, the one on screen stays.
+        hidden.tap()
+        wait(website)
+        website.press(forDuration: 1.2)
+        wait(button("Show in Sidebar"))
+        button("Show in Sidebar").tap()
+        waitGone(hidden)
+
+        // Hiding the project on screen moves on to the next one.
+        openProject("Git Issues")
+        let gitIssues = sidebarEntry("Git Issues")
+        gitIssues.press(forDuration: 1.2)
+        wait(button("Hide from Sidebar"))
+        button("Hide from Sidebar").tap()
+        waitGone(gitIssues)
+        wait(app.navigationBars["Website"])
+        hidden.tap()
+        wait(gitIssues)
+        gitIssues.tap()
+        wait(app.navigationBars["Git Issues"])
+        gitIssues.press(forDuration: 1.2)
+        wait(button("Show in Sidebar"))
+        button("Show in Sidebar").tap()
+        waitGone(hidden)
+    }
+
     func testAllIssuesHeadsTheProjectInTheSidebar() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()

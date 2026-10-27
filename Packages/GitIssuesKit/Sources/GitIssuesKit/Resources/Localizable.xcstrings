@@ -25424,7 +25424,7 @@
       }
     },
     "hiddenProjectsCount" : {
-      "comment" : "Mac sidebar: line at the end of the list of GitHub projects that folds out the projects the user hid. %(count)lld is how many projects are hidden (1, 2, …). Short.",
+      "comment" : "Line at the end of the list of GitHub projects (Mac and iPad sidebar, the iPhone's Home) that folds out the projects the user hid. Also a submenu in the menu of a project's title on iPhone. %(count)lld is how many projects are hidden (1, 2, …). Short.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -25646,7 +25646,7 @@
       }
     },
     "hideFromSidebar" : {
-      "comment" : "Mac sidebar: right-click menu item of a project or repository; moves it into a folded group of hidden ones at the end of the list.",
+      "comment" : "Mac sidebar: right-click menu item of a project or repository. iPad sidebar: long-press menu item and swipe action of a project. Moves it into a folded group of hidden ones at the end of the list.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -25821,6 +25821,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "隐藏议题的属性（⌃⌘I）"
+          }
+        }
+      }
+    },
+    "hideProject" : {
+      "comment" : "iPhone, Home: item of a project's long-press menu and its swipe action. Moves the project out of the list into a folded group of hidden projects at its end, on this device only; search and the menu of a project's title still find it. The iPad sidebar says Hide from Sidebar for the same.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Projekt ausblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide Project"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar proyecto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer le projet"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プロジェクトを非表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프로젝트 가리기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar projeto"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скрыть проект"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐藏项目"
           }
         }
       }
@@ -33602,7 +33662,7 @@
       }
     },
     "loadingIssues" : {
-      "comment" : "iPhone and iPad: title shown with a spinner while a project's or repository's issues are fetched for the first time.",
+      "comment" : "Title shown with a spinner while issues are fetched for the first time: a project's or repository's (iPhone and iPad), or those of My Issues while your projects come in one by one (iPhone, iPad, Mac).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -33777,6 +33837,168 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在载入图片…"
+          }
+        }
+      }
+    },
+    "loadingProjects" : {
+      "comment" : "Sync status line (sidebar, account sheet, subtitle of the iPhone's and iPad's screens) while projects are fetched from GitHub for the first time, as right after signing in; the number is how many are still to come. Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Issues aus %lld Projekt werden geladen …"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Issues aus %lld Projekten werden geladen …"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Loading issues from %(count)lld project…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Loading issues from %(count)lld projects…"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Cargando incidencias de %lld proyecto…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Cargando incidencias de %lld proyectos…"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Chargement des tickets de %lld projet…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Chargement des tickets de %lld projets…"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld件のプロジェクトからIssueを読み込み中…"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "프로젝트 %lld개에서 이슈를 불러오는 중…"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Carregando issues de %lld projeto…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Carregando issues de %lld projetos…"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Загрузка задач из %lld проектов…"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Загрузка задач из %lld проектов…"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Загрузка задач из %lld проекта…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Загрузка задач из %lld проекта…"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "正在从 %lld 个项目载入议题…"
+                }
+              }
+            }
           }
         }
       }
@@ -38451,6 +38673,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "分配给你的未关闭议题会显示在这里，无论它是否在看板上。"
+          }
+        }
+      }
+    },
+    "myIssuesLoadingMessage" : {
+      "comment" : "My Issues (iPhone, iPad, Mac): line under 'Loading issues…' while your projects are still being fetched from GitHub for the first time, as right after signing in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues, die dir zugewiesen sind, erscheinen hier, sobald ihr Projekt von GitHub abgerufen ist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues assigned to you show up here as each of your projects is fetched from GitHub."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las incidencias que tienes asignadas aparecen aquí a medida que se obtiene cada uno de tus proyectos de GitHub."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les tickets qui vous sont assignés s’affichent ici à mesure que chacun de vos projets est récupéré depuis GitHub."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あなたに割り当てられたIssueは、プロジェクトをGitHubから取得するたびにここに表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "나에게 할당된 이슈는 각 프로젝트를 GitHub에서 가져오는 대로 여기에 표시됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As issues atribuídas a você aparecem aqui à medida que cada um dos seus projetos é obtido do GitHub."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Назначенные вам задачи появятся здесь по мере того, как ваши проекты загружаются с GitHub."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分配给你的议题会随着各个项目从 GitHub 获取完成而显示在这里。"
+          }
+        }
+      }
+    },
+    "myIssuesLoadsWhenOnline" : {
+      "comment" : "My Issues (iPhone, iPad, Mac): line under 'You're offline' when your projects haven't been fetched from GitHub yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues, die dir zugewiesen sind, erscheinen hier, sobald du wieder online bist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues assigned to you show up here as soon as you're back online."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las incidencias que tienes asignadas aparecerán aquí en cuanto vuelvas a estar en línea."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les tickets qui vous sont assignés s’afficheront ici dès que vous serez de nouveau en ligne."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あなたに割り当てられたIssueは、オンラインに戻るとすぐにここに表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "나에게 할당된 이슈는 다시 온라인 상태가 되면 바로 여기에 표시됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As issues atribuídas a você aparecerão aqui assim que você voltar a ficar online."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Назначенные вам задачи появятся здесь, как только подключение восстановится."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分配给你的议题会在你恢复联网后立即显示在这里。"
           }
         }
       }
@@ -75260,7 +75602,7 @@
       }
     },
     "showInSidebar" : {
-      "comment" : "Mac sidebar: right-click menu item of a project or repository the user hid; puts it back in the sidebar's list.",
+      "comment" : "Mac and iPad sidebar: menu item of a project or repository the user hid (right-click on the Mac, long press on the iPad); puts it back in the sidebar's list.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -75435,6 +75777,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示议题的属性（⌃⌘I）"
+          }
+        }
+      }
+    },
+    "showProject" : {
+      "comment" : "iPhone, Home: item of the long-press menu and the swipe action of a project the user hid; puts it back in the list of projects.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Projekt einblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Project"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar proyecto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher le projet"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プロジェクトを表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프로젝트 표시"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar projeto"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показать проект"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示项目"
           }
         }
       }
@@ -80228,7 +80630,7 @@
       }
     },
     "syncProblem" : {
-      "comment" : "Syncing with GitHub failed: sync status line (sidebar, account sheet) and title of the warning card at the bottom of the sidebar. Short.",
+      "comment" : "Syncing with GitHub failed: sync status line (sidebar, account sheet), title of the warning card at the bottom of the sidebar, and title of My Issues while it couldn't be loaded yet (GitHub's error message shows under it). Short.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -84560,7 +84962,7 @@
       }
     },
     "youreOffline" : {
-      "comment" : "iPhone and iPad: title of an empty screen (Projects, a project, the Inbox) while there is no connection and nothing has been loaded yet. Also: Mac, Inbox: title shown instead of the notifications when they haven't been loaded yet and there is no internet connection.",
+      "comment" : "iPhone and iPad: title of an empty screen (Projects, a project, the Inbox, My Issues) while there is no connection and nothing has been loaded yet. Also: Mac, Inbox and My Issues: title shown instead of the notifications or your issues when they haven't been loaded yet and there is no internet connection.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

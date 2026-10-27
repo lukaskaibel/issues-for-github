@@ -282,7 +282,8 @@ The interface uses the system's own parts.
 
 - **iPhone:** no tab bar: the app opens where you left it, usually a project's board, and ‹ leads to Home, which has
   the Inbox and My Issues as two tiles with their counts, as Reminders has Today and Scheduled, and every project under
-  them. Search and New Issue are at the foot of each screen, as in Notes. A project's board shows one column at a
+  them. Touch and hold a project there, or swipe it left, to hide it: hidden ones wait folded at the end of the list,
+  as on the Mac. Search and New Issue are at the foot of each screen, as in Notes. A project's board shows one column at a
   time, with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and hold a card and drop it on a column in the strip to move it
   there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards.
   Lists for the views that are lists, and each project's All Issues and My Issues, grouped by status, with sections that
@@ -312,7 +313,8 @@ The interface uses the system's own parts.
   grey without borders or lanes, as on the Mac; a column's "…" hides it on that iPad, and the hidden ones wait at the end of the
   board and under Display in the project's "…", a tap away from coming back.
 - **iPad:** a sidebar with your account at the top, the Inbox, My Issues and Search, then every project, each a tap
-  away, and under them the entries of the project open: All Issues and its views, and its next milestones and roadmap. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
+  away (touch and hold one, or swipe it, to hide it; the hidden ones wait folded at the end of the projects),
+  and under them the entries of the project open: All Issues and its views, and its next milestones and roadmap. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
   drop (touch and hold, then drag). A milestone opens as the board's columns or a list, the roadmap as the timeline,
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
@@ -431,6 +433,10 @@ also reads each repository's issue events; when nothing happened, GitHub says so
 rate limit. The Inbox asks for new notifications at the pace GitHub sets, about once a minute, which is just as free
 when nothing changed. As often, it searches for issues assigned to you that changed in the last few minutes, to find
 the assignments your own account made, which GitHub sends no notification for.
+
+Right after signing in, the board on screen comes first and your other projects follow right after each other. Until
+the last one is in, the line under the title reads "Loading issues from 3 projects…", and My Issues shows a spinner
+while none of your issues have come in yet.
 
 The dot on the project at the top of the sidebar shows how syncing is going: green when everything is on GitHub, the
 accent colour while your changes go out, an amber ring when you're offline, and amber when something needs you. Hover
@@ -742,6 +748,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap a project in the sidebar (iPad) | Open it on its open view; its All Issues, views and milestones show under the projects |
 | Tap your picture at the top of the sidebar (iPad) | Your account, Sync Now and the settings |
 | Change Icon… in a project's "…" menu, or touch and hold it on Home (iPhone) | Its glyph and colour: 257 glyphs in groups, with a search field; a colour keeps the sheet open, a glyph closes it |
+| Touch and hold a project on Home (iPhone) or in the sidebar (iPad), or swipe it left | Hide it on that device, or show it again; hidden projects wait folded under "hidden" at the end of the projects, a tap unfolds them |
 | Swipe right in the Inbox | Read, or unread |
 | Swipe left in the Inbox | Archive, or snooze |
 | Touch and hold in the Inbox | Read, snooze, archive, unsubscribe, and the issue's status, priority, assignee and labels |
