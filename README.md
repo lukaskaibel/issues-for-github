@@ -840,5 +840,9 @@ combination shall include the source code for the parts of elk-swift used as wel
 Issues was released under the [MIT License](https://github.com/lukaskaibel/issues-for-github/blob/a12f672/LICENSE)
 until 27 October 2026. Copies from before then, up to commit `a12f672`, can still be used under that licence.
 
+**Name and icon.** The licences cover the code, not the name "Issues" or the app icon, which belong to Lukas Kaibel. If
+you publish a modified version, give it a name and an icon of its own, so that no one mistakes it for this app. Saying
+that it's based on Issues is welcome.
+
 Contributions come with terms of their own, so that Issues can be published on the App Store: see
 [CONTRIBUTING.md](CONTRIBUTING.md#licensing-your-contribution).
