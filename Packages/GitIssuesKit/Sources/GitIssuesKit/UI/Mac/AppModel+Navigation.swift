@@ -50,10 +50,45 @@ extension AppModel {
         }
     }
 
-    /// The events of a two-finger swipe so far, and how far the fingers have moved.
+    /// Navigation is decided at the start of a gesture; reaching an edge later must not turn a scroll into Back.
+    @MainActor
     struct PendingSwipe {
         var delta = CGSize.zero
         var events: [NSEvent] = []
+        let canGoBack: Bool
+        let canGoForward: Bool
+
+        init(canGoBack: Bool, canGoForward: Bool, board: BoardDrag? = nil) {
+            if let board, board.maxScrollX > 0.5 {
+                self.canGoBack = canGoBack && board.scrollX <= 0.5
+                self.canGoForward = canGoForward && board.scrollX >= board.maxScrollX - 0.5
+            } else {
+                self.canGoBack = canGoBack
+                self.canGoForward = canGoForward
+            }
+        }
+
+        func canSwipe(back: Bool) -> Bool { back ? canGoBack : canGoForward }
+    }
+
+    @MainActor
+    struct TrackedSwipe {
+        private(set) var progress: Double = 0
+        private(set) var finished = false
+
+        /// Returns a navigation direction only once, when the fingers lift after reaching the threshold.
+        mutating func update(amount: Double, phase: NSEvent.Phase, isComplete: Bool) -> Bool? {
+            guard !finished else { return nil }
+            if phase.contains(.ended) || phase.contains(.cancelled) || isComplete {
+                let back: Bool? = phase.contains(.ended) && !phase.contains(.cancelled) && abs(progress) >= AppModel.swipeThreshold
+                    ? progress > 0 : nil
+                progress = 0
+                finished = true
+                return back
+            }
+            if phase.contains(.began) || phase.contains(.changed) { progress = amount }
+            return nil
+        }
     }
 
     /// How far a two-finger swipe goes sideways before it navigates, in points, and how much of that it may go up or
@@ -64,14 +99,17 @@ extension AppModel {
     /// Starts following a two-finger swipe once it has gone clearly sideways, so a scroll that drifts a little to the
     /// side doesn't go back. Its first events are held back until then.
     private func trackSwipe(_ event: NSEvent) -> Bool {
-        if event.phase == .began {
+        // Momentum has no physical gesture phase and must never start or advance navigation.
+        guard !event.phase.isEmpty else { return false }
+        if event.phase.contains(.began) {
             pendingSwipe = nil
             guard signedIn, overlay == nil, swipeProgress == 0, event.hasPreciseScrollingDeltas,
                   NSEvent.isSwipeTrackingFromScrollEventsEnabled else { return false }
-            pendingSwipe = PendingSwipe()
+            let board = openItem == nil && viewMode == .board && currentProjectId != nil ? boardDrag : nil
+            pendingSwipe = PendingSwipe(canGoBack: canGoBack, canGoForward: canGoForward, board: board)
         }
         guard var pending = pendingSwipe else { return false }
-        if event.phase == .ended || event.phase == .cancelled {
+        if event.phase.contains(.ended) || event.phase.contains(.cancelled) {
             releaseSwipe(pending)
             return false
         }
@@ -80,7 +118,7 @@ extension AppModel {
         pending.events.append(event)
         let wantsBack = pending.delta.width > 0
         let sideways = abs(pending.delta.width)
-        if abs(pending.delta.height) > sideways * Self.swipeSlope || (sideways > 0 && !canSwipe(back: wantsBack)) {
+        if abs(pending.delta.height) > sideways * Self.swipeSlope || (sideways > 0 && !pending.canSwipe(back: wantsBack)) {
             pending.events.removeLast()
             releaseSwipe(pending)
             return false
@@ -90,29 +128,24 @@ extension AppModel {
             return true
         }
         pendingSwipe = nil
+        var swipe = TrackedSwipe()
         event.trackSwipeEvent(
             options: [.lockDirection, .clampGestureAmount],
-            dampenAmountThresholdMin: canGoForward ? -1 : 0,
-            max: canGoBack ? 1 : 0
-        ) { [weak self] amount, phase, isComplete, _ in
+            dampenAmountThresholdMin: pending.canGoForward ? -1 : 0,
+            max: pending.canGoBack ? 1 : 0
+        ) { [weak self] amount, phase, isComplete, stop in
             MainActor.assumeIsolated {
-                guard let self else { return }
-                switch phase {
-                case .began, .changed:
-                    self.swipeProgress = Double(amount)
-                case .ended, .cancelled:
-                    // It goes if the arrow is full as the fingers lift. The system would also count a short quick
-                    // flick, which is how a swipe went back without meaning to.
-                    let progress = self.swipeProgress
-                    if abs(progress) >= Self.swipeThreshold {
-                        if progress > 0 { self.goBack() } else { self.goForward() }
-                    }
+                guard let self else { stop.pointee = true; return }
+                let back = swipe.update(amount: Double(amount), phase: phase, isComplete: isComplete)
+                if swipe.finished {
+                    // Our own fade finishes the arrow; AppKit's remaining animation must not bring it back.
+                    stop.pointee = true
                     withAnimation(Theme.quick) { self.swipeProgress = 0 }
-                default:
-                    // The system finishing its own animation; the arrow is already gone.
-                    if isComplete, self.swipeProgress != 0 {
-                        withAnimation(Theme.quick) { self.swipeProgress = 0 }
-                    }
+                } else {
+                    self.swipeProgress = swipe.progress
+                }
+                if let back {
+                    if back { self.goBack() } else { self.goForward() }
                 }
             }
         }
@@ -122,15 +155,6 @@ extension AppModel {
     /// How far a two-finger swipe has to go, in the system's swipe amount, for letting go to go back or forward. The
     /// arrow is full from there.
     static let swipeThreshold = 0.5
-
-    private func canSwipe(back: Bool) -> Bool {
-        guard back ? canGoBack : canGoForward else { return false }
-        // On the board a sideways swipe scrolls the columns; it only navigates once the board is at its edge.
-        if openItem == nil, viewMode == .board, currentProjectId != nil {
-            return back ? boardDrag.scrollX <= 0.5 : boardDrag.scrollX >= boardDrag.maxScrollX - 0.5
-        }
-        return true
-    }
 
     /// A held-back swipe turned out to be a scroll: its events go to the view under the pointer after all, in order,
     /// before the one that decided it.

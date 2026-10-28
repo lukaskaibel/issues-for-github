@@ -147,6 +147,10 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- On the Mac, a two-finger gesture that scrolls the board no longer turns into Back or Forward when it reaches an
+  edge. Start a new gesture at the edge to navigate, including Forward at the right edge with the sidebar visible;
+  boards that fit the window work as before.
+- The Mac's two-finger navigation arrow no longer stays visible after a swipe ends or is cancelled.
 - My Issues says when it is still loading, and fills sooner. Right after signing in, the app fetches your projects
   one by one, and until then My Issues said "Nothing assigned to you" and Home counted 0. Now the line under the title
   reads "Loading issues from 3 projects…" until the last one is in. While none of your issues have come in yet, My
