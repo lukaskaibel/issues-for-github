@@ -1,19 +1,18 @@
-La mayor actualización hasta ahora: planifica con hitos, épicas y una hoja de ruta, abre las vistas que tu proyecto tiene en GitHub y usa Issues en nueve idiomas, con un nuevo diseño al estilo de Mail y Notas.
+El tablero llega al iPhone, tus proyectos pasan a primer plano en el iPhone y el iPad, y el tablero es más sobrio en todas partes.
 
-• Hitos: los próximos de un tablero, en la barra lateral, cada uno con sus incidencias, su progreso y el día en que vence. Completa uno y pasa lo que quede pendiente al siguiente
-• Épicas: incidencias cuyo trabajo se reparte en sus subincidencias. En el tablero, las incidencias de una épica aparecen juntas bajo su nombre; arrastra el nombre para moverlas todas
-• Una hoja de ruta: tus épicas como barras sobre los hitos, por meses o trimestres. Arrastra una barra para mover una épica y sus incidencias a otro hito
-• En la barra lateral, las vistas que tu proyecto tiene en GitHub, como tablero o lista y con los filtros como chips. Agrupada por hito o por incidencia principal, una vista muestra el progreso de cada grupo; filtrada por la iteración actual, los días que quedan; y con diseño de hoja de ruta, se ve como cronograma
-• Los hitos, las vistas y la hoja de ruta, también en el iPhone y el iPad; la hoja de ruta se muestra como lista en el iPhone y como cronograma en el iPad
-• Un nuevo diseño: en el Mac, una ventana en Liquid Glass como la de Mail y Notas, un inspector junto a la incidencia y menús contextuales con un campo de búsqueda. En el iPhone y el iPad, las propiedades de la incidencia en chips de Liquid Glass y los comentarios como una conversación
-• Un icono renovado para la app, también sobre fondo grafito o índigo, y el icono que elijas para cada proyecto
-• Nueve idiomas: inglés, alemán, francés, español, portugués, ruso, japonés, coreano y chino, según el idioma de tu dispositivo
-• La Entrada: tus notificaciones de GitHub, con la incidencia justo al lado. Lee, archiva y pospón con una tecla o deslizando; github.com y tus otros dispositivos quedan al día
-• Fechas de vencimiento con recordatorios: elige un día o escríbelo, por ejemplo “en 3 días”, y ese día tu Mac, tu iPhone y tu iPad te lo recuerdan
-• Las subincidencias quedan justo debajo de su incidencia principal; completa la última y la principal también se completa. Marca qué bloquea a qué
-• Todas las incidencias, estén o no en un tablero: tus repositorios en la barra lateral, con las incidencias que no están en ningún tablero; un clic las pone en uno
-• Mis incidencias a tu manera: fíltralas y agrúpalas por proyecto, estado, prioridad o fecha de vencimiento, con las más urgentes primero
-• Descripciones como en GitHub: tablas, listas de tareas que se marcan, código y diagramas Mermaid
-• Escribir en Markdown como en una app de notas: la negrita, la cursiva y el código se activan y desactivan, las listas continúan al pasar a la línea siguiente, y en el iPhone y el iPad la barra sobre el teclado muestra botones según dónde esté el punto de inserción
-• Menos clics: elegir un estado, una persona o una etiqueta cierra el menú
-• Corregido: girar un iPad a horizontal podía cerrar la app, y en el Mac deslizar con dos dedos ya no vuelve atrás sin querer
+• El tablero en el iPhone: columna a columna y, encima, una franja con todas las columnas y cuántas incidencias tiene cada una. Desliza o toca la franja para pasar a otra columna; mantén el dedo sobre una tarjeta y suéltala en una columna de la franja
+• Los proyectos, primero: en el iPhone ya no hay barra de pestañas y la app se abre donde lo dejaste. ‹ lleva a la página del proyecto, con Todas las incidencias, sus vistas, sus próximos hitos y la hoja de ruta, y, un paso más atrás, a todos tus proyectos, debajo de la Entrada y Mis incidencias
+• Fijar: desliza a la derecha sobre una vista, un hito o la hoja de ruta, y queda junto a la Entrada y Mis incidencias, con el número de sus incidencias abiertas
+• En el iPad, la barra lateral muestra todos los proyectos y, bajo el que está abierto, sus vistas y sus hitos
+• Un tablero más sobrio: tarjetas sin bordes sobre fondo gris, etiquetas como un punto y un nombre, y el color reservado para lo que requiere tu atención: una fecha de vencimiento, una incidencia urgente, un bloqueo
+• Todas las incidencias en lugar de Repositorios: las incidencias de un proyecto junto con las que no están en ningún tablero, y cuántas de estas siguen abiertas
+• Las subincidencias de las subincidencias se despliegan en árbol, ordenadas por prioridad o en el orden que elijas
+• Una incidencia bloqueada indica qué la bloquea, como #364 en su bandera
+• Selecciona varias subincidencias y cámbialas a la vez: con ⌘ + clic y Mayúsculas + clic en el Mac y el iPad, y con Seleccionar en el iPhone y el iPad
+• En el Mac, al arrastrar una de varias incidencias seleccionadas, se mueven todas
+• Los selectores te ofrecen las últimas incidencias principales, épicas, etiquetas y personas que elegiste
+• Oculta las columnas del tablero o los proyectos que no necesites, solo en tu dispositivo
+• Markdown que se ve como en GitHub mientras escribes, ahora con alertas, fórmulas, notas al pie e imágenes. Sus marcas solo aparecen junto al punto de inserción, y en el iPhone y el iPad la barra sobre el teclado es de Liquid Glass, como en Notas
+• Al escribir ** empieza la negrita, ya con sus asteriscos de cierre, y con ## un encabezado; Tab y las teclas de flecha pasan del título a la descripción y al revés
+• En el Mac, los tableros largos y la Entrada siguen al puntero sin retraso y se desplazan con fluidez
+• Corregido: Mis incidencias avisa si tus proyectos aún se están cargando, arrastrar en la lista del Mac vuelve a funcionar, y muchos otros detalles

@@ -6,6 +6,8 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-28
+
 ### Added
 
 - **The board on iPhone.** A board view shows as a board on the iPhone now, one column at a time across the screen,
@@ -62,7 +64,6 @@ All notable changes to this project are recorded here. The format follows
   Mac and on iPhone or iPad with a keyboard (Delete also on the touch keyboard). Holding Delete down stops at the start
   of the description instead of going on to delete the title. In a new issue or milestone, Return in the title now
   goes to the start of the description too, rather than its end.
-
 - **Hide board columns, on your device only.** A column's menu (right-click its header, or its "…"; on iPad its "…")
   has **Hide Column**: the column and its cards leave the board, and nothing changes on GitHub. Hidden columns wait at
   the right end of the board with their counts and under Display (`⇧V`), and a click brings one back. Each view keeps
@@ -653,7 +654,9 @@ First public version.
 - Light and dark appearance, or following the system, and a choice of Dock icons.
 - Sign-in with the GitHub CLI, a personal access token, or the OAuth device flow.
 
-[Unreleased]: https://github.com/lukaskaibel/issues-for-github/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/lukaskaibel/issues-for-github/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/lukaskaibel/issues-for-github/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/lukaskaibel/issues-for-github/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/lukaskaibel/issues-for-github/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/lukaskaibel/issues-for-github/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/lukaskaibel/issues-for-github/releases/tag/v0.1.0

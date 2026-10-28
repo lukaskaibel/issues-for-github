@@ -297,6 +297,13 @@ final class PadTests: AppTestCase {
     /// ⌘-click and Shift-click pick sub-issues, as in Mail, and the keys then change all of them. (Escape, which lets
     /// them go too, can't be tested: XCTest's Escape never reaches an app in the simulator, though other keys do.)
     func testPickSubIssuesWithPointerAndKeys() {
+        // Since Xcode 27.1, perform(withKeyModifiers:) holds no key during a click or tap in the iPad simulator: the
+        // app gets the click with empty modifier flags, so the ⌘-click opens the sub-issue. Keys typed with modifiers
+        // still arrive (testFormatShortcutsFromTheKeyboard), and the same test fails on the commit that added picking,
+        // which passed with Xcode 27.0. Not strict, so it counts again once XCTest holds the keys.
+        let options = XCTExpectedFailure.Options()
+        options.isStrict = false
+        XCTExpectFailure("XCTest in Xcode 27.1 holds no modifier keys during a click on iPad", options: options)
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()
         openProject("Git Issues")
@@ -304,18 +311,18 @@ final class PadTests: AppTestCase {
         wait(element("issue-title"))
         let first = element("sub-#13")
         scrollTo(first)
-        XCUIElement.perform(withKeyModifiers: .command) { first.tap() }
+        XCUIElement.perform(withKeyModifiers: .command) { first.click() }
         wait(element("sub-pick-done"))
-        XCUIElement.perform(withKeyModifiers: .shift) { element("sub-#11").tap() }
+        XCUIElement.perform(withKeyModifiers: .shift) { element("sub-#11").click() }
         wait(labelled("4 selected"))
         XCTAssertTrue(element("sub-#28").isSelected)
         XCTAssertFalse(element("sub-#12").isSelected)
         snapshot("iPad sub-issues picked with the pointer")
 
         // ⌘-click lets one go again.
-        XCUIElement.perform(withKeyModifiers: .command) { element("sub-#28").tap() }
+        XCUIElement.perform(withKeyModifiers: .command) { element("sub-#28").click() }
         wait(labelled("3 selected"))
-        XCUIElement.perform(withKeyModifiers: .command) { element("sub-#28").tap() }
+        XCUIElement.perform(withKeyModifiers: .command) { element("sub-#28").click() }
         wait(labelled("4 selected"))
 
         app.typeKey("s", modifierFlags: [])
