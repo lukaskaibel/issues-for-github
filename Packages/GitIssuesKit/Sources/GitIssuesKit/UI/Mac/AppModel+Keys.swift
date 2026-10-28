@@ -112,6 +112,15 @@ extension AppModel {
             return true
         }
         let key = event.charactersIgnoringModifiers?.lowercased() ?? ""
+        if modifiers == .command, showsTimelineCanvas {
+            switch key {
+            case "+", "=": zoomTimeline(by: 1)
+            case "-": zoomTimeline(by: -1)
+            case "0": resetTimelineZoom()
+            default: break
+            }
+            if ["+", "=", "-", "0"].contains(key) { return true }
+        }
         if scope == .inbox, let handled = handleInboxKey(event, key: key, modifiers: modifiers) {
             return handled
         }

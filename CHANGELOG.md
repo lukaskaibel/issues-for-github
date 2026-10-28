@@ -8,6 +8,15 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Zoom and date editing on timelines.** Pinch to zoom on a trackpad or iPad, use the zoom buttons, or on the Mac
+  use ⌘+ and ⌘− or hold ⌘ while scrolling; ⌘0 resets to the selected Months or Quarters preset. Zoom stays between
+  1 and 40 points per day and keeps the date under the pointer or the centre of the timeline in place. In a project's
+  roadmap view, drag an issue's date bar to move both dates together, or drag an edge to change just its start or end.
+  Dates snap to whole days, an end cannot pass its start, and Esc cancels a drag on the Mac. Single dates can move too;
+  bars drawn from iterations or milestone dates keep their existing meaning. VoiceOver offers actions to move or
+  resize by one day. Changes join the offline sync queue when the drag ends. Once a bar has room to read its title,
+  the title stays visible, with an ellipsis when it is too long.
+
 - **The board on iPhone.** A board view shows as a board on the iPhone now, one column at a time across the screen,
   with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and
   hold a card and the strip becomes a target for each column: let go on one and the card goes first in that column;

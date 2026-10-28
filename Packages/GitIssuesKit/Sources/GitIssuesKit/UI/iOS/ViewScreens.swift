@@ -538,6 +538,13 @@ struct ViewDisplayMenu: View {
                     Label(.board, systemImage: "rectangle.split.3x1").tag(ViewShape.board)
                     Label(.list, systemImage: "list.bullet").tag(ViewShape.list)
                 }
+                if model.showsTimeline(view) {
+                    Menu {
+                        TimelineZoomMenuItems()
+                    } label: {
+                        Label(.zoomPicker, systemImage: "plus.magnifyingglass")
+                    }
+                }
             } else {
                 Picker(.layout, selection: Binding(get: { model.layout(of: view) }, set: { model.showLayout($0, projectId: view.projectId) })) {
                     Label(.board, systemImage: "rectangle.split.3x1").tag(ViewMode.board)

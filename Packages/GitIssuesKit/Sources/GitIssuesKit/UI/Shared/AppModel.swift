@@ -348,7 +348,17 @@ public final class AppModel {
     }
     /// How much time the roadmap's timeline shows at once.
     var roadmapZoom: RoadmapZoom = RoadmapZoom(rawValue: UserDefaults.standard.string(forKey: "roadmap.zoom") ?? "") ?? .months {
-        didSet { UserDefaults.standard.set(roadmapZoom.rawValue, forKey: "roadmap.zoom") }
+        didSet {
+            UserDefaults.standard.set(roadmapZoom.rawValue, forKey: "roadmap.zoom")
+            timelineScaleOverride = nil
+        }
+    }
+    /// A pinch, wheel or zoom button overrides the Months/Quarters preset until the next preset choice or reset.
+    var timelineScaleOverride: Double? = UserDefaults.standard.object(forKey: "timeline.scale") as? Double {
+        didSet {
+            if let timelineScaleOverride { UserDefaults.standard.set(timelineScaleOverride, forKey: "timeline.scale") }
+            else { UserDefaults.standard.removeObject(forKey: "timeline.scale") }
+        }
     }
     /// The project opened last, which the sidebar shows while the Inbox or My Issues is on screen.
     var lastProjectId: String? = UserDefaults.standard.string(forKey: "selectedProject")
