@@ -142,6 +142,9 @@ All notable changes to this project are recorded here. The format follows
   the style, and bold that loses its last letter goes entirely; the caret never rests between hidden marks; and a
   heading's `#`s show only while you type them, until you leave the line. Marks no longer pop in and out: they unfold
   as the caret arrives and fold away behind it, the text beside them sliding along (at once with Reduce Motion).
+- **The source code is under the GPL.** Issues' source code is now under the GNU General Public License, version 3, in
+  place of the MIT License, with a permission to link it with elk-swift, which lays out the diagrams. Copies from
+  before 27 October 2026 can still be used under the MIT License. The app in the App Store stays free.
 
 ### Fixed
 

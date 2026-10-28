@@ -26,7 +26,7 @@
   <img alt="Platform: iOS and iPadOS 27 or later" src="https://img.shields.io/badge/iOS%20%26%20iPadOS-27%2B-111214">
   <img alt="Apple silicon" src="https://img.shields.io/badge/Apple%20silicon-native-111214">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138">
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-5B63D3"></a>
+  <a href="#license"><img alt="License: GPLv3" src="https://img.shields.io/badge/license-GPLv3-5B63D3"></a>
   <a href="CHANGELOG.md"><img alt="Version 1.1.0" src="https://img.shields.io/badge/version-1.1.0-5B63D3"></a>
 </p>
 
@@ -487,43 +487,6 @@ Tools/run-release.sh
 Without any setup the app is signed to run on your Mac only, which is all a local build needs. To sign with your own
 Apple Developer team, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and fill in your team ID.
 
-### Releasing to the App Store
-
-Releases go through [fastlane](https://fastlane.tools), for the Mac, iPhone and iPad together. It signs in to App Store
-Connect with an API key, so there are no Apple ID prompts, and signs the builds with your team's Apple Distribution
-certificate from the keychain and App Store profiles it fetches with the key. The first Mac build also creates a Mac
-Installer Distribution certificate for the package; macOS then asks once whether it may be used (Always Allow). Once:
-
-1. Create the app in App Store Connect for iOS and macOS with the bundle identifier `com.lukaskbl.GitIssues`, and set
-   the few things fastlane can't ([Design/app-store.md](Design/app-store.md) lists them).
-2. Copy `fastlane/.env.secret.example` to `fastlane/.env.secret` and fill in the API key and the contact for App Review.
-3. Set `GITHUB_CLIENT_ID` in `Config/Local.xcconfig`, so the builds offer "Sign in with GitHub".
-4. Run `bundle install`.
-
-Then:
-
-```bash
-bundle exec fastlane screenshots   # the App Store screenshots of the iPhone, iPad and Mac apps, on the sample data
-bundle exec fastlane beta          # build the Mac, iPhone and iPad apps and upload them to TestFlight
-bundle exec fastlane submit        # submit those builds for review once they're tested in TestFlight
-bundle exec fastlane release       # or all in one: build, upload texts and screenshots, and submit
-```
-
-The texts are in `fastlane/metadata`; `bundle exec fastlane metadata` uploads them with the screenshots and nothing
-else. `bundle exec fastlane ios <lane>` or `mac <lane>` does one platform. The Mac's App Store build runs in the App
-Sandbox, as the Mac App Store requires, and leaves out the GitHub CLI sign-in, which can't work there; **Product ›
-Archive** in Xcode makes the same build. Without an API key, `Tools/testflight.sh` and `Tools/testflight-mac.sh` upload
-a build with the Apple ID under Xcode › Settings › Accounts.
-
-Every change to the app on `main` also goes to TestFlight by itself, for the iPhone and iPad and for the Mac:
-[`.github/workflows/testflight.yml`](.github/workflows/testflight.yml) runs `bundle exec fastlane ios beta` and
-`mac beta` on GitHub side by side, signed with certificates made for it (the workflow lists the secrets it needs). There
-the Mac app is signed for the App Store from the start, so the Macs GitHub runs it on don't have to be registered with
-the team. A TestFlight build carries the version it's on its way to and the date and time in Germany: once `v0.3.0` is
-tagged, `0.4.0 (2026.1017.1047)` is the build of 17 October 2026 at 10:47. Its "What to Test" names the commit. So a
-release goes: set its version in `Config/Shared.xcconfig`, let the builds of it reach TestFlight, `submit`, and tag it
-after.
-
 ### Signing in
 
 The sign-in screen offers up to three ways to sign in, depending on your setup, and sample data:
@@ -863,4 +826,20 @@ Issues is an independent project and is not affiliated with, endorsed by, or spo
 
 ## License
 
-[MIT](LICENSE) © Lukas Kaibel
+Copyright © 2026 Lukas Kaibel
+
+Issues is free software: you can redistribute it and modify it under the terms of the
+[GNU General Public License, version 3](LICENSE), as published by the Free Software Foundation. It comes with no
+warranty of any kind; the licence has the details.
+
+**Additional permission under GNU GPL version 3 section 7.** If you modify this program, or any covered work, by
+linking or combining it with [elk-swift](https://github.com/lukilabs/elk-swift) (or a modified version of that
+library), containing parts covered by the terms of the Eclipse Public License 2.0, the licensors of this program grant
+you additional permission to convey the resulting work. Corresponding Source for a non-source form of such a
+combination shall include the source code for the parts of elk-swift used as well as that of the covered work.
+
+Issues was released under the [MIT License](https://github.com/lukaskaibel/issues-for-github/blob/a12f672/LICENSE)
+until 27 October 2026. Copies from before then, up to commit `a12f672`, can still be used under that licence.
+
+Contributions come with terms of their own, so that Issues can be published on the App Store: see
+[CONTRIBUTING.md](CONTRIBUTING.md#licensing-your-contribution).
