@@ -18643,6 +18643,66 @@
         }
       }
     },
+    "errorUnsupportedProjectFieldValue" : {
+      "comment" : "Sync error when a nonempty project field value has an unsupported type. No GitHub request is sent, so the existing field is preserved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Projektfeldwert kann nicht gespeichert werden. Sein Wert auf GitHub wurde nicht geändert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This project field value cannot be saved. Its value on GitHub was not changed."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede guardar este valor del campo del proyecto. Su valor en GitHub no ha cambiado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette valeur de champ du projet ne peut pas être enregistrée. Sa valeur sur GitHub n’a pas été modifiée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このプロジェクトフィールドの値は保存できません。GitHub上の値は変更されていません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 프로젝트 필드 값을 저장할 수 없습니다. GitHub의 해당 값은 변경되지 않았습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não é possível salvar este valor do campo do projeto. Seu valor no GitHub não foi alterado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось сохранить это значение поля проекта. Его значение на GitHub не изменилось."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法保存此项目字段值。GitHub 上该字段的值未作更改。"
+          }
+        }
+      }
+    },
     "escClearsPick" : {
       "comment" : "Mac, Inbox: hint under the buttons for several selected notifications: the Esc key unselects them. Keep 'Esc'.",
       "extractionState" : "manual",

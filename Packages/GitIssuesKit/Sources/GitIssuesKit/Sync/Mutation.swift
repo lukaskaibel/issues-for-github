@@ -676,7 +676,11 @@ extension Mutation {
         case .setEpic(let m):
             return line(try number(contentId: m.contentId), m.isEpic ? .queuedMadeEpic : .queuedNoLongerEpic)
         case .setProjectField(let m):
-            let text: LocalizedStringResource = m.valueName.map { .queuedFieldSet(field: m.fieldName, value: $0) } ?? .queuedFieldCleared(field: m.fieldName)
+            let valueName = m.valueName ?? m.value.flatMap { value -> String? in
+                if let date = value.date { return CalendarDay(date)?.longLabel ?? date }
+                return value.text ?? value.number.map { $0.formatted() } ?? value.optionId ?? value.iterationId
+            }
+            let text: LocalizedStringResource = valueName.map { .queuedFieldSet(field: m.fieldName, value: $0) } ?? .queuedFieldCleared(field: m.fieldName)
             return line(try number(itemId: m.itemId), text)
         case .markThreadRead(let m): return line(leadingNumber(m.label), .queuedMarkedAsRead)
         case .archiveThread(let m): return line(leadingNumber(m.label), .queuedArchivedInInbox)

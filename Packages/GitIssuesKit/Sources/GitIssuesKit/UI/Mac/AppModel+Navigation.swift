@@ -2,6 +2,43 @@
 import AppKit
 import SwiftUI
 
+/// Gesture ownership is decided before scrolling starts, not when the scroll view later reaches an edge.
+struct HistorySwipePolicy {
+    static let threshold = 0.5
+
+    enum Surface {
+        case page
+        case board(offset: CGFloat, maximum: CGFloat)
+        case timeline
+
+        fileprivate func allows(back: Bool) -> Bool {
+            switch self {
+            case .page: return true
+            case .timeline: return false
+            case .board(let offset, let maximum):
+                return back ? offset <= 0.5 : offset >= maximum - 0.5
+            }
+        }
+    }
+
+    let allowsBack: Bool
+    let allowsForward: Bool
+
+    init(canGoBack: Bool, canGoForward: Bool, surface: Surface, inMainWindow: Bool = true,
+         modifiers: NSEvent.ModifierFlags = [], isDragging: Bool = false) {
+        let enabled = inMainWindow && !isDragging && modifiers.intersection([.command, .option, .control, .shift]).isEmpty
+        allowsBack = enabled && canGoBack && surface.allows(back: true)
+        allowsForward = enabled && canGoForward && surface.allows(back: false)
+    }
+
+    var canTrack: Bool { allowsBack || allowsForward }
+    func allows(back: Bool) -> Bool { back ? allowsBack : allowsForward }
+
+    static func commits(progress: Double, phase: NSEvent.Phase) -> Bool {
+        phase == .ended && abs(progress) >= threshold
+    }
+}
+
 extension AppModel {
     // MARK: Mouse buttons and trackpad swipes
 
@@ -52,6 +89,7 @@ extension AppModel {
 
     /// The events of a two-finger swipe so far, and how far the fingers have moved.
     struct PendingSwipe {
+        let policy: HistorySwipePolicy
         var delta = CGSize.zero
         var events: [NSEvent] = []
     }
@@ -66,11 +104,31 @@ extension AppModel {
     private func trackSwipe(_ event: NSEvent) -> Bool {
         if event.phase == .began {
             pendingSwipe = nil
+            let surface: HistorySwipePolicy.Surface
+            if showsTimelineCanvas {
+                // A timeline keeps two-finger gestures for dates, including when already at either edge.
+                surface = .timeline
+            } else if openItem == nil, viewMode == .board, currentProjectId != nil {
+                surface = .board(offset: boardDrag.scrollX, maximum: boardDrag.maxScrollX)
+            } else {
+                surface = .page
+            }
+            let policy = HistorySwipePolicy(
+                canGoBack: canGoBack, canGoForward: canGoForward, surface: surface,
+                inMainWindow: event.window != nil && event.window === mainWindow,
+                modifiers: event.modifierFlags, isDragging: isDragging
+            )
             guard signedIn, overlay == nil, swipeProgress == 0, event.hasPreciseScrollingDeltas,
+                  event.momentumPhase.isEmpty, policy.canTrack,
                   NSEvent.isSwipeTrackingFromScrollEventsEnabled else { return false }
-            pendingSwipe = PendingSwipe()
+            pendingSwipe = PendingSwipe(policy: policy)
         }
         guard var pending = pendingSwipe else { return false }
+        guard signedIn, overlay == nil, !isDragging, event.window === mainWindow, event.momentumPhase.isEmpty,
+              event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else {
+            releaseSwipe(pending)
+            return false
+        }
         if event.phase == .ended || event.phase == .cancelled {
             releaseSwipe(pending)
             return false
@@ -80,7 +138,7 @@ extension AppModel {
         pending.events.append(event)
         let wantsBack = pending.delta.width > 0
         let sideways = abs(pending.delta.width)
-        if abs(pending.delta.height) > sideways * Self.swipeSlope || (sideways > 0 && !canSwipe(back: wantsBack)) {
+        if abs(pending.delta.height) > sideways * Self.swipeSlope || (sideways > 0 && !pending.policy.allows(back: wantsBack)) {
             pending.events.removeLast()
             releaseSwipe(pending)
             return false
@@ -92,8 +150,8 @@ extension AppModel {
         pendingSwipe = nil
         event.trackSwipeEvent(
             options: [.lockDirection, .clampGestureAmount],
-            dampenAmountThresholdMin: canGoForward ? -1 : 0,
-            max: canGoBack ? 1 : 0
+            dampenAmountThresholdMin: pending.policy.allowsForward ? -1 : 0,
+            max: pending.policy.allowsBack ? 1 : 0
         ) { [weak self] amount, phase, isComplete, _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
@@ -104,7 +162,7 @@ extension AppModel {
                     // It goes if the arrow is full as the fingers lift. The system would also count a short quick
                     // flick, which is how a swipe went back without meaning to.
                     let progress = self.swipeProgress
-                    if abs(progress) >= Self.swipeThreshold {
+                    if HistorySwipePolicy.commits(progress: progress, phase: phase) {
                         if progress > 0 { self.goBack() } else { self.goForward() }
                     }
                     withAnimation(Theme.quick) { self.swipeProgress = 0 }
@@ -121,16 +179,7 @@ extension AppModel {
 
     /// How far a two-finger swipe has to go, in the system's swipe amount, for letting go to go back or forward. The
     /// arrow is full from there.
-    static let swipeThreshold = 0.5
-
-    private func canSwipe(back: Bool) -> Bool {
-        guard back ? canGoBack : canGoForward else { return false }
-        // On the board a sideways swipe scrolls the columns; it only navigates once the board is at its edge.
-        if openItem == nil, viewMode == .board, currentProjectId != nil {
-            return back ? boardDrag.scrollX <= 0.5 : boardDrag.scrollX >= boardDrag.maxScrollX - 0.5
-        }
-        return true
-    }
+    static let swipeThreshold = HistorySwipePolicy.threshold
 
     /// A held-back swipe turned out to be a scroll: its events go to the view under the pointer after all, in order,
     /// before the one that decided it.

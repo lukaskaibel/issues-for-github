@@ -193,7 +193,8 @@ offers it on its light page, on graphite or as a white card on indigo. Each foll
 Pinch on a trackpad or iPad to zoom a timeline, or use its zoom controls. On the Mac, ⌘+ and ⌘− zoom, ⌘0 resets to
 Months or Quarters, and holding ⌘ while scrolling zooms under the pointer. Zoom has limits at both ends. Bars wide
 enough to read show their issue's title, with an ellipsis when it does not fit on one line. Scrolling stays responsive
-on long timelines as rows pass under the pointer.
+on long timelines as rows pass under the pointer. On the Mac, a two-finger horizontal gesture pans through dates,
+including at the timeline's edges; use ⌘[ and ⌘] or the back and forward buttons to navigate.
 
 In a project's roadmap view, drag the middle of an issue's date bar to move it while keeping its duration. Drag the
 left or right edge to change only the start or finish date. Dates snap to days and the edges stop at each other;

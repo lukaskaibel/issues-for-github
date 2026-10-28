@@ -18,6 +18,13 @@ final class FakeGitHub: @unchecked Sendable {
         var hiddenBlockers = 0
     }
 
+    struct FieldWrite {
+        let query: String
+        let variables: [String: Any]
+
+        var isClear: Bool { query.contains("clearProjectV2ItemFieldValue(") }
+    }
+
     static let projectId = "P1"
     static let repoId = "R1"
     static let repo = "octo/one"
@@ -30,6 +37,8 @@ final class FakeGitHub: @unchecked Sendable {
     private var events: [[String: Any]] = []
     private var eventClock = Date()
     private var log: [String] = []
+    private var fieldWriteLog: [FieldWrite] = []
+    private var nextFieldWriteAccepted: (() -> Void)?
     /// The board's saved views and fields besides Status, as GraphQL lists them, for tests of views.
     var views: [[String: Any]] = []
     var extraFields: [[String: Any]] = []
@@ -63,6 +72,23 @@ final class FakeGitHub: @unchecked Sendable {
         lock.withLock {
             defer { log = [] }
             return log
+        }
+    }
+
+    /// The actual GraphQL payloads sent to change card fields, retained independently of the request log.
+    func fieldWrites() -> [FieldWrite] {
+        lock.withLock { fieldWriteLog }
+    }
+
+    /// Runs once after a field write reaches GitHub but before its response, outside the fake's lock.
+    func afterNextFieldWrite(_ action: @escaping () -> Void) {
+        lock.withLock { nextFieldWriteAccepted = action }
+    }
+
+    /// A date stored on GitHub, without any of the local outbox's optimistic values.
+    func dateValue(itemId: String, fieldId: String) -> String? {
+        lock.withLock {
+            cardValues[itemId]?.first { ($0["field"] as? [String: Any])?["id"] as? String == fieldId }?["date"] as? String
         }
     }
 
@@ -145,7 +171,8 @@ final class FakeGitHub: @unchecked Sendable {
     // MARK: Answers
 
     fileprivate func answer(_ request: URLRequest) -> (status: Int, headers: [String: String], body: Data) {
-        lock.withLock {
+        var accepted: (() -> Void)?
+        let response: (status: Int, headers: [String: String], body: Data) = lock.withLock {
             if request.url?.path == "/repos/\(Self.repo)/issues/events" {
                 let etag = "W/\"\(events.count)\""
                 if request.value(forHTTPHeaderField: "If-None-Match") == etag {
@@ -169,6 +196,37 @@ final class FakeGitHub: @unchecked Sendable {
             } else if query.contains("addLabelsToLabelable(") {
                 log.append("add labels \((variables["ids"] as? [String] ?? []).joined(separator: ", "))")
                 data = ["addLabelsToLabelable": ["clientMutationId": NSNull()]]
+            } else if query.contains("updateProjectV2ItemFieldValue(") || query.contains("clearProjectV2ItemFieldValue(") {
+                fieldWriteLog.append(FieldWrite(query: query, variables: variables))
+                guard variables["p"] as? String == Self.projectId,
+                      let itemId = variables["i"] as? String,
+                      let index = issues.firstIndex(where: { $0.itemId == itemId }),
+                      let fieldId = variables["f"] as? String else {
+                    return (500, [:], Data("Unknown project, card or field in field write".utf8))
+                }
+                let clear = query.contains("clearProjectV2ItemFieldValue(")
+                var value: [String: Any] = ["field": ["id": fieldId]]
+                if clear {
+                    log.append("clear field \(fieldId)")
+                } else if query.contains("date: $d"), let date = variables["d"] as? String {
+                    value["date"] = date
+                    log.append("set field \(fieldId)")
+                } else if query.contains("iterationId: $v"), let iteration = variables["v"] as? String {
+                    value["iterationId"] = iteration
+                    log.append("set field \(fieldId)")
+                } else if query.contains("singleSelectOptionId: $o"), let option = variables["o"] as? String {
+                    value["optionId"] = option
+                    log.append("set field \(fieldId)")
+                } else {
+                    return (500, [:], Data("Unsupported project field write: \(query)".utf8))
+                }
+                cardValues[itemId, default: []].removeAll { ($0["field"] as? [String: Any])?["id"] as? String == fieldId }
+                if !clear { cardValues[itemId, default: []].append(value) }
+                issues[index].updatedAt = "2026-10-02T10:00:00Z"
+                projectUpdatedAt = issues[index].updatedAt
+                accepted = nextFieldWriteAccepted
+                nextFieldWriteAccepted = nil
+                data = [clear ? "clearProjectV2ItemFieldValue" : "updateProjectV2ItemFieldValue": ["clientMutationId": NSNull()]]
             } else if query.contains("items { totalCount }") {
                 log.append("meta")
                 data = ["node": meta()]
@@ -239,6 +297,8 @@ final class FakeGitHub: @unchecked Sendable {
             }
             return (200, [:], try! JSONSerialization.data(withJSONObject: ["data": data]))
         }
+        accepted?()
+        return response
     }
 
     private var onBoard: [Issue] { issues.filter { $0.itemId != nil } }

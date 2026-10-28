@@ -1133,7 +1133,8 @@ public actor SyncEngine {
             try await sendEpic(m)
 
         case .setProjectField(let m):
-            guard m.value != m.base else { break }
+            // A newer edit can replace an in-flight one and inherit its base. Returning to that base still
+            // needs a write: GitHub may already have accepted the earlier value.
             try await sendFieldValue(m.value, projectId: m.projectId, itemId: m.itemId, fieldId: m.fieldId)
 
         case .deleteItem(let m):
@@ -1184,12 +1185,26 @@ public actor SyncEngine {
         return id
     }
 
-    /// Sets one of a project's own fields to an option or an iteration, or clears it.
+    private enum FieldValueWriteError: LocalizedError {
+        case unsupported
+
+        var errorDescription: String? { String(localized: .errorUnsupportedProjectFieldValue) }
+    }
+
+    /// A missing value clears a field. A value of another type must never become a clear request.
     private func sendFieldValue(_ value: FieldValue?, projectId: String, itemId: String, fieldId: String) async throws {
-        if let iterationId = value?.iterationId {
+        guard let value, !value.isEmpty else {
+            try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: nil)
+            return
+        }
+        if let date = value.date {
+            try await api.setDateValue(projectId: projectId, itemId: itemId, fieldId: fieldId, date: date)
+        } else if let iterationId = value.iterationId {
             try await api.setIterationValue(projectId: projectId, itemId: itemId, fieldId: fieldId, iterationId: iterationId)
+        } else if let optionId = value.optionId {
+            try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: optionId)
         } else {
-            try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: value?.optionId)
+            throw FieldValueWriteError.unsupported
         }
     }
 

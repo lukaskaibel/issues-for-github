@@ -58,11 +58,17 @@ private struct TimelineViewport: Equatable {
     var width: CGFloat = 0
 }
 
+/// Reading the viewport for the next zoom must not invalidate the scroll view on every horizontal scroll tick.
+private final class TimelineViewportMetrics {
+    var offset: CGFloat = 0
+    var width: CGFloat = 0
+}
+
 private struct TimelineZoomModifier: ViewModifier {
     @Environment(AppModel.self) private var model
     var scale: CGFloat
     @State private var position = ScrollPosition()
-    @State private var viewport = TimelineViewport()
+    @State private var viewport = TimelineViewportMetrics()
     @State private var pinchScale: CGFloat?
     @State private var anchor: CGFloat?
     @GestureState private var pinching = false
@@ -73,7 +79,8 @@ private struct TimelineZoomModifier: ViewModifier {
             .onScrollGeometryChange(for: TimelineViewport.self) { geometry in
                 TimelineViewport(offset: geometry.contentOffset.x + geometry.contentInsets.leading, width: geometry.containerSize.width)
             } action: { _, next in
-                viewport = next
+                viewport.offset = next.offset
+                viewport.width = next.width
             }
             .onChange(of: scale) { previous, next in
                 let offset = TimelineZoom.offset(viewport.offset, anchor: anchor ?? viewport.width / 2, from: previous, to: next)

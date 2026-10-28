@@ -156,6 +156,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Moving or resizing an issue's date bar now updates its start and finish dates on GitHub. The sync sender had
+  mistaken ordinary date fields for an empty option and cleared them instead. Unsupported nonempty field values
+  now fail without clearing the field, and queued date changes say which date will be set. Moving a date back while
+  its previous change is still sending also saves the final date correctly.
+- Two-finger horizontal scrolling on a timeline keeps moving through dates instead of sticking or going back to
+  another page. A gesture stays with scrolling once it starts there, Command-scroll zooms without starting history
+  navigation, and cancelling a navigation swipe no longer goes back or forward.
 - Long project timelines scroll more smoothly, especially while rows pass under the pointer. Hovering no longer
   repaints every issue title or rebuilds every drag target, and the name column loads rows as they enter view.
 - My Issues says when it is still loading, and fills sooner. Right after signing in, the app fetches your projects
