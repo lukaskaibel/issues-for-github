@@ -86,6 +86,23 @@ struct TimelineDateEdit: Equatable {
 }
 
 extension AppModel {
+    /// Share field discovery across the rows and reuse the dates already chosen for their bars.
+    func timelineDateEdits(for rows: [TimelineRow], view: ProjectView) -> [String: TimelineDateEdit] {
+        guard projects.first(where: { $0.id == view.projectId })?.viewerCanUpdate == true,
+              let context = filterContext(projectId: view.projectId) else { return [:] }
+        let dates = timelineDateFields(projectId: view.projectId)
+        var edits: [String: TimelineDateEdit] = [:]
+        edits.reserveCapacity(rows.count)
+        for row in rows {
+            guard case .item(let item) = row.kind, item.projectId == view.projectId,
+                  let edit = TimelineDateEdit.make(
+                    item: item, dates: dates, context: context, displayedSpan: row.span, canUpdate: true
+                  ) else { continue }
+            edits[row.id] = edit
+        }
+        return edits
+    }
+
     func timelineDateEdit(for item: Item, view: ProjectView) -> TimelineDateEdit? {
         guard item.projectId == view.projectId, let context = filterContext(projectId: view.projectId) else { return nil }
         let dates = timelineDateFields(projectId: view.projectId)

@@ -156,6 +156,8 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Long project timelines scroll more smoothly, especially while rows pass under the pointer. Hovering no longer
+  repaints every issue title or rebuilds every drag target, and the name column loads rows as they enter view.
 - My Issues says when it is still loading, and fills sooner. Right after signing in, the app fetches your projects
   one by one, and until then My Issues said "Nothing assigned to you" and Home counted 0. Now the line under the title
   reads "Loading issues from 3 projects…" until the last one is in. While none of your issues have come in yet, My
