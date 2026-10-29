@@ -9,9 +9,6 @@ struct HomeScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.openRoute) private var openRoute
-    /// How many issues each pinned view or milestone has open, by its key. Counted while Home is on screen only, as on
-    /// a project's page: Home stays under every screen.
-    @State private var pinCounts: [String: Int] = [:]
     @State private var onScreen = false
     @State private var hiddenOpen = false
 
@@ -31,7 +28,7 @@ struct HomeScreen: View {
                     }
                     .accessibilityIdentifier("home-my-issues")
                     ForEach(HomePins.shared.keys.compactMap { model.entry(pinned: $0) }) { entry in
-                        PinTile(entry: entry, count: entry.counted ? pinCounts[entry.key] ?? 0 : nil)
+                        PinTile(entry: entry, count: entry.counted ? HomePins.shared.openCounts[entry.key] ?? 0 : nil)
                     }
                 }
                 .listRowInsets(EdgeInsets())
@@ -97,12 +94,14 @@ struct HomeScreen: View {
         .onChange(of: HomePins.shared.keys) { _, _ in recountPins() }
     }
 
+    /// Counts the pins' open issues while Home is on screen only, as a project's page does: Home stays under every
+    /// screen.
     private func recountPins() {
         var fresh: [String: Int] = [:]
         for entry in HomePins.shared.keys.compactMap({ model.entry(pinned: $0) }) {
             fresh[entry.key] = model.openCount(of: entry)
         }
-        if fresh != pinCounts { pinCounts = fresh }
+        if fresh != HomePins.shared.openCounts { HomePins.shared.openCounts = fresh }
     }
 
     /// An open project's row: a tap opens it; touch and hold, or swipe left, to hide it or show it again.

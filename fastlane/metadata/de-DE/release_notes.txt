@@ -1,19 +1,18 @@
-Das bisher größte Update: Plane mit Meilensteinen, Epics und einer Roadmap, öffne die Ansichten deines Projekts von GitHub und nutze Issues in neun Sprachen – in einem neuen Design, gebaut wie Mail und Notizen.
+Das Board kommt aufs iPhone, deine Projekte stehen auf iPhone und iPad an erster Stelle, und das Board wird überall ruhiger.
 
-• Meilensteine: die nächsten eines Boards in der Seitenleiste, jeweils mit ihren Issues, dem Fortschritt und dem Fälligkeitstag. Schließ einen ab und verschiebe, was übrig ist, in den nächsten
-• Epics: Issues, deren Arbeit in ihren Sub-Issues steckt. Auf dem Board stehen die Issues eines Epics unter seinem Namen beisammen; ziehst du den Namen, ziehen alle mit
-• Eine Roadmap: deine Epics als Balken über den Meilensteinen, nach Monaten oder Quartalen. Zieh einen Balken auf einen anderen Meilenstein, und das Epic kommt samt seinen Issues dorthin
-• Die Ansichten deines Projekts von GitHub in der Seitenleiste, als Board oder Liste, mit Filtern, die du mit einem Klick änderst. Nach Meilenstein oder übergeordnetem Issue gruppiert, zeigt eine Ansicht den Fortschritt jeder Gruppe, die der aktuellen Iteration ihre restlichen Tage; eine Roadmap-Ansicht ist eine Zeitleiste
-• Meilensteine, Ansichten und die Roadmap auch auf iPhone und iPad; die Roadmap ist auf dem iPhone eine Liste, auf dem iPad eine Zeitleiste
-• Neues Design: auf dem Mac das Fenster von Mail und Notizen in Liquid Glass, die Informationen zum Issue gleich daneben und Kontextmenüs mit Suchfeld. Auf iPhone und iPad zeigen Issues ihre Eigenschaften als Chips aus Glas und die Kommentare als Unterhaltung
-• Ein überarbeitetes App-Symbol, auch auf Graphit oder Indigo, und ein eigenes Symbol für jedes Projekt
-• Neun Sprachen: Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Russisch, Japanisch, Koreanisch und Chinesisch, passend zur Sprache deines Geräts
-• Der Eingang: deine Mitteilungen von GitHub, mit dem Issue gleich daneben. Lesen, archivieren und zurückstellen per Taste oder Wischen; github.com und deine anderen Geräte sind auf demselben Stand
-• Fälligkeitsdaten mit Erinnerung: Wähle einen Tag oder tippe ihn ein, etwa „in 3 Tagen“, und am Tag selbst erinnern dich Mac, iPhone und iPad
-• Sub-Issues hängen direkt unter ihrem übergeordneten Issue; erledigst du das letzte, ist auch das übergeordnete erledigt. Dazu Blocker: Halte fest, was was blockiert
-• Jedes Issue, ob auf einem Board oder nicht: deine Repositories in der Seitenleiste, die Issues auf keinem Board unter „Kein Projekt“; ein Klick bringt sie auf eines
-• „Meine Issues“ nach deinen Wünschen: filtern und nach Projekt, Status, Priorität oder Fälligkeitsdatum gruppieren, das Dringendste zuerst
-• Beschreibungen wie auf GitHub: Tabellen, abhakbare Checklisten, Code und Mermaid-Diagramme
-• Markdown schreiben wie in einer Notizen-App: Fett, Kursiv und Code lassen sich ein- und ausschalten, Listen gehen in der nächsten Zeile weiter, und auf iPhone und iPad hat die Leiste über der Tastatur Tasten für die Stelle, an der die Einfügemarke steht
-• Weniger Klicks: Ein Klick auf einen Status, eine Person oder ein Label schließt die Auswahl
-• Behoben: Beim Drehen eines iPad ins Querformat konnte die App abstürzen, und auf dem Mac führt ein Wischen mit zwei Fingern nicht mehr versehentlich zurück
+• Das Board auf dem iPhone: eine Spalte nach der anderen, darüber eine Leiste mit jeder Spalte und ihrer Anzahl. Wisch oder tippe auf die Leiste, um zu einer anderen Spalte zu wechseln; halte eine Karte gedrückt und lass sie auf einer Spalte in der Leiste los
+• Projekte zuerst: Auf dem iPhone gibt es keine Tableiste mehr, und die App öffnet sich dort, wo du aufgehört hast. ‹ führt zur Seite des Projekts mit „Alle Issues“, seinen Ansichten, den nächsten Meilensteinen und der Roadmap, und weiter zu all deinen Projekten unter dem Eingang und „Meine Issues“
+• Anheften: Wisch auf einer Ansicht, einem Meilenstein oder der Roadmap nach rechts, und sie steht neben dem Eingang und „Meine Issues“, mit der Zahl ihrer offenen Issues
+• Auf dem iPad listet die Seitenleiste jedes Projekt, mit den Ansichten und Meilensteinen des geöffneten darunter
+• Ein ruhigeres Board: Karten auf Grau ohne Rahmen, Labels als Punkt mit Namen und Farbe nur noch für das, was dich braucht: ein fälliges Datum, ein dringendes Issue, einen Blocker
+• „Alle Issues“ statt Repositories: die Issues eines Projekts zusammen mit denen auf keinem Board, und wie viele davon offen sind
+• Sub-Issues von Sub-Issues klappen als Baum auf, nach Priorität sortiert oder in der Reihenfolge deiner Wahl
+• Ein blockiertes Issue sagt, wodurch es blockiert ist, etwa #364 an seiner Flagge
+• Mehrere Sub-Issues auswählen und auf einmal ändern: per ⌘-Klick und Umschalt-Klick auf Mac und iPad, mit „Auswählen“ auf iPhone und iPad
+• Auf dem Mac ziehst du mehrere ausgewählte Issues auf einmal, indem du eines davon ziehst
+• Die Auswahl bietet die übergeordneten Issues, Epics, Labels und Personen zuerst an, die du zuletzt gewählt hast
+• Board-Spalten oder Projekte ausblenden, die du nicht brauchst, nur auf deinem Gerät
+• Markdown wie auf GitHub, schon während du schreibst, jetzt auch mit Hinweisen, Formeln, Fußnoten und Bildern. Die Zeichen erscheinen nur neben der Einfügemarke, und auf iPhone und iPad ist die Leiste über der Tastatur aus Glas, wie in Notizen
+• Tippst du **, beginnt Fett samt schließenden Sternchen, mit ## eine Überschrift; Tab und die Pfeiltasten führen vom Titel in die Beschreibung und zurück
+• Auf dem Mac folgen lange Boards und der Eingang dem Zeiger und scrollen flüssig
+• Behoben: „Meine Issues“ zeigt an, solange deine Projekte noch laden, Ziehen in der Mac-Liste funktioniert wieder, dazu viele kleinere Fehler

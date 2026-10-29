@@ -27,7 +27,7 @@
   <img alt="Apple silicon" src="https://img.shields.io/badge/Apple%20silicon-native-111214">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138">
   <a href="#license"><img alt="License: GPLv3" src="https://img.shields.io/badge/license-GPLv3-5B63D3"></a>
-  <a href="CHANGELOG.md"><img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-5B63D3"></a>
+  <a href="CHANGELOG.md"><img alt="Version 1.1.0" src="https://img.shields.io/badge/version-1.1.0-5B63D3"></a>
 </p>
 
 <p align="center">
@@ -46,10 +46,11 @@
   <img alt="Issues showing a GitHub Project as a board, with Backlog, Todo, In Progress and In Review columns; in In Progress, two sub-issues hang under their parent" src="Design/screenshots/hero-light.webp">
 </picture>
 
-> **New in 1.0: planning.** Milestones, epics and a roadmap, your project's views from GitHub, and a window built
-> like Mail and Notes. [See them below.](#milestones-epics-and-a-roadmap)
+> **New in 1.1: the board on iPhone.** One column at a time with every column in a strip over it, your projects
+> first with pins on Home, a quieter board on every device, and sub-issues as a tree.
+> [See it below.](#iphone-and-ipad)
 
-> **Version 1.0** covers the daily work with issues and the planning around it, on the Mac, iPhone and iPad: boards,
+> **Version 1.1** covers the daily work with issues and the planning around it, on the Mac, iPhone and iPad: boards,
 > lists and views, the Inbox, due dates, sub-issues and blockers, milestones, epics and a roadmap, in nine languages.
 > It is [in the App Store](https://apps.apple.com/app/id6819589759) for all three, free. You can also build it from
 > source (five minutes, see below).
@@ -737,7 +738,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 ## Not there yet
 
 Cycles of their own beyond a view of one iteration, linked pull requests, file uploads, real-time updates and
-notifications on screen for new Inbox entries are planned but not built. Also good to know in 1.0:
+notifications on screen for new Inbox entries are planned but not built. Also good to know in 1.1:
 
 - Pull requests and draft issues appear on the board and can be moved, but their text is read-only.
 - Images in descriptions of private repositories may not load, and pictures can't be pasted into a description: GitHub
@@ -854,6 +855,10 @@ combination shall include the source code for the parts of elk-swift used as wel
 
 Issues was released under the [MIT License](https://github.com/lukaskaibel/issues-for-github/blob/a12f672/LICENSE)
 until 27 October 2026. Copies from before then, up to commit `a12f672`, can still be used under that licence.
+
+**Name and icon.** The licences cover the code, not the name "Issues" or the app icon, which belong to Lukas Kaibel. If
+you publish a modified version, give it a name and an icon of its own, so that no one mistakes it for this app. Saying
+that it's based on Issues is welcome.
 
 Contributions come with terms of their own, so that Issues can be published on the App Store: see
 [CONTRIBUTING.md](CONTRIBUTING.md#licensing-your-contribution).

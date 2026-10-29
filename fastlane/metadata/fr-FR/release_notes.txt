@@ -1,19 +1,18 @@
-La mise à jour la plus importante à ce jour : planifiez avec des jalons, des epics et une feuille de route, retrouvez les vues GitHub de votre projet et utilisez Issues en neuf langues, avec une nouvelle interface conçue comme Mail et Notes.
+Le tableau arrive sur iPhone, vos projets passent au premier plan sur iPhone et iPad, et le tableau devient plus sobre partout.
 
-• Jalons : les prochains jalons d’un tableau dans la barre latérale, chacun avec ses tickets, son avancement et son échéance. Terminez-en un et déplacez ce qui reste vers le suivant
-• Epics : des tickets dont le travail se répartit en sous-tickets. Sur le tableau, les tickets d’un epic sont réunis sous son nom ; faites glisser le nom pour les déplacer tous
-• Une feuille de route : vos epics en barres le long des jalons, par mois ou par trimestre. Faites glisser une barre pour déplacer un epic et ses tickets vers un autre jalon
-• Les vues GitHub de votre projet dans la barre latérale, en tableau ou en liste, avec des filtres en pastilles. Regroupée par jalon ou par ticket parent, une vue montre où en est chaque groupe ; une vue de l’itération en cours indique les jours restants ; une vue feuille de route s’affiche en chronologie
-• Jalons, vues et feuille de route également sur iPhone et iPad ; la feuille de route s’affiche en liste sur iPhone et en chronologie sur iPad
-• Une nouvelle interface : sur Mac, une fenêtre en Liquid Glass comme celle de Mail et Notes, un inspecteur à côté du ticket et des menus contextuels avec un champ de recherche. Sur iPhone et iPad, les propriétés du ticket en pastilles de verre et les commentaires sous forme de conversation
-• Une icône retravaillée pour l’app, également sur fond graphite ou indigo, et une icône au choix pour chaque projet
-• Neuf langues : anglais, allemand, français, espagnol, portugais, russe, japonais, coréen et chinois, selon la langue de votre appareil
-• La Réception : vos notifications GitHub, avec le ticket juste à côté. Lisez, archivez et mettez en attente d’une touche ou d’un balayage ; github.com et vos autres appareils sont à jour
-• Échéances avec rappels : choisissez un jour ou saisissez-le, par exemple « dans 3 jours », et le jour venu, votre Mac, votre iPhone et votre iPad vous préviennent
-• Les sous-tickets se rangent juste sous leur ticket parent ; terminez le dernier, et le ticket parent est terminé lui aussi. Indiquez ce qui bloque quoi
-• Tous les tickets, sur un tableau ou non : vos dépôts dans la barre latérale, et les tickets qui ne sont sur aucun tableau ; un clic suffit pour les placer sur un tableau
-• Mes tickets à votre façon : filtrez-les et regroupez-les par projet, statut, priorité ou échéance, les plus urgents en premier
-• Descriptions affichées comme sur GitHub : tableaux, cases à cocher, code et diagrammes Mermaid
-• Écrire en Markdown comme dans une app de notes : le gras, l’italique et le code s’activent et se désactivent, les listes se poursuivent quand vous allez à la ligne, et sur iPhone et iPad, la barre au-dessus du clavier propose des boutons adaptés à l’endroit où se trouve le point d’insertion
-• Moins de clics : choisir un statut, une personne ou une étiquette ferme le menu
-• Corrigé : l’app pouvait se fermer inopinément lors du passage d’un iPad en mode paysage ; sur Mac, un balayage à deux doigts ne vous ramène plus en arrière par mégarde
+• Le tableau sur iPhone : une colonne à la fois, avec chaque colonne et son nombre de cartes dans un bandeau au-dessus. Balayez ou touchez le bandeau pour passer à une autre colonne ; maintenez le doigt sur une carte et déposez-la sur une colonne du bandeau
+• Les projets d’abord : sur iPhone, la barre d’onglets disparaît et l’app s’ouvre là où vous l’aviez laissée. ‹ mène à la page du projet, avec Tous les tickets, ses vues, ses prochains jalons et la feuille de route, puis à tous vos projets, sous Réception et Mes tickets
+• Épinglage : balayez vers la droite une vue, un jalon ou la feuille de route pour l’épingler à côté de Réception et de Mes tickets, avec le nombre de ses tickets ouverts
+• Sur iPad, la barre latérale affiche tous les projets, et sous le projet ouvert, ses vues et ses jalons
+• Un tableau plus sobre : des cartes sans bordure sur fond gris, des étiquettes réduites à un point et à leur nom, et la couleur réservée à ce qui demande votre attention : une échéance, un ticket urgent, un blocage
+• Tous les tickets à la place de Dépôts : les tickets d’un projet réunis avec ceux qui ne sont sur aucun tableau, et le nombre de ces derniers qui sont ouverts
+• Les sous-tickets des sous-tickets se déplient en arborescence, triés par priorité ou dans l’ordre de votre choix
+• Un ticket bloqué indique ce qui le bloque, par exemple #364, sur son drapeau
+• Sélectionnez plusieurs sous-tickets et modifiez-les en bloc : ⌘-clic et Maj-clic sur Mac et iPad, « Sélectionner » sur iPhone et iPad
+• Sur Mac, faites glisser l’un des tickets sélectionnés pour les déplacer tous
+• Les sélecteurs proposent les tickets parents, epics, étiquettes et personnes que vous avez choisis en dernier
+• Masquez les colonnes du tableau ou les projets dont vous n’avez pas besoin, sur votre appareil uniquement
+• Le Markdown s’affiche comme sur GitHub pendant que vous l’écrivez, désormais avec les alertes, les formules, les notes de bas de page et les images. Ses symboles n’apparaissent qu’à côté du point d’insertion, et sur iPhone et iPad, la barre au-dessus du clavier est en verre, comme dans Notes
+• Taper ** passe en gras et ajoute les astérisques de fermeture, et ## crée un en-tête ; Tab et les touches fléchées mènent du titre à la description et inversement
+• Sur Mac, les longs tableaux et la Réception suivent le pointeur et défilent avec fluidité
+• Corrigé : Mes tickets indique quand vos projets sont encore en cours de chargement, le glisser-déposer dans la liste fonctionne de nouveau sur Mac, et bien d’autres petites corrections

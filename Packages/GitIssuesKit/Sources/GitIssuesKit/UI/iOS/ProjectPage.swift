@@ -384,6 +384,9 @@ final class HomePins {
     private(set) var keys: [String] = UserDefaults.standard.stringArray(forKey: HomePins.key) ?? [] {
         didSet { UserDefaults.standard.set(keys, forKey: Self.key) }
     }
+    /// How many issues each pinned view or milestone has open, by its key, as Home last counted them while on screen.
+    /// Kept here rather than in Home's own state: written as Home first appears at launch, that state was lost again.
+    var openCounts: [String: Int] = [:]
 
     func contains(_ entry: ProjectEntry) -> Bool {
         keys.contains(entry.key)
