@@ -299,7 +299,7 @@ private struct ViewTimelineContent: View {
             }
         }
         .scrollIndicators(.never)
-        .animation(Theme.spring, value: snapshot.layout.rows.map(\.id))
+        .animation(Theme.spring, value: snapshot.rowIdentity)
         .onChange(of: model.dragCancelToken) { _, _ in
             if drag != nil {
                 cancelledDrag = true
@@ -353,7 +353,7 @@ private struct ViewTimelineContent: View {
             }
         }
         .coordinateSpace(.named(timelineSpace))
-        .simultaneousGesture(SpatialTapGesture().onEnded { value in
+        .gesture(SpatialTapGesture().onEnded { value in
             if let index = layout.row(at: value.location.y) { activate(layout.rows[index]) }
         })
         #if os(macOS)
@@ -591,13 +591,26 @@ private struct TimelineGroupIcon: View {
 
 /// An immutable drawing shared by the name column, hit targets and canvas until project data or zoom changes.
 private final class TimelineDrawingSnapshot {
+    /// Hover keeps the same instance, so it neither rebuilds nor compares the row list.
+    final class RowIdentity: Equatable {
+        let ids: [String]
+
+        init(rows: [TimelineRow]) { ids = rows.map(\.id) }
+
+        static func == (lhs: RowIdentity, rhs: RowIdentity) -> Bool {
+            lhs === rhs || lhs.ids == rhs.ids
+        }
+    }
+
     let layout: ViewTimelineLayout
+    let rowIdentity: RowIdentity
     let milestones: [(group: MilestoneGroup, mark: MilestoneMark)]
     let looks: [String: ItemLook]
     let edits: [String: TimelineDateEdit]
 
     init(layout: ViewTimelineLayout, milestones: [(group: MilestoneGroup, mark: MilestoneMark)], looks: [String: ItemLook], edits: [String: TimelineDateEdit]) {
         self.layout = layout
+        self.rowIdentity = RowIdentity(rows: layout.rows)
         self.milestones = milestones
         self.looks = looks
         self.edits = edits

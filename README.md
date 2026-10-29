@@ -192,13 +192,15 @@ offers it on its light page, on graphite or as a white card on indigo. Each foll
 ### Zoom and plan on a timeline
 
 Pinch on a trackpad or iPad to zoom a timeline, or use its zoom controls. On the Mac, ⌘+ and ⌘− zoom, ⌘0 resets to
-Months or Quarters, and holding ⌘ while scrolling zooms under the pointer. Zoom has limits at both ends. Bars wide
-enough to read show their issue's title, with an ellipsis when it does not fit on one line. Scrolling stays responsive
-on long timelines as rows pass under the pointer. On the Mac, a two-finger horizontal gesture pans through dates,
-including at the timeline's edges; use ⌘[ and ⌘] or the back and forward buttons to navigate.
+Months or Quarters (also available with the Reset Zoom button), and holding ⌘ while scrolling zooms under the
+pointer. Zoom has limits at both ends. Bars wide enough to read show their issue's title, with an ellipsis when it
+does not fit on one line. Scrolling stays responsive on long timelines as rows pass under the pointer. On the Mac,
+a two-finger horizontal gesture pans through dates,
+and navigates back or forward when it starts at the corresponding timeline edge, as on a board.
 
 In a project's roadmap view, drag the middle of an issue's date bar to move it while keeping its duration. Drag the
-left or right edge to change only the start or finish date. Dates snap to days and the edges stop at each other;
+left or right edge to change only the start or finish date. On iPad, touch and hold the bar before dragging;
+an ordinary swipe scrolls through dates. Dates snap to days and the edges stop at each other;
 Esc cancels on the Mac. A single date moves as a point. VoiceOver offers the same changes in one-day steps. The
 project must allow editing, and the bar must use the issue's own date fields; iteration and milestone dates keep
 their existing meaning. The change appears locally and joins the sync queue when you release the bar.

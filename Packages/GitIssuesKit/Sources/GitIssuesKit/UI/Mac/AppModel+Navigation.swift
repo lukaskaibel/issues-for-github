@@ -9,13 +9,12 @@ struct HistorySwipePolicy {
     enum Surface {
         case page
         case board(offset: CGFloat, maximum: CGFloat)
-        case timeline
+        case timeline(offset: CGFloat, maximum: CGFloat)
 
         fileprivate func allows(back: Bool) -> Bool {
             switch self {
             case .page: return true
-            case .timeline: return false
-            case .board(let offset, let maximum):
+            case .board(let offset, let maximum), .timeline(let offset, let maximum):
                 return back ? offset <= 0.5 : offset >= maximum - 0.5
             }
         }
@@ -35,7 +34,9 @@ struct HistorySwipePolicy {
     func allows(back: Bool) -> Bool { back ? allowsBack : allowsForward }
 
     static func commits(progress: Double, phase: NSEvent.Phase) -> Bool {
-        phase == .ended && abs(progress) >= threshold
+        // AppKit can cancel a slow lift using its own threshold and velocity rules. The filled arrow is our
+        // promise that letting go navigates; reversing below the threshold cancels it instead.
+        (phase == .ended || phase == .cancelled) && abs(progress) >= threshold
     }
 }
 
@@ -106,8 +107,7 @@ extension AppModel {
             pendingSwipe = nil
             let surface: HistorySwipePolicy.Surface
             if showsTimelineCanvas {
-                // A timeline keeps two-finger gestures for dates, including when already at either edge.
-                surface = .timeline
+                surface = .timeline(offset: timelineScrollX, maximum: timelineMaxScrollX)
             } else if openItem == nil, viewMode == .board, currentProjectId != nil {
                 surface = .board(offset: boardDrag.scrollX, maximum: boardDrag.maxScrollX)
             } else {

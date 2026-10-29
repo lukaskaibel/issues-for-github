@@ -678,7 +678,7 @@ extension Mutation {
         case .setProjectField(let m):
             let valueName = m.valueName ?? m.value.flatMap { value -> String? in
                 if let date = value.date { return CalendarDay(date)?.longLabel ?? date }
-                return value.text ?? value.number.map { $0.formatted() } ?? value.optionId ?? value.iterationId
+                return value.text ?? value.number.map { $0.formatted() }
             }
             let text: LocalizedStringResource = valueName.map { .queuedFieldSet(field: m.fieldName, value: $0) } ?? .queuedFieldCleared(field: m.fieldName)
             return line(try number(itemId: m.itemId), text)
@@ -694,6 +694,8 @@ extension Mutation {
 public enum OutboxState: String, Codable, Sendable {
     /// Waiting to be sent.
     case pending
+    /// A project field write has started and must no longer be folded into a newer edit. Retried after interruption.
+    case sending
     /// Sent; kept briefly so a stale read from GitHub cannot undo it on screen.
     case sent
     /// A text edit that clashes with a newer edit on GitHub and needs the user's decision.

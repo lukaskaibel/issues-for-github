@@ -6,18 +6,35 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
-## [1.1.0] - 2026-10-28
-
 ### Added
 
 - **Zoom and date editing on timelines.** Pinch to zoom on a trackpad or iPad, use the zoom buttons, or on the Mac
-  use ⌘+ and ⌘− or hold ⌘ while scrolling; ⌘0 resets to the selected Months or Quarters preset. Zoom stays between
-  1 and 40 points per day and keeps the date under the pointer or the centre of the timeline in place. In a project's
-  roadmap view, drag an issue's date bar to move both dates together, or drag an edge to change just its start or end.
+  use ⌘+ and ⌘− or hold ⌘ while scrolling; ⌘0 or the Reset Zoom button resets to the selected Months or Quarters
+  preset. Zoom stays between 1 and 40 points per day and keeps the date under the pointer or the centre of the
+  timeline in place. In a project's roadmap view, drag an issue's date bar to move both dates together, or drag an
+  edge to change just its start or end.
+  On iPad, touch and hold before dragging; an ordinary swipe scrolls the timeline.
   Dates snap to whole days, an end cannot pass its start, and Esc cancels a drag on the Mac. Single dates can move too;
   bars drawn from iterations or milestone dates keep their existing meaning. VoiceOver offers actions to move or
   resize by one day. Changes join the offline sync queue when the drag ends. Once a bar has room to read its title,
   the title stays visible, with an ellipsis when it is too long.
+
+### Fixed
+
+- Moving or resizing an issue's date bar now updates its start and finish dates on GitHub. The sync sender had
+  mistaken ordinary date fields for an empty option and cleared them instead. Unsupported nonempty field values
+  now fail without clearing the field, and queued date changes say which date will be set. Moving a date back while
+  its previous change is still sending also saves the final date correctly.
+- Two-finger horizontal scrolling on a timeline keeps moving through dates, with history navigation available when
+  a gesture starts at the corresponding edge, as on a board. A gesture stays with scrolling once it starts there,
+  and Command-scroll zooms without starting history navigation. A full navigation arrow commits on a slow lift too;
+  reversing below the threshold cancels navigation.
+- Long project timelines scroll more smoothly, especially while rows pass under the pointer. Hovering no longer
+  repaints every issue title or rebuilds every drag target, and the name column loads rows as they enter view.
+
+## [1.1.0] - 2026-10-28
+
+### Added
 
 - **The board on iPhone.** A board view shows as a board on the iPhone now, one column at a time across the screen,
   with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and
@@ -157,15 +174,6 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
-- Moving or resizing an issue's date bar now updates its start and finish dates on GitHub. The sync sender had
-  mistaken ordinary date fields for an empty option and cleared them instead. Unsupported nonempty field values
-  now fail without clearing the field, and queued date changes say which date will be set. Moving a date back while
-  its previous change is still sending also saves the final date correctly.
-- Two-finger horizontal scrolling on a timeline keeps moving through dates instead of sticking or going back to
-  another page. A gesture stays with scrolling once it starts there, Command-scroll zooms without starting history
-  navigation, and cancelling a navigation swipe no longer goes back or forward.
-- Long project timelines scroll more smoothly, especially while rows pass under the pointer. Hovering no longer
-  repaints every issue title or rebuilds every drag target, and the name column loads rows as they enter view.
 - My Issues says when it is still loading, and fills sooner. Right after signing in, the app fetches your projects
   one by one, and until then My Issues said "Nothing assigned to you" and Home counted 0. Now the line under the title
   reads "Loading issues from 3 projects…" until the last one is in. While none of your issues have come in yet, My

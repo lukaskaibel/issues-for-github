@@ -4,6 +4,17 @@ import Testing
 
 @Suite("Timeline zoom")
 struct TimelineZoomTests {
+    @Test("A saved number or launch-argument string both set a custom scale", arguments: [false, true])
+    func readsStoredScale(asString: Bool) throws {
+        let suite = "TimelineZoomTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        #expect(TimelineZoom.storedScale(in: defaults) == nil)
+        if asString { defaults.set("7.5", forKey: "timeline.scale") }
+        else { defaults.set(7.5, forKey: "timeline.scale") }
+        #expect(TimelineZoom.storedScale(in: defaults) == 7.5)
+    }
+
     @Test("Every input stays inside the same zoom limits")
     func clampsAllInputs() {
         #expect(TimelineZoom.clamp(0.01) == 1)

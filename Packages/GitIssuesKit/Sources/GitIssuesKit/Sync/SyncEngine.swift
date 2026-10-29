@@ -50,6 +50,8 @@ public actor SyncEngine {
     /// Sync rounds completed so far, and callers waiting for a round to finish.
     private var rounds = 0
     private var inRound = false
+    private var isPushing = false
+    private var pushWaiters: [CheckedContinuation<Void, Never>] = []
     private var waiters: [(round: Int, continuation: CheckedContinuation<Void, Never>)] = []
     /// Works on the built-in sample data: nothing is sent anywhere, changes are confirmed locally.
     public nonisolated let isDemo: Bool
@@ -187,7 +189,7 @@ public actor SyncEngine {
         do {
             try await db.writer.write { try Outbox.purgeSent($0) }
             let pending = try await db.reader.read {
-                try OutboxEntry.filter(Column("state") == OutboxState.pending.rawValue).fetchCount($0)
+                try OutboxEntry.filter([OutboxState.pending.rawValue, OutboxState.sending.rawValue].contains(Column("state"))).fetchCount($0)
             }
             let neverSynced = activeProjectId.map { lastPull[$0] == nil } ?? false
             if pending > 0 || neverSynced { await setPhase(.syncing) }
@@ -950,16 +952,35 @@ public actor SyncEngine {
     public static let undoWindow: TimeInterval = 5
 
     private func push(holdingUndoable: Bool = true) async throws {
+        // Explicit flushes (including notification actions in the background) wait for an active push, then
+        // drain with their own undo policy before returning to the caller that keeps the app running.
+        while isPushing {
+            await withCheckedContinuation { pushWaiters.append($0) }
+        }
+        isPushing = true
+        defer {
+            isPushing = false
+            let waiting = pushWaiters
+            pushWaiters = []
+            for waiter in waiting { waiter.resume() }
+        }
         var skipped = Set<Int64>()
         while true {
             let skip = skipped
             let heldSince = holdingUndoable ? Date().addingTimeInterval(-Self.undoWindow) : .distantFuture
-            let next = try await db.reader.read { db in
-                try OutboxEntry
-                    .filter(Column("state") == OutboxState.pending.rawValue)
+            let next = try await db.writer.write { db -> OutboxEntry? in
+                guard var entry = try OutboxEntry
+                    .filter([OutboxState.pending.rawValue, OutboxState.sending.rawValue].contains(Column("state")))
                     .order(Column("id"))
                     .fetchAll(db)
-                    .first { !skip.contains($0.id ?? -1) && !($0.mutation.isUndoable && $0.createdAt > heldSince) }
+                    .first(where: { !skip.contains($0.id ?? -1) && !($0.mutation.isUndoable && $0.createdAt > heldSince) }) else { return nil }
+                // Once a write may reach GitHub, later edits must keep its value as their base. Claiming it
+                // in this transaction prevents enqueue from folding a new edit into the sending row.
+                if case .setProjectField = entry.mutation, entry.state == .pending {
+                    entry.state = .sending
+                    try entry.update(db)
+                }
+                return entry
             }
             guard let entry = next, let entryId = entry.id else { return }
             do {
@@ -1133,8 +1154,7 @@ public actor SyncEngine {
             try await sendEpic(m)
 
         case .setProjectField(let m):
-            // A newer edit can replace an in-flight one and inherit its base. Returning to that base still
-            // needs a write: GitHub may already have accepted the earlier value.
+            guard m.value != m.base else { break }
             try await sendFieldValue(m.value, projectId: m.projectId, itemId: m.itemId, fieldId: m.fieldId)
 
         case .deleteItem(let m):

@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit
 
-/// A bar accepts a horizontal drag while a vertical swipe continues to scroll the timeline's rows.
+/// Hold a bar before moving its dates, so ordinary swipes scroll even when they start on a bar.
 struct TimelineTouchDrag: UIGestureRecognizerRepresentable {
     var space: Namespace.ID
     var changed: (CGPoint, CGFloat) -> Void
@@ -11,26 +11,24 @@ struct TimelineTouchDrag: UIGestureRecognizerRepresentable {
 
     func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
 
-    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
-        let recognizer = UIPanGestureRecognizer()
-        recognizer.minimumNumberOfTouches = 1
-        recognizer.maximumNumberOfTouches = 1
-        recognizer.delegate = context.coordinator
+    func makeUIGestureRecognizer(context: Context) -> UILongPressGestureRecognizer {
+        let recognizer = UILongPressGestureRecognizer()
+        recognizer.minimumPressDuration = 0.3
+        recognizer.allowableMovement = 8
+        recognizer.numberOfTouchesRequired = 1
         return recognizer
     }
 
-    func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
-        let translation = context.converter.translation(in: .named(space)) ?? .zero
+    func handleUIGestureRecognizerAction(_ recognizer: UILongPressGestureRecognizer, context: Context) {
+        let point = context.converter.location(in: .named(space))
         switch recognizer.state {
         case .began:
-            let point = context.converter.location(in: .named(space))
-            let start = CGPoint(x: point.x - translation.x, y: point.y - translation.y)
-            context.coordinator.start = start
-            changed(start, translation.x)
+            context.coordinator.start = point
+            changed(point, 0)
         case .changed:
-            if let start = context.coordinator.start { changed(start, translation.x) }
+            if let start = context.coordinator.start { changed(start, point.x - start.x) }
         case .ended:
-            if let start = context.coordinator.start { changed(start, translation.x) }
+            if let start = context.coordinator.start { changed(start, point.x - start.x) }
             context.coordinator.start = nil
             ended(false)
         case .cancelled, .failed:
@@ -41,14 +39,8 @@ struct TimelineTouchDrag: UIGestureRecognizerRepresentable {
         }
     }
 
-    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+    final class Coordinator {
         var start: CGPoint?
-
-        func gestureRecognizerShouldBegin(_ recognizer: UIGestureRecognizer) -> Bool {
-            guard let pan = recognizer as? UIPanGestureRecognizer else { return false }
-            let velocity = pan.velocity(in: pan.view)
-            return abs(velocity.x) > abs(velocity.y)
-        }
     }
 }
 #endif

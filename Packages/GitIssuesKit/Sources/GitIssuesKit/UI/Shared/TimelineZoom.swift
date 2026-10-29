@@ -9,6 +9,11 @@ enum TimelineZoom {
     static let maximumScale: CGFloat = 40
     static let step: CGFloat = 1.25
 
+    /// Launch arguments are strings, while a scale saved by the app is a number.
+    static func storedScale(in defaults: UserDefaults = .standard) -> Double? {
+        defaults.object(forKey: "timeline.scale") == nil ? nil : defaults.double(forKey: "timeline.scale")
+    }
+
     static func clamp(_ scale: CGFloat) -> CGFloat {
         guard !scale.isNaN else { return RoadmapZoom.months.scale }
         return min(max(scale, minimumScale), maximumScale)
@@ -56,6 +61,7 @@ extension View {
 private struct TimelineViewport: Equatable {
     var offset: CGFloat = 0
     var width: CGFloat = 0
+    var maximum: CGFloat = 0
 }
 
 /// Reading the viewport for the next zoom must not invalidate the scroll view on every horizontal scroll tick.
@@ -77,11 +83,25 @@ private struct TimelineZoomModifier: ViewModifier {
         content
             .scrollPosition($position)
             .onScrollGeometryChange(for: TimelineViewport.self) { geometry in
-                TimelineViewport(offset: geometry.contentOffset.x + geometry.contentInsets.leading, width: geometry.containerSize.width)
+                TimelineViewport(
+                    offset: geometry.contentOffset.x + geometry.contentInsets.leading,
+                    width: geometry.containerSize.width,
+                    maximum: max(0, geometry.contentSize.width - geometry.containerSize.width)
+                )
             } action: { _, next in
                 viewport.offset = next.offset
                 viewport.width = next.width
+                #if os(macOS)
+                model.timelineScrollX = next.offset
+                model.timelineMaxScrollX = next.maximum
+                #endif
             }
+            #if os(macOS)
+            .onDisappear {
+                model.timelineScrollX = 0
+                model.timelineMaxScrollX = 0
+            }
+            #endif
             .onChange(of: scale) { previous, next in
                 let offset = TimelineZoom.offset(viewport.offset, anchor: anchor ?? viewport.width / 2, from: previous, to: next)
                 viewport.offset = offset
@@ -112,7 +132,7 @@ private struct TimelineZoomModifier: ViewModifier {
             .background {
                 TimelineWheelZoom(enabled: model.overlay == nil && !model.isDragging && model.openItem == nil) { factor, pointerX in
                     anchor = pointerX
-                    model.setTimelineScale(scale * factor)
+                    model.setTimelineScale(model.timelineScale * factor)
                 }
             }
             #endif
@@ -134,6 +154,10 @@ struct TimelineZoomButtons: View {
                 model.zoomTimeline(by: 1)
             }
             .disabled(model.timelineScale >= TimelineZoom.maximumScale)
+            ToolbarIconButton(systemImage: "arrow.counterclockwise", label: .timelineResetZoom, help: .timelineResetZoom) {
+                model.resetTimelineZoom()
+            }
+            .disabled(model.timelineScaleOverride == nil)
             #else
             Button { model.zoomTimeline(by: -1) } label: {
                 Label(.timelineZoomOut, systemImage: "minus.magnifyingglass")

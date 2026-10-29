@@ -5,15 +5,13 @@ import Testing
 
 @Suite("Horizontal scrolling and history swipes")
 struct HistorySwipePolicyTests {
-    @Test("A timeline keeps horizontal pans for scrolling, even when history is available", arguments: [false, true], [false, true])
-    func timelineDoesNotNavigate(canGoBack: Bool, canGoForward: Bool) {
-        let policy = HistorySwipePolicy(canGoBack: canGoBack, canGoForward: canGoForward, surface: .timeline)
+    @Test("A timeline edge only offers directions present in its history", arguments: [false, true], [false, true])
+    func timelineUsesAvailableHistory(canGoBack: Bool, canGoForward: Bool) {
+        let policy = HistorySwipePolicy(canGoBack: canGoBack, canGoForward: canGoForward, surface: .timeline(offset: 0, maximum: 0))
 
-        #expect(!policy.canTrack)
-        #expect(!policy.allowsBack)
-        #expect(!policy.allowsForward)
-        #expect(!policy.allows(back: true))
-        #expect(!policy.allows(back: false))
+        #expect(policy.allowsBack == canGoBack)
+        #expect(policy.allowsForward == canGoForward)
+        #expect(policy.canTrack == (canGoBack || canGoForward))
     }
 
     @Test("A page only offers directions present in its history", arguments: [false, true], [false, true])
@@ -27,27 +25,33 @@ struct HistorySwipePolicyTests {
         #expect(policy.canTrack == (canGoBack || canGoForward))
     }
 
-    @Test("Board columns scroll internally; only an outward swipe at an edge can navigate", arguments: [CGFloat(0), CGFloat(200), CGFloat(400)])
-    func boardKeepsItsEdgeBehavior(offset: CGFloat) {
-        let policy = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: .board(offset: offset, maximum: 400))
+    @Test("Boards and timelines scroll internally; only an outward swipe at an edge can navigate", arguments: [CGFloat(0), CGFloat(200), CGFloat(400)], [false, true])
+    func scrollableKeepsItsEdgeBehavior(offset: CGFloat, timeline: Bool) {
+        let surface: HistorySwipePolicy.Surface = timeline ? .timeline(offset: offset, maximum: 400) : .board(offset: offset, maximum: 400)
+        let policy = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: surface)
 
         #expect(policy.allowsBack == (offset == 0))
         #expect(policy.allowsForward == (offset == 400))
         #expect(policy.canTrack == (offset != 200))
     }
 
-    @Test("A board that fits in the viewport retains both available history directions")
-    func boardWithoutOverflowIsAtBothEdges() {
-        let policy = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: .board(offset: 0, maximum: 0))
+    @Test("A board or timeline that fits in the viewport retains both available history directions", arguments: [false, true])
+    func scrollableWithoutOverflowIsAtBothEdges(timeline: Bool) {
+        let surface: HistorySwipePolicy.Surface = timeline ? .timeline(offset: 0, maximum: 0) : .board(offset: 0, maximum: 0)
+        let policy = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: surface)
 
         #expect(policy.allowsBack)
         #expect(policy.allowsForward)
     }
 
-    @Test("A pan that starts between board edges cannot become navigation as it reaches an edge or reverses")
-    func gestureKeepsItsInitialPolicy() {
+    @Test("A pan that starts between scroll edges cannot become navigation as it reaches an edge or reverses", arguments: [false, true])
+    func gestureKeepsItsInitialPolicy(timeline: Bool) {
         var offset: CGFloat = 200
-        let pan = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: .board(offset: offset, maximum: 400))
+        func policy() -> HistorySwipePolicy {
+            let surface: HistorySwipePolicy.Surface = timeline ? .timeline(offset: offset, maximum: 400) : .board(offset: offset, maximum: 400)
+            return HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: surface)
+        }
+        let pan = policy()
 
         offset = 400
         #expect(!pan.allows(back: false))
@@ -55,15 +59,17 @@ struct HistorySwipePolicyTests {
         #expect(!pan.allows(back: true))
         #expect(!pan.canTrack)
 
-        let nextGesture = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: .board(offset: offset, maximum: 400))
+        let nextGesture = policy()
         #expect(nextGesture.allowsBack)
         #expect(!nextGesture.allowsForward)
     }
 
-    @Test("An edge swipe keeps its original direction permissions while the viewport moves")
-    func edgeGestureDoesNotSwapDirections() {
-        let beganAtLeft = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: .board(offset: 0, maximum: 400))
-        let nextGestureAtRight = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: .board(offset: 400, maximum: 400))
+    @Test("An edge swipe keeps its original direction permissions while the viewport moves", arguments: [false, true])
+    func edgeGestureDoesNotSwapDirections(timeline: Bool) {
+        let left: HistorySwipePolicy.Surface = timeline ? .timeline(offset: 0, maximum: 400) : .board(offset: 0, maximum: 400)
+        let right: HistorySwipePolicy.Surface = timeline ? .timeline(offset: 400, maximum: 400) : .board(offset: 400, maximum: 400)
+        let beganAtLeft = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: left)
+        let nextGestureAtRight = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: right)
 
         #expect(beganAtLeft.allows(back: true))
         #expect(!beganAtLeft.allows(back: false))
@@ -73,9 +79,8 @@ struct HistorySwipePolicyTests {
 
     @Test("Modified wheel gestures remain available for zoom and native scrolling", arguments: [
         NSEvent.ModifierFlags.command, .shift, .option, .control, [.command, .shift],
-    ], [false, true])
-    func modifiedWheelDoesNotNavigate(modifiers: NSEvent.ModifierFlags, boardEdge: Bool) {
-        let surface: HistorySwipePolicy.Surface = boardEdge ? .board(offset: 0, maximum: 400) : .page
+    ], [HistorySwipePolicy.Surface.page, .board(offset: 0, maximum: 400), .timeline(offset: 0, maximum: 400)])
+    func modifiedWheelDoesNotNavigate(modifiers: NSEvent.ModifierFlags, surface: HistorySwipePolicy.Surface) {
         let policy = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: surface, modifiers: modifiers)
 
         #expect(!policy.canTrack)
@@ -101,14 +106,9 @@ struct HistorySwipePolicyTests {
         #expect(!policy.allowsForward)
     }
 
-    @Test("Letting go only commits a swipe once its arrow reaches the threshold", arguments: [0.49, 0.5, 0.9, -0.49, -0.5, -0.9])
-    func releaseRequiresEnoughProgress(progress: Double) {
-        #expect(HistorySwipePolicy.commits(progress: progress, phase: .ended) == (abs(progress) >= 0.5))
-    }
-
-    @Test("Cancelling a swipe never navigates, even after crossing the threshold", arguments: [0.5, 0.9, -0.5, -0.9])
-    func cancelledSwipeDoesNotCommit(progress: Double) {
-        #expect(!HistorySwipePolicy.commits(progress: progress, phase: .cancelled))
+    @Test("A full arrow commits at lift even when AppKit rejects a slow swipe", arguments: [0.49, 0.5, 0.9, -0.49, -0.5, -0.9], [NSEvent.Phase.ended, .cancelled])
+    func releaseRequiresEnoughProgress(progress: Double, phase: NSEvent.Phase) {
+        #expect(HistorySwipePolicy.commits(progress: progress, phase: phase) == (abs(progress) >= 0.5))
     }
 
     @Test("Progress updates and momentum do not commit navigation before the fingers lift", arguments: [NSEvent.Phase(), .began, .changed, .stationary, .mayBegin])

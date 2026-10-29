@@ -140,19 +140,20 @@ struct TimelineDateSyncTests {
                     let current = try #require(stored)
                     let entries = try OutboxEntry.fetchAll(db)
                     #expect(entries.count == 1)
-                    #expect(entries.first?.state == .pending)
+                    #expect(entries.first?.state == .sending)
                     let changes = restored.mutations(from: changed, item: current, dueFieldId: nil)
                     #expect(changes.count == 1)
                     for change in changes { try Outbox.enqueue(db, change) }
-                    let queued = try OutboxEntry.fetchOne(db)
+                    #expect(try OutboxEntry.fetchCount(db) == 2)
+                    let queued = try OutboxEntry.filter(Column("state") == OutboxState.pending.rawValue).fetchOne(db)
                     let pending = try #require(queued)
                     guard case .setProjectField(let mutation) = pending.mutation else {
                         Issue.record("Expected the date restoration to remain queued")
                         return
                     }
-                    // Coalescing inherits the first write's base even though GitHub has already accepted it.
+                    // The in-flight write stays separate, so the restoration keeps the value GitHub accepted as its base.
                     #expect(mutation.value?.date == Self.first.string)
-                    #expect(mutation.base?.date == Self.first.string)
+                    #expect(mutation.base?.date == Self.first.adding(days: 2).string)
                 }
             } catch {
                 Issue.record(error)
@@ -166,10 +167,138 @@ struct TimelineDateSyncTests {
         #expect(writes.allSatisfy { !$0.isClear && $0.variables["f"] as? String == fixture.start.id })
         #expect(fixture.github.dateValue(itemId: Self.itemId, fieldId: fixture.start.id) == Self.first.string)
         #expect(fixture.github.dateValue(itemId: Self.itemId, fieldId: fixture.end.id) == Self.last.string)
-        let pulled = try await pullWithoutOptimisticValues(fixture, sentCount: 1)
+        let pulled = try await pullWithoutOptimisticValues(fixture, sentCount: 2)
         #expect(pulled.fieldValues[fixture.start.id]?.date == Self.first.string)
         #expect(pulled.fieldValues[fixture.end.id]?.date == Self.last.string)
         #expect(!pulled.dirty)
+    }
+
+    @Test("An offline field edit that returns to its original value makes no request", arguments: [
+        (FieldValue(date: Self.first.string), FieldValue(date: Self.last.string)),
+        (FieldValue(optionId: "option-a"), FieldValue(optionId: "option-b")),
+        (FieldValue(iterationId: "iteration-a"), FieldValue(iterationId: "iteration-b")),
+        (FieldValue(text: "original"), FieldValue(text: "changed")),
+        (FieldValue(number: 1), FieldValue(number: 2)),
+        (nil, FieldValue(date: Self.first.string)),
+    ] as [(FieldValue?, FieldValue?)])
+    func offlineRestorationMakesNoRequest(values: (FieldValue?, FieldValue?)) async throws {
+        let fixture = try await fixture()
+        let (original, changed) = values
+        func change(to value: FieldValue?, base: FieldValue?) -> Mutation {
+            .setProjectField(.init(
+                itemId: Self.itemId, projectId: FakeGitHub.projectId, fieldId: fixture.start.id, fieldName: fixture.start.name,
+                value: value, valueName: nil, base: base
+            ))
+        }
+        try await enqueue([change(to: changed, base: original), change(to: original, base: changed)], in: fixture)
+        let entries = try await fixture.db.reader.read { try OutboxEntry.fetchAll($0) }
+        #expect(entries.count == 1)
+        let entry = try #require(entries.first)
+        guard case .setProjectField(let mutation) = entry.mutation else {
+            Issue.record("Expected the edits to coalesce into a project field change")
+            return
+        }
+        #expect(mutation.value == original)
+        #expect(mutation.base == original)
+
+        try await fixture.engine.pushPending()
+
+        #expect(fixture.github.fieldWrites().isEmpty)
+        let states = try await fixture.db.reader.read { try OutboxEntry.fetchAll($0).map(\.state) }
+        #expect(states == [.sent])
+    }
+
+    @Test("A field write interrupted while sending is retried before a newer edit")
+    func interruptedFieldWriteIsRetried() async throws {
+        let fixture = try await fixture()
+        let originalItem = try await item(fixture)
+        let original = try edit(originalItem, in: fixture)
+        let changed = original.adjusted(by: 2, part: .start)
+        try await enqueue(changed.mutations(from: original, item: originalItem, dueFieldId: nil), in: fixture)
+        // Persist the state left if the app exits before receiving the request's response.
+        try await fixture.db.writer.write { db in
+            try db.execute(sql: "UPDATE outbox SET state = ?", arguments: [OutboxState.sending.rawValue])
+            let current = try #require(try Item.fetchOne(db, key: Self.itemId))
+            for change in original.mutations(from: changed, item: current, dueFieldId: nil) {
+                try Outbox.enqueue(db, change)
+            }
+        }
+
+        let status = await MainActor.run { SyncStatus() }
+        let restarted = SyncEngine(db: fixture.db, api: fixture.github.api, status: status)
+        try await restarted.pushPending()
+
+        #expect(fixture.github.fieldWrites().map { $0.variables["d"] as? String } == [Self.first.adding(days: 2).string, Self.first.string])
+        let pulled = try await pullWithoutOptimisticValues(fixture, sentCount: 2)
+        #expect(pulled.fieldValues[fixture.start.id]?.date == Self.first.string)
+    }
+
+    @Test("A concurrent flush waits for an in-flight write and drains a newly queued edit")
+    func concurrentPushDoesNotDuplicateFieldWrite() async throws {
+        let fixture = try await fixture()
+        let originalItem = try await item(fixture)
+        let original = try edit(originalItem, in: fixture)
+        try await enqueue(original.adjusted(by: 2, part: .start).mutations(from: original, item: originalItem, dueFieldId: nil), in: fixture)
+        let accepted = AsyncStream<Void>.makeStream()
+        let response = DispatchSemaphore(value: 0)
+        defer { response.signal() }
+        fixture.github.afterNextFieldWrite {
+            accepted.continuation.yield(())
+            // Bound the hold so a regression that sends a duplicate cannot deadlock URLSession's protocol queue.
+            _ = response.wait(timeout: .now() + 5)
+        }
+        let pushing = Task {
+            defer { accepted.continuation.finish() }
+            try await fixture.engine.pushPending()
+        }
+        var started = false
+        for await _ in accepted.stream {
+            started = true
+            break
+        }
+        #expect(started)
+        let anotherStarted = AsyncStream<Void>.makeStream()
+        let anotherCompleted = AsyncStream<Void>.makeStream()
+        let anotherPush = Task {
+            defer {
+                anotherStarted.continuation.finish()
+                anotherCompleted.continuation.yield(())
+                anotherCompleted.continuation.finish()
+            }
+            // A notification action may enqueue another edit while the regular sync request is still waiting.
+            try await enqueue(original.adjusted(by: 3, part: .end).mutations(from: original, item: originalItem, dueFieldId: nil), in: fixture)
+            anotherStarted.continuation.yield(())
+            try await fixture.engine.pushPending()
+        }
+        var anotherDidStart = false
+        for await _ in anotherStarted.stream {
+            anotherDidStart = true
+            break
+        }
+        #expect(anotherDidStart)
+        // The held response makes completion forbidden here. A short inverted wait checks that the flush
+        // remains suspended instead of returning early and ending the notification's background execution.
+        let completedBeforeRelease = await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                var events = anotherCompleted.stream.makeAsyncIterator()
+                return await events.next() != nil
+            }
+            group.addTask {
+                try? await Task.sleep(for: .milliseconds(100))
+                return false
+            }
+            let completed = await group.next() ?? false
+            group.cancelAll()
+            return completed
+        }
+        #expect(!completedBeforeRelease)
+        #expect(fixture.github.fieldWrites().count == 1)
+        response.signal()
+        try await pushing.value
+        try await anotherPush.value
+        expectDateWrites([fixture.start.id: Self.first.adding(days: 2).string, fixture.end.id: Self.last.adding(days: 3).string], in: fixture)
+        let states = try await fixture.db.reader.read { try OutboxEntry.fetchAll($0).map(\.state) }
+        #expect(states == [.sent, .sent])
     }
 
     @Test("Moving a range with a specialized due date writes both endpoints and survives a server refresh")
@@ -252,5 +381,18 @@ struct TimelineDateSyncTests {
         let summary = try await fixture.db.reader.read { try mutation.summary($0) }
         #expect(summary.number == "#1")
         #expect(summary.text == String(localized: .queuedFieldSet(field: fixture.start.name, value: Self.first.longLabel)))
+    }
+
+    @Test("An option or iteration without a name never exposes its node ID", arguments: [
+        FieldValue(optionId: "PVTSSO_unknown"), FieldValue(iterationId: "PVTI_unknown"),
+    ])
+    func queuedUnnamedOptionSummary(value: FieldValue) async throws {
+        let fixture = try await fixture()
+        let mutation = Mutation.setProjectField(.init(
+            itemId: Self.itemId, projectId: FakeGitHub.projectId, fieldId: fixture.start.id, fieldName: "Workstream",
+            value: value, valueName: nil, base: nil
+        ))
+        let summary = try await fixture.db.reader.read { try mutation.summary($0) }
+        #expect(summary.text == String(localized: .queuedFieldCleared(field: "Workstream")))
     }
 }
