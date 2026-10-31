@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 // MARK: - Where issues sit in time
 
@@ -169,14 +172,15 @@ struct ViewTimelineLayout {
     var days: Int
     var scale: CGFloat
 
-    init(rows: [TimelineRow], milestones: [CalendarDay], zoom: RoadmapZoom, available: CGFloat, today: CalendarDay = .today()) {
+    init(rows: [TimelineRow], milestones: [CalendarDay], zoom: RoadmapZoom, available: CGFloat, today: CalendarDay = .today(), scale: CGFloat? = nil) {
         self.rows = rows
         let ends = rows.compactMap(\.span).flatMap { [$0.first, $0.last] } + milestones
         // A little before today and the earliest date, and a while past the last.
         first = min(ends.min() ?? today, today).adding(days: -10)
         let last = max(ends.max() ?? today, today.adding(days: 30)).adding(days: 14)
         days = max(last.days(from: first) + 1, 1)
-        scale = max(zoom.scale, available / CGFloat(days))
+        self.scale = TimelineZoom.clamp(scale ?? zoom.scale)
+        days = max(days, Int(ceil(max(available, 0) / self.scale)))
     }
 
     var width: CGFloat { CGFloat(days) * scale }
@@ -206,6 +210,17 @@ struct ViewTimelineLayout {
             return CGRect(x: x(day) + scale / 2 - height / 2, y: y, width: height, height: height)
         }
     }
+
+    /// Keep a middle target even on a short bar, so it can still be moved at the widest zoom.
+    func editPart(at point: CGPoint, row: Int, span: TimelineSpan, canResize: Bool) -> TimelineDateEdit.Part? {
+        let rect = rect(of: span, top: rowTop(row))
+        guard rect.insetBy(dx: -3, dy: -5).contains(point) else { return nil }
+        guard canResize else { return .move }
+        let edge = min(6, rect.width / 3)
+        if point.x <= rect.minX + edge { return .start }
+        if point.x >= rect.maxX - edge { return .end }
+        return .move
+    }
 }
 
 // MARK: - The timeline
@@ -220,51 +235,210 @@ struct ViewTimeline: View {
     var scope: Scope?
     var nameWidth: CGFloat = 300
     var open: (Item) -> Void
-    @State private var hovered: String?
 
     var body: some View {
         let rows = model.timelineRows(of: view, in: scope)
         let milestones = model.milestoneGroups(projectId: view.projectId).filter(\.isOpen)
+        let marks = milestones.map { (group: $0, mark: model.mark(of: $0, projectId: view.projectId)) }
+        let looks = Dictionary(rows.compactMap { row -> (String, ItemLook)? in
+            guard case .item(let item) = row.kind else { return nil }
+            let glyph = model.glyph(of: item)
+            return (item.id, ItemLook(done: model.isDone(item), started: glyph.category == .started, glyph: glyph))
+        }, uniquingKeysWith: { first, _ in first })
+        let edits = model.timelineDateEdits(for: rows, view: view)
         GeometryReader { proxy in
             let layout = ViewTimelineLayout(
                 rows: rows, milestones: milestones.compactMap(\.due), zoom: model.roadmapZoom,
-                available: max(proxy.size.width - nameWidth - 1, 200)
+                available: max(proxy.size.width - nameWidth - 1, 200), scale: model.timelineScale
             )
-            // Worked out here, as the drawing doesn't run on the main actor.
-            let marks = milestones.map { (group: $0, mark: model.mark(of: $0, projectId: view.projectId)) }
-            let looks = Dictionary(rows.compactMap { row -> (String, ItemLook)? in
-                guard case .item(let item) = row.kind else { return nil }
-                return (item.id, ItemLook(done: model.isDone(item), started: model.glyph(of: item).category == .started))
-            }, uniquingKeysWith: { first, _ in first })
-            ScrollView(.vertical) {
-                HStack(alignment: .top, spacing: 0) {
-                    names(layout)
-                        .frame(width: nameWidth)
-                    Rectangle().fill(Theme.panelBorder).frame(width: 1, height: layout.height)
-                    ScrollView(.horizontal) {
-                        Canvas { context, size in
-                            ViewTimelinePainter(
-                                context: context, size: size, layout: layout, milestones: marks, looks: looks, hovered: hovered
-                            ).draw()
-                        }
-                        .frame(width: layout.width, height: layout.height)
-                        .contentShape(Rectangle())
-                        .onTapGesture { point in
-                            if let index = layout.row(at: point.y) { activate(layout.rows[index]) }
-                        }
-                        #if os(macOS)
-                        .onContinuousHover { phase in
-                            if case .active(let point) = phase { hovered = layout.row(at: point.y).map { layout.rows[$0].id } } else { hovered = nil }
-                        }
-                        #endif
-                    }
-                    .scrollIndicators(.automatic)
-                    .defaultScrollAnchor(.leading)
-                }
-            }
-            .scrollIndicators(.never)
+            ViewTimelineContent(
+                view: view, scope: scope, nameWidth: nameWidth, open: open,
+                snapshot: TimelineDrawingSnapshot(layout: layout, milestones: marks, looks: looks, edits: edits)
+            )
         }
-        .animation(Theme.spring, value: rows.map(\.id))
+    }
+}
+
+/// Hovering and dragging update this view without rebuilding the project's timeline data.
+private struct ViewTimelineContent: View {
+    @Environment(AppModel.self) private var model
+    var view: ProjectView
+    var scope: Scope?
+    var nameWidth: CGFloat
+    var open: (Item) -> Void
+    var snapshot: TimelineDrawingSnapshot
+    @State private var hovered: String?
+    @State private var drag: IssueDateDrag?
+    @State private var cancelledDrag = false
+    @GestureState private var dragActive = false
+    @Namespace private var timelineSpace
+
+    private struct IssueDateDrag {
+        var rowId: String
+        var original: TimelineDateEdit
+        var edited: TimelineDateEdit
+        var part: TimelineDateEdit.Part
+        /// Dates and row positions stay fixed under the pointer until the drop.
+        var snapshot: TimelineDrawingSnapshot
+    }
+
+    var body: some View {
+        let shown = drag?.snapshot ?? snapshot
+        let layout = shown.layout
+        ScrollView(.vertical) {
+            HStack(alignment: .top, spacing: 0) {
+                names(shown)
+                    .frame(width: nameWidth)
+                Rectangle().fill(Theme.panelBorder).frame(width: 1, height: layout.height)
+                ScrollView(.horizontal) {
+                    canvas(shown)
+                }
+                .scrollIndicators(.automatic)
+                .defaultScrollAnchor(.leading)
+                .timelineZoom(scale: layout.scale)
+            }
+        }
+        .scrollIndicators(.never)
+        .animation(Theme.spring, value: snapshot.rowIdentity)
+        .onChange(of: model.dragCancelToken) { _, _ in
+            if drag != nil {
+                cancelledDrag = true
+                clearDrag()
+            }
+        }
+        .onChange(of: dragActive) { _, active in
+            if !active {
+                clearDrag()
+                cancelledDrag = false
+            }
+        }
+        .onDisappear { clearDrag() }
+    }
+
+    private func canvas(_ snapshot: TimelineDrawingSnapshot) -> some View {
+        let layout = snapshot.layout
+        let edits = snapshot.edits
+        return TimelineDrawing(snapshot: snapshot, previewRow: drag?.rowId, preview: drag?.edited.span)
+        .equatable()
+        .background(alignment: .topLeading) {
+            if let index = layout.rows.firstIndex(where: { $0.id == hovered }), case .item = layout.rows[index].kind {
+                Rectangle().fill(Theme.hover.opacity(0.7))
+                    .frame(width: layout.width, height: ViewTimelineLayout.rowHeight)
+                    .offset(y: layout.rowTop(index))
+            }
+        }
+        .contentShape(Rectangle())
+        .overlay(alignment: .topLeading) {
+            TimelineDateTargets(snapshot: snapshot, previewRow: drag?.rowId, preview: drag?.edited.span) { rect in
+                dateTarget(rect, layout: layout, edits: edits)
+            }
+            .equatable()
+        }
+        .overlay(alignment: .topLeading) {
+            if let rowId = drag?.rowId ?? hovered,
+               let index = layout.rows.firstIndex(where: { $0.id == rowId }),
+               let edit = edits[rowId], edit.canResize, case .item(let item) = layout.rows[index].kind {
+                let span = drag?.rowId == rowId ? (drag?.edited.span ?? edit.span) : edit.span
+                let rect = layout.rect(of: span, top: layout.rowTop(index))
+                let look = snapshot.looks[item.id]
+                let color = look?.done == true ? Theme.positive : look?.started == true ? Theme.started : Theme.accent
+                Path { path in
+                    for x in [rect.minX + 3, rect.maxX - 3] {
+                        path.move(to: CGPoint(x: x, y: rect.minY + 5))
+                        path.addLine(to: CGPoint(x: x, y: rect.maxY - 5))
+                    }
+                }
+                .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                .allowsHitTesting(false)
+            }
+        }
+        .coordinateSpace(.named(timelineSpace))
+        .gesture(SpatialTapGesture().onEnded { value in
+            if let index = layout.row(at: value.location.y) { activate(layout.rows[index]) }
+        })
+        #if os(macOS)
+        .onContinuousHover { phase in
+            switch phase {
+            case .active(let point):
+                let index = layout.row(at: point.y)
+                setHovered(index.map { layout.rows[$0].id })
+                if drag == nil, let index, let edit = edits[layout.rows[index].id],
+                   let part = layout.editPart(at: point, row: index, span: edit.span, canResize: edit.canResize) {
+                    (part == .move ? NSCursor.openHand : NSCursor.resizeLeftRight).set()
+                } else if drag == nil {
+                    NSCursor.arrow.set()
+                }
+            case .ended:
+                setHovered(nil)
+                if drag == nil { NSCursor.arrow.set() }
+            }
+        }
+        #endif
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func dateTarget(_ rect: CGRect, layout: ViewTimelineLayout, edits: [String: TimelineDateEdit]) -> some View {
+        let target = Color.clear
+            .frame(width: rect.width, height: rect.height)
+            .contentShape(Rectangle())
+        #if os(macOS)
+        target.gesture(
+            DragGesture(minimumDistance: 4, coordinateSpace: .named(timelineSpace))
+                .updating($dragActive) { _, active, _ in active = true }
+                .onChanged { value in
+                    updateDrag(start: value.startLocation, translation: value.translation.width, layout: layout, edits: edits)
+                }
+                .onEnded { _ in endDrag(cancelled: false) }
+        )
+        #else
+        target.gesture(TimelineTouchDrag(space: timelineSpace, changed: { start, translation in
+            updateDrag(start: start, translation: translation, layout: layout, edits: edits)
+        }, ended: { cancelled in endDrag(cancelled: cancelled) }))
+        #endif
+    }
+
+    private func updateDrag(start: CGPoint, translation: CGFloat, layout: ViewTimelineLayout, edits: [String: TimelineDateEdit]) {
+        guard !cancelledDrag else { return }
+        if drag == nil {
+            guard let index = layout.row(at: start.y) else { return }
+            let row = layout.rows[index]
+            guard let edit = edits[row.id],
+                  let part = layout.editPart(at: start, row: index, span: edit.span, canResize: edit.canResize) else { return }
+            drag = IssueDateDrag(rowId: row.id, original: edit, edited: edit, part: part, snapshot: snapshot)
+            model.isDragging = true
+        }
+        guard var current = drag else { return }
+        let days = Int((translation / current.snapshot.layout.scale).rounded())
+        let edited = current.original.adjusted(by: days, part: current.part)
+        if edited != current.edited {
+            current.edited = edited
+            drag = current
+        }
+        #if os(macOS)
+        (current.part == .move ? NSCursor.closedHand : NSCursor.resizeLeftRight).set()
+        #endif
+    }
+
+    private func endDrag(cancelled: Bool) {
+        if let drag, !cancelledDrag, !cancelled {
+            model.commitTimelineDateEdit(original: drag.original, edited: drag.edited)
+        }
+        clearDrag()
+        cancelledDrag = false
+    }
+
+    private func setHovered(_ rowId: String?) {
+        if hovered != rowId { hovered = rowId }
+    }
+
+    private func clearDrag() {
+        guard drag != nil else { return }
+        drag = nil
+        model.isDragging = false
+        #if os(macOS)
+        NSCursor.arrow.set()
+        #endif
     }
 
     private func activate(_ row: TimelineRow) {
@@ -278,21 +452,22 @@ struct ViewTimeline: View {
 
     // MARK: Names
 
-    private func names(_ layout: ViewTimelineLayout) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+    private func names(_ snapshot: TimelineDrawingSnapshot) -> some View {
+        let layout = snapshot.layout
+        return LazyVStack(alignment: .leading, spacing: 0) {
             Color.clear
                 .frame(height: ViewTimelineLayout.headerHeight)
                 .overlay(alignment: .bottom) { Rectangle().fill(Theme.panelBorder).frame(height: 1) }
             ForEach(layout.rows) { row in
-                nameCell(row)
+                nameCell(row, snapshot: snapshot)
             }
-            Spacer(minLength: 16)
+            Color.clear.frame(height: 16)
         }
         .frame(height: layout.height, alignment: .top)
     }
 
     @ViewBuilder
-    private func nameCell(_ row: TimelineRow) -> some View {
+    private func nameCell(_ row: TimelineRow, snapshot: TimelineDrawingSnapshot) -> some View {
         Button {
             activate(row)
         } label: {
@@ -314,11 +489,11 @@ struct ViewTimeline: View {
                         .monospacedDigit()
                         .foregroundStyle(Theme.textTertiary)
                 case .item(let item):
-                    StatusIcon(glyph: model.glyph(of: item), size: 13)
+                    StatusIcon(glyph: snapshot.looks[item.id]?.glyph ?? .none, size: 13)
                         .padding(.leading, 18)
                     Text(item.title)
                         .font(.ui)
-                        .foregroundStyle(model.isDone(item) ? Theme.textSecondary : Theme.text)
+                        .foregroundStyle(snapshot.looks[item.id]?.done == true ? Theme.textSecondary : Theme.text)
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
@@ -338,12 +513,28 @@ struct ViewTimeline: View {
         .buttonStyle(PlainPressStyle())
         #if os(macOS)
         .onHover { inside in
-            if inside { hovered = row.id } else if hovered == row.id { hovered = nil }
+            if inside { setHovered(row.id) } else if hovered == row.id { setHovered(nil) }
         }
         #endif
         .accessibilityLabel(Text(label(of: row)))
         .accessibilityValue(Text(row.span.map(spoken) ?? String(localized: .noDate)))
         .accessibilityIdentifier(identifier(of: row))
+        .accessibilityActions {
+            if case .item = row.kind, let edit = snapshot.edits[row.id] {
+                Button(.timelineMoveEarlier) { adjust(edit, by: -1, part: .move) }
+                Button(.timelineMoveLater) { adjust(edit, by: 1, part: .move) }
+                if edit.canResize {
+                    Button(.timelineStartEarlier) { adjust(edit, by: -1, part: .start) }
+                    Button(.timelineStartLater) { adjust(edit, by: 1, part: .start) }
+                    Button(.timelineEndEarlier) { adjust(edit, by: -1, part: .end) }
+                    Button(.timelineEndLater) { adjust(edit, by: 1, part: .end) }
+                }
+            }
+        }
+    }
+
+    private func adjust(_ edit: TimelineDateEdit, by days: Int, part: TimelineDateEdit.Part) {
+        model.commitTimelineDateEdit(original: edit, edited: edit.adjusted(by: days, part: part))
     }
 
     private func identifier(of row: TimelineRow) -> String {
@@ -398,10 +589,83 @@ private struct TimelineGroupIcon: View {
 
 // MARK: - Drawing
 
+/// An immutable drawing shared by the name column, hit targets and canvas until project data or zoom changes.
+private final class TimelineDrawingSnapshot {
+    /// Hover keeps the same instance, so it neither rebuilds nor compares the row list.
+    final class RowIdentity: Equatable {
+        let ids: [String]
+
+        init(rows: [TimelineRow]) { ids = rows.map(\.id) }
+
+        static func == (lhs: RowIdentity, rhs: RowIdentity) -> Bool {
+            lhs === rhs || lhs.ids == rhs.ids
+        }
+    }
+
+    let layout: ViewTimelineLayout
+    let rowIdentity: RowIdentity
+    let milestones: [(group: MilestoneGroup, mark: MilestoneMark)]
+    let looks: [String: ItemLook]
+    let edits: [String: TimelineDateEdit]
+
+    init(layout: ViewTimelineLayout, milestones: [(group: MilestoneGroup, mark: MilestoneMark)], looks: [String: ItemLook], edits: [String: TimelineDateEdit]) {
+        self.layout = layout
+        self.rowIdentity = RowIdentity(rows: layout.rows)
+        self.milestones = milestones
+        self.looks = looks
+        self.edits = edits
+    }
+}
+
+/// Pointer feedback never rebuilds the hundreds of otherwise unchanged drag recognizers.
+private struct TimelineDateTargets<Target: View>: View, Equatable {
+    var snapshot: TimelineDrawingSnapshot
+    var previewRow: String?
+    var preview: TimelineSpan?
+    var target: (CGRect) -> Target
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.snapshot === rhs.snapshot && lhs.previewRow == rhs.previewRow && lhs.preview == rhs.preview
+    }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(Array(snapshot.layout.rows.enumerated()), id: \.element.id) { index, row in
+                if let edit = snapshot.edits[row.id] {
+                    let span = row.id == previewRow ? (preview ?? edit.span) : edit.span
+                    let rect = snapshot.layout.rect(of: span, top: snapshot.layout.rowTop(index)).insetBy(dx: -3, dy: -5)
+                    target(rect).position(x: rect.midX, y: rect.midY)
+                }
+            }
+        }
+    }
+}
+
+private struct TimelineDrawing: View, Equatable {
+    var snapshot: TimelineDrawingSnapshot
+    var previewRow: String?
+    var preview: TimelineSpan?
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.snapshot === rhs.snapshot && lhs.previewRow == rhs.previewRow && lhs.preview == rhs.preview
+    }
+
+    var body: some View {
+        Canvas { context, size in
+            ViewTimelinePainter(
+                context: context, size: size, layout: snapshot.layout, milestones: snapshot.milestones,
+                looks: snapshot.looks, previewRow: previewRow, preview: preview
+            ).draw()
+        }
+        .frame(width: snapshot.layout.width, height: snapshot.layout.height)
+    }
+}
+
 /// How an issue's bar is coloured: done, under way, or not yet started.
 private struct ItemLook {
     var done: Bool
     var started: Bool
+    var glyph: StatusGlyph
 }
 
 /// Draws the timeline in one pass: months, milestones, today, and the bars.
@@ -411,7 +675,8 @@ private struct ViewTimelinePainter {
     var layout: ViewTimelineLayout
     var milestones: [(group: MilestoneGroup, mark: MilestoneMark)]
     var looks: [String: ItemLook]
-    var hovered: String?
+    var previewRow: String?
+    var preview: TimelineSpan?
 
     func draw() {
         let today = CalendarDay.today()
@@ -420,8 +685,6 @@ private struct ViewTimelinePainter {
             let top = layout.rowTop(index)
             if case .group = row.kind {
                 context.fill(Path(CGRect(x: 0, y: top, width: size.width, height: ViewTimelineLayout.rowHeight)), with: .color(Theme.groupHeader))
-            } else if hovered == row.id {
-                context.fill(Path(CGRect(x: 0, y: top, width: size.width, height: ViewTimelineLayout.rowHeight)), with: .color(Theme.hover.opacity(0.7)))
             }
         }
         drawMonths(today: today, bottom: bottom)
@@ -432,17 +695,27 @@ private struct ViewTimelinePainter {
         if todayX >= 0, todayX <= size.width {
             context.fill(Path(CGRect(x: todayX - 0.75, y: 2, width: 1.5, height: bottom - 2)), with: .color(Theme.accent))
             let label = context.resolve(Text(.today).font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.accent))
-            context.draw(label, at: CGPoint(x: todayX + 4, y: 7), anchor: .topLeading)
+            context.draw(label, at: CGPoint(x: todayX + 4, y: 0), anchor: .topLeading)
         }
 
         for (index, row) in layout.rows.enumerated() {
-            guard let span = row.span else { continue }
+            guard let span = row.id == previewRow ? preview : row.span else { continue }
             let top = layout.rowTop(index)
             switch row.kind {
             case .group(let section, _):
                 drawGroup(span, progress: section.progress, top: top)
             case .item(let item):
                 drawItem(span, item: item, top: top)
+                if row.id == previewRow {
+                    let rect = layout.rect(of: span, top: top)
+                    let dates = span.first == span.last ? span.first.longLabel : "\(span.first.longLabel) – \(span.last.longLabel)"
+                    let label = context.resolve(Text(dates).font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.text))
+                    let measured = label.measure(in: CGSize(width: 1000, height: 20))
+                    let x = min(max(rect.midX, measured.width / 2 + 4), size.width - measured.width / 2 - 4)
+                    let box = CGRect(x: x - measured.width / 2 - 4, y: rect.minY - measured.height - 5, width: measured.width + 8, height: measured.height + 4)
+                    context.fill(Path(roundedRect: box, cornerRadius: 3), with: .color(Theme.groupHeader))
+                    context.draw(label, at: CGPoint(x: x, y: box.midY))
+                }
             }
         }
     }
@@ -461,7 +734,7 @@ private struct ViewTimelinePainter {
             let resolved = context.resolve(Text(text).font(.system(size: 11)).foregroundStyle(Theme.textTertiary))
             let next = month.adding(months: 1)
             if layout.x(next) - max(x, 0) > 30 {
-                context.draw(resolved, at: CGPoint(x: max(x, 0) + 6, y: 7), anchor: .topLeading)
+                context.draw(resolved, at: CGPoint(x: max(x, 0) + 6, y: 13), anchor: .topLeading)
             }
             firstLabel = false
             month = next
@@ -510,7 +783,7 @@ private struct ViewTimelinePainter {
 
     /// An issue's stretch as a bar in its status's colour, or its day as a mark: a diamond for its milestone's day.
     private func drawItem(_ span: TimelineSpan, item: Item, top: CGFloat) {
-        let look = looks[item.id] ?? ItemLook(done: false, started: false)
+        let look = looks[item.id] ?? ItemLook(done: false, started: false, glyph: .none)
         let done = look.done
         let color = done ? Theme.positive : look.started ? Theme.started : Theme.accent
         switch span {
@@ -519,12 +792,16 @@ private struct ViewTimelinePainter {
             let shape = Path(roundedRect: rect, cornerRadius: 5)
             context.fill(shape, with: .color(color.opacity(done ? 0.18 : 0.22)))
             context.stroke(shape, with: .color(color.opacity(0.55)), lineWidth: 1)
-            // The title inside the bar where it fits.
-            let title = context.resolve(Text(item.title).font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.text))
-            if title.measure(in: CGSize(width: 1000, height: 20)).width + 14 <= rect.width {
+            // Once there is room for a readable prefix, keep long titles visible as a single truncated line.
+            if rect.width >= 40 {
                 var clipped = context
+                clipped.environment.lineLimit = 1
+                clipped.environment.truncationMode = .tail
                 clipped.clip(to: shape)
-                clipped.draw(title, at: CGPoint(x: rect.minX + 7, y: rect.midY), anchor: .leading)
+                let title = clipped.resolve(Text(item.title).font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.text))
+                let room = CGSize(width: rect.width - 14, height: rect.height)
+                let height = title.measure(in: room).height
+                clipped.draw(title, in: CGRect(x: rect.minX + 7, y: rect.midY - height / 2, width: room.width, height: height))
             }
         case .day(_, let milestone):
             let rect = layout.rect(of: span, top: top, height: 12)

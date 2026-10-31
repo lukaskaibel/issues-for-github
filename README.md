@@ -189,6 +189,22 @@ offers it on its light page, on graphite or as a white card on indigo. Each foll
 
 <img alt="The list grouped by status, half in the dark appearance and half in the light one" src="Design/screenshots/list-appearance.webp">
 
+### Zoom and plan on a timeline
+
+Pinch on a trackpad or iPad to zoom a timeline, or use its zoom controls. On the Mac, ⌘+ and ⌘− zoom, ⌘0 resets to
+Months or Quarters (also available with the Reset Zoom button), and holding ⌘ while scrolling zooms under the
+pointer. Zoom has limits at both ends. Bars wide enough to read show their issue's title, with an ellipsis when it
+does not fit on one line. Scrolling stays responsive on long timelines as rows pass under the pointer. On the Mac,
+a two-finger horizontal gesture pans through dates,
+and navigates back or forward when it starts at the corresponding timeline edge, as on a board.
+
+In a project's roadmap view, drag the middle of an issue's date bar to move it while keeping its duration. Drag the
+left or right edge to change only the start or finish date. On iPad, touch and hold the bar before dragging;
+an ordinary swipe scrolls through dates. Dates snap to days and the edges stop at each other;
+Esc cancels on the Mac. A single date moves as a point. VoiceOver offers the same changes in one-day steps. The
+project must allow editing, and the bar must use the issue's own date fields; iteration and milestone dates keep
+their existing meaning. The change appears locally and joins the sync queue when you release the bar.
+
 ### Every issue, on a board or not
 
 An issue someone opened straight in a repository isn't lost because nobody put it on a board. **All Issues**, at the
@@ -368,7 +384,8 @@ The interface uses the system's own parts.
   comment field, new issues and milestones.
 - **Keyboard first.** Single keys change status, priority, assignee, labels and the due date, and pickers offer your
   last choices first, so a run of similar changes takes one key each. Back and forward work like a browser: ⌘[ and ⌘],
-  the side buttons of a mouse, or a two-finger swipe.
+  the side buttons of a mouse, or a two-finger swipe. On a wide Mac board, a horizontal swipe scrolls the columns;
+  a new outward swipe at the corresponding edge goes back or forward.
 - **Due dates and reminders.** The day an issue is due, typed in a few words or picked in a month, and a notification
   on that day for issues assigned to you, from each of your devices.
 - **In nine languages.** English, German, French, Spanish, Portuguese (Brazil), Russian, Japanese, Korean and Chinese
@@ -418,6 +435,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | A person's load | Their open issues in the view, the ones with a started status in yellow; a view grouped by assignee |
 | The cycle over a view and its arrows | The iteration the view's filter names (`@current`, `@next`, `@current+2` or its title); an arrow changes the filter, in the same kind of words, until **Save** |
 | Bars on a roadmap view's timeline | Date fields named like a start and an end (Start date, Target date), else the iteration, else the milestone's day; GitHub doesn't say which fields its roadmap uses |
+| Dragging an issue's date bar or its edges | Changes its project date fields through the offline sync queue: both dates when moving, one date when resizing |
 | A project's icon | Nothing on GitHub, which has no icons for projects: the glyph and colour you pick are kept in iCloud, for you alone |
 | Inbox | Your GitHub notifications about issues and pull requests; read and archived (GitHub's *Done*) are the same there. Due issues, and assignments your own account made outside the app (found in the issues' timelines), are the app's own entries, read and archived in iCloud |
 
@@ -528,6 +546,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
+| `⌘+` `⌘−` / `⌘0` | Zoom a timeline in or out / reset to Months or Quarters; pinch, zoom buttons and ⌘-scroll work too |
 | `⌃⌘I` | Show or hide the details of the open issue, in the inspector beside it |
 | `F` | Filter the view on screen, or My Issues: pick what to filter by, then the values |
 | `⇧V` | Display options of the view: board or list, columns, groups, order and the fields shown; of My Issues: groups and order |
@@ -729,8 +748,7 @@ notifications on screen for new Inbox entries are planned but not built. Also go
   has no way for apps to upload them.
 - VoiceOver reads a description's tables and diagrams as their Markdown; its checkboxes it reads and ticks.
 - A view's order among the others, and its columns, grouping and sorting once it exists, can't be changed from the
-  app: GitHub's API doesn't take them. A roadmap view's bars can't be dragged to other dates yet, the iPhone shows a
-  roadmap view as a list, and board swimlanes aren't drawn.
+  app: GitHub's API doesn't take them. The iPhone shows a roadmap view as a list, and board swimlanes aren't drawn.
 
 ## For contributors
 

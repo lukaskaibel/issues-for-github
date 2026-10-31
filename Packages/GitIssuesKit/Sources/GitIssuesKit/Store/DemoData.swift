@@ -310,7 +310,7 @@ public enum DemoData {
                     blockedByCount: blockers.filter { $0.status != "Done" }.count,
                     blockingCount: blocked.filter { $0.status != "Done" }.count,
                     milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone,
-                    fieldValues: fieldValues(of: issue, in: spec)
+                    fieldValues: fieldValues(of: issue, in: spec, today: today)
                 ).insert(db)
                 for (relation, others) in [(LinkedIssue.Relation.blockedBy, blockers), (.blocking, blocked)] {
                     for (position, other) in others.enumerated() {
@@ -381,9 +381,12 @@ public enum DemoData {
 
     // MARK: Fields and views
 
-    private static func fieldValues(of issue: IssueSpec, in spec: ProjectSpec) -> [String: FieldValue] {
+    private static func fieldValues(of issue: IssueSpec, in spec: ProjectSpec, today: CalendarDay) -> [String: FieldValue] {
         guard spec.id == app.id else { return [:] }
         var values: [String: FieldValue] = [:]
+        if let due = issue.due {
+            values["\(spec.id)-start"] = FieldValue(date: today.adding(days: due - 7).string)
+        }
         if let weeks = cycleOfIssue[issue.number], let cycle = cycles.first(where: { $0.weeks == weeks }) {
             values["\(spec.id)-iteration"] = FieldValue(iterationId: cycle.id)
         }
@@ -418,6 +421,7 @@ public enum DemoData {
         if spec.hasDueField { add("due", "Due date", "DATE") }
         let isApp = spec.id == app.id
         if isApp {
+            add("start", "Start date", "DATE")
             // Weeks start on Monday, as GitHub's iterations do by default.
             let monday = today.adding(days: -((today.weekday() + 5) % 7))
             add("iteration", "Iteration", "ITERATION", iterations: cycles.map { cycle in
