@@ -14,6 +14,7 @@ struct HistorySwipePolicy {
         fileprivate func allows(back: Bool) -> Bool {
             switch self {
             case .page: return true
+            case .board(_, let maximum) where maximum <= 0.5: return true
             case .board(let offset, let maximum), .timeline(let offset, let maximum):
                 return back ? offset <= 0.5 : offset >= maximum - 0.5
             }
@@ -36,7 +37,7 @@ struct HistorySwipePolicy {
     static func commits(progress: Double, phase: NSEvent.Phase) -> Bool {
         // AppKit can cancel a slow lift using its own threshold and velocity rules. The filled arrow is our
         // promise that letting go navigates; reversing below the threshold cancels it instead.
-        (phase == .ended || phase == .cancelled) && abs(progress) >= threshold
+        (phase.contains(.ended) || phase.contains(.cancelled)) && abs(progress) >= threshold
     }
 }
 
@@ -95,6 +96,25 @@ extension AppModel {
         var events: [NSEvent] = []
     }
 
+    @MainActor
+    struct TrackedSwipe {
+        private(set) var progress: Double = 0
+        private(set) var finished = false
+
+        /// Returns a navigation direction only once, when the fingers lift after reaching the threshold.
+        mutating func update(amount: Double, phase: NSEvent.Phase, isComplete: Bool) -> Bool? {
+            guard !finished else { return nil }
+            if phase.contains(.ended) || phase.contains(.cancelled) || isComplete {
+                let back: Bool? = HistorySwipePolicy.commits(progress: progress, phase: phase) ? progress > 0 : nil
+                progress = 0
+                finished = true
+                return back
+            }
+            if phase.contains(.began) || phase.contains(.changed) { progress = amount }
+            return nil
+        }
+    }
+
     /// How far a two-finger swipe goes sideways before it navigates, in points, and how much of that it may go up or
     /// down without becoming a scroll. Safari's numbers (WebKit's `minimumHorizontalSwipeDistance`).
     private static let swipeDistance: CGFloat = 15
@@ -103,7 +123,9 @@ extension AppModel {
     /// Starts following a two-finger swipe once it has gone clearly sideways, so a scroll that drifts a little to the
     /// side doesn't go back. Its first events are held back until then.
     private func trackSwipe(_ event: NSEvent) -> Bool {
-        if event.phase == .began {
+        // Momentum has no physical gesture phase and must never start or advance navigation.
+        guard !event.phase.isEmpty else { return false }
+        if event.phase.contains(.began) {
             pendingSwipe = nil
             let surface: HistorySwipePolicy.Surface
             if showsTimelineCanvas {
@@ -129,7 +151,7 @@ extension AppModel {
             releaseSwipe(pending)
             return false
         }
-        if event.phase == .ended || event.phase == .cancelled {
+        if event.phase.contains(.ended) || event.phase.contains(.cancelled) {
             releaseSwipe(pending)
             return false
         }
@@ -148,29 +170,24 @@ extension AppModel {
             return true
         }
         pendingSwipe = nil
+        var swipe = TrackedSwipe()
         event.trackSwipeEvent(
             options: [.lockDirection, .clampGestureAmount],
             dampenAmountThresholdMin: pending.policy.allowsForward ? -1 : 0,
             max: pending.policy.allowsBack ? 1 : 0
-        ) { [weak self] amount, phase, isComplete, _ in
+        ) { [weak self] amount, phase, isComplete, stop in
             MainActor.assumeIsolated {
-                guard let self else { return }
-                switch phase {
-                case .began, .changed:
-                    self.swipeProgress = Double(amount)
-                case .ended, .cancelled:
-                    // It goes if the arrow is full as the fingers lift. The system would also count a short quick
-                    // flick, which is how a swipe went back without meaning to.
-                    let progress = self.swipeProgress
-                    if HistorySwipePolicy.commits(progress: progress, phase: phase) {
-                        if progress > 0 { self.goBack() } else { self.goForward() }
-                    }
+                guard let self else { stop.pointee = true; return }
+                let back = swipe.update(amount: Double(amount), phase: phase, isComplete: isComplete)
+                if swipe.finished {
+                    // Our own fade finishes the arrow; AppKit's remaining animation must not bring it back.
+                    stop.pointee = true
                     withAnimation(Theme.quick) { self.swipeProgress = 0 }
-                default:
-                    // The system finishing its own animation; the arrow is already gone.
-                    if isComplete, self.swipeProgress != 0 {
-                        withAnimation(Theme.quick) { self.swipeProgress = 0 }
-                    }
+                } else {
+                    self.swipeProgress = swipe.progress
+                }
+                if let back {
+                    if back { self.goBack() } else { self.goForward() }
                 }
             }
         }

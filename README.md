@@ -384,7 +384,8 @@ The interface uses the system's own parts.
   comment field, new issues and milestones.
 - **Keyboard first.** Single keys change status, priority, assignee, labels and the due date, and pickers offer your
   last choices first, so a run of similar changes takes one key each. Back and forward work like a browser: ⌘[ and ⌘],
-  the side buttons of a mouse, or a two-finger swipe.
+  the side buttons of a mouse, or a two-finger swipe. On a wide Mac board, a horizontal swipe scrolls the columns;
+  a new outward swipe at the corresponding edge goes back or forward.
 - **Due dates and reminders.** The day an issue is due, typed in a few words or picked in a month, and a notification
   on that day for issues assigned to you, from each of your devices.
 - **In nine languages.** English, German, French, Spanish, Portuguese (Brazil), Russian, Japanese, Korean and Chinese

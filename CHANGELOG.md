@@ -21,6 +21,8 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Horizontal trackpad scrolling on a wide Mac board stays with its columns until a new gesture starts at an edge.
+  Edge detection accounts for the sidebar, and the navigation arrow clears when the gesture finishes.
 - Moving or resizing an issue's date bar now updates its start and finish dates on GitHub. The sync sender had
   mistaken ordinary date fields for an empty option and cleared them instead. Unsupported nonempty field values
   now fail without clearing the field, and queued date changes say which date will be set. Moving a date back while
