@@ -420,6 +420,8 @@ public final class AppModel {
     /// The timeline's viewport, read when a gesture starts without invalidating its drawing on each scroll tick.
     @ObservationIgnored var timelineScrollX: CGFloat = 0
     @ObservationIgnored var timelineMaxScrollX: CGFloat = 0
+    /// The timeline that wrote them last. One that leaves the screen after the next has appeared keeps its hands off.
+    @ObservationIgnored var timelineScrollOwner: ObjectIdentifier?
     #endif
     /// Set while a board drag is in progress so keyboard shortcuts stay out of the way.
     var isDragging = false

@@ -19,20 +19,21 @@ All notable changes to this project are recorded here. The format follows
   resize by one day. Changes join the offline sync queue when the drag ends. Once a bar has room to read its title,
   the title stays visible, with an ellipsis when it is too long.
 
+### Changed
+
+- A timeline keeps the width of a day its zoom gives it. A short plan is no longer stretched across the window; the
+  room after it shows the days to come.
+
 ### Fixed
 
-- Horizontal trackpad scrolling on a wide Mac board stays with its columns until a new gesture starts at an edge.
-  Edge detection accounts for the sidebar, and the navigation arrow clears when the gesture finishes.
-- Moving or resizing an issue's date bar now updates its start and finish dates on GitHub. The sync sender had
-  mistaken ordinary date fields for an empty option and cleared them instead. Unsupported nonempty field values
-  now fail without clearing the field, and queued date changes say which date will be set. Moving a date back while
-  its previous change is still sending also saves the final date correctly.
-- Two-finger horizontal scrolling on a timeline keeps moving through dates, with history navigation available when
-  a gesture starts at the corresponding edge, as on a board. A gesture stays with scrolling once it starts there,
-  and Command-scroll zooms without starting history navigation. A full navigation arrow commits on a slow lift too;
-  reversing below the threshold cancels navigation.
-- Long project timelines scroll more smoothly, especially while rows pass under the pointer. Hovering no longer
-  repaints every issue title or rebuilds every drag target, and the name column loads rows as they enter view.
+- On a wide board on the Mac, a sideways swipe scrolls the columns instead of going back, also with the sidebar
+  showing. Going back or forward takes a new swipe once the board is scrolled all the way to that side, and the arrow
+  of a swipe no longer stays on screen after it.
+- A sideways swipe on a timeline on the Mac scrolls through the dates instead of going back or forward. Once the
+  timeline is scrolled all the way to that side, a new swipe goes back or forward, as on a board.
+- Setting a field such as Workstream or an iteration back while the change before it is still on its way to GitHub
+  keeps your last choice. Until now GitHub could be left with the one before.
+- Long timelines scroll more smoothly, also while the pointer passes over their rows.
 
 ## [1.1.0] - 2026-10-28
 

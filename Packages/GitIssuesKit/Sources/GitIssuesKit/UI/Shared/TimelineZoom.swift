@@ -92,12 +92,17 @@ private struct TimelineZoomModifier: ViewModifier {
                 viewport.offset = next.offset
                 viewport.width = next.width
                 #if os(macOS)
+                model.timelineScrollOwner = ObjectIdentifier(viewport)
                 model.timelineScrollX = next.offset
                 model.timelineMaxScrollX = next.maximum
                 #endif
             }
             #if os(macOS)
             .onDisappear {
+                // Going from one timeline to another, the next may already have written its viewport. Zeros over it
+                // would read as a timeline that doesn't scroll, and a swipe toward later dates would go forward.
+                guard model.timelineScrollOwner == ObjectIdentifier(viewport) else { return }
+                model.timelineScrollOwner = nil
                 model.timelineScrollX = 0
                 model.timelineMaxScrollX = 0
             }
@@ -158,15 +163,6 @@ struct TimelineZoomButtons: View {
                 model.resetTimelineZoom()
             }
             .disabled(model.timelineScaleOverride == nil)
-            #else
-            Button { model.zoomTimeline(by: -1) } label: {
-                Label(.timelineZoomOut, systemImage: "minus.magnifyingglass")
-            }
-            .disabled(model.timelineScale <= TimelineZoom.minimumScale)
-            Button { model.zoomTimeline(by: 1) } label: {
-                Label(.timelineZoomIn, systemImage: "plus.magnifyingglass")
-            }
-            .disabled(model.timelineScale >= TimelineZoom.maximumScale)
             #endif
         }
     }

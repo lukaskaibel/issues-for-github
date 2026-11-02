@@ -194,16 +194,15 @@ offers it on its light page, on graphite or as a white card on indigo. Each foll
 Pinch on a trackpad or iPad to zoom a timeline, or use its zoom controls. On the Mac, ⌘+ and ⌘− zoom, ⌘0 resets to
 Months or Quarters (also available with the Reset Zoom button), and holding ⌘ while scrolling zooms under the
 pointer. Zoom has limits at both ends. Bars wide enough to read show their issue's title, with an ellipsis when it
-does not fit on one line. Scrolling stays responsive on long timelines as rows pass under the pointer. On the Mac,
-a two-finger horizontal gesture pans through dates,
-and navigates back or forward when it starts at the corresponding timeline edge, as on a board.
+does not fit on one line. On the Mac, a sideways two-finger swipe scrolls through the dates; once the timeline is
+scrolled all the way to one side, a new swipe goes back or forward, as on a board.
 
 In a project's roadmap view, drag the middle of an issue's date bar to move it while keeping its duration. Drag the
-left or right edge to change only the start or finish date. On iPad, touch and hold the bar before dragging;
-an ordinary swipe scrolls through dates. Dates snap to days and the edges stop at each other;
-Esc cancels on the Mac. A single date moves as a point. VoiceOver offers the same changes in one-day steps. The
-project must allow editing, and the bar must use the issue's own date fields; iteration and milestone dates keep
-their existing meaning. The change appears locally and joins the sync queue when you release the bar.
+left or right edge to change only the start or finish date. On iPad, touch and hold the bar before dragging; an
+ordinary swipe scrolls through dates. Dates snap to days and the edges stop at each other; Esc cancels on the Mac. A
+single date moves as a point. VoiceOver offers the same changes in one-day steps. The project must allow editing, and
+the bar must use the issue's own date fields; iteration and milestone dates keep their existing meaning. The change
+appears locally and joins the sync queue when you release the bar.
 
 ### Every issue, on a board or not
 
@@ -384,8 +383,8 @@ The interface uses the system's own parts.
   comment field, new issues and milestones.
 - **Keyboard first.** Single keys change status, priority, assignee, labels and the due date, and pickers offer your
   last choices first, so a run of similar changes takes one key each. Back and forward work like a browser: ⌘[ and ⌘],
-  the side buttons of a mouse, or a two-finger swipe. On a wide Mac board, a horizontal swipe scrolls the columns;
-  a new outward swipe at the corresponding edge goes back or forward.
+  the side buttons of a mouse, or a two-finger swipe. On a wide board or a timeline a swipe scrolls instead, until it
+  is scrolled all the way to that side.
 - **Due dates and reminders.** The day an issue is due, typed in a few words or picked in a month, and a notification
   on that day for issues assigned to you, from each of your devices.
 - **In nine languages.** English, German, French, Spanish, Portuguese (Brazil), Russian, Japanese, Korean and Chinese
