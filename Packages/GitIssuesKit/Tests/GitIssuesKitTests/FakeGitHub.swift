@@ -11,6 +11,9 @@ final class FakeGitHub: @unchecked Sendable {
         var itemId: String?
         var parent: String?
         var title: String?
+        var body = ""
+        /// The milestone's id, as the app last set it. Reads don't list it.
+        var milestone: String?
         var updatedAt = "2026-10-01T10:00:00Z"
         var closed = false
         /// The issues that block it, and how many more GitHub counts but won't show (in repositories you can't see).
@@ -38,7 +41,7 @@ final class FakeGitHub: @unchecked Sendable {
     private var eventClock = Date()
     private var log: [String] = []
     private var fieldWriteLog: [FieldWrite] = []
-    private var nextFieldWriteAccepted: (() -> Void)?
+    private var nextWriteAccepted: (() -> Void)?
     /// The board's saved views and fields besides Status, as GraphQL lists them, for tests of views.
     var views: [[String: Any]] = []
     var extraFields: [[String: Any]] = []
@@ -75,14 +78,20 @@ final class FakeGitHub: @unchecked Sendable {
         }
     }
 
+    /// An issue as GitHub has it now.
+    func issue(_ contentId: String) -> Issue? {
+        lock.withLock { issues.first { $0.contentId == contentId } }
+    }
+
     /// The actual GraphQL payloads sent to change card fields, retained independently of the request log.
     func fieldWrites() -> [FieldWrite] {
         lock.withLock { fieldWriteLog }
     }
 
-    /// Runs once after a field write reaches GitHub but before its response, outside the fake's lock.
-    func afterNextFieldWrite(_ action: @escaping () -> Void) {
-        lock.withLock { nextFieldWriteAccepted = action }
+    /// Runs once after the next change the app makes here (a card's field, or an issue's text, milestone, parent or
+    /// blockers) reaches GitHub but before its response, outside the fake's lock.
+    func afterNextWrite(_ action: @escaping () -> Void) {
+        lock.withLock { nextWriteAccepted = action }
     }
 
     /// A date stored on GitHub, without any of the local outbox's optimistic values.
@@ -189,7 +198,15 @@ final class FakeGitHub: @unchecked Sendable {
             let query = payload["query"] as? String ?? ""
             let variables = payload["variables"] as? [String: Any] ?? [:]
             let data: Any
-            if query.contains("label(name: $name)") {
+            if let name = write(query, variables) {
+                accepted = nextWriteAccepted
+                nextWriteAccepted = nil
+                data = [name: ["clientMutationId": NSNull()]]
+            } else if query.contains("... on Issue { title body }") {
+                let id = variables["id"] as? String ?? ""
+                log.append("text \(id)")
+                data = ["node": issues.first { $0.contentId == id }.map { ["title": $0.title ?? "Issue \($0.number)", "body": $0.body] as Any } ?? NSNull()]
+            } else if query.contains("label(name: $name)") {
                 let name = variables["name"] as? String ?? ""
                 log.append("label \(name)")
                 data = ["node": ["label": label(named: name).map { $0 as Any } ?? NSNull()]]
@@ -224,8 +241,8 @@ final class FakeGitHub: @unchecked Sendable {
                 if !clear { cardValues[itemId, default: []].append(value) }
                 issues[index].updatedAt = "2026-10-02T10:00:00Z"
                 projectUpdatedAt = issues[index].updatedAt
-                accepted = nextFieldWriteAccepted
-                nextFieldWriteAccepted = nil
+                accepted = nextWriteAccepted
+                nextWriteAccepted = nil
                 data = [clear ? "clearProjectV2ItemFieldValue" : "updateProjectV2ItemFieldValue": ["clientMutationId": NSNull()]]
             } else if query.contains("items { totalCount }") {
                 log.append("meta")
@@ -301,6 +318,43 @@ final class FakeGitHub: @unchecked Sendable {
         return response
     }
 
+    /// Makes a change the app sends to an issue's text, milestone, parent or blockers, and says which mutation it was.
+    /// Nil for anything else.
+    private func write(_ query: String, _ variables: [String: Any]) -> String? {
+        func index(_ id: Any?) -> Int? {
+            issues.firstIndex { $0.contentId == id as? String }
+        }
+        if query.contains("updateIssue("), let i = index(variables["id"]) {
+            if query.contains("milestoneId: $m") {
+                issues[i].milestone = variables["m"] as? String
+                log.append("milestone \(issues[i].contentId): \(issues[i].milestone ?? "none")")
+            } else {
+                if let title = variables["title"] as? String { issues[i].title = title }
+                if let body = variables["body"] as? String { issues[i].body = body }
+                log.append("update \(issues[i].contentId)")
+            }
+            return "updateIssue"
+        }
+        if query.contains("addSubIssue("), let i = index(variables["c"]), let parent = variables["p"] as? String {
+            issues[i].parent = parent
+            log.append("parent \(issues[i].contentId): \(parent)")
+            return "addSubIssue"
+        }
+        if query.contains("removeSubIssue("), let i = index(variables["c"]) {
+            if issues[i].parent == variables["p"] as? String { issues[i].parent = nil }
+            log.append("parent \(issues[i].contentId): none")
+            return "removeSubIssue"
+        }
+        for name in ["addBlockedBy", "removeBlockedBy"] where query.contains("\(name)(") {
+            guard let i = index(variables["i"]), let blocker = variables["b"] as? String else { return nil }
+            issues[i].blockedBy.removeAll { $0 == blocker }
+            if name == "addBlockedBy" { issues[i].blockedBy.append(blocker) }
+            log.append("\(name == "addBlockedBy" ? "blocked" : "unblocked") \(issues[i].contentId) by \(blocker)")
+            return name
+        }
+        return nil
+    }
+
     private var onBoard: [Issue] { issues.filter { $0.itemId != nil } }
 
     private func label(named name: String) -> [String: Any]? {
@@ -336,7 +390,7 @@ final class FakeGitHub: @unchecked Sendable {
     private func content(_ issue: Issue) -> [String: Any] {
         let parent = issue.parent.flatMap { id in issues.first { $0.contentId == id } }
         return [
-            "__typename": "Issue", "id": issue.contentId, "number": issue.number, "title": issue.title ?? "Issue \(issue.number)", "body": "",
+            "__typename": "Issue", "id": issue.contentId, "number": issue.number, "title": issue.title ?? "Issue \(issue.number)", "body": issue.body,
             "state": "OPEN", "stateReason": NSNull(), "url": "https://github.com/\(Self.repo)/issues/\(issue.number)",
             "createdAt": "2026-10-01T09:00:00Z", "updatedAt": issue.updatedAt, "closedAt": NSNull(),
             "author": ["login": "octo"], "repository": ["id": Self.repoId, "nameWithOwner": Self.repo],
@@ -388,7 +442,7 @@ final class FakeGitHub: @unchecked Sendable {
     /// An issue as its page reads it: no comments, its sub-issues with what blocks them, and its own relations.
     private func detail(_ issue: Issue) -> [String: Any] {
         [
-            "title": issue.title ?? "Issue \(issue.number)", "body": "", "comments": ["nodes": []],
+            "title": issue.title ?? "Issue \(issue.number)", "body": issue.body, "comments": ["nodes": []],
             "subIssues": ["nodes": issues.filter { $0.parent == issue.contentId }.map(subIssue)],
             "blockedBy": ["nodes": blockers(of: issue)],
             "blocking": ["nodes": issues.filter { $0.blockedBy.contains(issue.contentId) }.map(link)],

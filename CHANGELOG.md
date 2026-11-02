@@ -31,8 +31,10 @@ All notable changes to this project are recorded here. The format follows
   of a swipe no longer stays on screen after it.
 - A sideways swipe on a timeline on the Mac scrolls through the dates instead of going back or forward. Once the
   timeline is scrolled all the way to that side, a new swipe goes back or forward, as on a board.
-- Setting a field such as Workstream or an iteration back while the change before it is still on its way to GitHub
-  keeps your last choice. Until now GitHub could be left with the one before.
+- Changing something back while the change before it is still on its way to GitHub keeps your last choice: a
+  milestone, a parent issue, a blocker, a description, or a field such as Workstream or an iteration. Until now
+  GitHub could be left with the one before, which came back at the next refresh, and a title changed back that way
+  asked you to choose between your own two versions.
 - Long timelines scroll more smoothly, also while the pointer passes over their rows.
 
 ## [1.1.0] - 2026-10-28

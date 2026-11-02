@@ -132,7 +132,7 @@ struct TimelineDateSyncTests {
         let restored = changed.adjusted(by: -2, part: .start)
         try await enqueue(changed.mutations(from: original, item: originalItem, dueFieldId: nil), in: fixture)
 
-        fixture.github.afterNextFieldWrite {
+        fixture.github.afterNextWrite {
             #expect(fixture.github.dateValue(itemId: Self.itemId, fieldId: fixture.start.id) == Self.first.adding(days: 2).string)
             do {
                 try fixture.db.writer.write { db in
@@ -242,7 +242,7 @@ struct TimelineDateSyncTests {
         let accepted = AsyncStream<Void>.makeStream()
         let response = DispatchSemaphore(value: 0)
         defer { response.signal() }
-        fixture.github.afterNextFieldWrite {
+        fixture.github.afterNextWrite {
             accepted.continuation.yield(())
             // Bound the hold so a regression that sends a duplicate cannot deadlock URLSession's protocol queue.
             _ = response.wait(timeout: .now() + 5)
