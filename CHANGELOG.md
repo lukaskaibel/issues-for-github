@@ -6,6 +6,22 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **My Issues as an overview of your work.** My Issues opens with a widget for each project you work in: what you
+  have started there, the three most pressing issues to do next (**3 more to do** shows the rest), and, as counts, what
+  waits in the backlog and what you finished this week. A large widget is a lane, In progress, Up next and Later side
+  by side, so large ones read down a column for everything you're doing; a medium one stacks them, a small one counts.
+  **Needs you** lists what wants you now, whatever the project: overdue, due today, urgent and not started, idle for a
+  week, or on no board; **Due this week** and **Done this week** can join it. The overview arranges itself, work in
+  progress first and large, until you move something: drag a widget by its header, or right-click it to change its
+  size or take it out, and **Edit Widgets** shows every size and what can be added. Your arrangement is the same on
+  your Mac, iPhone and iPad. On the Mac, drag an issue from Up next to In progress to start it, or back. A started issue
+  nobody has touched for a week says how long it has been idle, and a project's widget how many of its issues are
+  overdue; hidden projects stay out. On iPhone and iPad the widgets are a list, small projects two to a row, arranged
+  in **Customize…** in the "…" menu. **List** in the toolbar (`⌘2`, and `⌘1` back; on iPhone and iPad in the "…"
+  menu) shows everything as one list again, with its groups and order; the filter applies to both.
+
 ## [1.1.0] - 2026-10-28
 
 ### Added

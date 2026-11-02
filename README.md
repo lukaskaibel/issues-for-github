@@ -199,19 +199,36 @@ of its repositories that is on no board, like a team's issues in Linear. Those o
 project has several repositories, each row names its own. My Issues shows everything assigned to you, on a board or
 not.
 
-### My Issues, in the order you need
+### My Issues: what you're doing, in every project
 
-My Issues mixes every project and repository you work in, so it has a filter and Display options of its own, like a
-view's. Press `F` to keep only one project, what is urgent or what is due this week, and `⇧V` to group it by status,
-project, priority or due date. Status and priority are compared by what they mean, so "In Review" in one project and
-"Doing" in another are both in progress, and "P0" and "Urgent" are both urgent. It starts grouped by status, the most
-urgent issues first; grouped by project, the rows leave out the project's name. GitHub has no view behind My Issues,
-so what you choose stays on your device.
+My Issues opens as an overview of your work, a widget for each project you work in: what you have started there, the
+three most pressing issues to do next, and, counted rather than listed, what waits in the backlog and what you finished
+this week. A large widget is a lane, In progress, Up next and Later side by side, so the large ones read down a column
+for everything you're doing; a medium one stacks them; a small one counts. **3 more to do** shows the rest of a
+project's issues to do. **Needs you** lists what wants you now, whatever the project: overdue, due today, urgent and
+not started, idle for a week, or on no board. **Due this week** and **Done this week** can join it.
+
+The overview arranges itself, work in progress first and large, projects with only things to do medium, quiet ones
+small, until you move something. Drag a widget by its header to put it elsewhere; right-click it to change its size
+or take it out; **Edit Widgets** (right-click beside the widgets, or Display) shows every widget's size and a shelf of
+what can be added. Your arrangement is kept in iCloud, so your Mac, iPhone and iPad show the same. On the Mac, drag an
+issue from Up next to In progress to start it, or back. A started issue nobody has touched for a week says how long it has been
+idle, a project's widget says how many of its issues are overdue, and a click on its name shows the project; hidden
+projects stay out. On iPhone and iPad the widgets are a list, small projects two to a row as tiles, and
+**Customize…** in the "…" menu moves, resizes, removes and adds them.
+
+**List** in the middle of the toolbar shows everything as one list instead. My Issues has a filter and Display options
+of its own, like a view's. Press `F` to keep only one project, what is urgent or what is due this week (in the overview
+too), and `⇧V` to order the issues or group the list by status, project, priority or due date. Status and priority are
+compared by what they mean, so "In Review" in one project and "Doing" in another are both in progress, and "P0" and
+"Urgent" are both urgent. Up next and the list start with the most urgent issues; grouped by project, the list's rows
+leave out the project's name. GitHub has no view behind My Issues, so its filter and Display options stay on your
+device.
 
 <!-- The picture follows in the shared picture run (Tools/readme-images.sh, scene "my-issues").
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/my-issues-dark.webp">
-  <img alt="My Issues grouped by project, with the filter Status is not Done as a chip and the Display options open: Group by Project, Order by Priority" src="Design/screenshots/my-issues-light.webp">
+  <img alt="My Issues' overview: Git Issues and Website as lanes with In progress, Up next and Later side by side, then Needs you with the overdue crash and the urgent issues, and the two issues on no board as a small widget" src="Design/screenshots/my-issues-light.webp">
 </picture>
 -->
 
@@ -291,16 +308,17 @@ The interface uses the system's own parts.
   in Notes. A project's board shows one column at a
   time, with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and hold a card and drop it on a column in the strip to move it
   there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards.
-  Lists for the views that are lists, and each project's All Issues and My Issues, grouped by status, with sections that
-  fold and headers that stay pinned. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
+  Lists for the views that are lists, and each project's All Issues, grouped by status, with sections that fold and
+  headers that stay pinned; My Issues lists its widgets: each project with what you have started and what is next,
+  small projects as tiles, and Needs you. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
   and drag after holding to give an issue a new place in its section.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
   A milestone is a list grouped by epic,
   the roadmap a list of epics by milestone. The open view's filter is a line over its list or board; tap it to change
   the filter, and Display in the project's "…" turns a view into a list or back. Touch and hold a view on the
   project's page for its menu. A view's groups show their progress or each person's load, and a view of one iteration has the cycle on top, as on the Mac. My Issues'
-  "…" menu filters it, groups it by status, project, priority or due date and orders it; its filter shows as a line
-  under the title.
+  "…" menu shows it as the overview or a list, filters it, groups the list by status, project, priority or due date and
+  orders it; its filter shows as a line under the title.
   In the Inbox, swipe right to read and left to snooze or archive. In an issue, the title and description are edited in
   place, the Markdown drawn as on GitHub while you write, with a bar above the keyboard as in Notes (its Aa opens the
   Format panel); on its left, buttons come in for what the caret is in: its style, which a tap takes off, the line's
@@ -334,8 +352,9 @@ The interface uses the system's own parts.
 
 ## What it does
 
-- **Board and list** for every GitHub Project you can see, plus **My Issues**: everything assigned to you, with its
-  own filter, and grouped by status, project, priority or due date.
+- **Board and list** for every GitHub Project you can see, plus **My Issues**: everything assigned to you, as an
+  overview of widgets you arrange (what you're doing and what's next in each project, what needs you now), or as one
+  list with its own filter, grouped by status, project, priority or due date.
 - **All Issues** of a project: its board's issues and those of its repositories on no board, which one click puts on
   the board.
 - **Sub-issues and blockers.** Put any issue under another one, add issues that exist already as sub-issues, and mark
@@ -412,7 +431,8 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Board or list and the fields shown | The view's layout and visible fields, saved with **Save for Everyone** |
 | Other columns, groups or order | Yours alone: GitHub sets a view's columns, grouping and sorting only when it is made |
 | A hidden column | Yours alone, on each device: the column and its issues stay on GitHub for everyone |
-| My Issues' filter, groups and order | Yours alone, on each device: GitHub has no view of everything assigned to you |
+| My Issues' overview or list, filter, groups and order | Yours alone, on each device: GitHub has no view of everything assigned to you |
+| My Issues' widgets, their order and sizes | Yours alone, the same on your Mac, iPhone and iPad through iCloud |
 | Iteration on a card or row | The project's Iteration field, or any single-select field the view shows |
 | A group's progress ("4/6") | The view's issues in it that are done, of all; a view grouped by parent issue, milestone or iteration |
 | A person's load | Their open issues in the view, the ones with a started status in yellow; a view grouped by assignee |
@@ -530,11 +550,11 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
 | `⌃⌘I` | Show or hide the details of the open issue, in the inspector beside it |
 | `F` | Filter the view on screen, or My Issues: pick what to filter by, then the values |
-| `⇧V` | Display options of the view: board or list, columns, groups, order and the fields shown; of My Issues: groups and order |
+| `⇧V` | Display options of the view: board or list, columns, groups, order and the fields shown; of My Issues: the order, and the list's groups |
 | `⌘S` | Save the view's changed filter to GitHub, for everyone |
 | `⌃Tab` `⌃⇧Tab` | Next or previous view of the project |
 | `G` then `B` / `L` / `M` / `A` / `I` / `P` / `R` | Go to board, list, My Issues, All Issues, the Inbox, switch project, or the roadmap |
-| `⌘1` `⌘2` `⌘3` `⌘4` | Board, list, My Issues, roadmap (on the roadmap `⌘1` and `⌘2` switch timeline and list) |
+| `⌘1` `⌘2` `⌘3` `⌘4` | Board, list, My Issues, roadmap (on the roadmap `⌘1` and `⌘2` switch timeline and list, in My Issues overview and list) |
 | `⌘↵` | Save a description, send a comment, create the issue |
 | `⌘⇧C` / `⌘⇧O` | Copy the issue's GitHub link / open it on GitHub |
 | `⌘⇧.` | Copy a branch name for the issue, as GitHub suggests it |
@@ -705,7 +725,8 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold a view on the project's page (iPhone) | Pin, filter, rename, duplicate, open on GitHub, delete |
 | Swipe right on a view, milestone, All Issues or the roadmap on the project's page, or Pin in its "…" (iPhone) | Pin it to Home as a tile with its count; touch and hold the tile to unpin it |
 | Tap the filter line over a view | Change the filter; **Save for Everyone** puts it on GitHub, **Reset** takes it back |
-| "…" in My Issues | Filter it, group it by status, project, priority or due date, and order it; a tap on its filter line changes the filter, **Clear Filter** takes it away |
+| "…" in My Issues | Show it as the overview or a list, customize the overview's widgets, filter it, group the list by status, project, priority or due date, and order it; a tap on its filter line changes the filter, **Clear Filter** takes it away |
+| **3 more to do** under a project in My Issues | Shows the rest of its issues to do; **Show fewer** folds them again |
 | Tap ‹ or › beside a view's cycle | The cycle before or after, until you save it |
 | New View… on the project's page (iPhone), or in the project's "…" menu | A new view, starting from the one open |
 | Tap a project on Home (iPhone) | Open it on the view used last, with the project's page a step back |

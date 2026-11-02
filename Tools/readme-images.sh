@@ -139,10 +139,10 @@ for theme in dark light; do
   say "overlay none" "focus" "mode list"; sleep 1.2; shot "list-$theme"
   # All Issues of the project: the issues on no board first, with their count in the sidebar.
   say "select all"; sleep 1.2; shot "all-issues-$theme"
-  # My Issues grouped by project, done issues filtered out, with its Display options open.
-  say "select mine" "display reset" "filter -status:done" "display group project"; sleep 1.2
-  say "menu display"; sleep 1; shot "my-issues-$theme"
-  say "menu none" "filter" "display reset"
+  # My Issues' overview as it arranges itself: a lane for each project with work started, Needs you, and the issues
+  # on no board as a small widget.
+  say "select mine" "filter" "display reset" "display layout overview"; sleep 1.5; shot "my-issues-$theme"
+  say "display layout list"
   # The roadmap's timeline: the sample's epics over the milestones 0.3, 0.4 and 1.0.
   say "select Git Issues" "select roadmap" "roadmap timeline" "roadmap months"; sleep 1.5; shot "roadmap-$theme"
   # The project's views in the sidebar, "This Week" open with its filter and its cycle over the board.

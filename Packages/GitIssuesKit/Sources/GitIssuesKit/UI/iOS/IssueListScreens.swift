@@ -17,10 +17,19 @@ struct MyIssuesScreen: View {
                     Menu {
                         MyIssuesDisplayMenu()
                         Divider()
-                        Button {
-                            navigation.sheet = .arrangeSections(.myIssues)
-                        } label: {
-                            Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
+                        // The overview arranges its widgets in a sheet of its own; the list, its sections.
+                        if model.mineDisplay.layout == .overview {
+                            Button {
+                                navigation.sheet = .customizeMyIssues
+                            } label: {
+                                Label(.customizeEllipsis, systemImage: "square.grid.2x2")
+                            }
+                        } else {
+                            Button {
+                                navigation.sheet = .arrangeSections(.myIssues)
+                            } label: {
+                                Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
+                            }
                         }
                         Button {
                             model.refresh()
@@ -38,8 +47,8 @@ struct MyIssuesScreen: View {
     }
 }
 
-/// My Issues' filter and how it shows, at the top of its "…" menu: Filter… opens the sheet, a group or an order is
-/// picked right in the menu, which then closes.
+/// My Issues' filter and how it shows, at the top of its "…" menu: Filter… opens the sheet; the overview or the list,
+/// a group (for the list) or an order is picked right in the menu, which then closes.
 private struct MyIssuesDisplayMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
@@ -51,10 +60,17 @@ private struct MyIssuesDisplayMenu: View {
         } label: {
             Label(.filterEllipsis, systemImage: "line.3.horizontal.decrease")
         }
-        Picker(.groupBy, selection: Binding(get: { model.mineDisplay.grouping }, set: { grouping in model.setMineDisplay { $0.grouping = grouping } })) {
-            ForEach(MineGrouping.allCases) { Text($0.title).tag($0) }
+        Picker(.layout, selection: Binding(get: { model.mineDisplay.layout }, set: { layout in withAnimation(Theme.spring) { model.setMineLayout(layout) } })) {
+            Label { Text(.overview) } icon: { Image(systemName: "square.grid.2x2") }.tag(MineLayout.overview)
+            Label { Text(.list) } icon: { Image(systemName: "list.bullet") }.tag(MineLayout.list)
         }
         .pickerStyle(.menu)
+        if display.layout == .list {
+            Picker(.groupBy, selection: Binding(get: { model.mineDisplay.grouping }, set: { grouping in model.setMineDisplay { $0.grouping = grouping } })) {
+                ForEach(MineGrouping.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.menu)
+        }
         Picker(.orderBy, selection: Binding(get: { model.mineDisplay.order }, set: { model.setMineOrder($0) })) {
             ForEach(MineOrder.allCases) { Text($0.title).tag($0) }
         }
@@ -66,7 +82,7 @@ private struct MyIssuesDisplayMenu: View {
                 Label(display.descending ? .descending : .ascending, systemImage: display.descending ? "arrow.down" : "arrow.up")
             }
         }
-        if !display.isDefault {
+        if !display.optionsAreDefault {
             Button(role: .destructive) {
                 model.resetMineDisplay()
             } label: {
@@ -418,7 +434,8 @@ struct IssueList: View {
     var body: some View {
         let sections = model.sections(for: scope)
         Group {
-            if sections.isEmpty {
+            // The overview shows projects with nothing started or to do too.
+            if sections.isEmpty && !(isOverview && !model.mineLanes.isEmpty) {
                 emptyState
             } else {
                 List {
@@ -444,46 +461,10 @@ struct IssueList: View {
                             .listRowBackground(Color.clear)
                             .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
                     }
-                    // The person with the most open issues sets how long the load bars are.
-                    let mostOpen = sections.filter { $0.style == .people }.compactMap { $0.progress.map { $0.total - $0.done } }.max() ?? 0
-                    ForEach(sections) { section in
-                        let folded = model.isFolded(section, in: scope)
-                        Section {
-                            if !folded {
-                                ForEach(section.nesting.rows) { line in
-                                    switch line {
-                                    case .item(let item):
-                                        row(item, in: section)
-                                    case .epic(let group):
-                                        EpicGroupRow(group: group, column: column(of: section)) { openRoute(.issue(group.epic.id)) }
-                                            .listRowInsets(EdgeInsets())
-                                            .listRowSeparator(.hidden)
-                                            .listRowBackground(Theme.panel)
-                                    }
-                                }
-                                // Touch and hold, then drag, to give an issue a new place in its section, or an epic's
-                                // issues by their header.
-                                // Only sections by status are columns of the board; a group by another field has no order.
-                                .onMove(perform: canMove && column(of: section) != nil ? { move(in: section, from: $0, to: $1) } : nil)
-                            }
-                        } header: {
-                            SectionHeaderBand(
-                                title: section.title, glyph: section.glyph,
-                                icon: section.kind == .status ? nil : model.sectionIcon(section, projectId: scope.projectId),
-                                detail: section.detail,
-                                count: section.count, countText: section.countText, folded: folded,
-                                bar: section.progress.map { progress in
-                                    (section.style, progress, mostOpen > 0 ? CGFloat(progress.total - progress.done) / CGFloat(mostOpen) : 0)
-                                },
-                                onToggle: {
-                                    foldFeedback += 1
-                                    withAnimation(Theme.spring) { model.toggleSection(section.id, in: scope) }
-                                },
-                                onAdd: addAction(for: section)
-                            )
-                            .listRowInsets(EdgeInsets())
-                        }
-                        .listSectionSeparator(.hidden)
+                    if isOverview {
+                        overview(sections)
+                    } else {
+                        groups(sections)
                     }
                 }
                 .listStyle(.plain)
@@ -499,7 +480,154 @@ struct IssueList: View {
         .sensoryFeedback(.selection, trigger: foldFeedback)
     }
 
-    private func row(_ item: Item, in section: ListSection) -> some View {
+    /// My Issues as an overview: its widgets in their order. A project shows what you are doing there and the most
+    /// pressing of what is next, the rest as counts at its end; small projects stand two to a row as tiles; a smart
+    /// widget lists what it finds across every project.
+    @ViewBuilder
+    private func overview(_ sections: [ListSection]) -> some View {
+        let lanes = Dictionary(model.mineLanes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let byId = Dictionary(sections.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        ForEach(MobileWidgetRow.rows(model.overviewWidgets, lanes: lanes)) { row in
+            switch row {
+            case .tiles(let widgets):
+                ProjectTilesRow(widgets: widgets)
+            case .widget(let widget):
+                if let smart = widget.smart {
+                    smartSection(smart, size: widget.size)
+                } else if let lane = lanes[widget.id] {
+                    laneSection(lane, section: byId[lane.id])
+                }
+            }
+        }
+    }
+
+    /// A project, or the issues on no board: In progress and Up next, then the rest as counts.
+    @ViewBuilder
+    private func laneSection(_ lane: MineLane, section: ListSection?) -> some View {
+        let folded = model.isSectionCollapsed(lane.id, in: scope)
+        let unfolded = model.showsAllNext(lane)
+        let container = section ?? ListSection(id: lane.id, title: lane.title, glyph: .none, items: [])
+        Section {
+            if !folded {
+                if !lane.started.isEmpty {
+                    OverviewSubhead(title: .statusGroupInProgress)
+                    ForEach(lane.started) { row($0, in: container, idle: true) }
+                }
+                if !lane.next.isEmpty {
+                    // The issues on no board are all waiting; the header says where they are.
+                    if lane.projectId != nil { OverviewSubhead(title: .upNext) }
+                    ForEach(lane.shownNext(unfolded: unfolded)) { row($0, in: container) }
+                }
+                OverviewLaneFoot(lane: lane, unfolded: unfolded)
+            }
+        } header: {
+            SectionHeaderBand(
+                title: lane.title, glyph: .noProject,
+                icon: lane.projectId.map { .project(model.projectLooks.look($0)) } ?? .status(.noProject),
+                warning: lane.overdue > 0 ? String(localized: .overviewOverdue(count: lane.overdue)) : nil,
+                count: lane.open, folded: folded,
+                onToggle: {
+                    foldFeedback += 1
+                    withAnimation(Theme.spring) { model.toggleSection(lane.id, in: scope) }
+                },
+                onAdd: nil
+            )
+            .listRowInsets(EdgeInsets())
+        }
+        .listSectionSeparator(.hidden)
+    }
+
+    /// Needs you, Due this week or Done this week: a small one lists two, the others up to six.
+    @ViewBuilder
+    private func smartSection(_ widget: MineSmartWidget, size: MineWidgetSize) -> some View {
+        let limit = size == .small ? 2 : 6
+        let folded = model.isSectionCollapsed(widget.id, in: scope)
+        let count: Int = switch widget {
+        case .needsYou: model.needsYou.count
+        case .dueThisWeek: model.dueThisWeek.count
+        case .doneThisWeek: model.doneThisWeek.count
+        }
+        let container = ListSection(id: widget.id, title: widget.title, glyph: .none, items: [])
+        Section {
+            if !folded {
+                if count == 0 {
+                    Text(widget == .needsYou ? .nothingNeedsYou : widget == .dueThisWeek ? .nothingDueThisWeek : .nothingDoneThisWeek)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.textTertiary)
+                        .padding(.leading, IssueRow.leading)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Theme.panel)
+                }
+                switch widget {
+                case .needsYou:
+                    ForEach(model.needsYou.prefix(limit)) { NeedsYouListRow(entry: $0) }
+                case .dueThisWeek:
+                    ForEach(model.dueThisWeek.prefix(limit)) { row($0, in: container, namesBoard: true) }
+                case .doneThisWeek:
+                    ForEach(model.doneThisWeek.prefix(limit)) { row($0, in: container, namesBoard: true) }
+                }
+            }
+        } header: {
+            SmartWidgetHeader(widget: widget, count: count)
+                .listRowInsets(EdgeInsets())
+        }
+        .listSectionSeparator(.hidden)
+    }
+
+    private var isOverview: Bool {
+        scope == .myIssues && model.mineDisplay.layout == .overview
+    }
+
+    /// The list's groups, as a project's columns, a view's groups or My Issues' list has them.
+    @ViewBuilder
+    private func groups(_ sections: [ListSection]) -> some View {
+        // The person with the most open issues sets how long the load bars are.
+        let mostOpen = sections.filter { $0.style == .people }.compactMap { $0.progress.map { $0.total - $0.done } }.max() ?? 0
+        ForEach(sections) { section in
+            let folded = model.isFolded(section, in: scope)
+            Section {
+                if !folded {
+                    ForEach(section.nesting.rows) { line in
+                        switch line {
+                        case .item(let item):
+                            row(item, in: section)
+                        case .epic(let group):
+                            EpicGroupRow(group: group, column: column(of: section)) { openRoute(.issue(group.epic.id)) }
+                                .listRowInsets(EdgeInsets())
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Theme.panel)
+                        }
+                    }
+                    // Touch and hold, then drag, to give an issue a new place in its section, or an epic's
+                    // issues by their header.
+                    // Only sections by status are columns of the board; a group by another field has no order.
+                    .onMove(perform: canMove && column(of: section) != nil ? { move(in: section, from: $0, to: $1) } : nil)
+                }
+            } header: {
+                SectionHeaderBand(
+                    title: section.title, glyph: section.glyph,
+                    icon: section.kind == .status ? nil : model.sectionIcon(section, projectId: scope.projectId),
+                    detail: section.detail,
+                    count: section.count, countText: section.countText, folded: folded,
+                    bar: section.progress.map { progress in
+                        (section.style, progress, mostOpen > 0 ? CGFloat(progress.total - progress.done) / CGFloat(mostOpen) : 0)
+                    },
+                    onToggle: {
+                        foldFeedback += 1
+                        withAnimation(Theme.spring) { model.toggleSection(section.id, in: scope) }
+                    },
+                    onAdd: addAction(for: section)
+                )
+                .listRowInsets(EdgeInsets())
+            }
+            .listSectionSeparator(.hidden)
+        }
+    }
+
+    /// `namesBoard` overrides whether a row of My Issues names its project: the overview's smart widgets mix them.
+    private func row(_ item: Item, in section: ListSection, idle: Bool = false, namesBoard: Bool? = nil) -> some View {
         let nested = section.nesting.nestedCounts[item.id]
         let folded = section.nesting.folded.contains(item.id)
         let depth = min(section.nesting.depth(of: item.id), IssueRow.deepestIndent)
@@ -508,7 +636,8 @@ struct IssueList: View {
             openRoute(.issue(item.id))
         } label: {
             IssueRow(
-                item: item, showsProject: showsProject, namesBoard: !(scope == .myIssues && model.mineDisplay.grouping == .project),
+                item: item, showsProject: showsProject,
+                namesBoard: namesBoard ?? !(scope == .myIssues && (model.mineDisplay.grouping == .project || model.mineDisplay.layout == .overview)),
                 namesRepository: isAllIssues,
                 place: section.nesting.place(of: item.id), nested: nested,
                 folded: folded,
@@ -517,7 +646,8 @@ struct IssueList: View {
                     && section.kind != .group(.parent(contentId: item.parentId)),
                 showsMilestone: showsMilestone,
                 showsEpic: section.kind != .epic(contentId: epic) && section.nesting.groupOf[item.id] == nil,
-                chips: model.fieldChips(of: item, in: scope)
+                chips: model.fieldChips(of: item, in: scope),
+                idleDays: idle ? model.idleDays(of: item) : nil
             )
         }
         .buttonStyle(RowButtonStyle())
@@ -744,6 +874,75 @@ struct IssueList: View {
                 navigation.sheet = .newIssue(NewIssueContext(projectId: projectId))
             }
             .buttonStyle(.borderedProminent)
+        }
+    }
+}
+
+/// Over a project's started issues, and over what is next, in My Issues' overview.
+private struct OverviewSubhead: View {
+    let title: LocalizedStringResource
+
+    var body: some View {
+        Text(title)
+            .font(.smallMedium)
+            .foregroundStyle(Theme.textTertiary)
+            .padding(.leading, IssueRow.leading)
+            .padding(.top, 8)
+            .padding(.bottom, 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .listRowBackground(Theme.panel)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// The end of a project in the overview: a tap shows the rest of what is next, or only the first few again; then
+/// what waits in the backlog and what was finished this week.
+private struct OverviewLaneFoot: View {
+    @Environment(AppModel.self) private var model
+    let lane: MineLane
+    let unfolded: Bool
+
+    var body: some View {
+        let more = lane.moreNext(unfolded: unfolded)
+        let canFold = unfolded && lane.next.count > MineLane.nextShown
+        let counts = [
+            lane.later > 0 ? String(localized: .overviewInBacklog(count: lane.later)) : nil,
+            lane.doneThisWeek > 0 ? String(localized: .overviewDoneThisWeek(count: lane.doneThisWeek)) : nil,
+        ].compactMap { $0 }.joined(separator: " · ")
+        if more > 0 || canFold || !counts.isEmpty {
+            HStack(spacing: 6) {
+                if more > 0 || canFold {
+                    Button {
+                        withAnimation(Theme.spring) { model.toggleAllNext(lane) }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(canFold ? .overviewShowFewer : .overviewMoreToDo(count: more))
+                            Image(systemName: canFold ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(Theme.accent)
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PlainPressStyle())
+                    .accessibilityIdentifier("more-\(lane.title)")
+                }
+                if !counts.isEmpty {
+                    Text(counts)
+                        .foregroundStyle(Theme.textTertiary)
+                        .lineLimit(1)
+                        .frame(minHeight: 44)
+                }
+                Spacer(minLength: 0)
+            }
+            .font(.subheadline)
+            .padding(.leading, IssueRow.leading)
+            .padding(.trailing, 18)
+            .listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .listRowBackground(Theme.panel)
         }
     }
 }

@@ -25,8 +25,8 @@ struct MyIssuesFilterBar: View {
     }
 }
 
-/// How My Issues shows: what it groups by and what it is ordered by. It has no view on GitHub, so the choice stays
-/// on this Mac; Reset goes back to groups by status, most urgent first.
+/// How My Issues shows: what the list groups by, and what the list and the overview are ordered by. It has no view on
+/// GitHub, so the choice stays on this Mac; Reset goes back to groups by status, most urgent first.
 struct MyIssuesDisplayOptions: View {
     @Environment(AppModel.self) private var model
     var close: () -> Void
@@ -35,13 +35,16 @@ struct MyIssuesDisplayOptions: View {
         let display = model.mineDisplay
         VStack(alignment: .leading, spacing: 12) {
             Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
-                GridRow {
-                    Text(.groupBy).foregroundStyle(Theme.textSecondary)
-                    SelectDropdown(
-                        options: MineGrouping.allCases.map { .init(id: $0.rawValue, title: $0.title) },
-                        selected: display.grouping.rawValue, marked: display.grouping != MineDisplay().grouping
-                    ) { id in
-                        model.setMineDisplay { $0.grouping = MineGrouping(rawValue: id) ?? .status }
+                // The overview is by project; its order is that of each project's issues.
+                if display.layout == .list {
+                    GridRow {
+                        Text(.groupBy).foregroundStyle(Theme.textSecondary)
+                        SelectDropdown(
+                            options: MineGrouping.allCases.map { .init(id: $0.rawValue, title: $0.title) },
+                            selected: display.grouping.rawValue, marked: display.grouping != MineDisplay().grouping
+                        ) { id in
+                            model.setMineDisplay { $0.grouping = MineGrouping(rawValue: id) ?? .status }
+                        }
                     }
                 }
                 GridRow {
@@ -70,7 +73,27 @@ struct MyIssuesDisplayOptions: View {
                 }
             }
             .font(.small)
-            if !display.isDefault {
+            if display.layout == .overview {
+                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                HStack {
+                    Toggle(isOn: Binding(
+                        get: { model.mineArrangement.automatic },
+                        set: { automatic in withAnimation(Theme.spring) { model.setArrangesAutomatically(automatic) } }
+                    )) {
+                        Text(.arrangeAutomatically)
+                    }
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    Spacer(minLength: 8)
+                    Button(.editWidgets) {
+                        close()
+                        withAnimation(Theme.spring) { model.editingOverview = true }
+                    }
+                    .buttonStyle(QuietButtonStyle())
+                }
+                .font(.small)
+            }
+            if !display.optionsAreDefault {
                 Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
                 HStack {
                     Spacer(minLength: 8)

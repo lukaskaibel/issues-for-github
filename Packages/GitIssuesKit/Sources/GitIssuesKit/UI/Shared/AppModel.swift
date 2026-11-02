@@ -226,6 +226,11 @@ public final class AppModel {
     private(set) var personal: PersonalStore
     /// Each project's glyph and colour, which GitHub has no place for either; shared through iCloud.
     private(set) var projectLooks: ProjectLooks
+    /// How My Issues' overview is arranged, the same on every device of yours.
+    private(set) var overviewArrangement: OverviewArrangementStore
+    /// The Mac's Edit Widgets: every widget of My Issues' overview shows its size and can be taken out, and a shelf
+    /// offers what can be added.
+    var editingOverview = false
 
     // Derived from the above for the current scope.
     /// The columns the board shows, without those you hid. The list has every status: see `listColumns`.
@@ -388,6 +393,9 @@ public final class AppModel {
     @ObservationIgnored var filterContexts: [String: FilterContext] = [:]
     /// My Issues' filter and order with what they need to know of your issues, worked out once per change too.
     @ObservationIgnored var mineRulesCache: MineRules?
+    /// My Issues' overview, worked out once per change of the data.
+    @ObservationIgnored var mineLanesCache: [MineLane]?
+    @ObservationIgnored var needsYouCache: [NeedsYouEntry]?
     /// Projects tucked away in the sidebar. They can still be found in the command palette.
     var hiddenProjectIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenProjects") ?? []) {
         didSet { UserDefaults.standard.set(Array(hiddenProjectIds), forKey: "hiddenProjects") }
@@ -513,6 +521,7 @@ public final class AppModel {
         db = database
         personal = PersonalStore(persistent: !demo)
         projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
+        overviewArrangement = OverviewArrangementStore(persistent: !demo)
         auth = AuthStore()
         // Logins saved by earlier versions move to iCloud Keychain, and a login shared by another device is used.
         if auth.method == .keychain { KeychainTokenStore.migrateToShared() }
@@ -541,6 +550,7 @@ public final class AppModel {
         }
         #endif
         if demo { seedDemoDisplays() }
+        followArrangement()
         startObserving()
         restoreScope()
         scheduleInboxWake()
@@ -671,6 +681,8 @@ public final class AppModel {
         isDemo = demo
         personal = PersonalStore(persistent: !demo)
         projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
+        overviewArrangement = OverviewArrangementStore(persistent: !demo)
+        followArrangement()
         if demo { seedDemoDisplays() }
         resetNavigation()
         viewer = nil
@@ -1252,6 +1264,8 @@ public final class AppModel {
         noBoardCounts = [:]
         filterContexts = [:]
         mineRulesCache = nil
+        mineLanesCache = nil
+        needsYouCache = nil
         planningCache = PlanningCache()
         dataVersion &+= 1
 

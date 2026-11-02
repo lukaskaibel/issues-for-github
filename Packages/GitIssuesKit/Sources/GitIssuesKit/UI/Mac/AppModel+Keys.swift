@@ -103,6 +103,11 @@ extension AppModel {
             }
             return false
         }
+        // Escape ends editing My Issues' widgets, as Done does.
+        if isEscape, editingOverview, openItem == nil {
+            withAnimation(Theme.spring) { editingOverview = false }
+            return true
+        }
         // Text being typed in takes its keys; a comment, which is only read, leaves them to the app even when text in it
         // is selected.
         if let text = NSApp.keyWindow?.firstResponder as? NSTextView, text.isEditable { return false }

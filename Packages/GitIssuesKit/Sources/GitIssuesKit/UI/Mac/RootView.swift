@@ -173,6 +173,11 @@ struct ContentPanel: View {
                             // or a milestone's description, the toolbar would draw a band of its own with a line under it.
                             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
                             .transition(.opacity)
+                    } else if model.scope == .myIssues, model.mineDisplay.layout == .overview {
+                        MyIssuesOverview()
+                            // Its widgets stand on the board's grey, which goes on under the toolbar, as on the board.
+                            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+                            .transition(.opacity)
                     } else {
                         IssueListView()
                             .transition(.opacity)
@@ -245,8 +250,10 @@ struct ContentPanel: View {
         }
     }
 
-    /// Whether the page is a board, or about to be one while its project loads.
+    /// Whether the page is a board, or about to be one while its project loads, or My Issues' overview, whose widgets
+    /// stand on the same grey.
     private var onBoard: Bool {
+        if model.scope == .myIssues { return model.mineDisplay.layout == .overview && !model.mineLanes.isEmpty }
         guard model.viewMode == .board, model.currentProjectId != nil, let scope = model.scope, scope != .inbox else { return false }
         if case .roadmap = scope { return false }
         if case .milestone(let projectId, let title) = scope { return model.milestoneGroup(projectId: projectId, title: title) != nil }

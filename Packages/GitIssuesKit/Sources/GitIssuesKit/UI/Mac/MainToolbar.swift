@@ -52,7 +52,8 @@ private struct BackForwardButtons: ToolbarContent {
     }
 }
 
-/// In the middle: Board and List, the roadmap's Timeline and List, or the Inbox's For You and Watching.
+/// In the middle: Board and List, My Issues' Overview and List, the roadmap's Timeline and List, or the Inbox's For
+/// You and Watching.
 private struct PrincipalControl: View {
     @Environment(AppModel.self) private var model
     let openItem: Item?
@@ -66,6 +67,8 @@ private struct PrincipalControl: View {
                 LayoutPicker()
             } else if openItem == nil, model.roadmapScopeProjectId != nil {
                 RoadmapLayoutPicker()
+            } else if openItem == nil, model.scope == .myIssues {
+                MyIssuesLayoutPicker()
             }
         }
     }
@@ -169,7 +172,7 @@ extension AppModel {
     fileprivate func hasPrincipalControl(openItem: Item?) -> Bool {
         guard openItem == nil else { return false }
         if scope == .inbox { return showsInboxBuckets }
-        return showsLayoutSwitch || roadmapScopeProjectId != nil
+        return showsLayoutSwitch || roadmapScopeProjectId != nil || scope == .myIssues
     }
 
     fileprivate func hasPageControls(openItem: Item?) -> Bool {
@@ -282,6 +285,26 @@ private struct LayoutPicker: View {
     }
 }
 
+/// My Issues' Overview, its widgets, and List.
+private struct MyIssuesLayoutPicker: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Picker(selection: Binding(
+            get: { model.mineDisplay.layout },
+            set: { layout in withAnimation(Theme.spring) { model.setMineLayout(layout) } }
+        )) {
+            Label { Text(.overview) } icon: { Image(systemName: "square.grid.2x2") }.tag(MineLayout.overview)
+            Label { Text(.list) } icon: { Image(systemName: "list.bullet") }.tag(MineLayout.list)
+        } label: {
+            Text(.layout)
+        }
+        .pickerStyle(.segmented)
+        .labelStyle(.titleAndIcon)
+        .fixedSize()
+    }
+}
+
 /// The roadmap's Timeline and List.
 private struct RoadmapLayoutPicker: View {
     @Environment(AppModel.self) private var model
@@ -367,9 +390,20 @@ private struct MyIssuesToolbarButtons: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            HeaderFilterButton(filter: Binding(get: { model.mineFilter }, set: { model.setMineFilter($0) }), scope: .myIssues)
-            DisplayButton(changed: !model.mineDisplay.isDefault) { close in
-                MyIssuesDisplayOptions(close: close)
+            if model.editingOverview, model.mineDisplay.layout == .overview {
+                // Editing the widgets ends here, as the Mac's desktop widgets do.
+                Button {
+                    withAnimation(Theme.spring) { model.editingOverview = false }
+                } label: {
+                    Text(.done).fontWeight(.semibold).padding(.horizontal, 12).frame(height: 30).contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut(.defaultAction)
+            } else {
+                HeaderFilterButton(filter: Binding(get: { model.mineFilter }, set: { model.setMineFilter($0) }), scope: .myIssues)
+                DisplayButton(changed: !model.mineDisplay.optionsAreDefault) { close in
+                    MyIssuesDisplayOptions(close: close)
+                }
             }
         }
     }
