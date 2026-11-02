@@ -15,14 +15,15 @@ struct TimelineLayout {
     var days: Int
     var scale: CGFloat
 
-    init(roadmap: Roadmap, zoom: RoadmapZoom, available: CGFloat, today: CalendarDay = .today()) {
+    init(roadmap: Roadmap, zoom: RoadmapZoom, available: CGFloat, today: CalendarDay = .today(), scale: CGFloat? = nil) {
         self.roadmap = roadmap
         let span = roadmap.span ?? today.adding(days: -14)...today.adding(days: 60)
         // Today shows even when the milestones are all ahead.
         first = min(span.lowerBound, today.adding(days: -6))
         let last = max(span.upperBound, today.adding(days: 14))
         days = max(last.days(from: first) + 1, 1)
-        scale = max(zoom.scale, available / CGFloat(days))
+        self.scale = TimelineZoom.clamp(scale ?? zoom.scale)
+        days = max(days, Int(ceil(max(available, 0) / self.scale)))
     }
 
     var width: CGFloat { CGFloat(days) * scale }
@@ -133,6 +134,8 @@ struct RoadmapTimeline: View {
     @State private var hovered: TimelineLayout.Hit?
     @State private var drag: BarDrag?
     @State private var dueDrag: DueDrag?
+    @State private var cancelledDrag = false
+    @GestureState private var dragActive = false
 
     struct BarDrag: Equatable {
         var epicId: String
@@ -152,7 +155,7 @@ struct RoadmapTimeline: View {
     var body: some View {
         let roadmap = model.roadmap(projectId: projectId)
         GeometryReader { proxy in
-            let layout = TimelineLayout(roadmap: roadmap, zoom: model.roadmapZoom, available: max(proxy.size.width - nameWidth - 1, 200))
+            let layout = TimelineLayout(roadmap: roadmap, zoom: model.roadmapZoom, available: max(proxy.size.width - nameWidth - 1, 200), scale: model.timelineScale)
             ScrollView(.vertical) {
                 HStack(alignment: .top, spacing: 0) {
                     names(layout)
@@ -163,11 +166,32 @@ struct RoadmapTimeline: View {
                     }
                     .scrollIndicators(.automatic)
                     .defaultScrollAnchor(.leading)
+                    .timelineZoom(scale: layout.scale)
                 }
             }
             .scrollIndicators(.never)
         }
         .animation(Theme.spring, value: roadmap.rows.map(\.id))
+        .onChange(of: model.dragCancelToken) { _, _ in
+            if drag != nil || dueDrag != nil {
+                cancelledDrag = true
+                clearDrag()
+            }
+        }
+        .onChange(of: dragActive) { _, active in
+            if !active {
+                clearDrag()
+                cancelledDrag = false
+            }
+        }
+        .onDisappear { clearDrag() }
+    }
+
+    private func clearDrag() {
+        guard drag != nil || dueDrag != nil else { return }
+        drag = nil
+        dueDrag = nil
+        model.isDragging = false
     }
 
     // MARK: Names
@@ -259,6 +283,7 @@ struct RoadmapTimeline: View {
         .help(Text(hoverTooltip(layout)))
         .gesture(
             DragGesture(minimumDistance: 4)
+                .updating($dragActive) { _, active, _ in active = true }
                 .onChanged { value in changed(value, layout) }
                 .onEnded { _ in ended(layout) }
         )
@@ -273,6 +298,7 @@ struct RoadmapTimeline: View {
     }
 
     private func changed(_ value: DragGesture.Value, _ layout: TimelineLayout) {
+        guard !cancelledDrag else { return }
         if drag == nil, dueDrag == nil {
             guard model.projects.first(where: { $0.id == projectId })?.viewerCanUpdate == true else { return }
             switch layout.hit(value.startLocation) {
@@ -294,6 +320,7 @@ struct RoadmapTimeline: View {
                 return
             }
         }
+        if drag != nil || dueDrag != nil { model.isDragging = true }
         if var current = dueDrag {
             let window = layout.roadmap.windows[current.window]
             // Not before the day after the milestone before it, nor after the one after it.
@@ -316,9 +343,10 @@ struct RoadmapTimeline: View {
 
     private func ended(_ layout: TimelineLayout) {
         defer {
-            drag = nil
-            dueDrag = nil
+            clearDrag()
+            cancelledDrag = false
         }
+        guard !cancelledDrag else { return }
         if let dueDrag {
             let window = layout.roadmap.windows[dueDrag.window]
             if dueDrag.day != window.end { model.setDue(window.group, to: dueDrag.day) }
@@ -437,7 +465,7 @@ private struct TimelinePainter {
         if todayX >= 0, todayX <= size.width {
             context.fill(Path(CGRect(x: todayX - 0.75, y: 2, width: 1.5, height: plannedBottom - 2)), with: .color(Theme.accent))
             let label = context.resolve(Text(.today).font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.accent))
-            context.draw(label, at: CGPoint(x: todayX + 4, y: 7), anchor: .topLeading)
+            context.draw(label, at: CGPoint(x: todayX + 4, y: 0), anchor: .topLeading)
         }
 
         for (index, row) in roadmap.rows.enumerated() {
@@ -477,7 +505,7 @@ private struct TimelinePainter {
             // The first month's name only where there is room before the next one.
             let next = month.adding(months: 1)
             if layout.x(next) - x > 30 {
-                context.draw(resolved, at: CGPoint(x: x + 6, y: 7), anchor: .topLeading)
+                context.draw(resolved, at: CGPoint(x: x + 6, y: 13), anchor: .topLeading)
             }
             firstLabel = false
             month = next

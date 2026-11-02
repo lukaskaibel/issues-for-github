@@ -310,6 +310,7 @@ private struct RoadmapToolbarControls: View {
     var body: some View {
         HStack(spacing: 6) {
             if model.roadmapLayout == .timeline, !model.roadmap(projectId: projectId).windows.isEmpty {
+                TimelineZoomButtons()
                 Picker(selection: Binding(
                     get: { model.roadmapZoom },
                     set: { zoom in withAnimation(Theme.spring) { model.roadmapZoom = zoom } }
@@ -350,6 +351,7 @@ private struct ViewToolbarButtons: View {
 
     var body: some View {
         HStack(spacing: 0) {
+            if model.showsTimeline(view) { TimelineZoomButtons() }
             HeaderFilterButton(
                 filter: Binding(get: { model.filter(of: view) }, set: { model.setFilter($0, of: view) }),
                 scope: .project(view.projectId)

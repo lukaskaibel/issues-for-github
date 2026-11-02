@@ -54,11 +54,11 @@ struct BoardView: View {
             .scrollIndicators(.never)
             .scrollPosition($scroll)
             .onScrollGeometryChange(for: [CGFloat].self) { geometry in
-                [geometry.contentOffset.x, max(0, geometry.contentSize.width - geometry.containerSize.width)]
+                Self.scrollMetrics(geometry)
             } action: { _, new in
                 metrics.offset = new[0]
                 metrics.maxOffset = new[1]
-                drag.scrollX = new[0]
+                drag.scrollX = new[2]
                 drag.maxScrollX = new[1]
             }
             .onGeometryChange(for: CGRect.self) { proxy in
@@ -113,6 +113,12 @@ struct BoardView: View {
     /// Between columns, which leave room beside their cards for the cards' shadows as well: 20 points from the cards
     /// of one column to the next.
     static let spacing: CGFloat = 12
+
+    /// Keep programmatic scroll coordinates, but measure navigation from the visible board's left edge.
+    static func scrollMetrics(_ geometry: ScrollGeometry) -> [CGFloat] {
+        [geometry.contentOffset.x, max(0, geometry.contentSize.width - geometry.containerSize.width),
+         geometry.contentOffset.x + geometry.contentInsets.leading]
+    }
 
     /// A milestone's board shows the board's columns; they are changed on the board itself.
     private var showsAddColumn: Bool {

@@ -27,7 +27,7 @@ mkdir -p "$raw"
 swiftc -O Tools/readme-images/capture.swift -o "$work/capture" 2>/dev/null
 
 # The debug app shares its settings with the real one. Note what the scenes change and put it back afterwards.
-keys=(appearance viewMode selectedProject inbox.selected inbox.bucket roadmap.layout roadmap.zoom showsIssueInspector
+keys=(appearance viewMode selectedProject inbox.selected inbox.bucket roadmap.layout roadmap.zoom timeline.scale showsIssueInspector
   mine.display mine.filter "NSWindow Frame main")
 saved=()
 types=()
@@ -87,7 +87,7 @@ shot() {
 launch() {
   : > "$work/cmd"
   rm -f "$work/cmd.log"
-  open -n -g "$app" --args -demo.active YES -screenshotMode YES -viewMode board -appearance "$1" \
+  open -n -g "$app" --args -demo.active YES -screenshotMode YES -viewMode board -timeline.scale 5 -appearance "$1" \
     -AppleLanguages '(en)' -AppleLocale en_US -debugCommandFile "$PWD/$work/cmd" "-NSWindow Frame main" "160 80 1280 820 0 0 1512 949"
   for _ in $(seq 40); do
     pid=$(pgrep -nf "$PWD/$app/Contents/MacOS" || true)
