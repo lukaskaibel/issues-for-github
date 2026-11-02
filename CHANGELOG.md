@@ -6,6 +6,35 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Zoom and date editing on timelines.** Pinch to zoom on a trackpad or iPad, use the zoom buttons, or on the Mac
+  use ⌘+ and ⌘− or hold ⌘ while scrolling; ⌘0 or the Reset Zoom button resets to the selected Months or Quarters
+  preset. Zoom stays between 1 and 40 points per day and keeps the date under the pointer or the centre of the
+  timeline in place. In a project's roadmap view, drag an issue's date bar to move both dates together, or drag an
+  edge to change just its start or end.
+  On iPad, touch and hold before dragging; an ordinary swipe scrolls the timeline.
+  Dates snap to whole days, an end cannot pass its start, and Esc cancels a drag on the Mac. Single dates can move too;
+  bars drawn from iterations or milestone dates keep their existing meaning. VoiceOver offers actions to move or
+  resize by one day. Changes join the offline sync queue when the drag ends. Once a bar has room to read its title,
+  the title stays visible, with an ellipsis when it is too long.
+
+### Changed
+
+- A timeline keeps the width of a day its zoom gives it. A short plan is no longer stretched across the window; the
+  room after it shows the days to come.
+
+### Fixed
+
+- On a wide board on the Mac, a sideways swipe scrolls the columns instead of going back, also with the sidebar
+  showing. Going back or forward takes a new swipe once the board is scrolled all the way to that side, and the arrow
+  of a swipe no longer stays on screen after it.
+- A sideways swipe on a timeline on the Mac scrolls through the dates instead of going back or forward. Once the
+  timeline is scrolled all the way to that side, a new swipe goes back or forward, as on a board.
+- Setting a field such as Workstream or an iteration back while the change before it is still on its way to GitHub
+  keeps your last choice. Until now GitHub could be left with the one before.
+- Long timelines scroll more smoothly, also while the pointer passes over their rows.
+
 ## [1.1.0] - 2026-10-28
 
 ### Added

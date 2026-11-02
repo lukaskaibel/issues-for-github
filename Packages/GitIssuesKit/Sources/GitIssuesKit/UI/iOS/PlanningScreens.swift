@@ -268,6 +268,8 @@ struct RoadmapScreen: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 if wide, model.roadmapLayout == .timeline {
                     Menu {
+                        TimelineZoomMenuItems()
+                        Divider()
                         Picker(.zoomPicker, selection: Bindable(model).roadmapZoom) {
                             Text(.months).tag(RoadmapZoom.months)
                             Text(.quarters).tag(RoadmapZoom.quarters)

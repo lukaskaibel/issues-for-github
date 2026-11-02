@@ -50,6 +50,8 @@ public actor SyncEngine {
     /// Sync rounds completed so far, and callers waiting for a round to finish.
     private var rounds = 0
     private var inRound = false
+    private var isPushing = false
+    private var pushWaiters: [CheckedContinuation<Void, Never>] = []
     private var waiters: [(round: Int, continuation: CheckedContinuation<Void, Never>)] = []
     /// Works on the built-in sample data: nothing is sent anywhere, changes are confirmed locally.
     public nonisolated let isDemo: Bool
@@ -187,7 +189,7 @@ public actor SyncEngine {
         do {
             try await db.writer.write { try Outbox.purgeSent($0) }
             let pending = try await db.reader.read {
-                try OutboxEntry.filter(Column("state") == OutboxState.pending.rawValue).fetchCount($0)
+                try OutboxEntry.filter([OutboxState.pending.rawValue, OutboxState.sending.rawValue].contains(Column("state"))).fetchCount($0)
             }
             let neverSynced = activeProjectId.map { lastPull[$0] == nil } ?? false
             if pending > 0 || neverSynced { await setPhase(.syncing) }
@@ -950,16 +952,35 @@ public actor SyncEngine {
     public static let undoWindow: TimeInterval = 5
 
     private func push(holdingUndoable: Bool = true) async throws {
+        // Explicit flushes (including notification actions in the background) wait for an active push, then
+        // drain with their own undo policy before returning to the caller that keeps the app running.
+        while isPushing {
+            await withCheckedContinuation { pushWaiters.append($0) }
+        }
+        isPushing = true
+        defer {
+            isPushing = false
+            let waiting = pushWaiters
+            pushWaiters = []
+            for waiter in waiting { waiter.resume() }
+        }
         var skipped = Set<Int64>()
         while true {
             let skip = skipped
             let heldSince = holdingUndoable ? Date().addingTimeInterval(-Self.undoWindow) : .distantFuture
-            let next = try await db.reader.read { db in
-                try OutboxEntry
-                    .filter(Column("state") == OutboxState.pending.rawValue)
+            let next = try await db.writer.write { db -> OutboxEntry? in
+                guard var entry = try OutboxEntry
+                    .filter([OutboxState.pending.rawValue, OutboxState.sending.rawValue].contains(Column("state")))
                     .order(Column("id"))
                     .fetchAll(db)
-                    .first { !skip.contains($0.id ?? -1) && !($0.mutation.isUndoable && $0.createdAt > heldSince) }
+                    .first(where: { !skip.contains($0.id ?? -1) && !($0.mutation.isUndoable && $0.createdAt > heldSince) }) else { return nil }
+                // Once a write may reach GitHub, later edits must keep its value as their base. Claiming it
+                // in this transaction prevents enqueue from folding a new edit into the sending row.
+                if case .setProjectField = entry.mutation, entry.state == .pending {
+                    entry.state = .sending
+                    try entry.update(db)
+                }
+                return entry
             }
             guard let entry = next, let entryId = entry.id else { return }
             do {
@@ -1184,12 +1205,26 @@ public actor SyncEngine {
         return id
     }
 
-    /// Sets one of a project's own fields to an option or an iteration, or clears it.
+    private enum FieldValueWriteError: LocalizedError {
+        case unsupported
+
+        var errorDescription: String? { String(localized: .errorUnsupportedProjectFieldValue) }
+    }
+
+    /// A missing value clears a field. A value of another type must never become a clear request.
     private func sendFieldValue(_ value: FieldValue?, projectId: String, itemId: String, fieldId: String) async throws {
-        if let iterationId = value?.iterationId {
+        guard let value, !value.isEmpty else {
+            try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: nil)
+            return
+        }
+        if let date = value.date {
+            try await api.setDateValue(projectId: projectId, itemId: itemId, fieldId: fieldId, date: date)
+        } else if let iterationId = value.iterationId {
             try await api.setIterationValue(projectId: projectId, itemId: itemId, fieldId: fieldId, iterationId: iterationId)
+        } else if let optionId = value.optionId {
+            try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: optionId)
         } else {
-            try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: value?.optionId)
+            throw FieldValueWriteError.unsupported
         }
     }
 

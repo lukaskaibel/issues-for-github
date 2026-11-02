@@ -1094,7 +1094,10 @@ enum DebugRemote {
             view.subviews.forEach(collect)
         }
         collect(root)
-        guard let scrollView = views.max(by: { ($0.documentView?.frame.height ?? 0) < ($1.documentView?.frame.height ?? 0) }),
+        guard let scrollView = views.max(by: {
+            ($0.documentView?.frame.height ?? 0) - $0.contentView.bounds.height
+                < ($1.documentView?.frame.height ?? 0) - $1.contentView.bounds.height
+        }),
               let document = scrollView.documentView else {
             log("scrolltest: no scroll view")
             return

@@ -376,6 +376,58 @@ final class PadViewsTests: AppTestCase {
         XCTAssertEqual(title.value as? String, "Drag cards between columns with spring physics")
     }
 
+    /// A swipe over a bar scrolls dates. Moving the same bar requires a hold first.
+    func testTimelineDateEditingRequiresAHold() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        func openTimeline() -> XCUIElement {
+            launch(["-timeline.scale", "15"])
+            openPadProject("Git Issues")
+            sidebarEntry("Release Plan").tap()
+            let row = element("timeline-row-#9")
+            wait(row)
+            return row
+        }
+        func barCentre(_ row: XCUIElement) -> XCUICoordinate {
+            // The sample timeline starts ten days before the Monday two weeks ago. #9 runs from seven
+            // days ago to today, so its eight-day bar is centred 21 days after that Monday's padding.
+            let sinceMonday = (Calendar.current.component(.weekday, from: Date()) + 5) % 7
+            return row.coordinate(withNormalizedOffset: CGVector(dx: 1, dy: 0.5))
+                .withOffset(CGVector(dx: 1 + CGFloat(21 + sinceMonday) * 15, dy: 0))
+        }
+        func date(_ offset: Int) -> String {
+            Calendar.current.date(byAdding: .day, value: offset, to: Date())!
+                .formatted(.dateTime.day().month().locale(appLocale))
+        }
+
+        let row = openTimeline()
+        let original = row.value as? String
+        XCTAssertEqual(original, "\(date(-7)) – \(date(0))")
+        let start = barCentre(row)
+        start.press(forDuration: 0, thenDragTo: start.withOffset(CGVector(dx: -120, dy: 0)),
+                    withVelocity: .fast, thenHoldForDuration: 0)
+        waitForValue(row, equalTo: original)
+        XCTAssertFalse(element("notice-undo").exists)
+        // The bar is now left of this point. A held drag here must still leave its dates alone; otherwise the
+        // first gesture failed to scroll, leaving the original bar under the finger.
+        start.press(forDuration: 0.5, thenDragTo: start.withOffset(CGVector(dx: 30, dy: 0)),
+                    withVelocity: .slow, thenHoldForDuration: 0)
+        waitForValue(row, equalTo: original)
+        snapshot("Timeline swipe leaves dates unchanged")
+
+        // Start fresh at the same scroll position. This also proves the swipe above started on an editable bar.
+        app.terminate()
+        let heldRow = openTimeline()
+        let heldStart = barCentre(heldRow)
+        heldStart.press(forDuration: 0.5, thenDragTo: heldStart.withOffset(CGVector(dx: 30, dy: 0)),
+                        withVelocity: .slow, thenHoldForDuration: 0)
+        waitForValue(heldRow, equalTo: "\(date(-5)) – \(date(2))")
+        snapshot("Held timeline bar moved by two days")
+        heldStart.tap()
+        let title = element("issue-title")
+        wait(title)
+        XCTAssertEqual(title.value as? String, "Drag cards between columns with spring physics")
+    }
+
     func testTheFilterSheetOnTheIPad() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()
