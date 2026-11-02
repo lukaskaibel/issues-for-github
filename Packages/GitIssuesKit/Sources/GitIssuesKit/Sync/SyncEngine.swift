@@ -593,8 +593,9 @@ public actor SyncEngine {
         for item in hydrated {
             if let contentId = item.contentId { byContentId[contentId] = item }
         }
+        // A change being sent may not have reached GitHub, when sending broke off.
         let entries = try OutboxEntry
-            .filter([OutboxState.pending.rawValue, OutboxState.conflict.rawValue].contains(Column("state")))
+            .filter([OutboxState.pending.rawValue, OutboxState.sending.rawValue, OutboxState.conflict.rawValue].contains(Column("state")))
             .order(Column("id"))
             .fetchAll(db)
 
@@ -653,7 +654,7 @@ public actor SyncEngine {
 
             case .setTitle(var m):
                 guard let remote = byContentId[m.contentId] else { continue }
-                let state = reconcileText(&m, theirs: remote.title, mergeLines: false)
+                let state = entry.state.updated(to: reconcileText(&m, theirs: remote.title, mergeLines: false))
                 if state != entry.state || entry.mutation != .setTitle(m) {
                     entry.state = state
                     entry.mutation = .setTitle(m)
@@ -662,7 +663,7 @@ public actor SyncEngine {
 
             case .setBody(var m):
                 guard let remote = byContentId[m.contentId] else { continue }
-                let state = reconcileText(&m, theirs: remote.body, mergeLines: true)
+                let state = entry.state.updated(to: reconcileText(&m, theirs: remote.body, mergeLines: true))
                 if state != entry.state || entry.mutation != .setBody(m) {
                     entry.state = state
                     entry.mutation = .setBody(m)
@@ -976,7 +977,7 @@ public actor SyncEngine {
                     .first(where: { !skip.contains($0.id ?? -1) && !($0.mutation.isUndoable && $0.createdAt > heldSince) }) else { return nil }
                 // Once a write may reach GitHub, later edits must keep its value as their base. Claiming it
                 // in this transaction prevents enqueue from folding a new edit into the sending row.
-                if case .setProjectField = entry.mutation, entry.state == .pending {
+                if entry.state == .pending {
                     entry.state = .sending
                     try entry.update(db)
                 }
@@ -1239,6 +1240,7 @@ public actor SyncEngine {
 
     /// Saves a changed mutation (merged text, creation progress) back to its outbox row and re-applies it locally.
     private func store(_ entry: OutboxEntry, mutation: Mutation, state: OutboxState) async throws {
+        let state = entry.state.updated(to: state)
         guard mutation != entry.mutation || state != entry.state else { return }
         var updated = entry
         updated.mutation = mutation

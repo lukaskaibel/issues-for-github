@@ -694,12 +694,18 @@ extension Mutation {
 public enum OutboxState: String, Codable, Sendable {
     /// Waiting to be sent.
     case pending
-    /// A project field write has started and must no longer be folded into a newer edit. Retried after interruption.
+    /// On its way to GitHub, or was when sending broke off; sent again then. It may have reached GitHub already, so
+    /// a newer change is never folded into it: that one keeps this one's value as what GitHub has.
     case sending
     /// Sent; kept briefly so a stale read from GitHub cannot undo it on screen.
     case sent
     /// A text edit that clashes with a newer edit on GitHub and needs the user's decision.
     case conflict
+
+    /// The state a row takes when it was found ready to send (`.pending`) or clashing: one being sent stays so.
+    func updated(to state: OutboxState) -> OutboxState {
+        self == .sending && state == .pending ? .sending : state
+    }
 }
 
 public struct OutboxEntry: Codable, FetchableRecord, MutablePersistableRecord, Identifiable, Sendable {
@@ -728,6 +734,7 @@ public enum Outbox {
     }
 
     /// Records a mutation and applies it locally, folding it into an unsent one for the same field if there is one.
+    /// One that is being sent is left alone.
     public static func enqueue(_ db: Database, _ mutation: Mutation) throws {
         if case .deleteItem(let deletion) = mutation {
             try enqueueDeletion(db, deletion)
