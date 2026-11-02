@@ -6,6 +6,22 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **The sidebar says what each part covers.** On the Mac the Inbox and My Issues come first now, since they show
+  every project. Under a line follows the project, with its repositories under its name and a menu of its own: the
+  other projects to switch to, Change Icon, New Milestone, Copy Link, Open on GitHub and Hide. You are at the foot
+  of the sidebar, on Mac and iPad: your picture with the sync dot, your name and how syncing is going, and a click
+  opens your account, Sync Now, appearance, settings and signing out. When you're offline or something needs you, the
+  card sits right above you. Before, the project headed the whole sidebar, Inbox and My Issues included, and its menu
+  mixed switching projects with your account.
+
+### Fixed
+
+- On the Mac, a second click on the project's name in the sidebar closes its menu again, as on any menu's
+  button. Before, the menu often opened again at once, mostly on a trackpad, where the pointer moves a little as the
+  finger lifts. The same goes for every button that opens a dropdown, such as Display and the pickers.
+
 ## [1.1.0] - 2026-10-28
 
 ### Added

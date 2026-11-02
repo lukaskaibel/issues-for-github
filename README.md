@@ -241,8 +241,9 @@ there with everything left to do, drag a milestone's diamond to change its day. 
 
 ### A project's views, in the sidebar
 
-The sidebar is about one project at a time, as Linear's is about one workspace: the project sits at its top with an
-icon you pick, its menu switches to another, and under it are All Issues and the project's views as GitHub has them, such as "This week" or open bugs by area, then its milestones. A view
+The sidebar is about one project at a time, as Linear's is about one workspace. The Inbox and My Issues come first, as
+they cover every project; under a line follows the project, with an icon you pick, its repositories under its name and
+a menu that switches to another, and under it are All Issues and the project's views as GitHub has them, such as "This week" or open bugs by area, then its milestones. A view
 shows what its filter finds, as a board or as a list grouped the way GitHub groups it. The filter is a row of chips
 over the issues, as in Linear: press `F` to add one for a status, a person, a label, a milestone, an iteration or any field
 of the project, click a chip to change it. A changed filter stays yours until you press `⌘S`, which saves it to the
@@ -314,9 +315,10 @@ The interface uses the system's own parts.
   priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its cards on
   grey without borders or lanes, as on the Mac; a column's "…" hides it on that iPad, and the hidden ones wait at the end of the
   board and under Display in the project's "…", a tap away from coming back.
-- **iPad:** a sidebar with your account at the top, the Inbox, My Issues and Search, then every project, each a tap
+- **iPad:** a sidebar with the Inbox, My Issues and Search, then every project, each a tap
   away (touch and hold one, or swipe it, to hide it; the hidden ones wait folded at the end of the projects),
-  and under them the entries of the project open: All Issues and its views, and its next milestones and roadmap. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
+  and under them the entries of the project open: All Issues and its views, and its next milestones and roadmap; your
+  account is at its foot. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
   drop (touch and hold, then drag). A milestone opens as the board's columns or a list, the roadmap as the timeline,
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
@@ -440,11 +442,11 @@ Right after signing in, the board on screen comes first and your other projects 
 the last one is in, the line under the title reads "Loading issues from 3 projects…", and My Issues shows a spinner
 while none of your issues have come in yet.
 
-The dot on the project at the top of the sidebar shows how syncing is going: green when everything is on GitHub, the
-accent colour while your changes go out, an amber ring when you're offline, and amber when something needs you. Hover
-it to see when the app last synced. When you're offline, a change needs your decision or syncing fails, a card at the
-bottom of the sidebar says so and offers the next step (show the waiting changes, open the issue, try again). The rest
-of the time the bottom of the sidebar stays empty.
+You are at the foot of the sidebar: your picture, your name, and a line on how syncing is going ("Synced just now",
+"Offline · 3 queued"). The dot on your picture says the same in colour: green when everything is on GitHub, the
+accent colour while your changes go out, an amber ring when you're offline, and amber when something needs you. When
+you're offline, a change needs your decision or syncing fails, a card above you says so and offers the next step (show
+the waiting changes, open the issue, try again). The rest of the time there is nothing more at the foot.
 
 When you and someone else change the same issue:
 
@@ -598,7 +600,7 @@ an epic's bar onto another milestone, or down to Later, and its unfinished issue
 diamond sideways to change its day; Months and Quarters set how much time fits. In the roadmap's list, drag an epic
 into another milestone's group. An epic's page shows its sub-issues by milestone, with a plus for a new one in each.
 
-Click the project at the top of the sidebar to switch to another; its All Issues, views and milestones follow.
+Click the project's name in the sidebar to switch to another; its All Issues, views and milestones follow.
 **Go to View…** in the command palette opens any view of any project. Click a filter chip's property, comparison or
 values to change them, and its cross to remove it; **Edit Filter as Text…** at the end of the filter menu takes
 GitHub's own filter words. A dot beside a view means its filter is changed here and not saved; **Reset** takes it
@@ -652,17 +654,16 @@ lift off together and land one after the other where you drop them. `Esc` or a c
 pick, and a plain click on an issue opens it and lets the picked ones go. Sub-issues hanging under
 their parent are picked the same way, and so are the sub-issues listed in an open issue.
 
-Right-click the project at the top of the sidebar and choose **Change Icon…** to give it one of 257 glyphs in one of
+Click or right-click the project's name in the sidebar and choose **Change Icon…** to give it one of 257 glyphs in one of
 GitHub's eight colours; until then it is GitHub's table in grey. The glyphs come in groups such as Work, Code,
 Devices, Travel, Nature and Sports and Leisure, and typing finds them by name, in your language or in English, or by
 group ("sport"). A colour keeps the picker open, a glyph closes it, and the arrow keys and Return work while you type.
 **Change Project Icon…** in the command palette opens it as well. GitHub has no icons for projects, so the icon is kept in iCloud: your Mac, iPhone and iPad show the
 same one, and nobody else sees it.
 
-Right-click the project at the top of the sidebar to hide it; hidden projects wait under "hidden" in the project's
-menu. The project's menu is also where
-your account is, as in Linear: who is signed in, Sync Now, changes still waiting to be sent, appearance, settings and
-signing out. It works with the arrow keys like any menu.
+The same menu hides the project; hidden projects wait under "hidden" in it. Click yourself at the foot of the sidebar
+for your account: who is signed in, Sync Now, changes still waiting to be sent, appearance, settings and signing out.
+Both menus work with the arrow keys like any menu.
 
 The app follows the language of your Mac. To use another of its languages for Issues alone, add it under System
 Settings › General › Language & Region › Applications; on iPhone and iPad it is Settings › Apps › Issues › Language.
@@ -712,7 +713,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap ‹ (iPhone) | Back: from a project's view, milestone or roadmap to the project's page, from there to Home, with the Inbox, My Issues and your pins as tiles, then your projects |
 | Tap the search field at the foot of a screen (iPhone) | Search issues in every project by title or number, and projects by name; before you type, the issues you opened last |
 | Tap a project in the sidebar (iPad) | Open it on its open view; its All Issues, views and milestones show under the projects |
-| Tap your picture at the top of the sidebar (iPad) | Your account, Sync Now and the settings |
+| Tap yourself at the foot of the sidebar (iPad) | Your account, Sync Now and the settings |
 | Change Icon… in a project's "…" menu, or touch and hold it on Home (iPhone) | Its glyph and colour: 257 glyphs in groups, with a search field; a colour keeps the sheet open, a glyph closes it |
 | Touch and hold a project on Home (iPhone) or in the sidebar (iPad), or swipe it left | Hide it on that device, or show it again; hidden projects wait folded under "hidden" at the end of the projects, a tap unfolds them |
 | Swipe right in the Inbox | Read, or unread |

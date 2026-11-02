@@ -14,17 +14,16 @@ enum SidebarSelection: Hashable {
     case allIssues(String)
 }
 
-/// The system's sidebar, as in Notes and Mail: the project at the top with its menu, the Inbox and My Issues, then
-/// All Issues and the project's views, and its next milestones with the roadmap. One project at a time, as Linear
-/// shows one workspace.
+/// The system's sidebar, as in Notes and Mail: the Inbox and My Issues first, which cover every project; then the
+/// project the sidebar is about under its own name and menu, with All Issues and its views, and its next milestones
+/// with the roadmap; and you at the foot, with how syncing is going. One project at a time, as Linear shows one
+/// workspace.
 struct Sidebar: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
         List(selection: selection) {
             Section {
-                SidebarProjectHeader()
-                    .selectionDisabled()
                 Label { Text(.inbox) } icon: { Image(systemName: "tray") }
                     .badge(model.inboxUnreadCount)
                     .tag(SidebarSelection.inbox)
@@ -42,15 +41,11 @@ struct Sidebar: View {
         .listStyle(.sidebar)
         // The system's own text colour instead of the window's, so a selected row turns it white on the accent.
         .foregroundStyle(.primary)
-        // Nothing while everything is on GitHub; a card when you're offline or something needs you.
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if let attention = model.syncAttention {
-                SyncHintCard(attention: attention)
-                    .padding(10)
-                    .transition(.opacity.combined(with: .offset(y: 8)))
-            }
+        // You stay at the foot while the list scrolls above.
+        .scrollEdgeEffectStyle(.hard, for: .bottom)
+        .safeAreaBar(edge: .bottom, spacing: 0) {
+            SidebarFoot()
         }
-        .animation(Theme.overlay, value: model.syncAttention)
         .toolbar {
             ToolbarItem {
                 Button {
@@ -116,20 +111,23 @@ private struct SidebarReselect: ViewModifier {
     }
 }
 
-/// The project the sidebar is about, at its top, as Linear shows its workspace and Mail its accounts: its icon with
-/// the state of syncing as a dot, its name, and its menu.
-private struct SidebarProjectHeader: View {
+/// The foot of the sidebar: you, with how syncing is going, and above you a card when you're offline or something
+/// needs you. Nothing else shows there while everything is on GitHub.
+private struct SidebarFoot: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        Group {
-            if let project = model.sidebarProject {
-                ProjectMenuButton(project: project)
-            } else {
-                AccountMenuButton()
+        VStack(spacing: 8) {
+            if let attention = model.syncAttention {
+                SyncHintCard(attention: attention)
+                    .transition(.opacity.combined(with: .offset(y: 8)))
             }
+            AccountMenuButton()
         }
-        .padding(.bottom, 4)
+        .padding(.horizontal, 10)
+        .padding(.top, 6)
+        .padding(.bottom, 10)
+        .animation(Theme.overlay, value: model.syncAttention)
     }
 }
 
@@ -216,11 +214,12 @@ struct AllIssuesRow: View {
     }
 }
 
-/// The account at the top of the sidebar while there is no project: the avatar with the state of syncing as a dot,
-/// and the login. Clicking it opens the account menu; the tooltip says when the app last synced.
+/// You at the foot of the sidebar, as Slack and Discord show you: your picture with the state of syncing as a dot,
+/// your name, and how syncing is going. A click opens the account menu above it.
 struct AccountMenuButton: View {
     @Environment(AppModel.self) private var model
     @State private var open = false
+    @State private var hovering = false
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 20)) { context in
@@ -228,80 +227,56 @@ struct AccountMenuButton: View {
                 open = true
             } label: {
                 HStack(spacing: 9) {
-                    StatusAvatar(size: 24)
-                    Text(model.viewer?.login ?? "GitHub")
-                        .font(.system(size: 14, weight: .semibold))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(Theme.textTertiary)
+                    StatusAvatar(size: 26)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(model.viewerName)
+                            .font(.uiMedium)
+                            .foregroundStyle(Theme.text)
+                        Text(model.syncLine(at: context.date))
+                            .font(.tiny)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                     Spacer(minLength: 0)
                 }
-                .foregroundStyle(Theme.text)
-                .frame(height: 34)
+                // In line with the project's tile above.
+                .padding(.horizontal, 10)
+                .frame(height: 42)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(open || hovering ? Theme.field : .clear))
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .onHover { hovering = $0 }
             .help(model.accountSummary(at: context.date))
             .accessibilityLabel(.account)
             .accessibilityValue(model.accountSummary(at: context.date))
-            .dropdown(isPresented: $open) { close in
+            .dropdown(isPresented: $open, placement: .above) { close in
                 AccountDropdown(close: close)
             }
         }
     }
 }
 
-/// The menu of the project at the top of the sidebar, as Linear's workspace menu: who is signed in and how syncing is
-/// going, the projects to switch to, then Sync Now, the queue, appearance, settings and signing out. It opens as a
-/// dropdown like the pickers; the arrow keys move, Return picks, → opens a submenu.
+/// The account menu at the foot of the sidebar: who is signed in and how syncing is going, then Sync Now, the queue,
+/// appearance, settings and signing out. It opens as a dropdown like the pickers; the arrow keys move, Return picks,
+/// → opens a submenu.
 struct AccountDropdown: View {
     @Environment(AppModel.self) private var model
-    /// The project the sidebar is about; the menu lists the others to switch to.
-    var project: Project?
     var close: () -> Void
 
     @State private var cursor = MenuCursor<Entry>()
     @State private var queueOpen = false
     @State private var appearanceOpen = false
-    @State private var hiddenOpen = false
 
     enum Entry: Hashable {
-        case project(String), hidden, more, sync, queue, appearance, settings, signOut, signOutEverywhere
+        case sync, queue, appearance, settings, signOut, signOutEverywhere
     }
-
-    /// Up to this many projects are listed; with more, the command palette finds them by name.
-    private static let listed = 8
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             MenuDivider()
-            if project != nil {
-                Text(.projects)
-                    .font(.tinySemibold)
-                    .foregroundStyle(Theme.textTertiary)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 2)
-                    .padding(.bottom, 4)
-                ForEach(listedProjects) { project in
-                    row(.project(project.id))
-                }
-                if !hiddenProjects.isEmpty {
-                    row(.hidden)
-                        .dropdown(isPresented: $hiddenOpen, placement: .trailing) { close in
-                            HiddenProjectsMenu(projects: hiddenProjects, close: {
-                                close()
-                                self.close()
-                            })
-                        }
-                }
-                if shownProjects.count > Self.listed {
-                    row(.more)
-                }
-                MenuDivider()
-            }
             row(.sync)
             if waiting > 0 {
                 row(.queue)
@@ -326,17 +301,20 @@ struct AccountDropdown: View {
         .background(MenuKeys(
             onMove: { cursor.step($0, through: entries) },
             onActivate: { if let active = cursor.key { perform(active) } },
-            onOpen: { if let active = cursor.key, active == .queue || active == .appearance || active == .hidden { perform(active) } }
+            onOpen: { if let active = cursor.key, active == .queue || active == .appearance { perform(active) } }
         ))
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        // Your name and login, as at the foot; without a name, the login and where it comes from.
+        let login = model.viewer?.login ?? "GitHub"
+        let named = model.viewerName != login
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 AccountAvatar(size: 28)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(model.viewer?.login ?? "GitHub").font(.uiSemibold).lineLimit(1)
-                    Text(model.viewer?.name ?? String(localized: model.isDemo ? .sampleData : .signedInWithGitHub))
+                    Text(model.viewerName).font(.uiSemibold).lineLimit(1)
+                    Text(named ? login : String(localized: model.isDemo ? .sampleData : .signedInWithGitHub))
                         .font(.small)
                         .foregroundStyle(Theme.textSecondary)
                         .lineLimit(1)
@@ -364,32 +342,8 @@ struct AccountDropdown: View {
         model.outbox.filter { $0.state != .sent }.count
     }
 
-    private var shownProjects: [Project] {
-        model.openProjects.filter { !model.hiddenProjectIds.contains($0.id) }
-    }
-
-    /// The projects in the menu: the first few, and the one the sidebar is about wherever it comes.
-    private var listedProjects: [Project] {
-        var list = Array(shownProjects.prefix(Self.listed))
-        if let project, !list.contains(where: { $0.id == project.id }) {
-            if list.count == Self.listed { list.removeLast() }
-            list.append(project)
-        }
-        return list
-    }
-
-    private var hiddenProjects: [Project] {
-        model.openProjects.filter { model.hiddenProjectIds.contains($0.id) }
-    }
-
     private var entries: [Entry] {
-        var list: [Entry] = []
-        if project != nil {
-            list += listedProjects.map { .project($0.id) }
-            if !hiddenProjects.isEmpty { list.append(.hidden) }
-            if shownProjects.count > Self.listed { list.append(.more) }
-        }
-        list.append(.sync)
+        var list: [Entry] = [.sync]
         if waiting > 0 { list.append(.queue) }
         list += [.appearance, .settings, .signOut]
         if model.loginIsShared { list.append(.signOutEverywhere) }
@@ -399,14 +353,6 @@ struct AccountDropdown: View {
     @ViewBuilder
     private func row(_ entry: Entry) -> some View {
         switch entry {
-        case .project(let id):
-            if let other = model.openProjects.first(where: { $0.id == id }) {
-                ProjectMenuRow(project: other, checked: other.id == project?.id, cursor: cursor, key: entry, action: { perform(entry) })
-            }
-        case .hidden:
-            MenuRow(title: String(localized: .hiddenProjectsCount(count: hiddenProjects.count)), systemImage: "eye.slash", submenu: true, cursor: cursor, key: entry, open: hiddenOpen, action: { perform(entry) })
-        case .more:
-            MenuRow(title: String(localized: .switchProjectEllipsis), systemImage: "square.stack", cursor: cursor, key: entry, action: { perform(entry) })
         case .sync:
             MenuRow(title: String(localized: .syncNow), systemImage: "arrow.triangle.2.circlepath", shortcut: "⌘R", cursor: cursor, key: entry, action: { perform(entry) })
         case .queue:
@@ -424,14 +370,6 @@ struct AccountDropdown: View {
 
     private func perform(_ entry: Entry) {
         switch entry {
-        case .project(let id):
-            close()
-            model.select(.project(id))
-        case .hidden:
-            hiddenOpen = true
-        case .more:
-            close()
-            model.overlay = .palette(.projects)
         case .sync:
             close()
             model.refresh()

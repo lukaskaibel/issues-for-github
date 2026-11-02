@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -393,10 +393,11 @@ enum DebugRemote {
             if let character = argument.first {
                 sendKey(characters: String(character), code: 0, modifiers: .command)
             }
-        case "click", "rightclick":
-            // click|rightclick <x> <y> in points from the window's top-left corner.
+        case "click", "rightclick", "clickmove":
+            // click|rightclick <x> <y> in points from the window's top-left corner. clickmove: a click after which the
+            // pointer moves on a point, as it does on a trackpad.
             let bits = argument.split(separator: " ").compactMap { Double($0) }
-            if bits.count == 2 { click(at: CGPoint(x: bits[0], y: bits[1]), right: parts.first == "rightclick") }
+            if bits.count == 2 { click(at: CGPoint(x: bits[0], y: bits[1]), right: parts.first == "rightclick", move: parts.first == "clickmove") }
         case "responder":
             // Which control has the keyboard focus: the field editor means a single-line text field.
             let window = NSApp.windows.first { $0.isVisible && $0.contentView != nil && $0.frame.width > 600 }
@@ -839,7 +840,7 @@ enum DebugRemote {
             }
         case "rendersync":
             // The account in the sidebar with each sync dot, the cards for each state that needs attention, and the
-            // account menu, written next to the command file.
+            // account and project menus, written next to the command file.
             guard let base = UserDefaults.standard.string(forKey: "debugCommandFile") else { break }
             let dark = NSApp.effectiveAppearance.isDark
             let styles: [SyncDotStyle] = [.synced, .queued, .sending, .offline, .attention]
@@ -866,9 +867,14 @@ enum DebugRemote {
                     .environment(model)
                     .environment(\.colorScheme, dark ? .dark : .light)))),
                 ("sync-menu", ImageRenderer(content: AnyView(HStack(alignment: .top, spacing: 12) {
-                    AccountDropdown(project: model.sidebarProject, close: {})
+                    AccountDropdown(close: {})
                         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.popover))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
+                    if let project = model.sidebarProject {
+                        ProjectDropdown(project: project, close: {}, changeIcon: {})
+                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.popover))
+                            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
+                    }
                     AppearanceDropdown(close: {})
                         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Theme.popover))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.popoverBorder, lineWidth: 1))
@@ -937,7 +943,6 @@ enum DebugRemote {
             let renderer = ImageRenderer(
                 content: VStack(alignment: .leading, spacing: 2) {
                     if let project = model.sidebarProject {
-                        ProjectMenuButton(project: project)
                         SidebarProject(project: project)
                     }
                 }
@@ -1214,7 +1219,7 @@ enum DebugRemote {
         return nil
     }
 
-    private static func click(at point: CGPoint, right: Bool = false) {
+    private static func click(at point: CGPoint, right: Bool = false, move: Bool = false) {
         guard let main = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
               let content = main.contentView else { return }
         // The point is given in the main window; the click goes to whichever window is on top there,
@@ -1241,6 +1246,12 @@ enum DebugRemote {
         // and a control tracking the mouse reads the release from the queue.
         NSApp.postEvent(events[0], atStart: false)
         NSApp.postEvent(events[1], atStart: false)
+        if move, let moved = NSEvent.mouseEvent(
+            with: .mouseMoved, location: NSPoint(x: location.x + 1, y: location.y), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 0, pressure: 0
+        ) {
+            NSApp.postEvent(moved, atStart: false)
+        }
     }
 
     private static func sendKeys(_ text: String) {

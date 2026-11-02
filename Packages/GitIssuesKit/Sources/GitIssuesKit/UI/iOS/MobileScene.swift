@@ -224,8 +224,8 @@ struct MainTabs: View {
     }
 
     /// The iPad's sidebar: the Inbox, My Issues and search, then every project, and under them the entries of the
-    /// project on screen: All Issues and its views, then its next milestones and its roadmap. A project's row opens it
-    /// on its open view, as one of its views' rows does.
+    /// project on screen: All Issues and its views, then its next milestones and its roadmap; you at its foot. A
+    /// project's row opens it on its open view, as one of its views' rows does.
     private var sidebar: some View {
         @Bindable var navigation = navigation
         return TabView(selection: $navigation.tab) {
@@ -306,21 +306,21 @@ struct MainTabs: View {
         // when an iPad turns from portrait to landscape; they get the model and navigation handed on explicitly, or
         // they'd find none.
         .tabViewSidebarHeader {
-            SidebarAccountHeader()
+            SidebarComposeHeader()
                 .environment(model)
                 .environment(navigation)
         }
         .tabViewSidebarBottomBar {
-            // Nothing while everything is on GitHub (the dot on the avatar says so); a card when you're offline or
-            // something needs you.
-            VStack {
+            // You, with how syncing is going; above you a card when you're offline or something needs you.
+            VStack(spacing: 10) {
                 if let attention = model.syncAttention {
                     SidebarSyncHint(attention: attention)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
                         .transition(.opacity)
                 }
+                SidebarAccountFoot()
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
             .animation(Theme.overlay, value: model.syncAttention)
             .environment(model)
             .environment(navigation)
@@ -500,17 +500,15 @@ struct RouteDestination: View {
     }
 }
 
-/// The account at the top of the iPad sidebar, with the state of syncing as a dot on its picture, and the compose
-/// button; the projects are the sidebar's own entries below. It lines up with the rows below: the picture sits in their
-/// icon column, the name on their title edge, and the compose button in the column of the section's disclosure arrow.
-struct SidebarAccountHeader: View {
+/// The compose button at the top of the iPad sidebar, in the column of the sections' disclosure arrows. You are at the
+/// sidebar's foot.
+struct SidebarComposeHeader: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
 
     var body: some View {
         HStack(spacing: 0) {
-            accountButton
-            Spacer(minLength: 8)
+            Spacer(minLength: 0)
             Button {
                 navigation.sheet = .newIssue(navigation.newIssueContext)
             } label: {
@@ -526,43 +524,52 @@ struct SidebarAccountHeader: View {
             .accessibilityLabel(.newIssueAction)
             .disabled(model.openProjects.isEmpty)
         }
-        // The sidebar's rows put their icons 1 pt in and their accessories 15 pt past the content edge.
-        .padding(.leading, 1)
+        // The sidebar's rows put their accessories 15 pt past the content edge.
         .padding(.trailing, -15)
-    }
-
-    /// Your picture and login: the account, Sync Now and the settings.
-    private var accountButton: some View {
-        Button {
-            navigation.sheet = .account
-        } label: {
-            HStack(spacing: 11) {
-                StatusAvatar(size: 26)
-                HStack(spacing: 6) {
-                    Text(model.viewer?.login ?? "GitHub")
-                        .font(.headline)
-                        .foregroundStyle(Theme.text)
-                        .lineLimit(1)
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.textTertiary)
-                }
-            }
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
-            .contentShape(.hoverEffect, .rect(cornerRadius: 12).inset(by: -7))
-            .hoverEffect(.highlight)
-        }
-        .buttonStyle(PlainPressStyle())
-        .layoutPriority(1)
-        .accessibilityLabel(.accountAndSettings)
-        .accessibilityValue(model.accountSummary())
-        .accessibilityIdentifier("sidebar-account")
     }
 }
 
-/// What needs your attention about syncing, at the bottom of the iPad sidebar: being offline, a change to decide on,
-/// or a sync that failed. As on the Mac, nothing shows while everything is fine.
+/// You at the foot of the iPad sidebar, as on the Mac: your picture with the state of syncing as a dot, your name,
+/// and how syncing is going. A tap opens your account, Sync Now and the settings.
+struct SidebarAccountFoot: View {
+    @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 20)) { context in
+            Button {
+                navigation.sheet = .account
+            } label: {
+                HStack(spacing: 11) {
+                    StatusAvatar(size: 30)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(model.viewerName)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Theme.text)
+                        Text(model.syncLine(at: context.date))
+                            .font(.footnote)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+                .contentShape(.hoverEffect, .rect(cornerRadius: 12).inset(by: -7))
+                .hoverEffect(.highlight)
+            }
+            .buttonStyle(PlainPressStyle())
+            // The picture in the rows' icon column above, the name on their title edge.
+            .padding(.leading, 15)
+            .accessibilityLabel(.accountAndSettings)
+            .accessibilityValue(model.accountSummary(at: context.date))
+            .accessibilityIdentifier("sidebar-account")
+        }
+    }
+}
+
+/// What needs your attention about syncing, at the bottom of the iPad sidebar above you: being offline, a change to
+/// decide on, or a sync that failed. As on the Mac, nothing shows while everything is fine.
 struct SidebarSyncHint: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation

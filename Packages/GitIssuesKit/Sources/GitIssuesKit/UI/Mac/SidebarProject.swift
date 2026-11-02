@@ -2,8 +2,8 @@
 import AppKit
 import SwiftUI
 
-/// One project at a time in the sidebar, under its menu at the top: All Issues and the project's views, then its next
-/// milestones with the roadmap, each a section of the list.
+/// One project at a time in the sidebar, under the Inbox and My Issues: its name with its menu, All Issues and its
+/// views, then its next milestones with the roadmap, each a section of the list.
 struct SidebarProject: View {
     @Environment(AppModel.self) private var model
     var project: Project
@@ -24,42 +24,57 @@ struct SidebarProject: View {
 
 // MARK: - The project's menu
 
-/// The project the sidebar is about, at its top, as Linear shows its workspace: its icon on a tile with the state of
-/// syncing as a dot, and its name. A click opens its menu with the other projects and the account; right-click it to
-/// change its icon, hide it, copy its link or open it on GitHub.
+/// The project the sidebar is about, at the head of its part, under a line that sets it apart from the Inbox and My
+/// Issues: its icon on a tile, its name, and the repositories its issues come from. A click opens its menu with the
+/// other projects to switch to and what can be done with this one; right-click gives the same actions.
 struct ProjectMenuButton: View {
     @Environment(AppModel.self) private var model
     var project: Project
     @State private var open = false
     @State private var iconOpen = false
+    @State private var hovering = false
 
     var body: some View {
         let hidden = model.hiddenProjectIds.contains(project.id)
-        TimelineView(.periodic(from: .now, by: 20)) { context in
+        let repositories = model.repositoryLine(of: project)
+        VStack(alignment: .leading, spacing: 6) {
+            Rectangle()
+                .fill(Theme.popoverBorder)
+                .frame(height: 1)
+                .padding(.horizontal, 2)
             Button {
                 open = true
             } label: {
                 HStack(spacing: 9) {
-                    StatusProjectIcon(projectId: project.id, size: 24, tile: true)
-                    Text(project.title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                    ProjectTile(projectId: project.id, size: 26)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(project.title)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Theme.text)
+                        Text(repositories)
+                            .font(.tiny)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    Spacer(minLength: 4)
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(Theme.textTertiary)
-                    Spacer(minLength: 0)
+                        .padding(.trailing, 2)
                 }
-                .foregroundStyle(Theme.text)
-                .frame(height: 34)
+                .padding(.horizontal, 4)
+                .frame(height: 42)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(open || hovering ? Theme.field : .clear))
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help(model.accountSummary(at: context.date))
+            .onHover { hovering = $0 }
+            .help(repositories)
             .accessibilityLabel(.project)
-            .accessibilityValue("\(project.title), \(model.accountSummary(at: context.date))")
+            .accessibilityValue("\(project.title), \(repositories)")
             .dropdown(isPresented: $open) { close in
-                AccountDropdown(project: project, close: close)
+                ProjectDropdown(project: project, close: close, changeIcon: { iconOpen = true })
             }
             .dropdown(isPresented: $iconOpen) { close in
                 ProjectIconPicker(projectId: project.id, close: close)
@@ -88,12 +103,170 @@ struct ProjectMenuButton: View {
                 return menu.build()
             }
         }
+        .padding(.top, 4)
     }
 }
 
-/// A project in the project's menu: its icon, its name, and a check on the one the sidebar is about.
+/// The menu of the project at the head of its part of the sidebar, as Linear's team menu: the projects to switch to,
+/// each with its repositories, then its icon, a new milestone, its link, and hiding it. It opens as a dropdown like
+/// the pickers; the arrow keys move, Return picks, → opens a submenu.
+struct ProjectDropdown: View {
+    @Environment(AppModel.self) private var model
+    var project: Project
+    var close: () -> Void
+    /// Opens the icon picker in the menu's place.
+    var changeIcon: () -> Void
+
+    @State private var cursor = MenuCursor<Entry>()
+    @State private var hiddenOpen = false
+
+    enum Entry: Hashable {
+        case project(String), hidden, more, icon, milestone, copyLink, openOnGitHub, hide
+    }
+
+    /// Up to this many projects are listed; with more, the command palette finds them by name.
+    private static let listed = 8
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(.projects)
+                .font(.tinySemibold)
+                .foregroundStyle(Theme.textTertiary)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+                .padding(.bottom, 4)
+            ForEach(listedProjects) { project in
+                row(.project(project.id))
+            }
+            if !hiddenProjects.isEmpty {
+                row(.hidden)
+                    .dropdown(isPresented: $hiddenOpen, placement: .trailing) { close in
+                        HiddenProjectsMenu(projects: hiddenProjects, close: {
+                            close()
+                            self.close()
+                        })
+                    }
+            }
+            if shownProjects.count > Self.listed {
+                row(.more)
+            }
+            MenuDivider()
+            row(.icon)
+            if project.viewerCanUpdate { row(.milestone) }
+            MenuDivider()
+            row(.copyLink)
+            row(.openOnGitHub)
+            MenuDivider()
+            row(.hide)
+        }
+        .padding(.bottom, 4)
+        .frame(width: 264)
+        .font(.ui)
+        .foregroundStyle(Theme.text)
+        .background(MenuKeys(
+            onMove: { cursor.step($0, through: entries) },
+            onActivate: { if let active = cursor.key { perform(active) } },
+            onOpen: { if cursor.key == .hidden { perform(.hidden) } }
+        ))
+    }
+
+    private var hidden: Bool {
+        model.hiddenProjectIds.contains(project.id)
+    }
+
+    private var shownProjects: [Project] {
+        model.openProjects.filter { !model.hiddenProjectIds.contains($0.id) }
+    }
+
+    /// The projects in the menu: the first few, and the one the sidebar is about wherever it comes.
+    private var listedProjects: [Project] {
+        var list = Array(shownProjects.prefix(Self.listed))
+        if !list.contains(where: { $0.id == project.id }) {
+            if list.count == Self.listed { list.removeLast() }
+            list.append(project)
+        }
+        return list
+    }
+
+    private var hiddenProjects: [Project] {
+        model.openProjects.filter { model.hiddenProjectIds.contains($0.id) && $0.id != project.id }
+    }
+
+    private var entries: [Entry] {
+        var list: [Entry] = listedProjects.map { .project($0.id) }
+        if !hiddenProjects.isEmpty { list.append(.hidden) }
+        if shownProjects.count > Self.listed { list.append(.more) }
+        list.append(.icon)
+        if project.viewerCanUpdate { list.append(.milestone) }
+        list += [.copyLink, .openOnGitHub, .hide]
+        return list
+    }
+
+    @ViewBuilder
+    private func row(_ entry: Entry) -> some View {
+        switch entry {
+        case .project(let id):
+            if let other = model.openProjects.first(where: { $0.id == id }) {
+                ProjectMenuRow(
+                    project: other, detail: model.repositoryLine(of: other), checked: other.id == project.id,
+                    cursor: cursor, key: entry, action: { perform(entry) }
+                )
+            }
+        case .hidden:
+            MenuRow(title: String(localized: .hiddenProjectsCount(count: hiddenProjects.count)), systemImage: "eye.slash", submenu: true, cursor: cursor, key: entry, open: hiddenOpen, action: { perform(entry) })
+        case .more:
+            MenuRow(title: String(localized: .switchProjectEllipsis), systemImage: "square.stack", cursor: cursor, key: entry, action: { perform(entry) })
+        case .icon:
+            MenuRow(title: String(localized: .changeIconEllipsis), systemImage: "paintpalette", cursor: cursor, key: entry, action: { perform(entry) })
+        case .milestone:
+            MenuRow(title: String(localized: .newMilestoneEllipsis), systemImage: "plus", cursor: cursor, key: entry, action: { perform(entry) })
+        case .copyLink:
+            MenuRow(title: String(localized: .copyLink), systemImage: "link", cursor: cursor, key: entry, action: { perform(entry) })
+        case .openOnGitHub:
+            MenuRow(title: String(localized: .openOnGitHub), systemImage: "arrow.up.right.square", cursor: cursor, key: entry, action: { perform(entry) })
+        case .hide:
+            MenuRow(
+                title: String(localized: hidden ? .showInSidebar : .hideFromSidebar), systemImage: hidden ? "eye" : "eye.slash",
+                cursor: cursor, key: entry, action: { perform(entry) }
+            )
+        }
+    }
+
+    private func perform(_ entry: Entry) {
+        switch entry {
+        case .project(let id):
+            close()
+            model.select(.project(id))
+        case .hidden:
+            hiddenOpen = true
+        case .more:
+            close()
+            model.overlay = .palette(.projects)
+        case .icon:
+            close()
+            changeIcon()
+        case .milestone:
+            close()
+            model.overlay = .milestoneEditor(projectId: project.id, title: nil, assigning: [])
+        case .copyLink:
+            close()
+            model.copyLink(project.url, for: project.title)
+        case .openOnGitHub:
+            close()
+            if let url = URL(string: project.url) { NSWorkspace.shared.open(url) }
+        case .hide:
+            close()
+            model.setHidden(project, !hidden)
+        }
+    }
+}
+
+/// A project in the project's menu: its icon, its name with its repositories under it, and a check on the one the
+/// sidebar is about.
 struct ProjectMenuRow<Key: Hashable & Sendable>: View {
     var project: Project
+    /// A second line under the name, such as its repositories.
+    var detail: String?
     var checked: Bool
     var dimmed = false
     var cursor: MenuCursor<Key>
@@ -107,9 +280,16 @@ struct ProjectMenuRow<Key: Hashable & Sendable>: View {
                 ProjectIcon(projectId: project.id, size: 12)
                     .opacity(dimmed ? 0.5 : 1)
                     .frame(width: 16, height: 16)
-                Text(project.title)
-                    .lineLimit(1)
-                    .foregroundStyle(dimmed ? Theme.textSecondary : Theme.text)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(project.title)
+                        .foregroundStyle(dimmed ? Theme.textSecondary : Theme.text)
+                    if let detail {
+                        Text(detail)
+                            .font(.tiny)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                }
+                .lineLimit(1)
                 Spacer(minLength: 12)
                 if checked {
                     Image(systemName: "checkmark")
@@ -118,7 +298,7 @@ struct ProjectMenuRow<Key: Hashable & Sendable>: View {
                 }
             }
             .padding(.horizontal, 8)
-            .frame(height: 30)
+            .frame(height: detail == nil ? 30 : 40)
             .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(active ? Theme.menuHighlight : .clear))
             .contentShape(Rectangle())
         }
@@ -161,8 +341,9 @@ struct HiddenProjectsMenu: View {
 
 // MARK: - Views
 
-/// All Issues first, as Linear's team starts with its issues, then the project's views, in GitHub's order, and a row
-/// for a new one. A click opens a view, a double-click renames it, right-click for the rest.
+/// The project's name with its menu, then All Issues, as Linear's team starts with its issues, then the project's
+/// views, in GitHub's order, and a row for a new one. A click opens a view, a double-click renames it, right-click for
+/// the rest.
 private struct SidebarViews: View {
     @Environment(AppModel.self) private var model
     var project: Project
@@ -177,7 +358,9 @@ private struct SidebarViews: View {
     var body: some View {
         let views = model.views(projectId: project.id)
         let canEdit = model.canEditViews(projectId: project.id)
-        Section(String(localized: .views)) {
+        Section {
+            ProjectMenuButton(project: project)
+                .selectionDisabled()
             AllIssuesRow(projectId: project.id, current: current)
             if views.isEmpty {
                 // Until GitHub's views have been read: the board, as before there were views.

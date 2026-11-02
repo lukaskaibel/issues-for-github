@@ -1028,6 +1028,13 @@ public final class AppModel {
         return repos.filter { $0.projectId == projectId }
     }
 
+    /// The repositories a project's issues come from, for a line under its name ("acme/app and acme/web"), or its
+    /// owner until they are known.
+    func repositoryLine(of project: Project) -> String {
+        let names = repos(projectId: project.id).map(\.nameWithOwner).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        return names.isEmpty ? project.ownerLogin : names.formatted(.list(type: .and))
+    }
+
     func repo(of item: Item) -> RepoRef? {
         repos.first { $0.id == item.repoId && (item.projectId == nil || $0.projectId == item.projectId) }
     }
