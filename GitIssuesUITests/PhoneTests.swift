@@ -158,6 +158,45 @@ final class PhoneTests: AppTestCase {
         waitForLabel(parent, containing: "Done")
     }
 
+    func testMyIssuesOverviewShowsEachProject() {
+        launch(["-mine.display", #"{"layout":"overview"}"#])
+        wait(app.navigationBars["My Issues"])
+        wait(element("section-Git Issues"))
+        wait(element("row-#9"))
+        // In progress before what is next, in the same project; done issues are counted, not listed.
+        XCTAssertLessThan(element("row-#9").frame.minY, element("row-#25").frame.minY)
+        XCTAssertFalse(element("row-#21").exists)
+        snapshot("My Issues overview")
+
+        // A project folds like a section.
+        element("section-Git Issues").tap()
+        waitGone(element("row-#9"))
+        element("section-Git Issues").tap()
+        wait(element("row-#9"))
+
+        // What needs you comes after the projects with work started, as the overview arranges itself.
+        scrollTo(element("section-Needs you"))
+        wait(element("needs-#25"))
+
+        // Customize… lists the widgets, and whether the overview arranges itself.
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        wait(button("Customize…"))
+        button("Customize…").tap()
+        wait(app.navigationBars["Customize My Issues"])
+        wait(element("arrange-automatically"))
+        snapshot("Customize My Issues")
+        button("Done").tap()
+        waitGone(app.navigationBars["Customize My Issues"])
+
+        // The list, from the "…" menu.
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        wait(button("Layout"))
+        button("Layout").tap()
+        wait(button("List"))
+        button("List").tap()
+        wait(element("section-In progress"))
+    }
+
     func testPullToRefreshKeepsTheList() {
         launch()
         wait(element("row-#9"))

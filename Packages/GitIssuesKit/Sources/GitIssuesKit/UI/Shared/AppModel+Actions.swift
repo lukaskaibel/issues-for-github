@@ -591,6 +591,8 @@ extension AppModel {
     func setHidden(_ project: Project, _ hidden: Bool) {
         withAnimation(Theme.spring) {
             if hidden { hiddenProjectIds.insert(project.id) } else { hiddenProjectIds.remove(project.id) }
+            // My Issues' overview leaves hidden projects out.
+            rebuild()
         }
         #if os(macOS)
         guard hidden, scope?.projectId == project.id else { return }

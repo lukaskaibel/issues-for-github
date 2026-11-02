@@ -17,14 +17,17 @@ class AppTestCase: XCTestCase {
     }
 
     /// Starts in My Issues unless the test asks for another tab with `-mobile.tab`; a fresh install opens the Inbox.
+    /// My Issues shows as its list, whose groups and rows the tests know, unless a test asks for the overview with
+    /// `-mine.display`.
     @discardableResult
     func launch(_ arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         let tab = arguments.contains("-mobile.tab") ? [] : ["-mobile.tab", "myIssues"]
+        let display = arguments.contains("-mine.display") ? [] : ["-mine.display", #"{"layout":"list"}"#]
         // In English whatever the simulator's language, since the tests find buttons by their labels. GI_LANGUAGE
         // (TEST_RUNNER_GI_LANGUAGE for xcodebuild) runs them in another, to look at a translation.
         app.launchArguments = ["-demo.active", "YES", "-uiTestReset", "YES", "-AppleLanguages", "(\(language))", "-AppleLocale", appLocale.identifier]
-            + tab + arguments
+            + tab + display + arguments
         app.launch()
         self.app = app
         return app

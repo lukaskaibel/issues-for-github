@@ -51,11 +51,15 @@ enum MineOrder: String, Codable, CaseIterable, Identifiable {
 /// How you see My Issues. GitHub has no view behind it, so this is kept on the device, as your own display of a view
 /// is.
 struct MineDisplay: Codable, Equatable {
+    /// The overview by project, or the list. Grouping only applies to the list; the order to both.
+    var layout: MineLayout = .overview
     var grouping: MineGrouping = .status
     var order: MineOrder = .priority
     var descending = false
 
     var isDefault: Bool { self == MineDisplay() }
+    /// Whether the groups and order are as they start out, whichever layout shows.
+    var optionsAreDefault: Bool { self == MineDisplay(layout: layout) }
 
     /// As the settings keep it: JSON in a string, which reads and writes back like the app's other settings (the
     /// README's picture script puts it back after its run).
@@ -63,7 +67,8 @@ struct MineDisplay: Codable, Equatable {
         (try? JSONEncoder().encode(self)).map { String(decoding: $0, as: UTF8.self) } ?? ""
     }
 
-    init(grouping: MineGrouping = .status, order: MineOrder = .priority, descending: Bool = false) {
+    init(layout: MineLayout = .overview, grouping: MineGrouping = .status, order: MineOrder = .priority, descending: Bool = false) {
+        self.layout = layout
         self.grouping = grouping
         self.order = order
         self.descending = descending
@@ -72,6 +77,19 @@ struct MineDisplay: Codable, Equatable {
     init?(stored: String?) {
         guard let data = stored?.data(using: .utf8), let display = try? JSONDecoder().decode(Self.self, from: data) else { return nil }
         self = display
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case layout, grouping, order, descending
+    }
+
+    /// What older versions kept has no layout, and starts with the overview.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        layout = try container.decodeIfPresent(MineLayout.self, forKey: .layout) ?? .overview
+        grouping = try container.decodeIfPresent(MineGrouping.self, forKey: .grouping) ?? .status
+        order = try container.decodeIfPresent(MineOrder.self, forKey: .order) ?? .priority
+        descending = try container.decodeIfPresent(Bool.self, forKey: .descending) ?? false
     }
 }
 
@@ -348,15 +366,24 @@ extension AppModel {
         }
     }
 
+    /// Groups by status and the most urgent first again, in the layout on screen.
     func resetMineDisplay() {
-        setMineDisplay { $0 = MineDisplay() }
+        setMineDisplay { $0 = MineDisplay(layout: $0.layout) }
+    }
+
+    /// The overview or the list. The keyboard focus starts again from the top, as on another page.
+    func setMineLayout(_ layout: MineLayout) {
+        guard mineDisplay.layout != layout else { return }
+        focusedItemId = nil
+        setMineDisplay { $0.layout = layout }
     }
 
     // MARK: Groups
 
     /// My Issues' list, grouped as chosen. Outside the groups by status, issues that are done or canceled wait at
-    /// the end of their group.
+    /// the end of their group. The overview has a section per project, with what shows of it.
     func mineSections(_ items: [Item]) -> [ListSection] {
+        if mineDisplay.layout == .overview { return overviewSections() }
         switch mineDisplay.grouping {
         case .status: return groupedByKindOfStatus(items)
         case .project: return groupedByProject(items)
