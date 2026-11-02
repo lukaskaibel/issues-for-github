@@ -2,8 +2,8 @@ import Foundation
 import GRDB
 
 extension Mutation {
-    /// Sets or clears one of a project's own fields other than Status, Priority and the due date: an iteration or
-    /// an option of a field like "Workstream".
+    /// Sets or clears one of a project's own fields other than Status, Priority and the due date: an iteration,
+    /// a date, or an option of a field like "Workstream".
     public struct SetProjectField: Codable, Sendable, Equatable {
         public var itemId: String
         public var projectId: String
