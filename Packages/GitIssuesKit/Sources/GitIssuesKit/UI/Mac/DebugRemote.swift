@@ -107,11 +107,42 @@ enum DebugRemote {
             // filter <text>: changes the filter of the view on screen, here only, or My Issues'.
             if let view = model.currentView { model.setFilter(ProjectFilter(argument), of: view) }
             if model.scope == .myIssues { model.setMineFilter(ProjectFilter(argument)) }
+        case "widget":
+            // widget edit on|off, widget auto on|off, widget size <widget> small|medium|large, widget move <widget>|<onto>,
+            // widget remove <widget>, widget add <widget>, widget dump: My Issues' overview. A widget is a project's
+            // title or the arrangement's id: "project/<project id>", "No project", "smart/needsYou",
+            // "smart/dueThisWeek", "smart/doneThisWeek".
+            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            let rest = bits.count > 1 ? bits[1] : ""
+            func widget(_ name: String) -> String {
+                let name = name.trimmingCharacters(in: .whitespaces)
+                return model.projects.first { $0.title.localizedCaseInsensitiveCompare(name) == .orderedSame }.map { "project/\($0.id)" } ?? name
+            }
+            switch bits.first {
+            case "edit": model.editingOverview = rest != "off"
+            case "auto": model.setArrangesAutomatically(rest != "off")
+            case "size":
+                let words = rest.split(separator: " ").map(String.init)
+                if let last = words.last, let size = MineWidgetSize(rawValue: last) {
+                    model.setWidgetSize(widget(words.dropLast().joined(separator: " ")), size)
+                }
+            case "move":
+                let ends = rest.split(separator: "|").map { widget(String($0)) }
+                if ends.count == 2 { model.moveWidget(ends[0], onto: ends[1]) }
+            case "remove": model.removeWidget(widget(rest))
+            case "add":
+                let target = widget(rest)
+                model.addWidget(MineWidget(id: target, size: model.lane(target).map(MineArrangement.size(of:)) ?? .medium))
+            default:
+                break
+            }
+            log("widgets: " + model.overviewWidgets.map { "\($0.id)=\($0.size.rawValue)" }.joined(separator: " ") + " auto=\(model.mineArrangement.automatic)")
         case "display" where model.scope == .myIssues:
-            // display group status|project|priority|dueDate, display sort priority|dueDate|updated|created|manual [desc],
-            // display reset: how My Issues shows.
+            // display layout overview|list, display group status|project|priority|dueDate,
+            // display sort priority|dueDate|updated|created|manual [desc], display reset: how My Issues shows.
             let bits = argument.split(separator: " ").map(String.init)
             switch bits.first {
+            case "layout": model.setMineLayout(MineLayout(rawValue: bits.dropFirst().first ?? "") ?? .overview)
             case "group": model.setMineDisplay { $0.grouping = MineGrouping(rawValue: bits.dropFirst().first ?? "") ?? .status }
             case "sort":
                 model.setMineOrder(MineOrder(rawValue: bits.dropFirst().first ?? "") ?? .priority)

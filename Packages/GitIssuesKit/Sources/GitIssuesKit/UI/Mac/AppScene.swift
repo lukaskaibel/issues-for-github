@@ -37,7 +37,7 @@ public struct GitIssuesScene: Scene {
                 }
                 .keyboardShortcut("k", modifiers: .command)
                 Divider()
-                // On the roadmap, its own two layouts take these keys.
+                // On the roadmap and in My Issues, their own two layouts take these keys.
                 if case .roadmap = model.scope {
                     Button(.timeline) {
                         model.closeDetail()
@@ -47,6 +47,18 @@ public struct GitIssuesScene: Scene {
                     Button(.list) {
                         model.closeDetail()
                         withAnimation(Theme.spring) { model.roadmapLayout = .list }
+                    }
+                    .keyboardShortcut("2", modifiers: .command)
+                } else if model.scope == .myIssues {
+                    // My Issues' overview and list, as the roadmap's layouts.
+                    Button(.overview) {
+                        model.closeDetail()
+                        withAnimation(Theme.spring) { model.setMineLayout(.overview) }
+                    }
+                    .keyboardShortcut("1", modifiers: .command)
+                    Button(.list) {
+                        model.closeDetail()
+                        withAnimation(Theme.spring) { model.setMineLayout(.list) }
                     }
                     .keyboardShortcut("2", modifiers: .command)
                 } else {

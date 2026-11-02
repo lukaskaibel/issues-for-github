@@ -68,6 +68,8 @@ struct MobileRoot: View {
                 ViewFilterSheet(viewId: viewId)
             case .myIssuesFilter:
                 MyIssuesFilterSheet()
+            case .customizeMyIssues:
+                CustomizeMyIssuesSheet()
             case .newView(let projectId, let sourceViewId, let duplicate):
                 NewViewSheet(projectId: projectId, sourceViewId: sourceViewId, duplicate: duplicate)
             case .projectIcon(let projectId):
