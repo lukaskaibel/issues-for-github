@@ -122,6 +122,12 @@ extension AppModel {
     func accountSummary(at now: Date = Date()) -> String {
         "\(viewer?.login ?? "GitHub") · \(syncLine(at: now))"
     }
+
+    /// What to call the signed-in person: the name they gave GitHub, else their login.
+    var viewerName: String {
+        if let name = viewer?.name, !name.isEmpty { return name }
+        return viewer?.login ?? "GitHub"
+    }
 }
 
 extension Platform {
@@ -211,29 +217,7 @@ struct StatusAvatar: View {
     }
 }
 
-/// A project's icon with the state of syncing as a dot cut into its corner, at the top of the sidebar, where
-/// Linear shows its workspace.
-struct StatusProjectIcon: View {
-    @Environment(AppModel.self) private var model
-    var projectId: String
-    var size: CGFloat
-    /// The glyph in white on a tile of its colour, as apps show their icon at the top of a sidebar.
-    var tile = false
-
-    var body: some View {
-        Group {
-            if tile {
-                ProjectTile(projectId: projectId, size: size)
-            } else {
-                ProjectIcon(projectId: projectId, size: size)
-            }
-        }
-        .modifier(SyncDotCutout(size: size, style: model.syncDotStyle))
-        .allowsHitTesting(false)
-    }
-}
-
-/// The dot cut into the lower right corner of an avatar or a project's icon. The cut-out shows whatever is behind,
+/// The dot cut into the lower right corner of an avatar. The cut-out shows whatever is behind,
 /// so it works on any background and on hover.
 private struct SyncDotCutout: ViewModifier {
     var size: CGFloat

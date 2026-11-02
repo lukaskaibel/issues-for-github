@@ -147,15 +147,18 @@ enum Dropdown {
         func same(_ other: NSRect) -> Bool {
             abs(other.minX - anchor.minX) < 1 && abs(other.minY - anchor.minY) < 1 && abs(other.width - anchor.width) < 1
         }
-        guard let event = NSApp.currentEvent, [.leftMouseDown, .leftMouseUp].contains(event.type),
-              anchor.insetBy(dx: -1, dy: -1).contains(screenLocation(of: event)) else { return false }
+        let event = NSApp.currentEvent
         // Opened on mouse down, as the list's cells do: the dropdown is still open.
-        if !(window is DropdownPanel), let open = panels.first, same(open.anchor) {
+        if let event, [.leftMouseDown, .leftMouseUp].contains(event.type),
+           anchor.insetBy(dx: -1, dy: -1).contains(screenLocation(of: event)),
+           !(window is DropdownPanel), let open = panels.first, same(open.anchor) {
             close()
             return true
         }
-        // Opened on mouse up, as buttons do: the press already closed it.
-        if let dismissal, ProcessInfo.processInfo.systemUptime - dismissal.time < 0.8,
+        // Opened on mouse up, as buttons do: the press already closed it. SwiftUI runs a button's action once the
+        // events waiting behind the release are handled, so the event at hand is often the pointer moving on: what
+        // counts is where the press was. A key that opens the same dropdown is never a second click.
+        if event?.type != .keyDown, let dismissal, ProcessInfo.processInfo.systemUptime - dismissal.time < 0.8,
            anchor.insetBy(dx: -1, dy: -1).contains(dismissal.click), dismissal.anchors.contains(where: same) {
             Self.dismissal = nil
             return true
