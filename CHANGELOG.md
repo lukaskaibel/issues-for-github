@@ -46,6 +46,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Fixed a crash on the Mac when switching boards while a column is adding row views.
 - On a wide board on the Mac, a sideways swipe scrolls the columns instead of going back, also with the sidebar
   showing. Going back or forward takes a new swipe once the board is scrolled all the way to that side, and the arrow
   of a swipe no longer stays on screen after it.
