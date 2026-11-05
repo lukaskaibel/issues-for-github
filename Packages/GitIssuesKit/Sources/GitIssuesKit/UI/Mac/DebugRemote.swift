@@ -107,36 +107,54 @@ enum DebugRemote {
             // filter <text>: changes the filter of the view on screen, here only, or My Issues'.
             if let view = model.currentView { model.setFilter(ProjectFilter(argument), of: view) }
             if model.scope == .myIssues { model.setMineFilter(ProjectFilter(argument)) }
-        case "widget":
-            // widget edit on|off, widget auto on|off, widget size <widget> small|medium|large, widget move <widget>|<onto>,
-            // widget remove <widget>, widget add <widget>, widget dump: My Issues' overview. A widget is a project's
-            // title or the arrangement's id: "project/<project id>", "No project", "smart/needsYou",
-            // "smart/dueThisWeek", "smart/doneThisWeek".
+        case "card":
+            // card auto on|off, card move <card>|<index>, card remove <card>, card add <card>, card page <card>|<key>,
+            // card lift <card> <x> <y> (held with its top left corner there, as in the middle of a drag), card drop,
+            // card cancel, card dump: My
+            // Issues' overview. A card is a project's title or the arrangement's id: "project/<project id>",
+            // "No project", "smart/needsYou".
             let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
             let rest = bits.count > 1 ? bits[1] : ""
-            func widget(_ name: String) -> String {
+            func card(_ name: String) -> String {
                 let name = name.trimmingCharacters(in: .whitespaces)
+                if name == "No project" { return ListSection.noProjectId }
                 return model.projects.first { $0.title.localizedCaseInsensitiveCompare(name) == .orderedSame }.map { "project/\($0.id)" } ?? name
             }
             switch bits.first {
-            case "edit": model.editingOverview = rest != "off"
             case "auto": model.setArrangesAutomatically(rest != "off")
-            case "size":
-                let words = rest.split(separator: " ").map(String.init)
-                if let last = words.last, let size = MineWidgetSize(rawValue: last) {
-                    model.setWidgetSize(widget(words.dropLast().joined(separator: " ")), size)
-                }
             case "move":
-                let ends = rest.split(separator: "|").map { widget(String($0)) }
-                if ends.count == 2 { model.moveWidget(ends[0], onto: ends[1]) }
-            case "remove": model.removeWidget(widget(rest))
-            case "add":
-                let target = widget(rest)
-                model.addWidget(MineWidget(id: target, size: model.lane(target).map(MineArrangement.size(of:)) ?? .medium))
+                let ends = rest.split(separator: "|").map(String.init)
+                if ends.count == 2, let index = Int(ends[1]) { withAnimation(Theme.spring) { model.moveCard(card(ends[0]), toShownIndex: index) } }
+            case "remove": model.removeCard(card(rest))
+            case "add": model.addCard(card(rest))
+            case "page":
+                let ends = rest.split(separator: "|").map(String.init)
+                if ends.count == 2 { model.showPage(ends[1], of: card(ends[0])) }
+            case "lift":
+                // Shows a card held part-way: lifted, the slot where it would land, the others out of its way.
+                let words = rest.split(separator: " ").map(String.init)
+                if words.count >= 3, let dx = Double(words[words.count - 2]), let dy = Double(words[words.count - 1]) {
+                    let id = card(words.dropLast(2).joined(separator: " "))
+                    let cards = model.overviewCards
+                    if cards.contains(id) {
+                        // The overview moves the others out of its way, as it does for the pointer.
+                        model.overviewDrag.lift(id, order: cards, from: .zero)
+                        model.overviewDrag.translation = CGSize(width: dx, height: dy)
+                    }
+                }
+            case "drop":
+                if let id = model.overviewDrag.liftedId, let index = model.overviewDrag.order?.firstIndex(of: id) {
+                    withAnimation(Theme.spring) {
+                        model.moveCard(id, toShownIndex: index)
+                        model.overviewDrag.end()
+                    }
+                }
+            case "cancel":
+                withAnimation(Theme.spring) { model.overviewDrag.end() }
             default:
                 break
             }
-            log("widgets: " + model.overviewWidgets.map { "\($0.id)=\($0.size.rawValue)" }.joined(separator: " ") + " auto=\(model.mineArrangement.automatic)")
+            log(overviewState(model))
         case "display" where model.scope == .myIssues:
             // display layout overview|list, display group status|project|priority|dueDate,
             // display sort priority|dueDate|updated|created|manual [desc], display reset: how My Issues shows.
@@ -424,6 +442,20 @@ enum DebugRemote {
             if let character = argument.first {
                 sendKey(characters: String(character), code: 0, modifiers: .command)
             }
+        case "mousedrag":
+            // mousedrag <x1> <y1> <x2> <y2> [esc]: presses at the first point, moves to the second in steps and lets go,
+            // in points from the window's top-left corner, as a hand on the mouse would; "esc" presses Escape on the way.
+            // The events go straight to the window, which takes them in the background as well.
+            let bits = argument.split(separator: " ")
+            let numbers = bits.compactMap { Double($0) }
+            if numbers.count == 4 {
+                mouseDrag(from: CGPoint(x: numbers[0], y: numbers[1]), to: CGPoint(x: numbers[2], y: numbers[3]), escape: bits.last == "esc", model: model)
+            }
+        case "hscroll":
+            // hscroll <x> <y> <dx>: a two-finger swipe sideways over the point, from the touch to the lift, through the
+            // app's own handling of scrolls (and its swipe to go back or forward).
+            let numbers = argument.split(separator: " ").compactMap { Double($0) }
+            if numbers.count == 3 { horizontalScroll(at: CGPoint(x: numbers[0], y: numbers[1]), by: numbers[2], model: model) }
         case "click", "rightclick", "clickmove":
             // click|rightclick <x> <y> in points from the window's top-left corner. clickmove: a click after which the
             // pointer moves on a point, as it does on a trackpad.
@@ -1251,6 +1283,83 @@ enum DebugRemote {
             if let found = findDescription(in: subview) { return found }
         }
         return nil
+    }
+
+    /// The overview's cards in their order, each with the page it shows and its pages.
+    private static func overviewState(_ model: AppModel) -> String {
+        let cards = model.overviewCards.map { id in
+            "\(model.cardTitle(id))[\(model.currentPageKey(of: id) ?? "-")/\(model.overviewPages(of: id).map(\.key).joined(separator: ","))]"
+        }
+        return "cards: " + cards.joined(separator: " ") + " auto=\(model.mineArrangement.automatic) rows=\(model.overviewRowsPerPage) lifted=\(model.overviewDrag.liftedId ?? "-")"
+    }
+
+    private static func mouseDrag(from start: CGPoint, to end: CGPoint, escape: Bool, model: AppModel) {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
+              let content = window.contentView else { return }
+        func location(_ point: CGPoint) -> NSPoint { NSPoint(x: point.x, y: content.bounds.height - point.y) }
+        func event(_ type: NSEvent.EventType, _ point: CGPoint) -> NSEvent? {
+            NSEvent.mouseEvent(
+                with: type, location: location(point), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1
+            )
+        }
+        Task { @MainActor in
+            if let down = event(.leftMouseDown, start) { window.sendEvent(down) }
+            let steps = 24
+            for step in 1...steps {
+                try? await Task.sleep(for: .milliseconds(16))
+                let t = CGFloat(step) / CGFloat(steps)
+                let point = CGPoint(x: start.x + (end.x - start.x) * t, y: start.y + (end.y - start.y) * t)
+                if let dragged = event(.leftMouseDragged, point) { window.sendEvent(dragged) }
+                if escape, step == steps / 2 { sendKey(characters: "\u{1b}", code: 53) }
+            }
+            try? await Task.sleep(for: .milliseconds(120))
+            if let up = event(.leftMouseUp, end) { window.sendEvent(up) }
+            try? await Task.sleep(for: .milliseconds(600))
+            log("mousedrag done: " + overviewState(model))
+        }
+    }
+
+    private static func horizontalScroll(at point: CGPoint, by distance: Double, model: AppModel) {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
+              let content = window.contentView else { return }
+        let inWindow = NSPoint(x: point.x, y: content.bounds.height - point.y)
+        let onScreen = window.convertPoint(toScreen: inWindow)
+        // Quartz counts from the top of the main screen.
+        let quartz = CGPoint(x: onScreen.x, y: (NSScreen.screens.first?.frame.height ?? 0) - onScreen.y)
+        func scroll(_ dx: Int32, phase: Int64) -> NSEvent? {
+            guard let cg = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: 0, wheel2: dx, wheel3: 0) else { return nil }
+            cg.location = quartz
+            cg.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase)
+            cg.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+            return NSEvent(cgEvent: cg)
+        }
+        // The scroll view under the point that scrolls sideways, as a card's pages; the app's handling of swipes sees
+        // the events first, as it would see a hand's.
+        var view = content.hitTest(inWindow)
+        while let current = view, !((current as? NSScrollView).map { ($0.documentView?.frame.width ?? 0) > $0.contentView.bounds.width + 1 } ?? false) {
+            view = current.superview
+        }
+        let pager = view as? NSScrollView
+        log("hscroll over \(pager.map { "\(type(of: $0)) \(Int($0.contentView.bounds.width)) of \(Int($0.documentView?.frame.width ?? 0))" } ?? "no sideways scroll view")")
+        func send(_ event: NSEvent) {
+            if model.debugSwipeHandled(event) { return }
+            if let pager { pager.scrollWheel(with: event) } else { window.sendEvent(event) }
+        }
+        Task { @MainActor in
+            // Began, changed in steps, ended: CGScrollPhase's raw values.
+            let steps = 12
+            let step = Int32(distance / Double(steps))
+            if let began = scroll(step, phase: 1) { send(began) }
+            for _ in 1..<steps {
+                try? await Task.sleep(for: .milliseconds(12))
+                if let changed = scroll(step, phase: 2) { send(changed) }
+            }
+            try? await Task.sleep(for: .milliseconds(12))
+            if let ended = scroll(0, phase: 4) { send(ended) }
+            try? await Task.sleep(for: .milliseconds(900))
+            log("hscroll done: scope=\(String(describing: model.scope)) " + overviewState(model))
+        }
     }
 
     private static func click(at point: CGPoint, right: Bool = false, move: Bool = false) {

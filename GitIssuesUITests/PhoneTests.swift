@@ -161,24 +161,24 @@ final class PhoneTests: AppTestCase {
     func testMyIssuesOverviewShowsEachProject() {
         launch(["-mine.display", #"{"layout":"overview"}"#])
         wait(app.navigationBars["My Issues"])
-        wait(element("section-Git Issues"))
+        // A card per project, Needs you first, as the overview arranges itself.
+        wait(element("card-Needs you"))
+        let project = element("card-Git Issues")
+        scrollTo(project)
+        // The card opens on its first column with issues of yours: In Progress.
         wait(element("row-#9"))
-        // In progress before what is next, in the same project; done issues are counted, not listed.
-        XCTAssertLessThan(element("row-#9").frame.minY, element("row-#25").frame.minY)
-        XCTAssertFalse(element("row-#21").exists)
+        XCTAssertFalse(element("row-#5").exists)
         snapshot("My Issues overview")
 
-        // A project folds like a section.
-        element("section-Git Issues").tap()
+        // Its icons turn to another column's page.
+        project.buttons["In Review, 2"].tap()
+        wait(element("row-#5"))
         waitGone(element("row-#9"))
-        element("section-Git Issues").tap()
+        // A swipe sideways turns back.
+        element("row-#5").swipeRight()
         wait(element("row-#9"))
 
-        // What needs you comes after the projects with work started, as the overview arranges itself.
-        scrollTo(element("section-Needs you"))
-        wait(element("needs-#25"))
-
-        // Customize… lists the widgets, and whether the overview arranges itself.
+        // Customize… lists the cards, and whether the overview arranges itself.
         app.navigationBars.buttons["Options"].firstMatch.tap()
         wait(button("Customize…"))
         button("Customize…").tap()

@@ -392,20 +392,9 @@ private struct MyIssuesToolbarButtons: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            if model.editingOverview, model.mineDisplay.layout == .overview {
-                // Editing the widgets ends here, as the Mac's desktop widgets do.
-                Button {
-                    withAnimation(Theme.spring) { model.editingOverview = false }
-                } label: {
-                    Text(.done).fontWeight(.semibold).padding(.horizontal, 12).frame(height: 30).contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .keyboardShortcut(.defaultAction)
-            } else {
-                HeaderFilterButton(filter: Binding(get: { model.mineFilter }, set: { model.setMineFilter($0) }), scope: .myIssues)
-                DisplayButton(changed: !model.mineDisplay.optionsAreDefault) { close in
-                    MyIssuesDisplayOptions(close: close)
-                }
+            HeaderFilterButton(filter: Binding(get: { model.mineFilter }, set: { model.setMineFilter($0) }), scope: .myIssues)
+            DisplayButton(changed: !model.mineDisplay.optionsAreDefault) { close in
+                MyIssuesDisplayOptions(close: close)
             }
         }
     }

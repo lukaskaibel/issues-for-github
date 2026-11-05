@@ -25,8 +25,9 @@ struct MyIssuesFilterBar: View {
     }
 }
 
-/// How My Issues shows: what the list groups by, and what the list and the overview are ordered by. It has no view on
-/// GitHub, so the choice stays on this Mac; Reset goes back to groups by status, most urgent first.
+/// How My Issues shows: what the list groups by, what the list and the overview are ordered by, and which columns the
+/// overview's cards have a page for. It has no view on GitHub, so the choice stays on this Mac; Reset goes back to
+/// groups by status, most urgent first, and the pages a card starts with.
 struct MyIssuesDisplayOptions: View {
     @Environment(AppModel.self) private var model
     var close: () -> Void
@@ -74,23 +75,34 @@ struct MyIssuesDisplayOptions: View {
             }
             .font(.small)
             if display.layout == .overview {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
-                HStack {
-                    Toggle(isOn: Binding(
-                        get: { model.mineArrangement.automatic },
-                        set: { automatic in withAnimation(Theme.spring) { model.setArrangesAutomatically(automatic) } }
-                    )) {
-                        Text(.arrangeAutomatically)
+                let choices = model.overviewPageChoices
+                if !choices.isEmpty {
+                    Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(.pagesInEachCard)
+                            .font(.smallMedium)
+                            .foregroundStyle(Theme.textSecondary)
+                        ForEach(choices, id: \.key) { choice in
+                            Toggle(isOn: Binding(
+                                get: { display.showsPage(key: choice.key, kind: choice.kind) },
+                                set: { shows in withAnimation(Theme.spring) { model.setShowsPage(choice.key, kind: choice.kind, shows) } }
+                            )) {
+                                Text(verbatim: choice.title)
+                            }
+                            .toggleStyle(.checkbox)
+                        }
                     }
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-                    Spacer(minLength: 8)
-                    Button(.editWidgets) {
-                        close()
-                        withAnimation(Theme.spring) { model.editingOverview = true }
-                    }
-                    .buttonStyle(QuietButtonStyle())
+                    .font(.small)
                 }
+                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                Toggle(isOn: Binding(
+                    get: { model.mineArrangement.automatic },
+                    set: { automatic in withAnimation(Theme.spring) { model.setArrangesAutomatically(automatic) } }
+                )) {
+                    Text(.arrangeAutomatically)
+                }
+                .toggleStyle(.switch)
+                .controlSize(.small)
                 .font(.small)
             }
             if !display.optionsAreDefault {

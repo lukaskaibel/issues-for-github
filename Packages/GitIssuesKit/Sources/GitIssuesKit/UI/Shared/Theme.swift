@@ -31,6 +31,10 @@ enum Theme {
     /// The edge of a second card peeking out under one whose sub-issues are folded into it: a shade darker, as the
     /// notifications behind the first one in a stack are.
     static let cardBehind = Color(light: 0xE4E4E9, dark: 0x242427)
+    /// A row of a card in My Issues' overview under the pointer or the keyboard focus, and the icon of the page a card
+    /// shows: a step lighter than the card in the dark, where the list's grey would vanish on it.
+    static let cardRowHover = Color(light: 0xF0F0F3, dark: 0x37373B)
+    static let cardPageShown = Color(light: 0xE6E6EB, dark: 0x424247)
 
     static let hover = Color(light: 0xEDEDF0, dark: 0x2C2C2F)
     static let selected = Color(light: 0xEBEBEF, dark: 0x2F2F33)
