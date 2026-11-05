@@ -499,6 +499,9 @@ extension AppModel {
         let context = filterContext(projectId: field.projectId)
         switch field.kind {
         case .title: return .text(item.title)
+        case .multiSelect:
+            let ids = context?.value(of: field, in: item)?.optionIds ?? []
+            return ids.isEmpty ? nil : .text(field.options.filter { ids.contains($0.id) }.map(\.name).joined(separator: ", "))
         case .assignees: return item.assignees.first.map { .text($0.login) }
         case .labels: return item.labels.first.map { .text($0.name) }
         case .milestone:
@@ -831,7 +834,15 @@ extension AppModel {
 
     /// Gives issues an option of a single-select field or an iteration, or clears it.
     func setValue(_ value: FieldValue?, of field: ProjectField, for items: [Item]) {
-        perform(items.flatMap { valueMutations($0, field: field, value: value) })
+        let next = (value?.isEmpty ?? true) ? nil : value
+        let targets = items.filter { item in
+            item.projectId == field.projectId && project(of: item)?.viewerCanUpdate == true
+                && !projectEdits.isSaving(ProjectFieldTarget(item: item, fieldId: field.id), in: db, remaps: status.idRemaps)
+                && !valueMutations(item, field: field, value: next).isEmpty
+        }
+        performProjectEdits(targets.flatMap { valueMutations($0, field: field, value: next) }, expected: targets.map {
+            .init(target: ProjectFieldTarget(item: $0, fieldId: field.id), value: next)
+        })
     }
 
     func valueMutations(_ item: Item, field: ProjectField, value: FieldValue?) -> [Mutation] {
@@ -843,6 +854,10 @@ extension AppModel {
             guard item.priorityId != value?.optionId, let fieldId = project(of: item)?.priorityFieldId else { return [] }
             return [.setField(.init(itemId: item.id, projectId: projectId, fieldId: fieldId, kind: .priority, optionId: value?.optionId, base: item.priorityId))]
         }
+        if field.id == project(of: item)?.dueFieldId {
+            guard item.dueDate != value?.date else { return [] }
+            return [.setDate(.init(itemId: item.id, projectId: projectId, date: value?.date, base: item.dueDate))]
+        }
         let current = item.fieldValues[field.id]
         let next = (value?.isEmpty ?? true) ? nil : value
         guard current != next else { return [] }
@@ -850,6 +865,8 @@ extension AppModel {
             field.iterations.first { $0.id == id }?.title
         } else if let id = next?.optionId {
             field.options.first { $0.id == id }?.name
+        } else if let ids = next?.optionIds {
+            field.options.filter { ids.contains($0.id) }.map(\.name).formatted(.list(type: .and))
         } else {
             nil
         }

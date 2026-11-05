@@ -8,6 +8,7 @@ struct IssueScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.wideLayout) private var wide
+    @Environment(\.windowWidth) private var windowWidth
     @Environment(\.dismiss) private var dismiss
     var itemId: String
     /// Opened from the Inbox: what's new on it shows under the title, and the new comments are marked.
@@ -18,14 +19,24 @@ struct IssueScreen: View {
     @State private var pickerFromKeyboard = false
     @State private var editingDescription = false
     @State private var titleLink = TitleLink()
+    @State private var reference: IssueReference?
+    @State private var showsProjects = false
+
+    private var resolvedItem: Item? {
+        model.item(id: itemId) ?? reference.flatMap { model.item(referencedBy: $0) }
+    }
 
     var body: some View {
-        if let item = model.item(id: itemId) {
+        if let item = resolvedItem {
             content(item)
                 .onAppear {
+                    reference = IssueReference(item)
                     model.detailAppeared(item)
                     RecentIssues.record(item.id)
                     if let entry = inboxEntry { model.selectInboxEntry(entry) }
+                }
+                .onChange(of: itemId) { _, id in
+                    reference = model.item(id: id).map(IssueReference.init)
                 }
                 .onDisappear {
                     model.detailDisappeared(item)
@@ -61,7 +72,7 @@ struct IssueScreen: View {
     }
 
     private func content(_ item: Item) -> some View {
-        let regular = wide
+        let regular = wide && windowWidth >= 1000
         let picking = model.isPickingSubIssues(of: item)
         return HStack(alignment: .top, spacing: 0) {
             ScrollView {
@@ -72,7 +83,7 @@ struct IssueScreen: View {
                     }
                     IssueTitleField(item: item, link: titleLink)
                     if !regular {
-                        PropertyChips(item: item, picker: $picker)
+                        PropertyChips(item: item, picker: $picker, onProjects: { showsProjects = true })
                             .padding(.top, 14)
                     }
                     if let entry = inboxEntry, entry.isDue {
@@ -125,6 +136,9 @@ struct IssueScreen: View {
         }
         .sheet(item: $picker, onDismiss: { pickerFromKeyboard = false }) { kind in
             IssuePickerSheet(kind: kind, itemId: item.id, focusesSearch: pickerFromKeyboard)
+        }
+        .sheet(isPresented: $showsProjects) {
+            IssueProjectsSheet(reference: IssueReference(item))
         }
         .background { keyboardShortcuts(item) }
     }
@@ -447,12 +461,12 @@ private struct DescriptionEditor: View {
             accessibilityLabel: .description,
             accessibilityIdentifier: "issue-description"
         )
-        .id(item.id)
+        .id(IssueReference(item).viewID(remaps: model.status.idRemaps))
     }
 
     private func save(_ text: String) {
         // The latest copy, since the view may have been drawn before the last sync.
-        guard let current = model.item(id: item.id) else { return }
+        guard let current = model.item(referencedBy: IssueReference(item)) else { return }
         // Leave untouched text exactly as GitHub stores it, line endings included.
         guard text != Diff3.normalize(current.body) else { return }
         model.setBody(current, to: text)
@@ -467,6 +481,7 @@ private struct PropertyChips: View {
     @Environment(\.openRoute) private var openRoute
     var item: Item
     @Binding var picker: PickerKind?
+    var onProjects: () -> Void
 
     var body: some View {
         chips
@@ -476,6 +491,17 @@ private struct PropertyChips: View {
 
     private var chips: some View {
         FlowLayout(spacing: 8) {
+            if item.contentId != nil || item.projectId != nil {
+                Button(action: onProjects) {
+                    PropertyChip(text: String(localized: .issueProjectsTitle)) {
+                        Image(systemName: "square.grid.2x2").foregroundStyle(Theme.textSecondary)
+                    }
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainPressStyle())
+                .accessibilityIdentifier("issue-projects-details")
+            }
             Menu {
                 StatusMenuItems(item: item)
             } label: {
@@ -614,32 +640,19 @@ private struct PropertiesColumn: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
-                row(.status) {
-                    Menu {
-                        StatusMenuItems(item: item)
-                    } label: {
-                        value {
-                            StatusIcon(glyph: model.glyph(of: item), size: 15)
-                            Text(model.statusText(of: item))
-                                .foregroundStyle(model.statusIsPlaceholder(item) ? Theme.textTertiary : Theme.text)
-                        }
-                    }
-                    .accessibilityLabel(.statusIs(status: model.statusText(of: item)))
-                    .accessibilityIdentifier("property-status")
-                }
-                if model.project(of: item)?.priorityFieldId != nil {
-                    row(.priority) {
+                if !item.isOnBoard {
+                    row(.status) {
                         Menu {
-                            PriorityMenuItems(item: item)
+                            StatusMenuItems(item: item)
                         } label: {
                             value {
-                                PriorityIcon(level: model.priorityLevel(of: item))
-                                Text(model.priorityOption(of: item)?.name ?? String(localized: .noPriority))
-                                    .foregroundStyle(item.priorityId == nil ? Theme.textTertiary : Theme.text)
+                                StatusIcon(glyph: model.glyph(of: item), size: 15)
+                                Text(model.statusText(of: item))
+                                    .foregroundStyle(model.statusIsPlaceholder(item) ? Theme.textTertiary : Theme.text)
                             }
                         }
-                        .accessibilityLabel(model.priorityOption(of: item).map { .priorityIs(priority: $0.name) } ?? .priorityNone)
-                        .accessibilityIdentifier("property-priority")
+                        .accessibilityLabel(.statusIs(status: model.statusText(of: item)))
+                        .accessibilityIdentifier("property-status")
                     }
                 }
                 if item.kind != .draft {
@@ -681,45 +694,9 @@ private struct PropertiesColumn: View {
                         .accessibilityIdentifier("property-labels")
                     }
                 }
-                if model.canHaveDueDate(item) {
-                    row(.dueDate) {
-                        Button { picker = .dueDate } label: {
-                            value {
-                                if let due = model.dueBadge(for: item) {
-                                    DueDateIcon(tone: due.tone, size: 13)
-                                    Text(due.day.mediumLabel())
-                                        .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.text)
-                                } else {
-                                    Text(.addDueDate).foregroundStyle(Theme.textTertiary)
-                                }
-                            }
-                        }
-                        .buttonStyle(PlainPressStyle())
-                        .accessibilityLabel(model.dueBadge(for: item)?.tooltip ?? String(localized: .dueDateNone))
-                        .accessibilityIdentifier("property-due")
-                    }
-                }
-                Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32).padding(.vertical, 12)
-                if let project = model.project(of: item) {
-                    row(.project) {
-                        HStack(spacing: 8) {
-                            ProjectIcon(projectId: project.id)
-                            Text(project.title).lineLimit(1)
-                        }
-                        .padding(.horizontal, 8)
-                    }
-                } else if !item.isOnBoard, !model.boards(toAdd: item).isEmpty {
-                    row(.project) {
-                        Menu {
-                            AddToProjectMenuItems(item: item)
-                        } label: {
-                            value {
-                                Text(.addToProjectPlaceholder).foregroundStyle(Theme.textTertiary)
-                            }
-                        }
-                        .accessibilityIdentifier("property-project")
-                    }
-                }
+                Divider().padding(.vertical, 12)
+                MobileIssueProjects(reference: IssueReference(item))
+                Divider().padding(.vertical, 12)
                 if model.canHaveMilestone(item) {
                     row(.milestone) {
                         Button { picker = .milestone } label: {
@@ -821,6 +798,7 @@ private struct PropertiesColumn: View {
             .padding(.leading, 18)
             .padding(.trailing, 14)
         }
+        .accessibilityIdentifier("issue-properties-scroll")
         .background(Theme.panel)
         .sensoryFeedback(.selection, trigger: item.statusId)
         .sensoryFeedback(.selection, trigger: item.priorityId)

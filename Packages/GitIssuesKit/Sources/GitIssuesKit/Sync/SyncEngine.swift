@@ -10,7 +10,9 @@ public actor SyncEngine {
 
     private var activeProjectId: String?
     private var activeRepoIds: [String] = []
-    private var watchedIssueId: String?
+    private(set) var watchedIssueId: String?
+    /// A view's delayed lifecycle callbacks may still carry the local ID captured before acknowledgement.
+    private var publishedRemaps: [String: String] = [:]
     private var pollInterval: TimeInterval = 15
 
     private var lastPull: [String: Date] = [:]
@@ -130,6 +132,7 @@ public actor SyncEngine {
     }
 
     public func setWatchedIssue(_ contentId: String?) {
+        let contentId = contentId.map { publishedRemaps[$0] ?? $0 }
         guard watchedIssueId != contentId else { return }
         watchedIssueId = contentId
         lastDetailPull = nil
@@ -138,7 +141,7 @@ public actor SyncEngine {
 
     /// Stops refreshing an issue that left the screen, unless another one has been watched since.
     public func unwatchIssue(_ contentId: String) {
-        if watchedIssueId == contentId { watchedIssueId = nil }
+        if watchedIssueId == contentId || watchedIssueId == publishedRemaps[contentId] { watchedIssueId = nil }
     }
 
     public func setPollInterval(_ seconds: TimeInterval) {
@@ -302,9 +305,12 @@ public actor SyncEngine {
         for notice in notices { status.post(notice) }
     }
 
-    @MainActor
-    private func publish(remaps: [String: String]) {
-        status.idRemaps.merge(remaps) { _, new in new }
+    private func publish(remaps: [String: String]) async {
+        publishedRemaps.merge(remaps) { _, new in new }
+        if let watchedIssueId, let replacement = remaps[watchedIssueId] {
+            setWatchedIssue(replacement)
+        }
+        await MainActor.run { status.idRemaps.merge(remaps) { _, new in new } }
     }
 
     // MARK: Project list
@@ -495,8 +501,9 @@ public actor SyncEngine {
                 let removed = try Self.removeMissing(db, projectId: projectId, remoteIds: Set(sweepSnapshot.map(\.id)))
                 notices += removed.notices
                 leftBoard = removed.repoIds
-                remaps = try Self.dropCopiesWithoutProject(db)
                 try Outbox.rebase(db)
+                // Follow only cards that survive queued membership removals.
+                remaps = try Self.dropCopiesWithoutProject(db)
                 try Outbox.clearSettledDirtyFlags(db, projectId: projectId)
                 project.remoteUpdatedAt = behind ? nil : meta.updatedAt
                 project.itemsTotal = meta.itemsTotal
@@ -547,7 +554,8 @@ public actor SyncEngine {
         let rows = try Row.fetchAll(db, sql: """
             SELECT loose.id AS looseId, board.id AS boardId FROM item loose
             JOIN item board ON board.contentId = loose.contentId AND board.projectId IS NOT NULL
-            WHERE loose.projectId IS NULL
+            JOIN project ON project.id = board.projectId
+            WHERE loose.projectId IS NULL AND project.closed = 0
             """)
         for row in rows {
             let looseId: String = row["looseId"]
@@ -708,13 +716,24 @@ public actor SyncEngine {
             switch entry.mutation {
             case .createIssue(let m): m.itemId
             case .addToProject(let m): m.itemId
+            case .setProjectMembership(let m) where m.isMember: m.item.id
             default: nil
             }
         })
         let localItems = try Item.filter(Column("projectId") == projectId).fetchAll(db)
         for item in localItems where !remoteIds.contains(item.id) && !item.isLocalOnly && !justCreated.contains(item.id) {
-            let orphaned = entries.filter {
-                $0.state != .sent && ($0.mutation.itemId == item.id || (item.contentId != nil && $0.mutation.contentId == item.contentId))
+            let orphaned = entries.filter { entry in
+                guard entry.state != .sent else { return false }
+                // A membership belongs to one card; losing this card cannot cancel another project's change
+                // to the same issue, including an addition that has not reached GitHub yet.
+                switch entry.mutation {
+                case .setProjectMembership(let change):
+                    return change.item.projectId == projectId && change.item.id == item.id
+                case .addToProject(let change):
+                    return change.projectId == projectId && change.itemId == item.id
+                default:
+                    return entry.mutation.itemId == item.id || (item.contentId != nil && entry.mutation.contentId == item.contentId)
+                }
             }
             for entry in orphaned { try entry.delete(db) }
             if !orphaned.isEmpty {
@@ -970,11 +989,14 @@ public actor SyncEngine {
             let skip = skipped
             let heldSince = holdingUndoable ? Date().addingTimeInterval(-Self.undoWindow) : .distantFuture
             let next = try await db.writer.write { db -> OutboxEntry? in
-                guard var entry = try OutboxEntry
+                let entries = try OutboxEntry
                     .filter([OutboxState.pending.rawValue, OutboxState.sending.rawValue].contains(Column("state")))
                     .order(Column("id"))
                     .fetchAll(db)
-                    .first(where: { !skip.contains($0.id ?? -1) && !($0.mutation.isUndoable && $0.createdAt > heldSince) }) else { return nil }
+                guard var entry = entries.first(where: {
+                    !skip.contains($0.id ?? -1) && !($0.mutation.isUndoable && $0.createdAt > heldSince)
+                        && !Outbox.isWaitingForProjectRemoval($0, among: entries)
+                }) else { return nil }
                 // Once a write may reach GitHub, later edits must keep its value as their base. Claiming it
                 // in this transaction prevents enqueue from folding a new edit into the sending row.
                 if entry.state == .pending {
@@ -1000,9 +1022,12 @@ public actor SyncEngine {
                 }
                 throw error
             } catch {
-                let notice = try await db.writer.write { db in
-                    try Self.discard(db, entryId: entryId, error: error)
+                let (notice, remaps) = try await db.writer.write { db in
+                    var remaps: [String: String] = [:]
+                    let notice = try Self.discard(db, entryId: entryId, error: error, remaps: &remaps)
+                    return (notice, remaps)
                 }
+                if !remaps.isEmpty { await publish(remaps: remaps) }
                 if let projectId = activeProjectId { forceSweep.insert(projectId) }
                 if let notice { await post([notice]) }
             }
@@ -1088,7 +1113,11 @@ public actor SyncEngine {
             guard let projectId = m.projectId else {
                 return .sent([m.itemId: Item.idWithoutProject(contentId), m.contentId: contentId])
             }
-            let itemId = try await api.addToProject(projectId: projectId, contentId: contentId)
+            if m.createdItemId == nil {
+                m.createdItemId = try await api.addToProject(projectId: projectId, contentId: contentId)
+                try await store(entry, mutation: .createIssue(m), state: .pending)
+            }
+            guard let itemId = m.createdItemId else { return .deferred }
             if let fieldId = m.statusFieldId, let optionId = m.statusId {
                 try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: optionId)
             }
@@ -1109,6 +1138,15 @@ public actor SyncEngine {
                 try await api.setFieldValue(projectId: m.projectId, itemId: itemId, fieldId: fieldId, optionId: optionId)
             }
             return .sent([m.itemId: itemId])
+
+        case .setProjectMembership(let m):
+            guard m.isMember != m.base, let projectId = m.item.projectId, let contentId = m.item.contentId,
+                  m.item.kind != .draft else { break }
+            if m.isMember {
+                let id = try await api.addToProject(projectId: projectId, contentId: contentId)
+                return .sent([m.item.id: id])
+            }
+            try await ignoringGone { try await api.deleteProjectItem(projectId: projectId, itemId: m.item.id) }
 
         case .setParent(let m):
             // Changes that ended where they started need nothing from GitHub.
@@ -1224,6 +1262,16 @@ public actor SyncEngine {
             try await api.setIterationValue(projectId: projectId, itemId: itemId, fieldId: fieldId, iterationId: iterationId)
         } else if let optionId = value.optionId {
             try await api.setFieldValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionId: optionId)
+        } else if let text = value.text {
+            let field = try await db.reader.read { try ProjectField.fetchOne($0, key: fieldId) }
+            guard field?.projectId == projectId, field?.kind == .text else { throw FieldValueWriteError.unsupported }
+            try await api.setTextValue(projectId: projectId, itemId: itemId, fieldId: fieldId, text: text)
+        } else if let number = value.number {
+            let field = try await db.reader.read { try ProjectField.fetchOne($0, key: fieldId) }
+            guard number.isFinite, field?.projectId == projectId, field?.kind == .number else { throw FieldValueWriteError.unsupported }
+            try await api.setNumberValue(projectId: projectId, itemId: itemId, fieldId: fieldId, number: number)
+        } else if let optionIds = value.optionIds {
+            try await api.setMultiSelectValue(projectId: projectId, itemId: itemId, fieldId: fieldId, optionIds: optionIds)
         } else {
             throw FieldValueWriteError.unsupported
         }
@@ -1250,19 +1298,47 @@ public actor SyncEngine {
             try snapshot.update(db)
             try mutation.applyLocally(db)
             if case .createIssue(let m) = mutation {
-                try db.execute(sql: "UPDATE item SET number = ?, url = ? WHERE id = ?", arguments: [m.createdNumber, m.createdUrl, m.itemId])
+                // The issue may already have left its initial project. Creation progress must preserve later
+                // membership changes and publish issue metadata to every retained copy, including the loose one.
+                try Outbox.rebase(db)
+                try db.execute(sql: "UPDATE item SET number = ?, url = ? WHERE contentId = ?", arguments: [m.createdNumber, m.createdUrl, m.contentId])
                 try db.execute(sql: "UPDATE subIssue SET number = ?, url = ? WHERE id = ?", arguments: [m.createdNumber ?? 0, m.createdUrl, m.contentId])
             }
         }
     }
 
     private static func markSent(_ db: Database, entryId: Int64, remaps: [String: String]) throws {
+        if let entry = try OutboxEntry.fetchOne(db, key: entryId), case .createIssue(let creation) = entry.mutation,
+           let serverId = remaps[creation.contentId] {
+            try CreatedIssueIDs.record(db, localId: creation.contentId, serverId: serverId)
+        }
+        if let entry = try OutboxEntry.fetchOne(db, key: entryId),
+           case .setProjectMembership(let membership) = entry.mutation, !membership.isMember {
+            for field in try Outbox.active(db) where field.state == .pending && field.mutation.isProjectItemEdit && field.mutation.itemId == membership.item.id {
+                try field.delete(db)
+            }
+        }
         try db.execute(
             sql: "UPDATE outbox SET state = ?, sentAt = ? WHERE id = ?",
             arguments: [OutboxState.sent.rawValue, Date(), entryId]
         )
-        guard !remaps.isEmpty else { return }
-        for (old, new) in remaps {
+        try remapIDs(db, remaps: remaps)
+        // A pull may already have saved the server card. Merging into it must retain the local edits
+        // whose target IDs just changed, including when their next network request cannot complete.
+        if !remaps.isEmpty { try Outbox.rebase(db) }
+    }
+
+    private static func remapIDs(_ db: Database, remaps: [String: String]) throws {
+        var expanded = remaps.filter { $0.key != $0.value }
+        guard !expanded.isEmpty else { return }
+        // A retained issue's synthetic ID embeds the content ID assigned during creation.
+        for (old, new) in remaps where old != new {
+            let looseId = Item.idWithoutProject(old)
+            if let loose = try Item.fetchOne(db, key: looseId), loose.projectId == nil, loose.contentId == old {
+                expanded[looseId] = Item.idWithoutProject(new)
+            }
+        }
+        for (old, new) in expanded {
             // The board item may be here already, read from GitHub while the change was on its way.
             if try Item.exists(db, key: new) {
                 try db.execute(sql: "DELETE FROM item WHERE id = ?", arguments: [old])
@@ -1286,7 +1362,7 @@ public actor SyncEngine {
             if old.hasPrefix(LabelRef.localPrefix) { try Mutation.CreateLabel.remap(db, from: old, to: new) }
         }
         for var entry in try Outbox.active(db) {
-            let remapped = entry.mutation.remapping(remaps)
+            let remapped = entry.mutation.remapping(expanded)
             if remapped != entry.mutation {
                 entry.mutation = remapped
                 try entry.update(db)
@@ -1295,16 +1371,51 @@ public actor SyncEngine {
     }
 
     /// Gives up on a change GitHub refused, and says so.
-    private static func discard(_ db: Database, entryId: Int64, error: Error) throws -> Notice? {
+    private static func discard(_ db: Database, entryId: Int64, error: Error, remaps: inout [String: String]) throws -> Notice? {
         guard let entry = try OutboxEntry.fetchOne(db, key: entryId) else { return nil }
         let summary = try entry.mutation.summary(db)
         try entry.delete(db)
         if case .createIssue(let m) = entry.mutation {
-            try Item.deleteOne(db, key: m.itemId)
-            try db.execute(sql: "DELETE FROM subIssue WHERE id = ?", arguments: [m.contentId])
+            if m.createdContentId == nil {
+                try withdrawLocalMemberships(db, contentId: m.contentId, originalItemId: m.itemId)
+                try db.execute(sql: "DELETE FROM subIssue WHERE id = ?", arguments: [m.contentId])
+            } else {
+                try retainCreatedIssue(db, creation: m, remaps: &remaps)
+            }
         }
         if case .addComment(let m) = entry.mutation {
             try Comment.deleteOne(db, key: m.commentId)
+        }
+        if case .setProjectMembership(var m) = entry.mutation {
+            let contentId = m.item.contentId
+            let creationPending = try Outbox.active(db).contains { entry in
+                if case .createIssue(let creation) = entry.mutation { return creation.contentId == contentId }
+                return false
+            }
+            if let contentId, contentId.hasPrefix(LocalID.prefix), !creationPending {
+                try withdrawLocalMemberships(db, contentId: contentId, originalItemId: m.item.id)
+            } else {
+                // A reversal queued while this write was in flight starts from the server's unchanged membership.
+                for var following in try Outbox.active(db) where following.state == .pending && following.mutation.coalesceKey == entry.mutation.coalesceKey {
+                    guard case .setProjectMembership(var change) = following.mutation else { continue }
+                    change.base = m.base
+                    if m.base, change.item.id != m.item.id {
+                        // The rejected removal left the original card on GitHub. A re-add and any edits made
+                        // through its temporary card must follow that original card instead of keeping a duplicate.
+                        remaps[change.item.id] = m.item.id
+                        change.item.statusId = m.item.statusId
+                        change.item.priorityId = m.item.priorityId
+                        change.item.dueDate = m.item.dueDate
+                        change.item.fieldValues = m.item.fieldValues
+                    }
+                    following.mutation = .setProjectMembership(change)
+                    try following.update(db)
+                }
+                m.isMember = m.base
+                try m.apply(db)
+                try remapIDs(db, remaps: remaps)
+                try Outbox.rebase(db)
+            }
         }
         // A refused change of parent or blocker is undone here too, so the lists show what GitHub has.
         if case .setParent(var m) = entry.mutation {
@@ -1363,6 +1474,69 @@ public actor SyncEngine {
     }
 
     // MARK: Issue detail and repository data
+
+    /// Remove rejected temporary memberships and their field edits. Limit to the initial project when the
+    /// issue itself was created successfully and only its project setup failed.
+    private static func withdrawLocalMemberships(_ db: Database, contentId: String, originalItemId: String, projectId: String? = nil) throws {
+        guard contentId.hasPrefix(LocalID.prefix) else { return }
+        let entries = try Outbox.active(db)
+        let copies = try Item.filter(Column("contentId") == contentId).fetchAll(db)
+        var cardIds = Set(copies.filter { projectId == nil || $0.projectId == projectId }.map(\.id))
+        cardIds.insert(originalItemId)
+        for entry in entries {
+            switch entry.mutation {
+            case .setProjectMembership(let change) where change.item.contentId == contentId && (projectId == nil || change.item.projectId == projectId):
+                cardIds.insert(change.item.id)
+                try entry.delete(db)
+            case .addToProject(let change) where change.contentId == contentId && (projectId == nil || change.projectId == projectId):
+                cardIds.insert(change.itemId)
+                try entry.delete(db)
+            default: break
+            }
+        }
+        for entry in entries where entry.mutation.isProjectItemEdit && entry.mutation.itemId.map(cardIds.contains) == true {
+            try entry.delete(db)
+        }
+        for copy in copies where projectId == nil || copy.projectId == projectId { try copy.delete(db) }
+    }
+
+    /// Project setup can fail after GitHub has created the issue. Preserve its real identity and let changes
+    /// to other projects continue; only memberships that never reached GitHub should be withdrawn.
+    private static func retainCreatedIssue(_ db: Database, creation: Mutation.CreateIssue, remaps: inout [String: String]) throws {
+        guard let contentId = creation.createdContentId else { return }
+        if creation.createdItemId == nil, let projectId = creation.projectId {
+            try withdrawLocalMemberships(db, contentId: creation.contentId, originalItemId: creation.itemId, projectId: projectId)
+        }
+        var resolved = [creation.contentId: contentId]
+        if let itemId = creation.createdItemId { resolved[creation.itemId] = itemId }
+        try CreatedIssueIDs.record(db, localId: creation.contentId, serverId: contentId)
+        try remapIDs(db, remaps: resolved)
+        let openProjects = Set(try Project.filter(Column("closed") == false).fetchAll(db).map(\.id))
+        let copies = try Item.filter(Column("contentId") == contentId).fetchAll(db)
+        if !copies.contains(where: { $0.projectId.map(openProjects.contains) == true || $0.projectId == nil }) {
+            var retained = creation
+            retained.itemId = Item.idWithoutProject(contentId)
+            retained.contentId = contentId
+            retained.projectId = nil
+            retained.statusId = nil
+            retained.priorityId = nil
+            retained.dueDate = nil
+            retained.fieldValues = nil
+            try Mutation.createIssue(retained).applyLocally(db)
+        }
+        if creation.createdItemId == nil {
+            let items = try Item.filter(Column("contentId") == contentId).fetchAll(db)
+            let kept = items.first { $0.projectId.map(openProjects.contains) == true } ?? items.first { $0.projectId == nil }
+            if let kept {
+                let targetId = kept.projectId == nil ? Item.idWithoutProject(contentId) : kept.id
+                resolved[creation.itemId] = targetId
+                if kept.id != targetId { resolved[kept.id] = targetId }
+            }
+            try remapIDs(db, remaps: resolved)
+        }
+        try Outbox.rebase(db)
+        remaps.merge(resolved) { _, new in new }
+    }
 
     public func loadIssueDetail(contentId: String) async throws {
         guard !isDemo else { return }
@@ -1534,6 +1708,13 @@ public actor SyncEngine {
 
     /// A sync round on the sample data: queued changes are confirmed the way GitHub would confirm them.
     private func demoCycle() async {
+        #if DEBUG
+        // UI tests can hold changes locally to verify values before project metadata catches up.
+        if UserDefaults.standard.bool(forKey: "demo.offline") {
+            await finish(.offline)
+            return
+        }
+        #endif
         do {
             try await db.writer.write { try Outbox.purgeSent($0) }
             let heldSince = Date().addingTimeInterval(-Self.undoWindow)
@@ -1566,6 +1747,8 @@ public actor SyncEngine {
                     remaps = [m.itemId: itemId, m.contentId: contentId]
                 case .addToProject(let m):
                     remaps = [m.itemId: "demo-item-\(UUID().uuidString.lowercased())"]
+                case .setProjectMembership(let m) where m.isMember && !m.base:
+                    remaps = [m.item.id: "demo-item-\(UUID().uuidString.lowercased())"]
                 case .addComment(let m):
                     remaps = [m.commentId: "demo-comment-\(UUID().uuidString.lowercased())"]
                 case .setDate(let m) where m.date != nil:

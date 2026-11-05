@@ -189,12 +189,12 @@ struct DescriptionView: View {
             accessibilityLabel: .description,
             accessibilityIdentifier: "issue-description"
         )
-        .id(item.id)
+        .id(IssueReference(item).viewID(remaps: model.status.idRemaps))
     }
 
     private func save(_ text: String) {
         // The latest copy, since the view may have been drawn before the last sync.
-        guard let current = model.item(id: item.id) else { return }
+        guard let current = model.item(referencedBy: IssueReference(item)) else { return }
         // Leave untouched text exactly as GitHub stores it, line endings included.
         guard text != Diff3.normalize(current.body) else { return }
         model.setBody(current, to: text)
@@ -908,6 +908,7 @@ struct CommentComposer: View {
 /// right there, as on a card.
 struct IssueProperties: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var item: Item
     /// As wide as the longest label in this language needs, and never narrower than in English.
     @State private var labelWidth: CGFloat = 84
@@ -917,6 +918,7 @@ struct IssueProperties: View {
             properties
         }
         .scrollIndicators(.never)
+        .transaction { if reduceMotion { $0.animation = nil; $0.disablesAnimations = true } }
     }
 
     private var properties: some View {
@@ -925,23 +927,14 @@ struct IssueProperties: View {
                 .font(.tinySemibold)
                 .foregroundStyle(Theme.textTertiary)
                 .padding(.bottom, 6)
-            row(.status) {
-                PropertyButton(kind: .status, item: item) {
-                    HStack(spacing: 8) {
-                        StatusIcon(glyph: model.glyph(of: item))
-                        // An issue on no board has no status; clicking here puts it on one.
-                        Text(model.statusText(of: item))
-                            .foregroundStyle(model.statusIsPlaceholder(item) ? Theme.textTertiary : Theme.text)
-                    }
-                }
-            }
-            if model.project(of: item)?.priorityFieldId != nil {
-                row(.priority) {
-                    PropertyButton(kind: .priority, item: item) {
+            if !item.isOnBoard {
+                row(.status) {
+                    PropertyButton(kind: .status, item: item) {
                         HStack(spacing: 8) {
-                            PriorityIcon(level: model.priorityLevel(of: item))
-                            (model.priorityOption(of: item).map { Text($0.name) } ?? Text(.noPriority))
-                                .foregroundStyle(item.priorityId == nil ? Theme.textTertiary : Theme.text)
+                            StatusIcon(glyph: model.glyph(of: item))
+                            // An issue on no board has no status; clicking here puts it on one.
+                            Text(model.statusText(of: item))
+                                .foregroundStyle(model.statusIsPlaceholder(item) ? Theme.textTertiary : Theme.text)
                         }
                     }
                 }
@@ -970,40 +963,18 @@ struct IssueProperties: View {
                     }
                 }
             }
-            if model.canHaveDueDate(item) {
-                row(.dueDate) {
-                    PropertyButton(kind: .dueDate, item: item) {
-                        if let due = model.dueBadge(for: item) {
-                            HStack(spacing: 7) {
-                                DueDateIcon(tone: due.tone, size: 12)
-                                Text(due.day.mediumLabel())
-                                    .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.text)
-                            }
-                            .help(due.tooltip)
-                        } else {
-                            Text(.addDueDate).foregroundStyle(Theme.textTertiary)
-                        }
-                    }
+            ForEach(IssueProjectSection.sections(for: item, items: model.allItems, projects: model.projects, fields: model.fields)) { section in
+                VStack(alignment: .leading, spacing: 1) {
+                    Divider().padding(.vertical, 10)
+                    IssueProjectProperties(section: section, labelWidth: $labelWidth)
                 }
+                .transition(reduceMotion ? .identity : .opacity.combined(with: .offset(y: 6)))
             }
-
+            if item.kind != .draft, item.contentId != nil {
+                Divider().padding(.vertical, 10)
+                IssueProjectsButton(item: item)
+            }
             Divider().padding(.vertical, 10)
-
-            if let project = model.project(of: item) {
-                row(.project) {
-                    HStack(spacing: 8) {
-                        ProjectIcon(projectId: project.id)
-                        Text(project.title).lineLimit(1)
-                    }
-                    .padding(.horizontal, 8)
-                }
-            } else if !item.isOnBoard, !model.boards(toAdd: item).isEmpty {
-                row(.project) {
-                    PropertyButton(kind: .status, item: item) {
-                        Text(.addToProjectPlaceholder).foregroundStyle(Theme.textTertiary)
-                    }
-                }
-            }
             if model.canHaveMilestone(item) {
                 row(.milestone) {
                     PropertyButton(kind: .milestone, item: item) {

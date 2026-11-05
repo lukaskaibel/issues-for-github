@@ -52,6 +52,13 @@ final class FakeGitHub: @unchecked Sendable {
     /// The repository's labels, as GitHub lists them, and whether it refuses to make more, as for someone who can't.
     var labels: [[String: Any]] = []
     var refusesLabels = false
+    var refusesMembershipChanges = false
+    var failsMembershipWrites = false
+    var refusedMembershipProjects: Set<String> = []
+    var refusesIssueCreation = false
+    var failsFieldWrites = false
+    var refusesFieldWrites = false
+    private var addedMemberships = 0
     let token = UUID().uuidString
 
     init(_ issues: [Issue]) {
@@ -202,6 +209,42 @@ final class FakeGitHub: @unchecked Sendable {
                 accepted = nextWriteAccepted
                 nextWriteAccepted = nil
                 data = [name: ["clientMutationId": NSNull()]]
+            } else if query.contains("createIssue(") {
+                if refusesIssueCreation {
+                    return (200, [:], Data(#"{"errors":[{"message":"Issue creation is forbidden","type":"FORBIDDEN"}]}"#.utf8))
+                }
+                let number = (issues.map(\.number).max() ?? 0) + 1
+                let contentId = "I_created_\(number)"
+                issues.append(Issue(contentId: contentId, number: number, title: variables["title"] as? String,
+                                    body: variables["body"] as? String ?? ""))
+                data = ["createIssue": ["issue": ["id": contentId, "number": number, "url": "https://github.com/\(Self.repo)/issues/\(number)"]]]
+            } else if query.contains("addProjectV2ItemById(") || query.contains("deleteProjectV2Item(") {
+                if failsMembershipWrites { return (503, [:], Data("Membership writes are temporarily unavailable".utf8)) }
+                if refusesMembershipChanges || (variables["p"] as? String).map(refusedMembershipProjects.contains) == true {
+                    return (200, [:], Data(#"{"errors":[{"message":"Project membership cannot be changed","type":"FORBIDDEN"}]}"#.utf8))
+                }
+                guard variables["p"] as? String == Self.projectId else {
+                    return (500, [:], Data("Unexpected project in membership write".utf8))
+                }
+                if query.contains("addProjectV2ItemById("), let index = issues.firstIndex(where: { $0.contentId == variables["c"] as? String }) {
+                    if issues[index].itemId == nil {
+                        addedMemberships += 1
+                        issues[index].itemId = "PVTI_added_\(addedMemberships)"
+                    }
+                    log.append("add membership \(issues[index].contentId)")
+                    data = ["addProjectV2ItemById": ["item": ["id": issues[index].itemId!]]]
+                } else if let index = issues.firstIndex(where: { $0.itemId == variables["i"] as? String }) {
+                    let id = issues[index].itemId!
+                    issues[index].itemId = nil
+                    cardValues[id] = nil
+                    log.append("remove membership \(issues[index].contentId)")
+                    data = ["deleteProjectV2Item": ["deletedItemId": id]]
+                } else {
+                    return (500, [:], Data("Unexpected issue in membership write".utf8))
+                }
+                projectUpdatedAt = "2026-10-03T10:00:00Z"
+                accepted = nextWriteAccepted
+                nextWriteAccepted = nil
             } else if query.contains("... on Issue { title body }") {
                 let id = variables["id"] as? String ?? ""
                 log.append("text \(id)")
@@ -215,6 +258,10 @@ final class FakeGitHub: @unchecked Sendable {
                 data = ["addLabelsToLabelable": ["clientMutationId": NSNull()]]
             } else if query.contains("updateProjectV2ItemFieldValue(") || query.contains("clearProjectV2ItemFieldValue(") {
                 fieldWriteLog.append(FieldWrite(query: query, variables: variables))
+                if refusesFieldWrites {
+                    return (200, [:], Data(#"{"errors":[{"message":"Field update is forbidden","type":"FORBIDDEN"}]}"#.utf8))
+                }
+                if failsFieldWrites { return (503, [:], Data("Field writes are temporarily unavailable".utf8)) }
                 guard variables["p"] as? String == Self.projectId,
                       let itemId = variables["i"] as? String,
                       let index = issues.firstIndex(where: { $0.itemId == itemId }),
@@ -233,6 +280,15 @@ final class FakeGitHub: @unchecked Sendable {
                     log.append("set field \(fieldId)")
                 } else if query.contains("singleSelectOptionId: $o"), let option = variables["o"] as? String {
                     value["optionId"] = option
+                    log.append("set field \(fieldId)")
+                } else if query.contains("text: $v"), let text = variables["v"] as? String {
+                    value["text"] = text
+                    log.append("set field \(fieldId)")
+                } else if query.contains("number: $v"), let number = variables["v"] as? Double {
+                    value["number"] = number
+                    log.append("set field \(fieldId)")
+                } else if query.contains("multiSelectOptionIds: $v"), let options = variables["v"] as? [String] {
+                    value["options"] = options.map { ["id": $0] }
                     log.append("set field \(fieldId)")
                 } else {
                     return (500, [:], Data("Unsupported project field write: \(query)".utf8))

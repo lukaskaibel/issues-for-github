@@ -9,6 +9,8 @@ struct DueDatePicker: View {
     var current: Set<String?>
     /// Whether the first date adds a "Due date" field to the project, which the dropdown says once.
     var addsField: Bool
+    /// Other date fields use the same calendar with their own name and clearing action.
+    var fieldName: String? = nil
     var width: CGFloat = 280
     var fieldFont: Font = .ui
     var large = false
@@ -18,9 +20,9 @@ struct DueDatePicker: View {
     var body: some View {
         VStack(spacing: 0) {
             PickerList(
-                placeholder: PickerKind.dueDate.placeholder,
-                items: model.dueDateItems(current: current),
-                hint: PickerKind.dueDate.hint,
+                placeholder: fieldName ?? PickerKind.dueDate.placeholder,
+                items: model.dueDateItems(current: current, clearTitle: fieldName == nil ? nil : String(localized: .projectFieldClear)),
+                hint: fieldName == nil ? PickerKind.dueDate.hint : nil,
                 width: width,
                 maxRows: 7,
                 fieldFont: fieldFont,

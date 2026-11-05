@@ -206,7 +206,7 @@ struct ContentPanel: View {
 
             if let item = openItem {
                 IssueDetailView(item: item)
-                    .id(item.id)
+                    .id(IssueReference(item).viewID(remaps: model.status.idRemaps))
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .offset(x: 14)),
                         removal: .opacity.combined(with: .offset(x: 14))
@@ -235,7 +235,7 @@ struct ContentPanel: View {
             Group {
                 if let item = openItem {
                     IssueProperties(item: item)
-                        .id(item.id)
+                        .id(IssueReference(item).viewID(remaps: model.status.idRemaps))
                 } else {
                     Color.clear
                 }
