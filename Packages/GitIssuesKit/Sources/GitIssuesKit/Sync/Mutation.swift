@@ -20,6 +20,7 @@ public enum Mutation: Codable, Sendable, Equatable {
     case archiveThread(ThreadChange)
     case unsubscribeThread(ThreadChange)
     case addToProject(AddToProject)
+    case setProjectMembership(ProjectMembership)
     case setParent(SetParent)
     case setBlocking(SetBlocking)
     case setMilestone(SetMilestone)
@@ -141,6 +142,8 @@ public enum Mutation: Codable, Sendable, Equatable {
         public var createdAt: Date
         /// Filled in once GitHub has created the issue, so a retry never creates it twice.
         public var createdContentId: String?
+        /// Saved before setting the initial fields, so a later failure can retain the created membership.
+        public var createdItemId: String?
         public var createdNumber: Int?
         public var createdUrl: String?
     }
@@ -190,6 +193,7 @@ extension Mutation {
         case .setState(let m): "state:\(m.contentId)"
         case .deleteItem(let m): "delete:\(m.itemId)"
         case .addToProject(let m): "add:\(m.itemId)"
+        case .setProjectMembership(let m): "membership:\(m.item.contentId ?? m.item.id):\(m.item.projectId ?? "")"
         case .setParent(let m): "parent:\(m.child.contentId)"
         case .setBlocking(let m): "blocking:\(m.blocked.contentId):\(m.blocker.contentId)"
         case .setMilestone(let m): "milestone:\(m.contentId)"
@@ -209,7 +213,8 @@ extension Mutation {
         case .setField(let m): [m.itemId]
         case .setDate(let m): [m.itemId]
         case .move(let m): [m.itemId] + (m.afterItemId.map { [$0] } ?? [])
-        case .setTitle(let m), .setBody(let m): [m.itemId, m.contentId]
+        // Issue text is written by content id; its temporary project card may have been cancelled.
+        case .setTitle(let m), .setBody(let m): [m.contentId]
         case .setState(let m): [m.contentId]
         case .editAssignees(let m): [m.contentId]
         case .editLabels(let m): [m.contentId]
@@ -219,6 +224,8 @@ extension Mutation {
         case .deleteItem(let m): m.isDraft ? [m.itemId] : (m.contentId.map { [$0] } ?? [m.itemId])
         case .markThreadRead, .archiveThread, .unsubscribeThread: []
         case .addToProject(let m): [m.contentId]
+        case .setProjectMembership(let m):
+            (m.isMember || m.isMember == m.base ? [] : [m.item.id]) + [m.item.contentId].compactMap { $0 }
         case .setParent(let m): [m.child.contentId] + [m.parentId, m.base].compactMap { $0 }
         case .setBlocking(let m): [m.blocked.contentId, m.blocker.contentId]
         case .setMilestone(let m): [m.contentId] + [m.milestoneId].compactMap { $0 }
@@ -240,6 +247,7 @@ extension Mutation {
         case .createIssue(let m): m.itemId
         case .deleteItem(let m): m.itemId
         case .addToProject(let m): m.itemId
+        case .setProjectMembership(let m): m.item.id
         case .setProjectField(let m): m.itemId
         default: nil
         }
@@ -255,6 +263,7 @@ extension Mutation {
         case .createIssue(let m): m.contentId
         case .deleteItem(let m): m.contentId
         case .addToProject(let m): m.contentId
+        case .setProjectMembership(let m): m.item.contentId
         case .setParent(let m): m.child.contentId
         case .setBlocking(let m): m.blocked.contentId
         case .setMilestone(let m): m.contentId
@@ -346,6 +355,11 @@ extension Mutation {
             m.itemId = r(m.itemId)
             m.contentId = r(m.contentId)
             return .addToProject(m)
+        case .setProjectMembership(var m):
+            m.item.id = r(m.item.id)
+            m.item.contentId = r(m.item.contentId)
+            m.item.parentId = r(m.item.parentId)
+            return .setProjectMembership(m)
         case .setParent(var m):
             m.child.contentId = r(m.child.contentId)
             m.parentId = r(m.parentId)
@@ -568,6 +582,9 @@ extension Mutation {
             )
             try db.execute(sql: "UPDATE item SET statusId = ?, dirty = 1 WHERE id = ?", arguments: [m.statusId, m.itemId])
 
+        case .setProjectMembership(let m):
+            try m.apply(db)
+
         case .setParent(let m):
             try m.apply(db)
 
@@ -642,6 +659,9 @@ extension Mutation {
         case .addToProject(let m):
             let project = try String.fetchOne(db, sql: "SELECT title FROM project WHERE id = ?", arguments: [m.projectId])
             return line(try number(contentId: m.contentId), project.map { .queuedAddedToProject(project: $0) } ?? .queuedAddedToAProject)
+        case .setProjectMembership(let m):
+            let project = try String.fetchOne(db, sql: "SELECT title FROM project WHERE id = ?", arguments: [m.item.projectId]) ?? ""
+            return line(m.item.displayNumber, m.isMember ? .queuedAddedToProject(project: project) : .queuedRemovedFromProject(project: project))
         case .setParent(let m):
             let text: LocalizedStringResource = if m.parentId == nil {
                 .queuedRemovedFromParent
@@ -725,6 +745,12 @@ public struct OutboxEntry: Codable, FetchableRecord, MutablePersistableRecord, I
 }
 
 public enum Outbox {
+    /// A snapshot at this revision includes every local save up to this queue id, even if its rows were
+    /// coalesced or purged. The outbox uses AUTOINCREMENT, so SQLite retains the last issued id.
+    static func revision(_ db: Database) throws -> Int64 {
+        try Int64.fetchOne(db, sql: "SELECT seq FROM sqlite_sequence WHERE name = ?", arguments: [OutboxEntry.databaseTableName]) ?? 0
+    }
+
     /// How long a sent mutation keeps being re-applied over data read from GitHub.
     static let graceInterval: TimeInterval = 20
 
@@ -864,6 +890,16 @@ extension Mutation {
         case (.setProjectField(var new), .setProjectField(let old)):
             new.base = old.base
             return .setProjectField(new)
+        case (.setProjectMembership(var new), .setProjectMembership(let old)):
+            new.base = old.base
+            new.item.id = old.item.id
+            if new.isMember && old.base {
+                new.item.statusId = old.item.statusId
+                new.item.priorityId = old.item.priorityId
+                new.item.dueDate = old.item.dueDate
+                new.item.fieldValues = old.item.fieldValues
+            }
+            return .setProjectMembership(new)
         case (.updateMilestone(var new), .updateMilestone(let old)):
             // Both changes still have to be sent: what the newer one leaves alone, the older one says.
             new.change.title = new.change.title ?? old.change.title

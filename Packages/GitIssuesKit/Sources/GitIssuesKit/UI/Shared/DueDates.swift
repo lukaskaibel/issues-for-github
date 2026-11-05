@@ -90,8 +90,15 @@ extension AppModel {
     /// has none yet. An issue on no board has nowhere to keep a date, so it is left alone.
     func setDueDate(of items: [Item], to day: CalendarDay?) {
         let value = day?.string
-        perform(items.filter { $0.dueDate != value }.compactMap { item in
+        let targets = items.filter {
+            $0.isOnBoard && ($0.dueDate != value || projectEdits.isSaving(
+                ProjectFieldTarget(item: $0, fieldId: project(of: $0)?.dueFieldId ?? "@due"), in: db, remaps: status.idRemaps
+            ))
+        }
+        performProjectEdits(targets.compactMap { item in
             item.projectId.map { .setDate(.init(itemId: item.id, projectId: $0, date: value, base: item.dueDate)) }
+        }, expected: targets.map {
+            .init(target: ProjectFieldTarget(item: $0, fieldId: project(of: $0)?.dueFieldId ?? "@due"), value: value.map { FieldValue(date: $0) }, dueDate: true)
         })
         if day != nil { notifier.requestPermissionIfNeeded() }
     }
@@ -149,13 +156,13 @@ extension AppModel {
     }
 
     /// The same for issues whose dates are `current` (one value when they share it), such as a new issue's.
-    func dueDateItems(current: Set<String?>, today: CalendarDay = .today()) -> [PickerItem] {
+    func dueDateItems(current: Set<String?>, today: CalendarDay = .today(), clearTitle: String? = nil) -> [PickerItem] {
         var rows = DueDateParser.quickPicks(today: today).map { suggestion in
             dueDateRow(suggestion, selected: current == [suggestion.day.string], today: today)
         }
         if current.contains(where: { $0 != nil }) {
             rows.append(PickerItem(
-                id: "", title: String(localized: .removeDueDateRow),
+                id: "", title: clearTitle ?? String(localized: .removeDueDateRow),
                 icon: AnyView(Image(systemName: "xmark").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary))
             ))
         }

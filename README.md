@@ -120,7 +120,18 @@ unfolds them under it, level by level, as a tree. What blocks the issue and what
 issue carries a red flag with the number of the issue to finish first, as in `#5`, on its card, its list row and its
 line among its parent's sub-issues. Comments sit below, with the field
 for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
-inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arrows in the toolbar.
+inspector on the right (`⌃⌘I` hides it). Each synced open project the issue belongs to has its own section there, with
+its editable fields, including versions, start and finish dates, iterations, text, numbers and multiple-choice
+selections. Click a value to change
+or clear it; empty fields appear too, even when the current board view hides them. Click or tap a project's name
+to collapse or expand its fields. **+ Add to project**, below the
+current projects, opens a searchable picker to add or remove projects, and the × beside a project removes that
+membership. The issue stays intact, including when its last project is removed; membership changes join the offline
+queue. A wide iPad window has the same project groups in its inspector; on iPhone and narrow iPad windows, tap
+**Projects** below the title to open them in a sheet. Each field opens its native editor, and membership and field
+saves run asynchronously while the interface stays responsive. Project transitions and the accordion respect
+Reduce Motion. The project selector opens at full height on iPad. Issues opened only from an Inbox notification can
+be added to a project too. Step to the next issue with the arrows in the toolbar.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">

@@ -75,7 +75,9 @@ extension AppModel {
             ))
             return [add] + stateMutations(item, for: option)
         }
-        withAnimation(Theme.spring) { perform(mutations, inserting: inserted) }
+        performProjectEdits(mutations, inserting: inserted, expected: items.map {
+            .init(target: ProjectFieldTarget(item: $0, fieldId: "@membership"), value: nil, addingToProject: project.id)
+        })
     }
 
     /// Whether an issue counts as finished: in a done or cancelled column, or closed on GitHub.
