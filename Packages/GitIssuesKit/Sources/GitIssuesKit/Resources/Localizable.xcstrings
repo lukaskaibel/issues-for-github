@@ -71107,6 +71107,186 @@
         }
       }
     },
+    "rateIssues" : {
+      "comment" : "iPhone and iPad, account sheet: row that opens the app's page in the App Store to rate it or write a review. 'Issues' is the app's name; keep 'App Store' as Apple writes it in your language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues im App Store bewerten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rate Issues on the App Store"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valorar Issues en el App Store"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noter Issues sur l’App Store"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App StoreでIssuesを評価"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Store에서 Issues 평가하기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avaliar o Issues na App Store"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оценить Issues в App Store"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 App Store 上为 Issues 评分"
+          }
+        }
+      }
+    },
+    "rateIssuesFooter" : {
+      "comment" : "iPhone and iPad, account sheet: note under the row that opens the App Store to rate the app. 'Issues' is the app's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Bewertung oder ein paar Worte im App Store helfen anderen, Issues zu finden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A rating or a few words in the App Store help others find Issues."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una valoración o unas palabras en el App Store ayudan a otros a encontrar Issues."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une note ou quelques mots sur l’App Store aident d’autres personnes à découvrir Issues."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Storeでの評価やひとことのレビューが、ほかの人がIssuesを見つける助けになります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Store에 남긴 평가나 짧은 리뷰는 다른 사람들이 Issues를 찾는 데 도움이 됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uma avaliação ou algumas palavras na App Store ajudam outras pessoas a encontrar o Issues."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оценка или пара слов в App Store помогут другим найти Issues."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 App Store 上评分或写几句评价，能帮助更多人发现 Issues。"
+          }
+        }
+      }
+    },
+    "rateIssuesMenu" : {
+      "comment" : "Mac, app menu: opens the app's page in the App Store to rate it or write a review. 'Issues' is the app's name; keep 'App Store' as Apple writes it in your language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues im App Store bewerten…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rate Issues on the App Store…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valorar Issues en el App Store…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noter Issues sur l’App Store…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App StoreでIssuesを評価…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Store에서 Issues 평가하기…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avaliar o Issues na App Store…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оценить Issues в App Store…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 App Store 上为 Issues 评分…"
+          }
+        }
+      }
+    },
     "readOrUnread" : {
       "comment" : "iPad with a keyboard, Inbox: name of the U key in the keyboard shortcuts overlay (hold ⌘); marks the selected notification read, or unread again.",
       "extractionState" : "manual",

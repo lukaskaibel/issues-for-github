@@ -20,6 +20,8 @@ collects nothing about you.
   the colour, nothing else. Only you and your devices can read them.
 - **Preferences** such as the appearance, the app icon, the order of list sections and the time of reminders stay on
   your device.
+- **When to ask for a rating:** the last few days you opened the app, and when it last asked you to rate it on the App
+  Store, stay on your device. A rating you give goes to Apple, as for any app.
 - **Reminders** of issues that are due are notifications your device schedules itself from the due dates it has
   synced. They are not sent anywhere, and turning them off in Settings removes them.
 

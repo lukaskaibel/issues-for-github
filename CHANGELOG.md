@@ -8,6 +8,10 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Rate Issues on the App Store.** Once you have used Issues on three days, the system asks you for a rating as you
+  finish an issue, closed as completed or moved into a done column: never as the app opens, never on sample data, and
+  at most once a version and two months apart (the system shows it at most three times a year). **Rate Issues on the
+  App Store** is always there too, in the app menu on the Mac and in the account sheet on iPhone and iPad.
 - **My Issues as an overview of your work.** My Issues opens with a widget for each project you work in: what you
   have started there, the three most pressing issues to do next (**3 more to do** shows the rest), and, as counts, what
   waits in the backlog and what you finished this week. A large widget is a lane, In progress, Up next and Later side
