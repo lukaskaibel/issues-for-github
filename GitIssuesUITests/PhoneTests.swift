@@ -159,7 +159,7 @@ final class PhoneTests: AppTestCase {
     }
 
     func testMyIssuesOverviewShowsEachProject() {
-        launch(["-mine.display", #"{"layout":"overview"}"#])
+        launch(["-mine.display", defaultsString(#"{"layout":"overview"}"#)])
         wait(app.navigationBars["My Issues"])
         // A card per project, Needs you first, as the overview arranges itself.
         wait(element("card-Needs you"))
@@ -1072,8 +1072,9 @@ final class PhoneTests: AppTestCase {
         launch(["-mobile.tab", "home", "-demo.loadingProjects", "3"])
         wait(element("home-my-issues"))
         wait(labelled("Loading issues from 3 projects…"))
-        // What has come in so far is counted already.
-        waitForValue(element("home-my-issues"), equalTo: "12")
+        // What has come in so far is counted already: twelve assigned to Jordan, and the seven open posts of Jordan's
+        // blog, which nobody assigns.
+        waitForValue(element("home-my-issues"), equalTo: "19")
         snapshot("Home while projects load")
         element("home-my-issues").tap()
         wait(element("row-#9"))

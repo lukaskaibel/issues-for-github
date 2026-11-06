@@ -23,7 +23,7 @@ class AppTestCase: XCTestCase {
     func launch(_ arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         let tab = arguments.contains("-mobile.tab") ? [] : ["-mobile.tab", "myIssues"]
-        let display = arguments.contains("-mine.display") ? [] : ["-mine.display", #"{"layout":"list"}"#]
+        let display = arguments.contains("-mine.display") ? [] : ["-mine.display", defaultsString(#"{"layout":"list"}"#)]
         // In English whatever the simulator's language, since the tests find buttons by their labels. GI_LANGUAGE
         // (TEST_RUNNER_GI_LANGUAGE for xcodebuild) runs them in another, to look at a translation.
         app.launchArguments = ["-demo.active", "YES", "-uiTestReset", "YES", "-AppleLanguages", "(\(language))", "-AppleLocale", appLocale.identifier]
@@ -31,6 +31,12 @@ class AppTestCase: XCTestCase {
         app.launch()
         self.app = app
         return app
+    }
+
+    /// A text for a setting given at launch, such as JSON: the system reads launch arguments as property lists, and
+    /// drops one that isn't, so the text goes in quotes.
+    func defaultsString(_ text: String) -> String {
+        "\"" + text.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"") + "\""
     }
 
     var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
@@ -245,20 +251,28 @@ class AppTestCase: XCTestCase {
         wait(app.navigationBars[title])
     }
 
-    /// Taps an entry of the iPad sidebar, scrolling the sidebar to it first: under every project's row, the open
-    /// project's milestones and roadmap can be below the bottom of the screen.
+    /// Taps an entry of the iPad sidebar, scrolling the sidebar to it first.
     func tapSidebarEntry(_ title: String) {
+        revealSidebarEntry(title).tap()
+    }
+
+    /// Scrolls the iPad sidebar until an entry shows: under every project's row, the open project's milestones and
+    /// roadmap can be below the bottom of the screen, where the sidebar hasn't made their rows yet.
+    @discardableResult
+    func revealSidebarEntry(_ title: String) -> XCUIElement {
         let entry = sidebarEntry(title)
-        wait(entry)
+        wait(app.cells["projectSection"])
         let screen = app.windows.firstMatch.frame.insetBy(dx: 0, dy: 40)
         var swipes = 0
-        while !screen.contains(entry.frame) && swipes < 4 {
-            // On the Projects heading, which never opens anything.
-            let heading = app.cells["projectSection"]
-            heading.exists ? heading.swipeUp() : entry.swipeUp()
+        while !(entry.exists && screen.contains(entry.frame)) && swipes < 4 {
+            // In the sidebar, lower down to higher up: on whatever row is there, it only scrolls.
+            let window = app.windows.firstMatch
+            window.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.75))
+                .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.35)))
             swipes += 1
         }
-        entry.tap()
+        wait(entry)
+        return entry
     }
 
     /// An entry of the iPad sidebar, by its name: a view, a milestone, the roadmap or a repository.
