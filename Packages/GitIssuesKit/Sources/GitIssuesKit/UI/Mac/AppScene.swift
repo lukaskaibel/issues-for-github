@@ -17,6 +17,9 @@ public struct GitIssuesScene: Scene {
         .windowToolbarStyle(.unified)
         .defaultSize(width: 1280, height: 820)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button(.rateIssuesMenu) { Platform.open(AppReview.writeReviewURL) }
+            }
             CommandGroup(replacing: .newItem) {
                 Button(.newIssue) {
                     model.overlay = .newIssue(statusId: nil, parentItemId: nil)

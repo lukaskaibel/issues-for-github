@@ -599,6 +599,8 @@ public final class AppModel {
     // MARK: Session
 
     func startSyncing() {
+        // Your own GitHub, not the sample data: the days you use the app on count towards asking for a rating.
+        if !isDemo { AppReview.shared.start() }
         let engine = self.engine
         let project = currentProjectId
         Task {
@@ -1581,6 +1583,8 @@ public final class AppModel {
                 for mutation in mutations { try Outbox.enqueue(db, mutation) }
             }
             reloadNow()
+            // An issue finished is a moment to ask for a rating.
+            if finishesWork(mutations) { AppReview.shared.finishedSomething() }
             for parent in completions.parents {
                 status.post(Notice(
                     title: String(localized: .parentDoneWithSubIssues(number: parent.displayNumber)), message: parent.title,

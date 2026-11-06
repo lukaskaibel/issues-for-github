@@ -8,21 +8,25 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Rate Issues on the App Store.** Once you have used Issues on three days, the system asks you for a rating as you
+  finish an issue, closed as completed or moved into a done column: never as the app opens, never on sample data, and
+  at most once a version and two months apart (the system shows it at most three times a year). **Rate Issues on the
+  App Store** is always there too, in the app menu on the Mac and in the account sheet on iPhone and iPad.
 - **My Issues as an overview of your work.** My Issues opens with a card for each project you work in, all the same
-  size, so they fill the window side by side. A card pages sideways through the columns of its board that hold issues
-  of yours, what you have started first: swipe with two fingers, or click one of the status icons beside its name,
-  under which it says which column you see and how many issues are in it. When a column holds more than a page shows,
-  "39 more in Notebook" leads to the rest on the project. **Pages in Each Card** in Display picks the columns: what is in progress and
-  to do to start with, the backlog, cards without a status and **Done this week** when you ask for them. **Needs you**
-  pages through what wants you now, whatever the project: overdue, due today, urgent and not started, idle for a week,
-  or on no board. The overview arranges itself, what needs you first and work in progress next, until you drag a card
-  by its name: it lifts, a slot shows where it will land and the others make room; Esc puts it back. Right-click a card
-  to show its project or take it out, and beside the cards to add it back or let the overview arrange itself again.
-  Your order is the same on your Mac, iPhone and iPad. On the Mac, drop an issue on a status icon of its card to move
-  it to that column, and ← → turn the page of the card the keyboard is in. On iPad the cards stand two or three to a
-  row, on iPhone one under another, and **Customize…** in the "…" menu arranges them. **List** in the toolbar (`⌘2`,
-  and `⌘1` back; on iPhone and iPad in the "…" menu) shows everything as one list again, with its groups and order; the
-  filter applies to both.
+  size, so they fill the window side by side. A card pages sideways through the columns of its board that hold issues of
+  yours, what you have started first: swipe with two fingers, or click one of the status icons beside its name, under
+  which it says which column you see and how many issues are in it. When a column holds more than a page shows, "39 more
+  in Notebook" leads to the rest on the project. **Pages in Each Card** in Display picks the columns: what is in
+  progress and to do to start with, the backlog, cards without a status and **Done this week** when you ask for them.
+  **Needs you** pages through what wants you now, whatever the project: overdue, due today, urgent and not started, idle
+  for a week, or on no board. The overview arranges itself, what needs you first and work in progress next, until you
+  drag a card by its name: it lifts, a slot shows where it will land and the others make room; Esc puts it back.
+  Right-click a card to show its project or take it out, and beside the cards to add it back or let the overview arrange
+  itself again. Your order is the same on your Mac, iPhone and iPad. On the Mac, drop an issue on a status icon of its
+  card to move it to that column, and ← → turn the page of the card the keyboard is in. On iPad the cards stand two or
+  three to a row, on iPhone one under another, and **Customize…** in the "…" menu arranges them. **List** in the toolbar
+  (`⌘2`, and `⌘1` back; on iPhone and iPad in the "…" menu) shows everything as one list again, with its groups and
+  order; the filter applies to both.
 - **Zoom and date editing on timelines.** Pinch to zoom on a trackpad or iPad, use the zoom buttons, or on the Mac
   use ⌘+ and ⌘− or hold ⌘ while scrolling; ⌘0 or the Reset Zoom button resets to the selected Months or Quarters
   preset. Zoom stays between 1 and 40 points per day and keeps the date under the pointer or the centre of the
