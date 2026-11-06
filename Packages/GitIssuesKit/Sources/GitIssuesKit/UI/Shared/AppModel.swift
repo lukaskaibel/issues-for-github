@@ -228,9 +228,19 @@ public final class AppModel {
     private(set) var projectLooks: ProjectLooks
     /// How My Issues' overview is arranged, the same on every device of yours.
     private(set) var overviewArrangement: OverviewArrangementStore
-    /// The Mac's Edit Widgets: every widget of My Issues' overview shows its size and can be taken out, and a shelf
-    /// offers what can be added.
-    var editingOverview = false
+    /// The page each card of My Issues' overview shows, by the card's id: the key of a column (`MineColumn.key`) or a
+    /// reason of Needs you. Kept on this device.
+    var overviewPages = UserDefaults.standard.dictionary(forKey: "mine.pages") as? [String: String] ?? [:] {
+        didSet { UserDefaults.standard.set(overviewPages, forKey: "mine.pages") }
+    }
+    /// How many issues a page of the overview's cards has room for, as the cards are drawn: the keyboard steps through
+    /// those only. Set by the overview with `setOverviewRowsPerPage`.
+    @ObservationIgnored var overviewRowsPerPage = 10
+    /// A card of the overview held by its name to move it (Mac).
+    let overviewDrag = OverviewCardDrag()
+    /// Where the overview's cards are in the window: a two-finger swipe over one turns its pages rather than going back
+    /// or forward (Mac).
+    @ObservationIgnored var overviewCardFrames: [String: CGRect] = [:]
 
     // Derived from the above for the current scope.
     /// The columns the board shows, without those you hid. The list has every status: see `listColumns`.
@@ -406,6 +416,8 @@ public final class AppModel {
     /// My Issues' overview, worked out once per change of the data.
     @ObservationIgnored var mineLanesCache: [MineLane]?
     @ObservationIgnored var needsYouCache: [NeedsYouEntry]?
+    /// Your issues (`myItems`), worked out once per change too.
+    @ObservationIgnored var myItemsCache: [Item]?
     /// Projects tucked away in the sidebar. They can still be found in the command palette.
     var hiddenProjectIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenProjects") ?? []) {
         didSet { UserDefaults.standard.set(Array(hiddenProjectIds), forKey: "hiddenProjects") }
@@ -1290,6 +1302,7 @@ public final class AppModel {
         mineRulesCache = nil
         mineLanesCache = nil
         needsYouCache = nil
+        myItemsCache = nil
         planningCache = PlanningCache()
         dataVersion &+= 1
 

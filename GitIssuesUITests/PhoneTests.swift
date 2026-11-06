@@ -159,26 +159,32 @@ final class PhoneTests: AppTestCase {
     }
 
     func testMyIssuesOverviewShowsEachProject() {
-        launch(["-mine.display", #"{"layout":"overview"}"#])
+        launch(["-mine.display", defaultsString(#"{"layout":"overview"}"#)])
         wait(app.navigationBars["My Issues"])
-        wait(element("section-Git Issues"))
-        wait(element("row-#9"))
-        // In progress before what is next, in the same project; done issues are counted, not listed.
-        XCTAssertLessThan(element("row-#9").frame.minY, element("row-#25").frame.minY)
-        XCTAssertFalse(element("row-#21").exists)
+        // A card per project, Needs you first, as the overview arranges itself.
+        wait(element("card-Needs you"))
+        let project = element("card-Git Issues")
+        scrollTo(project)
+        // The card opens on its first column with issues of yours: In Progress. The next page waits beside it. Rows
+        // are looked for in the card: the project's own list, alive behind My Issues, has them too.
+        func row(_ number: Int) -> XCUIElement {
+            project.descendants(matching: .any).matching(identifier: "row-#\(number)").firstMatch
+        }
+        wait(row(9))
+        waitOnPage(row(9), of: project)
+        XCTAssertFalse(isOnPage(row(5), of: project))
         snapshot("My Issues overview")
 
-        // A project folds like a section.
-        element("section-Git Issues").tap()
-        waitGone(element("row-#9"))
-        element("section-Git Issues").tap()
-        wait(element("row-#9"))
+        // Its icons turn to another column's page.
+        project.buttons["In Review, 2"].tap()
+        waitOnPage(row(5), of: project)
+        XCTAssertFalse(isOnPage(row(9), of: project))
+        // A swipe sideways across the card turns back, as a finger does it: most of the way, quickly.
+        let start = project.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.7))
+        start.press(forDuration: 0.05, thenDragTo: project.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.7)), withVelocity: .fast, thenHoldForDuration: 0)
+        waitOnPage(row(9), of: project)
 
-        // What needs you comes after the projects with work started, as the overview arranges itself.
-        scrollTo(element("section-Needs you"))
-        wait(element("needs-#25"))
-
-        // Customize… lists the widgets, and whether the overview arranges itself.
+        // Customize… lists the cards, and whether the overview arranges itself.
         app.navigationBars.buttons["Options"].firstMatch.tap()
         wait(button("Customize…"))
         button("Customize…").tap()
@@ -195,6 +201,18 @@ final class PhoneTests: AppTestCase {
         wait(button("List"))
         button("List").tap()
         wait(element("section-In progress"))
+    }
+
+    /// Whether a row stands on the page a card shows, rather than on one beside it, waiting to be swiped to: on
+    /// iPhone the card is as wide as the screen, so the pages beside it are off the screen.
+    private func isOnPage(_ row: XCUIElement, of card: XCUIElement) -> Bool {
+        row.exists && app.windows.firstMatch.frame.contains(CGPoint(x: row.frame.midX, y: row.frame.midY))
+    }
+
+    private func waitOnPage(_ row: XCUIElement, of card: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        let deadline = Date().addingTimeInterval(6)
+        while !isOnPage(row, of: card), Date() < deadline { RunLoop.current.run(until: Date().addingTimeInterval(0.2)) }
+        XCTAssertTrue(isOnPage(row, of: card), "\(row) is not on the card's page", file: file, line: line)
     }
 
     func testPullToRefreshKeepsTheList() {
@@ -1054,8 +1072,9 @@ final class PhoneTests: AppTestCase {
         launch(["-mobile.tab", "home", "-demo.loadingProjects", "3"])
         wait(element("home-my-issues"))
         wait(labelled("Loading issues from 3 projects…"))
-        // What has come in so far is counted already.
-        waitForValue(element("home-my-issues"), equalTo: "12")
+        // What has come in so far is counted already: twelve assigned to Jordan, and the seven open posts of Jordan's
+        // blog, which nobody assigns.
+        waitForValue(element("home-my-issues"), equalTo: "19")
         snapshot("Home while projects load")
         element("home-my-issues").tap()
         wait(element("row-#9"))

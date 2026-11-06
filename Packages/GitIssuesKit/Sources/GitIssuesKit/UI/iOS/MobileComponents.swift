@@ -30,8 +30,6 @@ struct IssueRow: View {
     var showsEpic = true
     /// The project's own fields the view shows, such as an iteration.
     var chips: [FieldChip] = []
-    /// In My Issues' overview, how long a started issue has gone without a change, once that is a week or more.
-    var idleDays: Int? = nil
     @ScaledMetric(relativeTo: .body) private var glyphSize: CGFloat = 20
     @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 26
 
@@ -154,12 +152,6 @@ struct IssueRow: View {
                     Text(due.label)
                 }
             }
-            if let idleDays {
-                HStack(spacing: 4) {
-                    Image(systemName: "clock")
-                    Text(.overviewIdle(days: idleDays))
-                }
-            }
             if showsParent, let epic = epicParent {
                 // An epic by its icon and name, like a project in Linear; a long name gives way to what follows.
                 HStack(spacing: 4) {
@@ -243,7 +235,6 @@ struct IssueRow: View {
             parts.append(String(localized: .assignedToSpoken(names: item.assignees.map(\.login).joined(separator: ", "))))
         }
         if let due = model.dueBadge(for: item) { parts.append(due.tooltip) }
-        if let idleDays { parts.append(String(localized: .overviewIdleTooltip(days: idleDays))) }
         if showsMilestone, let milestone = model.milestoneTitle(of: item) {
             parts.append(String(localized: .milestoneTooltip(milestone: milestone)))
         }

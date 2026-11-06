@@ -1,7 +1,8 @@
 import Foundation
 import GRDB
 
-/// The sample projects shown in "Explore with sample data": a small team building an app and its website.
+/// The sample projects shown in "Explore with sample data": a small team building an app and its website, and Jordan's
+/// own blog, where nobody assigns issues since Jordan writes it alone.
 /// Kept in memory, so nothing here ever reaches GitHub and a fresh copy appears each time.
 public enum DemoData {
     static let viewer = Viewer(id: "demo-user-jordan", login: "jordan", name: "Jordan Lee", avatarUrl: nil)
@@ -32,6 +33,9 @@ public enum DemoData {
         var hasPriority = true
         /// Whether it has a "Due date" field; on the website the first date adds one.
         var hasDueField = true
+        /// Whose project it is: the team's organisation, or a person's own.
+        var owner = "acme"
+        var ownerIsOrg: Bool { owner == "acme" }
     }
 
     private static let appLabels = [
@@ -64,10 +68,22 @@ public enum DemoData {
         hasDueField: false
     )
 
-    /// The projects' glyphs and colours, which the app keeps itself: the Mac app on a laptop, the website on a globe.
+    /// Jordan's blog, a project of Jordan's own: its issues are assigned to nobody, and My Issues takes them in.
+    private static let blog = ProjectSpec(
+        id: "demo-project-blog", number: 3, title: "Blog", repoId: "demo-repo-blog", repo: "jordan/blog",
+        statuses: [("Ideas", "GRAY"), ("Next", "BLUE"), ("Writing", "YELLOW"), ("Editing", "ORANGE"), ("Done", "PURPLE")],
+        labels: [],
+        hasPriority: false,
+        hasDueField: false,
+        owner: "jordan"
+    )
+
+    /// The projects' glyphs and colours, which the app keeps itself: the Mac app on a laptop, the website on a globe,
+    /// the blog on a pencil.
     static let looks: [String: ProjectLook] = [
         app.id: ProjectLook(glyph: ProjectGlyph(key: "laptop") ?? .table, color: "BLUE"),
         site.id: ProjectLook(glyph: ProjectGlyph(key: "globe") ?? .table, color: "GREEN"),
+        blog.id: ProjectLook(glyph: ProjectGlyph(key: "pencil") ?? .table, color: "ORANGE"),
     ]
 
     /// How views show on this device to start with: This Week's board without Backlog, which a cycle leaves empty.
@@ -198,6 +214,19 @@ public enum DemoData {
         IssueSpec(number: 35, title: "Dark mode for the docs", status: "Done", priority: "Medium", labels: ["design"], assignees: [kai], hoursAgo: 60),
     ]
 
+    /// Jordan's blog: posts being written and edited, those next, ideas for later, and one published this week. Numbered
+    /// apart from the app's issues, whose ids they would otherwise share.
+    private static let blogIssues: [IssueSpec] = [
+        IssueSpec(number: 61, title: "How we built an offline queue that never loses a change", status: "Writing", priority: nil, hoursAgo: 6),
+        IssueSpec(number: 62, title: "Springs, not curves: dragging cards that feel right", status: "Editing", priority: nil, hoursAgo: 26),
+        IssueSpec(number: 63, title: "Keyboard first: J, K and the rest", status: "Next", priority: nil, hoursAgo: 40),
+        IssueSpec(number: 64, title: "Notes from the first hundred users", status: "Next", priority: nil, hoursAgo: 52),
+        IssueSpec(number: 65, title: "Dates in the RSS feed are a day off", status: "Next", priority: nil, hoursAgo: 20),
+        IssueSpec(number: 66, title: "A talk on GitHub Projects for small teams", status: "Ideas", priority: nil, hoursAgo: 90),
+        IssueSpec(number: 67, title: "Why the app has no settings for colours", status: "Ideas", priority: nil, hoursAgo: 120),
+        IssueSpec(number: 68, title: "Announcing 0.2: the board on iPhone and iPad", status: "Done", priority: nil, hoursAgo: 30),
+    ]
+
     /// Issues filed straight in the app's repository, on no board yet: they show under "No project".
     private static let appIssuesWithoutProject: [IssueSpec] = [
         IssueSpec(number: 27, title: "App quits when a project has no Status field", status: "", priority: nil, labels: ["bug"], assignees: [viewer.person], body: "Reported on 0.1.0: open a project without a Status field and the app quits right away.", hoursAgo: 4),
@@ -259,10 +288,10 @@ public enum DemoData {
                 url: "https://github.com/\(app.repo)/milestone/\(milestone.number)"
             ).insert(db)
         }
-        for (spec, issues) in [(app, longBoard(appIssues)), (site, siteIssues)] {
+        for (spec, issues) in [(app, longBoard(appIssues)), (site, siteIssues), (blog, blogIssues)] {
             try Project(
-                id: spec.id, ownerLogin: "acme", ownerIsOrg: true, number: spec.number, title: spec.title,
-                url: "https://github.com/orgs/acme/projects/\(spec.number)", closed: false, viewerCanUpdate: true,
+                id: spec.id, ownerLogin: spec.owner, ownerIsOrg: spec.ownerIsOrg, number: spec.number, title: spec.title,
+                url: "https://github.com/\(spec.ownerIsOrg ? "orgs" : "users")/\(spec.owner)/projects/\(spec.number)", closed: false, viewerCanUpdate: true,
                 remoteUpdatedAt: nil, itemsTotal: issues.count,
                 statusFieldId: "\(spec.id)-status", priorityFieldId: spec.hasPriority ? "\(spec.id)-priority" : nil,
                 dueFieldId: spec.hasDueField ? "\(spec.id)-due" : nil, lastSyncedAt: now
@@ -281,7 +310,7 @@ public enum DemoData {
             }
             try RepoRef(
                 id: spec.repoId, nameWithOwner: spec.repo, projectId: spec.id,
-                labels: spec.labels, assignableUsers: team, metaLoadedAt: now
+                labels: spec.labels, assignableUsers: spec.ownerIsOrg ? team : [viewer.person], metaLoadedAt: now
             ).insert(db)
             try seedFieldsAndViews(db, spec: spec, today: today)
 
@@ -466,6 +495,7 @@ public enum DemoData {
         switch repoId {
         case app.repoId: (appLabels, team)
         case site.repoId: (siteLabels, team)
+        case blog.repoId: ([], [viewer.person])
         default: (brandLabels, team)
         }
     }

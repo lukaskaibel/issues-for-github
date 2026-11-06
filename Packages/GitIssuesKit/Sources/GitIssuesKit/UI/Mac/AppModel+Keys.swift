@@ -86,6 +86,11 @@ extension AppModel {
             }
             return false
         }
+        // A card of My Issues' overview held by its name goes back where it was.
+        if overviewDrag.liftedId != nil {
+            if isEscape { withAnimation(Theme.spring) { overviewDrag.cancel() } }
+            return isEscape
+        }
         // Escape always closes the palette or dialog, whatever has focus inside it. A popover of the dialog
         // (a picker) is a window of its own and closes itself first.
         if isEscape, overlay != nil, NSApp.keyWindow == nil || NSApp.keyWindow === mainWindow {
@@ -102,11 +107,6 @@ extension AppModel {
                 return true
             }
             return false
-        }
-        // Escape ends editing My Issues' widgets, as Done does.
-        if isEscape, editingOverview, openItem == nil {
-            withAnimation(Theme.spring) { editingOverview = false }
-            return true
         }
         // Text being typed in takes its keys; a comment, which is only read, leaves them to the app even when text in it
         // is selected.
@@ -252,9 +252,12 @@ extension AppModel {
             stepDown(-1)
             return true
         case 123: // left
+            // In My Issues' overview, the card in focus turns to its page before.
+            if turnFocusedPage(-1) { return true }
             stepColumn(-1)
             return viewMode == .board && openItem == nil
         case 124: // right
+            if turnFocusedPage(1) { return true }
             stepColumn(1)
             return viewMode == .board && openItem == nil
         case 36: // return

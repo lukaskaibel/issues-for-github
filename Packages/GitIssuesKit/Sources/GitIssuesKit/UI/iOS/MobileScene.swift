@@ -430,7 +430,7 @@ struct MainTabs: View {
     private func reveal(_ itemId: String) {
         guard let item = model.item(id: itemId) else { return }
         navigation.sheet = nil
-        let mine = model.assignedItems.contains { $0.id == item.id }
+        let mine = model.myItems.contains { $0.id == item.id }
         if mine {
             navigation.tab = .myIssues
             navigation.myIssuesPath = [.issue(item.id)]

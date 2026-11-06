@@ -6,7 +6,7 @@ struct IssueListView: View {
 
     var body: some View {
         if model.sections.isEmpty {
-            if model.scope == .myIssues, !model.mineFilter.isEmpty, !model.assignedItems.isEmpty {
+            if model.scope == .myIssues, !model.mineFilter.isEmpty, !model.myItems.isEmpty {
                 // The filter hides everything; one click shows it all again.
                 EmptyState(title: String(localized: .nothingMatchesFilterTitle), message: String(localized: .nothingMatchesFilterMessage)) {
                     Button(.clearFilter) { model.setMineFilter(ProjectFilter("")) }

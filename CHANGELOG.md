@@ -12,19 +12,21 @@ All notable changes to this project are recorded here. The format follows
   finish an issue, closed as completed or moved into a done column: never as the app opens, never on sample data, and
   at most once a version and two months apart (the system shows it at most three times a year). **Rate Issues on the
   App Store** is always there too, in the app menu on the Mac and in the account sheet on iPhone and iPad.
-- **My Issues as an overview of your work.** My Issues opens with a widget for each project you work in: what you
-  have started there, the three most pressing issues to do next (**3 more to do** shows the rest), and, as counts, what
-  waits in the backlog and what you finished this week. A large widget is a lane, In progress, Up next and Later side
-  by side, so large ones read down a column for everything you're doing; a medium one stacks them, a small one counts.
-  **Needs you** lists what wants you now, whatever the project: overdue, due today, urgent and not started, idle for a
-  week, or on no board; **Due this week** and **Done this week** can join it. The overview arranges itself, work in
-  progress first and large, until you move something: drag a widget by its header, or right-click it to change its
-  size or take it out, and **Edit Widgets** shows every size and what can be added. Your arrangement is the same on
-  your Mac, iPhone and iPad. On the Mac, drag an issue from Up next to In progress to start it, or back. A started issue
-  nobody has touched for a week says how long it has been idle, and a project's widget how many of its issues are
-  overdue; hidden projects stay out. On iPhone and iPad the widgets are a list, small projects two to a row, arranged
-  in **Customize…** in the "…" menu. **List** in the toolbar (`⌘2`, and `⌘1` back; on iPhone and iPad in the "…"
-  menu) shows everything as one list again, with its groups and order; the filter applies to both.
+- **My Issues as an overview of your work.** My Issues opens with a card for each project you work in, all the same
+  size, so they fill the window side by side. A card pages sideways through the columns of its board that hold issues of
+  yours, what you have started first: swipe with two fingers, or click one of the status icons beside its name, under
+  which it says which column you see and how many issues are in it. When a column holds more than a page shows, "39 more
+  in Notebook" leads to the rest on the project. **Pages in Each Card** in Display picks the columns: what is in
+  progress and to do to start with, the backlog, cards without a status and **Done this week** when you ask for them.
+  **Needs you** pages through what wants you now, whatever the project: overdue, due today, urgent and not started, idle
+  for a week, or on no board. The overview arranges itself, what needs you first and work in progress next, until you
+  drag a card by its name: it lifts, a slot shows where it will land and the others make room; Esc puts it back.
+  Right-click a card to show its project or take it out, and beside the cards to add it back or let the overview arrange
+  itself again. Your order is the same on your Mac, iPhone and iPad. On the Mac, drop an issue on a status icon of its
+  card to move it to that column, and ← → turn the page of the card the keyboard is in. On iPad the cards stand two or
+  three to a row, on iPhone one under another, and **Customize…** in the "…" menu arranges them. **List** in the toolbar
+  (`⌘2`, and `⌘1` back; on iPhone and iPad in the "…" menu) shows everything as one list again, with its groups and
+  order; the filter applies to both.
 - **Zoom and date editing on timelines.** Pinch to zoom on a trackpad or iPad, use the zoom buttons, or on the Mac
   use ⌘+ and ⌘− or hold ⌘ while scrolling; ⌘0 or the Reset Zoom button resets to the selected Months or Quarters
   preset. Zoom stays between 1 and 40 points per day and keeps the date under the pointer or the centre of the
@@ -38,6 +40,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **My Issues finds your issues in projects you work on alone.** Where nobody else has an open issue in a project,
+  the issues assigned to nobody are yours too: they show in My Issues, its count and its overview, since in a project
+  of your own you rarely assign issues to yourself.
 - A timeline keeps the width of a day its zoom gives it. A short plan is no longer stretched across the window; the
   room after it shows the days to come.
 - **The sidebar says what each part covers.** On the Mac the Inbox and My Issues come first now, since they show

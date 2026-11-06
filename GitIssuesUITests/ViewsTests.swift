@@ -312,7 +312,7 @@ final class PadViewsTests: AppTestCase {
         wait(sidebarEntry("Board"))
         wait(sidebarEntry("Release Plan"))
         wait(sidebarEntry("0.3"))
-        wait(sidebarEntry("Roadmap"))
+        revealSidebarEntry("Roadmap")
         wait(element("column-Todo"))
         // The sidebar lists them, so no capsules over the board.
         XCTAssertFalse(element("view-Board").exists)
