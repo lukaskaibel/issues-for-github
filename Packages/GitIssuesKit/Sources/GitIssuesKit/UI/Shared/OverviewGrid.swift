@@ -3,7 +3,8 @@ import SwiftUI
 // MARK: - Layout
 
 /// Where the overview's cards stand: as many columns as fit cards of a readable width, every card the same size, so
-/// that two rows of them fill the window. On iPhone a card is one column wide and as tall as a few rows.
+/// that two rows of them fill the window. On iPhone, where cards stand one under another, each is as tall as its
+/// fullest page needs, up to a few rows.
 struct OverviewGridLayout: Equatable {
     struct Metrics: Equatable {
         var minCardWidth: CGFloat
@@ -19,7 +20,8 @@ struct OverviewGridLayout: Equatable {
         var pageBottom: CGFloat
         var minCardHeight: CGFloat
         var maxCardHeight: CGFloat
-        /// A card as tall as this many rows, whatever room there is: on iPhone, where cards stand one under another.
+        /// At most this many rows to a card, whatever room there is, and no more than its pages need: on iPhone, where
+        /// cards stand one under another.
         var fixedRows: Int? = nil
 
         #if os(macOS)
@@ -42,9 +44,13 @@ struct OverviewGridLayout: Equatable {
     let metrics: Metrics
     let count: Int
     let columns: Int
+    /// The size of every card, or with `heights` the largest.
     let card: CGSize
+    /// Each card's own height, on iPhone.
+    let heights: [CGFloat]?
 
-    init(width: CGFloat, height: CGFloat, count: Int, metrics: Metrics) {
+    /// `rowsNeeded`: how many rows each card's fullest page has, for cards that are only as tall as that.
+    init(width: CGFloat, height: CGFloat, count: Int, metrics: Metrics, rowsNeeded: [Int]? = nil) {
         self.metrics = metrics
         self.count = count
         let inner = max(width - 2 * metrics.margin, 200)
@@ -60,17 +66,37 @@ struct OverviewGridLayout: Equatable {
             cardHeight = min(max((room / onScreen).rounded(.down), metrics.minCardHeight), metrics.maxCardHeight)
         }
         card = CGSize(width: cardWidth, height: cardHeight)
+        if let rows = metrics.fixedRows, let needed = rowsNeeded, needed.count == count {
+            heights = needed.map { metrics.header + metrics.row * CGFloat(min(rows, max(1, $0))) + metrics.pageBottom }
+        } else {
+            heights = nil
+        }
+    }
+
+    func size(_ index: Int) -> CGSize {
+        CGSize(width: card.width, height: heights.map { $0[min(max(index, 0), $0.count - 1)] } ?? card.height)
+    }
+
+    /// How many issues the card at `index` has room for on a page.
+    func rows(_ index: Int) -> Int {
+        max(1, Int((size(index).height - metrics.header - metrics.pageBottom) / metrics.row))
     }
 
     /// The top left corner of the card at `index`.
     func origin(_ index: Int) -> CGPoint {
-        CGPoint(
+        if let heights {
+            return CGPoint(x: metrics.margin, y: metrics.top + heights.prefix(index).reduce(0, +) + CGFloat(index) * metrics.gap)
+        }
+        return CGPoint(
             x: metrics.margin + CGFloat(index % columns) * (card.width + metrics.gap),
             y: metrics.top + CGFloat(index / columns) * (card.height + metrics.gap)
         )
     }
 
     var contentHeight: CGFloat {
+        if let heights {
+            return metrics.top + heights.reduce(0, +) + CGFloat(max(0, count - 1)) * metrics.gap + metrics.bottom
+        }
         let rows = max(1, (count + columns - 1) / columns)
         return metrics.top + CGFloat(rows) * card.height + CGFloat(rows - 1) * metrics.gap + metrics.bottom
     }
@@ -177,15 +203,27 @@ struct OverviewGrid: View {
 
     #if os(macOS)
     @State private var scroll = ScrollPosition()
-    @State private var scrollY: CGFloat = 0
-    @State private var visibleHeight: CGFloat = 0
+    /// How far the overview is scrolled from its top, how much of it shows, and how far it can scroll.
+    @State private var scrolled = ScrollMetrics()
+
+    struct ScrollMetrics: Equatable {
+        var y: CGFloat = 0
+        var visible: CGFloat = 0
+        var maximum: CGFloat = 0
+    }
     #endif
 
     var body: some View {
         GeometryReader { geometry in
             let drag = model.overviewDrag
             let cards = drag.order ?? model.overviewCards
-            let layout = OverviewGridLayout(width: geometry.size.width, height: geometry.size.height, count: cards.count, metrics: metrics)
+            let layout = OverviewGridLayout(
+                width: geometry.size.width, height: geometry.size.height, count: cards.count, metrics: metrics,
+                rowsNeeded: metrics.fixedRows == nil ? nil : cards.map { id in
+                    // A card that says it has nothing needs two rows for that.
+                    model.overviewPages(of: id).map(\.count).max() ?? 2
+                }
+            )
             ScrollView {
                 VStack(spacing: 0) {
                     header
@@ -198,7 +236,7 @@ struct OverviewGrid: View {
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .strokeBorder(Theme.cardBorder.opacity(0.6), lineWidth: 1)
                                 )
-                                .frame(width: layout.card.width, height: layout.card.height)
+                                .frame(width: layout.size(index).width, height: layout.size(index).height)
                                 .offset(x: layout.origin(index).x, y: layout.origin(index).y)
                                 .transition(.opacity)
                         }
@@ -206,7 +244,7 @@ struct OverviewGrid: View {
                             let index = cards.firstIndex(of: id) ?? 0
                             let lifted = drag.liftedId == id
                             let origin = lifted ? drag.position : layout.origin(index)
-                            OverviewCard(id: id, layout: layout, lifted: lifted, cards: cards)
+                            OverviewCard(id: id, size: layout.size(index), rows: layout.rows(index), metrics: metrics, lifted: lifted, cards: cards)
                                 .offset(x: origin.x, y: origin.y)
                                 .zIndex(lifted ? 2 : drag.settlingId == id ? 1 : 0)
                                 #if os(macOS)
@@ -222,9 +260,16 @@ struct OverviewGrid: View {
             }
             #if os(macOS)
             .scrollPosition($scroll)
-            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, y in
-                let change = y - scrollY
-                scrollY = y
+            .onScrollGeometryChange(for: ScrollMetrics.self) { geometry in
+                // Measured from the top of the cards, under the toolbar the overview runs beneath.
+                let visible = geometry.containerSize.height - geometry.contentInsets.top - geometry.contentInsets.bottom
+                return ScrollMetrics(
+                    y: geometry.contentOffset.y + geometry.contentInsets.top, visible: visible,
+                    maximum: max(0, geometry.contentSize.height - visible)
+                )
+            } action: { _, metrics in
+                let change = metrics.y - scrolled.y
+                scrolled = metrics
                 // A card being dragged stays under the pointer while the overview scrolls under it.
                 if drag.liftedId != nil, change != 0 { drag.scrolled += change; retarget(layout: layout) }
             }
@@ -232,10 +277,6 @@ struct OverviewGrid: View {
             #endif
             .onAppear { model.setOverviewRowsPerPage(layout.rowsPerPage) }
             .onChange(of: layout.rowsPerPage) { _, rows in model.setOverviewRowsPerPage(rows) }
-            #if os(macOS)
-            .onAppear { visibleHeight = geometry.size.height }
-            .onChange(of: geometry.size.height) { _, height in visibleHeight = height }
-            #endif
         }
     }
 
@@ -266,22 +307,21 @@ struct OverviewGrid: View {
         withAnimation(Theme.spring) { drag.order = order }
     }
 
-    /// Near the top or bottom of the window, the overview scrolls on by itself while a card is held there.
+    /// Near the top or bottom of the window, the overview scrolls on by itself while a card is held there by its name.
     private func autoscroll(layout: OverviewGridLayout) {
         let drag = model.overviewDrag
-        let top = drag.position.y - scrollY
-        let bottom = top + layout.card.height
-        let edge: CGFloat = 40
+        // Where the pointer holds the card: about the middle of its name.
+        let pointer = drag.position.y + layout.metrics.header / 2 - scrolled.y
+        let edge: CGFloat = 44
         var step: CGFloat = 0
-        if top < edge { step = -12 } else if bottom > visibleHeight - edge, layout.contentHeight > visibleHeight { step = 12 }
+        if pointer < edge { step = -14 } else if pointer > scrolled.visible - edge { step = 14 }
         drag.autoscroll = step
-        guard step != 0, !drag.autoscrolling else { return }
+        guard step != 0, !drag.autoscrolling, scrolled.maximum > 0 else { return }
         drag.autoscrolling = true
         Task { @MainActor in
             while drag.liftedId != nil, drag.autoscroll != 0 {
-                let maximum = max(0, layout.contentHeight - visibleHeight)
-                let y = min(max(scrollY + drag.autoscroll, 0), maximum)
-                if y == scrollY { break }
+                let y = min(max(scrolled.y + drag.autoscroll, 0), scrolled.maximum)
+                if y == scrolled.y { break }
                 scroll.scrollTo(y: y)
                 try? await Task.sleep(for: .milliseconds(16))
             }
@@ -338,7 +378,35 @@ final class OverviewCardDrag {
         start = origin
         translation = .zero
         scrolled = 0
+        #if os(macOS)
+        watchEscape()
+        #endif
     }
+
+    #if os(macOS)
+    @ObservationIgnored private var escapeWatch: Timer?
+
+    /// While the mouse is held, AppKit hands the app nothing but the mouse until it is let go, so a press of Esc would
+    /// only arrive after the drop. The key's state is read instead, also when the pointer rests.
+    private func watchEscape() {
+        escapeWatch?.invalidate()
+        let timer = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.liftedId != nil else { return }
+                // Held down now, or pressed and waiting behind the mouse in the queue.
+                var pressed = CGEventSource.keyState(.combinedSessionState, key: 53)
+                if !pressed, let waiting = NSApp.nextEvent(matching: .keyDown, until: .distantPast, inMode: .eventTracking, dequeue: false),
+                   waiting.keyCode == 53 {
+                    _ = NSApp.nextEvent(matching: .keyDown, until: .distantPast, inMode: .eventTracking, dequeue: true)
+                    pressed = true
+                }
+                if pressed { withAnimation(Theme.spring) { self.cancel() } }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        escapeWatch = timer
+    }
+    #endif
 
     /// Esc: the card goes back where it was, and the rest of the drag is ignored.
     func cancel() {
@@ -353,6 +421,10 @@ final class OverviewCardDrag {
     }
 
     func end() {
+        #if os(macOS)
+        escapeWatch?.invalidate()
+        escapeWatch = nil
+        #endif
         liftedId = nil
         order = nil
         translation = .zero
@@ -388,7 +460,10 @@ extension EnvironmentValues {
 struct OverviewCard: View {
     @Environment(AppModel.self) private var model
     let id: String
-    let layout: OverviewGridLayout
+    let size: CGSize
+    /// How many issues a page has room for.
+    let rows: Int
+    let metrics: OverviewGridLayout.Metrics
     let lifted: Bool
     /// The cards in their order, for VoiceOver's Move Earlier and Move Later.
     let cards: [String]
@@ -403,15 +478,15 @@ struct OverviewCard: View {
                 withAnimation(Theme.spring) { pageKey = key }
                 model.showPage(key, of: id)
             }
-            .frame(height: layout.metrics.header)
+            .frame(height: metrics.header)
             if pages.isEmpty {
                 OverviewCardEmpty(id: id)
             } else {
                 ScrollView(.horizontal) {
                     LazyHStack(alignment: .top, spacing: 0) {
                         ForEach(pages) { page in
-                            OverviewPageView(page: page, rows: layout.rowsPerPage, metrics: layout.metrics)
-                                .frame(width: layout.card.width, alignment: .topLeading)
+                            OverviewPageView(page: page, rows: rows, metrics: metrics)
+                                .frame(width: size.width, alignment: .topLeading)
                                 .id(page.key)
                         }
                     }
@@ -429,12 +504,13 @@ struct OverviewCard: View {
                 }
             }
         }
-        .frame(width: layout.card.width, height: layout.card.height, alignment: .top)
+        .frame(width: size.width, height: size.height, alignment: .top)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Theme.card)
-                .shadow(color: lifted ? Theme.cardRaisedShadow : Theme.cardShadow, radius: lifted ? 16 : 2, y: lifted ? 8 : 1)
+                .shadow(color: lifted ? Theme.cardLiftedShadow : Theme.cardShadow, radius: lifted ? 28 : 2, y: lifted ? 16 : 1)
+                .shadow(color: lifted ? Theme.cardRaisedShadow : .clear, radius: lifted ? 4 : 0, y: lifted ? 2 : 0)
         )
         .scaleEffect(lifted ? 1.03 : 1)
         .animation(Theme.spring, value: lifted)

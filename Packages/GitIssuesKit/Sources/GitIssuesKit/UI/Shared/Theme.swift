@@ -28,6 +28,10 @@ enum Theme {
     static let cardRaisedShadow = Color(platformColor: .dynamic { isDark in
         PlatformColor.black.withAlphaComponent(isDark ? 0.5 : 0.11)
     })
+    /// Under a card of My Issues' overview held by its name: well off the page, as a widget lifted on the Mac's desktop.
+    static let cardLiftedShadow = Color(platformColor: .dynamic { isDark in
+        PlatformColor.black.withAlphaComponent(isDark ? 0.6 : 0.24)
+    })
     /// The edge of a second card peeking out under one whose sub-issues are folded into it: a shade darker, as the
     /// notifications behind the first one in a stack are.
     static let cardBehind = Color(light: 0xE4E4E9, dark: 0x242427)

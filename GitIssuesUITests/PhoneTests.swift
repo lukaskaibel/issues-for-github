@@ -165,18 +165,24 @@ final class PhoneTests: AppTestCase {
         wait(element("card-Needs you"))
         let project = element("card-Git Issues")
         scrollTo(project)
-        // The card opens on its first column with issues of yours: In Progress.
-        wait(element("row-#9"))
-        XCTAssertFalse(element("row-#5").exists)
+        // The card opens on its first column with issues of yours: In Progress. The next page waits beside it. Rows
+        // are looked for in the card: the project's own list, alive behind My Issues, has them too.
+        func row(_ number: Int) -> XCUIElement {
+            project.descendants(matching: .any).matching(identifier: "row-#\(number)").firstMatch
+        }
+        wait(row(9))
+        waitOnPage(row(9), of: project)
+        XCTAssertFalse(isOnPage(row(5), of: project))
         snapshot("My Issues overview")
 
         // Its icons turn to another column's page.
         project.buttons["In Review, 2"].tap()
-        wait(element("row-#5"))
-        waitGone(element("row-#9"))
-        // A swipe sideways turns back.
-        element("row-#5").swipeRight()
-        wait(element("row-#9"))
+        waitOnPage(row(5), of: project)
+        XCTAssertFalse(isOnPage(row(9), of: project))
+        // A swipe sideways across the card turns back, as a finger does it: most of the way, quickly.
+        let start = project.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.7))
+        start.press(forDuration: 0.05, thenDragTo: project.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.7)), withVelocity: .fast, thenHoldForDuration: 0)
+        waitOnPage(row(9), of: project)
 
         // Customize… lists the cards, and whether the overview arranges itself.
         app.navigationBars.buttons["Options"].firstMatch.tap()
@@ -195,6 +201,18 @@ final class PhoneTests: AppTestCase {
         wait(button("List"))
         button("List").tap()
         wait(element("section-In progress"))
+    }
+
+    /// Whether a row stands on the page a card shows, rather than on one beside it, waiting to be swiped to: on
+    /// iPhone the card is as wide as the screen, so the pages beside it are off the screen.
+    private func isOnPage(_ row: XCUIElement, of card: XCUIElement) -> Bool {
+        row.exists && app.windows.firstMatch.frame.contains(CGPoint(x: row.frame.midX, y: row.frame.midY))
+    }
+
+    private func waitOnPage(_ row: XCUIElement, of card: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        let deadline = Date().addingTimeInterval(6)
+        while !isOnPage(row, of: card), Date() < deadline { RunLoop.current.run(until: Date().addingTimeInterval(0.2)) }
+        XCTAssertTrue(isOnPage(row, of: card), "\(row) is not on the card's page", file: file, line: line)
     }
 
     func testPullToRefreshKeepsTheList() {

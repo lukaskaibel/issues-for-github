@@ -803,12 +803,13 @@ enum DebugRemote {
             // window <width> <height> [onscreen]: sizes the window in points for screenshots and moves it off the
             // screen, where the window is out of the way. With "onscreen", at the top left of the main screen
             // instead, where a capture of the screen sees it and dropdowns open beside it as they do for people.
-            // Either way the pointer goes through it, so it can't put hover states into the picture.
+            // Either way the pointer goes through it, so it can't put hover states into the picture; with "interactive"
+            // it takes the pointer, to be tried with a real one.
             let size = argument.split(separator: " ").compactMap { Double($0) }
             if size.count == 2, let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }) {
-                window.ignoresMouseEvents = true
-                Dropdown.offscreen = !argument.hasSuffix("onscreen")
-                if argument.hasSuffix("onscreen"), let screen = NSScreen.main?.visibleFrame {
+                window.ignoresMouseEvents = !argument.contains("interactive")
+                Dropdown.offscreen = !argument.contains("onscreen")
+                if argument.contains("onscreen"), let screen = NSScreen.main?.visibleFrame {
                     window.setFrame(CGRect(x: screen.minX, y: screen.maxY - size[1], width: size[0], height: size[1]), display: true)
                 } else {
                     let screens = NSScreen.screens.map(\.frame).reduce(CGRect.null) { $0.union($1) }
