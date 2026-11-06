@@ -214,6 +214,11 @@ of its repositories that is on no board, like a team's issues in Linear. Those o
 project has several repositories, each row names its own. My Issues shows everything assigned to you, on a board or
 not, and in a project where nobody else has open issues, what is assigned to nobody.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/all-issues-dark.webp">
+  <img alt="All Issues of a project, with 4 beside it in the sidebar: five issues under No project at the top, then In Review and In Progress with sub-issues under their parent" src="Design/screenshots/all-issues-light.webp">
+</picture>
+
 ### My Issues: what you're doing, in every project
 
 My Issues opens as an overview of your work: a card for each project you work in, all the same size, so that a
@@ -244,19 +249,10 @@ compared by what they mean, so "In Review" in one project and "Doing" in another
 list's rows leave out the project's name. GitHub has no view behind My Issues, so its filter and Display options stay on your
 device.
 
-<!-- The picture follows in the shared picture run (Tools/readme-images.sh, scene "my-issues").
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/my-issues-dark.webp">
-  <img alt="My Issues' overview: Needs you with the overdue crash, then Git Issues on its In Progress page, Website on its Todo page and the issues on no board, each card with a status icon for every page beside its name" src="Design/screenshots/my-issues-light.webp">
+  <img alt="My Issues' overview: five cards of one size, Needs you with the overdue crash, Git Issues and Website on their In Progress page, Jordan's blog on its Writing page and the two issues on no board, each card with the open column under its name and a status icon for every page beside it" src="Design/screenshots/my-issues-light.webp">
 </picture>
--->
-
-<!-- The picture follows in the shared picture run (Tools/readme-images.sh, scene "all-issues").
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/all-issues-dark.webp">
-  <img alt="All Issues of a project, with 4 beside it in the sidebar: five issues under No project at the top, then In Review and In Progress with sub-issues under their parent" src="Design/screenshots/all-issues-light.webp">
-</picture>
--->
 
 ### Milestones, epics and a roadmap
 
