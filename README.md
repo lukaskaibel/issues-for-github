@@ -211,8 +211,11 @@ top of the project's views in the sidebar (`G` then `A`), lists the board's issu
 of its repositories that is on no board, like a team's issues in Linear. Those on no board come first, under
 **No project**, and the quiet number beside All Issues says how many of them are open: click the circle with the plus
 (or press `S`), pick a column, and the issue is on the board. A new issue started there can stay on no board. Where a
-project has several repositories, each row names its own. My Issues shows everything assigned to you, on a board or
-not, and in a project where nobody else has open issues, what is assigned to nobody.
+project has several repositories, each row names its own. **Board** in the toolbar (`⌘1`) shows All Issues as a board
+instead: the issues on no board in a column of their own, then the board's columns. Drag one of them onto a status to
+put it on the board there. Move the columns around and hide the ones you don't need; that stays on your device, and the
+board on GitHub keeps its own order. My Issues shows everything assigned to you, on a board or not, and in a project
+where nobody else has open issues, what is assigned to nobody.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/all-issues-dark.webp">
@@ -325,7 +328,8 @@ The interface uses the system's own parts.
   time, with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and hold a card and drop it on a column in the strip to move it
   there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards.
   Lists for the views that are lists, and each project's All Issues, grouped by status, with sections that fold and
-  headers that stay pinned; My Issues shows its cards, one under another on iPhone and two or three to a row on iPad,
+  headers that stay pinned (All Issues turns into a board with **Board** in its "…" menu, its issues on no board a
+  column of their own); My Issues shows its cards, one under another on iPhone and two or three to a row on iPad,
   each paging sideways through its project's columns, and Needs you. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
   and drag after holding to give an issue a new place in its section.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
@@ -373,7 +377,8 @@ The interface uses the system's own parts.
   overview of cards you arrange (a card per project that pages through its columns, and what needs you now), or as one
   list with its own filter, grouped by status, project, priority or due date.
 - **All Issues** of a project: its board's issues and those of its repositories on no board, which one click puts on
-  the board.
+  the board. As a list, or as a board with a column of its own for the issues on no board and its columns in your own
+  order.
 - **Sub-issues and blockers.** Put any issue under another one, add issues that exist already as sub-issues, and mark
   which issues block which; a blocked issue carries a red flag that names what blocks it, on its card and in its
   parent's sub-issues. Sub-issues with their parent's status hang under it on the board and in the list, and a parent
@@ -449,6 +454,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | Board or list and the fields shown | The view's layout and visible fields, saved with **Save for Everyone** |
 | Other columns, groups or order | Yours alone: GitHub sets a view's columns, grouping and sorting only when it is made |
 | A hidden column | Yours alone, on each device: the column and its issues stay on GitHub for everyone |
+| All Issues as a board, the order of its columns | Yours alone, on each device: the board's statuses on GitHub keep their order |
 | My Issues' overview or list, filter, groups, order, and the page each card shows | Yours alone, on each device: GitHub has no view of everything assigned to you |
 | The order of My Issues' cards, and those taken out | Yours alone, the same on your Mac, iPhone and iPad through iCloud |
 | Iteration on a card or row | The project's Iteration field, or any single-select field the view shows |
@@ -575,7 +581,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘S` | Save the view's changed filter to GitHub, for everyone |
 | `⌃Tab` `⌃⇧Tab` | Next or previous view of the project |
 | `G` then `B` / `L` / `M` / `A` / `I` / `P` / `R` | Go to board, list, My Issues, All Issues, the Inbox, switch project, or the roadmap |
-| `⌘1` `⌘2` `⌘3` `⌘4` | Board, list, My Issues, roadmap (on the roadmap `⌘1` and `⌘2` switch timeline and list, in My Issues overview and list) |
+| `⌘1` `⌘2` `⌘3` `⌘4` | Board, list, My Issues, roadmap (on the roadmap `⌘1` and `⌘2` switch timeline and list, in My Issues overview and list, in All Issues its board and list) |
 | `←` `→` in My Issues' overview | Turn the page of the card the keyboard is in |
 | `⌘↵` | Save a description, send a comment, create the issue |
 | `⌘⇧C` / `⌘⇧O` | Copy the issue's GitHub link / open it on GitHub |
@@ -685,7 +691,10 @@ header to reorder it, double-click its name to rename it, right-click it for its
 and use **Add column** at the right end of the board. **Hide Column** takes a column and its cards off the board on
 this device only, for the view you're in; the project on GitHub doesn't change, and the list still shows every status.
 Hidden columns are listed at the right end of the board, with how many issues each holds, and under **Hidden
-Columns** in Display (`⇧V`); a click shows one again, and **Reset** there brings them all back.
+Columns** in Display (`⇧V`); a click shows one again, and **Reset** there brings them all back. All Issues as a board
+moves and hides its columns the same way, all of them on this device only: GitHub's statuses keep their order, and
+they are renamed, coloured and deleted on the board. Its **No project** column takes no cards; drag one of its issues
+onto a status to put it on the board.
 
 To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
 Shift-click. A bar at the bottom then sets status, priority, assignee, labels or the due date for all of them, and so
@@ -738,6 +747,8 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap at the end of bold text | Type on in bold: on the touch keyboard its stars stay hidden, and Delete takes the letter you see and keeps the bold |
 | Tap a checkbox, a link, a table or a diagram in a description | Tick it, open it, or edit its source |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
+| "…" in All Issues | Show it as a board or a list (on a wide iPad, the switch beside its name); on the board, the hidden columns, a tap away from coming back |
+| "…" over a column of All Issues' board | Move it left or right, or hide it, on that device |
 | Swipe sideways on a board, or tap a column in the strip over it (iPhone) | Turn to that column |
 | Touch and hold a card, then drop it on a column in the strip (iPhone) | Move it there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards |
 | Tap the milestone chip of an issue | Put it into another milestone, or a new one |

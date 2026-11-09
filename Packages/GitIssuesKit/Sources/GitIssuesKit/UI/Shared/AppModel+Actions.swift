@@ -114,8 +114,12 @@ extension AppModel {
     /// what hangs under it. A sub-issue whose parent is in the column joins the parent's sub-issues; any other
     /// card goes in front of or after the cards that stand on their own, never between a parent and its sub-issues.
     /// Dropped between two issues of an epic's group, or right below its header (`belowEpicHeader`), it joins the epic.
-    /// On a milestone's board, `milestone` names it: the board keeps its own order there, whatever the open view's.
-    func drop(_ item: Item, in column: BoardColumn, at index: Int, belowEpicHeader: String? = nil, milestone: String? = nil) {
+    /// On a milestone's board, `milestone` names it: the board keeps its own order there, whatever the open view's, as
+    /// it does in All Issues (`inAllIssues`), where an issue on no board goes on the board (`addToBoard`).
+    func drop(
+        _ item: Item, in column: BoardColumn, at index: Int, belowEpicHeader: String? = nil, milestone: String? = nil,
+        inAllIssues: Bool = false
+    ) {
         guard let projectId = item.projectId else { return }
         let itemEpic = epic(of: item)?.contentId
         let landing = column.landing(of: item, at: index, epic: itemEpic, belowHeader: belowEpicHeader)
@@ -129,7 +133,8 @@ extension AppModel {
             )))
         }
         // A view in an order of its own keeps it; only an unordered board has places to drop into, as on GitHub.
-        if !isOrdered(projectId: projectId, milestone: milestone), let move = placement(of: item, in: column, at: landing, projectId: projectId) {
+        if !isOrdered(projectId: projectId, milestone: milestone, inAllIssues: inAllIssues),
+           let move = placement(of: item, in: column, at: landing, projectId: projectId) {
             mutations.append(move)
         }
         // A sub-issue dropped onto a folded parent would vanish into it, so the parent opens.
@@ -149,12 +154,13 @@ extension AppModel {
     }
 
     /// Whether the board or list on screen has an order of its own, which dragging can't change: that of the
-    /// project's open view. A milestone's board and list keep the board's order, whatever the view.
-    func isOrdered(projectId: String?, milestone: String? = nil) -> Bool {
+    /// project's open view. A milestone's board and list keep the board's order, whatever the view, and so does All
+    /// Issues.
+    func isOrdered(projectId: String?, milestone: String? = nil, inAllIssues: Bool = false) -> Bool {
         #if os(macOS)
-        if currentMilestoneTitle != nil { return false }
+        if currentMilestoneTitle != nil || allIssuesProjectId != nil { return false }
         #endif
-        guard milestone == nil, let view = currentView(projectId: projectId) else { return false }
+        guard milestone == nil, !inAllIssues, let view = currentView(projectId: projectId) else { return false }
         return !sort(of: view).isEmpty
     }
 
@@ -197,10 +203,13 @@ extension AppModel {
     /// Drops `members`, the issues of an epic's group in a column, all of them together into a column at `index`,
     /// counted among that column's issues as shown without them. They take the column's status and keep their
     /// order, in front of or after what stands there on its own, or among the epic's issues the column has already.
-    func drop(_ group: Nesting.EpicGroup, members: [Item], in column: BoardColumn, at index: Int, milestone: String? = nil) {
-        guard let projectId = members.first?.projectId else { return }
+    func drop(
+        _ group: Nesting.EpicGroup, members: [Item], in column: BoardColumn, at index: Int, milestone: String? = nil,
+        inAllIssues: Bool = false
+    ) {
+        guard let projectId = members.first?.projectId, !column.isOnNoBoard else { return }
         let landing = column.landing(ofGroup: group.contentId, moving: Set(members.map(\.id)), at: index)
-        let placing = isOrdered(projectId: projectId, milestone: milestone)
+        let placing = isOrdered(projectId: projectId, milestone: milestone, inAllIssues: inAllIssues)
             ? [] : placements(of: members, in: column, at: landing, projectId: projectId)
         if column.value != nil {
             withAnimation(Theme.spring) { perform(members.flatMap { columnMutations($0, column) } + placing) }
@@ -259,9 +268,12 @@ extension AppModel {
     /// Drops picked issues together into a column at `index`, counted among the column's issues as shown without
     /// them and what hangs under them. They take the column's status and stand one after the other in their board
     /// order, in front of or after what stands there on its own, or among the issues of the epic they all belong to.
-    /// A message says how many moved, with a way to take it back.
+    /// A message says how many moved, with a way to take it back. In All Issues, those on no board go on the board.
     func drop(_ picked: PickedIssues, in column: BoardColumn, at index: Int) {
-        guard let projectId = picked.items.first?.projectId else { return }
+        guard !column.isOnNoBoard else { return }
+        let loose = picked.items.filter { !$0.isOnBoard }
+        if !loose.isEmpty, let boardId = allIssuesProjectId { addToBoard(loose, in: column, projectId: boardId) }
+        guard let projectId = picked.items.first(where: \.isOnBoard)?.projectId else { return }
         let items = picked.items.filter { $0.projectId == projectId }
         let placing = isOrdered(projectId: projectId)
             ? [] : placements(of: items, in: column, at: column.landing(of: picked, at: index), projectId: projectId, together: false)

@@ -38,7 +38,7 @@ extension AppModel {
     /// The issues the keyboard focus moves among, by column or by section: what takes the focus over from one that
     /// goes.
     var focusGroups: [[String]] {
-        if openItem == nil, viewMode == .board, currentProjectId != nil { return columns.map { $0.items.map(\.id) } }
+        if openItem == nil, showsBoard { return columns.map { $0.items.map(\.id) } }
         return sections.filter { !isFolded($0) }.map { $0.items.map(\.id) }
     }
 
@@ -72,7 +72,7 @@ extension AppModel {
         if let parentId = new.parentId, let parent = item(contentId: parentId), isFolded(parent) { setFolded(parent, false) }
         #if os(macOS)
         // The list on screen; iPhone and iPad keep a list per screen, whose sections fold where they are.
-        if viewMode == .list || currentProjectId == nil,
+        if !showsBoard,
            let section = sections.first(where: { $0.nesting.members.contains { $0.id == id } }), isFolded(section) {
             withAnimation(Theme.spring) { toggleSection(section.id) }
         }
@@ -94,7 +94,7 @@ extension AppModel {
         #if os(macOS)
         if openItem == nil, let view = currentView, showsTimeline(view) { return [] }
         #endif
-        if openItem == nil, viewMode == .board, currentProjectId != nil {
+        if openItem == nil, showsBoard {
             return columns.flatMap(\.items)
         }
         return sections.filter { !isFolded($0) }.flatMap(\.items)
@@ -111,7 +111,7 @@ extension AppModel {
     private var stepOrder: [Item] {
         let items: [Item] = if openItem == nil {
             orderedItems
-        } else if viewMode == .board, currentProjectId != nil, !columns.isEmpty {
+        } else if showsBoard, !columns.isEmpty {
             columns.flatMap(\.items)
         } else {
             sections.flatMap(\.items)

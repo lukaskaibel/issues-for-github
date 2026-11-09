@@ -8,6 +8,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **All Issues as a board.** All Issues shows as a board too, not only as a list: **Board** in the toolbar (`⌘1`,
+  and `⌘2` back to the list; on iPhone in the "…" menu), kept for each project. The issues on no board stand in a
+  column of their own before the board's columns; drag one onto a status and it goes on the board with that status, at
+  the end of the column. Nothing can be dropped into that column, so no issue leaves its board by accident. Put the
+  columns in your own order with **Move Left** and **Move Right** in a column's menu (on the Mac also by dragging its
+  header), and take the ones you don't need off with **Hide Column**: they wait at the end of the board, a click away
+  from coming back. Both stay on your device; the board's statuses on GitHub keep their order.
 - **Rate Issues on the App Store.** Once you have used Issues on three days, the system asks you for a rating as you
   finish an issue, closed as completed or moved into a done column: never as the app opens, never on sample data, and
   at most once a version and two months apart (the system shows it at most three times a year). **Rate Issues on the

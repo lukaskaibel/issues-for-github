@@ -140,14 +140,14 @@ private struct SearchButton: View {
 
 /// What the toolbar shows for the page on screen.
 extension AppModel {
-    /// Board and List, where both can show: a project's view (not a timeline) and a milestone.
+    /// Board and List, where both can show: a project's view (not a timeline), a milestone and All Issues.
     fileprivate var showsLayoutSwitch: Bool {
         switch scope {
         case .project:
             guard currentProjectId != nil else { return false }
             if let view = currentView { return view.layout != .roadmap && !showsTimeline(view) }
             return true
-        case .milestone:
+        case .milestone, .allIssues:
             return true
         default:
             return false

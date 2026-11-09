@@ -265,10 +265,14 @@ public final class AppModel {
         didSet {
             UserDefaults.standard.set(viewMode.rawValue, forKey: "viewMode")
             #if os(macOS)
-            // Board or list is part of how a view shows, which you may change for yourself. iPhone and iPad have a
-            // project on screen per window and say which (`showLayout`).
-            if !isFollowingView, oldValue != viewMode, let view = currentView {
-                setLayout(viewMode, of: view)
+            // Board or list is part of how a view shows, which you may change for yourself, and so is All Issues'.
+            // iPhone and iPad have a project on screen per window and say which (`showLayout`).
+            if !isFollowingView, oldValue != viewMode {
+                if let view = currentView {
+                    setLayout(viewMode, of: view)
+                } else if let projectId = allIssuesProjectId {
+                    setAllIssuesLayout(viewMode, projectId: projectId)
+                }
             }
             #endif
             recordNavigation()
@@ -384,6 +388,10 @@ public final class AppModel {
     /// How you chose to see a view, where it differs from the view on GitHub, by view id.
     var viewDisplays: [String: ViewDisplay] = AppModel.decoded("views.display") ?? [:] {
         didSet { AppModel.store(viewDisplays, "views.display") }
+    }
+    /// How you see each project's All Issues, where it differs from its list, by project id. On this device.
+    var allIssuesDisplays: [String: AllIssuesDisplay] = AppModel.decoded("allIssues.display") ?? [:] {
+        didSet { AppModel.store(allIssuesDisplays, "allIssues.display") }
     }
     /// How My Issues is grouped and ordered. GitHub has no view behind it, so this stays on the device.
     var mineDisplay = MineDisplay(stored: UserDefaults.standard.string(forKey: "mine.display")) ?? MineDisplay() {
@@ -899,6 +907,21 @@ public final class AppModel {
         }
     }
 
+    /// The project whose columns a board on screen would show: a project, one of its milestones, or its All Issues,
+    /// which has the board's columns after the issues on no board.
+    var boardProjectId: String? {
+        currentProjectId ?? allIssuesProjectId
+    }
+
+    /// Whether a board is on screen rather than a list (Mac): the issue page over it aside.
+    var showsBoard: Bool {
+        viewMode == .board && boardProjectId != nil
+    }
+
+    var boardProject: Project? {
+        boardProjectId.flatMap { id in projects.first { $0.id == id } }
+    }
+
     /// The board the screen belongs to, the roadmap included.
     var scopeProjectId: String? {
         scope?.projectId
@@ -1120,8 +1143,7 @@ public final class AppModel {
     /// they are empty: its issues are planned already.
     func columns(for scope: Scope) -> [BoardColumn] {
         _ = dataVersion
-        // All Issues is a list only.
-        guard let projectId = scope.projectId, scope != .allIssues(projectId) else { return [] }
+        guard let projectId = scope.projectId else { return [] }
         let key: String
         var view: ProjectView?
         switch scope {
@@ -1129,10 +1151,16 @@ public final class AppModel {
         case .project:
             view = currentView(projectId: projectId)
             key = view.map { "\(projectId)\u{1F}view\u{1F}\($0.id)" } ?? projectId
+        case .allIssues: key = "\(projectId)\u{1F}all"
         default: key = projectId
         }
         if let cached = columnCache[key] { return cached }
         let items = self.items(in: scope)
+        if case .allIssues = scope {
+            let result = allIssuesColumns(projectId: projectId, items: items)
+            columnCache[key] = result
+            return result
+        }
         if let view, let field = columnField(of: view), field.id != currentStatusFieldId(projectId: projectId) {
             let result = valueColumns(items, field: field, view: view)
             columnCache[key] = result
@@ -1311,7 +1339,7 @@ public final class AppModel {
         if let scope {
             newSections = sections(for: scope)
             switch scope {
-            case .project, .milestone: newColumns = shownColumns(for: scope)
+            case .project, .milestone, .allIssues: newColumns = shownColumns(for: scope)
             default: break
             }
         }
@@ -1370,11 +1398,17 @@ public final class AppModel {
         if let project = sidebarProject { select(.project(project.id)) }
     }
 
-    /// G B and G L, ⌘1 and ⌘2: the board or the list of the project on screen, or from anywhere else of the one used
-    /// last.
+    /// G B and G L: the board or the list of the project on screen, or from anywhere else of the one used last.
     func showProjectLayout(_ mode: ViewMode) {
         if currentProjectId == nil { selectLastProject() }
         guard currentProjectId != nil else { return }
+        closeDetail()
+        withAnimation(Theme.spring) { viewMode = mode }
+    }
+
+    /// ⌘1 and ⌘2: board or list for what is on screen, All Issues too; from anywhere else, as G B and G L.
+    func showLayout(_ mode: ViewMode) {
+        guard allIssuesProjectId != nil else { return showProjectLayout(mode) }
         closeDetail()
         withAnimation(Theme.spring) { viewMode = mode }
     }
