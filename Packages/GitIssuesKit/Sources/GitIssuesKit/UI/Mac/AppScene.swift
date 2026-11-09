@@ -65,11 +65,12 @@ public struct GitIssuesScene: Scene {
                     }
                     .keyboardShortcut("2", modifiers: .command)
                 } else {
-                    // From anywhere, as G B and G L do: the project used last when none is on screen.
-                    Button(.board) { model.showProjectLayout(.board) }
+                    // From anywhere, as G B and G L do: the project used last when none is on screen. All Issues
+                    // switches itself.
+                    Button(.board) { model.showLayout(.board) }
                         .keyboardShortcut("1", modifiers: .command)
                         .disabled(model.openProjects.isEmpty)
-                    Button(.list) { model.showProjectLayout(.list) }
+                    Button(.list) { model.showLayout(.list) }
                         .keyboardShortcut("2", modifiers: .command)
                         .disabled(model.openProjects.isEmpty)
                 }

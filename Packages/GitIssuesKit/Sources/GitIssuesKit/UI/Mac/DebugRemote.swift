@@ -866,13 +866,14 @@ enum DebugRemote {
             log("  deletion=\(model.deletionCandidate?.displayNumber ?? "-") canDelete18=\(model.scopedItems.first { $0.number == 18 }.map { model.canDelete($0) } ?? false)")
             log("  overlay=\(String(describing: model.overlay)) open=\(model.openItem?.displayNumber ?? "-") focus=\(model.targetItem?.displayNumber ?? "-") phase=\(model.status.phase) pending=\(model.pendingCount)")
         case "hidecolumn", "showcolumn":
-            // hidecolumn <name> | showcolumn <name>: hides a column of the open view's board on this device, or shows
-            // it again, as its menu and the list after the board do.
-            let all = model.currentProjectId.map { model.columns(projectId: $0) } ?? []
-            if let view = model.currentView, let column = all.first(where: { $0.title.caseInsensitiveCompare(argument) == .orderedSame }) {
-                model.setColumn(column.id, hidden: parts.first == "hidecolumn", of: view)
+            // hidecolumn <name> | showcolumn <name>: hides a column of the open view's board or All Issues' on this
+            // device, or shows it again, as its menu and the list after the board do.
+            let all = model.scope.map { model.columns(for: $0) } ?? []
+            if let scope = model.scope, model.canHideColumns(in: scope),
+               let column = all.first(where: { $0.title.caseInsensitiveCompare(argument) == .orderedSame }) {
+                model.setColumn(column.id, hidden: parts.first == "hidecolumn", in: scope)
             }
-            log("columns " + model.columns.map(\.title).joined(separator: " | ") + " hidden " + (model.currentProjectId.map { model.hiddenColumns(projectId: $0).map(\.title) } ?? []).joined(separator: " | "))
+            log("columns " + model.columns.map(\.title).joined(separator: " | ") + " hidden " + (model.scope.map { model.hiddenColumns(in: $0).map(\.title) } ?? []).joined(separator: " | "))
         case "column":
             // column add <name> | column delete <name> | column rename <old>=<new>
             guard let projectId = model.currentProjectId else { break }

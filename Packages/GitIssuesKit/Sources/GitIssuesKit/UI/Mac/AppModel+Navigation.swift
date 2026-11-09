@@ -135,7 +135,7 @@ extension AppModel {
                 surface = .timeline(offset: timelineScrollX, maximum: timelineMaxScrollX)
             } else if isOverOverviewCard(event) {
                 surface = .pager
-            } else if openItem == nil, viewMode == .board, currentProjectId != nil {
+            } else if openItem == nil, showsBoard {
                 surface = .board(offset: boardDrag.scrollX, maximum: boardDrag.maxScrollX)
             } else {
                 surface = .page

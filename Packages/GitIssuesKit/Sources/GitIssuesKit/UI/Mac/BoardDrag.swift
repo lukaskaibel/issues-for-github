@@ -228,6 +228,9 @@ final class BoardDrag {
                 model.drop(group.group, members: members, in: column, at: target.index)
             } else if let picked = current.picked {
                 model.drop(picked, in: column, at: target.index)
+            } else if !current.item.isOnBoard, let projectId = model.allIssuesProjectId {
+                // In All Issues: an issue on no board goes on the board, in the column it was dropped in.
+                model.addToBoard([current.item], in: column, projectId: projectId)
             } else {
                 model.drop(current.item, in: column, at: target.index)
             }
@@ -249,7 +252,7 @@ final class BoardDrag {
 
     private func begin(at point: CGPoint, model: AppModel) -> Bool {
         // A board you can only read has nothing to move, as its list hasn't.
-        guard model.currentProject?.viewerCanUpdate == true else { return false }
+        guard model.boardProject?.viewerCanUpdate == true else { return false }
         if let header = header(at: point) { return begin(header, at: point, model: model) }
         guard let (id, frame) = cardFrames.first(where: { $0.value.contains(point) }),
               let column = model.columns.first(where: { column in column.items.contains { $0.id == id } }),
@@ -343,6 +346,12 @@ final class BoardDrag {
         )
         let candidates = model.columns.compactMap { column in columnFrames[column.id].map { (column, $0) } }
         guard let (column, _) = candidates.min(by: { distance(centre.x, to: $0.1) < distance(centre.x, to: $1.1) }) else { return }
+        // Nothing goes into All Issues' issues on no board: taking an issue off its board would lose what it has there.
+        // Held over them, the card's slot goes back to where it was lifted.
+        guard model.accepts(column, current.item) else {
+            if let origin, target != origin { withAnimation(Theme.spring) { target = origin } }
+            return
+        }
 
         let moving = current.group?.ids ?? current.picked?.moving
         let others = moving.map { moving in column.items.filter { !moving.contains($0.id) } } ?? column.shown(without: current.item)
@@ -369,8 +378,14 @@ final class BoardDrag {
         }
 
         var next = Target(columnId: column.id, index: landing.slot, depth: landing.depth, row: landing.row)
-        // In a view with an order of its own, a card can't change places within its column: the slot stays put there.
-        if let origin, column.id == origin.columnId, model.isOrdered(projectId: model.currentProjectId) { next = origin }
+        // In a view with an order of its own, a card can't change places within its column: the slot stays put there,
+        // as among the issues on no board, which have no order on a board.
+        if let origin, column.id == origin.columnId, column.isOnNoBoard || model.isOrdered(projectId: model.currentProjectId) { next = origin }
+        // An issue on no board put on the board goes at the end of the column, where the board adds it.
+        if !current.item.isOnBoard, current.picked == nil, !column.isOnNoBoard {
+            let end = column.landing(of: current.item, at: others.count, epic: nil)
+            next = Target(columnId: column.id, index: end.slot, depth: end.depth, row: end.row)
+        }
         if next != target {
             withAnimation(Theme.spring) { target = next }
         }
@@ -409,10 +424,12 @@ final class BoardDrag {
 
     func dragColumn(_ dragged: BoardColumn, translation: CGFloat, step: CGFloat, model: AppModel) {
         let columns = model.columns
-        guard dragged.option != nil, model.currentProject?.viewerCanUpdate == true, column?.settling != true,
+        // All Issues keeps its order of columns on this device, so every one of them moves, and anyone may move them.
+        let local = model.allIssuesProjectId != nil
+        guard local || dragged.option != nil && model.currentProject?.viewerCanUpdate == true, column?.settling != true,
               let index = columns.firstIndex(where: { $0.id == dragged.id }) else { return }
         // "No status" is not a real column on GitHub, so it stays first and nothing can go before it.
-        let lowest = columns.first?.option == nil ? 1 : 0
+        let lowest = !local && columns.first?.option == nil ? 1 : 0
         let target = min(max(index + Int((translation / step).rounded()), lowest), columns.count - 1)
         if column == nil {
             column = ColumnDrag(id: dragged.id, from: index, to: target, translation: translation)
@@ -432,7 +449,10 @@ final class BoardDrag {
             transaction.disablesAnimations = true
             withTransaction(transaction) {
                 let columns = model.columns
-                if current.to != current.from, let projectId = model.currentProjectId {
+                if current.to != current.from, let projectId = model.allIssuesProjectId, columns.indices.contains(current.from) {
+                    let shown = columns.map(\.id)
+                    model.moveColumn(shown[current.from], among: shown, to: current.to, allIssuesOf: projectId, animated: false)
+                } else if current.to != current.from, let projectId = model.currentProjectId {
                     // Among the columns on screen; those the board leaves out keep their places.
                     let shown = columns.compactMap { $0.option?.id }
                     let offset = columns.first?.option == nil ? 1 : 0
