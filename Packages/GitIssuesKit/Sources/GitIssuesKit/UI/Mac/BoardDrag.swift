@@ -53,7 +53,6 @@ final class BoardDrag {
     @ObservationIgnored var columnFrames: [String: CGRect] = [:]
     /// Where the board sits in the window (top-left origin), to anchor dropdowns and menus.
     @ObservationIgnored var boardFrameInWindow: CGRect = .zero
-    @ObservationIgnored let menuRegion = UUID()
     /// The board's horizontal scroll position, for deciding whether a sideways swipe scrolls or navigates.
     @ObservationIgnored var scrollX: CGFloat = 0
     @ObservationIgnored var maxScrollX: CGFloat = 0
