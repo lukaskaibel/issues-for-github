@@ -428,6 +428,31 @@ final class PadViewsTests: AppTestCase {
         XCTAssertEqual(title.value as? String, "Drag cards between columns with spring physics")
     }
 
+    /// Touching and holding an issue's name on the timeline opens its menu, as on a card. Holding its bar moves its
+    /// dates instead (testTimelineDateEditingRequiresAHold).
+    func testATimelineIssueHasItsMenu() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openPadProject("Git Issues")
+        sidebarEntry("Release Plan").tap()
+        let row = element("timeline-row-#9")
+        wait(row)
+
+        openCardMenu(row)
+        snapshot("iPad timeline issue menu")
+        button("Status").tap()
+        button("In Review").tap()
+        closedCardMenu()
+
+        openCardMenu(row)
+        button("Open").tap()
+        closedCardMenu()
+        let title = element("issue-title")
+        wait(title)
+        XCTAssertEqual(title.value as? String, "Drag cards between columns with spring physics")
+        waitForLabel(element("property-status"), containing: "In Review")
+    }
+
     func testTheFilterSheetOnTheIPad() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()

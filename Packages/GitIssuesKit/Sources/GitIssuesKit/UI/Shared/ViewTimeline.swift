@@ -272,6 +272,9 @@ private struct ViewTimelineContent: View {
     @State private var cancelledDrag = false
     @GestureState private var dragActive = false
     @Namespace private var timelineSpace
+    #if os(macOS)
+    @State private var menuArea = TimelineMenuArea()
+    #endif
 
     private struct IssueDateDrag {
         var rowId: String
@@ -297,8 +300,25 @@ private struct ViewTimelineContent: View {
                 .defaultScrollAnchor(.leading)
                 .timelineZoom(scale: layout.scale)
             }
+            #if os(macOS)
+            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { menuArea.contentTop = $0 }
+            #endif
         }
         .scrollIndicators(.never)
+        #if os(macOS)
+        // Right-clicking an issue's line, on its name or anywhere along its bar, opens the same menu as on a card.
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+            ContextMenus.shared.register(menuArea.id, frame: frame) { [model, menuArea] point in
+                guard model.openItem == nil, model.overlay == nil,
+                      let index = menuArea.layout?.row(at: point.y - menuArea.contentTop),
+                      case .item(let shown) = menuArea.layout?.rows[index].kind,
+                      let item = model.item(id: shown.id) else { return nil }
+                return ItemMenuBuilder(model: model, item: item).menu()
+            }
+        }
+        .onChange(of: snapshot.rowIdentity, initial: true) { menuArea.layout = snapshot.layout }
+        .onDisappear { [menuArea] in ContextMenus.shared.remove(menuArea.id) }
+        #endif
         .animation(Theme.spring, value: snapshot.rowIdentity)
         .onChange(of: model.dragCancelToken) { _, _ in
             if drag != nil {
@@ -519,6 +539,14 @@ private struct ViewTimelineContent: View {
         .accessibilityLabel(Text(label(of: row)))
         .accessibilityValue(Text(row.span.map(spoken) ?? String(localized: .noDate)))
         .accessibilityIdentifier(identifier(of: row))
+        #if os(iOS)
+        // On the bars a long press moves the dates; on the name it opens the issue's menu, as on the roadmap.
+        .contextMenu {
+            if case .item(let item) = row.kind {
+                ItemMenuContent(item: item) { open(item) }
+            }
+        }
+        #endif
         .accessibilityActions {
             if case .item = row.kind, let edit = snapshot.edits[row.id] {
                 Button(.timelineMoveEarlier) { adjust(edit, by: -1, part: .move) }
@@ -586,6 +614,18 @@ private struct TimelineGroupIcon: View {
         .accessibilityHidden(true)
     }
 }
+
+#if os(macOS)
+/// Where a timeline's lines are in the window, for its right-click menu. Each timeline has its own area, so one going
+/// away takes only its own along. A plain object: scrolling moves the lines, and view state would redraw them each tick.
+@MainActor
+private final class TimelineMenuArea {
+    let id = UUID()
+    /// The top of the lines in the window, under the scroll view's top edge once scrolled.
+    var contentTop: CGFloat = 0
+    var layout: ViewTimelineLayout?
+}
+#endif
 
 // MARK: - Drawing
 
