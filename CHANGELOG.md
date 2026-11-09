@@ -75,6 +75,8 @@ All notable changes to this project are recorded here. The format follows
 - On the Mac, a second click on the project's name in the sidebar closes its menu again, as on any menu's
   button. Before, the menu often opened again at once, mostly on a trackpad, where the pointer moves a little as the
   finger lifts. The same goes for every button that opens a dropdown, such as Display and the pickers.
+- On the Mac, right-clicking an issue on a board opens its menu again after you switch views, such as from the board
+  to a view of this or the next iteration. Until now the right-click did nothing there until the window changed size.
 
 ## [1.1.0] - 2026-10-28
 

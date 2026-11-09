@@ -6,6 +6,9 @@ struct BoardView: View {
     @State private var scroll = ScrollPosition(edge: .leading)
     // Kept in a plain object: storing the offset in view state would redraw the board on every scroll tick.
     @State private var metrics = ScrollMetrics()
+    /// This board's own right-click area. Each view's board is a new one, and the board going away takes only its own
+    /// area along: one id for them all let the old board, fading out after the new one came, take the new one's.
+    @State private var menuRegion = UUID()
     var body: some View {
         let drag = model.boardDrag
         GeometryReader { proxy in
@@ -66,7 +69,7 @@ struct BoardView: View {
             } action: { frame in
                 drag.boardFrameInWindow = frame
                 // Right-clicking a card opens the same AppKit menu (with icons) as the list does.
-                ContextMenus.shared.register(drag.menuRegion, frame: frame) { [model, drag] point in
+                ContextMenus.shared.register(menuRegion, frame: frame) { [model, drag] point in
                     guard model.openItem == nil, model.overlay == nil else { return nil }
                     let local = CGPoint(x: point.x - frame.minX, y: point.y - frame.minY)
                     // The header over an epic's issues has the epic's menu.
@@ -78,7 +81,7 @@ struct BoardView: View {
                     return ItemMenuBuilder(model: model, item: item).menu()
                 }
             }
-            .onDisappear { ContextMenus.shared.remove(drag.menuRegion) }
+            .onDisappear { [menuRegion] in ContextMenus.shared.remove(menuRegion) }
             // A click on the board beside the columns' cards, on a column's header or between columns, lets the picked
             // issues go. Clicks on cards and buttons are theirs: the innermost gesture wins.
             .contentShape(Rectangle())
