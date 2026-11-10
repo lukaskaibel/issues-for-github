@@ -107,6 +107,8 @@ enum PaletteMode: Hashable {
     case blocking(itemId: String)
     case milestone(itemId: String)
     case epic(itemId: String)
+    /// The iteration of one of the board's iteration fields.
+    case iteration(itemId: String, fieldId: String)
     case projects
     /// Every saved view of the open projects, to go to.
     case views

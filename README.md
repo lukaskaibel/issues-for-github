@@ -262,7 +262,8 @@ device.
 
 Plan a board the way Linear plans releases and projects, with what GitHub has. Its next milestones sit under
 Milestones in the sidebar; each shows the board's columns with only its issues, or a list grouped by epic, with how much is done
-and the day it is due. `⇧M` puts issues into one. An epic is an issue labelled "epic" whose sub-issues are the work:
+and the day it is due. `⇧M` puts issues into one, and `⇧C` into an iteration of the board: the current one, the next or
+a later one, as GitHub counts them from the dates. An epic is an issue labelled "epic" whose sub-issues are the work:
 **Make Epic** in the right-click menu, `M` then `E` to put an issue into one. On the board and in the list, the
 issues of an epic in the same column stand together under its name, so you see at a glance what belongs to what;
 drag the name and they move together, drop a card among them and it joins the epic. The roadmap lays the epics out over
@@ -387,7 +388,8 @@ The interface uses the system's own parts.
   GitHub's order, and unfolds sub-issues of sub-issues as a tree.
 - **Milestones, epics and a roadmap.** A board's milestones with their own board and progress, epics whose
   sub-issues are the work, and a roadmap of the epics over the milestones, on a timeline or as a list. Completing a
-  milestone closes it on GitHub and moves what is left to the next one.
+  milestone closes it on GitHub and moves what is left to the next one. Issues go into the board's iterations too: the
+  current one, the next or a later one.
 - **A project's views** in the sidebar, one project at a time, with a filter of chips like Linear's that is GitHub's
   own filter underneath. Change it for yourself, save it for everyone, or make, rename and delete views; GitHub shows
   the same. Each view shows what it is for: work packages with their progress, a team with each person's load, a cycle
@@ -459,6 +461,7 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | My Issues' overview or list, filter, groups, order, and the page each card shows | Yours alone, on each device: GitHub has no view of everything assigned to you |
 | The order of My Issues' cards, and those taken out | Yours alone, the same on your Mac, iPhone and iPad through iCloud |
 | Iteration on a card or row | The project's Iteration field, or any single-select field the view shows |
+| An issue's iteration, Current and Next | The project's Iteration field, by the name the project gives it (such as Sprint); which iteration is current and which is next GitHub works out from its dates, as for `@current` and `@next` |
 | A group's progress ("4/6") | The view's issues in it that are done, of all; a view grouped by parent issue, milestone or iteration |
 | A person's load | Their open issues in the view, the ones with a started status in yellow; a view grouped by assignee |
 | The cycle over a view and its arrows | The iteration the view's filter names (`@current`, `@next`, `@current+2` or its title); an arrow changes the filter, in the same kind of words, until **Save** |
@@ -568,6 +571,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `D` | Set the due date: type "fri", "next week", "in 3 days" or "12.10.", or pick a day |
 | `M` then `P` / `B` / `X` | Set the parent issue, mark as blocked by another issue, mark as blocking one |
 | `⇧M` | Put the issue into a milestone, or take it out of one |
+| `⇧C` | Put the issue into an iteration of its board, marked Current and Next, or take it out of one (`0`) |
 | `M` then `E` | Put the issue into an epic |
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
 | `⌥↑` `⌥↓` or `⌥K` `⌥J` | Move the issue up or down its column or list section |
@@ -729,7 +733,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold an epic's name, then drag | Move all of its issues there to another column (iPad) or another place in their section |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
-| Touch and hold an issue | Status, priority, assignee, labels, due date and milestone as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
+| Touch and hold an issue | Status, priority, assignee, labels, due date, milestone and iteration as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
 | Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
 | Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several. Your last choices are listed first, as in every sheet that picks a parent, epic or blocker |
 | Type a label the repository doesn't have in the Labels sheet | Create label “…” makes it in the repository and adds it |
@@ -753,6 +757,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Swipe sideways on a board, or tap a column in the strip over it (iPhone) | Turn to that column |
 | Touch and hold a card, then drop it on a column in the strip (iPhone) | Move it there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards |
 | Tap the milestone chip of an issue | Put it into another milestone, or a new one |
+| Tap the iteration chip of an issue | Put it into the current iteration, the next or a later one, or take it out; `⇧C` on an iPad keyboard |
 | Touch and hold an epic's bar on the roadmap, then drag (iPad) | Move the epic and its unfinished issues to another milestone, or to Later |
 | Tap a view on the project's page (iPhone), or in the sidebar (iPad) | Open it |
 | Touch and hold a view on the project's page (iPhone) | Pin, filter, rename, duplicate, open on GitHub, delete |

@@ -8,6 +8,15 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Put an issue into an iteration.** An issue's iteration is now one click or key away: the Iteration row on the
+  issue's page, the iteration chip on a card or row (when the view shows it), the right-click menu, **Move to
+  Iteration…** in the command palette, or `⇧C`, as in Linear. The picker lists the iteration under way and those to
+  come, says which one is current and which is next (on the Mac also each one's days), and `0` takes the issue out of
+  its iteration. Nobody sets which iteration is current: GitHub works it out from the dates, as it does for `@current`
+  and `@next`. Picked issues go in together, and a new issue shows the iteration it starts in, such as that of the view
+  it is made in, and takes another with one click. On iPhone and iPad the iteration is a chip under the issue's title, a
+  row beside it on a wide iPad, a submenu when you touch and hold an issue, and `⇧C` on an iPad keyboard. A field named
+  "Sprint" or "Cycle" keeps its name.
 - **All Issues as a board.** All Issues shows as a board too, not only as a list: **Board** in the toolbar (`⌘1`,
   and `⌘2` back to the list; on iPhone in the "…" menu), kept for each project. The issues on no board stand in a
   column of their own before the board's columns; drag one onto a status and it goes on the board with that status, at

@@ -1030,6 +1030,9 @@ struct IssueProperties: View {
                     }
                 }
             }
+            ForEach(model.iterationFields(for: item)) { field in
+                iterationRow(field)
+            }
             if let repo = item.repo {
                 row(.repository) {
                     Text(repo).foregroundStyle(Theme.textBody).lineLimit(1).truncationMode(.middle).padding(.horizontal, 8)
@@ -1122,8 +1125,12 @@ struct IssueProperties: View {
     }
 
     private func row<Content: View>(_ title: LocalizedStringResource, @ViewBuilder content: () -> Content) -> some View {
+        row(Text(title), content: content)
+    }
+
+    private func row<Content: View>(_ title: Text, @ViewBuilder content: () -> Content) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
-            Text(title)
+            title
                 .font(.small)
                 .foregroundStyle(Theme.textSecondary)
                 .fixedSize()
@@ -1133,6 +1140,27 @@ struct IssueProperties: View {
             Spacer(minLength: 0)
         }
         .frame(minHeight: 30)
+    }
+
+    /// One of the board's iteration fields, by the name the board gives it: the iteration with "Current", "Next" or
+    /// its days after it.
+    private func iterationRow(_ field: ProjectField) -> some View {
+        row(Text(verbatim: field.name)) {
+            PropertyButton(kind: .iteration(fieldId: field.id), item: item) {
+                if let iteration = model.iteration(of: item, field: field) {
+                    HStack(spacing: 7) {
+                        IterationIcon(size: 13)
+                            .foregroundStyle(model.isRunning(iteration, field: field) ? Theme.started : Theme.textSecondary)
+                        Text(iteration.title).lineLimit(1)
+                        if let when = model.iterationPlace(iteration, field: field) ?? model.iterationRange(iteration) {
+                            Text(when).foregroundStyle(Theme.textTertiary).lineLimit(1)
+                        }
+                    }
+                } else {
+                    Text(.addToIteration).foregroundStyle(Theme.textTertiary)
+                }
+            }
+        }
     }
 
     /// Blocked by or blocking: the issues' numbers, listed in full beside the description.

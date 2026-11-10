@@ -438,6 +438,10 @@ extension AppModel {
 
     /// "Oct 12 – 18".
     func iterationRange(_ iteration: IterationSpan) -> String? {
+        Self.iterationRange(iteration)
+    }
+
+    static func iterationRange(_ iteration: IterationSpan) -> String? {
         guard let start = iteration.start, let end = iteration.end else { return nil }
         let first = start.date().formatted(.dateTime.day().month(.abbreviated))
         let last = start.month == end.month ? end.date().formatted(.dateTime.day()) : end.date().formatted(.dateTime.day().month(.abbreviated))

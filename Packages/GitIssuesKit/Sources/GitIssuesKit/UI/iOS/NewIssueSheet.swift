@@ -327,6 +327,32 @@ struct NewIssueSheet: View {
                     .accessibilityLabel(draft.milestoneTitle.map { .milestoneTooltip(milestone: $0) } ?? .noMilestone)
                     .accessibilityIdentifier("new-milestone")
                 }
+                // The board's iteration: the view's, when it is made in a view of one.
+                if let field = model.iterationFields(projectId: draft.projectId).first {
+                    let iteration = draft.fieldValues[field.id]?.iterationId.flatMap { id in field.iterations.first { $0.id == id } }
+                    Menu {
+                        Picker(selection: Binding(
+                            get: { draft.fieldValues[field.id]?.iterationId },
+                            set: { draft.fieldValues[field.id] = $0.map { FieldValue(iterationId: $0) } }
+                        )) {
+                            Label(.noIteration, systemImage: "circle.dashed").tag(String?.none)
+                            ForEach(model.iterationChoices(field, keeping: Set([iteration?.id].compactMap { $0 }))) { choice in
+                                Label(model.iterationMenuTitle(choice, field: field), systemImage: "arrow.triangle.2.circlepath")
+                                    .tag(Optional(choice.id))
+                            }
+                        } label: {
+                            Text(verbatim: field.name)
+                        }
+                        .pickerStyle(.inline)
+                    } label: {
+                        PropertyChip(text: iteration?.title ?? field.name, placeholder: iteration == nil) {
+                            IterationIcon(size: 13)
+                                .foregroundStyle(iteration.map { model.isRunning($0, field: field) ? Theme.started : Theme.textSecondary } ?? Theme.textTertiary)
+                        }
+                    }
+                    .accessibilityLabel(iteration.map { .fieldValueSpoken(field: field.name, value: $0.title) } ?? .noIteration)
+                    .accessibilityIdentifier("new-iteration")
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -410,6 +436,8 @@ struct NewIssueSheet: View {
         draft.statusId = defaultStatus(projectId: id)
         draft.priorityId = nil
         if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
+        // The fields of the board it was going on, such as its iteration, are no other board's.
+        draft.fieldValues = [:]
         model.loadRepoMeta(projectId: id)
         // In All Issues, the board and none keep the repository chosen, and with it the people and labels picked.
         guard !context.inAllIssues, let id else { return }
