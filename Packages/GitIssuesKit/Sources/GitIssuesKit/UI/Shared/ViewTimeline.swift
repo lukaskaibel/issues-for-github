@@ -134,7 +134,10 @@ extension AppModel {
     func timelineRows(of view: ProjectView, in scope: Scope? = nil) -> [TimelineRow] {
         let dates = timelineDateFields(projectId: view.projectId)
         let iteration = timelineIterationField(of: view)
-        let sections = groupedSections(of: view) ?? sections(for: .project(view.projectId))
+        // The view on screen has the list's groups in the list's order, yours if you put them into one; the groups'
+        // menu puts them back.
+        let shown = currentView(projectId: view.projectId)?.id == view.id
+        let sections = shown ? sections(for: .project(view.projectId)) : groupedSections(of: view) ?? sections(for: .project(view.projectId))
         var rows: [TimelineRow] = []
         for section in sections {
             let folded = isFolded(section, in: scope)
@@ -306,14 +309,24 @@ private struct ViewTimelineContent: View {
         }
         .scrollIndicators(.never)
         #if os(macOS)
-        // Right-clicking an issue's line, on its name or anywhere along its bar, opens the same menu as on a card.
+        // Right-clicking an issue's line, on its name or anywhere along its bar, opens the same menu as on a card; a
+        // group's line, the menu of a group's header in the list. A right-click that finds no menu reaches the line
+        // as a click, which would open the issue or fold the group.
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
-            ContextMenus.shared.register(menuArea.id, frame: frame) { [model, menuArea] point in
+            ContextMenus.shared.register(menuArea.id, frame: frame) { [model, menuArea, scope] point in
                 guard model.openItem == nil, model.overlay == nil,
                       let index = menuArea.layout?.row(at: point.y - menuArea.contentTop),
-                      case .item(let shown) = menuArea.layout?.rows[index].kind,
-                      let item = model.item(id: shown.id) else { return nil }
-                return ItemMenuBuilder(model: model, item: item).menu()
+                      let row = menuArea.layout?.rows[index] else { return nil }
+                switch row.kind {
+                case .group(let section, _):
+                    // A view's timeline is a project's, whose list offers a new issue in every group too.
+                    return SectionMenu.menu(
+                        id: section.id, title: section.title, folded: model.isFolded(section, in: scope), kind: section.kind,
+                        optionId: section.option?.id, canAdd: true, model: model
+                    )
+                case .item(let shown):
+                    return model.item(id: shown.id).map { ItemMenuBuilder(model: model, item: $0).menu() }
+                }
             }
         }
         .onChange(of: snapshot.rowIdentity, initial: true) { menuArea.layout = snapshot.layout }

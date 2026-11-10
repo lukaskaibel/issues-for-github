@@ -84,6 +84,11 @@ All notable changes to this project are recorded here. The format follows
 - An issue on the timeline of a roadmap view has its menu, as on a board. On the Mac right-click its name or anywhere
   along its line, bar included; until now that opened the issue. On iPad touch and hold its name; holding its bar
   still moves its dates.
+- On the Mac, right-clicking a group's line on the timeline of a roadmap view, such as a milestone, opens the group's
+  menu, as on a group's header in the list: **Fold** or **Unfold**, **Fold All**, **Back to the Usual Order** and
+  **New Issue** in that group. Until now the right-click folded or unfolded the group. The timeline also shows the
+  groups in the order you gave them in the list.
+- On iPad, **Open** in an epic's menu on the roadmap's timeline opens the epic. Until now it did nothing.
 - On the Mac, a second click on the project's name in the sidebar closes its menu again, as on any menu's
   button. Before, the menu often opened again at once, mostly on a trackpad, where the pointer moves a little as the
   finger lifts. The same goes for every button that opens a dropdown, such as Display and the pickers.

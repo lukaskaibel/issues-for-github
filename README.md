@@ -203,7 +203,8 @@ ordinary swipe scrolls through dates. Dates snap to days and the edges stop at e
 single date moves as a point. VoiceOver offers the same changes in one-day steps. The project must allow editing, and
 the bar must use the issue's own date fields; iteration and milestone dates keep their existing meaning. The change
 appears locally and joins the sync queue when you release the bar. Right-click an issue's name or bar for the same menu
-as on a card; on iPad, touch and hold its name.
+as on a card; on iPad, touch and hold its name. Right-click a group's line for the menu of a group in the list: fold it
+or all of them, or start a new issue in it.
 
 ### Every issue, on a board or not
 

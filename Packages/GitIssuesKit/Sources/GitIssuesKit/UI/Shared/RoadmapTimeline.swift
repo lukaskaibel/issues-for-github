@@ -256,7 +256,7 @@ struct RoadmapTimeline: View {
         .help(Text(tooltip(row)))
         .accessibilityLabel(Text(row.epic.title))
         .accessibilityValue(Text(accessibilityValue(row)))
-        .modifier(EpicRowMenu(epic: row.epic))
+        .modifier(EpicRowMenu(epic: row.epic, open: open))
     }
 
     // MARK: Timeline
@@ -401,6 +401,8 @@ struct RoadmapTimeline: View {
 private struct EpicRowMenu: ViewModifier {
     @Environment(AppModel.self) private var model
     var epic: Item
+    /// Opens the epic, as a tap on its line does.
+    var open: (Item) -> Void
     #if os(macOS)
     @State private var region = UUID()
     #endif
@@ -417,7 +419,7 @@ private struct EpicRowMenu: ViewModifier {
             .onDisappear { ContextMenus.shared.remove(region) }
         #else
         content.contextMenu {
-            ItemMenuContent(item: epic, foldable: false) {}
+            ItemMenuContent(item: epic, foldable: false) { open(epic) }
         }
         #endif
     }

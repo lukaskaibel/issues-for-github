@@ -873,7 +873,7 @@ struct IssueTable: NSViewRepresentable {
 
         func menu(forRow row: Int) -> NSMenu? {
             if entries.indices.contains(row), case .header(let section) = entries[row] {
-                return Self.sectionMenu(section, model: model)
+                return SectionMenu.menu(section, model: model)
             }
             if entries.indices.contains(row), case .epic(let sectionId, let group) = entries[row] {
                 return EpicGroupMenu.menu(group, in: statusColumn(sectionId), model: model)
@@ -881,37 +881,50 @@ struct IssueTable: NSViewRepresentable {
             guard let item = item(at: row) else { return nil }
             return ItemMenuBuilder(model: model, item: item).menu()
         }
+    }
+}
 
-        /// A section header's menu: fold this one or all of them, or start an issue in it.
-        static func sectionMenu(_ section: IssueSectionModel, model: AppModel) -> NSMenu {
-            let menu = NSMenu()
-            let fold = ClosureMenuItem(String(localized: section.collapsed ? .unfoldGroup : .foldGroup)) { [model] in model.toggleSection(section.id) }
-            fold.image = MenuIcons.symbol(section.collapsed ? "chevron.down" : "chevron.right")
-            menu.addItem(fold)
-            let all = ClosureMenuItem(String(localized: section.collapsed ? .unfoldAllGroups : .foldAllGroups)) { [model] in
-                model.toggleAllSections(like: section.id)
-            }
-            all.image = MenuIcons.symbol(section.collapsed ? "chevron.down.2" : "chevron.right.2")
-            menu.addItem(all)
-            // Sections dragged into an order of your own go back to the usual one, as on iPhone and iPad.
-            if !model.customListOrder().isEmpty {
-                let usual = ClosureMenuItem(String(localized: .backToUsualOrder)) { [model] in
-                    withAnimation(Theme.spring) { model.resetListOrder(in: model.scope ?? .myIssues) }
-                }
-                usual.image = MenuIcons.symbol("arrow.up.arrow.down")
-                menu.addItem(usual)
-            }
-            if section.canAdd {
-                menu.addItem(.separator())
-                let add = ClosureMenuItem(String(localized: .newIssueInGroupMenu(group: section.title))) { [model] in
-                    model.addIssue(in: section.kind, optionId: section.optionId, sectionId: section.id)
-                }
-                add.image = MenuIcons.symbol("plus")
-                menu.addItem(add)
-            }
-            for entry in menu.items where entry.image != nil { entry.preferredImageVisibility = .visible }
-            return menu
+/// A group's menu, on its header in the list and on its line on a view's timeline: fold this one or all of them, put
+/// the groups back in their usual order, or start an issue in it. It folds in the scope on screen.
+@MainActor
+enum SectionMenu {
+    static func menu(_ section: IssueSectionModel, model: AppModel) -> NSMenu {
+        menu(
+            id: section.id, title: section.title, folded: section.collapsed, kind: section.kind,
+            optionId: section.optionId, canAdd: section.canAdd, model: model
+        )
+    }
+
+    static func menu(
+        id: String, title: String, folded: Bool, kind: ListSection.Kind, optionId: String?, canAdd: Bool, model: AppModel
+    ) -> NSMenu {
+        let menu = NSMenu()
+        let fold = ClosureMenuItem(String(localized: folded ? .unfoldGroup : .foldGroup)) { [model] in model.toggleSection(id) }
+        fold.image = MenuIcons.symbol(folded ? "chevron.down" : "chevron.right")
+        menu.addItem(fold)
+        let all = ClosureMenuItem(String(localized: folded ? .unfoldAllGroups : .foldAllGroups)) { [model] in
+            model.toggleAllSections(like: id)
         }
+        all.image = MenuIcons.symbol(folded ? "chevron.down.2" : "chevron.right.2")
+        menu.addItem(all)
+        // Sections dragged into an order of your own go back to the usual one, as on iPhone and iPad.
+        if !model.customListOrder().isEmpty {
+            let usual = ClosureMenuItem(String(localized: .backToUsualOrder)) { [model] in
+                withAnimation(Theme.spring) { model.resetListOrder(in: model.scope ?? .myIssues) }
+            }
+            usual.image = MenuIcons.symbol("arrow.up.arrow.down")
+            menu.addItem(usual)
+        }
+        if canAdd {
+            menu.addItem(.separator())
+            let add = ClosureMenuItem(String(localized: .newIssueInGroupMenu(group: title))) { [model] in
+                model.addIssue(in: kind, optionId: optionId, sectionId: id)
+            }
+            add.image = MenuIcons.symbol("plus")
+            menu.addItem(add)
+        }
+        for entry in menu.items where entry.image != nil { entry.preferredImageVisibility = .visible }
+        return menu
     }
 }
 
@@ -1836,7 +1849,7 @@ final class IssueHeaderCell: NSView {
     override func menu(for event: NSEvent) -> NSMenu? {
         // Inside the table the table builds the menu; the pinned copy builds its own.
         guard handlesClicks, let section, let model else { return super.menu(for: event) }
-        let menu = IssueTable.Coordinator.sectionMenu(section, model: model)
+        let menu = SectionMenu.menu(section, model: model)
         if ContextMenus.isContextClick(event) {
             GlassMenu.show(menu, at: event, in: self, model: model)
             return nil
