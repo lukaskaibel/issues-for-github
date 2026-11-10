@@ -12,11 +12,18 @@ All notable changes to this project are recorded here. The format follows
   issue's page, the iteration chip on a card or row (when the view shows it), the right-click menu, **Move to
   Iteration…** in the command palette, or `⇧C`, as in Linear. The picker lists the iteration under way and those to
   come, says which one is current and which is next (on the Mac also each one's days), and `0` takes the issue out of
-  its iteration. Nobody sets which iteration is current: GitHub works it out from the dates, as it does for `@current` and
-  `@next`. Picked issues go in together, and a new issue shows the iteration it starts in, such as that of the view it
-  is made in, and takes another with one click. On iPhone and iPad the iteration is a chip under the issue's title, a
+  its iteration. Nobody sets which iteration is current: GitHub works it out from the dates, as it does for `@current`
+  and `@next`. Picked issues go in together, and a new issue shows the iteration it starts in, such as that of the view
+  it is made in, and takes another with one click. On iPhone and iPad the iteration is a chip under the issue's title, a
   row beside it on a wide iPad, a submenu when you touch and hold an issue, and `⇧C` on an iPad keyboard. A field named
   "Sprint" or "Cycle" keeps its name.
+- **All Issues as a board.** All Issues shows as a board too, not only as a list: **Board** in the toolbar (`⌘1`,
+  and `⌘2` back to the list; on iPhone in the "…" menu), kept for each project. The issues on no board stand in a
+  column of their own before the board's columns; drag one onto a status and it goes on the board with that status, at
+  the end of the column. Nothing can be dropped into that column, so no issue leaves its board by accident. Put the
+  columns in your own order with **Move Left** and **Move Right** in a column's menu (on the Mac also by dragging its
+  header), and take the ones you don't need off with **Hide Column**: they wait at the end of the board, a click away
+  from coming back. Both stay on your device; the board's statuses on GitHub keep their order.
 - **Rate Issues on the App Store.** Once you have used Issues on three days, the system asks you for a rating as you
   finish an issue, closed as completed or moved into a done column: never as the app opens, never on sample data, and
   at most once a version and two months apart (the system shows it at most three times a year). **Rate Issues on the
@@ -77,6 +84,8 @@ All notable changes to this project are recorded here. The format follows
 - On the Mac, a second click on the project's name in the sidebar closes its menu again, as on any menu's
   button. Before, the menu often opened again at once, mostly on a trackpad, where the pointer moves a little as the
   finger lifts. The same goes for every button that opens a dropdown, such as Display and the pickers.
+- On the Mac, right-clicking an issue on a board opens its menu again after you switch views, such as from the board
+  to a view of this or the next iteration. Until now the right-click did nothing there until the window changed size.
 
 ## [1.1.0] - 2026-10-28
 

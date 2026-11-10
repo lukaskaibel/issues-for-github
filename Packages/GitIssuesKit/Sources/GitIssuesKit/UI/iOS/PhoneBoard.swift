@@ -10,6 +10,8 @@ struct PhoneBoard: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     var projectId: String
+    /// The project's All Issues: the issues on no board in a column of their own, then the board's columns.
+    var allIssues = false
 
     /// The column on screen.
     @State private var page: String?
@@ -29,10 +31,13 @@ struct PhoneBoard: View {
     /// The column to open on.
     private var start: String?
 
-    init(projectId: String, page: String?) {
+    init(projectId: String, allIssues: Bool = false, page: String?) {
         self.projectId = projectId
+        self.allIssues = allIssues
         start = page
     }
+
+    private var scope: Scope { allIssues ? .allIssues(projectId) : .project(projectId) }
 
     /// From the edge of the screen to a column's cards, with the column's own room for their shadows: as far in as
     /// the strip and the lists.
@@ -41,7 +46,9 @@ struct PhoneBoard: View {
     static let targetsHeight: CGFloat = 96
 
     var body: some View {
-        let columns = model.shownColumns(for: .project(projectId))
+        let columns = model.shownColumns(for: scope)
+        // Nothing goes into All Issues' issues on no board, so they are no target.
+        let targets = columns.filter { !$0.isOnNoBoard }
         VStack(spacing: 0) {
             ColumnStrip(columns: columns, page: $page)
             GeometryReader { proxy in
@@ -49,7 +56,7 @@ struct PhoneBoard: View {
                     LazyHStack(spacing: 0) {
                         ForEach(columns) { column in
                             MobileColumn(
-                                projectId: projectId, column: column, width: proxy.size.width - 2 * Self.margin,
+                                projectId: projectId, allIssues: allIssues, column: column, width: proxy.size.width - 2 * Self.margin,
                                 target: $target, dragging: $dragging,
                                 onDrop: { id, slot in land(id, in: column, at: slot) }
                             )
@@ -70,9 +77,9 @@ struct PhoneBoard: View {
             if lifting {
                 let source = source(in: columns)
                 GeometryReader { proxy in
-                    ColumnTargets(columns: columns, source: source, hot: hot)
+                    ColumnTargets(columns: targets, source: source, hot: hot)
                         .onDrop(of: [.plainText, .url], delegate: TargetDrop(
-                            model: model, projectId: projectId, columns: columns, source: source, width: proxy.size.width,
+                            model: model, scope: scope, columns: targets, source: source, width: proxy.size.width,
                             over: $overTargets, hot: $hot, dragging: $dragging,
                             onDrop: { id, column in land(id, in: column, at: 0) },
                             onEnd: endDrag
@@ -111,7 +118,7 @@ struct PhoneBoard: View {
             if page == nil { page = start ?? Self.firstPage(of: columns) }
         }
         .onChange(of: page) { _, id in
-            if let id { navigation.boardPages[Self.pageKey(model: model, projectId: projectId)] = id }
+            if let id { navigation.boardPages[Self.pageKey(model: model, projectId: projectId, allIssues: allIssues)] = id }
         }
         // A column hidden or gone: the board turns to one that is there.
         .onChange(of: columns.map(\.id)) { _, ids in
@@ -121,7 +128,7 @@ struct PhoneBoard: View {
 
     private func land(_ id: String?, in column: BoardColumn, at slot: Int?) {
         endDrag()
-        if MobileBoard.land(id, in: column, at: slot, model: model, projectId: projectId, milestone: nil) { dropped += 1 }
+        if MobileBoard.land(id, in: column, at: slot, model: model, projectId: projectId, milestone: nil, allIssues: allIssues) { dropped += 1 }
     }
 
     /// After a drop, taken or not: the views that saw the drag hear nothing more of it.
@@ -141,11 +148,11 @@ struct PhoneBoard: View {
         return columns.first { $0.nesting.members.contains { $0.id == id } }?.id
     }
 
-    /// The board of a project's view and the column it opens on: the one it was left on, else the first column of
-    /// work in progress with cards in it.
-    static func page(model: AppModel, navigation: MobileNavigation, projectId: String) -> String? {
-        let columns = model.shownColumns(for: .project(projectId))
-        if let kept = navigation.boardPages[pageKey(model: model, projectId: projectId)], columns.contains(where: { $0.id == kept }) {
+    /// The board of a project's view or its All Issues and the column it opens on: the one it was left on, else the
+    /// first column of work in progress with cards in it.
+    static func page(model: AppModel, navigation: MobileNavigation, projectId: String, allIssues: Bool = false) -> String? {
+        let columns = model.shownColumns(for: allIssues ? .allIssues(projectId) : .project(projectId))
+        if let kept = navigation.boardPages[pageKey(model: model, projectId: projectId, allIssues: allIssues)], columns.contains(where: { $0.id == kept }) {
             return kept
         }
         return firstPage(of: columns)
@@ -155,8 +162,9 @@ struct PhoneBoard: View {
         (columns.first { $0.option?.statusCategory == .started && $0.count > 0 } ?? columns.first { $0.count > 0 } ?? columns.first)?.id
     }
 
-    private static func pageKey(model: AppModel, projectId: String) -> String {
-        "\(projectId)\u{1F}\(model.currentView(projectId: projectId)?.id ?? "")"
+    private static func pageKey(model: AppModel, projectId: String, allIssues: Bool) -> String {
+        if allIssues { return "\(projectId)\u{1F}all" }
+        return "\(projectId)\u{1F}\(model.currentView(projectId: projectId)?.id ?? "")"
     }
 }
 
@@ -311,7 +319,8 @@ private struct BoardDrop: DropDelegate {
 /// drag, as on a column.
 private struct TargetDrop: DropDelegate {
     var model: AppModel
-    var projectId: String
+    /// The board: a project's or its All Issues'.
+    var scope: Scope
     var columns: [BoardColumn]
     /// The column the card comes from.
     var source: String?
@@ -370,7 +379,7 @@ private struct TargetDrop: DropDelegate {
     private var fits: Bool {
         guard let dragging else { return true }
         let id = DraggedGroup(dragging)?.ids.first ?? dragging
-        return MainActor.assumeIsolated { model.item(id: id)?.projectId == projectId }
+        return MainActor.assumeIsolated { model.item(id: id).map { model.fits($0, onBoardOf: scope) } ?? false }
     }
 }
 #endif

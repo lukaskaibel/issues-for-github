@@ -6,6 +6,9 @@ struct BoardView: View {
     @State private var scroll = ScrollPosition(edge: .leading)
     // Kept in a plain object: storing the offset in view state would redraw the board on every scroll tick.
     @State private var metrics = ScrollMetrics()
+    /// This board's own right-click area. Each view's board is a new one, and the board going away takes only its own
+    /// area along: one id for them all let the old board, fading out after the new one came, take the new one's.
+    @State private var menuRegion = UUID()
     var body: some View {
         let drag = model.boardDrag
         GeometryReader { proxy in
@@ -39,8 +42,8 @@ struct BoardView: View {
                             if showsAddColumn {
                                 AddColumnButton()
                             }
-                            if let projectId = model.currentProjectId, model.currentView != nil {
-                                HiddenColumnsList(projectId: projectId)
+                            if let scope = model.scope, model.canHideColumns(in: scope) {
+                                HiddenColumnsList(scope: scope)
                             }
                         }
                         .frame(width: 180, alignment: .leading)
@@ -66,7 +69,7 @@ struct BoardView: View {
             } action: { frame in
                 drag.boardFrameInWindow = frame
                 // Right-clicking a card opens the same AppKit menu (with icons) as the list does.
-                ContextMenus.shared.register(drag.menuRegion, frame: frame) { [model, drag] point in
+                ContextMenus.shared.register(menuRegion, frame: frame) { [model, drag] point in
                     guard model.openItem == nil, model.overlay == nil else { return nil }
                     let local = CGPoint(x: point.x - frame.minX, y: point.y - frame.minY)
                     // The header over an epic's issues has the epic's menu.
@@ -78,7 +81,7 @@ struct BoardView: View {
                     return ItemMenuBuilder(model: model, item: item).menu()
                 }
             }
-            .onDisappear { ContextMenus.shared.remove(drag.menuRegion) }
+            .onDisappear { [menuRegion] in ContextMenus.shared.remove(menuRegion) }
             // A click on the board beside the columns' cards, on a column's header or between columns, lets the picked
             // issues go. Clicks on cards and buttons are theirs: the innermost gesture wins.
             .contentShape(Rectangle())
@@ -127,7 +130,7 @@ struct BoardView: View {
 
     /// After the columns: Add Column, and the columns you hid.
     private var showsTrailing: Bool {
-        showsAddColumn || model.currentView != nil && model.currentProjectId.map { !model.hiddenColumns(projectId: $0).isEmpty } == true
+        showsAddColumn || model.scope.map { model.canHideColumns(in: $0) && !model.hiddenColumns(in: $0).isEmpty } == true
     }
 
     private func columnWidth(available: CGFloat, count: Int) -> CGFloat {
@@ -842,7 +845,7 @@ struct ColumnHeader: View {
             }
             Spacer(minLength: 0)
 
-            if canEdit && column.option != nil || model.currentView != nil {
+            if canEdit && column.option != nil || model.currentView != nil || inAllIssues {
                 GlassMenuButton(label: .columnOptions, size: CGSize(width: 22, height: 22)) {
                     columnMenu(includingNewIssue: false)
                 }
@@ -850,10 +853,12 @@ struct ColumnHeader: View {
             }
 
             // Out of sight until the pointer is in the column: a "+" over every column is noise on a quiet board.
-            IconButton(systemName: "plus", label: String(localized: .newIssueInColumnTooltip(column: column.title)), size: 22) {
-                newIssue()
+            if canAddIssue {
+                IconButton(systemName: "plus", label: String(localized: .newIssueInColumnTooltip(column: column.title)), size: 22) {
+                    newIssue()
+                }
+                .opacity(inside.pointer || hovering ? 1 : 0)
             }
-            .opacity(inside.pointer || hovering ? 1 : 0)
         }
         .padding(.leading, 6)
         .padding(.trailing, 2)
@@ -876,7 +881,17 @@ struct ColumnHeader: View {
         }
     }
 
+    /// Whether the board's statuses can be changed here: on the board, not in All Issues, which shows them as they are.
     private var canEdit: Bool { model.currentProject?.viewerCanUpdate == true }
+
+    /// All Issues' board, whose columns are moved and hidden on this device only.
+    private var inAllIssues: Bool { model.allIssuesProjectId != nil }
+
+    /// A new issue in All Issues goes on the board, so not into the issues on none, and only where you may add one.
+    private var canAddIssue: Bool {
+        guard inAllIssues else { return true }
+        return !column.isOnNoBoard && model.boardProject?.viewerCanUpdate == true
+    }
 
     /// A new issue in this column: with its status or its value, and what the view's filter asks for.
     private func newIssue() {
@@ -897,9 +912,9 @@ struct ColumnHeader: View {
         statuses.firstIndex { $0.id == column.id } ?? 0
     }
 
-    /// The status columns the board shows, which Move Left and Move Right step through.
+    /// The status columns the board shows, which Move Left and Move Right step through; in All Issues every column.
     private var shownStatuses: [String] {
-        model.columns.compactMap { $0.option?.id }
+        inAllIssues ? model.columns.map(\.id) : model.columns.compactMap { $0.option?.id }
     }
 
     private func startRename() {
@@ -926,9 +941,12 @@ struct ColumnHeader: View {
 
     private func move(_ delta: Int) {
         let shown = shownStatuses
-        guard let projectId = model.currentProjectId, let index = shown.firstIndex(of: column.id),
-              shown.indices.contains(index + delta) else { return }
-        model.moveColumn(column.id, among: shown, to: index + delta, projectId: projectId)
+        guard let index = shown.firstIndex(of: column.id), shown.indices.contains(index + delta) else { return }
+        if let projectId = model.allIssuesProjectId {
+            model.moveColumn(column.id, among: shown, to: index + delta, allIssuesOf: projectId)
+        } else if let projectId = model.currentProjectId {
+            model.moveColumn(column.id, among: shown, to: index + delta, projectId: projectId)
+        }
     }
 
     private func delete() {
@@ -957,22 +975,25 @@ extension ColumnHeader {
                 }
             }
             menu.divider()
+        }
+        // All Issues puts its columns in an order of its own, on this device; the board's are its statuses' order.
+        if editable || inAllIssues {
             let shown = shownStatuses
             menu.item(.moveLeft, "arrow.left", enabled: shown.first != column.id) { move(-1) }
             menu.item(.moveRight, "arrow.right", enabled: shown.last != column.id) { move(1) }
             menu.divider()
         }
-        // Hidden here only, for a view's board; one column always stays.
-        if let view = model.currentView {
+        // Hidden here only, for a view's board and All Issues'; one column always stays.
+        if let scope = model.scope, model.canHideColumns(in: scope) {
             menu.item(.hideColumn, "eye.slash", enabled: model.columns.count > 1) { [model, id = column.id] in
-                model.setColumn(id, hidden: true, of: view)
+                model.setColumn(id, hidden: true, in: scope)
             }
             menu.divider()
         }
         if editable {
             menu.item(.deleteColumnEllipsis, "trash", enabled: statuses.count > 1, destructive: true) { confirmDelete = true }
         }
-        if includingNewIssue {
+        if includingNewIssue, canAddIssue {
             menu.divider()
             menu.item(String(localized: .newIssueInColumnMenuItem(column: column.title)), "plus") { newIssue() }
         }
@@ -984,11 +1005,11 @@ extension ColumnHeader {
 /// The columns you hid on the board, at its end: each with its count, shown again with a click.
 private struct HiddenColumnsList: View {
     @Environment(AppModel.self) private var model
-    var projectId: String
+    var scope: Scope
 
     var body: some View {
-        let hidden = model.hiddenColumns(projectId: projectId)
-        if !hidden.isEmpty, let view = model.currentView {
+        let hidden = model.hiddenColumns(in: scope)
+        if !hidden.isEmpty {
             VStack(alignment: .leading, spacing: 2) {
                 Text(.hiddenColumns)
                     .font(.small)
@@ -997,7 +1018,7 @@ private struct HiddenColumnsList: View {
                     .padding(.bottom, 4)
                 ForEach(hidden) { column in
                     Button {
-                        model.setColumn(column.id, hidden: false, of: view)
+                        model.setColumn(column.id, hidden: false, in: scope)
                     } label: {
                         HStack(spacing: 8) {
                             ColumnIcon(column: column)

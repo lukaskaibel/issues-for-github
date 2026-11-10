@@ -138,51 +138,120 @@ struct MyIssuesFilterSheet: View {
 }
 
 /// A project's All Issues: its board's issues and those of its repositories on no board, as a list by status with
-/// the issues on no board first.
+/// the issues on no board first, or as a board with a column of them before the board's columns.
 struct AllIssuesScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.wideLayout) private var wide
+    @Environment(\.windowWidth) private var windowWidth
     var projectId: String
 
     var body: some View {
         let project = model.projects.first { $0.id == projectId }
-        IssueList(scope: .allIssues(projectId))
-            .background(Theme.panel)
-            .navigationTitle(.allIssues)
-            .navigationSubtitle(project?.title ?? "")
-            .navigationBarTitleDisplayMode(.inline)
-            .modifier(EditorRole(active: wide))
-            .toolbar {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    Menu {
+        let mode = model.allIssuesLayout(projectId: projectId)
+        // A board needs its columns, which come with the project's first read; until then the list says it's looking.
+        let board = project != nil && mode == .board && !model.isLoading(projectId: projectId)
+            && !model.columns(for: .allIssues(projectId)).isEmpty
+        // A window narrower than this has the tab bar floating in the middle of the bar, next to the header.
+        let roomy = windowWidth >= 950
+        Group {
+            if board, wide {
+                MobileBoard(projectId: projectId, allIssues: true)
+            } else if board {
+                PhoneBoard(projectId: projectId, allIssues: true, page: PhoneBoard.page(model: model, navigation: navigation, projectId: projectId, allIssues: true))
+            } else {
+                IssueList(scope: .allIssues(projectId))
+            }
+        }
+        // White pages, and under the board the grey its cards stand on.
+        .background(board ? Theme.board : Theme.panel)
+        .navigationTitle(.allIssues)
+        .navigationSubtitle(project?.title ?? "")
+        .navigationBarTitleDisplayMode(.inline)
+        .modifier(EditorRole(active: wide))
+        .toolbar {
+            if wide, roomy {
+                // As a project's header: what is on screen, then Board and List.
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "rectangle.stack")
+                            .foregroundStyle(Theme.textSecondary)
+                        Text(.allIssues)
+                            .font(.headline)
+                            .lineLimit(1)
+                        Picker(.viewModePicker, selection: layout) {
+                            // Named for VoiceOver and the pointer, which would otherwise read the symbols' own names.
+                            Image(systemName: "rectangle.split.3x1").accessibilityLabel(.board).help(Text(.board)).tag(ViewMode.board)
+                            Image(systemName: "list.bullet").accessibilityLabel(.list).help(Text(.list)).tag(ViewMode.list)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 160)
+                        .padding(.leading, 8)
+                    }
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
+            ToolbarItemGroup(placement: .primaryAction) {
+                Menu {
+                    if !(wide && roomy) {
+                        Picker(.viewModePicker, selection: layout) {
+                            Label(.board, systemImage: "rectangle.split.3x1").tag(ViewMode.board)
+                            Label(.list, systemImage: "list.bullet").tag(ViewMode.list)
+                        }
+                        .pickerStyle(.inline)
+                        Divider()
+                    }
+                    if mode == .list {
                         Button {
                             navigation.sheet = .arrangeSections(.allIssues(projectId))
                         } label: {
                             Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
                         }
-                        // Home's pins are the iPhone's.
-                        if !wide { PinMenuItem(entry: .allIssues(projectId)) }
-                        Divider()
-                        Button {
-                            model.refresh()
-                        } label: {
-                            Label(.syncNow, systemImage: "arrow.triangle.2.circlepath")
+                    } else {
+                        let hidden = model.hiddenColumns(in: .allIssues(projectId))
+                        if !hidden.isEmpty {
+                            // A tap shows the column on the board again.
+                            Section(String(localized: .hiddenColumns)) {
+                                ForEach(hidden) { column in
+                                    Button {
+                                        model.setColumn(column.id, hidden: false, in: .allIssues(projectId))
+                                    } label: {
+                                        Label(column.title, systemImage: "eye")
+                                    }
+                                }
+                            }
                         }
-                    } label: {
-                        Label(.options, systemImage: "ellipsis")
                     }
-                    if wide { NewIssueButton(context: NewIssueContext(projectId: projectId, inAllIssues: true)) }
+                    // Home's pins are the iPhone's.
+                    if !wide { PinMenuItem(entry: .allIssues(projectId)) }
+                    Divider()
+                    Button {
+                        model.refresh()
+                    } label: {
+                        Label(.syncNow, systemImage: "arrow.triangle.2.circlepath")
+                    }
+                } label: {
+                    Label(.options, systemImage: "ellipsis")
                 }
+                if wide { NewIssueButton(context: NewIssueContext(projectId: projectId, inAllIssues: true)) }
             }
-            .modifier(PhoneSearchBar(context: NewIssueContext(projectId: projectId, inAllIssues: true)))
-            .onAppear {
-                model.setActiveProject(projectId)
-                navigation.rememberProject(projectId)
-                model.setActiveRepositories(model.repos(projectId: projectId).map(\.id))
-            }
-            .onDisappear { model.setActiveRepositories([]) }
-            .task(id: model.dataVersion) { await model.preloadAvatars(for: .allIssues(projectId)) }
+        }
+        .modifier(PhoneSearchBar(context: NewIssueContext(projectId: projectId, inAllIssues: true)))
+        .onAppear {
+            model.setActiveProject(projectId)
+            navigation.rememberProject(projectId)
+            model.setActiveRepositories(model.repos(projectId: projectId).map(\.id))
+        }
+        .onDisappear { model.setActiveRepositories([]) }
+        .task(id: model.dataVersion) { await model.preloadAvatars(for: .allIssues(projectId)) }
+    }
+
+    /// Board or list, kept for this project's All Issues.
+    private var layout: Binding<ViewMode> {
+        Binding(
+            get: { model.allIssuesLayout(projectId: projectId) },
+            set: { mode in withAnimation(Theme.spring) { model.setAllIssuesLayout(mode, projectId: projectId) } }
+        )
     }
 }
 

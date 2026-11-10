@@ -22,7 +22,7 @@ extension AppModel {
 
     /// ↓ ↑ and J K: down or up the column on the board, else through the list, or to the next or previous issue.
     private func stepDown(_ delta: Int) {
-        if viewMode == .board, openItem == nil, currentProjectId != nil { stepWithinColumn(delta) } else { step(delta) }
+        if showsBoard, openItem == nil { stepWithinColumn(delta) } else { step(delta) }
     }
 
     private func stepWithinColumn(_ delta: Int) {
@@ -136,7 +136,7 @@ extension AppModel {
         }
         // ⌥↑ and ⌥↓ (or ⌥K and ⌥J) move the issue up or down its column, or its section of the list. The
         // keyboard focus goes with it, so pressing again keeps moving the same issue.
-        if modifiers == .option, openItem == nil, currentProjectId != nil,
+        if modifiers == .option, openItem == nil, boardProjectId != nil,
            let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key] {
             if let id = cursorId, let item = scopedItems.first(where: { $0.id == id }), move(item, by: delta) {
                 moveFocus(to: item.id)
@@ -207,7 +207,7 @@ extension AppModel {
             let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key]
             if shift, let delta {
                 if selectedIds.isEmpty, let start = targetItem { toggleSelection(start) }
-                if viewMode == .board, currentProjectId != nil { stepWithinColumn(delta) } else { step(delta) }
+                if showsBoard { stepWithinColumn(delta) } else { step(delta) }
                 if let id = focusedItemId, let item = scopedItems.first(where: { $0.id == id }) { extendSelection(to: item) }
                 return true
             }

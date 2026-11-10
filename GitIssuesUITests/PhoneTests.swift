@@ -1207,6 +1207,47 @@ final class PhoneTests: AppTestCase {
         waitForLabel(element("page-All Issues"), containing: "5 on no board")
     }
 
+    /// All Issues as a board on the iPhone: a column at a time, the issues on no board first in the strip, and the
+    /// columns' menu moves and hides them.
+    func testAllIssuesAsABoard() {
+        launch()
+        openProjectPage("Git Issues")
+        let all = element("page-All Issues")
+        wait(all)
+        all.tap()
+        wait(app.navigationBars["All Issues"])
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        button("Board").tap()
+        let noBoard = element("strip-No project")
+        wait(noBoard)
+        XCTAssertLessThan(noBoard.frame.minX, element("strip-Backlog").frame.minX)
+        // The board opens on the work in progress; the issues on no board are its first column, off screen to the left.
+        let window = app.windows.firstMatch.frame
+        var swipes = 0
+        while !window.contains(noBoard.frame) && swipes < 6 {
+            app.swipeRight()
+            swipes += 1
+        }
+        noBoard.tap()
+        wait(element("card-#27"))
+        snapshot("All Issues as a board")
+
+        // Hidden from its menu, a column leaves the strip; the "…" menu brings it back.
+        app.buttons["Options for No project"].tap()
+        button("Hide Column").tap()
+        waitGone(element("strip-No project"))
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        let hidden = button("No project")
+        wait(hidden)
+        hidden.tap()
+        wait(element("strip-No project"))
+
+        // Back to the list, as it was.
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        button("List").tap()
+        wait(element("row-#27"))
+    }
+
     func testProjectIconFromTheProjectMenu() {
         launch()
         openProjectTab("Git Issues")
