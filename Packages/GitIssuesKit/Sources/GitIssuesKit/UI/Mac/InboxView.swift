@@ -427,6 +427,8 @@ private struct InboxUndoToast: View {
         .padding(.trailing, 8)
         .padding(.vertical, 8)
         .glassPanel(in: Capsule())
+        // A right-click on it does nothing: it neither presses Undo nor opens the menu of the notification under it.
+        .floatingContextMenu()
     }
 }
 

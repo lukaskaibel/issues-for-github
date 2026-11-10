@@ -83,6 +83,11 @@ struct SelectionBar: View {
             .padding(.horizontal, 2)
             // A Liquid Glass bar, as Photos shows what can be done to a selection.
             .glassPanel(in: Capsule())
+            // It stands for the picked issues: a right-click on it opens their menu, as on one of their cards, never the
+            // menu of a card under it. An issue's page hides it.
+            .floatingContextMenu(isShown: model.openItem == nil) { [model] in
+                model.selectedItems.first.map { ItemMenuBuilder(model: model, item: $0).menu() }
+            }
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -202,6 +207,11 @@ struct PeekPanel: View {
         .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Theme.popoverBorder, lineWidth: 0.5))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: Theme.shadow, radius: 30, y: 12)
+        // A right-click on the peek is about its issue: the issue's menu, as on its card, never the menu of the card or
+        // line under the peek. Its description keeps the menu of text, to copy from.
+        .floatingContextMenu { [model, id = item.id] in
+            model.item(id: id).map { ItemMenuBuilder(model: model, item: $0).menu() }
+        }
     }
 
     /// A ticked checkbox, saved like any edit of the description.

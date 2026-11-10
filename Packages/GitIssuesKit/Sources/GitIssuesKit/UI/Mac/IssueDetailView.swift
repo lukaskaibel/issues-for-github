@@ -888,6 +888,9 @@ struct CommentComposer: View {
         .contentShape(Rectangle())
         .onTapGesture { focused = true }
         .glassPanel(in: RoundedRectangle(cornerRadius: 21, style: .continuous))
+        // It floats over the page: its text keeps its own menu, and elsewhere a right-click neither sends the comment
+        // nor opens the menu of a sub-issue scrolled under it.
+        .floatingContextMenu()
         .onChange(of: draft) { _, text in model.commentDrafts[item.id] = text.isEmpty ? nil : text }
     }
 

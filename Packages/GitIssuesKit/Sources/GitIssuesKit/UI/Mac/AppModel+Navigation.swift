@@ -77,10 +77,16 @@ extension AppModel {
                 guard self.signedIn, self.overlay == nil, let window = event.window, window === self.mainWindow,
                       let content = window.contentView else { return false }
                 let point = CGPoint(x: event.locationInWindow.x, y: content.bounds.height - event.locationInWindow.y)
-                guard let menu = ContextMenus.shared.menu(at: point) else { return false }
-                // In glass, at the pickers' size, as every right-click menu of the app.
-                GlassMenu.show(menu, at: event, in: content, model: self)
-                return true
+                switch ContextMenus.shared.click(at: point, onText: ContextMenus.isOnText(at: event.locationInWindow, in: window)) {
+                case .menu(let menu):
+                    // In glass, at the pickers' size, as every right-click menu of the app.
+                    GlassMenu.show(menu, at: event, in: content, model: self)
+                    return true
+                case .nothing:
+                    return true
+                case .view:
+                    return false
+                }
             }
             return handled ? nil : event
         }
