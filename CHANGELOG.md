@@ -89,6 +89,10 @@ All notable changes to this project are recorded here. The format follows
   finger lifts. The same goes for every button that opens a dropdown, such as Display and the pickers.
 - On the Mac, right-clicking an issue on a board opens its menu again after you switch views, such as from the board
   to a view of this or the next iteration. Until now the right-click did nothing there until the window changed size.
+- On the Mac, a right-click on the peek opens the menu of the issue in it, with **Peek** ticked to put it away; its
+  description keeps the menu of text, with Copy. Until now it opened the menu of the card or timeline line under the
+  peek. A right-click on the bar of picked issues opens their menu, and one on a notice, the Inbox's Undo or the
+  comment field (outside its text) does nothing, instead of opening the menu of what is under it or pressing a button.
 
 ## [1.1.0] - 2026-10-28
 

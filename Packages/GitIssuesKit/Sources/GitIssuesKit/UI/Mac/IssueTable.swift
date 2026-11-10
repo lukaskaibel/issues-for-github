@@ -2152,9 +2152,11 @@ struct ItemMenuBuilder {
         let open = ClosureMenuItem(String(localized: .openIssue)) { [model, item] in model.open(item) }
         open.image = MenuIcons.symbol("arrow.up.left.and.arrow.down.right")
         menu.addItem(open)
-        let peek = ClosureMenuItem(String(localized: .peek)) { [model, item] in
+        // Ticked for the issue in the peek, as on the peek's own menu; picked again, it puts the peek away, as Space does.
+        let peeking = model.peekItemId == item.id
+        let peek = ClosureMenuItem(String(localized: .peek), checked: peeking) { [model, item] in
             model.hoveredItemId = item.id
-            if model.peekItemId != nil { model.followPeek(to: item.id) } else { model.togglePeek() }
+            if model.peekItemId != nil, !peeking { model.followPeek(to: item.id) } else { model.togglePeek() }
         }
         peek.image = MenuIcons.symbol("eye")
         hint(peek, " ")

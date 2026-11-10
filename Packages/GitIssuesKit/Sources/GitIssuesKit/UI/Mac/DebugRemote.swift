@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -717,6 +717,20 @@ enum DebugRemote {
                     log("iterations #\(argument) \(field.name)=\(model.iteration(of: item, field: field)?.title ?? "none") rows: \(rows.joined(separator: " | "))")
                 }
                 log("parts #\(argument): \(CardRegionStore.shared.parts(item.id).map { "\($0.kind)" }.joined(separator: " "))")
+            }
+        case "menuat":
+            // menuat <x> <y>: what a right-click there does, in window points from the top left: the entries of its
+            // menu, "view" when the view under the pointer gets it, or "nothing".
+            let bits = argument.split(separator: " ").compactMap { Double($0) }
+            if bits.count == 2, let window = model.mainWindow, let content = window.contentView {
+                let point = CGPoint(x: bits[0], y: bits[1])
+                let location = NSPoint(x: point.x, y: content.bounds.height - point.y)
+                switch ContextMenus.shared.click(at: point, onText: ContextMenus.isOnText(at: location, in: window)) {
+                case .menu(let menu):
+                    log("menuat: " + menu.items.map { $0.isSeparatorItem ? "—" : $0.title + ($0.state == .on ? " ✓" : "") }.joined(separator: " | "))
+                case .view: log("menuat: view")
+                case .nothing: log("menuat: nothing")
+                }
             }
         case "regions":
             // regions: the areas that have a right-click menu, in window points from the top left.
