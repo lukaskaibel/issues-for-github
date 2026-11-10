@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -205,7 +205,7 @@ enum DebugRemote {
             model.focusedItemId = item(argument, model)?.id
         case "overlay":
             // overlay palette|new|none, overlay parent|subissue|blockedby|blocking <number> for a relation picker, or
-            // overlay due <number> for the due date picker.
+            // overlay due <number> for the due date picker, overlay iteration <number> for the first iteration field's.
             let bits = argument.split(separator: " ").map(String.init)
             let target = bits.count > 1 ? item(bits[1], model)?.id : nil
             switch (bits.first, target) {
@@ -218,6 +218,10 @@ enum DebugRemote {
             case ("due", let id?): model.overlay = .palette(.dueDate(itemId: id))
             case ("milestone", let id?): model.overlay = .palette(.milestone(itemId: id))
             case ("epic", let id?): model.overlay = .palette(.epic(itemId: id))
+            case ("iteration", let id?):
+                if let item = model.item(id: id), let field = model.iterationFields(for: item).first {
+                    model.overlay = .palette(.iteration(itemId: id, fieldId: field.id))
+                }
             case ("labels", let id?): model.overlay = .palette(.labels(itemId: id))
             case ("assignees", let id?): model.overlay = .palette(.assignees(itemId: id))
             case ("newmilestone", _): model.overlay = .milestoneEditor(projectId: model.scopeProjectId, title: nil, assigning: [])
@@ -487,7 +491,7 @@ enum DebugRemote {
                 if bits.contains("opt") { modifiers.insert(.option) }
                 let arrows: [UInt16: String] = [125: "\u{F701}", 126: "\u{F700}", 123: "\u{F702}", 124: "\u{F703}"]
                 if arrows[code] != nil { modifiers.formUnion([.numericPad, .function]) }
-                let characters = arrows[code] ?? [36: "\r", 48: "\t", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a"][code] ?? ""
+                let characters = arrows[code] ?? [36: "\r", 48: "\t", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a", 8: "c"][code] ?? ""
                 sendKey(characters: modifiers.contains(.shift) ? characters.uppercased() : characters, code: code, modifiers: modifiers, toWindow: parts.first == "winkeycode")
             }
         case "status":
@@ -701,6 +705,18 @@ enum DebugRemote {
             // windows: every visible window and panel with its frame on screen, and the screen it is on.
             for window in NSApp.windows where window.isVisible {
                 log("window \(type(of: window)) \"\(window.title)\" frame=\(window.frame) screen=\(window.screen.map { "\($0.frame)" } ?? "nil") level=\(window.level.rawValue)")
+            }
+        case "iterations":
+            // iterations <number>: the issue's iteration in each iteration field of its board, the picker's rows, and the
+            // parts of its card that open a picker.
+            if let item = item(argument, model) {
+                for field in model.iterationFields(for: item) {
+                    let rows = model.pickerItems(.iteration(fieldId: field.id), for: item).map { row in
+                        "\(row.selected ? "✓" : "")\(row.shortcut ?? "-") \(row.title)\(row.subtitle.map { " (\($0))" } ?? "")"
+                    }
+                    log("iterations #\(argument) \(field.name)=\(model.iteration(of: item, field: field)?.title ?? "none") rows: \(rows.joined(separator: " | "))")
+                }
+                log("parts #\(argument): \(CardRegionStore.shared.parts(item.id).map { "\($0.kind)" }.joined(separator: " "))")
             }
         case "regions":
             // regions: the areas that have a right-click menu, in window points from the top left.

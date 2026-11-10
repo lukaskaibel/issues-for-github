@@ -34,6 +34,8 @@ struct CommandPalette: View {
                 step(.milestone, id)
             case .epic(let id):
                 step(.epic, id)
+            case .iteration(let id, let fieldId):
+                step(.iteration(fieldId: fieldId), id)
             case .views:
                 PickerList(
                     placeholder: String(localized: .goToViewPlaceholder),
@@ -396,6 +398,11 @@ private struct RootPalette: View {
                         model.setMilestone(of: targets, to: nil)
                     })
                 }
+            }
+            if let field = model.iterationFields(for: item).first {
+                list.append(PaletteCommand(id: "iteration", title: .moveToIterationCommand, section: section, icon: AnyView(IterationIcon().foregroundStyle(Theme.textSecondary)), keys: ["⇧", "C"]) {
+                    model.overlay = .palette(.iteration(itemId: item.id, fieldId: field.id))
+                })
             }
             if model.canRelate(item), !item.isEpic {
                 list.append(PaletteCommand(id: "epic", title: .addToEpicCommand, section: section, icon: AnyView(EpicIcon()), keys: ["M", "E"]) {

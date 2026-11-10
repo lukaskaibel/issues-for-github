@@ -282,6 +282,13 @@ extension AppModel {
             }
         }
 
+        // ⇧C: the iteration, as Linear's cycle. Without an issue to act on, or a board without iterations, C makes a
+        // new issue as ever.
+        if key == "c", event.modifierFlags.contains(.shift), let item = actionItem, let field = iterationFields(for: item).first {
+            overlay = .palette(.iteration(itemId: item.id, fieldId: field.id))
+            return true
+        }
+
         switch key {
         case "g":
             pendingGoTo = Date()

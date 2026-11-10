@@ -60,6 +60,12 @@ struct SelectionBar: View {
                         MilestoneIcon(mark: sameMilestone ? model.milestoneMark(of: first) : .none, size: 13)
                     }
                 }
+                // The board's iteration, named as the board names it; picks from another board keep theirs.
+                if let field = model.iterationFields(for: first).first {
+                    BarAction(kind: .iteration(fieldId: field.id), item: first, name: field.name, key: "⇧C") {
+                        IterationIcon(size: 13)
+                    }
+                }
                 Button {
                     model.copyLinks(items)
                 } label: {
@@ -86,11 +92,24 @@ struct SelectionBar: View {
 private struct BarAction<Icon: View>: View {
     var kind: PickerKind
     var item: Item
-    var title: LocalizedStringResource
+    var name: String
     var key: String
     @ViewBuilder var icon: Icon
 
     @State private var open = false
+
+    init(kind: PickerKind, item: Item, title: LocalizedStringResource, key: String, @ViewBuilder icon: () -> Icon) {
+        self.init(kind: kind, item: item, name: String(localized: title), key: key, icon: icon)
+    }
+
+    /// A field named by the board, such as its iteration field.
+    init(kind: PickerKind, item: Item, name: String, key: String, @ViewBuilder icon: () -> Icon) {
+        self.kind = kind
+        self.item = item
+        self.name = name
+        self.key = key
+        self.icon = icon()
+    }
 
     var body: some View {
         Button {
@@ -98,7 +117,7 @@ private struct BarAction<Icon: View>: View {
         } label: {
             HStack(spacing: 6) {
                 icon.frame(width: 14, height: 14)
-                Text(title)
+                Text(name)
             }
             .font(.ui)
             .padding(.horizontal, 10)
@@ -106,7 +125,7 @@ private struct BarAction<Icon: View>: View {
             .hoverFill(active: open, radius: 17)
         }
         .buttonStyle(PlainPressStyle())
-        .help(Text(.titleWithShortcutKey(title: String(localized: title), key: key)))
+        .help(Text(.titleWithShortcutKey(title: name, key: key)))
         .dropdown(isPresented: $open) { close in
             ItemPicker(kind: kind, itemId: item.id, close: close)
         }

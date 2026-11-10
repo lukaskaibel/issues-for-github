@@ -1477,7 +1477,10 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             let width = 7 + 10 + 5 + textWidth + 7
             let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
             guard rect.minX > x + 160 else { break }
-            drawChip(rect, hovered: false)
+            // An iteration opens its picker, as the milestone does.
+            let kind: PickerKind? = field.icon == .iteration ? .iteration(fieldId: field.fieldId) : nil
+            if let kind { parts.append((kind, rect)) }
+            drawChip(rect, hovered: kind != nil && hoveredPart == kind)
             let icon = CGRect(x: rect.minX + 7, y: midY - 5, width: 10, height: 10)
             switch field.icon {
             case .option(let color): PlanningGlyph.drawDot(color, in: icon.insetBy(dx: -1, dy: -1), cg: context)
@@ -2340,7 +2343,36 @@ struct ItemMenuBuilder {
         if targets.contains(where: model.canHaveMilestone) {
             entries.append(submenu(String(localized: .milestone), MenuIcons.milestone(model.milestoneMark(of: item)), milestoneMenu(targets), picker: .milestone))
         }
+        // Each of the board's iteration fields, named as the board names it ("Iteration", "Sprint").
+        for field in model.iterationFields(for: item) {
+            entries.append(submenu(field.name, MenuIcons.symbol("arrow.triangle.2.circlepath"), iterationMenu(field, targets), picker: .iteration(fieldId: field.id)))
+        }
         return entries
+    }
+
+    /// No iteration, then the current one and those to come, with the one the issues share checked.
+    private func iterationMenu(_ field: ProjectField, _ targets: [Item]) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let ids = model.iterationIds(of: targets, field: field)
+        let none = ClosureMenuItem(String(localized: .noIteration), checked: ids == [nil]) { [model] in
+            model.setIteration(of: targets, field: field, to: nil)
+        }
+        none.image = MenuIcons.symbol("arrow.triangle.2.circlepath", color: Theme.textTertiary)
+        let choices = model.iterationChoices(field, keeping: Set(ids.compactMap { $0 }))
+        let numbered = AppModel.numbersPickMilestones(choices.map(\.title))
+        if numbered { number(none, 0) }
+        menu.addItem(none)
+        for (index, iteration) in choices.enumerated() {
+            let entry = ClosureMenuItem(model.iterationMenuTitle(iteration, field: field), checked: ids == [iteration.id]) { [model] in
+                model.setIteration(of: targets, field: field, to: iteration)
+            }
+            entry.image = MenuIcons.symbol("arrow.triangle.2.circlepath", color: model.isRunning(iteration, field: field) ? Theme.started : Theme.textSecondary)
+            entry.toolTip = model.iterationRange(iteration)
+            if numbered { number(entry, index + 1) }
+            menu.addItem(entry)
+        }
+        return menu
     }
 
     /// No milestone, the open ones with the one they share checked, and a new one for them.

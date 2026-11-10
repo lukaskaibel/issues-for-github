@@ -155,6 +155,9 @@ struct IssueScreen: View {
             if model.canHaveDueDate(item) {
                 Button(.dueDateTitle) { navigation.requestPicker(.dueDate) }.keyboardShortcut("d", modifiers: [])
             }
+            if let field = model.iterationFields(for: item).first {
+                Button(.iteration) { navigation.requestPicker(.iteration(fieldId: field.id)) }.keyboardShortcut("c", modifiers: .shift)
+            }
         }
         .opacity(0)
         .allowsHitTesting(false)
@@ -564,6 +567,19 @@ private struct PropertyChips: View {
                 .accessibilityLabel(model.milestoneTitle(of: item).map { .milestoneTooltip(milestone: $0) } ?? .noMilestone)
                 .accessibilityIdentifier("chip-milestone")
             }
+            ForEach(model.iterationFields(for: item)) { field in
+                let iteration = model.iteration(of: item, field: field)
+                Menu {
+                    IterationMenuItems(item: item, field: field)
+                } label: {
+                    PropertyChip(text: iteration?.title ?? field.name, placeholder: iteration == nil) {
+                        IterationIcon(size: 13)
+                            .foregroundStyle(iteration.map { model.isRunning($0, field: field) ? Theme.started : Theme.textSecondary } ?? Theme.textTertiary)
+                    }
+                }
+                .accessibilityLabel(model.iterationDescription(of: item, field: field))
+                .accessibilityIdentifier("chip-iteration")
+            }
             if let parentNumber = item.parentNumber {
                 Button {
                     if let parentId = item.parentId, let parent = model.item(contentId: parentId) {
@@ -745,6 +761,9 @@ private struct PropertiesColumn: View {
                         }
                     }
                 }
+                ForEach(model.iterationFields(for: item)) { field in
+                    iterationRow(field)
+                }
                 if let repo = item.repo {
                     row(.repository) {
                         Text(repo).foregroundStyle(Theme.textBody).lineLimit(1).truncationMode(.middle).padding(.horizontal, 8)
@@ -827,8 +846,12 @@ private struct PropertiesColumn: View {
     }
 
     private func row<Content: View>(_ title: LocalizedStringResource, @ViewBuilder content: () -> Content) -> some View {
+        row(Text(title), content: content)
+    }
+
+    private func row<Content: View>(_ title: Text, @ViewBuilder content: () -> Content) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
-            Text(title)
+            title
                 .font(.footnote)
                 .foregroundStyle(Theme.textTertiary)
                 .fixedSize()
@@ -846,6 +869,30 @@ private struct PropertiesColumn: View {
             .frame(minHeight: 34)
             .contentShape(Rectangle())
             .hoverEffect(.highlight)
+    }
+
+    /// One of the board's iteration fields, by the name the board gives it, as on the Mac.
+    private func iterationRow(_ field: ProjectField) -> some View {
+        row(Text(verbatim: field.name)) {
+            Menu {
+                IterationMenuItems(item: item, field: field)
+            } label: {
+                value {
+                    if let iteration = model.iteration(of: item, field: field) {
+                        IterationIcon(size: 13)
+                            .foregroundStyle(model.isRunning(iteration, field: field) ? Theme.started : Theme.textSecondary)
+                        Text(iteration.title).foregroundStyle(Theme.text).lineLimit(1)
+                        if let when = model.iterationPlace(iteration, field: field) ?? model.iterationRange(iteration) {
+                            Text(when).foregroundStyle(Theme.textTertiary).lineLimit(1)
+                        }
+                    } else {
+                        Text(.addToIteration).foregroundStyle(Theme.textTertiary)
+                    }
+                }
+            }
+            .accessibilityLabel(model.iterationDescription(of: item, field: field))
+            .accessibilityIdentifier("property-iteration")
+        }
     }
 
     /// Blocked by or blocking: the issues' numbers, listed in full beside the description.

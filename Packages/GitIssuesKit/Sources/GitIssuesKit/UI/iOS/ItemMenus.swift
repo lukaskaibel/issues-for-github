@@ -140,6 +140,9 @@ struct ItemMenuContent: View {
         if targets.contains(where: model.canHaveMilestone) {
             MilestoneMenu(item: item)
         }
+        ForEach(model.iterationFields(for: item)) { field in
+            IterationMenu(item: item, field: field)
+        }
     }
 }
 
@@ -269,6 +272,53 @@ struct MilestoneMenu: View {
 
     /// A selection no row has, for picked issues in different milestones.
     static let mixed = "\u{1}"
+}
+
+/// One of the board's iteration fields as a submenu, named as the board names it ("Iteration", "Sprint").
+struct IterationMenu: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+    var field: ProjectField
+
+    var body: some View {
+        Menu {
+            IterationMenuItems(item: item, field: field)
+        } label: {
+            Label {
+                Text(model.iteration(of: item, field: field).map { String(localized: .fieldValueSpoken(field: field.name, value: $0.title)) } ?? field.name)
+            } icon: {
+                Image(systemName: "arrow.triangle.2.circlepath")
+            }
+        }
+    }
+}
+
+/// The iterations to choose from, inline: none, then the current one and those to come, the current and the next one
+/// saying so. With several picked issues, the one they share is checked.
+struct IterationMenuItems: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+    var field: ProjectField
+
+    var body: some View {
+        let ids = model.iterationIds(of: model.targets(for: item), field: field)
+        Picker(selection: Binding(
+            get: { ids.count == 1 ? ids.first ?? nil : String?.some(MilestoneMenu.mixed) },
+            set: { id in
+                let current = model.item(id: item.id) ?? item
+                model.setIteration(of: model.targets(for: current), field: field, to: field.iterations.first { $0.id == id })
+            }
+        )) {
+            Label(.noIteration, systemImage: "circle.dashed").tag(String?.none)
+            ForEach(model.iterationChoices(field, keeping: Set(ids.compactMap { $0 }))) { iteration in
+                Label(model.iterationMenuTitle(iteration, field: field), systemImage: "arrow.triangle.2.circlepath")
+                    .tag(Optional(iteration.id))
+            }
+        } label: {
+            Text(verbatim: field.name)
+        }
+        .pickerStyle(.inline)
+    }
 }
 
 /// Status as a submenu with the app's status circles, the current one checked: on several picked issues, the one they

@@ -146,6 +146,15 @@ struct NewIssueView: View {
                         (draft.milestoneTitle.map { Text($0) } ?? Text(.milestone))
                     }
                 }
+                // The board's iteration: the view's, when it is made in a view of one.
+                if let field = iterationField {
+                    chip(.iteration(fieldId: field.id)) {
+                        let iteration = draft.fieldValues[field.id]?.iterationId.flatMap { id in field.iterations.first { $0.id == id } }
+                        IterationIcon(size: 12)
+                            .foregroundStyle(iteration.map { model.isRunning($0, field: field) } == true ? Theme.started : Theme.textSecondary)
+                        (iteration.map { Text($0.title) } ?? Text(verbatim: field.name))
+                    }
+                }
                 if let parent = draft.parent {
                     HStack(spacing: 6) {
                         if parent.isEpic {
@@ -226,6 +235,7 @@ struct NewIssueView: View {
         return groups.filter(\.isOpen)
     }
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
+    private var iterationField: ProjectField? { model.iterationFields(projectId: draft.projectId).first }
     /// The board's repositories, also for an issue started on none in All Issues.
     private var repos: [RepoRef] {
         if inAllIssues, let id = model.allIssuesProjectId { return model.repos(projectId: id) }
@@ -277,6 +287,8 @@ struct NewIssueView: View {
         draft.statusId = defaultStatus(projectId: id)
         draft.priorityId = nil
         if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
+        // The fields of the board it was going on, such as its iteration, are no other board's.
+        draft.fieldValues = [:]
         if let id { model.loadRepoMeta(projectId: id) }
     }
 
@@ -462,6 +474,9 @@ struct NewIssueView: View {
                     trailing: group.due.map { AnyView(Text($0.shortLabel()).font(.small).foregroundStyle(Theme.textTertiary)) }
                 )
             }
+        case .iteration(let fieldId):
+            guard let field = model.field(id: fieldId) else { return [] }
+            return model.iterationItems(field: field, current: [draft.fieldValues[fieldId]?.iterationId])
         case .dueDate, .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic:
             return []
         }
@@ -496,6 +511,8 @@ struct NewIssueView: View {
             draft.dueDate = CalendarDay(id)?.string
         case .milestone:
             draft.milestoneTitle = id.isEmpty ? nil : id
+        case .iteration(let fieldId):
+            draft.fieldValues[fieldId] = id.isEmpty ? nil : FieldValue(iterationId: id)
         case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic:
             break
         }

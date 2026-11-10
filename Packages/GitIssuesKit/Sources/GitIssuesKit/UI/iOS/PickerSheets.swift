@@ -155,6 +155,7 @@ extension PickerKind {
         case .blocking: .blockingSheetTitle
         case .milestone: .milestone
         case .epic: .epic
+        case .iteration: .iteration
         }
     }
 
@@ -168,6 +169,7 @@ extension PickerKind {
         case .subIssues: .searchSubIssues
         case .parent, .addSubIssue, .blockedBy, .blocking, .epic: .searchByTitleOrNumber
         case .milestone: .searchMilestones
+        case .iteration: .searchIterations
         }
     }
 }

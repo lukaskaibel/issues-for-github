@@ -75,7 +75,7 @@ func matching(_ query: String, in items: [PickerItem], creating typed: PickerIte
 
 // MARK: - Picker contents for an issue
 
-enum PickerKind: Equatable {
+enum PickerKind: Hashable {
     case status
     case priority
     case assignees
@@ -92,6 +92,8 @@ enum PickerKind: Equatable {
     case milestone
     /// The epic it belongs to: its parent, among the board's epics.
     case epic
+    /// The iteration of one of the board's iteration fields it is planned for.
+    case iteration(fieldId: String)
 
     var placeholder: String {
         switch self {
@@ -107,6 +109,7 @@ enum PickerKind: Equatable {
         case .blocking: String(localized: .markAsBlockingPlaceholder)
         case .milestone: String(localized: .moveToMilestonePlaceholder)
         case .epic: String(localized: .addToEpicPlaceholder)
+        case .iteration: String(localized: .moveToIterationPlaceholder)
         }
     }
 
@@ -119,6 +122,7 @@ enum PickerKind: Equatable {
         case .labels: "L"
         case .dueDate: "D"
         case .milestone: "⇧M"
+        case .iteration: "⇧C"
         case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic: nil
         }
     }
@@ -140,6 +144,7 @@ enum PickerKind: Equatable {
         case .blocking: String(localized: .blockingHelp)
         case .milestone: String(localized: .changeMilestone)
         case .epic: String(localized: .changeEpic)
+        case .iteration: String(localized: .changeIteration)
         }
     }
 
@@ -155,7 +160,13 @@ enum PickerKind: Equatable {
     /// takes one away, they open on the first that isn't.
     var opensOnSelection: Bool { self != .blockedBy && self != .blocking }
 
-    var width: CGFloat { self == .subIssues || picksIssues ? 460 : self == .milestone ? 300 : 280 }
+    var width: CGFloat {
+        switch self {
+        case .subIssues: 460
+        case .milestone, .iteration: 300
+        default: picksIssues ? 460 : 280
+        }
+    }
 }
 
 extension AppModel {
@@ -280,6 +291,9 @@ extension AppModel {
             return milestoneItems(for: item, targets: targets)
         case .epic:
             return epicItems(for: item, targets: targets)
+        case .iteration(let fieldId):
+            guard let field = field(id: fieldId) else { return [] }
+            return iterationItems(field: field, current: iterationIds(of: targets, field: field))
         case .blockedBy, .blocking:
             let ids = Set(targets.compactMap(\.contentId))
             let linked = { (candidate: Item) -> Bool in
@@ -420,6 +434,9 @@ extension AppModel {
             text = milestoneTitle(of: item).map { .milestoneTooltip(milestone: $0) } ?? .noMilestone
         case .epic:
             text = epic(of: item).map { .epicTooltip(epic: $0.title) } ?? .noEpic
+        case .iteration(let fieldId):
+            guard let field = field(id: fieldId) else { return String(localized: .noIteration) }
+            return iterationDescription(of: item, field: field)
         case .blockedBy, .blocking:
             let relation: LinkedIssue.Relation = kind == .blockedBy ? .blockedBy : .blocking
             let open = links(of: item, relation).filter { !$0.isClosed }
@@ -515,6 +532,9 @@ extension AppModel {
             } else if let epic = issue(contentId: id) {
                 setParent(of: targets, to: epic)
             }
+        case .iteration(let fieldId):
+            guard let field = field(id: fieldId) else { return }
+            setIteration(of: targets, field: field, to: field.iterations.first { $0.id == id })
         }
     }
 
