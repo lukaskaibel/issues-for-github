@@ -357,6 +357,22 @@ final class PadPlanningTests: AppTestCase {
         wait(app.buttons["Sign-in and accounts"])
     }
 
+    /// Touching and holding an epic's name on the roadmap opens its menu, whose Open opens it as a tap does.
+    func testAnEpicsMenuOnTheRoadmapOpensIt() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openSidebarEntry("Roadmap")
+        let epic = app.buttons["Sign-in and accounts"]
+        wait(epic)
+        openCardMenu(epic)
+        snapshot("iPad roadmap epic menu")
+        button("Open").tap()
+        closedCardMenu()
+        let title = element("issue-title")
+        wait(title)
+        XCTAssertEqual(title.value as? String, "Sign-in and accounts")
+    }
+
     /// Dragging an epic's bar onto another milestone moves the epic and its unfinished issues there.
     func testDraggingAnEpicsBarMovesItToAnotherMilestone() {
         XCUIDevice.shared.orientation = .landscapeLeft
