@@ -65,6 +65,8 @@ enum MobileSheet: Identifiable, Equatable {
     case newView(projectId: String, sourceViewId: String?, duplicate: Bool)
     /// The glyph and colour a project shows with.
     case projectIcon(String)
+    /// The status picker of an issue, ready to type the name of a new status.
+    case newStatus(itemId: String)
 
     var id: String {
         switch self {
@@ -80,6 +82,7 @@ enum MobileSheet: Identifiable, Equatable {
         case .customizeMyIssues: "customize-my-issues"
         case .newView(let projectId, let source, let duplicate): "new-view-\(projectId)-\(source ?? "-")-\(duplicate)"
         case .projectIcon(let id): "project-icon-\(id)"
+        case .newStatus(let itemId): "new-status-\(itemId)"
         }
     }
 }

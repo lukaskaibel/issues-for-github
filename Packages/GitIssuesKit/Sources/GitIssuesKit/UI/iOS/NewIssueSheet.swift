@@ -99,6 +99,10 @@ struct NewIssueSheet: View {
         .interactiveDismissDisabled(hasContent)
         .sensoryFeedback(.success, trigger: created)
         .onAppear(perform: prepare)
+        .onChange(of: model.optionIdRemaps) { _, saved in
+            // A status made in this form, now saved on GitHub.
+            if let id = draft.statusId, let savedId = saved[id] { draft.statusId = savedId }
+        }
     }
 
     // MARK: Where it goes
@@ -218,6 +222,10 @@ struct NewIssueSheet: View {
                             }
                         }
                         .pickerStyle(.inline)
+                        // One the board doesn't have yet, typed into the status sheet.
+                        if model.canCreateStatus(projectId: draft.projectId) {
+                            Button(.newStatusEllipsis, systemImage: "plus") { picker = .status }
+                        }
                     } label: {
                         PropertyChip(text: statuses.first { $0.id == draft.statusId }?.name ?? String(localized: .status)) {
                             StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: draft.statusId), size: 16)
@@ -481,9 +489,12 @@ private struct DraftPickerSheet: View {
             PickerSheet(
                 title: kind.sheetTitle,
                 prompt: kind.searchPrompt,
-                multiple: true,
+                multiple: kind.multiple,
+                // A status is picked here only to make a new one, so typing starts at once.
+                focusesSearch: kind == .status,
                 items: items,
-                creating: kind == .labels ? { model.newLabelRow($0, projectId: draft.projectId, repoId: draft.repoId) } : nil,
+                creating: kind == .labels ? { model.newLabelRow($0, projectId: draft.projectId, repoId: draft.repoId) }
+                    : kind == .status ? { model.newStatusRow($0, projectId: draft.projectId) } : nil,
                 onPick: pick
             )
         }
@@ -506,6 +517,13 @@ private struct DraftPickerSheet: View {
                     icon: AnyView(Circle().fill(Theme.labelColor(label.color)).frame(width: 11, height: 11))
                 )
             }, .label, key: \.title)
+        case .status:
+            return model.statusOptions(projectId: draft.projectId).map { option in
+                PickerItem(
+                    id: option.id, title: option.name, selected: draft.statusId == option.id,
+                    icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id), size: 17))
+                )
+            }
         default:
             return []
         }
@@ -513,6 +531,12 @@ private struct DraftPickerSheet: View {
 
     private func pick(_ id: String) {
         switch kind {
+        case .status:
+            if let name = AppModel.newStatusName(id), let projectId = draft.projectId {
+                draft.statusId = model.createStatus(named: name, projectId: projectId, for: []) ?? draft.statusId
+            } else {
+                draft.statusId = id
+            }
         case .assignees:
             if let index = draft.assignees.firstIndex(where: { $0.id == id }) {
                 draft.assignees.remove(at: index)

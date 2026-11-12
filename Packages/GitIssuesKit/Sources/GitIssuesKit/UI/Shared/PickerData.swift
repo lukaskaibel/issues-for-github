@@ -464,6 +464,10 @@ extension AppModel {
         let targets = targets(for: current).map { target in allItems.first { $0.id == target.id } ?? target }
         switch kind {
         case .status:
+            if let name = Self.newStatusName(id), let projectId = current.projectId {
+                createStatus(named: name, projectId: projectId, for: targets)
+                return
+            }
             guard current.isOnBoard else {
                 if id == Self.toggleStateId {
                     let close = !targets.allSatisfy(\.isClosed)

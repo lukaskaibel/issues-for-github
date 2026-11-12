@@ -202,6 +202,8 @@ struct IssuePickerSheet: View {
             },
             creating: kind == .labels ? { query in
                 model.item(id: itemId).flatMap { model.newLabelRow(query, projectId: $0.projectId, repoId: $0.repoId) }
+            } : kind == .status ? { query in
+                model.item(id: itemId).flatMap { model.newStatusRow(query, for: $0) }
             } : nil,
             onQueryChange: { typed = $0 },
             onPick: { id in

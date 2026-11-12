@@ -61,17 +61,26 @@ extension AppModel {
     /// "Create status …" in an issue's status picker: for a name its board has no status of, whatever its case, when
     /// the issues it changes are all on that board.
     func newStatusRow(_ query: String, for item: Item) -> PickerItem? {
-        guard item.isOnBoard, let projectId = item.projectId,
-              targets(for: item).allSatisfy({ $0.projectId == projectId }) else { return nil }
-        return newStatusRow(query, projectId: projectId)
+        guard canCreateStatus(for: item) else { return nil }
+        return newStatusRow(query, projectId: item.projectId)
+    }
+
+    /// Whether a status can be made for an issue: when it and the issues picked with it are on one board you may change.
+    func canCreateStatus(for item: Item) -> Bool {
+        guard item.isOnBoard, let projectId = item.projectId, canCreateStatus(projectId: projectId) else { return false }
+        return targets(for: item).allSatisfy { $0.projectId == projectId }
+    }
+
+    func canCreateStatus(projectId: String?) -> Bool {
+        guard let project = projects.first(where: { $0.id == projectId }) else { return false }
+        return project.viewerCanUpdate && project.statusFieldId != nil
     }
 
     /// The same for a board, as in a new issue's form; none on a board you may not change.
     func newStatusRow(_ query: String, projectId: String?) -> PickerItem? {
         let name = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, let project = projects.first(where: { $0.id == projectId }),
-              project.viewerCanUpdate, project.statusFieldId != nil,
-              !statusOptions(projectId: project.id).contains(where: { OptionMerge.sameName($0.name, name) })
+        guard !name.isEmpty, canCreateStatus(projectId: projectId),
+              !statusOptions(projectId: projectId).contains(where: { OptionMerge.sameName($0.name, name) })
         else { return nil }
         return PickerItem(
             id: Self.newStatusPrefix + name, title: String(localized: .createStatusNamed(name: name)),

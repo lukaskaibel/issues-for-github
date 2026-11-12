@@ -384,7 +384,7 @@ extension AppModel {
         mutations.append(.createIssue(.init(
             itemId: itemId, contentId: contentId, projectId: project?.id, repoId: repo.id, repo: repo.nameWithOwner,
             title: title, body: draft.body,
-            statusFieldId: project?.statusFieldId, statusId: project == nil ? nil : draft.statusId,
+            statusFieldId: project?.statusFieldId, statusId: project == nil ? nil : savedOptionId(draft.statusId),
             priorityFieldId: project?.priorityFieldId, priorityId: project == nil ? nil : draft.priorityId,
             dueDate: project == nil ? nil : draft.dueDate,
             assignees: draft.assignees, labels: draft.labels,

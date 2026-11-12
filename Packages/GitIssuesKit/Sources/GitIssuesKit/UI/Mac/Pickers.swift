@@ -301,7 +301,8 @@ struct ItemPicker: View {
                 large: large,
                 opensOnSelection: kind.opensOnSelection,
                 limit: kind.picksIssues ? 60 : .max,
-                creating: kind == .labels ? { model.newLabelRow($0, projectId: item.projectId, repoId: item.repoId) } : nil,
+                creating: kind == .labels ? { model.newLabelRow($0, projectId: item.projectId, repoId: item.repoId) }
+                    : kind == .status ? { model.newStatusRow($0, for: item) } : nil,
                 onQueryChange: { query = $0 },
                 onPick: { id in
                     // A title typed to look for an issue becomes the new one's, when none was picked.
