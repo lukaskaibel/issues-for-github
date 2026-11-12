@@ -6727,6 +6727,66 @@
         }
       }
     },
+    "bringBackAllCards" : {
+      "comment" : "Mac, My Issues overview: button under 'No cards in My Issues' that puts every card taken out back into the overview.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Karten zurückholen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring Back All Cards"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recuperar todas las tarjetas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remettre toutes les cartes"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのカードを戻す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 카드 다시 가져오기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trazer de volta todos os cartões"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вернуть все карточки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复所有卡片"
+          }
+        }
+      }
+    },
     "cancel" : {
       "comment" : "Button that closes a dialog or sheet without making changes (Mac, iPhone, iPad).",
       "extractionState" : "manual",
@@ -39333,6 +39393,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "我的议题"
+          }
+        }
+      }
+    },
+    "myIssuesCardsRemovedMessage" : {
+      "comment" : "Mac, My Issues overview: message under 'No cards in My Issues', when every card was taken out with 'Remove from My Issues'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du hast alle Karten entfernt. Hol sie zurück, um deine Issues hier wieder zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You took every card out. Bring them back to see your issues here again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Has quitado todas las tarjetas. Recupéralas para volver a ver aquí tus incidencias."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous avez retiré toutes les cartes. Remettez-les pour revoir vos tickets ici."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのカードを削除しました。元に戻すと、ここにまたIssueが表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 카드를 제거했습니다. 다시 가져오면 여기에 이슈가 다시 표시됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você removeu todos os cartões. Traga-os de volta para ver suas issues aqui de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вы убрали все карточки. Верните их, чтобы снова видеть здесь свои задачи."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你已移除所有卡片。将它们恢复后，你的议题会再次显示在这里。"
+          }
+        }
+      }
+    },
+    "myIssuesCardsRemovedTitle" : {
+      "comment" : "Mac, My Issues overview: title shown when every card (each project's, and Needs you) was taken out with 'Remove from My Issues', so nothing is left on screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Karten in Meine Issues"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No cards in My Issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay tarjetas en Mis incidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune carte dans Mes tickets"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自分のIssueにカードがありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 이슈에 카드 없음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhum cartão em Minhas issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В «Мои задачи» нет карточек"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的议题中没有卡片"
           }
         }
       }

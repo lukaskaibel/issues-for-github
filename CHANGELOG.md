@@ -146,6 +146,8 @@ All notable changes to this project are recorded here. The format follows
 - The command palette no longer offers **Filter…** and **Display Options** while an issue is open, where they did
   nothing.
 - **Copy Branch Name** is offered for issues only, not for pull requests, which have a branch of their own.
+- With every card taken out of My Issues on the Mac, **Bring Back All Cards** puts them back. Until now it said
+  "Nothing assigned to you", with no way back.
 
 ## [1.1.0] - 2026-10-28
 
