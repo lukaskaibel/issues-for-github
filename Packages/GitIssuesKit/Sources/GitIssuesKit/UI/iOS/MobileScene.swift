@@ -110,7 +110,9 @@ struct MobileRoot: View {
             }
         }
         .overlay(alignment: .top) {
+            // The overlay sits outside `.environment(navigation)` above, and a banner's Open needs the navigation.
             NoticeBanners()
+                .environment(navigation)
         }
         .onChange(of: model.status.idRemaps) { _, remaps in
             model.follow(remaps: remaps)
