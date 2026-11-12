@@ -81991,6 +81991,66 @@
         }
       }
     },
+    "statusIconNote" : {
+      "comment" : "Mac and iPhone/iPad: a short line under the kinds in a status's Icon menu (Backlog, Todo, In progress, Done, Canceled), saying that moving an issue into a status of the Done or Canceled kind closes it on GitHub. 'Done' and 'Canceled' are the names of those kinds in the same menu.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„Erledigt“ und „Abgebrochen“ schließen das Issue."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done and Canceled close the issue."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Hecho» y «Cancelado» cierran la incidencia."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« Terminé » et « Annulé » ferment le ticket."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「完了」と「キャンセル済み」はIssueをクローズします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‘완료’와 ‘취소됨’은 이슈를 닫습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Concluídas” e “Canceladas” fecham a issue."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Готово» и «Отменено» закрывают задачу."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“已完成”和“已取消”会关闭议题。"
+          }
+        }
+      }
+    },
     "statusIs" : {
       "comment" : "iPhone and iPad: VoiceOver label of the button showing an issue's status (issue screen, new issue sheet). %(status)@ is the status's name, such as “In Progress” or “No status”.",
       "extractionState" : "manual",

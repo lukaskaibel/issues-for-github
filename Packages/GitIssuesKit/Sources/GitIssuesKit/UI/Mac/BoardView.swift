@@ -974,6 +974,10 @@ extension ColumnHeader {
                         checked: option.statusCategory == kind
                     ) { [model] in model.setKind(kind, of: option) }
                 }
+                kinds.divider()
+                let note = NSMenuItem(title: String(localized: .statusIconNote), action: nil, keyEquivalent: "")
+                note.isEnabled = false
+                kinds.menu.addItem(note)
             }
             menu.submenu(.colour, "paintpalette") { colours in
                 for color in Defaults.optionColors {

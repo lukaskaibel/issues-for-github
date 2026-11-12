@@ -73,6 +73,11 @@ struct StatusStyleMenu: View {
                 .buttonStyle(.plain)
                 .onHover { lit = $0 ? kind : (lit == kind ? nil : lit) }
             }
+            Text(.statusIconNote)
+                .font(.small)
+                .foregroundStyle(Theme.textTertiary)
+                .padding(.horizontal, 15)
+                .padding(.top, 2)
             MenuDivider()
             heading(.colour)
             HStack(spacing: 0) {

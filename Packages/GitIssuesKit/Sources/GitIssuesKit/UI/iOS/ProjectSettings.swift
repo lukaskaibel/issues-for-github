@@ -179,7 +179,7 @@ struct StatusKindPicker: View {
     @Environment(\.colorScheme) private var scheme
     var option: FieldOption
 
-    var body: some View {
+    @ViewBuilder var body: some View {
         Picker(.statusIcon, selection: Binding(
             get: { option.statusCategory },
             set: { model.setKind($0, of: option) }
@@ -194,6 +194,8 @@ struct StatusKindPicker: View {
             }
         }
         .pickerStyle(.inline)
+        // What a kind does besides its circle, so picking Done doesn't surprise.
+        Text(.statusIconNote)
     }
 }
 

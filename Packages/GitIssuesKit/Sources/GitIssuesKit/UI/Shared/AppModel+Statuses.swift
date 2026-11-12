@@ -1,8 +1,8 @@
 import GRDB
 import SwiftUI
 
-/// Statuses made and shaped where they are used: "Create status …" in every status picker, and a status's icon and
-/// colour wherever statuses are edited. Statuses are the project's Status field on GitHub, so making one or changing
+/// Statuses made and shaped where they are used: a row in every status picker makes the status typed, and a status's
+/// icon and colour can be changed wherever statuses are edited. Statuses are the project's Status field on GitHub, so making one or changing
 /// its colour needs a connection; its icon, which says what it means, is the app's own (`StatusKinds`).
 extension AppModel {
     // MARK: Kinds
