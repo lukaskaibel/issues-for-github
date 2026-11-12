@@ -43,6 +43,11 @@ public actor SyncEngine {
     /// deleted here, which such a read mustn't bring back.
     var viewsChangedHere: [String: Date] = [:]
     var viewsDeletedHere: [String: Date] = [:]
+    /// Changes to a board's statuses or priorities on their way to GitHub, by project; a pull leaves the board's
+    /// options alone meanwhile, so options shown before they were saved don't flicker away.
+    private var optionWrites: [String: Task<[RemoteOption], Error>] = [:]
+    /// How many such changes were saved, by project: a pull that read the options before one was saved leaves them.
+    private var optionsSaved: [String: Int] = [:]
 
     private var loop: Task<Void, Never>?
     private var sleeper: Task<Void, Never>?
@@ -339,6 +344,7 @@ public actor SyncEngine {
 
     public func pull(projectId: String) async throws {
         guard !isDemo else { return }
+        let optionsBefore = optionsSaved[projectId]
         let meta = try await api.projectMeta(id: projectId)
 
         let (local, dirtyIds, known, issues, cursors) = try await db.reader.read { db in
@@ -453,6 +459,7 @@ public actor SyncEngine {
         let hydratedSnapshot = hydrated
         let protectedViews = recentViewChanges()
         let deletedViews = recentViewDeletions()
+        let optionsBusy = optionWrites[projectId] != nil || optionsSaved[projectId] != optionsBefore
         let written = try await db.writer.write { db -> (notices: [Notice], leftBoard: Set<String>, remaps: [String: String]) in
             guard var project = try Project.fetchOne(db, key: projectId) else { return ([], [], [:]) }
             project.title = meta.title
@@ -461,7 +468,7 @@ public actor SyncEngine {
             project.statusFieldId = meta.statusField?.id
             project.priorityFieldId = meta.priorityField?.id
             project.dueFieldId = meta.dueField?.id
-            try Self.writeOptions(db, projectId: projectId, meta: meta)
+            if !optionsBusy { try Self.writeOptions(db, projectId: projectId, meta: meta) }
             try Self.writeFields(db, projectId: projectId, fields: meta.fields)
             try Self.writeViews(db, projectId: projectId, views: meta.views, protected: protectedViews, deleted: deletedViews)
 
@@ -1492,30 +1499,92 @@ public actor SyncEngine {
     // MARK: Columns
 
     /// Adds, renames, recolours, reorders or removes status columns. Needs a connection; not queued.
-    public func updateOptions(projectId: String, fieldId: String, kind: OptionKind, options: [RemoteOption]) async throws {
-        let saved = isDemo
-            ? options.map { RemoteOption(id: $0.id ?? "demo-option-\(UUID().uuidString.lowercased())", name: $0.name, color: $0.color, descr: $0.descr) }
-            : try await api.updateFieldOptions(fieldId: fieldId, options: options)
-        try await db.writer.write { db in
-            try FieldOption.filter(Column("projectId") == projectId && Column("fieldId") == fieldId).deleteAll(db)
-            for (index, option) in saved.enumerated() {
-                guard let id = option.id else { continue }
-                try FieldOption(
-                    id: id, fieldId: fieldId, projectId: projectId, kind: kind,
-                    name: option.name, color: option.color, descr: option.descr, position: index
-                ).insert(db)
-            }
-            // Cards that sat in a removed column have no status any more.
-            let ids = saved.compactMap(\.id)
-            let column = kind == .status ? "statusId" : "priorityId"
-            let placeholders = ids.map { _ in "?" }.joined(separator: ",")
-            try db.execute(
-                sql: "UPDATE item SET \(column) = NULL WHERE projectId = ? AND \(column) IS NOT NULL AND \(column) NOT IN (\(placeholders))",
-                arguments: StatementArguments([projectId] + ids)
+    ///
+    /// GitHub drops every option left out of the list it is sent, with every card's value of it, so the change is made
+    /// again on top of the options GitHub has now (`OptionMerge`): `base` is the list the change was made to, as the
+    /// app had it. Changes to one board's options go out one after another, each on top of the one before.
+    /// Options shown here before they were saved carry a local id; `placeholders` names them (local id: name), and
+    /// their cards move to the saved option of that name. Returns the options as saved.
+    @discardableResult
+    public func updateOptions(
+        projectId: String, fieldId: String, kind: OptionKind, base: [RemoteOption], options: [RemoteOption],
+        placeholders: [String: String] = [:]
+    ) async throws -> [RemoteOption] {
+        let previous = optionWrites[projectId]
+        let write = Task<[RemoteOption], Error> {
+            _ = await previous?.result
+            return try await self.writeOptions(
+                projectId: projectId, fieldId: fieldId, kind: kind, base: base, options: options, placeholders: placeholders
             )
         }
+        optionWrites[projectId] = write
+        defer {
+            if optionWrites[projectId] == write { optionWrites[projectId] = nil }
+        }
+        return try await write.value
+    }
+
+    private func writeOptions(
+        projectId: String, fieldId: String, kind: OptionKind, base: [RemoteOption], options: [RemoteOption],
+        placeholders: [String: String]
+    ) async throws -> [RemoteOption] {
+        let saved: [RemoteOption]
+        if isDemo {
+            saved = options.map {
+                RemoteOption(id: $0.id ?? "demo-option-\(UUID().uuidString.lowercased())", name: $0.name, color: $0.color, descr: $0.descr)
+            }
+        } else {
+            let theirs = try await api.fieldOptions(fieldId: fieldId)
+            let merged = OptionMerge.merge(base: base, mine: options, theirs: theirs)
+            saved = merged == theirs ? theirs : try await api.updateFieldOptions(fieldId: fieldId, options: merged)
+        }
+        try await db.writer.write { db in
+            try Self.storeOptions(db, saved, projectId: projectId, fieldId: fieldId, kind: kind, placeholders: placeholders)
+        }
+        optionsSaved[projectId, default: 0] += 1
         forceSweep.insert(projectId)
         kick()
+        return saved
+    }
+
+    /// Writes a field's options as saved on GitHub. Options of other changes still on their way keep their local ids.
+    static func storeOptions(
+        _ db: Database, _ saved: [RemoteOption], projectId: String, fieldId: String, kind: OptionKind,
+        placeholders: [String: String]
+    ) throws {
+        let local = Array(placeholders.keys)
+        try db.execute(
+            sql: """
+                DELETE FROM fieldOption WHERE projectId = ? AND fieldId = ?
+                AND (id NOT LIKE '\(LocalID.prefix)%' OR id IN (\(local.map { _ in "?" }.joined(separator: ","))))
+                """,
+            arguments: StatementArguments([projectId, fieldId] + local)
+        )
+        for (index, option) in saved.enumerated() {
+            guard let id = option.id else { continue }
+            try FieldOption(
+                id: id, fieldId: fieldId, projectId: projectId, kind: kind,
+                name: option.name, color: option.color, descr: option.descr, position: index
+            ).insert(db, onConflict: .replace)
+        }
+        let column = kind == .status ? "statusId" : "priorityId"
+        // Cards given an option before it was saved now have the saved one.
+        for (localId, name) in placeholders {
+            let id = saved.first { OptionMerge.sameName($0.name, name) }?.id
+            try db.execute(
+                sql: "UPDATE item SET \(column) = ? WHERE projectId = ? AND \(column) = ?",
+                arguments: [id, projectId, localId]
+            )
+        }
+        // Cards that sat in a removed column have no status any more.
+        let ids = saved.compactMap(\.id)
+        try db.execute(
+            sql: """
+                UPDATE item SET \(column) = NULL WHERE projectId = ? AND \(column) IS NOT NULL
+                AND \(column) NOT LIKE '\(LocalID.prefix)%' AND \(column) NOT IN (\(ids.map { _ in "?" }.joined(separator: ",")))
+                """,
+            arguments: StatementArguments([projectId] + ids)
+        )
     }
 
     /// Adds the opinionated Priority field to a project that has none.

@@ -98,6 +98,27 @@ public struct FieldOption: Codable, FetchableRecord, PersistableRecord, Identifi
     public var color: String
     public var descr: String
     public var position: Int
+    /// The kind of status chosen in the app (`StatusKinds`), which wins over what the name suggests. Not stored here.
+    public var chosenKind: StatusCategory? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case id, fieldId, projectId, kind, name, color, descr, position
+    }
+
+    public init(
+        id: String, fieldId: String, projectId: String, kind: OptionKind, name: String, color: String, descr: String,
+        position: Int, chosenKind: StatusCategory? = nil
+    ) {
+        self.id = id
+        self.fieldId = fieldId
+        self.projectId = projectId
+        self.kind = kind
+        self.name = name
+        self.color = color
+        self.descr = descr
+        self.position = position
+        self.chosenKind = chosenKind
+    }
 }
 
 /// A card: one item of a project together with the issue, pull request or draft behind it. An issue that is on

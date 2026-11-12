@@ -12211,6 +12211,18 @@
         }
       }
     },
+    "createStatusNamed" : {
+      "comment" : "Row in the status picker (Mac: dropdowns, command palette, right-click menus, new issue form; iPhone, iPad: the Status sheet and the new issue form) when what was typed is no status of the issue's project: makes a status of that name in the project's Status field on GitHub and moves the issue into it. The placeholder is the typed name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create status “%(name)@”"
+          }
+        }
+      }
+    },
     "createSubIssueCommand" : {
       "comment" : "Mac, command palette (⌘K), command for the issue in focus: starts writing a new issue under it (GitHub sub-issues).",
       "extractionState" : "manual",
@@ -12807,6 +12819,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "创建于 %@"
+          }
+        }
+      }
+    },
+    "creatingStatusNeedsConnection" : {
+      "comment" : "Message of the notice 'Status “QA” could not be created' when the app is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Statuses are saved on GitHub, so making one needs a connection."
           }
         }
       }
@@ -40893,6 +40917,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新建状态"
+          }
+        }
+      }
+    },
+    "newStatusEllipsis" : {
+      "comment" : "iPhone and iPad: last item of the Status submenu in an issue's long-press menu. Opens the status sheet ready to type the name of a new status.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Status…"
           }
         }
       }
@@ -81151,6 +81187,18 @@
         }
       }
     },
+    "statusCouldNotBeCreated" : {
+      "comment" : "Title of a warning notice (Mac, iPhone, iPad) when a status typed into a status picker could not be made on GitHub, e.g. while offline. The placeholder is the status's name, e.g. 'QA'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status “%(name)@” could not be created"
+          }
+        }
+      }
+    },
     "statusEditorFooter" : {
       "comment" : "iPhone and iPad, Statuses screen of a project: note under the list of statuses. 'Status' is the name of the field on GitHub (GitHub is in English); a GitHub project is a board.",
       "extractionState" : "manual",
@@ -81507,6 +81555,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "待办"
+          }
+        }
+      }
+    },
+    "statusIcon" : {
+      "comment" : "Mac: submenu of a board column's menu; iPhone and iPad: menu in the status list and a board column's menu. Lists the kinds a status can be (Backlog, Todo, In progress, Done, Canceled), each with the circle the app draws for it. The kind also says whether an issue in that status is closed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icon"
+          }
+        }
+      }
+    },
+    "statusIconFooter" : {
+      "comment" : "iPhone and iPad: footer below the list of a project's statuses (Statuses screen in the project's settings), explaining the Icon menu next to each status.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The icon says what a status means: issues in a Done or Canceled status are closed on GitHub. GitHub has no icons, so they are kept in iCloud for your devices."
+          }
+        }
+      }
+    },
+    "statusIconIs" : {
+      "comment" : "Accessibility label (VoiceOver) of the button showing a status's icon in the iPhone/iPad status list. The placeholder is the kind, e.g. 'In progress'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icon: %(kind)@"
           }
         }
       }
