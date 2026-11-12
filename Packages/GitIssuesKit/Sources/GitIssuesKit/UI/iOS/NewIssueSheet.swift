@@ -410,9 +410,10 @@ struct NewIssueSheet: View {
         // Begun in a milestone, from the roadmap, or under an issue that has a milestone.
         new.milestoneTitle = context.milestoneTitle ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
         new.isEpic = context.isEpic
-        // Begun in a view, its group or its column: what the view's filter asks for, and the group's value.
-        let preset = context.preset ?? (parent == nil && !context.inAllIssues && context.milestoneTitle == nil && !context.isEpic
-            ? model.newIssuePreset(projectId: projectId) : nil)
+        // Begun in a view, its group or its column: what the view's filter asks for, and the group's value. Begun on
+        // Home, in the Inbox or in My Issues, the board is only the first one, and its view isn't on screen.
+        let preset = context.preset ?? (context.projectId != nil && parent == nil && !context.inAllIssues
+            && context.milestoneTitle == nil && !context.isEpic ? model.newIssuePreset(projectId: projectId) : nil)
         if let preset {
             model.apply(preset, to: &new)
             if let chosen { new.statusId = chosen }

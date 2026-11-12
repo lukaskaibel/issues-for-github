@@ -117,6 +117,8 @@ All notable changes to this project are recorded here. The format follows
   refused the issue with them, and it was lost.
 - In All Issues on the Mac, the plus of a column puts a new issue on that board, also when one left on no board last
   time comes back.
+- On iPhone and iPad, a new issue begun on Home, in the Inbox or in My Issues no longer takes labels, people, an
+  iteration or a parent from the filter of the first project's view.
 
 ## [1.1.0] - 2026-10-28
 
