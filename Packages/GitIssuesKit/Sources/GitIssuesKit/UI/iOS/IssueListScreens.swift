@@ -711,6 +711,8 @@ struct IssueList: View {
         .modifier(RowDragging(token: places(in: section) || model.canNestSomewhere(item) ? item.id : nil, text: DropOntoIssue.text(item)))
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { drag.heights[item.id] = $0 }
         .onDrop(of: [.plainText, .url], delegate: rowDrop(rowId: item.id, item: item, in: section))
+        // For VoiceOver, whose drag drops in the middle of a row, which takes an issue under it.
+        .modifier(RowSteps(enabled: places(in: section)) { step(item, in: section, by: $0) })
         .contextMenu {
             ItemMenuContent(item: item, foldable: nested != nil) { openRoute(.issue(item.id)) }
         } preview: {
@@ -735,6 +737,20 @@ struct IssueList: View {
     private func column(of section: ListSection) -> BoardColumn? {
         guard case .project(let projectId) = scope, section.kind == .status else { return nil }
         return model.listColumns(projectId: projectId).first { $0.id == section.id }
+    }
+
+    /// For VoiceOver: moves an issue one row up or down in its section, past what hangs under it.
+    private func step(_ item: Item, in section: ListSection, by delta: Int) {
+        let rows = section.nesting.rows
+        guard let index = rows.firstIndex(where: { $0.id == item.id }) else { return }
+        if delta < 0 {
+            guard index > 0 else { return }
+            land(item.id, at: ListDropTarget(sectionId: section.id, rowId: rows[index - 1].id, place: .above))
+        } else {
+            let under = section.nesting.descendants(of: item.id)
+            guard let next = rows.indices.dropFirst(index + 1).first(where: { !under.contains(rows[$0].id) }) else { return }
+            land(item.id, at: ListDropTarget(sectionId: section.id, rowId: rows[next].id, place: .below))
+        }
     }
 
     /// Lands what was dropped on a row: under the row's issue, or above or below the row, in that section's column.

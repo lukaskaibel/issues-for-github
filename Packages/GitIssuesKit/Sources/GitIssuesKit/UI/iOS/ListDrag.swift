@@ -112,6 +112,22 @@ struct RowDragging: ViewModifier {
     }
 }
 
+/// Move Up and Move Down for VoiceOver on a row that can be put elsewhere in its section.
+struct RowSteps: ViewModifier {
+    var enabled: Bool
+    var step: (Int) -> Void
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .accessibilityAction(named: Text(.moveIssueUp)) { step(-1) }
+                .accessibilityAction(named: Text(.moveIssueDown)) { step(1) }
+        } else {
+            content
+        }
+    }
+}
+
 /// Reads where over a row of the list a dragged issue is held, and takes it when it's let go.
 struct ListRowDrop: DropDelegate {
     var model: AppModel
