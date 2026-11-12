@@ -8,12 +8,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
-- **Drop an issue onto another one to make it a sub-issue, on iPhone and iPad.** Touch and hold a card or a list row,
-  drag it over the middle of another issue, and that issue lights up with a tick; let go and the dragged issue becomes
-  its sub-issue, with a notice that can undo it. It works on every board (also All Issues', a view's and a milestone's)
-  and in every list, My Issues too. Only the parent changes: the issue keeps its status, so one dropped onto an issue
-  in another column goes back to its own. Over the top or bottom edge of a card or row, or between cards, the issue
-  moves there as before. An issue never goes under itself or one of its own sub-issues.
+- **Drop a card onto another one to make it a sub-issue, on iPhone and iPad.** Touch and hold a card, drag it over the
+  middle of another card, and that card lights up with a tick; let go and the dragged issue becomes its sub-issue, with
+  a notice that can undo it. It works on every board: a view's, All Issues' and a milestone's. Only the parent changes:
+  the issue keeps its status, so one dropped onto an issue in another column goes back to its own. Over the top or
+  bottom edge of a card, or between cards, the card moves there as before. An issue never goes under itself or one of
+  its own sub-issues.
 
 - **Put an issue into an iteration.** An issue's iteration is now one click or key away: the Iteration row on the
   issue's page, the iteration chip on a card or row (when the view shows it), the right-click menu, **Move to
@@ -63,9 +63,6 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
-- **Dragging in the list on iPhone and iPad.** Every issue in a list can be dragged now, not only in a project's list by
-  status. Where it can go between rows, a line shows the place, which leaves the rows still under your finger, and it
-  can go into another status's section too, as on the Mac; an epic's name takes its issues along there.
 - **My Issues finds your issues in projects you work on alone.** Where nobody else has an open issue in a project,
   the issues assigned to nobody are yours too: they show in My Issues, its count and its overview, since in a project
   of your own you rarely assign issues to yourself.

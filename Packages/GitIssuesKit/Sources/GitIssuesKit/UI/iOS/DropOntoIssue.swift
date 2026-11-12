@@ -1,13 +1,13 @@
 #if os(iOS)
 import SwiftUI
 
-/// A card or row held over the middle of another issue and let go there becomes that issue's sub-issue; held over a
-/// card's or row's top or bottom edge, or between cards, it goes to that place as before. What may go under what, and
+/// A card held over the middle of another card and let go there becomes that issue's sub-issue; held over a card's top
+/// or bottom edge, or between cards, it goes to that place as before. What may go under what, and
 /// the notice that undoes it, are the Mac's (`AppModel+DropNesting.swift`): only the parent changes, so the issue keeps
 /// its status, and a card dropped onto an issue in another column goes back to its own one, where it names its parent.
-/// This is what the board and the list share for it.
+/// This is what the iPad's and the iPhone's boards share for it.
 enum DropOntoIssue {
-    /// How far into a card or row from its top and bottom the finger places the dragged issue above or below it
+    /// How far into a card from its top and bottom the finger places the dragged issue above or below it
     /// rather than under it: a quarter of it, at least enough to hit with a finger, and at most so much that the middle
     /// stays easy to hit on a short card.
     static func edge(of height: CGFloat) -> CGFloat {
@@ -24,11 +24,6 @@ enum DropOntoIssue {
         if shown.folded.contains(parent.id) { model.setFolded(parent, false) }
         model.nest([child], under: parent)
         return true
-    }
-
-    /// What a dragged issue is outside the app: its link on GitHub, or its number and title.
-    static func text(_ item: Item) -> String {
-        item.url ?? "\(item.displayNumber) \(item.title)"
     }
 }
 #endif

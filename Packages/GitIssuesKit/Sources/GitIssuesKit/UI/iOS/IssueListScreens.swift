@@ -515,7 +515,6 @@ struct IssueList: View {
     var scope: Scope
     @State private var doneFeedback = 0
     @State private var foldFeedback = 0
-    @State private var drag = ListDrag()
 
     var body: some View {
         let sections = model.sections(for: scope)
@@ -562,8 +561,6 @@ struct IssueList: View {
         .refreshable { await model.refreshAndWait() }
         .sensoryFeedback(.success, trigger: doneFeedback)
         .sensoryFeedback(.selection, trigger: foldFeedback)
-        .sensoryFeedback(.selection, trigger: drag.lit)
-        .sensoryFeedback(.impact(weight: .medium), trigger: drag.landed)
     }
 
     private var isOverview: Bool {
@@ -584,9 +581,16 @@ struct IssueList: View {
                         case .item(let item):
                             row(item, in: section)
                         case .epic(let group):
-                            epicRow(group, in: section)
+                            EpicGroupRow(group: group, column: column(of: section)) { openRoute(.issue(group.epic.id)) }
+                                .listRowInsets(EdgeInsets())
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Theme.panel)
                         }
                     }
+                    // Touch and hold, then drag, to give an issue a new place in its section, or an epic's
+                    // issues by their header.
+                    // Only sections by status are columns of the board; a group by another field has no order.
+                    .onMove(perform: canMove && column(of: section) != nil ? { move(in: section, from: $0, to: $1) } : nil)
                 }
             } header: {
                 SectionHeaderBand(
@@ -607,32 +611,6 @@ struct IssueList: View {
             }
             .listSectionSeparator(.hidden)
         }
-    }
-
-    /// The header over an epic's issues in a section. Touch and hold, then drag, to move them all, in a section that is
-    /// one of the board's columns.
-    private func epicRow(_ group: Nesting.EpicGroup, in section: ListSection) -> some View {
-        let column = column(of: section)
-        return EpicGroupRow(group: group, column: column) { openRoute(.issue(group.epic.id)) }
-            .modifier(ListRowDropMark(drag: drag, sectionId: section.id, rowId: group.id, indent: 16))
-            .modifier(RowDragging(
-                token: column.flatMap { canMove ? DraggedGroup(columnId: $0.id, epic: group.contentId, ids: Set($0.members(of: group).map(\.id))).token : nil },
-                text: DropOntoIssue.text(group.epic)
-            ))
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { drag.heights[group.id] = $0 }
-            .onDrop(of: [.plainText, .url], delegate: rowDrop(rowId: group.id, item: nil, in: section))
-            .listRowInsets(EdgeInsets())
-            .listRowSeparator(.hidden)
-            .listRowBackground(Theme.panel)
-    }
-
-    /// Takes an issue or an epic's issues dropped on a row of a section.
-    private func rowDrop(rowId: String, item: Item?, in section: ListSection) -> ListRowDrop {
-        ListRowDrop(
-            model: model, drag: drag, sectionId: section.id, rowId: rowId, item: item,
-            placesIn: places(in: section) ? scope.projectId : nil,
-            onDrop: { id, target in land(id, at: target) }
-        )
     }
 
     private func row(_ item: Item, in section: ListSection) -> some View {
@@ -706,24 +684,12 @@ struct IssueList: View {
                 .tint(Color(white: 0.45))
             }
         }
-        .modifier(ListRowDropMark(drag: drag, sectionId: section.id, rowId: item.id, indent: 16 + CGFloat(depth) * IssueRow.indent))
-        // Lifted where it can go to another place, or under another issue, as on the Mac.
-        .modifier(RowDragging(token: places(in: section) || model.canNestSomewhere(item) ? item.id : nil, text: DropOntoIssue.text(item)))
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { drag.heights[item.id] = $0 }
-        .onDrop(of: [.plainText, .url], delegate: rowDrop(rowId: item.id, item: item, in: section))
-        // For VoiceOver, whose drag drops in the middle of a row, which takes an issue under it.
-        .modifier(RowSteps(enabled: places(in: section)) { step(item, in: section, by: $0) })
         .contextMenu {
             ItemMenuContent(item: item, foldable: nested != nil) { openRoute(.issue(item.id)) }
         } preview: {
             IssuePreview(item: item)
                 .environment(model)
         }
-    }
-
-    /// Whether issues can be put above or below the section's rows: one of the board's columns, in the board's order.
-    private func places(in section: ListSection) -> Bool {
-        canMove && column(of: section) != nil
     }
 
     /// Issues keep their place on the board, so they can be moved in a project you can edit. My Issues mixes
@@ -739,53 +705,26 @@ struct IssueList: View {
         return model.listColumns(projectId: projectId).first { $0.id == section.id }
     }
 
-    /// For VoiceOver: moves an issue one row up or down in its section, past what hangs under it.
-    private func step(_ item: Item, in section: ListSection, by delta: Int) {
+    private func move(in section: ListSection, from source: IndexSet, to destination: Int) {
         let rows = section.nesting.rows
-        guard let index = rows.firstIndex(where: { $0.id == item.id }) else { return }
-        if delta < 0 {
-            guard index > 0 else { return }
-            land(item.id, at: ListDropTarget(sectionId: section.id, rowId: rows[index - 1].id, place: .above))
-        } else {
-            let under = section.nesting.descendants(of: item.id)
-            guard let next = rows.indices.dropFirst(index + 1).first(where: { !under.contains(rows[$0].id) }) else { return }
-            land(item.id, at: ListDropTarget(sectionId: section.id, rowId: rows[next].id, place: .below))
-        }
-    }
-
-    /// Lands what was dropped on a row: under the row's issue, or above or below the row, in that section's column.
-    private func land(_ id: String?, at target: ListDropTarget) {
-        drag.target = nil
-        drag.dragging = nil
-        guard let id, let section = model.sections(for: scope).first(where: { $0.id == target.sectionId }) else { return }
-        if target.place == .into {
-            if DropOntoIssue.nest(id, under: target.rowId, shown: section.nesting, model: model) { drag.landed += 1 }
-            return
-        }
-        let rows = section.nesting.rows
-        guard let column = column(of: section), let index = rows.firstIndex(where: { $0.id == target.rowId }) else { return }
-        // Counted among the rows, epic headers and the dragged issue in its old place included.
-        let destination = target.place == .above ? index : index + 1
-        if let lifted = DraggedGroup(id) {
-            // The epic's issues go together, to where its header was put, from this section or another.
-            guard let projectId = scope.projectId, let source = model.listColumns(projectId: projectId).first(where: { $0.id == lifted.columnId }),
-                  let group = source.nesting.groups.first(where: { $0.contentId == lifted.epic }) else { return }
-            let members = source.members(of: group)
+        guard let from = source.first, rows.indices.contains(from), let column = column(of: section) else { return }
+        if case .epic(let group) = rows[from] {
+            // The epic's issues go together, to where its header was put.
+            let members = column.members(of: group)
             let moving = Set(members.map(\.id))
             let index = rows.prefix(destination).compactMap(\.item).filter { !moving.contains($0.id) }.count
-            withAnimation(Theme.spring) { model.drop(group, members: members, in: column, at: index) }
-            drag.landed += 1
+            model.drop(group, members: members, in: column, at: index)
             return
         }
-        guard let item = model.item(id: id), item.projectId == scope.projectId else { return }
-        // `drop` counts the other issues, without the sub-issues the issue brings along.
+        guard case .item(let item) = rows[from] else { return }
+        // `destination` counts the rows, epic headers and the issue itself in its old place included; `drop`
+        // counts the other issues, without the sub-issues the issue brings along.
         let others = Set(column.shown(without: item).map(\.id))
-        let place = rows.prefix(destination).compactMap(\.item).filter { others.contains($0.id) }.count
+        let index = rows.prefix(destination).compactMap(\.item).filter { others.contains($0.id) }.count
         // Put right below an epic's header, it joins the epic, as it shows.
         let above = rows.prefix(destination).last { row in row.item.map { others.contains($0.id) } ?? true }
         let header: String? = if case .epic(let group)? = above { group.contentId } else { nil }
-        withAnimation(Theme.spring) { model.drop(item, in: column, at: place, belowEpicHeader: header) }
-        drag.landed += 1
+        model.drop(item, in: column, at: index, belowEpicHeader: header)
     }
 
     private var isAllIssues: Bool {

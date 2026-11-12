@@ -107,46 +107,4 @@ final class DropOntoIssueTests: AppTestCase {
         let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in condition() }, object: nil)
         XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: 6), .completed, message, file: file, line: line)
     }
-
-    // MARK: The list
-
-    /// The project's list, which opens scrolled to In Progress, with In Review under it.
-    private func openList() {
-        openBoard()
-        showLayout("List")
-        wait(element("row-#5"))
-    }
-
-    func testARowDroppedOntoAnotherRowBecomesItsSubIssue() {
-        openList()
-        // Both stand on their own in In Review, #5 above #16.
-        let child = element("row-#16")
-        let parent = element("row-#5")
-        wait(child)
-        drag(child, onto: parent)
-        wait(notice("1 issue made a sub-issue of #5"), 15)
-        snapshot("Dropped onto a row")
-        waitForLabel(child, containing: "Sub-issue of #5")
-        XCTAssertGreaterThan(child.frame.minY, parent.frame.minY)
-        element("notice-undo").tap()
-        waitUntil(!child.label.contains("Sub-issue of"), "Undo took the parent back")
-    }
-
-    func testARowDroppedOntoAnotherRowsEdgeMovesThereAndIntoAnotherStatus() {
-        openList()
-        let row = element("row-#16")
-        let other = element("row-#5")
-        wait(row)
-        XCTAssertGreaterThan(row.frame.minY, other.frame.minY)
-        // The top edge of #5, in the same section: it goes above #5.
-        drag(row, onto: other, at: 0.1)
-        waitUntil(row.frame.minY < other.frame.minY, "The row moved above the other one")
-        XCTAssertFalse(row.label.contains("Sub-issue of"))
-        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'made a sub-issue of'")).firstMatch.exists)
-        // Up into In Progress, onto the bottom edge of #7: it goes there, and takes that status.
-        let inProgress = element("row-#7")
-        wait(inProgress)
-        drag(row, onto: inProgress, at: 0.9)
-        waitForLabel(row, containing: "In Progress")
-    }
 }

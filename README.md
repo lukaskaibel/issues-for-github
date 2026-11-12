@@ -335,8 +335,7 @@ The interface uses the system's own parts.
   headers that stay pinned (All Issues turns into a board with **Board** in its "…" menu, its issues on no board a
   column of their own); My Issues shows its cards, one under another on iPhone and two or three to a row on iPad,
   each paging sideways through its project's columns, and Needs you. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
-  and drag after holding to give an issue a new place or status, where a line shows, or drop it onto the middle of
-  another issue, in any list, to make it that issue's sub-issue.
+  and drag after holding to give an issue a new place in its section.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
   A milestone is a list grouped by epic,
   the roadmap a list of epics by milestone. The open view's filter is a line over its list or board; tap it to change
@@ -733,11 +732,11 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap the arrow beside an issue | Fold the sub-issues hanging under it in or out |
 | Tap an epic's name over its issues | Open the epic; the arrow beside its icon folds them in or out |
 | Touch and hold an epic's name over its issues | Open the epic, move all of them to another status, fold them |
-| Touch and hold an epic's name, then drag | Move all of its issues there to another column (iPad), or another place or status in the list |
+| Touch and hold an epic's name, then drag | Move all of its issues there to another column (iPad) or another place in their section |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
 | Touch and hold an issue | Status, priority, assignee, labels, due date, milestone and iteration as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
-| Touch and hold an issue in a list, then drag | Over the middle of another issue, that one lights up: let go to make the dragged issue its sub-issue, in any list. Over a row's top or bottom edge, a line shows where it goes: another place in its section, or another section to change its status, in a project's list by status |
+| Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
 | Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several. Your last choices are listed first, as in every sheet that picks a parent, epic or blocker |
 | Type a label the repository doesn't have in the Labels sheet | Create label “…” makes it in the repository and adds it |
 | Tap the date chip of an issue | Pick a due date: quick choices, a calendar, or typed in the search field |
