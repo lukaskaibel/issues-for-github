@@ -234,6 +234,28 @@ final class PadTests: AppTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(start), 20, "Something on the board kept animating after its menu closed")
     }
 
+    func testReturnRepeatsTheRecentChoice() {
+        // As if "release" had just been given to other issues: L and Return give it to this one too.
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch(["-recentPicks", "{ label = (release, release); }"])
+        openProject("Git Issues")
+        element("card-#9").tap()
+        wait(element("issue-title"))
+        app.typeKey("l", modifierFlags: [])
+        wait(app.navigationBars["Labels"])
+        app.typeKey(.return, modifierFlags: [])
+        waitGone(app.navigationBars["Labels"])
+        waitForLabel(element("property-labels"), containing: "release")
+
+        // Without a recent choice, Return keeps the status as it is rather than picking the first one.
+        let status = element("property-status").label
+        app.typeKey("s", modifierFlags: [])
+        wait(app.navigationBars["Status"])
+        app.typeKey(.return, modifierFlags: [])
+        waitGone(app.navigationBars["Status"])
+        XCTAssertEqual(element("property-status").label, status)
+    }
+
     func testIssueKeysAndBack() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()

@@ -129,9 +129,19 @@ struct PickerList: View {
     private var filtered: [PickerItem] {
         if let search, !query.isEmpty { return search(query) }
         let rows = matching(query, in: self.rows, creating: query.isEmpty ? nil : creating?(query))
+        return Self.limited(rows, to: limit, typing: !query.isEmpty)
+    }
+
+    /// The first `limit` rows. Rows that are always there stay: where they are while nothing is typed, such as New
+    /// Sub-issue… under the recent issues at the top, and after the best matches once something is.
+    static func limited(_ rows: [PickerItem], to limit: Int, typing: Bool) -> [PickerItem] {
         guard rows.count > limit else { return rows }
-        // Rows that are always there stay, after the best matches.
         let kept = rows.filter(\.alwaysShown)
+        guard typing else {
+            let shown = Array(rows.prefix(limit))
+            let ids = Set(shown.map(\.id))
+            return shown + kept.filter { !ids.contains($0.id) }
+        }
         return Array(rows.filter { !$0.alwaysShown }.prefix(limit - kept.count)) + kept
     }
 

@@ -142,6 +142,22 @@ struct RecentPicksTests {
 
     // MARK: Adding sub-issues
 
+    #if os(macOS)
+    @Test("In a long list, New Sub-issue… stays under the recent issues while nothing is typed, and goes last after matches")
+    func newSubIssueStays() {
+        let list = rows(["fresh"] + ["new"] + (1...100).map { "i\($0)" }, alwaysShown: ["new"])
+        let shown = PickerList.limited(list, to: 60, typing: false)
+        #expect(shown.count == 60)
+        #expect(shown.prefix(3).map(\.id) == ["fresh", "new", "i1"])
+        let late = rows((1...100).map { "i\($0)" } + ["new"], alwaysShown: ["new"])
+        #expect(PickerList.limited(late, to: 60, typing: false).last?.id == "new", "kept even when it comes after the first sixty")
+        let typed = PickerList.limited(list, to: 60, typing: true)
+        #expect(typed.count == 60)
+        #expect(typed.last?.id == "new")
+        #expect(typed.first?.id == "fresh")
+    }
+    #endif
+
     @Test("Adding a sub-issue offers the open issues you made in the last day that are under nothing, newest first")
     func freshIssues() {
         let now = Date(timeIntervalSinceReferenceDate: 800_000_000)
