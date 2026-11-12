@@ -79,11 +79,10 @@ private struct OverviewRowDropping: ViewModifier {
         if let drag {
             content
                 .modifier(ListRowDropMark(drag: drag, sectionId: page.id, rowId: item.id, indent: 8))
-                .modifier(RowDragging(token: item.id, text: DropOntoIssue.text(item)))
+                .modifier(RowDragging(token: model.canNestSomewhere(item) ? item.id : nil, text: DropOntoIssue.text(item)))
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { drag.heights[item.id] = $0 }
                 .onDrop(of: [.plainText, .url], delegate: ListRowDrop(
                     model: model, drag: drag, sectionId: page.id, rowId: item.id, item: item, placesIn: nil,
-                    nests: item.projectId.map { id in model.projects.first { $0.id == id }?.viewerCanUpdate == true } ?? true,
                     onDrop: { id, target in
                         drag.target = nil
                         drag.dragging = nil

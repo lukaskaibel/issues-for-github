@@ -305,7 +305,7 @@ struct MobileColumn: View {
             .sensoryFeedback(trigger: nestTarget) { _, new in new == nil ? nil : .selection }
             .onDrop(of: [.plainText, .url], delegate: ColumnDrop(
                 model: model, scope: MobileBoard.scope(projectId: projectId, milestone: milestone, allIssues: allIssues),
-                column: column, frames: frames, nests: canEdit, target: $target, dragging: $dragging, onDrop: onDrop, onNest: onNest
+                column: column, frames: frames, target: $target, dragging: $dragging, onDrop: onDrop, onNest: onNest
             ))
         }
         // The columns stand on the board's grey without lanes, and reach the bottom edge, where their cards scroll out
@@ -318,9 +318,6 @@ struct MobileColumn: View {
 
     /// The cards' width in the column.
     private var inner: CGFloat { width - 2 * Self.inset }
-
-    /// Whether the board can be changed here, which dropping a card onto another one does to the issue.
-    private var canEdit: Bool { model.projects.first { $0.id == projectId }?.viewerCanUpdate == true }
 
     /// The card of this column a dragged card is held over the middle of, which would take it as a sub-issue.
     private var nestTarget: String? {
@@ -484,8 +481,6 @@ private struct ColumnDrop: DropDelegate {
     var scope: Scope
     var column: BoardColumn
     var frames: CardFrames
-    /// Whether a card can be dropped onto another one here, to go under it: where the board can be changed.
-    var nests: Bool
     @Binding var target: BoardDropTarget?
     @Binding var dragging: String?
     var onDrop: (String?, Int?) -> Void
@@ -535,14 +530,14 @@ private struct ColumnDrop: DropDelegate {
     /// The card the finger holds the dragged card over the middle of, if the dragged card can go under it: its item
     /// id. Its top and bottom edges are left to placing the card above or below it, as the gaps between cards are.
     private func nestTarget(at location: CGPoint) -> String? {
-        guard nests, let dragging, DraggedGroup(dragging) == nil else { return nil }
+        guard let dragging, DraggedGroup(dragging) == nil else { return nil }
         return MainActor.assumeIsolated {
             guard let child = model.item(id: dragging) else { return nil }
             for item in column.items {
                 guard let frame = frames.frames[item.id], frame.minY <= location.y, location.y <= frame.maxY else { continue }
                 let edge = DropOntoIssue.edge(of: frame.height)
                 guard location.y > frame.minY + edge, location.y < frame.maxY - edge else { return nil }
-                return model.canDropAsSubIssue(child, onto: item) ? item.id : nil
+                return model.canNest([child], under: item) ? item.id : nil
             }
             return nil
         }

@@ -39,7 +39,7 @@ final class DropOntoIssueTests: AppTestCase {
         wait(parent)
         XCTAssertEqual(child.frame.minX, parent.frame.minX, accuracy: 1)
         drag(child, onto: parent)
-        wait(notice(isPad ? "#17 is now a sub-issue of #25" : "#7 is now a sub-issue of #15"))
+        wait(notice(isPad ? "1 issue made a sub-issue of #25" : "1 issue made a sub-issue of #15"))
         snapshot("Dropped onto a card")
         waitForLabel(child, containing: isPad ? "Sub-issue of #25" : "Sub-issue of #15")
         XCTAssertTrue(hangs(child, under: parent), "The card hangs under its new parent")
@@ -59,7 +59,7 @@ final class DropOntoIssueTests: AppTestCase {
         waitUntil(child.frame.minY > other.frame.maxY, "The card moved below the other one")
         XCTAssertEqual(child.frame.minX, other.frame.minX, accuracy: 1)
         XCTAssertFalse(child.label.contains("Sub-issue of"))
-        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'is now a sub-issue of'")).firstMatch.exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'made a sub-issue of'")).firstMatch.exists)
     }
 
     func testAParentCantBeDroppedOntoItsOwnSubIssue() {
@@ -71,7 +71,7 @@ final class DropOntoIssueTests: AppTestCase {
         wait(child)
         drag(parent, onto: child)
         Thread.sleep(forTimeInterval: 1)
-        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'is now a sub-issue of'")).firstMatch.exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'made a sub-issue of'")).firstMatch.exists)
         XCTAssertFalse(parent.label.contains("Sub-issue of"))
         XCTAssertTrue(hangs(child, under: parent), "#13 still hangs under #9")
     }
@@ -85,7 +85,7 @@ final class DropOntoIssueTests: AppTestCase {
         wait(child)
         wait(parent)
         drag(child, onto: parent)
-        wait(notice("#17 is now a sub-issue of #7"))
+        wait(notice("1 issue made a sub-issue of #7"))
         waitForLabel(child, containing: "Sub-issue of #7")
         // Back in Todo, beside the cards it stood with.
         XCTAssertEqual(child.frame.minX, neighbour.frame.minX, accuracy: 1)
@@ -111,7 +111,7 @@ final class DropOntoIssueTests: AppTestCase {
         scrollTo(parent)
         wait(child)
         drag(child, onto: parent)
-        wait(notice("#17 is now a sub-issue of #25"))
+        wait(notice("1 issue made a sub-issue of #25"))
         snapshot("Dropped onto a row")
         waitForLabel(child, containing: "Sub-issue of #25")
         // It hangs under its new parent now.
@@ -130,7 +130,7 @@ final class DropOntoIssueTests: AppTestCase {
         drag(row, onto: other, at: 0.9)
         waitUntil(row.frame.minY > other.frame.minY, "The row moved below the other one")
         XCTAssertFalse(row.label.contains("Sub-issue of"))
-        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'is now a sub-issue of'")).firstMatch.exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'made a sub-issue of'")).firstMatch.exists)
         // The top edge of a row in In Progress: it goes there, and takes that status.
         let inProgress = element("row-#7")
         scrollTo(inProgress)

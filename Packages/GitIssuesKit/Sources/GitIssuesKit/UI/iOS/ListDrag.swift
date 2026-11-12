@@ -123,8 +123,6 @@ struct ListRowDrop: DropDelegate {
     /// Whether a dragged issue can be put above or below the row: in a section that is one of the board's columns, in
     /// the board's own order, of a project that can be changed. Then the project, whose issues alone can go there.
     var placesIn: String?
-    /// Whether the row's issue can take a dragged one under it: where the list can be changed.
-    var nests: Bool
     var onDrop: (String?, ListDropTarget) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
@@ -175,8 +173,8 @@ struct ListRowDrop: DropDelegate {
 
     /// Whether the dragged issue can go under this row's issue.
     private var nestsHere: Bool {
-        guard nests, let item, let dragging = drag.dragging, DraggedGroup(dragging) == nil else { return false }
-        return MainActor.assumeIsolated { model.item(id: dragging).map { model.canDropAsSubIssue($0, onto: item) } ?? false }
+        guard let item, let dragging = drag.dragging, DraggedGroup(dragging) == nil else { return false }
+        return MainActor.assumeIsolated { model.item(id: dragging).map { model.canNest([$0], under: item) } ?? false }
     }
 
     /// Whether what is dragged can go above or below this row: issues of the section's project.

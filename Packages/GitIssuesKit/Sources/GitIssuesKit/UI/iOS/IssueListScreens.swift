@@ -630,8 +630,7 @@ struct IssueList: View {
     private func rowDrop(rowId: String, item: Item?, in section: ListSection) -> ListRowDrop {
         ListRowDrop(
             model: model, drag: drag, sectionId: section.id, rowId: rowId, item: item,
-            placesIn: canMove && column(of: section) != nil ? scope.projectId : nil,
-            nests: item.map(canNest) ?? false,
+            placesIn: places(in: section) ? scope.projectId : nil,
             onDrop: { id, target in land(id, at: target) }
         )
     }
@@ -708,7 +707,8 @@ struct IssueList: View {
             }
         }
         .modifier(ListRowDropMark(drag: drag, sectionId: section.id, rowId: item.id, indent: 16 + CGFloat(depth) * IssueRow.indent))
-        .modifier(RowDragging(token: item.id, text: DropOntoIssue.text(item)))
+        // Lifted where it can go to another place, or under another issue, as on the Mac.
+        .modifier(RowDragging(token: places(in: section) || model.canNestSomewhere(item) ? item.id : nil, text: DropOntoIssue.text(item)))
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { drag.heights[item.id] = $0 }
         .onDrop(of: [.plainText, .url], delegate: rowDrop(rowId: item.id, item: item, in: section))
         .contextMenu {
@@ -719,11 +719,9 @@ struct IssueList: View {
         }
     }
 
-    /// Whether an issue can take another one dropped onto it as its sub-issue here: in a project that can be changed,
-    /// and in My Issues and search, whose issues are yours to change.
-    private func canNest(_ item: Item) -> Bool {
-        guard let projectId = item.projectId else { return model.canRelate(item) }
-        return model.projects.first { $0.id == projectId }?.viewerCanUpdate == true
+    /// Whether issues can be put above or below the section's rows: one of the board's columns, in the board's order.
+    private func places(in section: ListSection) -> Bool {
+        canMove && column(of: section) != nil
     }
 
     /// Issues keep their place on the board, so they can be moved in a project you can edit. My Issues mixes
