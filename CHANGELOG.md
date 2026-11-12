@@ -162,6 +162,8 @@ All notable changes to this project are recorded here. The format follows
 - On iPhone, a notification whose issue is still being read opens in the app once it is, instead of on github.com.
 - On iPhone and iPad, the milestone and New View sheets don't close with a swipe while they hold what you typed;
   Cancel still does.
+- In the Inbox, closing, reopening or renaming an issue that is on none of your boards shows at once, in its row and
+  on its page. Until now the Inbox kept saying it was open, offered to close it again, and kept the old title.
 
 ## [1.1.0] - 2026-10-28
 
