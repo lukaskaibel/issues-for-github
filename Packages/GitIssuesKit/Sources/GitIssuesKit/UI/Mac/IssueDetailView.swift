@@ -624,7 +624,7 @@ private struct EpicGroupHeader: View {
             // A closed milestone takes no new issues.
             if item.kind == .issue, group?.isOpen ?? true {
                 IconButton(systemName: "plus", label: String(localized: .newSubIssueInMilestone(milestone: title ?? String(localized: .noMilestone))), size: 20) {
-                    model.newIssuePlan = NewIssuePlan(milestoneTitle: title)
+                    model.newIssuePlan = NewIssuePlan(milestoneTitle: title, noMilestone: title == nil)
                     model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
                 }
             }

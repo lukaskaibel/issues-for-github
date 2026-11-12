@@ -25,6 +25,8 @@ struct NewIssueDraft: Equatable {
 struct NewIssuePlan: Equatable {
     var milestoneTitle: String?
     var isEpic = false
+    /// Begun in an epic's "No milestone" group: in none, whatever milestone is on screen.
+    var noMilestone = false
 }
 
 /// What the user can do to an issue. Each action becomes one or more queued mutations.

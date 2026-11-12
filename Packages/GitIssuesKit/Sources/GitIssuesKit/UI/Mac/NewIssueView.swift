@@ -334,7 +334,7 @@ struct NewIssueView: View {
         // Begun in a milestone, or from the roadmap: in that milestone, or as an epic.
         let plan = model.newIssuePlan ?? NewIssuePlan()
         model.newIssuePlan = nil
-        let milestone = plan.milestoneTitle ?? model.currentMilestoneTitle
+        let milestone = plan.noMilestone ? nil : plan.milestoneTitle ?? model.currentMilestoneTitle
             ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
         // In All Issues, also one left on no board in one of its repositories.
         let onNoBoardHere = parent == nil && unsent(onNoBoardIn: model.allIssuesProjectId)
@@ -347,6 +347,7 @@ struct NewIssueView: View {
                 if draft.projectId == nil { draft.projectId = projectId }
             }
             if let milestone { draft.milestoneTitle = milestone }
+            if plan.noMilestone { draft.milestoneTitle = nil }
             restored = true
             focus = .title
             model.loadRepoMeta(projectId: draft.projectId)

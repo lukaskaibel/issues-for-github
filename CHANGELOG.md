@@ -164,6 +164,8 @@ All notable changes to this project are recorded here. The format follows
   Cancel still does.
 - In the Inbox, closing, reopening or renaming an issue that is on none of your boards shows at once, in its row and
   on its page. Until now the Inbox kept saying it was open, offered to close it again, and kept the old title.
+- On the Mac, the plus of an epic's **No milestone** group makes a sub-issue in no milestone, also when the epic was
+  opened from a milestone. Until now it went into that milestone.
 
 ## [1.1.0] - 2026-10-28
 
