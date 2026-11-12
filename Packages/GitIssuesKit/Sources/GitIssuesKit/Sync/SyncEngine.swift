@@ -48,6 +48,8 @@ public actor SyncEngine {
     private var optionWrites: [String: Task<[RemoteOption], Error>] = [:]
     /// How many such changes were saved, by project: a pull that read the options before one was saved leaves them.
     private var optionsSaved: [String: Int] = [:]
+    /// When each board's options were last read, by a pull or on their own (`refreshOptions`).
+    private var optionsRead: [String: Date] = [:]
 
     private var loop: Task<Void, Never>?
     private var sleeper: Task<Void, Never>?
@@ -527,6 +529,7 @@ public actor SyncEngine {
         }
         forceSweep.remove(projectId)
         lastPull[projectId] = Date()
+        optionsRead[projectId] = lastPull[projectId]
         // Views whose filters only GitHub can answer are asked again when the board changed.
         try await refreshViewMatches(projectId: projectId, force: changed)
         // An issue taken off the board may now be on none; its repository says so at the next full read.
@@ -1585,6 +1588,36 @@ public actor SyncEngine {
                 """,
             arguments: StatementArguments([projectId] + ids)
         )
+    }
+
+    /// Reads a board's statuses again on their own, a small read, when they are about to be picked from: a board that
+    /// isn't on screen is read in full only every few minutes, so a status just added, renamed, recoloured or removed on
+    /// github.com would otherwise be missing from the picker of an issue opened from My Issues or the Inbox. At most
+    /// every ten seconds per board.
+    public func refreshOptions(projectId: String) async {
+        guard !isDemo, optionWrites[projectId] == nil else { return }
+        if let last = optionsRead[projectId], Date().timeIntervalSince(last) < 10 { return }
+        optionsRead[projectId] = Date()
+        let before = optionsSaved[projectId]
+        guard let fieldId = (try? await db.reader.read {
+            try String.fetchOne($0, sql: "SELECT statusFieldId FROM project WHERE id = ?", arguments: [projectId])
+        }) ?? nil,
+              let theirs = try? await api.fieldOptions(fieldId: fieldId),
+              optionWrites[projectId] == nil, optionsSaved[projectId] == before else { return }
+        try? await db.writer.write { db in
+            let wanted = theirs.enumerated().compactMap { index, option in
+                option.id.map {
+                    FieldOption(
+                        id: $0, fieldId: fieldId, projectId: projectId, kind: .status,
+                        name: option.name, color: option.color, descr: option.descr, position: index
+                    )
+                }
+            }
+            let request = FieldOption.filter(Column("projectId") == projectId && Column("fieldId") == fieldId)
+            guard try request.order(Column("position")).fetchAll(db) != wanted else { return }
+            try request.deleteAll(db)
+            for option in wanted { try option.insert(db) }
+        }
     }
 
     /// Adds the opinionated Priority field to a project that has none.

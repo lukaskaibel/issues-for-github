@@ -53,6 +53,16 @@ extension AppModel {
         saveColumns(projectId: option.projectId, options)
     }
 
+    // MARK: Fresh statuses
+
+    /// Statuses are about to be picked for a board: they are read again from GitHub now, unless that just happened, so
+    /// one added, renamed or removed on github.com shows even for a board that isn't on screen.
+    func refreshStatuses(projectId: String?) {
+        guard let projectId, !isDemo else { return }
+        let engine = self.engine
+        Task { await engine.refreshOptions(projectId: projectId) }
+    }
+
     // MARK: Making a status
 
     /// A row that makes a status carries its name in its id.

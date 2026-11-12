@@ -294,6 +294,7 @@ struct NewIssueView: View {
         // The fields of the board it was going on, such as its iteration, are no other board's.
         draft.fieldValues = [:]
         if let id { model.loadRepoMeta(projectId: id) }
+        model.refreshStatuses(projectId: id)
     }
 
     /// What a new issue starts with in the view on screen; none for sub-issues and planned ones.
@@ -366,6 +367,7 @@ struct NewIssueView: View {
         draft = new
         focus = .title
         model.loadRepoMeta(projectId: projectId)
+        model.refreshStatuses(projectId: projectId)
         if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
     }
 

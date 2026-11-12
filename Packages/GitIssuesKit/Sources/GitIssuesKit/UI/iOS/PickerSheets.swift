@@ -220,6 +220,7 @@ struct IssuePickerSheet: View {
             if let item = model.item(id: itemId) {
                 model.loadRepoMeta(for: item)
                 if kind.picksIssues { model.loadRelations(for: item) }
+                if kind == .status { model.refreshStatuses(projectId: item.projectId) }
             }
         }
     }

@@ -318,6 +318,7 @@ struct ItemPicker: View {
             .onAppear {
                 // Sub-issues and blockers show checked or left out, so the picker wants them fresh.
                 if kind.picksIssues { model.loadRelations(for: item) }
+                if kind == .status { model.refreshStatuses(projectId: item.projectId) }
             }
         }
     }

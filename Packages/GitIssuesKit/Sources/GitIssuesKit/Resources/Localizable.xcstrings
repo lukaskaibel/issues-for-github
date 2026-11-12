@@ -12215,10 +12215,58 @@
       "comment" : "Row in the status picker (Mac: dropdowns, command palette, right-click menus, new issue form; iPhone, iPad: the Status sheet and the new issue form) when what was typed is no status of the issue's project: makes a status of that name in the project's Status field on GitHub and moves the issue into it. The placeholder is the typed name.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status „%@“ erstellen"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Create status “%(name)@”"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear estado «%@»"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Créer le statut « %@ »"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ステータス「%@」を作成"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‘%@’ 상태 생성"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Criar status “%@”"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Создать статус «%@»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建状态“%@”"
           }
         }
       }
@@ -12827,10 +12875,58 @@
       "comment" : "Message of the notice 'Status “QA” could not be created' when the app is offline.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status werden auf GitHub gespeichert, daher ist zum Erstellen eine Verbindung nötig."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Statuses are saved on GitHub, so making one needs a connection."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los estados se guardan en GitHub, así que para crear uno se necesita conexión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les statuts sont enregistrés sur GitHub ; il faut donc une connexion pour en créer un."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ステータスはGitHubに保存されるため、作成するには接続が必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "상태는 GitHub에 저장되므로 생성하려면 연결이 필요합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Os status são salvos no GitHub, então é preciso estar conectado para criar um."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Статусы хранятся на GitHub, поэтому для создания нужно подключение."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "状态保存在 GitHub 上，因此创建状态需要网络连接。"
           }
         }
       }
@@ -40925,10 +41021,58 @@
       "comment" : "iPhone and iPad: last item of the Status submenu in an issue's long-press menu. Opens the status sheet ready to type the name of a new status.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neuer Status …"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "New Status…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuevo estado…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouveau statut…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規ステータス…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 상태…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Novo status…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Новый статус…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建状态…"
           }
         }
       }
@@ -81191,10 +81335,58 @@
       "comment" : "Title of a warning notice (Mac, iPhone, iPad) when a status typed into a status picker could not be made on GitHub, e.g. while offline. The placeholder is the status's name, e.g. 'QA'.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status „%@“ konnte nicht erstellt werden"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Status “%(name)@” could not be created"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo crear el estado «%@»"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de créer le statut « %@ »"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ステータス「%@」を作成できませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‘%@’ 상태를 생성할 수 없음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível criar o status “%@”"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось создать статус «%@»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法创建状态“%@”"
           }
         }
       }
@@ -81563,10 +81755,58 @@
       "comment" : "Mac: submenu of a board column's menu; iPhone and iPad: menu in the status list and a board column's menu. Lists the kinds a status can be (Backlog, Todo, In progress, Done, Canceled), each with the circle the app draws for it. The kind also says whether an issue in that status is closed.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Symbol"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Icon"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icono"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icône"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アイコン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아이콘"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ícone"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Значок"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图标"
           }
         }
       }
@@ -81575,10 +81815,58 @@
       "comment" : "iPhone and iPad: footer below the list of a project's statuses (Statuses screen in the project's settings), explaining the Icon menu next to each status.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Symbol sagt, was ein Status bedeutet: Issues in einem Status „Erledigt“ oder „Abgebrochen“ werden auf GitHub geschlossen. GitHub kennt keine Symbole, daher werden sie in iCloud für deine Geräte gespeichert."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "The icon says what a status means: issues in a Done or Canceled status are closed on GitHub. GitHub has no icons, so they are kept in iCloud for your devices."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El icono indica qué significa un estado: las incidencias en un estado «Hecho» o «Cancelado» se cierran en GitHub. GitHub no tiene iconos, así que se guardan en iCloud para tus dispositivos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’icône indique ce que signifie un statut : les tickets dans un statut « Terminé » ou « Annulé » sont fermés sur GitHub. GitHub n’a pas d’icônes ; elles sont donc conservées dans iCloud pour vos appareils."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アイコンはステータスの意味を表します。「完了」または「キャンセル済み」のステータスにあるIssueは、GitHubでクローズされます。GitHubにはアイコンがないため、アイコンはiCloudに保存され、お使いのデバイスで共有されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아이콘은 상태의 의미를 나타냅니다. ‘완료’ 또는 ‘취소됨’ 상태의 이슈는 GitHub에서 닫힙니다. GitHub에는 아이콘이 없으므로 아이콘은 사용자의 기기에서 쓸 수 있도록 iCloud에 저장됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O ícone diz o que um status significa: issues em um status “Concluídas” ou “Canceladas” são fechadas no GitHub. O GitHub não tem ícones, então eles ficam no iCloud para os seus dispositivos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Значок показывает, что означает статус: задачи в статусе «Готово» или «Отменено» закрываются на GitHub. На GitHub значков нет, поэтому они хранятся в iCloud для ваших устройств."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图标表示状态的含义：处于“已完成”或“已取消”状态的议题会在 GitHub 上关闭。GitHub 没有图标，因此图标保存在 iCloud 中，供你的设备使用。"
           }
         }
       }
@@ -81587,10 +81875,58 @@
       "comment" : "Accessibility label (VoiceOver) of the button showing a status's icon in the iPhone/iPad status list. The placeholder is the kind, e.g. 'In progress'.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Symbol: %@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Icon: %(kind)@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icono: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icône : %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アイコン：%@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아이콘: %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ícone: %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Значок: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图标：%@"
           }
         }
       }

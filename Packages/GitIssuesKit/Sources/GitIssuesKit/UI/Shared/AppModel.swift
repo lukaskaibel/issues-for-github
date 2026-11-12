@@ -888,6 +888,8 @@ public final class AppModel {
         let projectId = item.projectId
         let repoId = item.repoId
         let fetchable = item.kind != .draft && !item.isLocalOnly
+        // Its status can be changed from here, also when its board isn't the one on screen.
+        refreshStatuses(projectId: projectId)
         let engine = self.engine
         Task {
             await engine.setWatchedIssue(fetchable ? contentId : nil)

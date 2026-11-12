@@ -427,6 +427,7 @@ struct NewIssueSheet: View {
         }
         draft = new
         model.loadRepoMeta(projectId: projectId)
+        model.refreshStatuses(projectId: projectId)
         if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
         focus = .title
     }
@@ -442,6 +443,7 @@ struct NewIssueSheet: View {
         guard id != draft.projectId else { return }
         draft.projectId = id
         draft.statusId = defaultStatus(projectId: id)
+        model.refreshStatuses(projectId: id)
         draft.priorityId = nil
         if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
         // The fields of the board it was going on, such as its iteration, are no other board's.
