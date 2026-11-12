@@ -19,7 +19,16 @@ struct StatusEditor: View {
             Section {
                 ForEach(statuses) { option in
                     HStack(spacing: 12) {
-                        StatusIcon(glyph: model.glyph(projectId: projectId, optionId: option.id), size: 17)
+                        // What the status means, drawn as its circle.
+                        Menu {
+                            StatusKindPicker(option: option)
+                        } label: {
+                            StatusIcon(glyph: model.glyph(projectId: projectId, optionId: option.id), size: 17)
+                                .frame(width: 32, height: 32)
+                                .contentShape(Rectangle())
+                        }
+                        .padding(.horizontal, -8)
+                        .accessibilityLabel(.statusIconIs(kind: AppModel.statusTitle(option.statusCategory)))
                         Button {
                             name = option.name
                             renaming = option
@@ -66,7 +75,10 @@ struct StatusEditor: View {
                     if let index = offsets.first { deleting = statuses[index] }
                 }
             } footer: {
-                Text(.statusEditorFooter)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(.statusEditorFooter)
+                    Text(.statusIconFooter)
+                }
             }
             Section {
                 Button {
@@ -157,6 +169,31 @@ struct StatusEditor: View {
         case "PURPLE": "5B63D3"
         default: "8B949E"
         }
+    }
+}
+
+/// The kinds a status can be, each with its circle in the status's colour, its own checked. The kind says what the
+/// status means: an issue in a Done or Canceled one is closed.
+struct StatusKindPicker: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var scheme
+    var option: FieldOption
+
+    var body: some View {
+        Picker(.statusIcon, selection: Binding(
+            get: { option.statusCategory },
+            set: { model.setKind($0, of: option) }
+        )) {
+            ForEach(AppModel.statusKindsInOrder, id: \.self) { kind in
+                Label {
+                    Text(AppModel.statusTitle(kind))
+                } icon: {
+                    MenuImages.status(AppModel.kindGlyph(kind, color: option.color), scheme)
+                }
+                .tag(kind)
+            }
+        }
+        .pickerStyle(.inline)
     }
 }
 

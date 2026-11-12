@@ -963,8 +963,18 @@ extension ColumnHeader {
     func columnMenu(includingNewIssue: Bool) -> NSMenu {
         let menu = MenuBuilder()
         let editable = canEdit && column.option != nil
-        if editable {
+        if editable, let option = column.option {
             menu.item(.renameEllipsis, "pencil") { startRename() }
+            // What the status means, drawn as its circle; kept in iCloud, as GitHub has no icons.
+            menu.submenu(.statusIcon, "circle.dashed") { kinds in
+                for kind in AppModel.statusKindsInOrder {
+                    kinds.item(
+                        AppModel.statusTitle(kind),
+                        image: MenuIcons.status(AppModel.kindGlyph(kind, color: option.color)),
+                        checked: option.statusCategory == kind
+                    ) { [model] in model.setKind(kind, of: option) }
+                }
+            }
             menu.submenu(.colour, "paintpalette") { colours in
                 for color in Defaults.optionColors {
                     colours.item(

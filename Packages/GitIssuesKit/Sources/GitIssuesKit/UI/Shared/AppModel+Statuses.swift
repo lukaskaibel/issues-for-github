@@ -36,8 +36,12 @@ extension AppModel {
     /// The kinds in the order a board has them, for the Icon menus.
     static let statusKindsInOrder: [StatusCategory] = [.backlog, .unstarted, .started, .completed, .canceled]
 
-    /// A kind's name and circle in the Icon menus.
-    static func kindTitle(_ kind: StatusCategory) -> String { statusTitle(kind) }
+    /// A kind's circle in the Icon menus, in the status's colour.
+    static func kindGlyph(_ kind: StatusCategory, color: String) -> StatusGlyph {
+        var glyph = statusGlyph(kind)
+        if let colour = Theme.optionColor(color) { glyph.color = colour }
+        return glyph
+    }
 
     // MARK: Colours
 

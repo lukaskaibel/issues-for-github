@@ -14,7 +14,7 @@ public enum OptionMerge {
     /// - A new option whose name GitHub already has, made there or by an earlier save of the same option, takes that
     ///   one instead of making a second.
     /// - The order is the change's own when it moved options, otherwise GitHub's, with new options after the option
-    ///   before them in the change.
+    ///   before them in the change, or at the end when the change put them there.
     public static func merge(base: [RemoteOption], mine: [RemoteOption], theirs: [RemoteOption]) -> [RemoteOption] {
         let was = byId(base)
         let now = byId(theirs)
@@ -64,6 +64,11 @@ public enum OptionMerge {
             return option
         }
         for (index, option) in mine.enumerated() where option.id == nil && adopted[index] == nil {
+            // Added at the end stays at the end, after what GitHub added too.
+            if !mine[(index + 1)...].contains(where: { $0.id != nil }) {
+                result.append(option)
+                continue
+            }
             let before = mine[..<index].enumerated().map { offset, earlier in adopted[offset] ?? earlier }
             insert(option, after: before[...], into: &result)
         }
