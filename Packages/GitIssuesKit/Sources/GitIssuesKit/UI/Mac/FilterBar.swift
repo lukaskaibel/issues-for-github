@@ -271,7 +271,7 @@ struct FilterMenu: View {
                     } else if id.hasPrefix("property:") {
                         property = properties.first { "property:\($0.id)" == id }
                     } else if id.hasPrefix("value:"), let entry = model.allFilterValues(in: scope).first(where: { "value:\($0.value.id)" == id }) {
-                        filter = model.toggling(entry.value, in: filter, termIndex: model.termIndex(for: entry.property, in: filter))
+                        filter = model.toggling(entry.value, in: filter, termIndex: model.termIndex(for: entry.property, in: filter), takesSeveral: entry.property.takesSeveral)
                         close()
                     }
                 },
@@ -303,7 +303,10 @@ struct FilterValueList: View {
     var body: some View {
         if let property {
             let values = model.filterValues(property, in: scope)
-            let picked = termIndex.flatMap { filter.terms.indices.contains($0) ? model.pickedValues(filter.terms[$0]) : nil } ?? []
+            // "No assignee" and the like are ticked by a `no:` or `has:` term of their own.
+            let presence = values.filter { model.presenceTerm(of: $0, in: filter) != nil }.map { "\($0.key):\($0.value.lowercased())" }
+            let picked = (termIndex.flatMap { filter.terms.indices.contains($0) ? model.pickedValues(filter.terms[$0]) : nil } ?? [])
+                .union(presence)
             PickerList(
                 placeholder: property.title,
                 items: values.map { value in
@@ -322,7 +325,7 @@ struct FilterValueList: View {
                     // The term this property writes into, as it is now: picking may have made or taken one away.
                     let index = model.termIndex(for: property, in: filter)
                         ?? (value.key == "no" || value.key == "has" ? filter.terms.firstIndex { $0.key == value.key && $0.values.contains(value.value) } : nil)
-                    filter = model.toggling(value, in: filter, termIndex: index)
+                    filter = model.toggling(value, in: filter, termIndex: index, takesSeveral: property.takesSeveral)
                 },
                 onClose: close
             )

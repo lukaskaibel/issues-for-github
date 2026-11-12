@@ -120,6 +120,13 @@ extension AppModel {
         return items.filter { seen.insert($0.id).inserted }
     }
 
+    /// Whether ↑ and ↓ have an issue to move to from the open one: not from one the board or list behind it doesn't
+    /// show, such as an issue opened from the Inbox or the command palette, where they scroll its page instead.
+    var stepsFromOpenIssue: Bool {
+        guard let openItemId else { return true }
+        return stepOrder.contains { $0.id == openItemId }
+    }
+
     /// Moves to the next or previous issue: opens it when an issue is open, otherwise moves the focus.
     func step(_ delta: Int) {
         let items = stepOrder

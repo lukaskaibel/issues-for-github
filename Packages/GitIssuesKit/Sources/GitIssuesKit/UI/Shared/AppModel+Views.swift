@@ -244,8 +244,10 @@ extension AppModel {
         // What is the same as the view's own isn't a choice of yours. A roadmap's own is its timeline, so a board or a
         // list chosen for it is.
         if view.layout != .roadmap, display.layout == (view.layout == .board ? .board : .list) { display.layout = nil }
-        if display.columnFieldId == view.columnFieldId { display.columnFieldId = nil }
-        if display.groupFieldId == view.groupByFieldId { display.groupFieldId = nil }
+        // A view without columns or groups of its own on GitHub has them by status here.
+        let status = currentStatusFieldId(projectId: view.projectId)
+        if display.columnFieldId == (view.columnFieldId ?? status) { display.columnFieldId = nil }
+        if display.groupFieldId == (view.groupByFieldId ?? status) { display.groupFieldId = nil }
         if display.sort == view.sortBy { display.sort = nil }
         if display.visibleFieldIds == view.visibleFieldIds { display.visibleFieldIds = nil }
         if display.hiddenColumnIds?.isEmpty == true { display.hiddenColumnIds = nil }
@@ -995,10 +997,6 @@ extension AppModel {
             ))
             return
         }
-        #if os(iOS)
-        // The iPhone has no board.
-        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
-        #endif
         let hidden = hiddenColumnIds(of: view)
         guard layout(of: view) == .board, !hidden.isEmpty,
               let column = columns(projectId: projectId).first(where: { $0.nesting.members.contains { $0.id == item.id } }),

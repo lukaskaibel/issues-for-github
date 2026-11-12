@@ -283,7 +283,11 @@ struct NewIssueView: View {
         guard id != draft.projectId else { return }
         draft.projectId = id
         // Another board brings its own repository along; in All Issues the issue stays in the one chosen.
-        if !inAllIssues { draft.repoId = id.flatMap { model.defaultRepoId(projectId: $0) } ?? draft.repoId }
+        if !inAllIssues, let repoId = id.flatMap({ model.defaultRepoId(projectId: $0) }), repoId != draft.repoId {
+            draft.repoId = repoId
+            // Labels belong to a repository: GitHub would refuse another one's, and the new issue with them.
+            draft.labels = []
+        }
         draft.statusId = defaultStatus(projectId: id)
         draft.priorityId = nil
         if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
@@ -330,15 +334,20 @@ struct NewIssueView: View {
         // Begun in a milestone, or from the roadmap: in that milestone, or as an epic.
         let plan = model.newIssuePlan ?? NewIssuePlan()
         model.newIssuePlan = nil
-        let milestone = plan.milestoneTitle ?? model.currentMilestoneTitle
+        let milestone = plan.noMilestone ? nil : plan.milestoneTitle ?? model.currentMilestoneTitle
             ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
         // In All Issues, also one left on no board in one of its repositories.
         let onNoBoardHere = parent == nil && unsent(onNoBoardIn: model.allIssuesProjectId)
         if typed == nil, groupPreset == nil, let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id, unsent.isEpic == plan.isEpic,
            model.scopeProjectId == nil || unsent.projectId == projectId || onNoBoardHere {
             draft = unsent
-            if let statusId { draft.statusId = chosenStatus(statusId) }
+            if let statusId {
+                draft.statusId = chosenStatus(statusId)
+                // A column's plus puts it on that board, also when it was left on no board last time.
+                if draft.projectId == nil { draft.projectId = projectId }
+            }
             if let milestone { draft.milestoneTitle = milestone }
+            if plan.noMilestone { draft.milestoneTitle = nil }
             restored = true
             focus = .title
             model.loadRepoMeta(projectId: draft.projectId)
