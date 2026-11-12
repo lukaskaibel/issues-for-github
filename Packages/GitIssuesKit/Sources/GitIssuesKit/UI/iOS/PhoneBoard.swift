@@ -134,7 +134,7 @@ struct PhoneBoard: View {
 
     private func nest(_ id: String?, under parentId: String, in column: BoardColumn) {
         endDrag()
-        if MobileBoard.nest(id, under: parentId, in: column, model: model) { dropped += 1 }
+        if DropOntoIssue.nest(id, under: parentId, shown: column.nesting, model: model) { dropped += 1 }
     }
 
     /// After a drop, taken or not: the views that saw the drag hear nothing more of it.

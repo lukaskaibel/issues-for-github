@@ -108,19 +108,7 @@ struct MobileBoard: View {
     private func nest(_ id: String?, under parentId: String, in column: BoardColumn) {
         target = nil
         dragging = nil
-        if Self.nest(id, under: parentId, in: column, model: model) { dropped += 1 }
-    }
-
-    /// Makes the dropped card a sub-issue of the card (`parentId`, an item id) it was let go over. A parent whose
-    /// sub-issues are folded into it opens, so that one that hangs under it in this column doesn't vanish into it. False
-    /// when the drag carried nothing that can go there.
-    @discardableResult
-    static func nest(_ id: String?, under parentId: String, in column: BoardColumn, model: AppModel) -> Bool {
-        guard let id, DraggedGroup(id) == nil, let child = model.item(id: id), let parent = model.item(id: parentId),
-              model.canDropAsSubIssue(child, onto: parent) else { return false }
-        if column.nesting.folded.contains(parent.id) { model.setFolded(parent, false) }
-        model.dropAsSubIssue(child, onto: parent)
-        return true
+        if DropOntoIssue.nest(id, under: parentId, shown: column.nesting, model: model) { dropped += 1 }
     }
 
     /// The board a project's, one of its milestones' or its All Issues' board shows.
@@ -552,19 +540,12 @@ private struct ColumnDrop: DropDelegate {
             guard let child = model.item(id: dragging) else { return nil }
             for item in column.items {
                 guard let frame = frames.frames[item.id], frame.minY <= location.y, location.y <= frame.maxY else { continue }
-                let edge = ColumnDrop.edge(of: frame.height)
+                let edge = DropOntoIssue.edge(of: frame.height)
                 guard location.y > frame.minY + edge, location.y < frame.maxY - edge else { return nil }
                 return model.canDropAsSubIssue(child, onto: item) ? item.id : nil
             }
             return nil
         }
-    }
-
-    /// How far into a card from its top and bottom the finger places the dragged card above or below it rather than
-    /// under it: a quarter of the card, at least enough to hit with a finger and at most so much that the middle stays
-    /// easy to hit on a short card.
-    static func edge(of height: CGFloat) -> CGFloat {
-        min(max(height * 0.25, 14), 26)
     }
 
     /// The position among the column's cards, from where the finger is; or the card it would go under.
