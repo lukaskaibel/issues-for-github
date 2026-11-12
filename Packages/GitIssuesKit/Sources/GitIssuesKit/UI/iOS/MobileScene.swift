@@ -110,7 +110,9 @@ struct MobileRoot: View {
             }
         }
         .overlay(alignment: .top) {
+            // Outside the `.environment(navigation)` above, so it is handed over again: a notice opens issues.
             NoticeBanners()
+                .environment(navigation)
         }
         .onChange(of: model.status.idRemaps) { _, remaps in
             model.follow(remaps: remaps)
