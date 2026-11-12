@@ -130,6 +130,8 @@ All notable changes to this project are recorded here. The format follows
   them a second time.
 - Choosing Status again under Group by or Columns in Display no longer counts as a change of yours, with its dot and
   Reset.
+- **Complete** on a milestone leaves issues that are closed on GitHub where they are, even when their column still
+  says In Progress, and closed issues no longer get due reminders.
 
 ## [1.1.0] - 2026-10-28
 
