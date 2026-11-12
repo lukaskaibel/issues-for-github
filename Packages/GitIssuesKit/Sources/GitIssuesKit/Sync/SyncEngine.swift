@@ -1639,9 +1639,9 @@ public actor SyncEngine {
     /// isn't on screen is read in full only every few minutes, so a status just added, renamed, recoloured or removed on
     /// github.com would otherwise be missing from the picker of an issue opened from My Issues or the Inbox. At most
     /// every ten seconds per board.
-    public func refreshOptions(projectId: String) async {
+    public func refreshOptions(projectId: String, notWithin interval: TimeInterval = 10) async {
         guard !isDemo, optionWrites[projectId] == nil else { return }
-        if let last = optionsRead[projectId], Date().timeIntervalSince(last) < 10 { return }
+        if let last = optionsRead[projectId], Date().timeIntervalSince(last) < interval { return }
         optionsRead[projectId] = Date()
         let before = optionsSaved[projectId]
         guard let fieldId = (try? await db.reader.read {

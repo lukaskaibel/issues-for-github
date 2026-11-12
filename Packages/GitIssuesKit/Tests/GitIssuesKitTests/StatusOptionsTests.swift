@@ -266,20 +266,19 @@ struct SavingStatusesTests {
         #expect(github.fieldWrites().count == 1, "Only the change that had its status was sent")
     }
 
-    @Test("a status added on github.com shows when statuses are about to be picked, read at most every ten seconds")
+    @Test("a status added on github.com shows when statuses are about to be picked, unless they were just read")
     func refreshesOnTheirOwn() async throws {
         let github = FakeGitHub(Self.board)
         let (db, engine) = try await makeEngine(github)
         try await engine.pull(projectId: FakeGitHub.projectId)
         try await db.writer.write { try $0.execute(sql: "UPDATE project SET statusFieldId = 'F-status'") }
         github.statusOptions.append(["id": "web", "name": "From the website", "color": "BLUE", "description": ""])
-        // Just read by the pull: not again yet.
+        // Just read by the pull: not again yet (an hour stands in for the ten seconds, which a busy test run can take).
         _ = github.requests()
-        await engine.refreshOptions(projectId: FakeGitHub.projectId)
+        await engine.refreshOptions(projectId: FakeGitHub.projectId, notWithin: 3600)
         #expect(!github.requests().contains("options"))
         #expect(try names(db) == ["Todo"])
-        try await Task.sleep(for: .seconds(10.2))
-        await engine.refreshOptions(projectId: FakeGitHub.projectId)
+        await engine.refreshOptions(projectId: FakeGitHub.projectId, notWithin: 0)
         #expect(github.requests() == ["options"])
         #expect(try names(db) == ["Todo", "From the website"])
     }
