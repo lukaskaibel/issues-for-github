@@ -72,8 +72,10 @@ an assignee or a label opens its picker right where you clicked, ready to type i
 The board is quiet: white cards on grey, without borders or lanes, labels as a dot and a name, and colour only where
 something needs you, such as a date that's due, an urgent issue or a blocker. Drag a card and it lifts off the board,
 tilts with the motion and settles with a spring, while its neighbours make room. Press Esc mid-drag and it goes back
-to where it came from. Pick several cards with ⌘-click and drag one of them, and they all go, together. The move shows
-in the same frame and reaches GitHub in the background.
+to where it came from. Pick several cards with ⌘-click and drag one of them, and they all go, together. Hold a card
+over the middle of another one and that issue lights up while the card says "Sub-issue of #9": let go, and it becomes
+that issue's sub-issue, keeping its own status. Near a card's top or bottom edge it goes in between, as before. The
+move shows in the same frame and reaches GitHub in the background.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/drag-dark.webp">
@@ -182,7 +184,7 @@ labels, `D` due date, `I` assign to me.
 
 The list groups issues by status. Each header stays pinned while you scroll through its section and folds it with
 a click. Drag an issue up or down to give it a new place, or into another section to change its status, as on the
-board. The app follows the system appearance, or stays light or dark if you prefer.
+board; drop it on the middle of another issue, which lights up, to make it that issue's sub-issue. The app follows the system appearance, or stays light or dark if you prefer.
 
 Its icon is a card with a done mark, lifted off a board of faint tiles. Settings (on iPhone and iPad, your account)
 offers it on its light page, on graphite or as a white card on indigo. Each follows light and dark mode.
@@ -382,11 +384,11 @@ The interface uses the system's own parts.
 - **All Issues** of a project: its board's issues and those of its repositories on no board, which one click puts on
   the board. As a list, or as a board with a column of its own for the issues on no board and its columns in your own
   order.
-- **Sub-issues and blockers.** Put any issue under another one, add issues that exist already as sub-issues, and mark
-  which issues block which; a blocked issue carries a red flag that names what blocks it, on its card and in its
-  parent's sub-issues. Sub-issues with their parent's status hang under it on the board and in the list, and a parent
-  is done when its last sub-issue is. An issue lists its sub-issues by priority, or by status, newest first or in
-  GitHub's order, and unfolds sub-issues of sub-issues as a tree.
+- **Sub-issues and blockers.** Put any issue under another one, also by dropping it onto that issue on the Mac, add
+  issues that exist already as sub-issues, and mark which issues block which; a blocked issue carries a red flag that
+  names what blocks it, on its card and in its parent's sub-issues. Sub-issues with their parent's status hang under it
+  on the board and in the list, and a parent is done when its last sub-issue is. An issue lists its sub-issues by
+  priority, or by status, newest first or in GitHub's order, and unfolds sub-issues of sub-issues as a tree.
 - **Milestones, epics and a roadmap.** A board's milestones with their own board and progress, epics whose
   sub-issues are the work, and a roadmap of the epics over the milestones, on a timeline or as a list. Completing a
   milestone closes it on GitHub and moves what is left to the next one. Issues go into the board's iterations too: the
@@ -692,7 +694,12 @@ While writing a description, a comment or a new issue (also on iPad with a keybo
 On the board, drag cards between and within columns; press `Esc` mid-drag to put a card back. A parent takes the
 sub-issues hanging under it along within its column, and other cards land before or after them, never in between. In the list, drag a
 row up or down within its section, or into another section to change its status; My Issues mixes projects, so its
-rows aren't dragged there: `⇧V` sets their order. Drag a column by its
+rows aren't moved there: `⇧V` sets their order. Drop an issue on the middle of another one, in a list, on a board,
+on an epic's name on a board, or on an issue in My Issues, and it becomes that issue's sub-issue; the issue lights up
+while you hold it there, and near its top or bottom edge the dragged issue goes in front of or after it instead.
+Picked issues go under it together. The dropped issues keep their status, and a message takes it back with **Undo**.
+Only what GitHub takes lights up: not the issue itself or one of its own sub-issues, not pull requests or drafts, not
+on a board you can only read, and not past 100 sub-issues under one issue or eight levels. Drag a column by its
 header to reorder it, double-click its name to rename it, right-click it for its menu (rename, colour, hide, delete),
 and use **Add column** at the right end of the board. **Hide Column** takes a column and its cards off the board on
 this device only, for the view you're in; the project on GitHub doesn't change, and the list still shows every status.
@@ -700,7 +707,7 @@ Hidden columns are listed at the right end of the board, with how many issues ea
 Columns** in Display (`⇧V`); a click shows one again, and **Reset** there brings them all back. All Issues as a board
 moves and hides its columns the same way, all of them on this device only: GitHub's statuses keep their order, and
 they are renamed, coloured and deleted on the board. Its **No project** column takes no cards; drag one of its issues
-onto a status to put it on the board.
+onto a status to put it on the board. All Issues' list takes drags the same way.
 
 To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
 Shift-click. A bar at the bottom then sets status, priority, assignee, labels or the due date for all of them, and so
