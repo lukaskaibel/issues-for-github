@@ -2203,7 +2203,7 @@ struct ItemMenuBuilder {
             let copy = ClosureMenuItem(String(localized: .copyLink)) { [model, item] in model.copyLink(item) }
             copy.image = MenuIcons.symbol("link")
             menu.addItem(copy)
-            if item.number != nil {
+            if item.branchName != nil {
                 let branch = ClosureMenuItem(String(localized: .copyBranchName)) { [model, item] in model.copyBranchName(item) }
                 branch.image = MenuIcons.symbol("arrow.triangle.branch")
                 branch.keyEquivalent = "."

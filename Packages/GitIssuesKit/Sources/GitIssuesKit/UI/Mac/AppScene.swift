@@ -116,7 +116,7 @@ public struct GitIssuesScene: Scene {
                     if let item = model.targetItem { model.copyBranchName(item) }
                 }
                 .keyboardShortcut(".", modifiers: [.command, .shift])
-                .disabled(model.targetItem?.number == nil)
+                .disabled(model.targetItem?.branchName == nil)
                 Button(.openOnGitHub) {
                     if let item = model.targetItem { model.openOnGitHub(item) }
                 }
