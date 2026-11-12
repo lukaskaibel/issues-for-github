@@ -922,8 +922,9 @@ struct IssueTable: NSViewRepresentable {
         func showNestTarget(_ id: String?) {
             guard id != nestTargetId, let table else { return }
             nestTargetId = id
-            for row in visibleRows(in: table) {
-                (table.rowView(atRow: row, makeIfNecessary: false) as? PlainRowView)?.isNestTarget = id != nil && entries[row].id == id
+            // Every row the table holds, also those just off screen while it scrolls during the drag.
+            table.enumerateAvailableRowViews { view, row in
+                (view as? PlainRowView)?.isNestTarget = id != nil && entries.indices.contains(row) && entries[row].id == id
             }
         }
 
