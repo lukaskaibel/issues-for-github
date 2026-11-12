@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat", "rowcheck", "vscroll", "repaintcheck"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat", "rowcheck", "vscroll", "repaintcheck", "nesttarget"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -652,6 +652,22 @@ enum DebugRemote {
             if let up = event(.leftMouseUp, NSPoint(x: start.x, y: start.y - dy)) { NSApp.postEvent(up, atStart: false) }
             if let down = event(.leftMouseDown, start) { table.mouseDown(with: down) }
             log("listpress: row \(row) hidden=\(table.hiddenRowIndexes.map { $0 })")
+        case "nesttarget":
+            // nesttarget <number>|none: lights the list row of an issue as the one dragged issues would go under, as a
+            // drag over it does, or none; then names the rows that are lit.
+            for window in NSApp.windows where window.isVisible {
+                func collect(_ view: NSView) -> [HoverTableView] {
+                    (view as? HoverTableView).map { [$0] } ?? view.subviews.flatMap(collect)
+                }
+                for table in window.contentView.map(collect) ?? [] {
+                    guard let coordinator = table.coordinator else { continue }
+                    coordinator.showNestTarget(item(argument, model)?.id)
+                    let lit = IssueTable.loadedRows(of: table).filter {
+                        (table.rowView(atRow: $0, makeIfNecessary: false) as? PlainRowView)?.isNestTarget == true
+                    }
+                    log("nesttarget: lit \(lit.map { coordinator.item(at: $0)?.displayNumber ?? "row \($0)" })")
+                }
+            }
         case "label":
             // label <number> <name>: puts a label on an issue or takes it off, as its label picker does.
             let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
