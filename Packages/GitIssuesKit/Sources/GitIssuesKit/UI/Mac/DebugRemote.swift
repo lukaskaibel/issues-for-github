@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat", "rowcheck", "vscroll"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat", "rowcheck", "vscroll", "repaintcheck"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -612,6 +612,46 @@ enum DebugRemote {
                     log("rowcheck: \(table.coordinator?.rowCheck ?? "no coordinator")")
                 }
             }
+        case "repaintcheck":
+            // repaintcheck: draws the list's rows anew and names those that then look different, which showed an
+            // earlier paint.
+            for window in NSApp.windows where window.isVisible {
+                func collect(_ view: NSView) -> [HoverTableView] {
+                    (view as? HoverTableView).map { [$0] } ?? view.subviews.flatMap(collect)
+                }
+                for table in window.contentView.map(collect) ?? [] {
+                    log(table.coordinator?.repaintCheck() ?? "no coordinator")
+                }
+            }
+        case "listpress":
+            // listpress <number> <dy>: presses on an issue's row in the list and moves the mouse dy points down with the
+            // button held, then lets go, through the table's own handling of a drag, in-process: the table starts the
+            // drag as for a hand (up to its start); a real drop needs a real mouse.
+            let bits = argument.split(separator: " ").map(String.init)
+            guard bits.count == 2, let item = item(bits[0], model), let dy = Double(bits[1]),
+                  let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }), let content = window.contentView else { break }
+            func collect(_ view: NSView) -> [HoverTableView] {
+                (view as? HoverTableView).map { [$0] } ?? view.subviews.flatMap(collect)
+            }
+            guard let table = collect(content).first, let coordinator = table.coordinator,
+                  let row = (0..<table.numberOfRows).first(where: { coordinator.item(at: $0)?.id == item.id }) else {
+                log("listpress: no row")
+                break
+            }
+            let rect = table.rect(ofRow: row)
+            let start = table.convert(NSPoint(x: rect.minX + 300, y: rect.midY), to: nil)
+            func event(_ type: NSEvent.EventType, _ point: NSPoint) -> NSEvent? {
+                NSEvent.mouseEvent(
+                    with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                    windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1
+                )
+            }
+            for step in 1...12 {
+                if let dragged = event(.leftMouseDragged, NSPoint(x: start.x, y: start.y - dy * Double(step) / 12)) { NSApp.postEvent(dragged, atStart: false) }
+            }
+            if let up = event(.leftMouseUp, NSPoint(x: start.x, y: start.y - dy)) { NSApp.postEvent(up, atStart: false) }
+            if let down = event(.leftMouseDown, start) { table.mouseDown(with: down) }
+            log("listpress: row \(row) hidden=\(table.hiddenRowIndexes.map { $0 })")
         case "label":
             // label <number> <name>: puts a label on an issue or takes it off, as its label picker does.
             let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)

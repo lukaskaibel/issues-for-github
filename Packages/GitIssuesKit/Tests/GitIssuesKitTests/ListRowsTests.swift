@@ -10,6 +10,7 @@ import Testing
 @Suite("Rows of the Mac list show their issues as they are now", .serialized)
 struct ListRowsTests {
     /// A table as the list sets one up, handing out painted rows for `rows`.
+    @MainActor
     final class Source: NSObject, NSTableViewDataSource, NSTableViewDelegate {
         var rows: [IssueRowModel]
 
@@ -61,6 +62,7 @@ struct ListRowsTests {
     /// made ready, as a scroll makes them.
     private func makeTable(_ source: Source) -> (NSWindow, NSTableView, NSScrollView) {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
         let table = NSTableView()
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("issue"))
         column.resizingMask = .autoresizingMask
@@ -138,6 +140,21 @@ struct ListRowsTests {
         moved.insert(moved.remove(at: 90), at: 75)
         source.change(table, to: moved)
         #expect(stale(table, source).isEmpty)
+    }
+
+    @Test("Probe: hidden rows")
+    func probeHiddenRows() {
+        let source = Source(rows: Self.rows)
+        let (window, table, _) = makeTable(source)
+        defer { window.close() }
+        let row = visibleRows(table).lowerBound + 3
+        table.hideRows(at: [row], withAnimation: [])
+        let loaded = IssueTable.loadedRows(of: table)
+        print("PROBE hidden=\(table.hiddenRowIndexes.map { $0 }) loadedContains=\(loaded.contains(row)) view=\(table.view(atColumn: 0, row: row, makeIfNecessary: false) != nil) rowView=\(table.rowView(atRow: row, makeIfNecessary: false) != nil)")
+        source.change(table, to: Self.rows.map { Self.row($0.item.number!, labels: Self.labels) })
+        print("PROBE staleWhileHidden=\(stale(table, source))")
+        table.unhideRows(at: [row], withAnimation: [])
+        print("PROBE staleAfterUnhide=\(stale(table, source)) cell=\((table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell)?.row?.item.labels.count ?? -1)")
     }
 
     @Test("A row's view taken over by another issue drops the pointer's place on the parts of the one before")

@@ -768,9 +768,69 @@ struct IssueTable: NSViewRepresentable {
                 }
             }
             loaded.sort()
+            // Row views out of place, faded or hidden, and any the table no longer counts as a row: those would stand
+            // over other rows.
+            var misplaced: [String] = []
+            let counted = Set(loaded.compactMap { table.rowView(atRow: $0, makeIfNecessary: false).map(ObjectIdentifier.init) })
+            for case let rowView as NSTableRowView in table.subviews {
+                let row = table.row(for: rowView)
+                let cell = rowView.numberOfColumns > 0 ? rowView.view(atColumn: 0) as? NSView : nil
+                let alpha = min(rowView.alphaValue, cell?.alphaValue ?? 1)
+                let what = row >= 0 && entries.indices.contains(row) ? entries[row].id : "row \(row)"
+                if !counted.contains(ObjectIdentifier(rowView)) {
+                    if !rowView.isHidden, alpha > 0.01 { misplaced.append("orphan \(what) frame=\(rowView.frame) alpha=\(alpha)") }
+                } else if rowView.frame.integral != table.rect(ofRow: row).integral || (alpha < 0.99 && draggedIds.isEmpty) || rowView.isHidden {
+                    misplaced.append("\(row) \(what) frame=\(rowView.frame) want=\(table.rect(ofRow: row)) alpha=\(alpha) hidden=\(rowView.isHidden)")
+                }
+            }
             let ranges = loaded.isEmpty ? "none" : "\(loaded.first!)…\(loaded.last!) (\(loaded.count))"
-            return "visible=\(visible.location)..<\(visible.location + visible.length) loaded=\(ranges) stale=\(stale.count)"
+            return "visible=\(visible.location)..<\(visible.location + visible.length) loaded=\(ranges) stale=\(stale.count) misplaced=\(misplaced.count)"
                 + (stale.isEmpty ? "" : "\n  " + stale.joined(separator: "\n  "))
+                + (misplaced.isEmpty ? "" : "\n  " + misplaced.joined(separator: "\n  "))
+        }
+
+        /// Draws every row with a view anew and says which rows then look different from before: those showed pixels
+        /// from an earlier paint. For the debug remote.
+        func repaintCheck() -> String {
+            guard let table, let window = table.window, let root = window.contentView?.superview ?? window.contentView else { return "no table" }
+            func picture() -> [UInt8] {
+                let scale = window.backingScaleFactor
+                let width = Int(root.bounds.width * scale), height = Int(root.bounds.height * scale)
+                var bytes = [UInt8](repeating: 0, count: width * height * 4)
+                bytes.withUnsafeMutableBytes { buffer in
+                    guard let context = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                                                  space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+                          let layer = root.layer else { return }
+                    context.scaleBy(x: scale, y: scale)
+                    layer.render(in: context)
+                }
+                return bytes
+            }
+            let before = picture()
+            let rows = IssueTable.loadedRows(of: table)
+            for row in rows { table.view(atColumn: 0, row: row, makeIfNecessary: false)?.needsDisplay = true }
+            window.displayIfNeeded()
+            CATransaction.flush()
+            let after = picture()
+            let scale = window.backingScaleFactor
+            let width = Int(root.bounds.width * scale)
+            var differing: [String] = []
+            for row in rows {
+                let rect = root.convert(table.rect(ofRow: row), from: table).intersection(root.convert(table.visibleRect, from: table))
+                guard !rect.isEmpty else { continue }
+                // Bitmap rows count from the bottom.
+                let top = Int((root.bounds.height - rect.maxY) * scale), bottom = Int((root.bounds.height - rect.minY) * scale)
+                var changed = 0
+                for y in max(0, top)..<min(bottom, before.count / (width * 4)) {
+                    let start = y * width * 4
+                    for x in Int(rect.minX * scale)..<min(Int(rect.maxX * scale), width) where before[start + x * 4 + 3] != after[start + x * 4 + 3]
+                        || before[start + x * 4] != after[start + x * 4] {
+                        changed += 1
+                    }
+                }
+                if changed > 0 { differing.append("\(row) \(entries.indices.contains(row) ? entries[row].id : "?") \(changed)px") }
+            }
+            return "repaint: \(rows.count) rows, \(differing.count) looked different" + (differing.isEmpty ? "" : "\n  " + differing.joined(separator: "\n  "))
         }
         #endif
 
