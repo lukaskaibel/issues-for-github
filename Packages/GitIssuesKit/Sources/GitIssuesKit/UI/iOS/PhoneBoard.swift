@@ -58,7 +58,8 @@ struct PhoneBoard: View {
                             MobileColumn(
                                 projectId: projectId, allIssues: allIssues, column: column, width: proxy.size.width - 2 * Self.margin,
                                 target: $target, dragging: $dragging,
-                                onDrop: { id, slot in land(id, in: column, at: slot) }
+                                onDrop: { id, slot in land(id, in: column, at: slot) },
+                                onNest: { id, parent in nest(id, under: parent, in: column) }
                             )
                             .padding(.horizontal, Self.margin)
                             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -129,6 +130,11 @@ struct PhoneBoard: View {
     private func land(_ id: String?, in column: BoardColumn, at slot: Int?) {
         endDrag()
         if MobileBoard.land(id, in: column, at: slot, model: model, projectId: projectId, milestone: nil, allIssues: allIssues) { dropped += 1 }
+    }
+
+    private func nest(_ id: String?, under parentId: String, in column: BoardColumn) {
+        endDrag()
+        if DropOntoIssue.nest(id, under: parentId, shown: column.nesting, model: model) { dropped += 1 }
     }
 
     /// After a drop, taken or not: the views that saw the drag hear nothing more of it.
