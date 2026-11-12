@@ -121,6 +121,8 @@ All notable changes to this project are recorded here. The format follows
   iteration or a parent from the filter of the first project's view.
 - On iPhone and iPad, a new issue begun in My Issues stays assigned to you when you choose another project for it, so
   it shows up there.
+- On iPhone and iPad, the plus of a list's **No status** section makes an issue without a status, as that column on
+  the board does.
 
 ## [1.1.0] - 2026-10-28
 
