@@ -66,7 +66,7 @@ All notable changes to this project are recorded here. The format follows
 
 - **Pickers offer the likeliest choice first.** The parent, epic, blocker, label and assignee you chose lately now come
   at the very top of their pickers, above **Remove from #…** and the current one, with the likeliest lit so `Return`
-  takes it (on an iPad keyboard too). A choice made twice in a row comes first and stays there when one issue in
+  takes it. A choice made twice in a row comes first and stays there when one issue in
   between goes elsewhere, so going through many issues that all get the same parent is one key each. A change to
   several issues at once counts as one choice. **Add Existing Issue…** offers the issues you made in the last day first,
   and on iPhone and iPad the Assignee and Labels submenus of a touch and hold list the recent ones first too.
@@ -89,8 +89,6 @@ All notable changes to this project are recorded here. The format follows
   as **Set Parent Issue…** from the command palette, lit the row under the pointer instead of the recent choice, so
   `Return` could take an issue out of its parent instead of moving it to the one chosen last. Rows now light under the
   pointer only once it moves.
-- **On an iPad keyboard, Return with nothing typed no longer picks a picker's first row,** such as **Remove from #…**
-  or the first status. It repeats the recent choice at the top, or keeps the value as it is.
 - **New Sub-issue… stays at the top of Add Sub-issue on a large board** until you type; with more than 60 issues it
   had moved to the end of the list.
 - Dragging an issue in All Issues' list on the Mac no longer turns its row blank until you leave the list. The

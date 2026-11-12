@@ -357,9 +357,8 @@ final class PhoneTests: AppTestCase {
         // comes first, above taking #8 out of its epic, so the next pick is the same again.
         launch(["-recentPicks", "{ parent = (demo-issue-40, demo-issue-40); }"])
         scrollTo(element("row-#8"))
-        element("row-#8").tap()
-        wait(element("property-epic"))
-        element("property-epic").tap()
+        openCardMenu(element("row-#8"))
+        button("Add to Epic…").tap()
         let recent = pickerRow("#40")
         wait(recent)
         XCTAssertLessThan(recent.frame.minY, pickerRow("Remove from").frame.minY, "The epic chosen lately comes first")
