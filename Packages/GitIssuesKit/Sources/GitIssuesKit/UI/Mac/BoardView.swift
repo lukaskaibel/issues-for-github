@@ -822,6 +822,8 @@ private struct BoardCell: View {
             tree: !at.isSlot && place.depth > 0 ? place : nil
         )
         .equatable()
+        // Held over an issue to go under it, the card won't land in its slot, which fades.
+        .opacity(at.isSlot && drag.target?.nest != nil ? 0.35 : 1)
         .padding(.bottom, at.edge)
         .padding(.leading, at.indent)
     }
