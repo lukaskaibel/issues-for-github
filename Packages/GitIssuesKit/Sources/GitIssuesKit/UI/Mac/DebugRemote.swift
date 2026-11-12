@@ -54,7 +54,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat", "rowcheck", "vscroll"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -455,6 +455,11 @@ enum DebugRemote {
             if numbers.count == 4 {
                 mouseDrag(from: CGPoint(x: numbers[0], y: numbers[1]), to: CGPoint(x: numbers[2], y: numbers[3]), escape: bits.last == "esc", model: model)
             }
+        case "vscroll":
+            // vscroll <x> <y> <dy>: a two-finger scroll up or down over the point, from the touch to the lift, as a hand's
+            // reaches the list (positive dy moves the content down, as scrolling towards the top does).
+            let numbers = argument.split(separator: " ").compactMap { Double($0) }
+            if numbers.count == 3 { verticalScroll(at: CGPoint(x: numbers[0], y: numbers[1]), by: numbers[2]) }
         case "hscroll":
             // hscroll <x> <y> <dx>: a two-finger swipe sideways over the point, from the touch to the lift, through the
             // app's own handling of scrolls (and its swipe to go back or forward).
@@ -595,6 +600,26 @@ enum DebugRemote {
                 }
                 let summary: String = find(root)?.coordinator?.listSummary ?? "no table"
                 log("list: " + summary)
+            }
+        case "rowcheck":
+            // rowcheck: for each list in a window, the rows on screen, the rows the table holds a view for (on screen
+            // and made ready around it), and the rows whose view shows something else than the row is now.
+            for window in NSApp.windows where window.isVisible {
+                func collect(_ view: NSView) -> [HoverTableView] {
+                    (view as? HoverTableView).map { [$0] } ?? view.subviews.flatMap(collect)
+                }
+                for table in window.contentView.map(collect) ?? [] {
+                    log("rowcheck: \(table.coordinator?.rowCheck ?? "no coordinator")")
+                }
+            }
+        case "label":
+            // label <number> <name>: puts a label on an issue or takes it off, as its label picker does.
+            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            if bits.count == 2, let item = item(bits[0], model),
+               let label = model.labels(for: item).first(where: { $0.name.caseInsensitiveCompare(bits[1]) == .orderedSame }) {
+                model.pick(.labels, id: label.id, for: item)
+            } else {
+                log("label: no such issue or label")
             }
         case "listdropepic":
             // listdropepic <epic number> <row>: drops the header over the epic's issues in the list above that row.
@@ -1391,6 +1416,40 @@ enum DebugRemote {
             if let ended = scroll(0, phase: 4) { send(ended) }
             try? await Task.sleep(for: .milliseconds(900))
             log("hscroll done: scope=\(String(describing: model.scope)) " + overviewState(model))
+        }
+    }
+
+    private static func verticalScroll(at point: CGPoint, by distance: Double) {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
+              let content = window.contentView else { return }
+        let inWindow = NSPoint(x: point.x, y: content.bounds.height - point.y)
+        let onScreen = window.convertPoint(toScreen: inWindow)
+        let quartz = CGPoint(x: onScreen.x, y: (NSScreen.screens.first?.frame.height ?? 0) - onScreen.y)
+        func scroll(_ dy: Int32, phase: Int64) -> NSEvent? {
+            guard let cg = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1, wheel1: dy, wheel2: 0, wheel3: 0) else { return nil }
+            cg.location = quartz
+            cg.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase)
+            cg.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+            return NSEvent(cgEvent: cg)
+        }
+        var view = content.hitTest(inWindow)
+        while let current = view, !(current is NSScrollView) { view = current.superview }
+        guard let scrollView = view as? NSScrollView else {
+            log("vscroll: no scroll view")
+            return
+        }
+        Task { @MainActor in
+            let steps = 12
+            let step = Int32(distance / Double(steps))
+            if let began = scroll(step, phase: 1) { scrollView.scrollWheel(with: began) }
+            for _ in 1..<steps {
+                try? await Task.sleep(for: .milliseconds(12))
+                if let changed = scroll(step, phase: 2) { scrollView.scrollWheel(with: changed) }
+            }
+            try? await Task.sleep(for: .milliseconds(12))
+            if let ended = scroll(0, phase: 4) { scrollView.scrollWheel(with: ended) }
+            try? await Task.sleep(for: .milliseconds(600))
+            log("vscroll done: y=\(Int(scrollView.contentView.bounds.minY))")
         }
     }
 
