@@ -35,6 +35,7 @@ struct PickerList: View {
     /// Where each row was at the first pick that kept the list open, and whether it was a recent one, so rows stay
     /// put under the pointer while more are picked.
     @State private var held: [String: (place: Int, recent: Bool)]?
+    @State private var pointer = PointerRest()
 
     var body: some View {
         let visible = filtered
@@ -85,7 +86,7 @@ struct PickerList: View {
                 .onSubmit {
                     if let index = cursor.key, visible.indices.contains(index) { pick(visible[index]) }
                 }
-            PickerRows(visible: visible, cursor: cursor, multiple: multiple, showsRecent: query.isEmpty, maxRows: maxRows) { item, keepOpen in
+            PickerRows(visible: visible, cursor: cursor, pointer: pointer, multiple: multiple, showsRecent: query.isEmpty, maxRows: maxRows) { item, keepOpen in
                 pick(item, keepOpen: keepOpen)
             }
         }
@@ -94,8 +95,9 @@ struct PickerList: View {
         .foregroundStyle(Theme.text)
         .onAppear {
             focused = true
-            // Single-choice pickers start on the choice made last time, so Return makes it again, or else on the
-            // current value, so Return keeps it. Pickers of several values start at the top, where recent ones are.
+            // Single-choice pickers start on the likeliest recent choice, at the top, so Return makes it again, or
+            // else on the current value, so Return keeps it. Pickers of several values start at the top, where recent
+            // ones are too.
             if multiple {
                 return
             } else if let recent = items.firstIndex(where: \.recent) {
@@ -147,6 +149,7 @@ struct PickerList: View {
 private struct PickerRows: View {
     var visible: [PickerItem]
     var cursor: MenuCursor<Int>
+    var pointer: PointerRest
     var multiple: Bool
     /// Whether recent rows get their line; not while something is typed, when rows go by how well they match.
     var showsRecent: Bool
@@ -165,7 +168,7 @@ private struct PickerRows: View {
                             .onTapGesture {
                                 onPick(item, multiple && !NSEvent.modifierFlags.isDisjoint(with: [.shift, .command]))
                             }
-                            .onHover { if $0 { cursor.key = position } }
+                            .onHover { if $0, pointer.moved() { cursor.key = position } }
                         if position == lineAfter {
                             MenuDivider()
                         }
@@ -184,10 +187,30 @@ private struct PickerRows: View {
             .frame(height: min(CGFloat(max(visible.count, 1)), CGFloat(maxRows)) * PickerRow.height + 12
                 + (lineAfter != nil ? MenuDivider.height : 0))
             .onChange(of: cursor.keyMoves) {
+                pointer.rest()
                 // Only for the keys: the pointer is on its row already, and scrolling would move the row away from it.
                 if let index = cursor.key, visible.indices.contains(index) { proxy.scrollTo(visible[index].id) }
             }
         }
+    }
+}
+
+/// Where the pointer was when the list opened, when the keys last moved the light or when it last lit a row. A row
+/// that comes under a pointer at rest, as the list opens or scrolls under it, doesn't take the light from the keys:
+/// a picker opened over the pointer keeps its recent choice lit, so Return still takes it.
+@MainActor
+private final class PointerRest {
+    private var location = NSEvent.mouseLocation
+
+    func rest() {
+        location = NSEvent.mouseLocation
+    }
+
+    /// Whether the pointer moved since; where it is now counts as its new rest.
+    func moved() -> Bool {
+        let now = NSEvent.mouseLocation
+        defer { location = now }
+        return now != location
     }
 }
 
