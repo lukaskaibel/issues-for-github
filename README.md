@@ -364,7 +364,7 @@ The interface uses the system's own parts.
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
   work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
-  their picker ready to type in; Return picks the first match. While writing, the Mac's Format shortcuts work too
+  their picker ready to type in; Return picks the first match, or with nothing typed your recent choice at the top. While writing, the Mac's Format shortcuts work too
   (⌘B, ⌘I, ⇧⌘H, ⇧⌘L and the others), listed while you hold ⌘, the Markdown shows next to the caret as on the Mac, and
   Tab and the arrow keys go between an issue's title and its description. With a pointer, ⌘-click and Shift-click pick several
   sub-issues in an issue, as on the Mac; the keys then change all of them, and Esc lets them go.
