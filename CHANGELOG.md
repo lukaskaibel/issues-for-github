@@ -60,7 +60,7 @@ All notable changes to this project are recorded here. The format follows
   at the very top of their pickers, above **Remove from #…** and the current one, with the likeliest lit so `Return`
   takes it (on an iPad keyboard too). A choice made twice in a row comes first and stays there when one issue in
   between goes elsewhere, so going through many issues that all get the same parent is one key each. A change to
-  several issues at once counts as one choice. **Add Existing Issue** offers the issues you made in the last day first,
+  several issues at once counts as one choice. **Add Existing Issue…** offers the issues you made in the last day first,
   and on iPhone and iPad the Assignee and Labels submenus of a touch and hold list the recent ones first too.
 - **My Issues finds your issues in projects you work on alone.** Where nobody else has an open issue in a project,
   the issues assigned to nobody are yours too: they show in My Issues, its count and its overview, since in a project
