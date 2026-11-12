@@ -332,6 +332,43 @@ final class PhoneTests: AppTestCase {
         XCTAssertFalse(pickerRow("Create label").exists)
     }
 
+    func testTypingAStatusTheBoardLacksMakesIt() {
+        launch()
+        scrollTo(element("row-#13"))
+        element("row-#13").tap()
+        let chip = element("chip-status")
+        wait(chip)
+        chip.tap()
+        let search = app.searchFields.firstMatch
+        wait(search)
+        search.tap()
+        // A status of that name, whatever its case, is picked rather than made again.
+        search.typeText("todo")
+        wait(pickerRow("Todo"))
+        XCTAssertFalse(pickerRow("Create status").exists)
+        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "QA")
+        let create = pickerRow("Create status “QA”")
+        wait(create)
+        snapshot("Status sheet, a status to make")
+        create.tap()
+        waitGone(app.navigationBars["Status"])
+        waitForLabel(chip, containing: "QA")
+
+        // One of the board's statuses from now on, after In Review, its icon and colour a touch and hold away.
+        chip.tap()
+        let made = pickerRow("QA")
+        wait(made)
+        XCTAssertGreaterThan(made.frame.minY, pickerRow("In Review").frame.minY)
+        XCTAssertLessThan(made.frame.minY, pickerRow("Done").frame.minY)
+        made.press(forDuration: 1.2)
+        button("Icon").tap()
+        // Not Done: the sheet's own button is called that too.
+        wait(button("Canceled"))
+        snapshot("A status's icons")
+        button("Canceled").tap()
+        XCTAssertTrue(app.navigationBars["Status"].exists, "Changing the icon keeps the sheet open")
+    }
+
     func testRecentChoicesComeFirst() {
         // As if "sync" had just been added to another issue: it leads the sheet, apart from the rest.
         launch(["-recentPicks", "{ label = (sync); }"])
