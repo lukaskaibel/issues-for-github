@@ -154,6 +154,7 @@ All notable changes to this project are recorded here. The format follows
   moment later.
 - On the Mac, a picker opened on an issue you just made, such as with `S` right after creating it, no longer goes
   blank when GitHub gives the issue its own number.
+- On iPhone and iPad, an issue you made stays among the issues you opened last once GitHub has created it.
 
 ## [1.1.0] - 2026-10-28
 

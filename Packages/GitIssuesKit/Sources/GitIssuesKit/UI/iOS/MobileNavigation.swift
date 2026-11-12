@@ -437,6 +437,7 @@ final class MobileNavigation {
         for (key, path) in projectPaths { projectPaths[key] = remap(path) }
         for (key, path) in allIssuesPaths { allIssuesPaths[key] = remap(path) }
         for (key, path) in planningPaths { planningPaths[key] = remap(path) }
+        RecentIssues.follow(remaps: remaps)
     }
 }
 
@@ -467,6 +468,13 @@ enum RecentIssues {
         var list = ids.filter { $0 != id }
         list.insert(id, at: 0)
         UserDefaults.standard.set(Array(list.prefix(12)), forKey: key)
+    }
+
+    /// An issue made here keeps its place once GitHub has given it its own id.
+    static func follow(remaps: [String: String]) {
+        let list = ids
+        guard list.contains(where: { remaps[$0] != nil }) else { return }
+        UserDefaults.standard.set(list.map { remaps[$0] ?? $0 }, forKey: key)
     }
 }
 #endif
