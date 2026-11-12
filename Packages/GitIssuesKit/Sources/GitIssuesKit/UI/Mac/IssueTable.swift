@@ -860,7 +860,7 @@ struct IssueTable: NSViewRepresentable {
 
         /// The start of a row's card, as wide as a title reads, with a label under it naming the issue it goes under,
         /// and how many issues the drag carries on its corner when it carries several.
-        private static func nestingImage(_ card: NSImage, under parent: Item, count: Int?, appearance: NSAppearance) -> NSImage {
+        static func nestingImage(_ card: NSImage, under parent: Item, count: Int?, appearance: NSAppearance) -> NSImage {
             let inset = IssueTable.inset
             let width = min(card.size.width - 2 * inset, 380)
             let height = card.size.height - 2
@@ -888,6 +888,12 @@ struct IssueTable: NSViewRepresentable {
                     in: NSRect(x: -inset, y: top - 1, width: card.size.width, height: card.size.height), from: .zero,
                     operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
                 )
+                // The title fades out where the card ends instead of being cut off.
+                appearance.performAsCurrentDrawingAppearance {
+                    let surface = NSColor(Theme.cardLifted)
+                    NSGradient(starting: surface.withAlphaComponent(0), ending: surface)?
+                        .draw(in: NSRect(x: rect.maxX - 56, y: rect.minY, width: 56, height: rect.height), angle: 0)
+                }
                 NSGraphicsContext.restoreGraphicsState()
                 appearance.performAsCurrentDrawingAppearance {
                     NSColor(Theme.cardLiftedBorder).setStroke()
