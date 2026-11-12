@@ -174,9 +174,21 @@ public struct ProjectFilter: Equatable, Sendable {
         return parts.filter { !$0.isEmpty }
     }
 
-    /// Takes the quotes off a value, also those around part of it (`>="Iteration 2"`).
+    /// Takes the quotes off a value, also those around part of it (`>="Iteration 2"`), and only those: the apostrophe
+    /// in `"Won't do"` stays.
     static func unquote(_ text: Substring) -> String {
-        String(text.filter { $0 != "\"" && $0 != "'" })
+        var value = ""
+        var quote: Character?
+        for character in text {
+            if let open = quote {
+                if character == open { quote = nil } else { value.append(character) }
+            } else if character == "\"" || character == "'" {
+                quote = character
+            } else {
+                value.append(character)
+            }
+        }
+        return value
     }
 
     static func quote(_ value: String) -> String {

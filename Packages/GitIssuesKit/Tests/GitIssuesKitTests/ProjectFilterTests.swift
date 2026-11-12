@@ -142,6 +142,27 @@ struct ProjectFilterTests {
         #expect(matches("no:workstream", Self.item(2)))
     }
 
+    @Test("A value with an apostrophe in it, such as the status Won't do, keeps it")
+    func apostrophes() {
+        let filter = ProjectFilter(#"-status:"Won't do" label:'say "hi"',bug"#)
+        #expect(filter.terms[0].values == ["Won't do"])
+        #expect(filter.terms[1].values == [#"say "hi""#, "bug"])
+        #expect(ProjectFilter(filter.text).terms.map(\.values) == filter.terms.map(\.values))
+        let status = ProjectField(
+            id: "F-status", projectId: "P1", databaseId: 1, name: "Status", dataType: "SINGLE_SELECT", position: 2,
+            options: [FieldChoice(id: "s-wont", name: "Won't do", color: "GRAY"), FieldChoice(id: "s-todo", name: "Todo", color: "BLUE")]
+        )
+        let context = FilterContext(
+            viewerLogin: "lukaskaibel", today: Self.today, fields: Self.builtIn + [status],
+            statusFieldId: status.id, priorityFieldId: nil, dueFieldId: nil,
+            optionName: { _, optionId in status.options.first { $0.id == optionId }?.name },
+            parentReference: { _ in nil }
+        )
+        #expect(!ProjectFilter(#"-status:"Won't do""#).matches(Self.item(1, status: "s-wont"), context))
+        #expect(ProjectFilter(#"-status:"Won't do""#).matches(Self.item(2, status: "s-todo"), context))
+        #expect(ProjectFilter(#"status:"won't do""#).matches(Self.item(3, status: "s-wont"), context))
+    }
+
     @Test("Open, closed, assignees with @me, milestones and parents")
     func issueFacts() {
         let mine = Self.item(1, assignees: ["lukaskaibel"], milestone: "V2 – Compliance & Quick Wins", parent: 217)

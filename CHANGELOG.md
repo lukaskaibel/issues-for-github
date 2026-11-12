@@ -123,6 +123,8 @@ All notable changes to this project are recorded here. The format follows
   it shows up there.
 - On iPhone and iPad, the plus of a list's **No status** section makes an issue without a status, as that column on
   the board does.
+- Filters with an apostrophe in a value, such as the status "Won't do", match. Until now such a view showed what it
+  should hide.
 
 ## [1.1.0] - 2026-10-28
 
