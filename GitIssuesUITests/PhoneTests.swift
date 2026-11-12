@@ -338,7 +338,10 @@ final class PhoneTests: AppTestCase {
         element("row-#13").tap()
         let chip = element("chip-status")
         wait(chip)
+        // The chip's menu ends with New Status…, which opens the status sheet ready to type.
         chip.tap()
+        wait(button("New Status…"))
+        button("New Status…").tap()
         let search = app.searchFields.firstMatch
         wait(search)
         search.tap()
@@ -356,6 +359,9 @@ final class PhoneTests: AppTestCase {
 
         // One of the board's statuses from now on, after In Review, its icon and colour a touch and hold away.
         chip.tap()
+        wait(button("New Status…"))
+        button("New Status…").tap()
+        wait(app.navigationBars["Status"])
         let made = pickerRow("QA")
         wait(made)
         XCTAssertGreaterThan(made.frame.minY, pickerRow("In Review").frame.minY)

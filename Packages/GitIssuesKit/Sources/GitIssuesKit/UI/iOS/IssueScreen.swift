@@ -930,6 +930,7 @@ private struct PropertiesColumn: View {
 /// The status options as menu items with their circles, the current one checked.
 struct StatusMenuItems: View {
     @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
     @Environment(\.colorScheme) private var scheme
     var item: Item
 
@@ -946,6 +947,12 @@ struct StatusMenuItems: View {
             AddToProjectMenuItems(item: item)
         } else {
             picker
+            // One the board doesn't have yet, typed into the status sheet.
+            if model.canCreateStatus(for: item) {
+                Button(.newStatusEllipsis, systemImage: "plus") {
+                    navigation.sheet = .newStatus(itemId: item.id)
+                }
+            }
         }
     }
 
