@@ -50,6 +50,7 @@ final class BoardDrag {
 
     struct Nest: Equatable {
         var item: Item
+        var columnId: String
         var frame: CGRect
         /// An epic's header rather than a card.
         var isHeader = false
@@ -375,6 +376,9 @@ final class BoardDrag {
         // Near its top or bottom edge they go in front of it or after it, as anywhere else.
         if let nest = nestTarget(at: current.location, model: model), var next = target ?? origin {
             next.nest = nest
+            // In the issue's column the slot stays where it is, so nothing moves under the pointer; elsewhere it goes,
+            // as nothing will land there.
+            if next.columnId != nest.columnId { next.columnId = "" }
             if next != target { withAnimation(Theme.quick) { target = next } }
             return
         }
@@ -434,10 +438,11 @@ final class BoardDrag {
         }
         let found: Nest? = if let header = header(at: point), middle(header.frame),
            let epic = model.columns.first(where: { $0.id == header.columnId })?.nesting.groups.first(where: { $0.contentId == header.epic })?.epic {
-            Nest(item: epic, frame: header.frame, isHeader: true)
+            Nest(item: epic, columnId: header.columnId, frame: header.frame, isHeader: true)
         } else if let (id, frame) = cardFrames.first(where: { !moving.contains($0.key) && middle($0.value) }),
-                  let item = model.columns.lazy.flatMap(\.items).first(where: { $0.id == id }) {
-            Nest(item: item, frame: frame)
+                  let column = model.columns.first(where: { $0.items.contains { $0.id == id } }),
+                  let item = column.items.first(where: { $0.id == id }) {
+            Nest(item: item, columnId: column.id, frame: frame)
         } else {
             nil
         }
