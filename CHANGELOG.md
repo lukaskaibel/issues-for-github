@@ -157,6 +157,8 @@ All notable changes to this project are recorded here. The format follows
 - On iPhone and iPad, an issue you made stays among the issues you opened last once GitHub has created it.
 - On iPhone and iPad, pull down on a board or an issue to sync now, as on the lists; an issue also fetches its
   comments.
+- On iPad, choosing another view of the same project in the sidebar opens that view, not the issue that was open in
+  the one before.
 
 ## [1.1.0] - 2026-10-28
 

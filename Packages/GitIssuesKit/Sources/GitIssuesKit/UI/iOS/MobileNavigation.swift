@@ -111,6 +111,9 @@ final class MobileNavigation {
     var tab: MobileTab {
         didSet {
             guard tab != oldValue else { return }
+            // A project's views share its stack: another view of it opens on that view, not under the issue that was
+            // open in the one before, as on the Mac.
+            if case .view(let projectId, _) = tab, case .view(projectId, _) = oldValue { projectPaths[projectId] = [] }
             saveTab()
             if let id = Self.projectId(of: tab) { sidebarProjectId = id }
         }
