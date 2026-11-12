@@ -341,7 +341,11 @@ struct NewIssueView: View {
         if typed == nil, groupPreset == nil, let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id, unsent.isEpic == plan.isEpic,
            model.scopeProjectId == nil || unsent.projectId == projectId || onNoBoardHere {
             draft = unsent
-            if let statusId { draft.statusId = chosenStatus(statusId) }
+            if let statusId {
+                draft.statusId = chosenStatus(statusId)
+                // A column's plus puts it on that board, also when it was left on no board last time.
+                if draft.projectId == nil { draft.projectId = projectId }
+            }
             if let milestone { draft.milestoneTitle = milestone }
             restored = true
             focus = .title

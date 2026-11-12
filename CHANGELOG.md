@@ -115,6 +115,8 @@ All notable changes to this project are recorded here. The format follows
   no longer swallowed.
 - On the Mac, choosing a board in another repository for a new issue drops the labels picked for the first one. GitHub
   refused the issue with them, and it was lost.
+- In All Issues on the Mac, the plus of a column puts a new issue on that board, also when one left on no board last
+  time comes back.
 
 ## [1.1.0] - 2026-10-28
 
