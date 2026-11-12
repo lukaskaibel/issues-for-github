@@ -23,7 +23,8 @@ final class DropOntoIssueTests: AppTestCase {
 
     /// Touches and holds `card` until it lifts, drags it slowly to the point `dy` (0 top, 1 bottom) down `target`, holds
     /// it there, and lets go. Moving slowly and resting lets the drag take over from the card's menu before the finger
-    /// arrives, as in PadTests.testDragCardToAnotherColumn.
+    /// arrives, as in PadTests.testDragCardToAnotherColumn. The targets are above or beside the card: a touch dragged
+    /// straight down slides over the card's menu, which opens under it, and never lifts the card.
     private func drag(_ card: XCUIElement, onto target: XCUIElement, at dy: CGFloat = 0.5) {
         card.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             .press(forDuration: 1.0, thenDragTo: target.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: dy)), withVelocity: .slow, thenHoldForDuration: 0.8)
@@ -40,15 +41,15 @@ final class DropOntoIssueTests: AppTestCase {
 
     func testACardDroppedOntoAnotherCardBecomesItsSubIssueAndUndoTakesItBack() {
         openBoard()
-        // Both stand on their own, in Todo.
-        let (child, parent) = (element("card-#17"), element("card-#25"))
+        // Both stand on their own, in Todo, #17 above #25.
+        let (child, parent) = (element("card-#25"), element("card-#17"))
         wait(child)
         wait(parent)
         XCTAssertEqual(child.frame.minX, parent.frame.minX, accuracy: 1)
         drag(child, onto: parent)
-        wait(notice("1 issue made a sub-issue of #25"))
+        wait(notice("1 issue made a sub-issue of #17"), 15)
         snapshot("Dropped onto a card")
-        waitForLabel(child, containing: "Sub-issue of #25")
+        waitForLabel(child, containing: "Sub-issue of #17")
         XCTAssertTrue(hangs(child, under: parent), "The card hangs under its new parent")
         element("notice-undo").tap()
         waitUntil(!child.label.contains("Sub-issue of"), "Undo took the parent back")
@@ -57,13 +58,13 @@ final class DropOntoIssueTests: AppTestCase {
 
     func testACardDroppedOntoAnotherCardsEdgeOnlyMovesThere() {
         openBoard()
-        let (child, other) = (element("card-#17"), element("card-#25"))
+        let (child, other) = (element("card-#25"), element("card-#17"))
         wait(child)
         wait(other)
-        XCTAssertLessThan(child.frame.minY, other.frame.minY)
-        // The bottom edge of the other card: the card goes below it, standing on its own.
-        drag(child, onto: other, at: 0.92)
-        waitUntil(child.frame.minY > other.frame.maxY, "The card moved below the other one")
+        XCTAssertGreaterThan(child.frame.minY, other.frame.minY)
+        // The top edge of the other card: the card goes above it, standing on its own.
+        drag(child, onto: other, at: 0.08)
+        waitUntil(child.frame.maxY < other.frame.minY, "The card moved above the other one")
         XCTAssertEqual(child.frame.minX, other.frame.minX, accuracy: 1)
         XCTAssertFalse(child.label.contains("Sub-issue of"))
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'made a sub-issue of'")).firstMatch.exists)
@@ -92,7 +93,7 @@ final class DropOntoIssueTests: AppTestCase {
         wait(child)
         wait(parent)
         drag(child, onto: parent)
-        wait(notice("1 issue made a sub-issue of #7"))
+        wait(notice("1 issue made a sub-issue of #7"), 15)
         waitForLabel(child, containing: "Sub-issue of #7")
         // Back in Todo, beside the cards it stood with.
         XCTAssertEqual(child.frame.minX, neighbour.frame.minX, accuracy: 1)
@@ -113,14 +114,14 @@ final class DropOntoIssueTests: AppTestCase {
 
     func testARowDroppedOntoAnotherRowBecomesItsSubIssue() {
         openList()
-        let child = element("row-#17")
-        let parent = element("row-#25")
-        scrollTo(parent)
-        wait(child)
+        let child = element("row-#25")
+        let parent = element("row-#17")
+        scrollTo(child)
+        wait(parent)
         drag(child, onto: parent)
-        wait(notice("1 issue made a sub-issue of #25"))
+        wait(notice("1 issue made a sub-issue of #17"), 15)
         snapshot("Dropped onto a row")
-        waitForLabel(child, containing: "Sub-issue of #25")
+        waitForLabel(child, containing: "Sub-issue of #17")
         // It hangs under its new parent now.
         XCTAssertGreaterThan(child.frame.minY, parent.frame.minY)
         element("notice-undo").tap()
@@ -129,21 +130,20 @@ final class DropOntoIssueTests: AppTestCase {
 
     func testARowDroppedOntoAnotherRowsEdgeMovesThereAndIntoAnotherStatus() {
         openList()
-        let row = element("row-#17")
-        let other = element("row-#25")
-        scrollTo(other)
-        XCTAssertLessThan(row.frame.minY, other.frame.minY)
-        // The bottom edge of #25, in the same section: it goes below #25.
-        drag(row, onto: other, at: 0.9)
-        waitUntil(row.frame.minY > other.frame.minY, "The row moved below the other one")
+        let row = element("row-#25")
+        let other = element("row-#17")
+        scrollTo(row)
+        XCTAssertGreaterThan(row.frame.minY, other.frame.minY)
+        // The top edge of #17, in the same section: it goes above #17.
+        drag(row, onto: other, at: 0.1)
+        waitUntil(row.frame.minY < other.frame.minY, "The row moved above the other one")
         XCTAssertFalse(row.label.contains("Sub-issue of"))
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'made a sub-issue of'")).firstMatch.exists)
-        // The top edge of a row in In Progress: it goes there, and takes that status.
+        // From In Progress, below Todo, up onto the bottom edge of #17: it goes there, and takes Todo's status.
         let inProgress = element("row-#7")
         scrollTo(inProgress)
-        scrollTo(row)
-        if !app.windows.firstMatch.frame.contains(inProgress.frame) { scrollTo(inProgress) }
-        drag(row, onto: inProgress, at: 0.08)
-        waitForLabel(row, containing: "In Progress")
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(other.frame), "Todo's #17 still shows")
+        drag(inProgress, onto: other, at: 0.9)
+        waitForLabel(inProgress, containing: "Todo")
     }
 }
