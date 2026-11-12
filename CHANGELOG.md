@@ -8,6 +8,16 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Make a status where you pick one.** Type a name the board has no status of into any status picker, on the
+  Mac (the dropdown, `S`, the right-click menu, `⌘K` and the new issue) or on iPhone and iPad (the Status sheet, and
+  **New Status…** when you touch and hold an issue), and **Create status “…”** makes it in the project's Status field
+  on GitHub and moves the issue, or every picked one, into it: one pick. It goes next to the statuses of its kind, in
+  their colour, and shows at once. Making one needs a connection; offline, a notice says so.
+- **A status's icon and colour, right there.** The **⋯** on the highlighted status in a picker (on iPhone and iPad a
+  touch and hold) changes its colour on GitHub and its icon: Backlog, Todo, In progress, Done or Canceled. The icon is
+  also what the status means, so issues moved into a status you made Done are closed as completed. Columns' menus and
+  the Statuses screen on iPhone and iPad have **Icon** too. GitHub has no icons, so yours are kept in iCloud; a status
+  without one goes by its name, as before.
 - **Drop an issue onto another one to make it a sub-issue (Mac).** Drag a row of a list, a card of a board or an issue
   in My Issues onto another issue, and it goes under that issue. Hold it over the middle of the issue: the issue lights
   up, and on the board the card shrinks a little and says "Sub-issue of #9". Near the top or bottom edge of an issue,
@@ -79,6 +89,11 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- A status added, renamed, recoloured or removed on github.com shows as soon as you pick a status, also for an issue
+  of a board that isn't open, such as from My Issues or the Inbox, instead of minutes later or after a restart.
+- Changing the statuses in the app (adding, renaming, recolouring, moving or deleting a column) no longer removes a
+  status someone added on github.com since the app last read the board: the change is made on GitHub's statuses as they
+  are now, so no issue loses its status.
 - Every row of a list on the Mac shows its issue as it is now: a change such as new labels from GitHub could miss a
   row just out of view, which then showed it only once the pointer went over it. A part of a row lit under the
   pointer, such as its labels, no longer stays lit while the list scrolls under a resting pointer, nor moves on to

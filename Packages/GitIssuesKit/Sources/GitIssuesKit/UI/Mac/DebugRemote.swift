@@ -44,6 +44,12 @@ enum DebugRemote {
     }
 
     private static func item(_ token: String, _ model: AppModel) -> Item? {
+        // "Sandbox#17": the issue of that number on a project, by part of its title, whatever is on screen.
+        let parts = token.split(separator: "#", maxSplits: 1).map(String.init)
+        if parts.count == 2, let number = Int(parts[1]),
+           let project = model.projects.first(where: { $0.title.localizedCaseInsensitiveContains(parts[0]) }) {
+            return model.allItems.first { $0.projectId == project.id && $0.number == number }
+        }
         guard let number = Int(token) else { return nil }
         return model.scopedItems.first { $0.number == number } ?? model.allItems.first { $0.number == number }
     }
@@ -54,7 +60,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat", "rowcheck", "vscroll", "repaintcheck", "nesttarget"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat", "rowcheck", "vscroll", "repaintcheck", "nesttarget", "statuses"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -991,6 +997,25 @@ enum DebugRemote {
                 model.setColumn(column.id, hidden: parts.first == "hidecolumn", in: scope)
             }
             log("columns " + model.columns.map(\.title).joined(separator: " | ") + " hidden " + (model.scope.map { model.hiddenColumns(in: $0).map(\.title) } ?? []).joined(separator: " | "))
+        case "statuses":
+            // statuses [project]: the statuses of the board on screen, or of a project by part of its title: name, id,
+            // colour, kind (* when chosen in the app) and how many cards.
+            let named = argument.isEmpty ? nil : model.projects.first { $0.title.localizedCaseInsensitiveContains(argument) }?.id
+            guard let projectId = named ?? model.currentProjectId else { break }
+            for option in model.statusOptions(projectId: projectId) {
+                let count = model.issueCount(projectId: projectId, statusId: option.id)
+                log("status \(option.name) id=\(option.id) color=\(option.color) kind=\(option.statusCategory)\(option.chosenKind == nil ? "" : "*") cards=\(count)")
+            }
+            log("statuses remaps=\(model.optionIdRemaps.count) pending=\(model.pendingCount)")
+        case "statuskind":
+            // statuskind <status name>=<backlog|unstarted|started|completed|canceled>
+            guard let projectId = model.currentProjectId else { break }
+            let names = argument.split(separator: "=").map(String.init)
+            let kinds: [String: StatusCategory] = ["backlog": .backlog, "unstarted": .unstarted, "started": .started, "completed": .completed, "canceled": .canceled]
+            if names.count == 2, let kind = kinds[names[1]],
+               let option = model.statusOptions(projectId: projectId).first(where: { $0.name == names[0] }) {
+                model.setKind(kind, of: option)
+            }
         case "column":
             // column add <name> | column delete <name> | column rename <old>=<new>
             guard let projectId = model.currentProjectId else { break }

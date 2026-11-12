@@ -215,6 +215,10 @@ struct NewIssueView: View {
         // A glass panel over the window, as the command palette.
         .glassPanel(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .onAppear(perform: prepare)
+        .onChange(of: model.optionIdRemaps) { _, saved in
+            // A status made in this form, now saved on GitHub.
+            if let id = draft.statusId, let savedId = saved[id] { draft.statusId = savedId }
+        }
         .onDisappear {
             guard !created else { return }
             let typed = !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -294,6 +298,7 @@ struct NewIssueView: View {
         // The fields of the board it was going on, such as its iteration, are no other board's.
         draft.fieldValues = [:]
         if let id { model.loadRepoMeta(projectId: id) }
+        model.refreshStatuses(projectId: id)
     }
 
     /// What a new issue starts with in the view on screen; none for sub-issues and planned ones.
@@ -371,6 +376,7 @@ struct NewIssueView: View {
         draft = new
         focus = .title
         model.loadRepoMeta(projectId: projectId)
+        model.refreshStatuses(projectId: projectId)
         if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
     }
 
@@ -433,7 +439,8 @@ struct NewIssueView: View {
                     items: items(kind),
                     multiple: kind.multiple,
                     width: kind.width,
-                    creating: kind == .labels ? { model.newLabelRow($0, projectId: draft.projectId, repoId: draft.repoId) } : nil,
+                    creating: kind == .labels ? { model.newLabelRow($0, projectId: draft.projectId, repoId: draft.repoId) }
+                        : kind == .status ? { model.newStatusRow($0, projectId: draft.projectId) } : nil,
                     onPick: { pick(kind, $0) },
                     onClose: close
                 )
@@ -448,7 +455,11 @@ struct NewIssueView: View {
             let none = draft.statusId == nil && draft.projectId != nil
                 ? [PickerItem(id: "", title: String(localized: .noStatus), selected: true, icon: AnyView(StatusIcon(glyph: .none)))] : []
             return none + statuses.map { option in
-                PickerItem(id: option.id, title: option.name, selected: draft.statusId == option.id, icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id))))
+                PickerItem(
+                    id: option.id, title: option.name, selected: draft.statusId == option.id,
+                    icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id))),
+                    status: model.canCreateStatus(projectId: draft.projectId) ? option : nil
+                )
             }
         case .priority:
             return [PickerItem(id: "", title: String(localized: .noPriority), selected: draft.priorityId == nil, icon: AnyView(PriorityIcon(level: .none)))]
@@ -494,7 +505,12 @@ struct NewIssueView: View {
     private func pick(_ kind: PickerKind, _ id: String) {
         switch kind {
         case .status:
-            draft.statusId = id.isEmpty ? nil : id
+            if let name = AppModel.newStatusName(id), let projectId = draft.projectId {
+                // Shown at once; the form takes GitHub's id for it when it has one (see the onChange above).
+                draft.statusId = model.createStatus(named: name, projectId: projectId, for: []) ?? draft.statusId
+            } else {
+                draft.statusId = id.isEmpty ? nil : id
+            }
         case .priority:
             draft.priorityId = id.isEmpty ? nil : id
         case .assignees:

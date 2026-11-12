@@ -18,6 +18,8 @@ collects nothing about you.
 - **The icons you pick for projects**, a glyph and a colour, are kept in the same iCloud storage, so your devices show
   the same ones; GitHub has no icons for projects. They hold the project's id on GitHub and the names of the glyph and
   the colour, nothing else. Only you and your devices can read them.
+- **The icons you give statuses** (Backlog, Todo, In progress, Done or Canceled) are kept there too, as GitHub has no
+  icons for statuses. They hold the ids of the project and the status on GitHub and which icon it is, nothing else.
 - **Preferences** such as the appearance, the app icon, the order of list sections and the time of reminders stay on
   your device.
 - **When to ask for a rating:** the last few days you opened the app, and when it last asked you to rate it on the App
@@ -29,7 +31,7 @@ collects nothing about you.
 
 - The app talks to **GitHub** only: `api.github.com` to read and change your projects, issues and notifications,
   `github.com` while you sign in, and GitHub's image servers for avatars and pictures in issue descriptions.
-- Snoozed and unread Inbox entries, and the icons you pick for projects, go to **your iCloud account**, through Apple,
+- Snoozed and unread Inbox entries, and the icons you pick for projects and statuses, go to **your iCloud account**, through Apple,
   as described above.
 - Your login is sent to nobody but GitHub. What GitHub does with your data is described in
   [GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).

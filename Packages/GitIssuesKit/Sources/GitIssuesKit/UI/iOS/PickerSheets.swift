@@ -128,6 +128,7 @@ struct PickerSheet: View {
             .buttonStyle(.borderless)
             .accessibilityAddTraits(item.selected ? .isSelected : [])
         }
+        .modifier(StatusRowMenu(option: item.status))
     }
 
     private func pick(_ item: PickerItem, keepOpen: Bool) {
@@ -202,6 +203,8 @@ struct IssuePickerSheet: View {
             },
             creating: kind == .labels ? { query in
                 model.item(id: itemId).flatMap { model.newLabelRow(query, projectId: $0.projectId, repoId: $0.repoId) }
+            } : kind == .status ? { query in
+                model.item(id: itemId).flatMap { model.newStatusRow(query, for: $0) }
             } : nil,
             onQueryChange: { typed = $0 },
             onPick: { id in
@@ -218,6 +221,7 @@ struct IssuePickerSheet: View {
             if let item = model.item(id: itemId) {
                 model.loadRepoMeta(for: item)
                 if kind.picksIssues { model.loadRelations(for: item) }
+                if kind == .status { model.refreshStatuses(projectId: item.projectId) }
             }
         }
     }
