@@ -330,11 +330,13 @@ The interface uses the system's own parts.
   in Notes. A project's board shows one column at a
   time, with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and hold a card and drop it on a column in the strip to move it
   there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards.
+  Held over the middle of another card, that card lights up, and the card you let go there becomes its sub-issue.
   Lists for the views that are lists, and each project's All Issues, grouped by status, with sections that fold and
   headers that stay pinned (All Issues turns into a board with **Board** in its "…" menu, its issues on no board a
   column of their own); My Issues shows its cards, one under another on iPhone and two or three to a row on iPad,
   each paging sideways through its project's columns, and Needs you. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
-  and drag after holding to give an issue a new place in its section.
+  and drag after holding to give an issue a new place or status, where a line shows, or drop it onto the middle of
+  another issue, in any list, to make it that issue's sub-issue.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
   A milestone is a list grouped by epic,
   the roadmap a list of epics by milestone. The open view's filter is a line over its list or board; tap it to change
@@ -359,7 +361,7 @@ The interface uses the system's own parts.
   away (touch and hold one, or swipe it, to hide it; the hidden ones wait folded at the end of the projects),
   and under them the entries of the project open: All Issues and its views, and its next milestones and roadmap; your
   account is at its foot. A view opens as a board, a list or, for a roadmap view, a timeline; cards are moved with drag and
-  drop (touch and hold, then drag). A milestone opens as the board's columns or a list, the roadmap as the timeline,
+  drop (touch and hold, then drag), and one dropped onto the middle of another card becomes its sub-issue. A milestone opens as the board's columns or a list, the roadmap as the timeline,
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
   work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
@@ -731,11 +733,11 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap the arrow beside an issue | Fold the sub-issues hanging under it in or out |
 | Tap an epic's name over its issues | Open the epic; the arrow beside its icon folds them in or out |
 | Touch and hold an epic's name over its issues | Open the epic, move all of them to another status, fold them |
-| Touch and hold an epic's name, then drag | Move all of its issues there to another column (iPad) or another place in their section |
+| Touch and hold an epic's name, then drag | Move all of its issues there to another column (iPad), or another place or status in the list |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
 | Touch and hold an issue | Status, priority, assignee, labels, due date, milestone and iteration as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
-| Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
+| Touch and hold an issue in a list, then drag | Over the middle of another issue, that one lights up: let go to make the dragged issue its sub-issue, in any list. Over a row's top or bottom edge, a line shows where it goes: another place in its section, or another section to change its status, in a project's list by status |
 | Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several. Your last choices are listed first, as in every sheet that picks a parent, epic or blocker |
 | Type a label the repository doesn't have in the Labels sheet | Create label “…” makes it in the repository and adds it |
 | Tap the date chip of an issue | Pick a due date: quick choices, a calendar, or typed in the search field |
@@ -753,6 +755,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap at the end of bold text | Type on in bold: on the touch keyboard its stars stay hidden, and Delete takes the letter you see and keeps the bold |
 | Tap a checkbox, a link, a table or a diagram in a description | Tick it, open it, or edit its source |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
+| Touch and hold a card, then drag it over the middle of another card | That card lights up: let go to make the dragged issue its sub-issue. It keeps its status, and the notice that says so undoes it. Over a card's top or bottom edge it goes above or below that card instead |
 | "…" in All Issues | Show it as a board or a list (on a wide iPad, the switch beside its name); on the board, the hidden columns, a tap away from coming back |
 | "…" over a column of All Issues' board | Move it left or right, or hide it, on that device |
 | Swipe sideways on a board, or tap a column in the strip over it (iPhone) | Turn to that column |
