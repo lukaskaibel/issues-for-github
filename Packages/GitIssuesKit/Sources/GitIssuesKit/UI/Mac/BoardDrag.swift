@@ -42,6 +42,18 @@ final class BoardDrag {
         var depth = 0
         /// Where it shows among the column's rows, epic headers included, not counting the dragged card.
         var row = 0
+        /// The issue the lifted ones would go under instead, when held over the middle of its card or of its header as
+        /// an epic, and where that is on the board. The slot stays where it was meanwhile, so nothing moves under the
+        /// pointer.
+        var nest: Nest?
+    }
+
+    struct Nest: Equatable {
+        var item: Item
+        var columnId: String
+        var frame: CGRect
+        /// An epic's header rather than a card.
+        var isHeader = false
     }
 
     private(set) var active: Active?
@@ -152,6 +164,8 @@ final class BoardDrag {
         !header.fold.isNull && header.fold.insetBy(dx: -4, dy: -4).contains(point)
     }
     @ObservationIgnored private var origin: Target?
+    /// Whether the lifted issues can go under an issue, by its id, as worked out once per drag.
+    @ObservationIgnored private var nestable: [String: Bool] = [:]
     @ObservationIgnored private var ignoringGesture = false
     @ObservationIgnored private var timer: Timer?
 
@@ -219,6 +233,18 @@ final class BoardDrag {
     func ended(model: AppModel) {
         defer { ignoringGesture = false }
         guard let current = active, !current.settling else { return }
+        // Dropped onto an issue, they go under it and keep their status: the card goes back to where it was lifted.
+        if let nest = target?.nest {
+            let dragged = current.picked?.items ?? [current.item]
+            withAnimation(Theme.spring) { target = origin }
+            model.nest(dragged, under: nest.item)
+            // The slot's frame is only known after the layout pass that moves it back.
+            DispatchQueue.main.async { [self] in
+                guard active?.item.id == current.item.id else { return }
+                settle(model: model)
+            }
+            return
+        }
         // Back where it was lifted, nothing moves, unless picked cards from elsewhere come along into that column.
         if let target, let column = model.columns.first(where: { $0.id == target.columnId }),
            target != origin || current.picked?.items.contains(where: { item in !column.nesting.members.contains { $0.id == item.id } }) == true {
@@ -269,6 +295,7 @@ final class BoardDrag {
             origin = Target(columnId: column.id, index: index, depth: column.nesting.depth(of: id), row: row)
         }
         target = origin
+        nestable = [:]
         active = Active(
             item: item, picked: picked, size: frame.size,
             grab: CGSize(width: point.x - frame.minX, height: point.y - frame.minY),
@@ -345,6 +372,16 @@ final class BoardDrag {
         )
         let candidates = model.columns.compactMap { column in columnFrames[column.id].map { (column, $0) } }
         guard let (column, _) = candidates.min(by: { distance(centre.x, to: $0.1) < distance(centre.x, to: $1.1) }) else { return }
+        // The pointer in the middle of a card that can take the lifted issues as its sub-issues: they would go under it.
+        // Near its top or bottom edge they go in front of it or after it, as anywhere else.
+        if let nest = nestTarget(at: current.location, model: model), var next = target ?? origin {
+            next.nest = nest
+            // In the issue's column the slot stays where it is, so nothing moves under the pointer; elsewhere it goes,
+            // as nothing will land there.
+            if next.columnId != nest.columnId { next.columnId = "" }
+            if next != target { withAnimation(Theme.quick) { target = next } }
+            return
+        }
         // Nothing goes into All Issues' issues on no board: taking an issue off its board would lose what it has there.
         // Held over them, the card's slot goes back to where it was lifted.
         guard model.accepts(column, current.item) else {
@@ -388,6 +425,33 @@ final class BoardDrag {
         if next != target {
             withAnimation(Theme.spring) { target = next }
         }
+    }
+
+    /// The issue whose card, or whose header as an epic, the pointer is in the middle of, if the lifted issues can go
+    /// under it: the middle half of a card, between edges of at least 10 points where they go in front or after; all
+    /// of an epic's header but its outer 5 points, as it is only one line high.
+    private func nestTarget(at point: CGPoint, model: AppModel) -> Nest? {
+        guard let current = active, current.group == nil else { return nil }
+        let moving = current.picked?.moving ?? [current.item.id]
+        func middle(_ frame: CGRect, edge: CGFloat? = nil) -> Bool {
+            let edge = edge ?? max(10, frame.height / 4)
+            return frame.minX <= point.x && point.x <= frame.maxX && frame.minY + edge <= point.y && point.y <= frame.maxY - edge
+        }
+        let found: Nest? = if let header = header(at: point), middle(header.frame, edge: 5),
+           let epic = model.columns.first(where: { $0.id == header.columnId })?.nesting.groups.first(where: { $0.contentId == header.epic })?.epic {
+            Nest(item: epic, columnId: header.columnId, frame: header.frame, isHeader: true)
+        } else if let (id, frame) = cardFrames.first(where: { !moving.contains($0.key) && middle($0.value) }),
+                  let column = model.columns.first(where: { $0.items.contains { $0.id == id } }),
+                  let item = column.items.first(where: { $0.id == id }) {
+            Nest(item: item, columnId: column.id, frame: frame)
+        } else {
+            nil
+        }
+        guard let found else { return nil }
+        if nestable[found.item.id] == nil {
+            nestable[found.item.id] = model.canNest(current.picked?.items ?? [current.item], under: found.item)
+        }
+        return nestable[found.item.id] == true ? found : nil
     }
 
     private func distance(_ x: CGFloat, to frame: CGRect) -> CGFloat {

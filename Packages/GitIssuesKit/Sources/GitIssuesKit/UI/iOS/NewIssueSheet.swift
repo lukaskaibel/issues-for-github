@@ -99,6 +99,10 @@ struct NewIssueSheet: View {
         .interactiveDismissDisabled(hasContent)
         .sensoryFeedback(.success, trigger: created)
         .onAppear(perform: prepare)
+        .onChange(of: model.optionIdRemaps) { _, saved in
+            // A status made in this form, now saved on GitHub.
+            if let id = draft.statusId, let savedId = saved[id] { draft.statusId = savedId }
+        }
     }
 
     // MARK: Where it goes
@@ -218,6 +222,10 @@ struct NewIssueSheet: View {
                             }
                         }
                         .pickerStyle(.inline)
+                        // One the board doesn't have yet, typed into the status sheet.
+                        if model.canCreateStatus(projectId: draft.projectId) {
+                            Button(.newStatusEllipsis, systemImage: "plus") { picker = .status }
+                        }
                     } label: {
                         PropertyChip(text: statuses.first { $0.id == draft.statusId }?.name ?? String(localized: .status)) {
                             StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: draft.statusId), size: 16)
@@ -410,15 +418,17 @@ struct NewIssueSheet: View {
         // Begun in a milestone, from the roadmap, or under an issue that has a milestone.
         new.milestoneTitle = context.milestoneTitle ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
         new.isEpic = context.isEpic
-        // Begun in a view, its group or its column: what the view's filter asks for, and the group's value.
-        let preset = context.preset ?? (parent == nil && !context.inAllIssues && context.milestoneTitle == nil && !context.isEpic
-            ? model.newIssuePreset(projectId: projectId) : nil)
+        // Begun in a view, its group or its column: what the view's filter asks for, and the group's value. Begun on
+        // Home, in the Inbox or in My Issues, the board is only the first one, and its view isn't on screen.
+        let preset = context.preset ?? (context.projectId != nil && parent == nil && !context.inAllIssues
+            && context.milestoneTitle == nil && !context.isEpic ? model.newIssuePreset(projectId: projectId) : nil)
         if let preset {
             model.apply(preset, to: &new)
             if let chosen { new.statusId = chosen }
         }
         draft = new
         model.loadRepoMeta(projectId: projectId)
+        model.refreshStatuses(projectId: projectId)
         if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
         focus = .title
     }
@@ -434,6 +444,7 @@ struct NewIssueSheet: View {
         guard id != draft.projectId else { return }
         draft.projectId = id
         draft.statusId = defaultStatus(projectId: id)
+        model.refreshStatuses(projectId: id)
         draft.priorityId = nil
         if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
         // The fields of the board it was going on, such as its iteration, are no other board's.
@@ -442,8 +453,9 @@ struct NewIssueSheet: View {
         // In All Issues, the board and none keep the repository chosen, and with it the people and labels picked.
         guard !context.inAllIssues, let id else { return }
         draft.repoId = model.defaultRepoId(projectId: id)
-        // People and labels belong to a repository, so choices made for another one no longer apply.
-        draft.assignees = []
+        // People and labels belong to a repository, so choices made for another one no longer apply; begun in My
+        // Issues, it stays yours, so that it shows up there.
+        draft.assignees = context.assignToMe ? model.viewer.map { [$0.person] } ?? [] : []
         draft.labels = []
     }
 
@@ -481,9 +493,12 @@ private struct DraftPickerSheet: View {
             PickerSheet(
                 title: kind.sheetTitle,
                 prompt: kind.searchPrompt,
-                multiple: true,
+                multiple: kind.multiple,
+                // A status is picked here only to make a new one, so typing starts at once.
+                focusesSearch: kind == .status,
                 items: items,
-                creating: kind == .labels ? { model.newLabelRow($0, projectId: draft.projectId, repoId: draft.repoId) } : nil,
+                creating: kind == .labels ? { model.newLabelRow($0, projectId: draft.projectId, repoId: draft.repoId) }
+                    : kind == .status ? { model.newStatusRow($0, projectId: draft.projectId) } : nil,
                 onPick: pick
             )
         }
@@ -506,6 +521,14 @@ private struct DraftPickerSheet: View {
                     icon: AnyView(Circle().fill(Theme.labelColor(label.color)).frame(width: 11, height: 11))
                 )
             }, .label, key: \.title)
+        case .status:
+            return model.statusOptions(projectId: draft.projectId).map { option in
+                PickerItem(
+                    id: option.id, title: option.name, selected: draft.statusId == option.id,
+                    icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id), size: 17)),
+                    status: model.canCreateStatus(projectId: draft.projectId) ? option : nil
+                )
+            }
         default:
             return []
         }
@@ -513,6 +536,12 @@ private struct DraftPickerSheet: View {
 
     private func pick(_ id: String) {
         switch kind {
+        case .status:
+            if let name = AppModel.newStatusName(id), let projectId = draft.projectId {
+                draft.statusId = model.createStatus(named: name, projectId: projectId, for: []) ?? draft.statusId
+            } else {
+                draft.statusId = id
+            }
         case .assignees:
             if let index = draft.assignees.firstIndex(where: { $0.id == id }) {
                 draft.assignees.remove(at: index)

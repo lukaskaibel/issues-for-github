@@ -105,7 +105,7 @@ extension AppModel {
         var result: [(item: Item, day: CalendarDay)] = []
         for item in allItems {
             guard let day = item.due, let projectId = item.projectId, !closedProjects.contains(projectId),
-                  item.assignees.contains(where: { $0.id == viewer.id }), !isDone(item),
+                  item.assignees.contains(where: { $0.id == viewer.id }), !isDone(item), !item.isClosed,
                   seen.insert(item.contentId ?? item.id).inserted else { continue }
             result.append((item, day))
         }

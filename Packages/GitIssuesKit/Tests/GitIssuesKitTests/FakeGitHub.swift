@@ -52,6 +52,9 @@ final class FakeGitHub: @unchecked Sendable {
     /// The repository's labels, as GitHub lists them, and whether it refuses to make more, as for someone who can't.
     var labels: [[String: Any]] = []
     var refusesLabels = false
+    /// The Status field's options, as GitHub lists them; `updateProjectV2Field` replaces them, giving new ones an id.
+    var statusOptions: [[String: Any]] = [["id": "todo", "name": "Todo", "color": "GRAY", "description": ""]]
+    private var nextOptionId = 1
     let token = UUID().uuidString
 
     init(_ issues: [Issue]) {
@@ -198,6 +201,33 @@ final class FakeGitHub: @unchecked Sendable {
             let query = payload["query"] as? String ?? ""
             let variables = payload["variables"] as? [String: Any] ?? [:]
             let data: Any
+            if query.contains("updateProjectV2Field(") {
+                log.append("update options")
+                let sent = variables["options"] as? [[String: Any]] ?? []
+                statusOptions = sent.map { option in
+                    var option = option
+                    if option["id"] == nil {
+                        option["id"] = "opt-\(nextOptionId)"
+                        nextOptionId += 1
+                    }
+                    return option
+                }
+                // Cards whose option wasn't sent lose their status, as on GitHub.
+                let kept = Set(statusOptions.compactMap { $0["id"] as? String })
+                for (card, values) in cardValues {
+                    cardValues[card] = values.filter { value in
+                        guard (value["field"] as? [String: Any])?["id"] as? String == "F-status" else { return true }
+                        return (value["optionId"] as? String).map(kept.contains) ?? true
+                    }
+                }
+                let field: [String: Any] = ["id": "F-status", "name": "Status", "options": statusOptions]
+                return (200, [:], try! JSONSerialization.data(withJSONObject: ["data": ["updateProjectV2Field": ["projectV2Field": field]]]))
+            }
+            if query.contains("node(id: $f) { ... on ProjectV2SingleSelectField") {
+                log.append("options")
+                let field: [String: Any] = ["id": "F-status", "name": "Status", "options": statusOptions]
+                return (200, [:], try! JSONSerialization.data(withJSONObject: ["data": ["node": field]]))
+            }
             if let name = write(query, variables) {
                 accepted = nextWriteAccepted
                 nextWriteAccepted = nil
@@ -380,7 +410,7 @@ final class FakeGitHub: @unchecked Sendable {
             "fields": ["nodes": [[
                 "__typename": "ProjectV2SingleSelectField", "id": "F-status", "name": "Status", "dataType": "SINGLE_SELECT",
                 "databaseId": 1,
-                "options": [["id": "todo", "name": "Todo", "color": "GRAY", "description": ""]],
+                "options": statusOptions,
             ]] + extraFields],
             "repositories": ["nodes": [["id": Self.repoId, "nameWithOwner": Self.repo]]],
             "views": ["nodes": views],

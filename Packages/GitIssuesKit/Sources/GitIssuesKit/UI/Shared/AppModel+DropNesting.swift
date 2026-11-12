@@ -14,19 +14,43 @@ extension AppModel {
     /// and not under it already. None when `target` can't take them all: GitHub keeps at most 100 sub-issues under an
     /// issue and nests them at most eight levels deep.
     func nestable(_ dragged: [Item], under target: Item) -> [Item] {
-        guard canRelate(target), canChangeRelations(of: target), let parentId = target.contentId else { return [] }
-        let above = ancestors(of: target)
+        Self.nestable(dragged, under: target, among: allItems) { [self] in canRelate($0) && canChangeRelations(of: $0) }
+    }
+
+    /// The rule behind `nestable(_:under:)`, over every issue this device knows (`items`); `canChange` says which
+    /// issues' relations may change here.
+    nonisolated static func nestable(_ dragged: [Item], under target: Item, among items: [Item], canChange: (Item) -> Bool) -> [Item] {
+        guard canChange(target), let parentId = target.contentId else { return [] }
+        var parents: [String: String] = [:]
+        var children: [String: [String]] = [:]
+        for item in items {
+            guard let id = item.contentId, let parent = item.parentId, parent != id else { continue }
+            parents[id] = parent
+            children[parent, default: []].append(id)
+        }
+        // The issues above the target: its parent, that one's parent, and so on.
+        var above = Set<String>()
+        var next = target.parentId
+        while let id = next, above.insert(id).inserted { next = parents[id] }
+
         var seen = Set<String>()
-        let children = dragged.filter { child in
-            guard canRelate(child), canChangeRelations(of: child), let id = child.contentId, seen.insert(id).inserted else { return false }
+        let moving = dragged.filter { child in
+            guard canChange(child), let id = child.contentId, seen.insert(id).inserted else { return false }
             return id != parentId && child.parentId != parentId && !above.contains(id)
         }
-        guard !children.isEmpty, target.subTotal + children.count <= Self.subIssueLimit else { return [] }
-        // The target's level, counted from the top, and how many levels each child brings along under it.
+        guard !moving.isEmpty, target.subTotal + moving.count <= subIssueLimit else { return [] }
+        // The target's level, counted from the top, and how many levels each one brings along under it.
+        var known: [String: Int] = [:]
+        func levels(_ id: String, _ path: Set<String>) -> Int {
+            if let levels = known[id] { return levels }
+            // A loop in stale data counts no further.
+            let below = (children[id] ?? []).filter { !path.contains($0) }.map { levels($0, path.union([$0])) }.max() ?? 0
+            known[id] = below + 1
+            return below + 1
+        }
         let level = above.count + 1
-        let spans = levelsSpanned(by: children.compactMap(\.contentId))
-        guard spans.values.allSatisfy({ level + $0 <= Self.subIssueLevels }) else { return [] }
-        return children
+        guard moving.allSatisfy({ child in level + levels(child.contentId ?? "", [child.contentId ?? ""]) <= subIssueLevels }) else { return [] }
+        return moving
     }
 
     /// Whether an issue can be picked up to go under another one: an issue (not a pull request or draft) on a board you
@@ -68,22 +92,5 @@ extension AppModel {
     func canChangeRelations(of item: Item) -> Bool {
         guard let projectId = item.projectId else { return true }
         return projects.first { $0.id == projectId }?.viewerCanUpdate == true
-    }
-
-    /// How many levels each of the issues spans with what hangs under it, by node id: 1 for one without sub-issues.
-    private func levelsSpanned(by ids: [String]) -> [String: Int] {
-        var children: [String: [String]] = [:]
-        for item in allItems {
-            if let id = item.contentId, let parent = item.parentId, parent != id { children[parent, default: []].append(id) }
-        }
-        var known: [String: Int] = [:]
-        func levels(_ id: String, _ path: Set<String>) -> Int {
-            if let levels = known[id] { return levels }
-            // A loop in stale data counts no further.
-            let below = (children[id] ?? []).filter { !path.contains($0) }.map { levels($0, path.union([$0])) }.max() ?? 0
-            known[id] = below + 1
-            return below + 1
-        }
-        return Dictionary(ids.map { ($0, levels($0, [$0])) }, uniquingKeysWith: max)
     }
 }

@@ -7,6 +7,8 @@ struct SignInView: View {
 
     @State private var deviceCode: DeviceFlow.Code?
     @State private var working = false
+    /// Waiting for the code to be entered on GitHub, which Cancel stops.
+    @State private var deviceFlow: Task<Void, Never>?
     @State private var errorText: String?
     @State private var showTokenField = false
     @State private var token = ""
@@ -102,7 +104,13 @@ struct SignInView: View {
                     NSWorkspace.shared.open(code.verificationURL)
                 }
                 .buttonStyle(PrimaryButtonStyle())
-                Button(.cancel) { deviceCode = nil }
+                Button(.cancel) {
+                    // Otherwise it keeps asking GitHub until the code expires, and every way to sign in waits for it.
+                    deviceFlow?.cancel()
+                    deviceFlow = nil
+                    deviceCode = nil
+                    working = false
+                }
                     .buttonStyle(SecondaryButtonStyle())
             }
             HStack(spacing: 6) {
@@ -119,7 +127,7 @@ struct SignInView: View {
         guard let clientID = DeviceFlow.configuredClientID else { return }
         errorText = nil
         working = true
-        Task {
+        deviceFlow = Task {
             defer { working = false }
             do {
                 let flow = DeviceFlow(clientID: clientID)
@@ -131,6 +139,8 @@ struct SignInView: View {
                 deviceCode = nil
                 model.completeSignIn()
             } catch {
+                // Cancelled: nothing went wrong, and the next sign-in may have begun already.
+                guard !Task.isCancelled else { return }
                 deviceCode = nil
                 errorText = error.localizedDescription
             }

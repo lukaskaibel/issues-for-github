@@ -114,6 +114,28 @@ enum PaletteMode: Hashable {
     case views
 }
 
+extension PaletteMode {
+    /// The same step for an issue that GitHub has given its own id since it was made here.
+    func remapping(_ remaps: [String: String]) -> PaletteMode {
+        func id(_ old: String) -> String { remaps[old] ?? old }
+        return switch self {
+        case .status(let itemId): .status(itemId: id(itemId))
+        case .priority(let itemId): .priority(itemId: id(itemId))
+        case .assignees(let itemId): .assignees(itemId: id(itemId))
+        case .labels(let itemId): .labels(itemId: id(itemId))
+        case .dueDate(let itemId): .dueDate(itemId: id(itemId))
+        case .parent(let itemId): .parent(itemId: id(itemId))
+        case .addSubIssue(let itemId): .addSubIssue(itemId: id(itemId))
+        case .blockedBy(let itemId): .blockedBy(itemId: id(itemId))
+        case .blocking(let itemId): .blocking(itemId: id(itemId))
+        case .milestone(let itemId): .milestone(itemId: id(itemId))
+        case .epic(let itemId): .epic(itemId: id(itemId))
+        case .iteration(let itemId, let fieldId): .iteration(itemId: id(itemId), fieldId: fieldId)
+        case .root, .projects, .views: self
+        }
+    }
+}
+
 enum Overlay: Equatable {
     case palette(PaletteMode)
     case newIssue(statusId: String?, parentItemId: String?)
@@ -228,6 +250,11 @@ public final class AppModel {
     private(set) var personal: PersonalStore
     /// Each project's glyph and colour, which GitHub has no place for either; shared through iCloud.
     private(set) var projectLooks: ProjectLooks
+    /// The kinds given to statuses in the app, which draw their circles (`StatusKinds`).
+    private(set) var statusKinds: StatusKinds
+    /// Statuses made here, from the id they were shown under until GitHub saved them to the id GitHub gave them, so a
+    /// new issue's form that picked one carries on with it.
+    var optionIdRemaps: [String: String] = [:]
     /// How My Issues' overview is arranged, the same on every device of yours.
     private(set) var overviewArrangement: OverviewArrangementStore
     /// The page each card of My Issues' overview shows, by the card's id: the key of a column (`MineColumn.key`) or a
@@ -558,6 +585,7 @@ public final class AppModel {
         db = database
         personal = PersonalStore(persistent: !demo)
         projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
+        statusKinds = StatusKinds(persistent: !demo)
         overviewArrangement = OverviewArrangementStore(persistent: !demo)
         auth = AuthStore()
         // Logins saved by earlier versions move to iCloud Keychain, and a login shared by another device is used.
@@ -588,6 +616,7 @@ public final class AppModel {
         #endif
         if demo { seedDemoDisplays() }
         followArrangement()
+        followStatusKinds()
         startObserving()
         restoreScope()
         scheduleInboxWake()
@@ -720,8 +749,10 @@ public final class AppModel {
         isDemo = demo
         personal = PersonalStore(persistent: !demo)
         projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
+        statusKinds = StatusKinds(persistent: !demo)
         overviewArrangement = OverviewArrangementStore(persistent: !demo)
         followArrangement()
+        followStatusKinds()
         if demo { seedDemoDisplays() }
         resetNavigation()
         viewer = nil
@@ -838,7 +869,8 @@ public final class AppModel {
         }
         #endif
         if projects != listed { projects = listed }
-        if options != snapshot.options { options = snapshot.options }
+        let options = withChosenKinds(snapshot.options)
+        if self.options != options { self.options = options }
         if repos != snapshot.repos { repos = snapshot.repos }
         if allItems != snapshot.items { allItems = snapshot.items }
         outbox = snapshot.outbox
@@ -878,6 +910,8 @@ public final class AppModel {
         let projectId = item.projectId
         let repoId = item.repoId
         let fetchable = item.kind != .draft && !item.isLocalOnly
+        // Its status can be changed from here, also when its board isn't the one on screen.
+        refreshStatuses(projectId: projectId)
         let engine = self.engine
         Task {
             await engine.setWatchedIssue(fetchable ? contentId : nil)
@@ -1405,6 +1439,12 @@ public final class AppModel {
         if currentProjectId == nil { selectLastProject() }
         guard currentProjectId != nil else { return }
         closeDetail()
+        // A view's timeline is a list as far as `viewMode` goes, so the list would change nothing: the view is told.
+        if let view = currentView, showsTimeline(view) {
+            setLayout(mode, of: view)
+            followLayout(of: view)
+            return
+        }
         withAnimation(Theme.spring) { viewMode = mode }
     }
 
@@ -1511,6 +1551,8 @@ public final class AppModel {
         if let id = focusedItemId, let new = remaps[id] { focusedItemId = new }
         if let id = hoveredItemId, let new = remaps[id] { hoveredItemId = new }
         if let id = peekItemId, let new = remaps[id] { peekItemId = new }
+        // A picker opened on an issue just made, such as S right after creating it, would otherwise go blank.
+        if case .palette(let mode)? = overlay, mode.remapping(remaps) != mode { overlay = .palette(mode.remapping(remaps)) }
         for (old, new) in remaps {
             if let draft = commentDrafts.removeValue(forKey: old) { commentDrafts[new] = draft }
         }
@@ -1575,6 +1617,13 @@ public final class AppModel {
         await engine.syncNow()
     }
 
+    /// Pulled down on an issue's screen: its comments and sub-issues as well, which a sync fetches only now and then.
+    func refreshAndWait(issue item: Item) async {
+        await refreshAndWait()
+        guard let contentId = item.contentId, item.kind != .draft, !item.isLocalOnly else { return }
+        try? await engine.loadIssueDetail(contentId: contentId)
+    }
+
     /// One sync round, for an issue a notification names that this device hasn't seen yet.
     func syncAndWait() async {
         guard signedIn else { return }
@@ -1612,7 +1661,10 @@ public final class AppModel {
         guard !mutations.isEmpty else { return }
         let completions = parentCompletions(after: mutations)
         let starts = epicStarts(after: mutations)
-        let mutations = mutations + completions.mutations + starts.mutations
+        // Made from a screen drawn before an issue made here got its id from GitHub, such as its page while you type,
+        // a change still names the one it had: it goes to the issue's id now, or GitHub would never hear of it.
+        let remaps = status.idRemaps
+        let mutations = (mutations + completions.mutations + starts.mutations).map { $0.remapping(remaps) }
         do {
             try db.writer.write { db in
                 for item in inserting { try item.insert(db, onConflict: .ignore) }

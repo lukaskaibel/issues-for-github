@@ -162,6 +162,19 @@ struct InboxScreen: View {
     private func open(_ entry: InboxEntry) {
         if !entry.missing, let card = model.inboxItem(for: entry) {
             openRoute(.inboxIssue(entry: entry.id, item: card.id))
+        } else if !entry.missing, entry.contentId == nil {
+            // Just arrived, and its issue isn't read yet, which takes a moment: it opens here once it is, as on the
+            // iPad, rather than on github.com.
+            model.selectInboxEntry(entry)
+            Task {
+                await model.refreshInboxAndWait()
+                guard let current = model.inboxEntry(id: entry.id) else { return }
+                if !current.missing, let card = model.inboxItem(for: current) {
+                    openRoute(.inboxIssue(entry: current.id, item: card.id))
+                } else if let url = current.webURL {
+                    Platform.open(url)
+                }
+            }
         } else {
             model.selectInboxEntry(entry)
             if let url = entry.webURL { Platform.open(url) }

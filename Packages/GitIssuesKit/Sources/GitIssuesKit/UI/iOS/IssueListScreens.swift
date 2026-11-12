@@ -765,7 +765,9 @@ struct IssueList: View {
                 navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: preset?.statusId, parentItemId: parent, preset: preset))
             }
         case (.project, _):
-            return { navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: section.option?.id)) }
+            // The "No status" section makes an issue without one, as that column on the board does.
+            let statusId = section.option?.id ?? (section.id == BoardColumn.noStatusId ? section.id : nil)
+            return { navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: statusId)) }
         case (.milestone(_, let title), .epic(let contentId)) where canEdit:
             let parent = contentId.flatMap { model.issue(contentId: $0)?.id }
             return { navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, parentItemId: parent, milestoneTitle: title)) }

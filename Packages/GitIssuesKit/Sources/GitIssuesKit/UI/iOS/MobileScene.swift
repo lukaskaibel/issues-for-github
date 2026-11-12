@@ -74,6 +74,8 @@ struct MobileRoot: View {
                 NewViewSheet(projectId: projectId, sourceViewId: sourceViewId, duplicate: duplicate)
             case .projectIcon(let projectId):
                 ProjectIconSheet(projectId: projectId)
+            case .newStatus(let itemId):
+                IssuePickerSheet(kind: .status, itemId: itemId, focusesSearch: true)
             }
         }
         .modifier(ViewAlerts(navigation: navigation))
