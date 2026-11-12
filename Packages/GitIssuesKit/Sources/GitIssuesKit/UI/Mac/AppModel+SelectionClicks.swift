@@ -34,7 +34,8 @@ extension AppModel {
     /// GitHub only can't be changed with the others, so the click does nothing to it.
     func handleSubIssueClick(on item: Item?, in order: [String]) -> Bool {
         let modifiers = NSEvent.modifierFlags.intersection([.command, .shift])
-        guard !modifiers.isEmpty else { return false }
+        // Beside the Inbox no issue is open, and nothing would act on sub-issues picked there, nor let them go.
+        guard !modifiers.isEmpty, openItem != nil else { return false }
         guard let item else { return true }
         if modifiers.contains(.shift) {
             extendSubIssuePick(to: item, in: order)

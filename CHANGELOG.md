@@ -108,6 +108,8 @@ All notable changes to this project are recorded here. The format follows
   screen, as its buttons and `S` `P` `A` `L` `I` do. Until now `E`, `U` and `⇧S` acted on the picked one.
 - In the Inbox, `⇧⌫` (archive everything read) no longer marks the notification that would move into the selection as
   read.
+- On the Mac, ⌘- or Shift-clicking a sub-issue of the issue beside the Inbox opens it. Until now it was marked as
+  picked, with nothing to act on it and no way to let it go.
 
 ## [1.1.0] - 2026-10-28
 
