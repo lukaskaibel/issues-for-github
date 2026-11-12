@@ -150,6 +150,8 @@ All notable changes to this project are recorded here. The format follows
   "Nothing assigned to you", with no way back.
 - Signing in on the Mac: **Cancel** on the code for GitHub lets you sign in another way at once. Until now every
   button stayed grey until the code expired, a quarter of an hour later.
+- What you type on the page of an issue you just made keeps being saved when GitHub gives the issue its own number a
+  moment later.
 
 ## [1.1.0] - 2026-10-28
 

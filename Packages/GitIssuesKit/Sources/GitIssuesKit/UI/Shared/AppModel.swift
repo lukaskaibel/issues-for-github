@@ -1618,7 +1618,10 @@ public final class AppModel {
         guard !mutations.isEmpty else { return }
         let completions = parentCompletions(after: mutations)
         let starts = epicStarts(after: mutations)
-        let mutations = mutations + completions.mutations + starts.mutations
+        // Made from a screen drawn before an issue made here got its id from GitHub, such as its page while you type,
+        // a change still names the one it had: it goes to the issue's id now, or GitHub would never hear of it.
+        let remaps = status.idRemaps
+        let mutations = (mutations + completions.mutations + starts.mutations).map { $0.remapping(remaps) }
         do {
             try db.writer.write { db in
                 for item in inserting { try item.insert(db, onConflict: .ignore) }
