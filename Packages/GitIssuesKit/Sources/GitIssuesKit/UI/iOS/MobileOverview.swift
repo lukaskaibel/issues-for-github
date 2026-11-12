@@ -10,11 +10,16 @@ struct MobileOverview: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.horizontalSizeClass) private var sizeClass
+    /// An issue dragged onto another one's row, to go under it as its sub-issue.
+    @State private var drag = ListDrag()
 
     var body: some View {
         OverviewGrid(metrics: sizeClass == .compact ? .compact : .regular, header: filter)
             .background(Theme.board)
             .refreshable { await model.refreshAndWait() }
+            .environment(drag)
+            .sensoryFeedback(.selection, trigger: drag.lit)
+            .sensoryFeedback(.impact(weight: .medium), trigger: drag.landed)
     }
 
     private var filter: AnyView? {
@@ -31,10 +36,12 @@ struct MobileOverview: View {
     }
 }
 
-/// An issue on a card's page: a tap opens it, a long press has its menu with a preview.
+/// An issue on a card's page: a tap opens it, a long press has its menu with a preview. Touched and held, then
+/// dragged over another issue, it goes under that one as its sub-issue.
 struct OverviewRow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openRoute) private var openRoute
+    @Environment(ListDrag.self) private var drag: ListDrag?
     let item: Item
     let page: OverviewPage
 
@@ -49,6 +56,7 @@ struct OverviewRow: View {
         }
         .buttonStyle(RowButtonStyle())
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .modifier(OverviewRowDropping(drag: drag, item: item, page: page))
         .padding(.horizontal, -8)
         .contextMenu {
             ItemMenuContent(item: item, foldable: false) { openRoute(.issue(item.id)) }
@@ -57,6 +65,34 @@ struct OverviewRow: View {
                 .environment(model)
         }
         .accessibilityIdentifier("row-\(item.displayNumber)")
+    }
+}
+
+/// An overview row dragged, and dropped onto: only to go under another issue, as the overview has no order of its own.
+private struct OverviewRowDropping: ViewModifier {
+    @Environment(AppModel.self) private var model
+    var drag: ListDrag?
+    var item: Item
+    var page: OverviewPage
+
+    func body(content: Content) -> some View {
+        if let drag {
+            content
+                .modifier(ListRowDropMark(drag: drag, sectionId: page.id, rowId: item.id, indent: 8))
+                .modifier(RowDragging(token: item.id, text: DropOntoIssue.text(item)))
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { drag.heights[item.id] = $0 }
+                .onDrop(of: [.plainText, .url], delegate: ListRowDrop(
+                    model: model, drag: drag, sectionId: page.id, rowId: item.id, item: item, placesIn: nil,
+                    nests: item.projectId.map { id in model.projects.first { $0.id == id }?.viewerCanUpdate == true } ?? true,
+                    onDrop: { id, target in
+                        drag.target = nil
+                        drag.dragging = nil
+                        if target.place == .into, DropOntoIssue.nest(id, under: target.rowId, shown: Nesting(), model: model) { drag.landed += 1 }
+                    }
+                ))
+        } else {
+            content
+        }
     }
 }
 

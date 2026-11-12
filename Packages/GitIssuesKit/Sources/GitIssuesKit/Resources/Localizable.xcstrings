@@ -15313,66 +15313,6 @@
         }
       }
     },
-    "droppedAsSubIssue" : {
-      "comment" : "iPhone and iPad: banner after a card was dragged onto another issue's card on the board and let go there, which made it a sub-issue of that issue. %(issue)@ is the dragged issue's number, %(parent)@ the other issue's, such as '#12' and '#9'; the parent's title shows below, and an Undo button beside it.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ ist jetzt ein Sub-Issue von %2$@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%(issue)@ is now a sub-issue of %(parent)@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ ahora es una subincidencia de %2$@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ est maintenant un sous-ticket de %2$@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@は%2$@のサブIssueになりました"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@이(가) 이제 %2$@의 하위 이슈입니다"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ agora é uma sub-issue de %2$@"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ теперь подзадача %2$@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ 现在是 %2$@ 的子议题"
-          }
-        }
-      }
-    },
     "dueDate" : {
       "comment" : "The day an issue is due (a date field of the GitHub project). Used as a label and as a placeholder before a date is set.",
       "extractionState" : "manual",
