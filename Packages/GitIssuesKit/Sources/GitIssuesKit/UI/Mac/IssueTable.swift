@@ -818,7 +818,7 @@ struct IssueTable: NSViewRepresentable {
             for row in rows {
                 let rect = root.convert(table.rect(ofRow: row), from: table).intersection(root.convert(table.visibleRect, from: table))
                 guard !rect.isEmpty else { continue }
-                // Bitmap rows count from the bottom.
+                // The bitmap's first row is the window's top.
                 let top = Int((root.bounds.height - rect.maxY) * scale), bottom = Int((root.bounds.height - rect.minY) * scale)
                 var changed = 0
                 for y in max(0, top)..<min(bottom, before.count / (width * 4)) {
@@ -961,15 +961,6 @@ extension IssueTable {
                 table.endUpdates()
             }
         }
-        #if DEBUG
-        if UserDefaults.standard.bool(forKey: "exp.visibleRowsOnly") {
-            let range = table.rows(in: table.visibleRect)
-            for row in max(0, range.location)..<min(newIds.count, max(0, range.location) + range.length) {
-                if let view = table.view(atColumn: 0, row: row, makeIfNecessary: false) { configure(view, row) }
-            }
-            return
-        }
-        #endif
         // Every row with a view, not only those on screen: the table makes rows ready around them ahead of a scroll,
         // and such a row would come into view as it was, until the pointer went over it.
         for row in loadedRows(of: table) where row < newIds.count {
@@ -1075,7 +1066,11 @@ final class HoverTableView: NSTableView {
     func updateHoverFromCurrentMouseLocation() {
         guard let window, window.isKeyWindow else { return }
         let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
-        coordinator?.hover(row: visibleRect.contains(point) ? row(at: point) : -1)
+        let row = visibleRect.contains(point) ? row(at: point) : -1
+        coordinator?.hover(row: row)
+        // The part under the pointer too: a part lit before the scroll would go on with its row, and with whichever
+        // issue later takes that row's view over, until the pointer moved.
+        coordinator?.hoverPart(row: row, pointInTable: point)
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {

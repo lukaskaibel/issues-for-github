@@ -71,6 +71,10 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Every row of a list on the Mac shows its issue as it is now: a change such as new labels from GitHub could miss a
+  row just out of view, which then showed it only once the pointer went over it. A part of a row lit under the
+  pointer, such as its labels, no longer stays lit while the list scrolls under a resting pointer, nor moves on to
+  other issues' rows.
 - On a wide board on the Mac, a sideways swipe scrolls the columns instead of going back, also with the sidebar
   showing. Going back or forward takes a new swipe once the board is scrolled all the way to that side, and the arrow
   of a swipe no longer stays on screen after it.

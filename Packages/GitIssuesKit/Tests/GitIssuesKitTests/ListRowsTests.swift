@@ -142,21 +142,6 @@ struct ListRowsTests {
         #expect(stale(table, source).isEmpty)
     }
 
-    @Test("Probe: hidden rows")
-    func probeHiddenRows() {
-        let source = Source(rows: Self.rows)
-        let (window, table, _) = makeTable(source)
-        defer { window.close() }
-        let row = visibleRows(table).lowerBound + 3
-        table.hideRows(at: [row], withAnimation: [])
-        let loaded = IssueTable.loadedRows(of: table)
-        print("PROBE hidden=\(table.hiddenRowIndexes.map { $0 }) loadedContains=\(loaded.contains(row)) view=\(table.view(atColumn: 0, row: row, makeIfNecessary: false) != nil) rowView=\(table.rowView(atRow: row, makeIfNecessary: false) != nil)")
-        source.change(table, to: Self.rows.map { Self.row($0.item.number!, labels: Self.labels) })
-        print("PROBE staleWhileHidden=\(stale(table, source))")
-        table.unhideRows(at: [row], withAnimation: [])
-        print("PROBE staleAfterUnhide=\(stale(table, source)) cell=\((table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell)?.row?.item.labels.count ?? -1)")
-    }
-
     @Test("A row's view taken over by another issue drops the pointer's place on the parts of the one before")
     func reusedRowDropsHover() {
         let cell = IssueRowCell(frame: NSRect(x: 0, y: 0, width: 900, height: Theme.rowHeight))
