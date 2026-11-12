@@ -98,7 +98,9 @@ public struct GitIssuesScene: Scene {
                     if let view = model.currentView { model.saveFilter(of: view) }
                 }
                 .keyboardShortcut("s", modifiers: .command)
-                .disabled(model.currentView.map { !model.canSaveFilter(of: $0) } ?? true)
+                // Not from behind an issue's page or a new issue, where ⌘S out of habit would save a filter you can't
+                // see for everyone.
+                .disabled(model.currentView.map { !model.canSaveFilter(of: $0) } ?? true || model.openItem != nil || model.overlay != nil)
                 Divider()
                 Button(.syncWithGitHubNow) { model.refresh() }
                     .keyboardShortcut("r", modifiers: .command)

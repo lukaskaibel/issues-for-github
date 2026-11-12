@@ -141,6 +141,8 @@ All notable changes to this project are recorded here. The format follows
   later.
 - On the Mac, `⌘↵` in an issue's title, or anywhere on its page but the comment field, no longer posts a comment you
   had begun.
+- On the Mac, `⌘S` no longer saves a view's changed filter for everyone while an issue or the new-issue window is in
+  front of it.
 
 ## [1.1.0] - 2026-10-28
 
