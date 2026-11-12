@@ -180,9 +180,10 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
         return number.map { "\(repo)#\($0)" } ?? repo
     }
 
-    /// The branch name GitHub suggests for the issue: its number and title, such as "14-sign-in-with-device-flow".
+    /// The branch name GitHub suggests for the issue: its number and title, such as "14-sign-in-with-device-flow". A
+    /// pull request has a branch of its own already, so none.
     public var branchName: String? {
-        guard let number else { return nil }
+        guard let number, kind == .issue else { return nil }
         let folded = title.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
         var slug = ""
         for character in folded {

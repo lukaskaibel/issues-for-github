@@ -212,7 +212,7 @@ private struct IssueLinkButtons: View {
     var body: some View {
         HStack(spacing: 0) {
             ToolbarIconButton(systemImage: "link", label: .copyLinkWithShortcut) { model.copyLink(item) }
-            if item.number != nil {
+            if item.branchName != nil {
                 ToolbarIconButton(systemImage: "arrow.triangle.branch", label: .copyBranchNameWithShortcut) { model.copyBranchName(item) }
             }
         }

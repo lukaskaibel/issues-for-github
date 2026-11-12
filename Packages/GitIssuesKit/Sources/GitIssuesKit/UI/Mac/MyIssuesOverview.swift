@@ -33,6 +33,14 @@ struct MyIssuesOverview: View {
             }
         } else if model.isLoadingMyIssues {
             MyIssuesLoadingState()
+        } else if !model.addableCards.isEmpty {
+            // Every card taken out: no way back by a right-click on the grid, which isn't there.
+            EmptyState(title: String(localized: .myIssuesCardsRemovedTitle), message: String(localized: .myIssuesCardsRemovedMessage)) {
+                Button(.bringBackAllCards) {
+                    withAnimation(Theme.spring) { for id in model.addableCards { model.addCard(id) } }
+                }
+                .buttonStyle(SecondaryButtonStyle())
+            }
         } else {
             EmptyState(title: String(localized: .nothingAssignedTitle), message: String(localized: .myIssuesEmptyMessage))
         }

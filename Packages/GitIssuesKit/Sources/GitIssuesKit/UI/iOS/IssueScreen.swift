@@ -103,6 +103,7 @@ struct IssueScreen: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
+            .refreshable { await model.refreshAndWait(issue: item) }
             .pageFootBar {
                 // While the description is edited, the keyboard bar is the only thing above the keyboard; while
                 // sub-issues are picked, the bar of what to do with them.
