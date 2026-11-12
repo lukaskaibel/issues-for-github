@@ -143,6 +143,8 @@ All notable changes to this project are recorded here. The format follows
   had begun.
 - On the Mac, `⌘S` no longer saves a view's changed filter for everyone while an issue or the new-issue window is in
   front of it.
+- The command palette no longer offers **Filter…** and **Display Options** while an issue is open, where they did
+  nothing.
 
 ## [1.1.0] - 2026-10-28
 

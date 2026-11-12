@@ -555,7 +555,8 @@ private struct RootPalette: View {
                 model.showProjectLayout(.list)
             })
         }
-        if model.currentView != nil || model.scope == .myIssues {
+        // Their buttons show only while no issue is open, as F and ⇧V work only then.
+        if model.openItem == nil, model.currentView != nil || model.scope == .myIssues {
             list.append(PaletteCommand(id: "filter", title: .filterEllipsis, section: go, icon: symbol("line.3.horizontal.decrease"), keys: ["F"]) {
                 model.overlay = nil
                 model.filterMenuRequest += 1
