@@ -1405,6 +1405,12 @@ public final class AppModel {
         if currentProjectId == nil { selectLastProject() }
         guard currentProjectId != nil else { return }
         closeDetail()
+        // A view's timeline is a list as far as `viewMode` goes, so the list would change nothing: the view is told.
+        if let view = currentView, showsTimeline(view) {
+            setLayout(mode, of: view)
+            followLayout(of: view)
+            return
+        }
         withAnimation(Theme.spring) { viewMode = mode }
     }
 
