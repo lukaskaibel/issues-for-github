@@ -15313,6 +15313,18 @@
         }
       }
     },
+    "droppedAsSubIssue" : {
+      "comment" : "iPhone and iPad: banner after a card was dragged onto another issue's card on the board and let go there, which made it a sub-issue of that issue. %(issue)@ is the dragged issue's number, %(parent)@ the other issue's, such as '#12' and '#9'; the parent's title shows below, and an Undo button beside it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(issue)@ is now a sub-issue of %(parent)@"
+          }
+        }
+      }
+    },
     "dueDate" : {
       "comment" : "The day an issue is due (a date field of the GitHub project). Used as a label and as a placeholder before a date is set.",
       "extractionState" : "manual",

@@ -37,7 +37,8 @@ struct MobileBoard: View {
                         MobileColumn(
                             projectId: projectId, milestone: milestone, allIssues: allIssues, column: column, width: width,
                             target: $target, dragging: $dragging,
-                            onDrop: { id, slot in move(id, to: column, at: slot) }
+                            onDrop: { id, slot in move(id, to: column, at: slot) },
+                            onNest: { id, parent in nest(id, under: parent, in: column) }
                         )
                         .frame(width: width)
                     }
@@ -102,6 +103,24 @@ struct MobileBoard: View {
         target = nil
         dragging = nil
         if Self.land(id, in: column, at: slot, model: model, projectId: projectId, milestone: milestone, allIssues: allIssues) { dropped += 1 }
+    }
+
+    private func nest(_ id: String?, under parentId: String, in column: BoardColumn) {
+        target = nil
+        dragging = nil
+        if Self.nest(id, under: parentId, in: column, model: model) { dropped += 1 }
+    }
+
+    /// Makes the dropped card a sub-issue of the card (`parentId`, an item id) it was let go over. A parent whose
+    /// sub-issues are folded into it opens, so that one that hangs under it in this column doesn't vanish into it. False
+    /// when the drag carried nothing that can go there.
+    @discardableResult
+    static func nest(_ id: String?, under parentId: String, in column: BoardColumn, model: AppModel) -> Bool {
+        guard let id, DraggedGroup(id) == nil, let child = model.item(id: id), let parent = model.item(id: parentId),
+              model.canDropAsSubIssue(child, onto: parent) else { return false }
+        if column.nesting.folded.contains(parent.id) { model.setFolded(parent, false) }
+        model.dropAsSubIssue(child, onto: parent)
+        return true
     }
 
     /// The board a project's, one of its milestones' or its All Issues' board shows.
@@ -191,6 +210,11 @@ struct BoardDropTarget: Equatable {
     var row: Int?
     /// Whether an epic's issues are dragged by their header, which land as one smaller card.
     var group = false
+    /// The card (item id) the dragged card is held over the middle of, and goes under as a sub-issue if let go there:
+    /// it lights up, and the gap, if one was open, keeps its room unseen, so that no card moves under the finger.
+    var nest: String? = nil
+    /// No gap at all: the card was held over another card's middle before any gap opened in this column.
+    var gapless = false
 }
 
 /// The issues of an epic standing together in a column, lifted by their header: what the drag carries, in place of a
@@ -249,6 +273,8 @@ struct MobileColumn: View {
     @Binding var target: BoardDropTarget?
     @Binding var dragging: String?
     var onDrop: (String?, Int?) -> Void
+    /// A card let go over the middle of another one: the dragged card's id, and the other card's.
+    var onNest: (String?, String) -> Void
 
     @State private var frames = CardFrames()
     @State private var foldFeedback = 0
@@ -287,9 +313,11 @@ struct MobileColumn: View {
             .frame(maxHeight: .infinity)
             .accessibilityIdentifier("column-\(column.title)")
             .sensoryFeedback(.selection, trigger: foldFeedback)
+            // A tick as a card lights up to take the dragged one under it.
+            .sensoryFeedback(trigger: nestTarget) { _, new in new == nil ? nil : .selection }
             .onDrop(of: [.plainText, .url], delegate: ColumnDrop(
                 model: model, scope: MobileBoard.scope(projectId: projectId, milestone: milestone, allIssues: allIssues),
-                column: column, frames: frames, target: $target, dragging: $dragging, onDrop: onDrop
+                column: column, frames: frames, nests: canEdit, target: $target, dragging: $dragging, onDrop: onDrop, onNest: onNest
             ))
         }
         // The columns stand on the board's grey without lanes, and reach the bottom edge, where their cards scroll out
@@ -303,9 +331,17 @@ struct MobileColumn: View {
     /// The cards' width in the column.
     private var inner: CGFloat { width - 2 * Self.inset }
 
+    /// Whether the board can be changed here, which dropping a card onto another one does to the issue.
+    private var canEdit: Bool { model.projects.first { $0.id == projectId }?.viewerCanUpdate == true }
+
+    /// The card of this column a dragged card is held over the middle of, which would take it as a sub-issue.
+    private var nestTarget: String? {
+        target?.columnId == column.id ? target?.nest : nil
+    }
+
     /// Where the gap shows among all of the column's rows, the dragged card included.
     private var gapPosition: Int? {
-        guard let target, target.columnId == column.id else { return nil }
+        guard let target, target.columnId == column.id, !target.gapless else { return nil }
         if let row = target.row { return min(row, column.nesting.rows.count) }
         // Without knowing the card yet: in front of the card at the slot.
         guard target.slot < column.items.count else { return column.nesting.rows.count }
@@ -321,6 +357,9 @@ struct MobileColumn: View {
             )
             .frame(height: target?.group == true ? 52 : 76)
             .padding(.leading, CGFloat(min(target?.depth ?? 0, CardTreeLines.deepest)) * CardTreeLines.indent)
+            // Kept, unseen, while a card is lit to take the dragged one, so that nothing moves under the finger.
+            .opacity(nestTarget == nil ? 1 : 0)
+            .accessibilityHidden(true)
             .transition(.opacity.combined(with: .scale(scale: 0.96)))
     }
 
@@ -372,15 +411,29 @@ struct MobileColumn: View {
     }
 
     private func card(_ item: Item, space: String, width: CGFloat) -> some View {
-        Button {
+        let lit = nestTarget == item.id
+        return Button {
             openRoute(.issue(item.id))
         } label: {
-            CardView(card: model.cardModel(for: item, in: column.nesting, showsMilestone: milestone == nil), width: width, avatarVersion: model.avatarVersion)
+            CardView(card: model.cardModel(for: item, in: column.nesting, showsMilestone: milestone == nil), width: width, selected: lit, avatarVersion: model.avatarVersion)
                 .equatable()
         }
         .buttonStyle(CardPressStyle())
         .accessibilityIdentifier("card-\(item.displayNumber)")
         .hoverEffect(.lift)
+        // Lit to take the dragged card as a sub-issue: a ring a little outside the card and a card a little larger, so
+        // both show around the dragged card, which covers most of it.
+        .overlay {
+            if lit {
+                RoundedRectangle(cornerRadius: CardView.cornerRadius + Self.nestRingOutset, style: .continuous)
+                    .strokeBorder(Theme.accent, lineWidth: 2.5)
+                    .padding(-Self.nestRingOutset)
+                    .transition(.opacity)
+                    .accessibilityHidden(true)
+            }
+        }
+        .scaleEffect(lit ? 1.03 : 1)
+        .animation(Theme.quick, value: lit)
         .opacity((dragging == item.id || liftedIds.contains(item.id)) && target != nil ? 0.35 : 1)
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .named(space))
@@ -404,6 +457,9 @@ struct MobileColumn: View {
         .accessibilityAction(named: Text(.moveToNextStatus)) { step(item, by: 1) }
         .accessibilityAction(named: Text(.moveToPreviousStatus)) { step(item, by: -1) }
     }
+
+    /// How far outside a card the ring is that lights it up to take a dragged card.
+    static let nestRingOutset: CGFloat = 4
 
     /// What a card is outside the app: its link on GitHub, or its number and title.
     private func dragText(_ item: Item) -> String {
@@ -440,9 +496,12 @@ private struct ColumnDrop: DropDelegate {
     var scope: Scope
     var column: BoardColumn
     var frames: CardFrames
+    /// Whether a card can be dropped onto another one here, to go under it: where the board can be changed.
+    var nests: Bool
     @Binding var target: BoardDropTarget?
     @Binding var dragging: String?
     var onDrop: (String?, Int?) -> Void
+    var onNest: (String?, String) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
         CardDragMark.isCard(info)
@@ -455,6 +514,8 @@ private struct ColumnDrop: DropDelegate {
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
         update(info)
+        // Going under another card adds to what is there, which the dragged card's badge says with a plus.
+        if target?.columnId == column.id, target?.nest != nil { return DropProposal(operation: .copy) }
         return DropProposal(operation: fits ? .move : .forbidden)
     }
 
@@ -464,6 +525,11 @@ private struct ColumnDrop: DropDelegate {
 
     func performDrop(info: DropInfo) -> Bool {
         guard CardDragMark.isCard(info) else { return false }
+        if target?.columnId == column.id, let parent = target?.nest {
+            CardDragMark.loadId(info) { id in onNest(id, parent) }
+            return true
+        }
+        guard fits else { return false }
         let slot = target?.columnId == column.id ? target?.slot : nil
         CardDragMark.loadId(info) { id in onDrop(id, slot) }
         return true
@@ -478,8 +544,39 @@ private struct ColumnDrop: DropDelegate {
         return MainActor.assumeIsolated { model.item(id: id).map { model.fits($0, onBoardOf: scope) } ?? false }
     }
 
-    /// The position among the column's cards, from where the finger is.
+    /// The card the finger holds the dragged card over the middle of, if the dragged card can go under it: its item
+    /// id. Its top and bottom edges are left to placing the card above or below it, as the gaps between cards are.
+    private func nestTarget(at location: CGPoint) -> String? {
+        guard nests, let dragging, DraggedGroup(dragging) == nil else { return nil }
+        return MainActor.assumeIsolated {
+            guard let child = model.item(id: dragging) else { return nil }
+            for item in column.items {
+                guard let frame = frames.frames[item.id], frame.minY <= location.y, location.y <= frame.maxY else { continue }
+                let edge = ColumnDrop.edge(of: frame.height)
+                guard location.y > frame.minY + edge, location.y < frame.maxY - edge else { return nil }
+                return model.canDropAsSubIssue(child, onto: item) ? item.id : nil
+            }
+            return nil
+        }
+    }
+
+    /// How far into a card from its top and bottom the finger places the dragged card above or below it rather than
+    /// under it: a quarter of the card, at least enough to hit with a finger and at most so much that the middle stays
+    /// easy to hit on a short card.
+    static func edge(of height: CGFloat) -> CGFloat {
+        min(max(height * 0.25, 14), 26)
+    }
+
+    /// The position among the column's cards, from where the finger is; or the card it would go under.
     private func update(_ info: DropInfo) {
+        if let parent = nestTarget(at: info.location) {
+            // The gap keeps its place, and its room, while the card is lit: closing it would move the card under the
+            // finger away from it.
+            var next = target?.columnId == column.id ? target ?? BoardDropTarget(columnId: column.id, slot: 0) : BoardDropTarget(columnId: column.id, slot: 0, gapless: true)
+            next.nest = parent
+            if next != target { target = next }
+            return
+        }
         guard fits else {
             if target?.columnId == column.id { target = nil }
             return
