@@ -125,6 +125,9 @@ All notable changes to this project are recorded here. The format follows
   the board does.
 - Filters with an apostrophe in a value, such as the status "Won't do", match. Until now such a view showed what it
   should hide.
+- In the filter menu, **Updated** and **Due date** take one value, so picking another replaces it. **No assignee**,
+  **Has date** and the like are ticked when they are set, and picking them again takes them away instead of adding
+  them a second time.
 
 ## [1.1.0] - 2026-10-28
 

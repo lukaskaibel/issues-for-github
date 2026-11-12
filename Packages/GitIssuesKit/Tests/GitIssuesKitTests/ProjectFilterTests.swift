@@ -163,6 +163,25 @@ struct ProjectFilterTests {
         #expect(ProjectFilter(#"status:"won't do""#).matches(Self.item(3, status: "s-wont"), context))
     }
 
+    @Test("Picking a value in the filter menu: one that takes a single value replaces it; No and Has toggle their own term")
+    func pickingValues() {
+        func value(_ key: String, _ value: String) -> FilterValue {
+            FilterValue(key: key, value: value, title: value, icon: .symbol("circle"))
+        }
+        // Updated and Due date take one value: another one replaces it rather than meaning "any of".
+        let updated = ProjectFilter("updated:>@today-7d")
+        #expect(AppModel.toggling(value("updated", "@today"), in: updated, termIndex: 0, takesSeveral: false).text == "updated:@today")
+        // Labels take several.
+        #expect(AppModel.toggling(value("label", "ui"), in: ProjectFilter("label:bug"), termIndex: 0).text == "label:bug,ui")
+        // No assignee, picked while set, goes; picked from the search (no term of the property) it isn't added twice.
+        let none = ProjectFilter("no:assignee is:open")
+        #expect(AppModel.presenceTerm(of: value("no", "assignee"), in: none) == 0)
+        #expect(AppModel.toggling(value("no", "assignee"), in: none, termIndex: nil).text == "is:open")
+        #expect(AppModel.toggling(value("no", "assignee"), in: ProjectFilter("is:open"), termIndex: nil).text == "is:open no:assignee")
+        // Picked instead of a person, it takes the person's place.
+        #expect(AppModel.toggling(value("no", "assignee"), in: ProjectFilter("assignee:bob"), termIndex: 0).text == "no:assignee")
+    }
+
     @Test("Open, closed, assignees with @me, milestones and parents")
     func issueFacts() {
         let mine = Self.item(1, assignees: ["lukaskaibel"], milestone: "V2 – Compliance & Quick Wins", parent: 217)

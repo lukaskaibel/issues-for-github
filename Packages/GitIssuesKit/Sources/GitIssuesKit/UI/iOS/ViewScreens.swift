@@ -367,7 +367,9 @@ private struct FilterValuesScreen: View {
         let values = model.filterValues(property, in: scope)
         let index = termIndex ?? model.termIndex(for: property, in: filter)
         let term = index.flatMap { filter.terms.indices.contains($0) ? filter.terms[$0] : nil }
-        let picked = term.map(model.pickedValues) ?? []
+        // "No assignee" and the like are ticked by a `no:` or `has:` term of their own.
+        let presence = values.filter { model.presenceTerm(of: $0, in: filter) != nil }.map { "\($0.key):\($0.value.lowercased())" }
+        let picked = (term.map(model.pickedValues) ?? []).union(presence)
         let shown = query.isEmpty ? values : values.filter { fuzzyScore(query, $0.title) != nil || ($0.subtitle.flatMap { fuzzyScore(query, $0) } != nil) }
         List {
             if let term, let index, term.key != "has", term.key != "no" {
@@ -384,7 +386,7 @@ private struct FilterValuesScreen: View {
                 ForEach(shown) { value in
                     Button {
                         let wasNew = term == nil
-                        filter = model.toggling(value, in: filter, termIndex: model.termIndex(for: property, in: filter) ?? index)
+                        filter = model.toggling(value, in: filter, termIndex: model.termIndex(for: property, in: filter) ?? index, takesSeveral: property.takesSeveral)
                         // A property that takes one value is done with its pick.
                         if wasNew, !property.takesSeveral { dismiss() }
                     } label: {
