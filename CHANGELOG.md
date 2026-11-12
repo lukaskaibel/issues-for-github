@@ -113,6 +113,8 @@ All notable changes to this project are recorded here. The format follows
 - On an issue opened full size from the Inbox, `↑` `↓` go on to the next or previous notification, as `J` `K` do. On
   an issue the board or list behind it doesn't show, such as one opened from the command palette, the arrow keys are
   no longer swallowed.
+- On the Mac, choosing a board in another repository for a new issue drops the labels picked for the first one. GitHub
+  refused the issue with them, and it was lost.
 
 ## [1.1.0] - 2026-10-28
 

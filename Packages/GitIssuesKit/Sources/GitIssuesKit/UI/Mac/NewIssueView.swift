@@ -283,7 +283,11 @@ struct NewIssueView: View {
         guard id != draft.projectId else { return }
         draft.projectId = id
         // Another board brings its own repository along; in All Issues the issue stays in the one chosen.
-        if !inAllIssues { draft.repoId = id.flatMap { model.defaultRepoId(projectId: $0) } ?? draft.repoId }
+        if !inAllIssues, let repoId = id.flatMap({ model.defaultRepoId(projectId: $0) }), repoId != draft.repoId {
+            draft.repoId = repoId
+            // Labels belong to a repository: GitHub would refuse another one's, and the new issue with them.
+            draft.labels = []
+        }
         draft.statusId = defaultStatus(projectId: id)
         draft.priorityId = nil
         if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
