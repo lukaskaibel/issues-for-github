@@ -443,8 +443,9 @@ struct NewIssueSheet: View {
         // In All Issues, the board and none keep the repository chosen, and with it the people and labels picked.
         guard !context.inAllIssues, let id else { return }
         draft.repoId = model.defaultRepoId(projectId: id)
-        // People and labels belong to a repository, so choices made for another one no longer apply.
-        draft.assignees = []
+        // People and labels belong to a repository, so choices made for another one no longer apply; begun in My
+        // Issues, it stays yours, so that it shows up there.
+        draft.assignees = context.assignToMe ? model.viewer.map { [$0.person] } ?? [] : []
         draft.labels = []
     }
 

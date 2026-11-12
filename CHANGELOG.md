@@ -119,6 +119,8 @@ All notable changes to this project are recorded here. The format follows
   time comes back.
 - On iPhone and iPad, a new issue begun on Home, in the Inbox or in My Issues no longer takes labels, people, an
   iteration or a parent from the filter of the first project's view.
+- On iPhone and iPad, a new issue begun in My Issues stays assigned to you when you choose another project for it, so
+  it shows up there.
 
 ## [1.1.0] - 2026-10-28
 
