@@ -135,6 +135,7 @@ All notable changes to this project are recorded here. The format follows
 - Messages about an issue, such as a parent finished with its last sub-issue, an epic started, or a new issue the view
   doesn't show, have an **Open** button and go away by themselves, on Mac, iPhone and iPad. Until now they stayed
   until closed, without a way to open the issue, and piled up.
+- Back and Forward bring a roadmap view back as its timeline, not as a list.
 
 ## [1.1.0] - 2026-10-28
 
