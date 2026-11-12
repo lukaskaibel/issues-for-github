@@ -8,6 +8,14 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Drop an issue onto another one to make it a sub-issue (Mac).** Drag a row of a list, a card of a board or an issue
+  in My Issues onto another issue, and it goes under that issue. Hold it over the middle of the issue: the issue lights
+  up, and on the board the card shrinks a little and says "Sub-issue of #9". Near the top or bottom edge of an issue,
+  or between issues, it still goes in front of or after it as before, and into another column or section. Picked
+  issues all go under it together. The dropped issue keeps its status and stays where it stands; a message says what
+  happened and takes it back with **Undo**. An issue can't go under itself or one of its own sub-issues, nor where
+  GitHub wouldn't take it: a pull request, a draft, a board you can only read, more than 100 sub-issues under one issue
+  or more than eight levels. On a board, dropping onto an epic's name makes the issue one of the epic's.
 - **Put an issue into an iteration.** An issue's iteration is now one click or key away: the Iteration row on the
   issue's page, the iteration chip on a card or row (when the view shows it), the right-click menu, **Move to
   Iteration…** in the command palette, or `⇧C`, as in Linear. The picker lists the iteration under way and those to
@@ -75,6 +83,10 @@ All notable changes to this project are recorded here. The format follows
   row just out of view, which then showed it only once the pointer went over it. A part of a row lit under the
   pointer, such as its labels, no longer stays lit while the list scrolls under a resting pointer, nor moves on to
   other issues' rows.
+- Dragging an issue in All Issues' list on the Mac no longer turns its row blank until you leave the list. The
+  issue now moves as on All Issues' board: to another place or status, and one on no board onto the board with the
+  status you drop it on. In My Issues, and in a project you can only read, a row lifts only where it can go under
+  another issue, so none goes blank there either.
 - On a wide board on the Mac, a sideways swipe scrolls the columns instead of going back, also with the sidebar
   showing. Going back or forward takes a new swipe once the board is scrolled all the way to that side, and the arrow
   of a swipe no longer stays on screen after it.

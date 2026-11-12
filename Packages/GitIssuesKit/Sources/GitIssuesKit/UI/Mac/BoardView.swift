@@ -97,8 +97,18 @@ struct BoardView: View {
                     if let group = active.group {
                         LiftedGroup(active: active, group: group.group)
                     } else {
-                        let nesting = model.columns.first { $0.nesting.members.contains { $0.id == active.item.id } }?.nesting
-                        LiftedCard(active: active, card: model.cardModel(for: active.item, in: nesting, showsMilestone: model.currentMilestoneTitle == nil), avatarVersion: model.avatarVersion)
+                        // Both placed from the board's top left corner, not centred on each other.
+                        ZStack(alignment: .topLeading) {
+                            // The issue the lifted card would go under lights up beneath it.
+                            if let nest = drag.target?.nest, !active.settling {
+                                NestTargetMark(frame: nest.frame, isHeader: nest.isHeader)
+                            }
+                            let nesting = model.columns.first { $0.nesting.members.contains { $0.id == active.item.id } }?.nesting
+                            LiftedCard(
+                                active: active, card: model.cardModel(for: active.item, in: nesting, showsMilestone: model.currentMilestoneTitle == nil),
+                                avatarVersion: model.avatarVersion, nestingUnder: active.settling ? nil : drag.target?.nest?.item
+                            )
+                        }
                     }
                 }
             }
@@ -198,6 +208,8 @@ private struct LiftedCard: View {
     var active: BoardDrag.Active
     var card: CardModel
     var avatarVersion: Int
+    /// The issue it would go under if dropped now: it shrinks a little, lets the issue show through, and says so.
+    var nestingUnder: Item?
 
     var body: some View {
         let picked = active.picked?.items.count
@@ -205,12 +217,52 @@ private struct LiftedCard: View {
             // A parent carries the sub-issues hanging under it along, and a picked card the other picked ones.
             .background(alignment: .top) { if card.nested != nil || picked != nil { CardStackEdge() } }
             .overlay(alignment: .topTrailing) { if let picked { PickedCount(count: picked) } }
+            .opacity(nestingUnder != nil ? 0.88 : 1)
+            .overlay(alignment: .bottomLeading) {
+                if let nestingUnder { NestHint(parent: nestingUnder).offset(x: 10, y: 13).transition(.scale(scale: 0.8).combined(with: .opacity)) }
+            }
+            .scaleEffect(nestingUnder != nil ? 0.9 : 1, anchor: .center)
+            .animation(Theme.quick, value: nestingUnder?.id)
             .scaleEffect(active.lifted ? 1.03 : 1)
             .rotationEffect(.degrees(active.lifted ? 1.5 + active.tilt : 0))
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: active.tilt)
             .shadow(color: active.lifted ? Theme.shadow : .clear, radius: active.lifted ? 22 : 0, y: active.lifted ? 16 : 0)
             .offset(x: active.location.x - active.grab.width, y: active.location.y - active.grab.height)
             .allowsHitTesting(false)
+    }
+}
+
+/// The issue a lifted card would go under if dropped now, lit up under it: tinted, with a ring, as a page of a My Issues
+/// card lights up for an issue dragged onto it.
+private struct NestTargetMark: View {
+    var frame: CGRect
+    var isHeader: Bool
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: isHeader ? 8 : CardView.cornerRadius, style: .continuous)
+        shape.fill(Theme.selectionBorder.opacity(0.14))
+            .overlay(shape.strokeBorder(Theme.selectionBorder, lineWidth: 2))
+            .frame(width: frame.width + 6, height: frame.height + 6)
+            .offset(x: frame.minX - 3, y: frame.minY - 3)
+            .allowsHitTesting(false)
+            .transition(.opacity)
+            .accessibilityHidden(true)
+    }
+}
+
+/// Under a lifted card held over another issue: that it becomes a sub-issue of it when dropped there.
+struct NestHint: View {
+    var parent: Item
+
+    var body: some View {
+        Label(String(localized: .subIssueOf(number: parent.displayNumber)), systemImage: "arrow.turn.down.right")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 8)
+            .frame(minHeight: 22)
+            .background(Capsule().fill(Theme.accentFill))
+            .fixedSize()
+            .accessibilityHidden(true)
     }
 }
 
@@ -770,6 +822,8 @@ private struct BoardCell: View {
             tree: !at.isSlot && place.depth > 0 ? place : nil
         )
         .equatable()
+        // Held over an issue to go under it, the card won't land in its slot, which fades.
+        .opacity(at.isSlot && drag.target?.nest != nil ? 0.35 : 1)
         .padding(.bottom, at.edge)
         .padding(.leading, at.indent)
     }
