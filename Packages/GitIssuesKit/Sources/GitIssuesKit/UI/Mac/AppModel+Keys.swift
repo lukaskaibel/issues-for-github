@@ -378,7 +378,9 @@ extension AppModel {
             inboxPicked = []
             return true
         }
-        let targets = inboxPicked.isEmpty
+        // One picked notification counts as none, as for the pane, the toolbar and S, P, A, L, I: the keys act on
+        // the one on screen then, not on a picked one that may be another.
+        let targets = inboxPicked.count <= 1
             ? inboxSelected.map { [$0] } ?? []
             : visibleInbox.filter { inboxPicked.contains($0.id) }
         let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key]

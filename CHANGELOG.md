@@ -104,6 +104,8 @@ All notable changes to this project are recorded here. The format follows
 - In the command palette, a command whose name begins with what you typed comes first: "go to" picks **Go to View…**,
   not an issue that merely has those letters in order. Issues the view on screen leaves out, such as ones its filter
   hides, the roadmap's issues or those on another board, are found as well, after the ones on screen.
+- In the Inbox on the Mac, with one notification picked (`X`) and another on screen, every key acts on the one on
+  screen, as its buttons and `S` `P` `A` `L` `I` do. Until now `E`, `U` and `⇧S` acted on the picked one.
 
 ## [1.1.0] - 2026-10-28
 

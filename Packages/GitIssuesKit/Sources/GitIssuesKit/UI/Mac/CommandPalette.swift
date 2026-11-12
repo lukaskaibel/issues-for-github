@@ -502,7 +502,7 @@ private struct RootPalette: View {
             }
         }
         if model.scope == .inbox {
-            let entries = model.inboxPicked.isEmpty
+            let entries = model.inboxPicked.count <= 1
                 ? model.inboxSelected.map { [$0] } ?? []
                 : model.visibleInbox.filter { model.inboxPicked.contains($0.id) }
             let section = String(localized: entries.count > 1 ? .selectedNotificationCount(count: entries.count) : .inbox)
