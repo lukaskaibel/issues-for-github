@@ -132,6 +132,9 @@ All notable changes to this project are recorded here. The format follows
   Reset.
 - **Complete** on a milestone leaves issues that are closed on GitHub where they are, even when their column still
   says In Progress, and closed issues no longer get due reminders.
+- Messages about an issue, such as a parent finished with its last sub-issue, an epic started, or a new issue the view
+  doesn't show, have an **Open** button and go away by themselves, on Mac, iPhone and iPad. Until now they stayed
+  until closed, without a way to open the issue, and piled up.
 
 ## [1.1.0] - 2026-10-28
 

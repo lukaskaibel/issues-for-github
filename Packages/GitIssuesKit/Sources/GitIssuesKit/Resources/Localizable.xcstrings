@@ -44659,6 +44659,66 @@
         }
       }
     },
+    "noticeOpenIssue" : {
+      "comment" : "Button (a verb) in a short message at the bottom of the window (Mac) or the top of the screen (iPhone, iPad) about an issue, such as 'Parent issue #12 is done' or 'Epic #8 started': opens that issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "열기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыть"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开"
+          }
+        }
+      }
+    },
     "noticePrioritySetThere" : {
       "comment" : "Notice (Mac: in the bottom corner of the window; iPhone, iPad: banner at the top) message, first sentence: what someone else set the issue's priority to on GitHub. %(priority)@ is a priority as named on the board, e.g. 'High'. Followed by 'Your change to … was applied last.'",
       "extractionState" : "manual",

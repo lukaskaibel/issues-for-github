@@ -997,10 +997,6 @@ extension AppModel {
             ))
             return
         }
-        #if os(iOS)
-        // The iPhone has no board.
-        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
-        #endif
         let hidden = hiddenColumnIds(of: view)
         guard layout(of: view) == .board, !hidden.isEmpty,
               let column = columns(projectId: projectId).first(where: { $0.nesting.members.contains { $0.id == item.id } }),
