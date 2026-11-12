@@ -3,7 +3,8 @@ import XCTest
 /// A card dropped onto the middle of another card on the iPhone's and iPad's board becomes that issue's sub-issue;
 /// dropped onto a card's top or bottom edge, it only moves there, as before.
 final class DropOntoIssueTests: AppTestCase {
-    private func openBoard() {
+    /// The project's board, on the iPhone turned to `column`; it opens on In Progress.
+    private func openBoard(column: String = "Todo") {
         if isPad {
             XCUIDevice.shared.orientation = .landscapeLeft
             launch()
@@ -11,6 +12,12 @@ final class DropOntoIssueTests: AppTestCase {
         } else {
             launch()
             openProjectTab("Git Issues")
+            if column != "In Progress" {
+                let strip = element("strip-\(column)")
+                wait(strip)
+                strip.tap()
+                waitUntil(strip.isSelected, "\(column) is the column on screen")
+            }
         }
     }
 
@@ -33,15 +40,15 @@ final class DropOntoIssueTests: AppTestCase {
 
     func testACardDroppedOntoAnotherCardBecomesItsSubIssueAndUndoTakesItBack() {
         openBoard()
-        // Both stand on their own, in the same column (Todo on the iPad; In Progress on the iPhone, where it opens).
-        let (child, parent) = isPad ? (element("card-#17"), element("card-#25")) : (element("card-#7"), element("card-#15"))
+        // Both stand on their own, in Todo.
+        let (child, parent) = (element("card-#17"), element("card-#25"))
         wait(child)
         wait(parent)
         XCTAssertEqual(child.frame.minX, parent.frame.minX, accuracy: 1)
         drag(child, onto: parent)
-        wait(notice(isPad ? "1 issue made a sub-issue of #25" : "1 issue made a sub-issue of #15"))
+        wait(notice("1 issue made a sub-issue of #25"))
         snapshot("Dropped onto a card")
-        waitForLabel(child, containing: isPad ? "Sub-issue of #25" : "Sub-issue of #15")
+        waitForLabel(child, containing: "Sub-issue of #25")
         XCTAssertTrue(hangs(child, under: parent), "The card hangs under its new parent")
         element("notice-undo").tap()
         waitUntil(!child.label.contains("Sub-issue of"), "Undo took the parent back")
@@ -50,7 +57,7 @@ final class DropOntoIssueTests: AppTestCase {
 
     func testACardDroppedOntoAnotherCardsEdgeOnlyMovesThere() {
         openBoard()
-        let (child, other) = isPad ? (element("card-#17"), element("card-#25")) : (element("card-#7"), element("card-#15"))
+        let (child, other) = (element("card-#17"), element("card-#25"))
         wait(child)
         wait(other)
         XCTAssertLessThan(child.frame.minY, other.frame.minY)
@@ -63,7 +70,7 @@ final class DropOntoIssueTests: AppTestCase {
     }
 
     func testAParentCantBeDroppedOntoItsOwnSubIssue() {
-        openBoard()
+        openBoard(column: "In Progress")
         // #9 is in In Progress, with #13 hanging under it.
         let parent = element("card-#9")
         let child = element("card-#13")
@@ -139,3 +146,4 @@ final class DropOntoIssueTests: AppTestCase {
         drag(row, onto: inProgress, at: 0.08)
         waitForLabel(row, containing: "In Progress")
     }
+}
