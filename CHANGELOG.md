@@ -137,6 +137,8 @@ All notable changes to this project are recorded here. The format follows
   until closed, without a way to open the issue, and piled up.
 - Back and Forward bring a roadmap view back as its timeline, not as a list.
 - On a roadmap view's timeline on the Mac, `⌘2` and `G` `L` show the list. Until now they did nothing.
+- On the roadmap, grabbing a milestone's diamond and letting go where it was keeps its date. Until now it moved a day
+  later.
 
 ## [1.1.0] - 2026-10-28
 
