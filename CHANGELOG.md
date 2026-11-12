@@ -101,6 +101,9 @@ All notable changes to this project are recorded here. The format follows
 - On the Mac, switching a board to its list with a card in focus keeps the list where it starts; the card stays in
   view below its section's header. Until now the list jumped so the card sat at the top edge, under the pinned header,
   which drew over it. `K` past the top of the list stops below that header too.
+- In the command palette, a command whose name begins with what you typed comes first: "go to" picks **Go to View…**,
+  not an issue that merely has those letters in order. Issues the view on screen leaves out, such as ones its filter
+  hides, the roadmap's issues or those on another board, are found as well, after the ones on screen.
 
 ## [1.1.0] - 2026-10-28
 

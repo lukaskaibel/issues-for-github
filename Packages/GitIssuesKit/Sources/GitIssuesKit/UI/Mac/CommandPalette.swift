@@ -320,23 +320,43 @@ private struct RootPalette: View {
     private var results: [PaletteCommand] {
         let commands = self.commands
         guard !query.isEmpty else { return commands }
-        let matchedCommands = commands
+        let scoredCommands = commands
             .compactMap { command -> (PaletteCommand, Int)? in
                 // The shown title or the English one, whichever matches better.
                 let scores = [command.title, command.englishTitle].compactMap { $0.flatMap { fuzzyScore(query, $0) } }
                 return scores.max().map { (command, $0) }
             }
             .sorted { $0.1 > $1.1 }
-            .map(\.0)
-        let pool = model.scope == .myIssues || model.scope == .inbox ? model.allItems : model.scopedItems
+        let matchedCommands = scoredCommands.map(\.0)
+        let everywhere = model.scope == .myIssues || model.scope == .inbox
+        let pool = everywhere ? model.allItems : model.scopedItems
         let digits = query.trimmingCharacters(in: CharacterSet(charactersIn: "# "))
-        let issues = pool
-            .compactMap { item -> (Item, Int)? in
-                if let number = item.number, !digits.isEmpty, String(number).hasPrefix(digits) { return (item, 1000 - String(number).count) }
-                return fuzzyScore(query, item.title).map { (item, $0) }
-            }
-            .sorted { $0.1 > $1.1 }
-            .prefix(8)
+        func scored(_ items: [Item]) -> [(Item, Int)] {
+            items
+                .compactMap { item -> (Item, Int)? in
+                    if let number = item.number, !digits.isEmpty, String(number).hasPrefix(digits) { return (item, 1000 - String(number).count) }
+                    return fuzzyScore(query, item.title).map { (item, $0) }
+                }
+                .sorted { $0.1 > $1.1 }
+        }
+        var found = scored(pool)
+        if !everywhere, found.count < 8 {
+            // The issues on screen first; then any other, such as one the view's filter leaves out, an epic on the
+            // roadmap or an issue on another board, so that any can be jumped to. An issue on several boards once.
+            var seen = Set(pool.map { $0.contentId ?? $0.id })
+            let rest = model.allItems.filter { seen.insert($0.contentId ?? $0.id).inserted }
+            found += scored(rest)
+        }
+        let scoredIssues = found.prefix(8)
+        // "go to" is how "Go to View…" begins, while issues merely have those letters in order: when what was typed
+        // begins a command's name and no issue's title, the commands come first, so that Return runs it.
+        let typed = query.trimmingCharacters(in: .whitespaces)
+        let begins = { (text: String?) in
+            text?.range(of: typed, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
+        }
+        let commandsFirst = scoredCommands.contains { begins($0.0.title) || begins($0.0.englishTitle) }
+            && !scoredIssues.contains { begins($0.0.title) || ($0.1 >= 900) }
+        let issues = scoredIssues
             .map { item, _ in
                 let title = "\(item.displayNumber)  \(item.title)"
                 return PaletteCommand(
@@ -344,11 +364,14 @@ private struct RootPalette: View {
                     icon: AnyView(StatusIcon(glyph: model.glyph(of: item)))
                 ) { model.open(item) }
             }
-        return issues + matchedCommands.map { command in
+        let named = matchedCommands.map { command in
             var command = command
             command.section = String(localized: .commandsSection)
             return command
         }
+        guard commandsFirst else { return issues + named }
+        let beginning = named.filter { begins($0.title) || begins($0.englishTitle) }
+        return beginning + named.filter { !(begins($0.title) || begins($0.englishTitle)) } + issues
     }
 
     private var commands: [PaletteCommand] {
