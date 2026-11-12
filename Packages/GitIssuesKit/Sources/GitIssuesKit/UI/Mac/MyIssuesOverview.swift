@@ -112,12 +112,15 @@ struct OverviewRow: View {
 }
 
 /// What every issue in the overview does: the pointer and the keyboard focus light it up, a click opens it (⌘ and
-/// Shift pick), a right-click has its menu, and it can be dragged onto another column's icon of its card.
+/// Shift pick), a right-click has its menu, and it can be dragged onto another column's icon of its card, or onto
+/// another issue to go under it.
 private struct OverviewIssueInteractions: ViewModifier {
     @Environment(AppModel.self) private var model
     @Environment(OverviewDrag.self) private var drag
     let item: Item
     @State private var hovering = false
+    /// Whether issues dragged onto this one would go under it if dropped now.
+    @State private var targeted = false
 
     func body(content: Content) -> some View {
         let selected = model.isSelected(item.id)
@@ -129,8 +132,16 @@ private struct OverviewIssueInteractions: ViewModifier {
                     .fill(selected ? Theme.accentFill : hovering || focused ? Theme.cardRowHover : .clear)
                     .padding(.vertical, 1)
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(targeted ? Theme.selectionBorder : .clear, lineWidth: 1.5)
+                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(targeted ? Theme.selectionBorder.opacity(0.14) : .clear))
+                    .padding(.vertical, 1)
+                    .allowsHitTesting(false)
+            )
             .padding(.horizontal, -6)
             .contentShape(Rectangle())
+            .onDrop(of: [.plainText], delegate: IssueDrop(target: item, model: model, drag: drag, targeted: $targeted))
             .id(item.id)
             .onHover { inside in
                 hovering = inside
@@ -179,6 +190,45 @@ struct OverviewPageDrop: ViewModifier {
               let item = model.allItems.first(where: { $0.id == id }), item.projectId == projectId,
               item.statusId != status.id, model.project(of: item)?.viewerCanUpdate == true else { return nil }
         return (item, status)
+    }
+}
+
+/// An issue takes the issues dragged onto it as its sub-issues: the one dragged, or all picked with it.
+private struct IssueDrop: DropDelegate {
+    let target: Item
+    let model: AppModel
+    let drag: OverviewDrag
+    @Binding var targeted: Bool
+
+    private var dragged: [Item]? {
+        guard let id = drag.itemId, let item = model.allItems.first(where: { $0.id == id }) else { return nil }
+        return model.targets(for: item)
+    }
+
+    private var canDrop: Bool {
+        dragged.map { model.canNest($0, under: target) } ?? false
+    }
+
+    func validateDrop(info: DropInfo) -> Bool { canDrop }
+
+    func dropEntered(info: DropInfo) {
+        withAnimation(Theme.quick) { targeted = canDrop }
+    }
+
+    func dropExited(info: DropInfo) {
+        withAnimation(Theme.quick) { targeted = false }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: targeted ? .move : .forbidden)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        targeted = false
+        defer { drag.itemId = nil }
+        guard let dragged else { return false }
+        withAnimation(Theme.spring) { model.nest(dragged, under: target) }
+        return true
     }
 }
 

@@ -82256,7 +82256,7 @@
       }
     },
     "subIssueOf" : {
-      "comment" : "iPhone and iPad: chip on a sub-issue (issue screen, new issue sheet) naming the issue it belongs to. %(number)@ is that issue's number, such as “#12”. Short. Also: Mac, New Issue window: chip showing which issue the new sub-issue will belong to (GitHub sub-issues). %(number)@ is the parent issue's number, such as '#12'.",
+      "comment" : "iPhone and iPad: chip on a sub-issue (issue screen, new issue sheet) naming the issue it belongs to. %(number)@ is that issue's number, such as “#12”. Short. Also: Mac, New Issue window: chip showing which issue the new sub-issue will belong to (GitHub sub-issues). %(number)@ is the parent issue's number, such as '#12'. Also: Mac, while an issue is dragged over another one on a board: a small accent label under the dragged card saying it will become that issue's sub-issue when dropped.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
