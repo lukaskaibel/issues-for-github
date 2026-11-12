@@ -97,15 +97,18 @@ struct BoardView: View {
                     if let group = active.group {
                         LiftedGroup(active: active, group: group.group)
                     } else {
-                        // The issue the lifted card would go under lights up beneath it.
-                        if let nest = drag.target?.nest, !active.settling {
-                            NestTargetMark(frame: nest.frame, isHeader: nest.isHeader)
+                        // Both placed from the board's top left corner, not centred on each other.
+                        ZStack(alignment: .topLeading) {
+                            // The issue the lifted card would go under lights up beneath it.
+                            if let nest = drag.target?.nest, !active.settling {
+                                NestTargetMark(frame: nest.frame, isHeader: nest.isHeader)
+                            }
+                            let nesting = model.columns.first { $0.nesting.members.contains { $0.id == active.item.id } }?.nesting
+                            LiftedCard(
+                                active: active, card: model.cardModel(for: active.item, in: nesting, showsMilestone: model.currentMilestoneTitle == nil),
+                                avatarVersion: model.avatarVersion, nestingUnder: active.settling ? nil : drag.target?.nest?.item
+                            )
                         }
-                        let nesting = model.columns.first { $0.nesting.members.contains { $0.id == active.item.id } }?.nesting
-                        LiftedCard(
-                            active: active, card: model.cardModel(for: active.item, in: nesting, showsMilestone: model.currentMilestoneTitle == nil),
-                            avatarVersion: model.avatarVersion, nestingUnder: active.settling ? nil : drag.target?.nest?.item
-                        )
                     }
                 }
             }
@@ -247,7 +250,7 @@ private struct NestTargetMark: View {
     }
 }
 
-/// Under a lifted card held over another issue: "Sub-issue of #9", which it becomes when dropped.
+/// Under a lifted card held over another issue: that it becomes a sub-issue of it when dropped there.
 struct NestHint: View {
     var parent: Item
 

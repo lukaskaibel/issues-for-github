@@ -858,8 +858,8 @@ struct IssueTable: NSViewRepresentable {
             }
         }
 
-        /// The start of a row's card, as wide as a title reads, with "Sub-issue of #9" under it, and how many issues the
-        /// drag carries on its corner when it carries several.
+        /// The start of a row's card, as wide as a title reads, with a label under it naming the issue it goes under,
+        /// and how many issues the drag carries on its corner when it carries several.
         private static func nestingImage(_ card: NSImage, under parent: Item, count: Int?, appearance: NSAppearance) -> NSImage {
             let inset = IssueTable.inset
             let width = min(card.size.width - 2 * inset, 380)
