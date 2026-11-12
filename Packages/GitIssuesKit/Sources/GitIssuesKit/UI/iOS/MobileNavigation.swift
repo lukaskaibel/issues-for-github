@@ -114,6 +114,9 @@ final class MobileNavigation {
     var tab: MobileTab {
         didSet {
             guard tab != oldValue else { return }
+            // A project's views share its stack: another view of it opens on that view, not under the issue that was
+            // open in the one before, as on the Mac.
+            if case .view(let projectId, _) = tab, case .view(projectId, _) = oldValue { projectPaths[projectId] = [] }
             saveTab()
             if let id = Self.projectId(of: tab) { sidebarProjectId = id }
         }
@@ -440,6 +443,7 @@ final class MobileNavigation {
         for (key, path) in projectPaths { projectPaths[key] = remap(path) }
         for (key, path) in allIssuesPaths { allIssuesPaths[key] = remap(path) }
         for (key, path) in planningPaths { planningPaths[key] = remap(path) }
+        RecentIssues.follow(remaps: remaps)
     }
 }
 
@@ -470,6 +474,13 @@ enum RecentIssues {
         var list = ids.filter { $0 != id }
         list.insert(id, at: 0)
         UserDefaults.standard.set(Array(list.prefix(12)), forKey: key)
+    }
+
+    /// An issue made here keeps its place once GitHub has given it its own id.
+    static func follow(remaps: [String: String]) {
+        let list = ids
+        guard list.contains(where: { remaps[$0] != nil }) else { return }
+        UserDefaults.standard.set(list.map { remaps[$0] ?? $0 }, forKey: key)
     }
 }
 #endif

@@ -193,8 +193,9 @@ struct DescriptionView: View {
     }
 
     private func save(_ text: String) {
-        // The latest copy, since the view may have been drawn before the last sync.
-        guard let current = model.item(id: item.id) else { return }
+        // The latest copy, since the view may have been drawn before the last sync, also under the id GitHub gave an
+        // issue made here while it was being written.
+        guard let current = model.item(id: model.status.idRemaps[item.id] ?? item.id) else { return }
         // Leave untouched text exactly as GitHub stores it, line endings included.
         guard text != Diff3.normalize(current.body) else { return }
         model.setBody(current, to: text)
@@ -623,7 +624,7 @@ private struct EpicGroupHeader: View {
             // A closed milestone takes no new issues.
             if item.kind == .issue, group?.isOpen ?? true {
                 IconButton(systemName: "plus", label: String(localized: .newSubIssueInMilestone(milestone: title ?? String(localized: .noMilestone))), size: 20) {
-                    model.newIssuePlan = NewIssuePlan(milestoneTitle: title)
+                    model.newIssuePlan = NewIssuePlan(milestoneTitle: title, noMilestone: title == nil)
                     model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
                 }
             }
@@ -877,7 +878,8 @@ struct CommentComposer: View {
                     .background(Circle().fill(canSend ? Theme.accentFill : Theme.field))
             }
             .buttonStyle(PlainPressStyle())
-            .keyboardShortcut(.return, modifiers: .command)
+            // Only while writing the comment: ⌘↵ in the title or elsewhere on the page doesn't post a half-written one.
+            .keyboardShortcut(focused ? KeyboardShortcut(.return, modifiers: .command) : nil)
             .disabled(!canSend)
             .help(Text(.titleWithShortcutKey(title: String(localized: .postComment), key: "⌘↵")))
             .accessibilityLabel(Text(.sendCommentButton))

@@ -236,43 +236,14 @@ struct IssueTable: NSViewRepresentable {
                 }
             }
             let oldIds = entries.map(\.id)
-            let newIds = next.map(\.id)
-            let old = entries
             entries = next
-
-            if oldIds == newIds {
-                for row in visibleRows(in: table) where old[row] != next[row] {
-                    configureView(at: row, in: table)
-                }
-            } else {
-                let difference = newIds.difference(from: oldIds).inferringMoves()
-                if old.isEmpty || difference.count > 300 {
-                    table.reloadData()
-                } else if let move = Self.singleMove(difference) {
-                    // One issue changed place, by a drag or a new status: it slides there.
-                    table.beginUpdates()
-                    table.moveRow(at: move.from, to: move.to)
-                    table.endUpdates()
-                    for row in visibleRows(in: table) { configureView(at: row, in: table) }
-                } else {
-                    // Rows slide to their new place when an issue changes status or order.
-                    table.beginUpdates()
-                    for change in difference {
-                        switch change {
-                        case .remove(let offset, _, _):
-                            table.removeRows(at: IndexSet(integer: offset), withAnimation: [.effectFade, .slideUp])
-                        case .insert(let offset, _, _):
-                            table.insertRows(at: IndexSet(integer: offset), withAnimation: [.effectFade, .slideDown])
-                        }
-                    }
-                    table.endUpdates()
-                    for row in visibleRows(in: table) { configureView(at: row, in: table) }
-                }
+            IssueTable.update(table, from: oldIds, to: next.map(\.id)) { view, row in
+                configure(view, with: entries[row])
             }
 
             if avatarVersion != self.avatarVersion {
                 self.avatarVersion = avatarVersion
-                for row in visibleRows(in: table) {
+                for row in IssueTable.loadedRows(of: table) {
                     table.view(atColumn: 0, row: row, makeIfNecessary: false)?.needsDisplay = true
                 }
             }
@@ -284,29 +255,31 @@ struct IssueTable: NSViewRepresentable {
             }
             if focusScrollToken != self.focusScrollToken {
                 self.focusScrollToken = focusScrollToken
-                if let focusedId, let row = entries.firstIndex(where: { $0.id == focusedId }) {
-                    NSAnimationContext.runAnimationGroup { context in
-                        context.duration = 0.12
-                        context.allowsImplicitAnimation = true
-                        table.scrollRowToVisible(row)
-                    }
-                }
+                scrollToFocused(attempts: 5)
             }
         }
 
-        /// The one row that moved, when that is all that changed.
-        private static func singleMove(_ difference: CollectionDifference<String>) -> (from: Int, to: Int)? {
-            guard difference.count == 2,
-                  case .remove(let from, _, let removedTo?) = difference.removals.first,
-                  case .insert(let to, _, let insertedFrom?) = difference.insertions.first,
-                  removedTo == to, insertedFrom == from else { return nil }
-            return (from, to)
-        }
-
-        private func visibleRows(in table: NSTableView) -> Range<Int> {
-            let range = table.rows(in: table.visibleRect)
-            let lower = max(0, range.location)
-            return lower..<min(entries.count, lower + range.length)
+        /// Brings the focused row into view, below the section header held at the top rather than behind it. A list
+        /// just switched to from the board isn't laid out yet: scrolled then, the row went to the top edge, under that
+        /// header, even when it was in view anyway. So it waits for the layout, a few turns of the run loop at most.
+        private func scrollToFocused(attempts: Int) {
+            guard let table, let focusedId, let row = entries.firstIndex(where: { $0.id == focusedId }) else { return }
+            guard !table.visibleRect.isEmpty else {
+                if attempts > 0 {
+                    DispatchQueue.main.async { [weak self] in self?.scrollToFocused(attempts: attempts - 1) }
+                }
+                return
+            }
+            var rect = table.rect(ofRow: row)
+            if !entries[row].isHeader {
+                rect.origin.y -= Theme.rowHeight
+                rect.size.height += Theme.rowHeight
+            }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.12
+                context.allowsImplicitAnimation = true
+                table.scrollToVisible(rect)
+            }
         }
 
         private func configureView(at row: Int, in table: NSTableView) {
@@ -472,7 +445,7 @@ struct IssueTable: NSViewRepresentable {
             case .header:
                 return
             }
-            for visible in visibleRows(in: tableView) { configureView(at: visible, in: tableView) }
+            for loaded in IssueTable.loadedRows(of: tableView) { configureView(at: loaded, in: tableView) }
         }
 
         func tableView(
@@ -922,7 +895,8 @@ struct IssueTable: NSViewRepresentable {
         func showNestTarget(_ id: String?) {
             guard id != nestTargetId, let table else { return }
             nestTargetId = id
-            for row in visibleRows(in: table) {
+            // Rows held just off screen too, which a drag scrolling the list brings into view.
+            for row in IssueTable.loadedRows(of: table) where entries.indices.contains(row) {
                 (table.rowView(atRow: row, makeIfNecessary: false) as? PlainRowView)?.isNestTarget = id != nil && entries[row].id == id
             }
         }
@@ -984,6 +958,10 @@ struct IssueTable: NSViewRepresentable {
             let place = "\(stickySectionId ?? "?") y=\(Int(sticky?.frame.minY ?? 0))"
             return "sticky=" + (shown ? place : "hidden") + " rows=" + rows.joined(separator: " ")
         }
+
+        /// The rows as the table shows them, and the ones being dragged, for the debug remote's checks.
+        var debugEntries: [Entry] { entries }
+        var debugDraggedIds: Set<String> { draggedIds }
         #endif
 
         @objc func clicked(_ sender: NSTableView) {
@@ -1038,18 +1016,19 @@ struct IssueTable: NSViewRepresentable {
         /// Highlights the part under the pointer, so it reads as clickable.
         func hoverPart(row: Int, pointInTable point: NSPoint) {
             guard let table else { return }
-            for visible in visibleRows(in: table) {
+            // Rows made ready off screen too, or one would come back into view lit up where the pointer left it.
+            for loaded in IssueTable.loadedRows(of: table) {
                 // An epic's header lights up as a whole, or just its arrow.
-                if let header = table.view(atColumn: 0, row: visible, makeIfNecessary: false) as? EpicHeaderRowCell {
+                if let header = table.view(atColumn: 0, row: loaded, makeIfNecessary: false) as? EpicHeaderRowCell {
                     let local = header.convert(point, from: table)
-                    header.hoveringFold = visible == row && header.isOnFold(local)
-                    header.highlighted = visible == row && !header.hoveringFold && draggedIds.isEmpty
+                    header.hoveringFold = loaded == row && header.isOnFold(local)
+                    header.highlighted = loaded == row && !header.hoveringFold && draggedIds.isEmpty
                     continue
                 }
-                guard let cell = table.view(atColumn: 0, row: visible, makeIfNecessary: false) as? IssueRowCell else { continue }
+                guard let cell = table.view(atColumn: 0, row: loaded, makeIfNecessary: false) as? IssueRowCell else { continue }
                 let local = cell.convert(point, from: table)
-                cell.hoveredPart = visible == row ? cell.part(at: local)?.kind : nil
-                cell.hoveringFold = visible == row && cell.isOnFold(local)
+                cell.hoveredPart = loaded == row ? cell.part(at: local)?.kind : nil
+                cell.hoveringFold = loaded == row && cell.isOnFold(local)
             }
         }
 
@@ -1079,6 +1058,64 @@ struct IssueTable: NSViewRepresentable {
             guard let item = item(at: row) else { return nil }
             return ItemMenuBuilder(model: model, item: item).menu()
         }
+    }
+}
+
+extension IssueTable {
+    /// Takes the table from one list of rows to the next, by their ids, and brings every row it holds a view for up to
+    /// date: issues that come or go slide in or out, one that changes place slides there. The data source answers
+    /// with the new rows already; `configure` gives a row's view what the row shows now, and leaves a view that shows
+    /// it already as it is.
+    @MainActor
+    static func update(_ table: NSTableView, from oldIds: [String], to newIds: [String], configure: (_ view: NSView, _ row: Int) -> Void) {
+        if oldIds != newIds {
+            let difference = newIds.difference(from: oldIds).inferringMoves()
+            if oldIds.isEmpty || difference.count > 300 {
+                table.reloadData()
+            } else if let move = singleMove(difference) {
+                // One issue changed place, by a drag or a new status: it slides there.
+                table.beginUpdates()
+                table.moveRow(at: move.from, to: move.to)
+                table.endUpdates()
+            } else {
+                // Rows slide to their new place when an issue changes status or order.
+                table.beginUpdates()
+                for change in difference {
+                    switch change {
+                    case .remove(let offset, _, _):
+                        table.removeRows(at: IndexSet(integer: offset), withAnimation: [.effectFade, .slideUp])
+                    case .insert(let offset, _, _):
+                        table.insertRows(at: IndexSet(integer: offset), withAnimation: [.effectFade, .slideDown])
+                    }
+                }
+                table.endUpdates()
+            }
+        }
+        // Every row with a view, not only those on screen: the table makes rows ready around them ahead of a scroll,
+        // and such a row would come into view as it was, until the pointer went over it.
+        for row in loadedRows(of: table) where row < newIds.count {
+            if let view = table.view(atColumn: 0, row: row, makeIfNecessary: false) { configure(view, row) }
+        }
+    }
+
+    /// The rows the table holds a view for: those on screen, and those it has made ready around them ahead of a scroll.
+    @MainActor
+    static func loadedRows(of table: NSTableView) -> [Int] {
+        var rows: [Int] = []
+        // Rows on their way out are counted as row -1.
+        table.enumerateAvailableRowViews { _, row in
+            if row >= 0 { rows.append(row) }
+        }
+        return rows
+    }
+
+    /// The one row that moved, when that is all that changed.
+    private static func singleMove(_ difference: CollectionDifference<String>) -> (from: Int, to: Int)? {
+        guard difference.count == 2,
+              case .remove(let from, _, let removedTo?) = difference.removals.first,
+              case .insert(let to, _, let insertedFrom?) = difference.insertions.first,
+              removedTo == to, insertedFrom == from else { return nil }
+        return (from, to)
     }
 }
 
@@ -1171,7 +1208,11 @@ final class HoverTableView: NSTableView {
     func updateHoverFromCurrentMouseLocation() {
         guard let window, window.isKeyWindow else { return }
         let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
-        coordinator?.hover(row: visibleRect.contains(point) ? row(at: point) : -1)
+        let row = visibleRect.contains(point) ? row(at: point) : -1
+        coordinator?.hover(row: row)
+        // The part under the pointer too: a part lit before the scroll would go on with its row, and with whichever
+        // issue later takes that row's view over, until the pointer moved.
+        coordinator?.hoverPart(row: row, pointInTable: point)
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
@@ -1191,6 +1232,8 @@ final class HoverTableView: NSTableView {
 /// dragging it moves them all.
 final class EpicHeaderRowCell: NSView {
     private var group: Nesting.EpicGroup?
+    /// What the header shows now.
+    var shownGroup: Nesting.EpicGroup? { group }
     private var title = NSAttributedString()
     private var count = NSAttributedString()
     /// The arrow, where it was drawn last.
@@ -1390,7 +1433,8 @@ final class PlainRowView: NSTableRowView {
 /// One issue, drawn directly. Configuring and drawing a recycled cell takes a fraction of a millisecond.
 final class IssueRowCell: NSView, NSViewToolTipOwner {
     weak var model: AppModel?
-    private var row: IssueRowModel?
+    /// What the row shows now.
+    private(set) var row: IssueRowModel?
     /// The date's place, for its tooltip.
     private var dateRect = NSRect.zero
     /// The number's place, whose tooltip names the repository.
@@ -1466,6 +1510,14 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
     func configure(_ row: IssueRowModel, highlighted: Bool) {
         if row != self.row {
+            // A view taken over from another issue starts without that issue's pointer on its parts, nor the places
+            // they had.
+            if row.item.id != self.row?.item.id {
+                hoveredPart = nil
+                hoveringFold = false
+                parts = []
+                foldRect = nil
+            }
             self.row = row
             let item = row.item
             // Picked rows are filled with the accent colour, as a Mac list shows its selection, and read in white.
@@ -2067,6 +2119,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 /// A status group's header: icon, name, count, and a button to add an issue with that status.
 final class IssueHeaderCell: NSView {
     private var section: IssueSectionModel?
+    /// What the header shows now.
+    var shownSection: IssueSectionModel? { section }
     private weak var model: AppModel?
     private let addButton = NSButton()
 
@@ -2080,6 +2134,7 @@ final class IssueHeaderCell: NSView {
         addButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: String(localized: .newIssueAction))?
             .withSymbolConfiguration(.init(pointSize: 11, weight: .medium))
         addButton.imagePosition = .imageOnly
+        addButton.contentTintColor = NSColor(Theme.textSecondary)
         addButton.target = self
         addButton.action = #selector(add)
         addSubview(addButton)
@@ -2134,12 +2189,11 @@ final class IssueHeaderCell: NSView {
 
     func configure(_ section: IssueSectionModel, model: AppModel) {
         self.model = model
-        addButton.isHidden = !section.canAdd
-        addButton.contentTintColor = NSColor(Theme.textSecondary)
-        addButton.toolTip = String(localized: .newIssueInGroupTooltip(group: section.title))
-        toolTip = section.style == .progress ? section.progress.map { String(localized: .milestoneProgressTooltip(done: $0.done, total: $0.total)) } : nil
         guard section != self.section else { return }
         self.section = section
+        addButton.isHidden = !section.canAdd
+        addButton.toolTip = String(localized: .newIssueInGroupTooltip(group: section.title))
+        toolTip = section.style == .progress ? section.progress.map { String(localized: .milestoneProgressTooltip(done: $0.done, total: $0.total)) } : nil
         needsDisplay = true
     }
 
@@ -2443,7 +2497,7 @@ struct ItemMenuBuilder {
             let copy = ClosureMenuItem(String(localized: .copyLink)) { [model, item] in model.copyLink(item) }
             copy.image = MenuIcons.symbol("link")
             menu.addItem(copy)
-            if item.number != nil {
+            if item.branchName != nil {
                 let branch = ClosureMenuItem(String(localized: .copyBranchName)) { [model, item] in model.copyBranchName(item) }
                 branch.image = MenuIcons.symbol("arrow.triangle.branch")
                 branch.keyEquivalent = "."

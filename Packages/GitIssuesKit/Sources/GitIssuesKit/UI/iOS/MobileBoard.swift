@@ -283,6 +283,8 @@ struct MobileColumn: View {
                 .animation(Theme.spring, value: column.nesting.rows.map(\.id))
             }
             .scrollIndicators(.hidden)
+            // Pull down: sync now, as on every list.
+            .refreshable { await model.refreshAndWait() }
             .coordinateSpace(.named(space))
             .frame(maxHeight: .infinity)
             .accessibilityIdentifier("column-\(column.title)")
