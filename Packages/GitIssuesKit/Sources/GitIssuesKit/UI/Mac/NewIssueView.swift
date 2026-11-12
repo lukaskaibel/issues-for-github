@@ -446,7 +446,11 @@ struct NewIssueView: View {
             let none = draft.statusId == nil && draft.projectId != nil
                 ? [PickerItem(id: "", title: String(localized: .noStatus), selected: true, icon: AnyView(StatusIcon(glyph: .none)))] : []
             return none + statuses.map { option in
-                PickerItem(id: option.id, title: option.name, selected: draft.statusId == option.id, icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id))))
+                PickerItem(
+                    id: option.id, title: option.name, selected: draft.statusId == option.id,
+                    icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id))),
+                    status: model.canCreateStatus(projectId: draft.projectId) ? option : nil
+                )
             }
         case .priority:
             return [PickerItem(id: "", title: String(localized: .noPriority), selected: draft.priorityId == nil, icon: AnyView(PriorityIcon(level: .none)))]

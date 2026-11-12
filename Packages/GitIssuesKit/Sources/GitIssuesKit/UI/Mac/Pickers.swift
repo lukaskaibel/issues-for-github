@@ -227,6 +227,9 @@ struct PickerRow: View {
             }
             Spacer(minLength: 8)
             if let trailing = item.trailing { trailing }
+            if let status = item.status, !status.id.hasPrefix(LocalID.prefix) {
+                StatusStyleButton(option: status, shown: active)
+            }
             if item.selected, onCheck == nil {
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .bold))

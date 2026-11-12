@@ -197,6 +197,54 @@ struct StatusKindPicker: View {
     }
 }
 
+/// GitHub's colours for a status, its own checked; a pick is saved on GitHub.
+struct StatusColourPicker: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var scheme
+    var option: FieldOption
+
+    var body: some View {
+        Picker(.colour, selection: Binding(
+            get: { option.color },
+            set: { model.setColor($0, of: option) }
+        )) {
+            ForEach(Defaults.optionColors, id: \.self) { color in
+                Label {
+                    Text(Defaults.colourName(color))
+                } icon: {
+                    MenuImages.label(StatusEditor.hex(color), scheme)
+                }
+                .tag(color)
+            }
+        }
+        .pickerStyle(.inline)
+    }
+}
+
+/// A long press on a status in a picker sheet: its icon and colour, right where it is picked.
+struct StatusRowMenu: ViewModifier {
+    var option: FieldOption?
+
+    func body(content: Content) -> some View {
+        if let option, !option.id.hasPrefix(LocalID.prefix) {
+            content.contextMenu {
+                Menu {
+                    StatusKindPicker(option: option)
+                } label: {
+                    Label(.statusIcon, systemImage: "circle.dashed")
+                }
+                Menu {
+                    StatusColourPicker(option: option)
+                } label: {
+                    Label(.colour, systemImage: "paintpalette")
+                }
+            }
+        } else {
+            content
+        }
+    }
+}
+
 /// The order of a list's sections, as a list to rearrange. A preference of this device only.
 struct ArrangeSectionsSheet: View {
     @Environment(AppModel.self) private var model

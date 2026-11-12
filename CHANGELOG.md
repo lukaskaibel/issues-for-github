@@ -8,6 +8,16 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Make a status where you pick one.** Type a name the board has no status of into any status picker, on the
+  Mac (the dropdown, `S`, the right-click menu, `⌘K` and the new issue) or on iPhone and iPad (the Status sheet, and
+  **New Status…** when you touch and hold an issue), and **Create status “…”** makes it in the project's Status field
+  on GitHub and moves the issue, or every picked one, into it: one pick. It goes next to the statuses of its kind, in
+  their colour, and shows at once. Making one needs a connection; offline, a notice says so.
+- **A status's icon and colour, right there.** The **⋯** on the highlighted status in a picker (on iPhone and iPad a
+  touch and hold) changes its colour on GitHub and its icon: Backlog, Todo, In progress, Done or Canceled. The icon is
+  also what the status means, so issues moved into a status you made Done are closed as completed. Columns' menus and
+  the Statuses screen on iPhone and iPad have **Icon** too. GitHub has no icons, so yours are kept in iCloud; a status
+  without one goes by its name, as before.
 - **Put an issue into an iteration.** An issue's iteration is now one click or key away: the Iteration row on the
   issue's page, the iteration chip on a card or row (when the view shows it), the right-click menu, **Move to
   Iteration…** in the command palette, or `⇧C`, as in Linear. The picker lists the iteration under way and those to
@@ -71,6 +81,11 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- A status added, renamed, recoloured or removed on github.com shows as soon as you pick a status, also for an issue
+  of a board that isn't open, such as from My Issues or the Inbox, instead of minutes later or after a restart.
+- Changing the statuses in the app (adding, renaming, recolouring, moving or deleting a column) no longer removes a
+  status someone added on github.com since the app last read the board: the change is made on GitHub's statuses as they
+  are now, so no issue loses its status.
 - On a wide board on the Mac, a sideways swipe scrolls the columns instead of going back, also with the sidebar
   showing. Going back or forward takes a new swipe once the board is scrolled all the way to that side, and the arrow
   of a swipe no longer stays on screen after it.

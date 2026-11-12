@@ -523,7 +523,8 @@ private struct DraftPickerSheet: View {
             return model.statusOptions(projectId: draft.projectId).map { option in
                 PickerItem(
                     id: option.id, title: option.name, selected: draft.statusId == option.id,
-                    icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id), size: 17))
+                    icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id), size: 17)),
+                    status: model.canCreateStatus(projectId: draft.projectId) ? option : nil
                 )
             }
         default:

@@ -81811,6 +81811,66 @@
         }
       }
     },
+    "statusIconAndColourTooltip" : {
+      "comment" : "Mac: tooltip and VoiceOver label of the small ⋯ button on the highlighted row of the status picker. Opens a menu with the status's icon (what it means: Backlog, Todo, In progress, Done, Canceled) and its colour on GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Symbol und Farbe"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icon and Colour"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icono y color"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Icône et couleur"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アイコンとカラー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아이콘 및 색상"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ícone e cor"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Значок и цвет"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图标和颜色"
+          }
+        }
+      }
+    },
     "statusIconFooter" : {
       "comment" : "iPhone and iPad: footer below the list of a project's statuses (Statuses screen in the project's settings), explaining the Icon menu next to each status.",
       "extractionState" : "manual",

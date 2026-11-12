@@ -128,6 +128,7 @@ struct PickerSheet: View {
             .buttonStyle(.borderless)
             .accessibilityAddTraits(item.selected ? .isSelected : [])
         }
+        .modifier(StatusRowMenu(option: item.status))
     }
 
     private func pick(_ item: PickerItem, keepOpen: Bool) {
