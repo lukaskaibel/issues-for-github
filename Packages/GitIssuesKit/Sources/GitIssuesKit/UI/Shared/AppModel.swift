@@ -114,6 +114,28 @@ enum PaletteMode: Hashable {
     case views
 }
 
+extension PaletteMode {
+    /// The same step for an issue that GitHub has given its own id since it was made here.
+    func remapping(_ remaps: [String: String]) -> PaletteMode {
+        func id(_ old: String) -> String { remaps[old] ?? old }
+        return switch self {
+        case .status(let itemId): .status(itemId: id(itemId))
+        case .priority(let itemId): .priority(itemId: id(itemId))
+        case .assignees(let itemId): .assignees(itemId: id(itemId))
+        case .labels(let itemId): .labels(itemId: id(itemId))
+        case .dueDate(let itemId): .dueDate(itemId: id(itemId))
+        case .parent(let itemId): .parent(itemId: id(itemId))
+        case .addSubIssue(let itemId): .addSubIssue(itemId: id(itemId))
+        case .blockedBy(let itemId): .blockedBy(itemId: id(itemId))
+        case .blocking(let itemId): .blocking(itemId: id(itemId))
+        case .milestone(let itemId): .milestone(itemId: id(itemId))
+        case .epic(let itemId): .epic(itemId: id(itemId))
+        case .iteration(let itemId, let fieldId): .iteration(itemId: id(itemId), fieldId: fieldId)
+        case .root, .projects, .views: self
+        }
+    }
+}
+
 enum Overlay: Equatable {
     case palette(PaletteMode)
     case newIssue(statusId: String?, parentItemId: String?)
@@ -1517,6 +1539,8 @@ public final class AppModel {
         if let id = focusedItemId, let new = remaps[id] { focusedItemId = new }
         if let id = hoveredItemId, let new = remaps[id] { hoveredItemId = new }
         if let id = peekItemId, let new = remaps[id] { peekItemId = new }
+        // A picker opened on an issue just made, such as S right after creating it, would otherwise go blank.
+        if case .palette(let mode)? = overlay, mode.remapping(remaps) != mode { overlay = .palette(mode.remapping(remaps)) }
         for (old, new) in remaps {
             if let draft = commentDrafts.removeValue(forKey: old) { commentDrafts[new] = draft }
         }

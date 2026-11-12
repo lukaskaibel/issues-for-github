@@ -152,6 +152,8 @@ All notable changes to this project are recorded here. The format follows
   button stayed grey until the code expired, a quarter of an hour later.
 - What you type on the page of an issue you just made keeps being saved when GitHub gives the issue its own number a
   moment later.
+- On the Mac, a picker opened on an issue you just made, such as with `S` right after creating it, no longer goes
+  blank when GitHub gives the issue its own number.
 
 ## [1.1.0] - 2026-10-28
 
