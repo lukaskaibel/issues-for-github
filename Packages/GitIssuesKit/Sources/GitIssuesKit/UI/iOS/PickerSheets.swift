@@ -53,7 +53,16 @@ struct PickerSheet: View {
             .searchable(text: $query, isPresented: $searching, placement: .navigationBarDrawer(displayMode: .always), prompt: Text(prompt))
             .onChange(of: query) { _, typed in onQueryChange?(typed) }
             .onSubmit(of: .search) {
-                if let first = visible.first { pick(first, keepOpen: false) }
+                // Return picks the first match of what was typed. With nothing typed it makes the recent choice at the
+                // top again, as on the Mac, or else keeps the value as it is; never the first row as such, which can
+                // be Remove from #9 or the first status.
+                if !query.isEmpty, let first = visible.first {
+                    pick(first, keepOpen: false)
+                } else if query.isEmpty, let recent = visible.first(where: \.recent) {
+                    pick(recent, keepOpen: false)
+                } else if query.isEmpty, !multiple {
+                    dismiss()
+                }
             }
             .onAppear { if focusesSearch { searching = true } }
             .searchPresentationToolbarBehavior(.avoidHidingContent)
