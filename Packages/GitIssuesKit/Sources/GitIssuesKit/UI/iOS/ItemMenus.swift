@@ -487,18 +487,17 @@ struct AssigneeMenu: View {
 
     var body: some View {
         let targets = model.targets(for: item)
+        let assigned = { (person: Person) in targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } } }
+        // The people assigned lately first, in a group of their own, as the pickers have them.
+        let people = model.splitRecent(model.people(for: item), .assignee, key: \.id, chosen: assigned)
         Menu {
-            ForEach(model.people(for: item)) { person in
-                Toggle(isOn: Binding(
-                    get: { targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } } },
-                    set: { _ in model.pick(.assignees, id: person.id, for: item) }
-                )) {
-                    Label {
-                        Text(person.login)
-                    } icon: {
-                        MenuImages.avatar(person, scheme)
-                    }
+            if !people.recent.isEmpty {
+                Section {
+                    ForEach(people.recent) { toggle($0, isOn: false) }
                 }
+            }
+            Section {
+                ForEach(people.rest) { toggle($0, isOn: assigned($0)) }
             }
         } label: {
             Label {
@@ -513,6 +512,19 @@ struct AssigneeMenu: View {
         }
         .onAppear { model.loadRepoMeta(for: item) }
     }
+
+    private func toggle(_ person: Person, isOn: Bool) -> some View {
+        Toggle(isOn: Binding(
+            get: { isOn },
+            set: { _ in model.pick(.assignees, id: person.id, for: item) }
+        )) {
+            Label {
+                Text(person.login)
+            } icon: {
+                MenuImages.avatar(person, scheme)
+            }
+        }
+    }
 }
 
 /// The repository's labels, each with a checkmark when set (on all picked issues, with several).
@@ -522,26 +534,37 @@ struct LabelsMenu: View {
     var item: Item
 
     var body: some View {
-        let labels = model.labels(for: item)
         let targets = model.targets(for: item)
+        let has = { (label: LabelRef) in targets.allSatisfy { target in target.labels.contains { $0.name == label.name } } }
+        // The labels given lately first, in a group of their own, as the pickers have them.
+        let labels = model.splitRecent(model.labels(for: item), .label, key: \.name, chosen: has)
         Menu {
-            if labels.isEmpty {
+            if labels.recent.isEmpty, labels.rest.isEmpty {
                 Text(.noLabelsInRepository)
             }
-            ForEach(labels) { label in
-                Toggle(isOn: Binding(
-                    get: { targets.allSatisfy { target in target.labels.contains { $0.name == label.name } } },
-                    set: { _ in model.pick(.labels, id: label.id, for: item) }
-                )) {
-                    Label {
-                        Text(label.name)
-                    } icon: {
-                        MenuImages.label(label.color, scheme)
-                    }
+            if !labels.recent.isEmpty {
+                Section {
+                    ForEach(labels.recent) { toggle($0, isOn: false) }
                 }
+            }
+            Section {
+                ForEach(labels.rest) { toggle($0, isOn: has($0)) }
             }
         } label: {
             Label(.labels, systemImage: "tag")
+        }
+    }
+
+    private func toggle(_ label: LabelRef, isOn: Bool) -> some View {
+        Toggle(isOn: Binding(
+            get: { isOn },
+            set: { _ in model.pick(.labels, id: label.id, for: item) }
+        )) {
+            Label {
+                Text(label.name)
+            } icon: {
+                MenuImages.label(label.color, scheme)
+            }
         }
     }
 }

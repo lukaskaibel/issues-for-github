@@ -273,14 +273,21 @@ extension AppModel {
                 ))
             }
             rows += candidates.filter(isParent).map { issueRow($0, near: item, selected: true) }
-            // The parent given last comes next, for the next issue to go under it too.
             let others = candidates.filter { !isParent($0) }.map { issueRow($0, near: item) }
-            return recentFirst(rows + others, .parent, after: rows.count)
+            // The parent given lately comes first, above Remove, for the next issue to go under it too.
+            return recentFirst(rows + others, .parent)
         case .addSubIssue:
             let excluded = ancestors(of: item).union(subIssueIds(of: item))
-            let rows = relatableIssues(near: item)
-                .filter { !excluded.contains($0.contentId ?? "") }
-                .map { issueRow($0, near: item) }
+            let candidates = relatableIssues(near: item).filter { !excluded.contains($0.contentId ?? "") }
+            // Issues you made lately and put under nothing yet come first: made one after another, they are sorted
+            // under their parents next.
+            let fresh = freshIssues(candidates)
+            let recent = fresh.map { candidate in
+                var row = issueRow(candidate, near: item)
+                row.recent = true
+                return row
+            }
+            let rows = recent + candidates.filter { !fresh.contains($0) }.map { issueRow($0, near: item) }
             #if os(macOS)
             // Typing a title and picking this carries the title into the new issue.
             let new = PickerItem(
@@ -288,7 +295,7 @@ extension AppModel {
                 icon: AnyView(Image(systemName: "plus").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)),
                 alwaysShown: true
             )
-            return [new] + rows
+            return recent + [new] + rows.dropFirst(recent.count)
             #else
             return rows
             #endif
@@ -311,7 +318,7 @@ extension AppModel {
             let candidates = relatableIssues(near: item).filter { !ids.contains($0.contentId ?? "") }
             let current = candidates.filter(linked).map { issueRow($0, near: item, selected: true) }
             let others = candidates.filter { !linked($0) }.map { issueRow($0, near: item) }
-            return recentFirst(current + others, kind == .blockedBy ? .blockedBy : .blocking, after: current.count)
+            return recentFirst(current + others, kind == .blockedBy ? .blockedBy : .blocking)
         }
     }
 
@@ -680,7 +687,7 @@ extension AppModel {
                 trailing: milestoneTitle(of: epic).map { AnyView(Text($0).font(.small).foregroundStyle(Theme.textTertiary).lineLimit(1)) }
             )
         }
-        // An epic is a parent too: the one issues went under last comes first.
-        return recentFirst(rows + epics, .parent, after: rows.count)
+        // An epic is a parent too: the one issues went under lately comes first.
+        return recentFirst(rows + epics, .parent)
     }
 }

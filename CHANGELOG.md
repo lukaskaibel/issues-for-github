@@ -80,6 +80,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **Pickers offer the likeliest choice first.** The parent, epic, blocker, label and assignee you chose lately now come
+  at the very top of their pickers, above **Remove from #…** and the current one, with the likeliest lit so `Return`
+  takes it. A choice made twice in a row comes first and stays there when one issue in
+  between goes elsewhere, so going through many issues that all get the same parent is one key each. A change to
+  several issues at once counts as one choice. **Add Existing Issue…** offers the issues you made in the last day first,
+  and on iPhone and iPad the Assignee and Labels submenus of a touch and hold list the recent ones first too.
 - **My Issues finds your issues in projects you work on alone.** Where nobody else has an open issue in a project,
   the issues assigned to nobody are yours too: they show in My Issues, its count and its overview, since in a project
   of your own you rarely assign issues to yourself.
@@ -95,6 +101,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **Return in a picker opened over the pointer picks what is lit.** A picker that opened under a pointer at rest, such
+  as **Set Parent Issue…** from the command palette, lit the row under the pointer instead of the recent choice, so
+  `Return` could take an issue out of its parent instead of moving it to the one chosen last. Rows now light under the
+  pointer only once it moves.
+- **New Sub-issue… stays at the top of Add Sub-issue on a large board** until you type; with more than 60 issues it
+  had moved to the end of the list.
 - A status added, renamed, recoloured or removed on github.com shows as soon as you pick a status, also for an issue
   of a board that isn't open, such as from My Issues or the Inbox, instead of minutes later or after a restart.
 - Changing the statuses in the app (adding, renaming, recolouring, moving or deleting a column) no longer removes a

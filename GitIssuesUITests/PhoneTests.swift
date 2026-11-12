@@ -395,6 +395,40 @@ final class PhoneTests: AppTestCase {
         XCTAssertLessThan(sync.frame.minY, pickerRow("bug").frame.minY)
     }
 
+    func testRecentEpicLeadsAboveRemove() {
+        // As if issues had just gone into "Drag and drop on the board" twice in a row: for #8, in another epic, it
+        // comes first, above taking #8 out of its epic, so the next pick is the same again.
+        launch(["-recentPicks", "{ parent = (demo-issue-40, demo-issue-40); }"])
+        scrollTo(element("row-#8"))
+        openCardMenu(element("row-#8"))
+        button("Add to Epic…").tap()
+        let recent = pickerRow("#40")
+        wait(recent)
+        XCTAssertLessThan(recent.frame.minY, pickerRow("Remove from").frame.minY, "The epic chosen lately comes first")
+        XCTAssertLessThan(recent.frame.minY, pickerRow("#41").frame.minY)
+        snapshot("Epic sheet with the recent one first")
+    }
+
+    func testRecentLabelsLeadTheLongPressMenu() {
+        // As if "ui" had just been added to other issues: the long-press menu's Labels lists it first.
+        launch(["-recentPicks", "{ label = (ui); }"])
+        scrollTo(element("row-#8"))
+        openCardMenu(element("row-#8"))
+        button("Labels").tap()
+        let ui = menuItem("ui")
+        wait(ui)
+        XCTAssertLessThan(ui.frame.minY, menuItem("auth").frame.minY, "The label given lately comes first")
+        XCTAssertLessThan(ui.frame.minY, menuItem("sync").frame.minY, "Before the one #8 has")
+        snapshot("Labels menu with the recent one first")
+        ui.tap()
+        waitForLabel(element("row-#8"), containing: "ui")
+    }
+
+    private func menuItem(_ name: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "label == %@ AND (elementType == %d OR elementType == %d)",
+            name, XCUIElement.ElementType.button.rawValue, XCUIElement.ElementType.switch.rawValue)).firstMatch
+    }
+
     func testDueDateSheet() {
         launch()
         // Below #27 and #38, which are on no board and lead My Issues.

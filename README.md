@@ -95,8 +95,10 @@ label the repository doesn't have and **Create label “…”** makes it there,
 Type a status the board doesn't have and **Create status “…”** makes it in the project's Status field on GitHub, next
 to the statuses of its kind and in their colour, and moves the issue (or every picked one) into it. The **⋯** on the
 highlighted status changes its icon and colour right there, without leaving the picker.
-Pickers put what you chose last at the top, above a line: give the next issue the same parent, epic, label or assignee
-with one key. Right-click a card for everything at once: the menu has rows as big as the pickers' and a search field, so
+Pickers put what you chose lately at the very top, above a line, with the likeliest lit: give the next issue the same
+parent, epic, label or assignee with one key. A choice made twice in a row stays on top even after a single pick of
+another, so a run of issues under one parent isn't broken by the one that went elsewhere. Right-click a card for
+everything at once: the menu has rows as big as the pickers' and a search field, so
 typing "rev" finds Status › In Review, and Status, Priority, Assignee, Labels, Due Date and Milestone open the same
 pickers as a click on the card.
 
@@ -627,7 +629,9 @@ it for everything at once. The right-click menu takes the keys at once: type to 
 submenu, `↑` `↓` to move, `→` to open a submenu or picker, `Return` to pick and `Esc` to close. A pick closes the
 dropdown, and so does a second click on what opened it; for several assignees or labels, tick the checkbox at the start
 of each row, or hold Shift while you click or press Return. The pickers for parent, epic, blockers, labels and assignees
-list your last three choices first, above a line, with the light on the latest, so `Return` repeats it. The sub-issue
+list up to three recent choices at the very top, above a line (also above **Remove from #…**), with the light on the
+likeliest, so `Return` repeats it: the latest, or one chosen twice in a row before a single other pick. Adding an
+existing sub-issue offers the issues you made in the last day first. The sub-issue
 count lists the sub-issues, whose status, priority and assignee change right there too. The red flag of a blocked issue
 names the issue that blocks it, `#5`, with `+1` for each further one, and lists them all when clicked, also beside a
 sub-issue in its parent. In the list, click a section header to fold it; Option-click folds them all.
@@ -751,7 +755,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Swipe left on an issue | Assign to me (or unassign), delete |
 | Touch and hold an issue | Status, priority, assignee, labels, due date, milestone and iteration as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
 | Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
-| Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several. Your last choices are listed first, as in every sheet that picks a parent, epic or blocker |
+| Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several. Your recent choices are listed first, as in every sheet that picks a parent, epic or blocker and in the Assignee and Labels submenus of a touch and hold |
 | Type a label the repository doesn't have in the Labels sheet | Create label “…” makes it in the repository and adds it |
 | Type a status the board doesn't have in the Status sheet | Create status “…” makes it on the board on GitHub and moves the issue into it; **New Status…** at the end of an issue's Status submenu and of the new issue's status chip opens that sheet ready to type |
 | Touch and hold a status in the Status sheet | Its icon and colour; also in a column's "…" and in the project's Statuses |

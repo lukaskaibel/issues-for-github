@@ -110,7 +110,7 @@ struct MobileRoot: View {
             }
         }
         .overlay(alignment: .top) {
-            // Outside the `.environment(navigation)` above, so it is handed over again: a notice opens issues.
+            // The overlay sits outside `.environment(navigation)` above, and a banner's Open needs the navigation.
             NoticeBanners()
                 .environment(navigation)
         }
