@@ -630,7 +630,9 @@ enum DebugRemote {
             // listdrop <number> <row>: drops the issue in the list above that row, as a drag would, with the other
             // picked ones when it is picked.
             // dragimage <number> <path>: the card an issue's row lifts off as, as a PNG.
-            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            // dragimage <number> <path> <parent number>: the smaller card it turns into over that issue.
+            var bits = argument.split(separator: " ", maxSplits: 2).map(String.init)
+            let parent = bits.count == 3 ? item(bits.removeLast(), model) : nil
             guard bits.count == 2, let item = item(bits[0], model),
                   let root = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 })?.contentView else { break }
             func find(_ view: NSView) -> HoverTableView? {
@@ -646,7 +648,11 @@ enum DebugRemote {
                     log("listdrop: \(coordinator.dropItem(item.id, above: row))")
                 }
             } else if let row = (0..<table.numberOfRows).first(where: { coordinator.item(at: $0)?.id == item.id }),
-                      let image = coordinator.liftedImage(row, in: table, picked: coordinator.picked(from: item.id))?.image,
+                      let image = parent.flatMap({ parent in
+                          (table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell)?.dragImage().map {
+                              IssueTable.Coordinator.nestingImage($0, under: parent, count: coordinator.picked(from: item.id)?.items.count, appearance: table.effectiveAppearance)
+                          }
+                      }) ?? coordinator.liftedImage(row, in: table, picked: coordinator.picked(from: item.id))?.image,
                       let tiff = image.tiffRepresentation,
                       let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
                 try? png.write(to: URL(fileURLWithPath: bits[1]))

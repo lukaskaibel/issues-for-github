@@ -85,9 +85,9 @@ struct IssueListView: View {
                         load: mostOpen > 0 ? CGFloat(section.progress.map { $0.total - $0.done } ?? 0) / CGFloat(mostOpen) : 0
                     )
                 },
-                // My Issues mixes projects, so there is no one order to put an issue into; All Issues mixes the board
-                // with issues on none.
-                canMoveRows: canEdit && model.allIssuesProjectId == nil,
+                // My Issues mixes projects, so there is no one order to put an issue into; there an issue only goes
+                // under another one. All Issues takes issues to a status, as its board does.
+                canMoveRows: canEdit,
                 focusedId: model.focusedItemId,
                 focusScrollToken: model.focusScrollToken,
                 avatarVersion: model.avatarVersion,
