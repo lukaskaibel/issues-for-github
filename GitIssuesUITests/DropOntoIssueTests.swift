@@ -70,14 +70,18 @@ final class DropOntoIssueTests: AppTestCase {
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'made a sub-issue of'")).firstMatch.exists)
     }
 
-    func testAParentCantBeDroppedOntoItsOwnSubIssue() {
+    func testAParentCantBeDroppedOntoItsOwnSubIssue() throws {
+        // A sub-issue hangs below its parent, and a touch dragged down slides over the card's menu; the iPad's pointer
+        // lifts the card without its menu.
+        try XCTSkipUnless(isPad, "Needs the iPad's pointer")
         openBoard(column: "In Progress")
         // #9 is in In Progress, with #13 hanging under it.
         let parent = element("card-#9")
         let child = element("card-#13")
         wait(parent)
         wait(child)
-        drag(parent, onto: child)
+        parent.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .click(forDuration: 0.6, thenDragTo: child.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)), withVelocity: .slow, thenHoldForDuration: 0.8)
         Thread.sleep(forTimeInterval: 1)
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'made a sub-issue of'")).firstMatch.exists)
         XCTAssertFalse(parent.label.contains("Sub-issue of"))
