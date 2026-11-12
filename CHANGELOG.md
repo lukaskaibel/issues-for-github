@@ -148,6 +148,8 @@ All notable changes to this project are recorded here. The format follows
 - **Copy Branch Name** is offered for issues only, not for pull requests, which have a branch of their own.
 - With every card taken out of My Issues on the Mac, **Bring Back All Cards** puts them back. Until now it said
   "Nothing assigned to you", with no way back.
+- Signing in on the Mac: **Cancel** on the code for GitHub lets you sign in another way at once. Until now every
+  button stayed grey until the code expired, a quarter of an hour later.
 
 ## [1.1.0] - 2026-10-28
 
