@@ -114,6 +114,74 @@ All notable changes to this project are recorded here. The format follows
   description keeps the menu of text, with Copy. Until now it opened the menu of the card or timeline line under the
   peek. A right-click on the bar of picked issues opens their menu, and one on a notice, the Inbox's Undo or the
   comment field (outside its text) does nothing, instead of opening the menu of what is under it or pressing a button.
+- On the Mac, switching a board to its list with a card in focus keeps the list where it starts; the card stays in
+  view below its section's header. Until now the list jumped so the card sat at the top edge, under the pinned header,
+  which drew over it. `K` past the top of the list stops below that header too.
+- In the command palette, a command whose name begins with what you typed comes first: "go to" picks **Go to View…**,
+  not an issue that merely has those letters in order. Issues the view on screen leaves out, such as ones its filter
+  hides, the roadmap's issues or those on another board, are found as well, after the ones on screen.
+- In the Inbox on the Mac, with one notification picked (`X`) and another on screen, every key acts on the one on
+  screen, as its buttons and `S` `P` `A` `L` `I` do. Until now `E`, `U` and `⇧S` acted on the picked one.
+- In the Inbox, `⇧⌫` (archive everything read) no longer marks the notification that would move into the selection as
+  read.
+- On the Mac, ⌘- or Shift-clicking a sub-issue of the issue beside the Inbox opens it. Until now it was marked as
+  picked, with nothing to act on it and no way to let it go.
+- On an issue opened full size from the Inbox, `↑` `↓` go on to the next or previous notification, as `J` `K` do. On
+  an issue the board or list behind it doesn't show, such as one opened from the command palette, the arrow keys are
+  no longer swallowed.
+- On the Mac, choosing a board in another repository for a new issue drops the labels picked for the first one. GitHub
+  refused the issue with them, and it was lost.
+- In All Issues on the Mac, the plus of a column puts a new issue on that board, also when one left on no board last
+  time comes back.
+- On iPhone and iPad, a new issue begun on Home, in the Inbox or in My Issues no longer takes labels, people, an
+  iteration or a parent from the filter of the first project's view.
+- On iPhone and iPad, a new issue begun in My Issues stays assigned to you when you choose another project for it, so
+  it shows up there.
+- On iPhone and iPad, the plus of a list's **No status** section makes an issue without a status, as that column on
+  the board does.
+- Filters with an apostrophe in a value, such as the status "Won't do", match. Until now such a view showed what it
+  should hide.
+- In the filter menu, **Updated** and **Due date** take one value, so picking another replaces it. **No assignee**,
+  **Has date** and the like are ticked when they are set, and picking them again takes them away instead of adding
+  them a second time.
+- Choosing Status again under Group by or Columns in Display no longer counts as a change of yours, with its dot and
+  Reset.
+- **Complete** on a milestone leaves issues that are closed on GitHub where they are, even when their column still
+  says In Progress, and closed issues no longer get due reminders.
+- Messages about an issue, such as a parent finished with its last sub-issue, an epic started, or a new issue the view
+  doesn't show, have an **Open** button and go away by themselves, on Mac, iPhone and iPad. Until now they stayed
+  until closed, without a way to open the issue, and piled up.
+- Back and Forward bring a roadmap view back as its timeline, not as a list.
+- On a roadmap view's timeline on the Mac, `⌘2` and `G` `L` show the list. Until now they did nothing.
+- On the roadmap, grabbing a milestone's diamond and letting go where it was keeps its date. Until now it moved a day
+  later.
+- On the Mac, `⌘↵` in an issue's title, or anywhere on its page but the comment field, no longer posts a comment you
+  had begun.
+- On the Mac, `⌘S` no longer saves a view's changed filter for everyone while an issue or the new-issue window is in
+  front of it.
+- The command palette no longer offers **Filter…** and **Display Options** while an issue is open, where they did
+  nothing.
+- **Copy Branch Name** is offered for issues only, not for pull requests, which have a branch of their own.
+- With every card taken out of My Issues on the Mac, **Bring Back All Cards** puts them back. Until now it said
+  "Nothing assigned to you", with no way back.
+- Signing in on the Mac: **Cancel** on the code for GitHub lets you sign in another way at once. Until now every
+  button stayed grey until the code expired, a quarter of an hour later.
+- What you type on the page of an issue you just made keeps being saved when GitHub gives the issue its own number a
+  moment later.
+- On the Mac, a picker opened on an issue you just made, such as with `S` right after creating it, no longer goes
+  blank when GitHub gives the issue its own number.
+- On iPhone and iPad, an issue you made stays among the issues you opened last once GitHub has created it.
+- On iPhone and iPad, pull down on a board or an issue to sync now, as on the lists; an issue also fetches its
+  comments.
+- On iPad, choosing another view of the same project in the sidebar opens that view, not the issue that was open in
+  the one before.
+- On iPhone, a notification whose issue is still being read opens in the app once it is, instead of on github.com.
+- On iPhone and iPad, the milestone and New View sheets don't close with a swipe while they hold what you typed;
+  Cancel still does.
+- In the Inbox, closing, reopening or renaming an issue that is on none of your boards shows at once, in its row and
+  on its page. Until now the Inbox kept saying it was open, offered to close it again, and kept the old title.
+- On the Mac, the plus of an epic's **No milestone** group makes a sub-issue in no milestone, also when the epic was
+  opened from a milestone. Until now it went into that milestone.
 
 ## [1.1.0] - 2026-10-28
 

@@ -375,6 +375,7 @@ struct NoticeBanners: View {
 
 private struct NoticeBanner: View {
     @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
     var notice: Notice
     @State private var offset: CGFloat = 0
 
@@ -400,6 +401,10 @@ private struct NoticeBanner: View {
                     .buttonStyle(.bordered)
                     .font(.footnote.weight(.medium))
                     .accessibilityIdentifier("notice-undo")
+                } else if case .openItem(let id) = notice.action {
+                    Button(.noticeOpenIssue) { open(id) }
+                        .buttonStyle(.bordered)
+                        .font(.footnote.weight(.medium))
                 } else if let label = notice.action?.adoptLabel {
                     HStack(spacing: 8) {
                         Button(.keepMine) { model.status.dismiss(notice.id) }
@@ -430,8 +435,13 @@ private struct NoticeBanner: View {
         .glassPanel(in: .rect(cornerRadius: 22))
         .contentShape(.rect(cornerRadius: 22))
         .onTapGesture {
-            // A notice that only tells something goes away when tapped; one that asks waits for an answer.
-            if notice.action == nil || notice.action?.isUndo == true { model.status.dismiss(notice.id) }
+            // A notice that only tells something goes away when tapped, one about an issue opens it; one that asks
+            // waits for an answer.
+            if case .openItem(let id) = notice.action {
+                open(id)
+            } else if notice.action == nil || notice.action?.isUndo == true {
+                model.status.dismiss(notice.id)
+            }
         }
         .offset(y: min(offset, 0))
         .gesture(
@@ -447,11 +457,18 @@ private struct NoticeBanner: View {
         )
         .accessibilityElement(children: .contain)
         .task {
-            // Notices that ask for a decision stay until answered; one that can be undone stays a little longer.
-            guard notice.action == nil || notice.action?.isUndo == true else { return }
-            try? await Task.sleep(for: .seconds(notice.isWarning || notice.action?.isUndo == true ? 10 : 3))
+            // Notices that ask for a decision stay until answered; one with a button stays a little longer.
+            guard notice.action?.adoptLabel == nil else { return }
+            try? await Task.sleep(for: .seconds(notice.isWarning || notice.action != nil ? 10 : 3))
             model.status.dismiss(notice.id)
         }
+    }
+
+    /// The issue's screen, on top of the one in front: `open` only shows an issue on the Mac.
+    private func open(_ itemId: String) {
+        model.status.dismiss(notice.id)
+        guard model.item(id: itemId) != nil else { return }
+        navigation.push(.issue(itemId), on: navigation.tab)
     }
 }
 #endif

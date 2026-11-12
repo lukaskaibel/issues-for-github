@@ -322,9 +322,13 @@ struct RoadmapTimeline: View {
         }
         if drag != nil || dueDrag != nil { model.isDragging = true }
         if var current = dueDrag {
+            // A sync while dragging may have taken milestones away.
+            guard layout.roadmap.windows.indices.contains(current.window) else { return }
             let window = layout.roadmap.windows[current.window]
-            // Not before the day after the milestone before it, nor after the one after it.
-            var day = layout.day(at: value.location.x)
+            // As far as the pointer moved, so that grabbing the diamond, which sits at the end of its day, and letting
+            // go where it was changes nothing. Not before the day after the milestone before it, nor after the one
+            // after it.
+            var day = window.end.adding(days: Int(((value.location.x - value.startLocation.x) / layout.scale).rounded()))
             if current.window > 0 { day = max(day, layout.roadmap.windows[current.window - 1].end.adding(days: 1)) }
             if layout.roadmap.windows.indices.contains(current.window + 1), !layout.roadmap.windows[current.window + 1].undated {
                 day = min(day, layout.roadmap.windows[current.window + 1].end.adding(days: -1))
@@ -348,6 +352,7 @@ struct RoadmapTimeline: View {
         }
         guard !cancelledDrag else { return }
         if let dueDrag {
+            guard layout.roadmap.windows.indices.contains(dueDrag.window) else { return }
             let window = layout.roadmap.windows[dueDrag.window]
             if dueDrag.day != window.end { model.setDue(window.group, to: dueDrag.day) }
             return
@@ -359,9 +364,9 @@ struct RoadmapTimeline: View {
             if case .row = drag.from { model.moveEpic(epic, to: nil, projectId: projectId) }
             return
         }
-        guard let target = drag.target else { return }
+        guard let target = drag.target, layout.roadmap.windows.indices.contains(target) else { return }
         let group = layout.roadmap.windows[target].group
-        if case .row(let index) = drag.from, layout.roadmap.rows[index].runs == [target...target] { return }
+        if case .row(let index) = drag.from, layout.roadmap.rows.indices.contains(index), layout.roadmap.rows[index].runs == [target...target] { return }
         model.moveEpic(epic, to: group, projectId: projectId)
     }
 
@@ -604,7 +609,7 @@ private struct TimelinePainter {
         let top = drag.location.y - TimelineLayout.barHeight / 2
         var width: CGFloat = 0
         var x: CGFloat
-        if let target = drag.target {
+        if let target = drag.target, roadmap.windows.indices.contains(target) {
             let span = layout.span(of: roadmap.windows[target])
             x = span.lowerBound + 2
             width = span.upperBound - span.lowerBound - 4
