@@ -31,12 +31,15 @@ extension AppModel {
 
     /// Remembers a choice.
     func noteRecent(_ kind: RecentPick, _ key: String?, at date: Date = .now) {
-        guard let key, !key.isEmpty else { return }
-        if let last = Self.lastNoted, last.kind == kind, last.key == key, abs(date.timeIntervalSince(last.date)) < Self.samePick {
-            return
-        }
+        guard let key, !key.isEmpty, !Self.isSamePick(as: Self.lastNoted, kind, key, at: date) else { return }
         Self.lastNoted = (kind, key, date)
         recentPicks[kind.rawValue] = Self.noting(key, in: recentPicks[kind.rawValue] ?? [])
+    }
+
+    /// Whether a choice is the one noted just before, within a moment: the same change made to several issues.
+    static func isSamePick(as last: (kind: RecentPick, key: String, date: Date)?, _ kind: RecentPick, _ key: String, at date: Date) -> Bool {
+        guard let last else { return false }
+        return last.kind == kind && last.key == key && abs(date.timeIntervalSince(last.date)) < samePick
     }
 
     /// The choices made lately, likeliest first.
@@ -121,14 +124,18 @@ extension AppModel {
     /// Of `candidates`, the open issues you made in the last day that are under no other issue yet, newest first, at
     /// most three: the likeliest to be put under a parent next.
     func freshIssues(_ candidates: [Item], now: Date = .now) -> [Item] {
-        guard let login = viewer?.login else { return [] }
+        Self.freshIssues(candidates, by: viewer?.login, now: now)
+    }
+
+    static func freshIssues(_ candidates: [Item], by login: String?, now: Date) -> [Item] {
+        guard let login else { return [] }
         return Array(candidates
             .filter { candidate in
                 guard candidate.authorLogin == login, candidate.parentId == nil, !candidate.isClosed, !candidate.isEpic,
                       let created = candidate.createdAt else { return false }
-                return now.timeIntervalSince(created) < Self.freshFor
+                return now.timeIntervalSince(created) < freshFor
             }
             .sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) }
-            .prefix(Self.recentShown))
+            .prefix(recentShown))
     }
 }
