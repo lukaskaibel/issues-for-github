@@ -139,6 +139,8 @@ All notable changes to this project are recorded here. The format follows
 - On a roadmap view's timeline on the Mac, `⌘2` and `G` `L` show the list. Until now they did nothing.
 - On the roadmap, grabbing a milestone's diamond and letting go where it was keeps its date. Until now it moved a day
   later.
+- On the Mac, `⌘↵` in an issue's title, or anywhere on its page but the comment field, no longer posts a comment you
+  had begun.
 
 ## [1.1.0] - 2026-10-28
 

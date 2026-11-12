@@ -877,7 +877,8 @@ struct CommentComposer: View {
                     .background(Circle().fill(canSend ? Theme.accentFill : Theme.field))
             }
             .buttonStyle(PlainPressStyle())
-            .keyboardShortcut(.return, modifiers: .command)
+            // Only while writing the comment: ⌘↵ in the title or elsewhere on the page doesn't post a half-written one.
+            .keyboardShortcut(focused ? KeyboardShortcut(.return, modifiers: .command) : nil)
             .disabled(!canSend)
             .help(Text(.titleWithShortcutKey(title: String(localized: .postComment), key: "⌘↵")))
             .accessibilityLabel(Text(.sendCommentButton))
