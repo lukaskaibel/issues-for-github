@@ -81,6 +81,10 @@ All notable changes to this project are recorded here. The format follows
   as **Set Parent Issue…** from the command palette, lit the row under the pointer instead of the recent choice, so
   `Return` could take an issue out of its parent instead of moving it to the one chosen last. Rows now light under the
   pointer only once it moves.
+- **On an iPad keyboard, Return with nothing typed no longer picks a picker's first row,** such as **Remove from #…**
+  or the first status. It repeats the recent choice at the top, or keeps the value as it is.
+- **New Sub-issue… stays at the top of Add Sub-issue on a large board** until you type; with more than 60 issues it
+  had moved to the end of the list.
 
 - On a wide board on the Mac, a sideways swipe scrolls the columns instead of going back, also with the sidebar
   showing. Going back or forward takes a new swipe once the board is scrolled all the way to that side, and the arrow
