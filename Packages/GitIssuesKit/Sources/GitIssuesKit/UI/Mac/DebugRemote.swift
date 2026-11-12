@@ -44,6 +44,12 @@ enum DebugRemote {
     }
 
     private static func item(_ token: String, _ model: AppModel) -> Item? {
+        // "Sandbox#17": the issue of that number on a project, by part of its title, whatever is on screen.
+        let parts = token.split(separator: "#", maxSplits: 1).map(String.init)
+        if parts.count == 2, let number = Int(parts[1]),
+           let project = model.projects.first(where: { $0.title.localizedCaseInsensitiveContains(parts[0]) }) {
+            return model.allItems.first { $0.projectId == project.id && $0.number == number }
+        }
         guard let number = Int(token) else { return nil }
         return model.scopedItems.first { $0.number == number } ?? model.allItems.first { $0.number == number }
     }
@@ -905,8 +911,10 @@ enum DebugRemote {
             }
             log("columns " + model.columns.map(\.title).joined(separator: " | ") + " hidden " + (model.scope.map { model.hiddenColumns(in: $0).map(\.title) } ?? []).joined(separator: " | "))
         case "statuses":
-            // The statuses of the board on screen: name, id, colour, kind (* when chosen in the app) and how many cards.
-            guard let projectId = model.currentProjectId else { break }
+            // statuses [project]: the statuses of the board on screen, or of a project by part of its title: name, id,
+            // colour, kind (* when chosen in the app) and how many cards.
+            let named = argument.isEmpty ? nil : model.projects.first { $0.title.localizedCaseInsensitiveContains(argument) }?.id
+            guard let projectId = named ?? model.currentProjectId else { break }
             for option in model.statusOptions(projectId: projectId) {
                 let count = model.issueCount(projectId: projectId, statusId: option.id)
                 log("status \(option.name) id=\(option.id) color=\(option.color) kind=\(option.statusCategory)\(option.chosenKind == nil ? "" : "*") cards=\(count)")
