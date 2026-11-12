@@ -693,13 +693,19 @@ private struct MobileColumnHeader: View {
     /// Whether this board can hide its columns: a view's and All Issues', not a milestone's.
     private var hides: Bool { model.canHideColumns(in: scope) }
 
-    /// Rename, colour and move the status.
+    /// Rename, give an icon and colour, and move the status.
     @ViewBuilder private func statusItems(_ option: FieldOption) -> some View {
         Button {
             name = option.name
             renaming = true
         } label: {
             Label(.renameEllipsis, systemImage: "pencil")
+        }
+        // What the status means, drawn as its circle; kept in iCloud, as GitHub has no icons.
+        Menu {
+            StatusKindPicker(option: option)
+        } label: {
+            Label(.statusIcon, systemImage: "circle.dashed")
         }
         Menu {
             Picker(.colour, selection: Binding(

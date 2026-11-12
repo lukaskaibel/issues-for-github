@@ -260,6 +260,9 @@ struct PickerRow: View {
             }
             Spacer(minLength: 8)
             if let trailing = item.trailing { trailing }
+            if let status = item.status, !status.id.hasPrefix(LocalID.prefix) {
+                StatusStyleButton(option: status, shown: active)
+            }
             if item.selected, onCheck == nil {
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .bold))
@@ -334,7 +337,8 @@ struct ItemPicker: View {
                 large: large,
                 opensOnSelection: kind.opensOnSelection,
                 limit: kind.picksIssues ? 60 : .max,
-                creating: kind == .labels ? { model.newLabelRow($0, projectId: item.projectId, repoId: item.repoId) } : nil,
+                creating: kind == .labels ? { model.newLabelRow($0, projectId: item.projectId, repoId: item.repoId) }
+                    : kind == .status ? { model.newStatusRow($0, for: item) } : nil,
                 onQueryChange: { query = $0 },
                 onPick: { id in
                     // A title typed to look for an issue becomes the new one's, when none was picked.
@@ -350,6 +354,7 @@ struct ItemPicker: View {
             .onAppear {
                 // Sub-issues and blockers show checked or left out, so the picker wants them fresh.
                 if kind.picksIssues { model.loadRelations(for: item) }
+                if kind == .status { model.refreshStatuses(projectId: item.projectId) }
             }
         }
     }

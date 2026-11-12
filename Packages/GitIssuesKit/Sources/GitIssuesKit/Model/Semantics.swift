@@ -217,7 +217,8 @@ private final class InferenceCache<Value>: @unchecked Sendable {
 }
 
 extension FieldOption {
-    public var statusCategory: StatusCategory { StatusCategory.infer(from: name) }
+    /// What the status means: the kind chosen for it in the app, else what its name suggests.
+    public var statusCategory: StatusCategory { chosenKind ?? StatusCategory.infer(from: name) }
     public var priorityLevel: PriorityLevel { PriorityLevel.infer(from: name) }
 }
 

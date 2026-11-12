@@ -18,6 +18,9 @@ struct PickerItem: Identifiable {
     var recent = false
     /// Makes what was typed, such as a new label: picked on its own, never ticked along with others.
     var creates = false
+    /// A status whose icon and colour can be changed right from its row: on the Mac with a button on the lit row, on
+    /// iPhone and iPad with a long press.
+    var status: FieldOption? = nil
 }
 
 /// Subsequence match: every character of the query appears in order. Higher is better; nil is no match.
@@ -176,12 +179,14 @@ extension AppModel {
         switch kind {
         case .status:
             guard item.isOnBoard else { return stateItems(for: item, targets: targets) + addToProjectItems(for: item) }
+            let editable = canCreateStatus(projectId: item.projectId)
             return statusOptions(projectId: item.projectId).enumerated().map { index, option in
                 PickerItem(
                     id: option.id, title: option.name,
                     selected: targets.allSatisfy { target in statusOption(of: target)?.name == option.name },
                     icon: AnyView(StatusIcon(glyph: glyph(projectId: item.projectId, optionId: option.id))),
-                    shortcut: index < 9 ? "\(index + 1)" : nil
+                    shortcut: index < 9 ? "\(index + 1)" : nil,
+                    status: editable ? option : nil
                 )
             }
         case .priority:
@@ -471,6 +476,10 @@ extension AppModel {
         let targets = targets(for: current).map { target in allItems.first { $0.id == target.id } ?? target }
         switch kind {
         case .status:
+            if let name = Self.newStatusName(id), let projectId = current.projectId {
+                createStatus(named: name, projectId: projectId, for: targets)
+                return
+            }
             guard current.isOnBoard else {
                 if id == Self.toggleStateId {
                     let close = !targets.allSatisfy(\.isClosed)

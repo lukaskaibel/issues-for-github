@@ -325,6 +325,7 @@ struct IterationMenuItems: View {
 /// share.
 struct StatusMenu: View {
     @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
     @Environment(\.colorScheme) private var scheme
     var item: Item
 
@@ -361,6 +362,12 @@ struct StatusMenu: View {
                 }
             }
             .pickerStyle(.inline)
+            // One the board doesn't have yet, typed into the status sheet.
+            if model.canCreateStatus(for: item) {
+                Button(.newStatusEllipsis, systemImage: "plus") {
+                    navigation.sheet = .newStatus(itemId: item.id)
+                }
+            }
         } label: {
             Label {
                 Text(.status)
@@ -368,7 +375,7 @@ struct StatusMenu: View {
                 MenuImages.status(model.glyph(of: item), scheme)
             }
         }
-        .disabled(statuses.isEmpty)
+        .disabled(statuses.isEmpty && !model.canCreateStatus(for: item))
     }
 
     private var selection: Binding<String?> {

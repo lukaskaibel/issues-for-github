@@ -386,7 +386,7 @@ extension AppModel {
         mutations.append(.createIssue(.init(
             itemId: itemId, contentId: contentId, projectId: project?.id, repoId: repo.id, repo: repo.nameWithOwner,
             title: title, body: draft.body,
-            statusFieldId: project?.statusFieldId, statusId: project == nil ? nil : draft.statusId,
+            statusFieldId: project?.statusFieldId, statusId: project == nil ? nil : savedOptionId(draft.statusId),
             priorityFieldId: project?.priorityFieldId, priorityId: project == nil ? nil : draft.priorityId,
             dueDate: project == nil ? nil : draft.dueDate,
             assignees: draft.assignees, labels: draft.labels,
@@ -506,12 +506,21 @@ extension AppModel {
     /// Saves a new set of status columns. Shown at once; rolled back if GitHub refuses.
     func saveColumns(projectId: String, _ newOptions: [RemoteOption]) {
         guard let fieldId = projects.first(where: { $0.id == projectId })?.statusFieldId else { return }
+        // What the change was made to, so GitHub's options are changed in the same way (`OptionMerge`).
+        let current = statusOptions(projectId: projectId)
+        let base = current.filter { !$0.id.hasPrefix(LocalID.prefix) }.map(\.remote)
+        // A status still on its way to GitHub keeps its place-holding id, which its own save hands over.
+        let onTheirWay = current.filter { $0.id.hasPrefix(LocalID.prefix) }
+        var placeholders: [String: String] = [:]
         do {
             try db.writer.write { db in
                 try FieldOption.filter(Column("projectId") == projectId && Column("fieldId") == fieldId).deleteAll(db)
                 for (index, option) in newOptions.enumerated() {
+                    let waiting = option.id == nil ? onTheirWay.first { OptionMerge.sameName($0.name, option.name) }?.id : nil
+                    let id = option.id ?? waiting ?? LocalID.make()
+                    if option.id == nil, waiting == nil { placeholders[id] = option.name }
                     try FieldOption(
-                        id: option.id ?? LocalID.make(), fieldId: fieldId, projectId: projectId, kind: .status,
+                        id: id, fieldId: fieldId, projectId: projectId, kind: .status,
                         name: option.name, color: option.color, descr: option.descr, position: index
                     ).insert(db)
                 }
@@ -521,9 +530,13 @@ extension AppModel {
         }
         reloadNow()
         let engine = self.engine
+        let placeholdersMade = placeholders
         Task {
             do {
-                try await engine.updateOptions(projectId: projectId, fieldId: fieldId, kind: .status, options: newOptions)
+                try await engine.updateOptions(
+                    projectId: projectId, fieldId: fieldId, kind: .status, base: base, options: newOptions,
+                    placeholders: placeholdersMade
+                )
             } catch {
                 status.post(Notice(
                     title: String(localized: .columnsCouldNotBeSaved),

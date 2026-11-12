@@ -250,6 +250,11 @@ public final class AppModel {
     private(set) var personal: PersonalStore
     /// Each project's glyph and colour, which GitHub has no place for either; shared through iCloud.
     private(set) var projectLooks: ProjectLooks
+    /// The kinds given to statuses in the app, which draw their circles (`StatusKinds`).
+    private(set) var statusKinds: StatusKinds
+    /// Statuses made here, from the id they were shown under until GitHub saved them to the id GitHub gave them, so a
+    /// new issue's form that picked one carries on with it.
+    var optionIdRemaps: [String: String] = [:]
     /// How My Issues' overview is arranged, the same on every device of yours.
     private(set) var overviewArrangement: OverviewArrangementStore
     /// The page each card of My Issues' overview shows, by the card's id: the key of a column (`MineColumn.key`) or a
@@ -580,6 +585,7 @@ public final class AppModel {
         db = database
         personal = PersonalStore(persistent: !demo)
         projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
+        statusKinds = StatusKinds(persistent: !demo)
         overviewArrangement = OverviewArrangementStore(persistent: !demo)
         auth = AuthStore()
         // Logins saved by earlier versions move to iCloud Keychain, and a login shared by another device is used.
@@ -610,6 +616,7 @@ public final class AppModel {
         #endif
         if demo { seedDemoDisplays() }
         followArrangement()
+        followStatusKinds()
         startObserving()
         restoreScope()
         scheduleInboxWake()
@@ -742,8 +749,10 @@ public final class AppModel {
         isDemo = demo
         personal = PersonalStore(persistent: !demo)
         projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
+        statusKinds = StatusKinds(persistent: !demo)
         overviewArrangement = OverviewArrangementStore(persistent: !demo)
         followArrangement()
+        followStatusKinds()
         if demo { seedDemoDisplays() }
         resetNavigation()
         viewer = nil
@@ -860,7 +869,8 @@ public final class AppModel {
         }
         #endif
         if projects != listed { projects = listed }
-        if options != snapshot.options { options = snapshot.options }
+        let options = withChosenKinds(snapshot.options)
+        if self.options != options { self.options = options }
         if repos != snapshot.repos { repos = snapshot.repos }
         if allItems != snapshot.items { allItems = snapshot.items }
         outbox = snapshot.outbox
@@ -900,6 +910,8 @@ public final class AppModel {
         let projectId = item.projectId
         let repoId = item.repoId
         let fetchable = item.kind != .draft && !item.isLocalOnly
+        // Its status can be changed from here, also when its board isn't the one on screen.
+        refreshStatuses(projectId: projectId)
         let engine = self.engine
         Task {
             await engine.setWatchedIssue(fetchable ? contentId : nil)
