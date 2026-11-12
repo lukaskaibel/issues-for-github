@@ -128,6 +128,8 @@ All notable changes to this project are recorded here. The format follows
 - In the filter menu, **Updated** and **Due date** take one value, so picking another replaces it. **No assignee**,
   **Has date** and the like are ticked when they are set, and picking them again takes them away instead of adding
   them a second time.
+- Choosing Status again under Group by or Columns in Display no longer counts as a change of yours, with its dot and
+  Reset.
 
 ## [1.1.0] - 2026-10-28
 
