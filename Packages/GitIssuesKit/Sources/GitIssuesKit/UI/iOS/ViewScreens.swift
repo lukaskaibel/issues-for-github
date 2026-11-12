@@ -485,6 +485,8 @@ struct NewViewSheet: View {
                 }
             }
         }
+        // A name typed isn't lost to a swipe down; Cancel still lets it go.
+        .interactiveDismissDisabled(!duplicate && !(template?.name.trimmingCharacters(in: .whitespaces).isEmpty ?? true))
         .onAppear {
             guard template == nil else { return }
             let source = model.view(id: sourceViewId)

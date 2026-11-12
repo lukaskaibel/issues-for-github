@@ -160,6 +160,8 @@ All notable changes to this project are recorded here. The format follows
 - On iPad, choosing another view of the same project in the sidebar opens that view, not the issue that was open in
   the one before.
 - On iPhone, a notification whose issue is still being read opens in the app once it is, instead of on github.com.
+- On iPhone and iPad, the milestone and New View sheets don't close with a swipe while they hold what you typed;
+  Cancel still does.
 
 ## [1.1.0] - 2026-10-28
 
