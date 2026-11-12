@@ -110,6 +110,9 @@ All notable changes to this project are recorded here. The format follows
   read.
 - On the Mac, ⌘- or Shift-clicking a sub-issue of the issue beside the Inbox opens it. Until now it was marked as
   picked, with nothing to act on it and no way to let it go.
+- On an issue opened full size from the Inbox, `↑` `↓` go on to the next or previous notification, as `J` `K` do. On
+  an issue the board or list behind it doesn't show, such as one opened from the command palette, the arrow keys are
+  no longer swallowed.
 
 ## [1.1.0] - 2026-10-28
 

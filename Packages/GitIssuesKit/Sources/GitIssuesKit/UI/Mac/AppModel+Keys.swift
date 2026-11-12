@@ -246,9 +246,11 @@ extension AppModel {
 
         switch event.keyCode {
         case 125: // down
+            guard stepsFromOpenIssue else { return false }
             stepDown(1)
             return true
         case 126: // up
+            guard stepsFromOpenIssue else { return false }
             stepDown(-1)
             return true
         case 123: // left
@@ -355,10 +357,11 @@ extension AppModel {
             undoInbox()
             return true
         }
-        // With the issue open full size, J and K go on to the next notification's issue.
+        // With the issue open full size, J and K, and the arrows, go on to the next notification's issue.
         if let openItem {
-            guard modifiers.isEmpty, !shift, key == "j" || key == "k" else { return nil }
-            stepInboxOpen(key == "j" ? 1 : -1, from: openItem)
+            let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key]
+            guard modifiers.isEmpty, !shift, let delta else { return nil }
+            stepInboxOpen(delta, from: openItem)
             return true
         }
         if modifiers == .command, key == "a" {
