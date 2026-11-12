@@ -1605,6 +1605,13 @@ public final class AppModel {
         await engine.syncNow()
     }
 
+    /// Pulled down on an issue's screen: its comments and sub-issues as well, which a sync fetches only now and then.
+    func refreshAndWait(issue item: Item) async {
+        await refreshAndWait()
+        guard let contentId = item.contentId, item.kind != .draft, !item.isLocalOnly else { return }
+        try? await engine.loadIssueDetail(contentId: contentId)
+    }
+
     /// One sync round, for an issue a notification names that this device hasn't seen yet.
     func syncAndWait() async {
         guard signedIn else { return }
