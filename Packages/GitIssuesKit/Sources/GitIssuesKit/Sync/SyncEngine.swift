@@ -1027,6 +1027,8 @@ public actor SyncEngine {
     }
 
     private func send(_ entry: OutboxEntry) async throws -> SendOutcome {
+        // A status still being made on GitHub has no id there yet; the change waits until it has (`storeOptions`).
+        if Self.waitsForStatus(entry.mutation) { return .deferred }
         if entry.mutation.referencedIds.contains(where: { $0.hasPrefix(LocalID.prefix) }) {
             throw APIError.graphql([GraphQLErrorItem(message: String(localized: .errorIssueNeverCreated), type: "NOT_FOUND")])
         }
@@ -1550,6 +1552,43 @@ public actor SyncEngine {
         return saved
     }
 
+    /// Whether a change gives a status that is still being made on GitHub, which it has to wait for.
+    static func waitsForStatus(_ mutation: Mutation) -> Bool {
+        let optionId: String? = switch mutation {
+        case .setField(let m): m.optionId
+        case .addToProject(let m): m.statusId
+        case .createIssue(let m): m.statusId
+        default: nil
+        }
+        return optionId?.hasPrefix(LocalID.prefix) == true
+    }
+
+    /// A status that couldn't be made on GitHub: the changes waiting for it are let go. Issues moved into it go back to
+    /// the status they had, or are read again from GitHub; a new issue made with it is made without a status.
+    static func dropStatus(_ db: Database, localId: String, restoring items: [Item]) throws {
+        for var entry in try Outbox.active(db) where entry.state != .sent && waitsForStatus(entry.mutation) {
+            switch entry.mutation {
+            case .setField(let m) where m.optionId == localId:
+                try entry.delete(db)
+            case .addToProject(var m) where m.statusId == localId:
+                m.statusId = nil
+                entry.mutation = .addToProject(m)
+                try entry.update(db)
+            case .createIssue(var m) where m.statusId == localId:
+                m.statusId = nil
+                entry.mutation = .createIssue(m)
+                try entry.update(db)
+            default:
+                break
+            }
+        }
+        for item in items {
+            try db.execute(sql: "UPDATE item SET statusId = ? WHERE id = ? AND statusId = ?", arguments: [item.statusId, item.id, localId])
+        }
+        try db.execute(sql: "UPDATE item SET statusId = NULL, dirty = 1 WHERE statusId = ?", arguments: [localId])
+        try db.execute(sql: "DELETE FROM fieldOption WHERE id = ?", arguments: [localId])
+    }
+
     /// Writes a field's options as saved on GitHub. Options of other changes still on their way keep their local ids.
     static func storeOptions(
         _ db: Database, _ saved: [RemoteOption], projectId: String, fieldId: String, kind: OptionKind,
@@ -1571,13 +1610,19 @@ public actor SyncEngine {
             ).insert(db, onConflict: .replace)
         }
         let column = kind == .status ? "statusId" : "priorityId"
-        // Cards given an option before it was saved now have the saved one.
+        // Cards given an option before it was saved now have the saved one, and so do the changes waiting to give it.
         for (localId, name) in placeholders {
             let id = saved.first { OptionMerge.sameName($0.name, name) }?.id
             try db.execute(
                 sql: "UPDATE item SET \(column) = ? WHERE projectId = ? AND \(column) = ?",
                 arguments: [id, projectId, localId]
             )
+            if let id {
+                try db.execute(
+                    sql: "UPDATE outbox SET mutation = REPLACE(mutation, ?, ?) WHERE mutation LIKE ?",
+                    arguments: [localId, id, "%\(localId)%"]
+                )
+            }
         }
         // Cards that sat in a removed column have no status any more.
         let ids = saved.compactMap(\.id)

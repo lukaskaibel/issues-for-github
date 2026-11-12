@@ -147,6 +147,14 @@ struct NewStatusTests {
     }
 }
 
+private extension Item {
+    func with(statusId: String?) -> Item {
+        var copy = self
+        copy.statusId = statusId
+        return copy
+    }
+}
+
 @Suite("Saving a board's statuses")
 struct SavingStatusesTests {
     private func makeEngine(_ github: FakeGitHub) async throws -> (AppDatabase, SyncEngine) {
@@ -212,6 +220,50 @@ struct SavingStatusesTests {
         #expect(statusId == qa)
         // Another status still on its way keeps its place-holding row.
         #expect(try names(db) == ["Todo", "QA", "Later"])
+    }
+
+    @Test("a change giving a status still being made waits for it, then gives the saved one; dropped if it fails")
+    func waitingChange() async throws {
+        let github = FakeGitHub(Self.board)
+        let (db, engine) = try await makeEngine(github)
+        try await engine.pull(projectId: FakeGitHub.projectId)
+        let local = LocalID.make()
+        try await db.writer.write { db in
+            try FieldOption(
+                id: local, fieldId: "F-status", projectId: FakeGitHub.projectId, kind: .status, name: "QA", color: "GRAY", descr: "", position: 1
+            ).insert(db)
+            try Outbox.enqueue(db, .setField(.init(
+                itemId: "PVTI_1", projectId: FakeGitHub.projectId, fieldId: "F-status", kind: .status, optionId: local, base: "todo"
+            )))
+        }
+        try await engine.pushPending()
+        #expect(github.fieldWrites().isEmpty, "Nothing is sent with an id GitHub doesn't know")
+        let base = [RemoteOption(id: "todo", name: "Todo", color: "GRAY")]
+        let saved = try await engine.updateOptions(
+            projectId: FakeGitHub.projectId, fieldId: "F-status", kind: .status, base: base,
+            options: base + [RemoteOption(id: nil, name: "QA", color: "GRAY")], placeholders: [local: "QA"]
+        )
+        try await engine.pushPending()
+        let qa = try #require(saved.last?.id)
+        #expect(github.fieldWrites().map { $0.variables["o"] as? String } == [qa])
+
+        // One that couldn't be made: the change waiting for it goes, and the card shows its status again.
+        let failed = LocalID.make()
+        try await db.writer.write { db in
+            try Outbox.enqueue(db, .setField(.init(
+                itemId: "PVTI_1", projectId: FakeGitHub.projectId, fieldId: "F-status", kind: .status, optionId: failed, base: qa
+            )))
+        }
+        let before = try await db.reader.read { try Item.fetchOne($0, key: "PVTI_1") }
+        try await db.writer.write { db in
+            try SyncEngine.dropStatus(db, localId: failed, restoring: [try #require(before).with(statusId: qa)])
+        }
+        let after = try await db.reader.read { db in
+            (try Item.fetchOne(db, key: "PVTI_1")?.statusId, try OutboxEntry.fetchCount(db))
+        }
+        #expect(after.0 == qa)
+        try await engine.pushPending()
+        #expect(github.fieldWrites().count == 1, "Only the change that had its status was sent")
     }
 
     @Test("two statuses made quickly one after the other are both made, once each")

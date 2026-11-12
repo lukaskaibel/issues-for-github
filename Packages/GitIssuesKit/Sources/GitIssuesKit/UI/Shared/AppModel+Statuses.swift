@@ -167,15 +167,9 @@ extension AppModel {
                 guard let option = statusOptions(projectId: projectId).first(where: { $0.id == id }) else { return }
                 perform(items.flatMap { statusMutations($0, option) })
             } catch {
-                // Back as it was.
+                // Back as it was, and what was given the status meanwhile without it.
                 try? await db.writer.write { db in
-                    try db.execute(sql: "DELETE FROM fieldOption WHERE fieldId = ? AND id = ?", arguments: [fieldId, localId])
-                    for item in items {
-                        try db.execute(
-                            sql: "UPDATE item SET statusId = ? WHERE id = ? AND statusId = ?",
-                            arguments: [item.statusId, item.id, localId]
-                        )
-                    }
+                    try SyncEngine.dropStatus(db, localId: localId, restoring: items)
                 }
                 withAnimation(Theme.spring) { reloadNow() }
                 status.post(Notice(
@@ -187,11 +181,11 @@ extension AppModel {
         return localId
     }
 
-    /// The status a new issue's form picked: the one GitHub saved for a status made there, none while it is still
-    /// being made.
+    /// The status a new issue's form picked: for one made there, the id GitHub gave it, or while it is still being made
+    /// the id it shows under, which the new issue waits for (`SyncEngine.waitsForStatus`).
     func savedOptionId(_ id: String?) -> String? {
-        guard let id, id.hasPrefix(LocalID.prefix) else { return id }
-        return optionIdRemaps[id]
+        guard let id else { return nil }
+        return optionIdRemaps[id] ?? id
     }
 
     /// Where a new status of a kind goes: after the board's statuses of that kind, or else after those of the kinds
