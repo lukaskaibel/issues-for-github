@@ -428,15 +428,16 @@ final class BoardDrag {
     }
 
     /// The issue whose card, or whose header as an epic, the pointer is in the middle of, if the lifted issues can go
-    /// under it: the middle half of a card, between edges of at least 10 points where they go in front or after.
+    /// under it: the middle half of a card, between edges of at least 10 points where they go in front or after; all
+    /// of an epic's header but its outer 5 points, as it is only one line high.
     private func nestTarget(at point: CGPoint, model: AppModel) -> Nest? {
         guard let current = active, current.group == nil else { return nil }
         let moving = current.picked?.moving ?? [current.item.id]
-        func middle(_ frame: CGRect) -> Bool {
-            let edge = max(10, frame.height / 4)
+        func middle(_ frame: CGRect, edge: CGFloat? = nil) -> Bool {
+            let edge = edge ?? max(10, frame.height / 4)
             return frame.minX <= point.x && point.x <= frame.maxX && frame.minY + edge <= point.y && point.y <= frame.maxY - edge
         }
-        let found: Nest? = if let header = header(at: point), middle(header.frame),
+        let found: Nest? = if let header = header(at: point), middle(header.frame, edge: 5),
            let epic = model.columns.first(where: { $0.id == header.columnId })?.nesting.groups.first(where: { $0.contentId == header.epic })?.epic {
             Nest(item: epic, columnId: header.columnId, frame: header.frame, isHeader: true)
         } else if let (id, frame) = cardFrames.first(where: { !moving.contains($0.key) && middle($0.value) }),

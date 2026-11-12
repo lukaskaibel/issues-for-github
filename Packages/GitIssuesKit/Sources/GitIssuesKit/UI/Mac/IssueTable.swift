@@ -726,9 +726,6 @@ struct IssueTable: NSViewRepresentable {
             proposedDropOperation dropOperation: NSTableView.DropOperation
         ) -> NSDragOperation {
             guard info.draggingSource as? NSTableView === tableView else { return [] }
-            #if DEBUG
-            DebugRemote.log("PROBE validate row=\(row) op=\(dropOperation == .on ? "on" : "above")")
-            #endif
             // In the middle of an issue that can take the dragged ones as its sub-issues: they would go under it, and it
             // lights up. Near its top or bottom edge they go in front of it or after it, as anywhere else.
             if dropOperation == .on, let target = nestTarget(at: row), canNest(info, under: target) {
