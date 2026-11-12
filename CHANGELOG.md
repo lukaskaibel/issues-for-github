@@ -98,6 +98,9 @@ All notable changes to this project are recorded here. The format follows
   description keeps the menu of text, with Copy. Until now it opened the menu of the card or timeline line under the
   peek. A right-click on the bar of picked issues opens their menu, and one on a notice, the Inbox's Undo or the
   comment field (outside its text) does nothing, instead of opening the menu of what is under it or pressing a button.
+- On the Mac, switching a board to its list with a card in focus keeps the list where it starts; the card stays in
+  view below its section's header. Until now the list jumped so the card sat at the top edge, under the pinned header,
+  which drew over it. `K` past the top of the list stops below that header too.
 
 ## [1.1.0] - 2026-10-28
 

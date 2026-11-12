@@ -270,13 +270,30 @@ struct IssueTable: NSViewRepresentable {
             }
             if focusScrollToken != self.focusScrollToken {
                 self.focusScrollToken = focusScrollToken
-                if let focusedId, let row = entries.firstIndex(where: { $0.id == focusedId }) {
-                    NSAnimationContext.runAnimationGroup { context in
-                        context.duration = 0.12
-                        context.allowsImplicitAnimation = true
-                        table.scrollRowToVisible(row)
-                    }
+                scrollToFocused(attempts: 5)
+            }
+        }
+
+        /// Brings the focused row into view, below the section header held at the top rather than behind it. A list
+        /// just switched to from the board isn't laid out yet: scrolled then, the row went to the top edge, under that
+        /// header, even when it was in view anyway. So it waits for the layout, a few turns of the run loop at most.
+        private func scrollToFocused(attempts: Int) {
+            guard let table, let focusedId, let row = entries.firstIndex(where: { $0.id == focusedId }) else { return }
+            guard !table.visibleRect.isEmpty else {
+                if attempts > 0 {
+                    DispatchQueue.main.async { [weak self] in self?.scrollToFocused(attempts: attempts - 1) }
                 }
+                return
+            }
+            var rect = table.rect(ofRow: row)
+            if !entries[row].isHeader {
+                rect.origin.y -= Theme.rowHeight
+                rect.size.height += Theme.rowHeight
+            }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.12
+                context.allowsImplicitAnimation = true
+                table.scrollToVisible(rect)
             }
         }
 
