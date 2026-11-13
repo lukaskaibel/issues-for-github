@@ -1,4 +1,5 @@
 #if os(macOS)
+import Observation
 import Testing
 @testable import GitIssuesKit
 
@@ -96,6 +97,33 @@ struct PlacedRowsTests {
         // The rows that stay keep their views.
         for id in Self.ids[0..<4] { #expect(after.firstIndex(of: id) == before.firstIndex(of: id)) }
         #expect(!after.contains("row-4"))
+    }
+
+    @Test("A board can change its rows when scrolling asks it to build more views", arguments: [0, 2, 10])
+    func rowsChangingDuringGrowth(count: Int) {
+        let window = RowWindow()
+        window.scrolled(to: 0...100)
+        window.update(ids: Self.ids, kinds: Array(repeating: 0, count: 10), plan: Self.plan)
+        let ids = (0..<count).map { "replacement-\($0)" }
+        let plan = RowPlan(heights: Array(repeating: 100, count: count), gap: 8, bottom: 40)
+        // SwiftUI can rebuild the container synchronously when it is told to add views. Replacing the board at
+        // that point must not leave the scroll assignment using indices from the board it just left.
+        withObservationTracking {
+            _ = window.growth
+        } onChange: {
+            MainActor.assumeIsolated {
+                #expect(Set((0..<window.slotCount).compactMap { window[slot: $0] }) == Set(Self.ids))
+                window.update(ids: ids, kinds: Array(repeating: 1, count: count), plan: plan)
+            }
+        }
+        window.scrolled(to: 0...840)
+        #expect(Set(shown(window).compactMap { $0 }) == Set(ids))
+        #expect(window.index(of: "row-0") == nil)
+        for (index, id) in ids.enumerated() { #expect(window.index(of: id) == index) }
+        // A later scroll must use the replacement board as well.
+        window.scrolled(to: 0...100)
+        window.scrolled(to: 0...840)
+        #expect(Set(shown(window).compactMap { $0 }) == Set(ids))
     }
 }
 #endif

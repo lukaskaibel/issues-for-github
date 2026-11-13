@@ -65,6 +65,8 @@ enum MobileSheet: Identifiable, Equatable {
     case newView(projectId: String, sourceViewId: String?, duplicate: Bool)
     /// The glyph and colour a project shows with.
     case projectIcon(String)
+    /// The status picker of an issue, ready to type the name of a new status.
+    case newStatus(itemId: String)
 
     var id: String {
         switch self {
@@ -80,6 +82,7 @@ enum MobileSheet: Identifiable, Equatable {
         case .customizeMyIssues: "customize-my-issues"
         case .newView(let projectId, let source, let duplicate): "new-view-\(projectId)-\(source ?? "-")-\(duplicate)"
         case .projectIcon(let id): "project-icon-\(id)"
+        case .newStatus(let itemId): "new-status-\(itemId)"
         }
     }
 }
@@ -111,6 +114,9 @@ final class MobileNavigation {
     var tab: MobileTab {
         didSet {
             guard tab != oldValue else { return }
+            // A project's views share its stack: another view of it opens on that view, not under the issue that was
+            // open in the one before, as on the Mac.
+            if case .view(let projectId, _) = tab, case .view(projectId, _) = oldValue { projectPaths[projectId] = [] }
             saveTab()
             if let id = Self.projectId(of: tab) { sidebarProjectId = id }
         }
@@ -440,6 +446,7 @@ final class MobileNavigation {
         for (key, path) in planningPaths { planningPaths[key] = remap(path) }
         if case .picker(let id, let kind) = sheet, let new = remaps[id] { sheet = .picker(itemId: new, kind: kind) }
         if case .dueDate(let id) = sheet, let new = remaps[id] { sheet = .dueDate(new) }
+        RecentIssues.follow(remaps: remaps)
     }
 }
 
@@ -470,6 +477,13 @@ enum RecentIssues {
         var list = ids.filter { $0 != id }
         list.insert(id, at: 0)
         UserDefaults.standard.set(Array(list.prefix(12)), forKey: key)
+    }
+
+    /// An issue made here keeps its place once GitHub has given it its own id.
+    static func follow(remaps: [String: String]) {
+        let list = ids
+        guard list.contains(where: { remaps[$0] != nil }) else { return }
+        UserDefaults.standard.set(list.map { remaps[$0] ?? $0 }, forKey: key)
     }
 }
 #endif

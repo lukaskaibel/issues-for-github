@@ -22,7 +22,7 @@ extension AppModel {
 
     /// ↓ ↑ and J K: down or up the column on the board, else through the list, or to the next or previous issue.
     private func stepDown(_ delta: Int) {
-        if viewMode == .board, openItem == nil, currentProjectId != nil { stepWithinColumn(delta) } else { step(delta) }
+        if showsBoard, openItem == nil { stepWithinColumn(delta) } else { step(delta) }
     }
 
     private func stepWithinColumn(_ delta: Int) {
@@ -86,6 +86,11 @@ extension AppModel {
             }
             return false
         }
+        // A card of My Issues' overview held by its name goes back where it was.
+        if overviewDrag.liftedId != nil {
+            if isEscape { withAnimation(Theme.spring) { overviewDrag.cancel() } }
+            return isEscape
+        }
         // Escape always closes the palette or dialog, whatever has focus inside it. A popover of the dialog
         // (a picker) is a window of its own and closes itself first.
         if isEscape, overlay != nil, NSApp.keyWindow == nil || NSApp.keyWindow === mainWindow {
@@ -102,11 +107,6 @@ extension AppModel {
                 return true
             }
             return false
-        }
-        // Escape ends editing My Issues' widgets, as Done does.
-        if isEscape, editingOverview, openItem == nil {
-            withAnimation(Theme.spring) { editingOverview = false }
-            return true
         }
         // Text being typed in takes its keys; a comment, which is only read, leaves them to the app even when text in it
         // is selected.
@@ -136,7 +136,7 @@ extension AppModel {
         }
         // ⌥↑ and ⌥↓ (or ⌥K and ⌥J) move the issue up or down its column, or its section of the list. The
         // keyboard focus goes with it, so pressing again keeps moving the same issue.
-        if modifiers == .option, openItem == nil, currentProjectId != nil,
+        if modifiers == .option, openItem == nil, boardProjectId != nil,
            let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key] {
             if let id = cursorId, let item = scopedItems.first(where: { $0.id == id }), move(item, by: delta) {
                 moveFocus(to: item.id)
@@ -207,7 +207,7 @@ extension AppModel {
             let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key]
             if shift, let delta {
                 if selectedIds.isEmpty, let start = targetItem { toggleSelection(start) }
-                if viewMode == .board, currentProjectId != nil { stepWithinColumn(delta) } else { step(delta) }
+                if showsBoard { stepWithinColumn(delta) } else { step(delta) }
                 if let id = focusedItemId, let item = scopedItems.first(where: { $0.id == id }) { extendSelection(to: item) }
                 return true
             }
@@ -246,15 +246,20 @@ extension AppModel {
 
         switch event.keyCode {
         case 125: // down
+            guard stepsFromOpenIssue else { return false }
             stepDown(1)
             return true
         case 126: // up
+            guard stepsFromOpenIssue else { return false }
             stepDown(-1)
             return true
         case 123: // left
+            // In My Issues' overview, the card in focus turns to its page before.
+            if turnFocusedPage(-1) { return true }
             stepColumn(-1)
             return viewMode == .board && openItem == nil
         case 124: // right
+            if turnFocusedPage(1) { return true }
             stepColumn(1)
             return viewMode == .board && openItem == nil
         case 36: // return
@@ -277,6 +282,13 @@ extension AppModel {
                 displayMenuRequest += 1
                 return true
             }
+        }
+
+        // ⇧C: the iteration, as Linear's cycle. Without an issue to act on, or a board without iterations, C makes a
+        // new issue as ever.
+        if key == "c", event.modifierFlags.contains(.shift), let item = actionItem, let field = iterationFields(for: item).first {
+            overlay = .palette(.iteration(itemId: item.id, fieldId: field.id))
+            return true
         }
 
         switch key {
@@ -345,10 +357,11 @@ extension AppModel {
             undoInbox()
             return true
         }
-        // With the issue open full size, J and K go on to the next notification's issue.
+        // With the issue open full size, J and K, and the arrows, go on to the next notification's issue.
         if let openItem {
-            guard modifiers.isEmpty, !shift, key == "j" || key == "k" else { return nil }
-            stepInboxOpen(key == "j" ? 1 : -1, from: openItem)
+            let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key]
+            guard modifiers.isEmpty, !shift, let delta else { return nil }
+            stepInboxOpen(delta, from: openItem)
             return true
         }
         if modifiers == .command, key == "a" {
@@ -368,7 +381,9 @@ extension AppModel {
             inboxPicked = []
             return true
         }
-        let targets = inboxPicked.isEmpty
+        // One picked notification counts as none, as for the pane, the toolbar and S, P, A, L, I: the keys act on
+        // the one on screen then, not on a picked one that may be another.
+        let targets = inboxPicked.count <= 1
             ? inboxSelected.map { [$0] } ?? []
             : visibleInbox.filter { inboxPicked.contains($0.id) }
         let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key]

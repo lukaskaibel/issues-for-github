@@ -57,7 +57,16 @@ struct PickerSheet: View {
             .searchable(text: $query, isPresented: $searching, placement: .navigationBarDrawer(displayMode: .always), prompt: fieldName.map { Text(verbatim: $0) } ?? Text(prompt))
             .onChange(of: query) { _, typed in onQueryChange?(typed) }
             .onSubmit(of: .search) {
-                if let first = visible.first { pick(first, keepOpen: false) }
+                // Return picks the first match of what was typed. With nothing typed it makes the recent choice at the
+                // top again, as on the Mac, or else keeps the value as it is; never the first row as such, which can
+                // be Remove from #9 or the first status.
+                if !query.isEmpty, let first = visible.first {
+                    pick(first, keepOpen: false)
+                } else if query.isEmpty, let recent = visible.first(where: \.recent) {
+                    pick(recent, keepOpen: false)
+                } else if query.isEmpty, !multiple {
+                    dismiss()
+                }
             }
             .onAppear { if focusesSearch { searching = true } }
             .searchPresentationToolbarBehavior(.avoidHidingContent)
@@ -133,6 +142,7 @@ struct PickerSheet: View {
             .buttonStyle(.borderless)
             .accessibilityAddTraits(item.selected ? .isSelected : [])
         }
+        .modifier(StatusRowMenu(option: item.status))
         .disabled(!isEnabled(item))
     }
 
@@ -162,6 +172,7 @@ extension PickerKind {
         case .blocking: .blockingSheetTitle
         case .milestone: .milestone
         case .epic: .epic
+        case .iteration: .iteration
         }
     }
 
@@ -175,6 +186,7 @@ extension PickerKind {
         case .subIssues: .searchSubIssues
         case .parent, .addSubIssue, .blockedBy, .blocking, .epic: .searchByTitleOrNumber
         case .milestone: .searchMilestones
+        case .iteration: .searchIterations
         }
     }
 }
@@ -207,6 +219,8 @@ struct IssuePickerSheet: View {
             },
             creating: kind == .labels ? { query in
                 model.item(id: itemId).flatMap { model.newLabelRow(query, projectId: $0.projectId, repoId: $0.repoId) }
+            } : kind == .status ? { query in
+                model.item(id: itemId).flatMap { model.newStatusRow(query, for: $0) }
             } : nil,
             onQueryChange: { typed = $0 },
             onPick: { id in
@@ -223,6 +237,7 @@ struct IssuePickerSheet: View {
             if let item = model.item(id: itemId) {
                 model.loadRepoMeta(for: item)
                 if kind.picksIssues { model.loadRelations(for: item) }
+                if kind == .status { model.refreshStatuses(projectId: item.projectId) }
             }
         }
     }

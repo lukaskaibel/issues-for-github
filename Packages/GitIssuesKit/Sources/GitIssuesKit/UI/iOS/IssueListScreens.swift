@@ -17,7 +17,7 @@ struct MyIssuesScreen: View {
                     Menu {
                         MyIssuesDisplayMenu()
                         Divider()
-                        // The overview arranges its widgets in a sheet of its own; the list, its sections.
+                        // The overview arranges its cards in a sheet of its own; the list, its sections.
                         if model.mineDisplay.layout == .overview {
                             Button {
                                 navigation.sheet = .customizeMyIssues
@@ -70,6 +70,22 @@ private struct MyIssuesDisplayMenu: View {
                 ForEach(MineGrouping.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.menu)
+        } else {
+            let choices = model.overviewPageChoices
+            if !choices.isEmpty {
+                Menu {
+                    ForEach(choices, id: \.key) { choice in
+                        Toggle(isOn: Binding(
+                            get: { model.mineDisplay.showsPage(key: choice.key, kind: choice.kind) },
+                            set: { shows in withAnimation(Theme.spring) { model.setShowsPage(choice.key, kind: choice.kind, shows) } }
+                        )) {
+                            Text(verbatim: choice.title)
+                        }
+                    }
+                } label: {
+                    Label(.pagesInEachCard, systemImage: "rectangle.stack")
+                }
+            }
         }
         Picker(.orderBy, selection: Binding(get: { model.mineDisplay.order }, set: { model.setMineOrder($0) })) {
             ForEach(MineOrder.allCases) { Text($0.title).tag($0) }
@@ -122,51 +138,120 @@ struct MyIssuesFilterSheet: View {
 }
 
 /// A project's All Issues: its board's issues and those of its repositories on no board, as a list by status with
-/// the issues on no board first.
+/// the issues on no board first, or as a board with a column of them before the board's columns.
 struct AllIssuesScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.wideLayout) private var wide
+    @Environment(\.windowWidth) private var windowWidth
     var projectId: String
 
     var body: some View {
         let project = model.projects.first { $0.id == projectId }
-        IssueList(scope: .allIssues(projectId))
-            .background(Theme.panel)
-            .navigationTitle(.allIssues)
-            .navigationSubtitle(project?.title ?? "")
-            .navigationBarTitleDisplayMode(.inline)
-            .modifier(EditorRole(active: wide))
-            .toolbar {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    Menu {
+        let mode = model.allIssuesLayout(projectId: projectId)
+        // A board needs its columns, which come with the project's first read; until then the list says it's looking.
+        let board = project != nil && mode == .board && !model.isLoading(projectId: projectId)
+            && !model.columns(for: .allIssues(projectId)).isEmpty
+        // A window narrower than this has the tab bar floating in the middle of the bar, next to the header.
+        let roomy = windowWidth >= 950
+        Group {
+            if board, wide {
+                MobileBoard(projectId: projectId, allIssues: true)
+            } else if board {
+                PhoneBoard(projectId: projectId, allIssues: true, page: PhoneBoard.page(model: model, navigation: navigation, projectId: projectId, allIssues: true))
+            } else {
+                IssueList(scope: .allIssues(projectId))
+            }
+        }
+        // White pages, and under the board the grey its cards stand on.
+        .background(board ? Theme.board : Theme.panel)
+        .navigationTitle(.allIssues)
+        .navigationSubtitle(project?.title ?? "")
+        .navigationBarTitleDisplayMode(.inline)
+        .modifier(EditorRole(active: wide))
+        .toolbar {
+            if wide, roomy {
+                // As a project's header: what is on screen, then Board and List.
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "rectangle.stack")
+                            .foregroundStyle(Theme.textSecondary)
+                        Text(.allIssues)
+                            .font(.headline)
+                            .lineLimit(1)
+                        Picker(.viewModePicker, selection: layout) {
+                            // Named for VoiceOver and the pointer, which would otherwise read the symbols' own names.
+                            Image(systemName: "rectangle.split.3x1").accessibilityLabel(.board).help(Text(.board)).tag(ViewMode.board)
+                            Image(systemName: "list.bullet").accessibilityLabel(.list).help(Text(.list)).tag(ViewMode.list)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 160)
+                        .padding(.leading, 8)
+                    }
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
+            ToolbarItemGroup(placement: .primaryAction) {
+                Menu {
+                    if !(wide && roomy) {
+                        Picker(.viewModePicker, selection: layout) {
+                            Label(.board, systemImage: "rectangle.split.3x1").tag(ViewMode.board)
+                            Label(.list, systemImage: "list.bullet").tag(ViewMode.list)
+                        }
+                        .pickerStyle(.inline)
+                        Divider()
+                    }
+                    if mode == .list {
                         Button {
                             navigation.sheet = .arrangeSections(.allIssues(projectId))
                         } label: {
                             Label(.arrangeSectionsMenu, systemImage: "arrow.up.arrow.down")
                         }
-                        // Home's pins are the iPhone's.
-                        if !wide { PinMenuItem(entry: .allIssues(projectId)) }
-                        Divider()
-                        Button {
-                            model.refresh()
-                        } label: {
-                            Label(.syncNow, systemImage: "arrow.triangle.2.circlepath")
+                    } else {
+                        let hidden = model.hiddenColumns(in: .allIssues(projectId))
+                        if !hidden.isEmpty {
+                            // A tap shows the column on the board again.
+                            Section(String(localized: .hiddenColumns)) {
+                                ForEach(hidden) { column in
+                                    Button {
+                                        model.setColumn(column.id, hidden: false, in: .allIssues(projectId))
+                                    } label: {
+                                        Label(column.title, systemImage: "eye")
+                                    }
+                                }
+                            }
                         }
-                    } label: {
-                        Label(.options, systemImage: "ellipsis")
                     }
-                    if wide { NewIssueButton(context: NewIssueContext(projectId: projectId, inAllIssues: true)) }
+                    // Home's pins are the iPhone's.
+                    if !wide { PinMenuItem(entry: .allIssues(projectId)) }
+                    Divider()
+                    Button {
+                        model.refresh()
+                    } label: {
+                        Label(.syncNow, systemImage: "arrow.triangle.2.circlepath")
+                    }
+                } label: {
+                    Label(.options, systemImage: "ellipsis")
                 }
+                if wide { NewIssueButton(context: NewIssueContext(projectId: projectId, inAllIssues: true)) }
             }
-            .modifier(PhoneSearchBar(context: NewIssueContext(projectId: projectId, inAllIssues: true)))
-            .onAppear {
-                model.setActiveProject(projectId)
-                navigation.rememberProject(projectId)
-                model.setActiveRepositories(model.repos(projectId: projectId).map(\.id))
-            }
-            .onDisappear { model.setActiveRepositories([]) }
-            .task(id: model.dataVersion) { await model.preloadAvatars(for: .allIssues(projectId)) }
+        }
+        .modifier(PhoneSearchBar(context: NewIssueContext(projectId: projectId, inAllIssues: true)))
+        .onAppear {
+            model.setActiveProject(projectId)
+            navigation.rememberProject(projectId)
+            model.setActiveRepositories(model.repos(projectId: projectId).map(\.id))
+        }
+        .onDisappear { model.setActiveRepositories([]) }
+        .task(id: model.dataVersion) { await model.preloadAvatars(for: .allIssues(projectId)) }
+    }
+
+    /// Board or list, kept for this project's All Issues.
+    private var layout: Binding<ViewMode> {
+        Binding(
+            get: { model.allIssuesLayout(projectId: projectId) },
+            set: { mode in withAnimation(Theme.spring) { model.setAllIssuesLayout(mode, projectId: projectId) } }
+        )
     }
 }
 
@@ -434,8 +519,10 @@ struct IssueList: View {
     var body: some View {
         let sections = model.sections(for: scope)
         Group {
-            // The overview shows projects with nothing started or to do too.
-            if sections.isEmpty && !(isOverview && !model.mineLanes.isEmpty) {
+            if isOverview {
+                // The overview shows projects with nothing started or to do too.
+                if model.overviewCards.isEmpty { emptyState } else { MobileOverview() }
+            } else if sections.isEmpty {
                 emptyState
             } else {
                 List {
@@ -461,11 +548,7 @@ struct IssueList: View {
                             .listRowBackground(Color.clear)
                             .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
                     }
-                    if isOverview {
-                        overview(sections)
-                    } else {
-                        groups(sections)
-                    }
+                    groups(sections)
                 }
                 .listStyle(.plain)
                 .environment(\.defaultMinListHeaderHeight, 0)
@@ -478,102 +561,6 @@ struct IssueList: View {
         .refreshable { await model.refreshAndWait() }
         .sensoryFeedback(.success, trigger: doneFeedback)
         .sensoryFeedback(.selection, trigger: foldFeedback)
-    }
-
-    /// My Issues as an overview: its widgets in their order. A project shows what you are doing there and the most
-    /// pressing of what is next, the rest as counts at its end; small projects stand two to a row as tiles; a smart
-    /// widget lists what it finds across every project.
-    @ViewBuilder
-    private func overview(_ sections: [ListSection]) -> some View {
-        let lanes = Dictionary(model.mineLanes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let byId = Dictionary(sections.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        ForEach(MobileWidgetRow.rows(model.overviewWidgets, lanes: lanes)) { row in
-            switch row {
-            case .tiles(let widgets):
-                ProjectTilesRow(widgets: widgets)
-            case .widget(let widget):
-                if let smart = widget.smart {
-                    smartSection(smart, size: widget.size)
-                } else if let lane = lanes[widget.id] {
-                    laneSection(lane, section: byId[lane.id])
-                }
-            }
-        }
-    }
-
-    /// A project, or the issues on no board: In progress and Up next, then the rest as counts.
-    @ViewBuilder
-    private func laneSection(_ lane: MineLane, section: ListSection?) -> some View {
-        let folded = model.isSectionCollapsed(lane.id, in: scope)
-        let unfolded = model.showsAllNext(lane)
-        let container = section ?? ListSection(id: lane.id, title: lane.title, glyph: .none, items: [])
-        Section {
-            if !folded {
-                if !lane.started.isEmpty {
-                    OverviewSubhead(title: .statusGroupInProgress)
-                    ForEach(lane.started) { row($0, in: container, idle: true) }
-                }
-                if !lane.next.isEmpty {
-                    // The issues on no board are all waiting; the header says where they are.
-                    if lane.projectId != nil { OverviewSubhead(title: .upNext) }
-                    ForEach(lane.shownNext(unfolded: unfolded)) { row($0, in: container) }
-                }
-                OverviewLaneFoot(lane: lane, unfolded: unfolded)
-            }
-        } header: {
-            SectionHeaderBand(
-                title: lane.title, glyph: .noProject,
-                icon: lane.projectId.map { .project(model.projectLooks.look($0)) } ?? .status(.noProject),
-                warning: lane.overdue > 0 ? String(localized: .overviewOverdue(count: lane.overdue)) : nil,
-                count: lane.open, folded: folded,
-                onToggle: {
-                    foldFeedback += 1
-                    withAnimation(Theme.spring) { model.toggleSection(lane.id, in: scope) }
-                },
-                onAdd: nil
-            )
-            .listRowInsets(EdgeInsets())
-        }
-        .listSectionSeparator(.hidden)
-    }
-
-    /// Needs you, Due this week or Done this week: a small one lists two, the others up to six.
-    @ViewBuilder
-    private func smartSection(_ widget: MineSmartWidget, size: MineWidgetSize) -> some View {
-        let limit = size == .small ? 2 : 6
-        let folded = model.isSectionCollapsed(widget.id, in: scope)
-        let count: Int = switch widget {
-        case .needsYou: model.needsYou.count
-        case .dueThisWeek: model.dueThisWeek.count
-        case .doneThisWeek: model.doneThisWeek.count
-        }
-        let container = ListSection(id: widget.id, title: widget.title, glyph: .none, items: [])
-        Section {
-            if !folded {
-                if count == 0 {
-                    Text(widget == .needsYou ? .nothingNeedsYou : widget == .dueThisWeek ? .nothingDueThisWeek : .nothingDoneThisWeek)
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.textTertiary)
-                        .padding(.leading, IssueRow.leading)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .listRowInsets(EdgeInsets())
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Theme.panel)
-                }
-                switch widget {
-                case .needsYou:
-                    ForEach(model.needsYou.prefix(limit)) { NeedsYouListRow(entry: $0) }
-                case .dueThisWeek:
-                    ForEach(model.dueThisWeek.prefix(limit)) { row($0, in: container, namesBoard: true) }
-                case .doneThisWeek:
-                    ForEach(model.doneThisWeek.prefix(limit)) { row($0, in: container, namesBoard: true) }
-                }
-            }
-        } header: {
-            SmartWidgetHeader(widget: widget, count: count)
-                .listRowInsets(EdgeInsets())
-        }
-        .listSectionSeparator(.hidden)
     }
 
     private var isOverview: Bool {
@@ -626,8 +613,7 @@ struct IssueList: View {
         }
     }
 
-    /// `namesBoard` overrides whether a row of My Issues names its project: the overview's smart widgets mix them.
-    private func row(_ item: Item, in section: ListSection, idle: Bool = false, namesBoard: Bool? = nil) -> some View {
+    private func row(_ item: Item, in section: ListSection) -> some View {
         let nested = section.nesting.nestedCounts[item.id]
         let folded = section.nesting.folded.contains(item.id)
         let depth = min(section.nesting.depth(of: item.id), IssueRow.deepestIndent)
@@ -637,7 +623,7 @@ struct IssueList: View {
         } label: {
             IssueRow(
                 item: item, showsProject: showsProject,
-                namesBoard: namesBoard ?? !(scope == .myIssues && (model.mineDisplay.grouping == .project || model.mineDisplay.layout == .overview)),
+                namesBoard: !(scope == .myIssues && model.mineDisplay.grouping == .project),
                 namesRepository: isAllIssues,
                 place: section.nesting.place(of: item.id), nested: nested,
                 folded: folded,
@@ -646,8 +632,7 @@ struct IssueList: View {
                     && section.kind != .group(.parent(contentId: item.parentId)),
                 showsMilestone: showsMilestone,
                 showsEpic: section.kind != .epic(contentId: epic) && section.nesting.groupOf[item.id] == nil,
-                chips: model.fieldChips(of: item, in: scope),
-                idleDays: idle ? model.idleDays(of: item) : nil
+                chips: model.fieldChips(of: item, in: scope)
             )
         }
         .buttonStyle(RowButtonStyle())
@@ -780,7 +765,9 @@ struct IssueList: View {
                 navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: preset?.statusId, parentItemId: parent, preset: preset))
             }
         case (.project, _):
-            return { navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: section.option?.id)) }
+            // The "No status" section makes an issue without one, as that column on the board does.
+            let statusId = section.option?.id ?? (section.id == BoardColumn.noStatusId ? section.id : nil)
+            return { navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: statusId)) }
         case (.milestone(_, let title), .epic(let contentId)) where canEdit:
             let parent = contentId.flatMap { model.issue(contentId: $0)?.id }
             return { navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, parentItemId: parent, milestoneTitle: title)) }
@@ -797,7 +784,7 @@ struct IssueList: View {
         case .inbox:
             EmptyView()
         case .myIssues:
-            if !model.mineFilter.isEmpty, !model.assignedItems.isEmpty {
+            if !model.mineFilter.isEmpty, !model.myItems.isEmpty {
                 // The filter hides everything; one tap shows it all again.
                 MobileEmptyState(
                     title: String(localized: .nothingMatchesFilterTitle),
@@ -874,75 +861,6 @@ struct IssueList: View {
                 navigation.sheet = .newIssue(NewIssueContext(projectId: projectId))
             }
             .buttonStyle(.borderedProminent)
-        }
-    }
-}
-
-/// Over a project's started issues, and over what is next, in My Issues' overview.
-private struct OverviewSubhead: View {
-    let title: LocalizedStringResource
-
-    var body: some View {
-        Text(title)
-            .font(.smallMedium)
-            .foregroundStyle(Theme.textTertiary)
-            .padding(.leading, IssueRow.leading)
-            .padding(.top, 8)
-            .padding(.bottom, 2)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .listRowInsets(EdgeInsets())
-            .listRowSeparator(.hidden)
-            .listRowBackground(Theme.panel)
-            .accessibilityAddTraits(.isHeader)
-    }
-}
-
-/// The end of a project in the overview: a tap shows the rest of what is next, or only the first few again; then
-/// what waits in the backlog and what was finished this week.
-private struct OverviewLaneFoot: View {
-    @Environment(AppModel.self) private var model
-    let lane: MineLane
-    let unfolded: Bool
-
-    var body: some View {
-        let more = lane.moreNext(unfolded: unfolded)
-        let canFold = unfolded && lane.next.count > MineLane.nextShown
-        let counts = [
-            lane.later > 0 ? String(localized: .overviewInBacklog(count: lane.later)) : nil,
-            lane.doneThisWeek > 0 ? String(localized: .overviewDoneThisWeek(count: lane.doneThisWeek)) : nil,
-        ].compactMap { $0 }.joined(separator: " · ")
-        if more > 0 || canFold || !counts.isEmpty {
-            HStack(spacing: 6) {
-                if more > 0 || canFold {
-                    Button {
-                        withAnimation(Theme.spring) { model.toggleAllNext(lane) }
-                    } label: {
-                        HStack(spacing: 5) {
-                            Text(canFold ? .overviewShowFewer : .overviewMoreToDo(count: more))
-                            Image(systemName: canFold ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 10, weight: .semibold))
-                        }
-                        .foregroundStyle(Theme.accent)
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(PlainPressStyle())
-                    .accessibilityIdentifier("more-\(lane.title)")
-                }
-                if !counts.isEmpty {
-                    Text(counts)
-                        .foregroundStyle(Theme.textTertiary)
-                        .lineLimit(1)
-                        .frame(minHeight: 44)
-                }
-                Spacer(minLength: 0)
-            }
-            .font(.subheadline)
-            .padding(.leading, IssueRow.leading)
-            .padding(.trailing, 18)
-            .listRowInsets(EdgeInsets())
-            .listRowSeparator(.hidden)
-            .listRowBackground(Theme.panel)
         }
     }
 }

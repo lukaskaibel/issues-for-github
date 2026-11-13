@@ -10,6 +10,9 @@ struct MobileBoard: View {
     var projectId: String
     /// A milestone of the board, whose issues it shows in the board's columns.
     var milestone: String? = nil
+    /// The project's All Issues: the issues on no board in a column of their own, then the board's columns, in an
+    /// order of your own.
+    var allIssues = false
 
     @State private var target: BoardDropTarget?
     /// The card a drag hovering this board carries, which may have been lifted in another window: it dims, and a
@@ -20,20 +23,22 @@ struct MobileBoard: View {
     @State private var newStatus = ""
 
     var body: some View {
-        let columns = model.shownColumns(for: milestone.map { .milestone(projectId: projectId, title: $0) } ?? .project(projectId))
+        let scope = Self.scope(projectId: projectId, milestone: milestone, allIssues: allIssues)
+        let columns = model.shownColumns(for: scope)
         let canEdit = model.projects.first { $0.id == projectId }?.viewerCanUpdate == true
-        let hidden = milestone == nil ? model.hiddenColumns(projectId: projectId) : []
-        // A milestone's board shows the board's columns; they are changed on the board itself.
-        let addsStatus = canEdit && milestone == nil && columns.allSatisfy { $0.value == nil }
+        let hidden = model.hiddenColumns(in: scope)
+        // A milestone's board and All Issues show the board's columns; they are changed on the board itself.
+        let addsStatus = canEdit && milestone == nil && !allIssues && columns.allSatisfy { $0.value == nil }
         GeometryReader { proxy in
             let width = columnWidth(available: proxy.size.width, count: columns.count, trailing: addsStatus || !hidden.isEmpty)
             ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: Self.spacing) {
                     ForEach(columns) { column in
                         MobileColumn(
-                            projectId: projectId, milestone: milestone, column: column, width: width,
+                            projectId: projectId, milestone: milestone, allIssues: allIssues, column: column, width: width,
                             target: $target, dragging: $dragging,
-                            onDrop: { id, slot in move(id, to: column, at: slot) }
+                            onDrop: { id, slot in move(id, to: column, at: slot) },
+                            onNest: { id, parent in nest(id, under: parent, in: column) }
                         )
                         .frame(width: width)
                     }
@@ -54,8 +59,8 @@ struct MobileBoard: View {
                                 .buttonStyle(.plain)
                                 .hoverEffect(.highlight)
                             }
-                            if !hidden.isEmpty, let view = model.currentView(projectId: projectId) {
-                                MobileHiddenColumns(columns: hidden, view: view)
+                            if !hidden.isEmpty {
+                                MobileHiddenColumns(columns: hidden, scope: scope)
                             }
                         }
                         .frame(width: 170, alignment: .leading)
@@ -97,25 +102,49 @@ struct MobileBoard: View {
     private func move(_ id: String?, to column: BoardColumn, at slot: Int?) {
         target = nil
         dragging = nil
-        if Self.land(id, in: column, at: slot, model: model, projectId: projectId, milestone: milestone) { dropped += 1 }
+        if Self.land(id, in: column, at: slot, model: model, projectId: projectId, milestone: milestone, allIssues: allIssues) { dropped += 1 }
+    }
+
+    private func nest(_ id: String?, under parentId: String, in column: BoardColumn) {
+        target = nil
+        dragging = nil
+        if DropOntoIssue.nest(id, under: parentId, shown: column.nesting, model: model) { dropped += 1 }
+    }
+
+    /// The board a project's, one of its milestones' or its All Issues' board shows.
+    static func scope(projectId: String, milestone: String?, allIssues: Bool) -> Scope {
+        if allIssues { return .allIssues(projectId) }
+        return milestone.map { .milestone(projectId: projectId, title: $0) } ?? .project(projectId)
     }
 
     /// Lands a card at `slot` among all of the column's cards, itself included, or at the end without one. An
-    /// epic's issues lifted by their header land there together. False when the drag carried nothing of this board.
+    /// epic's issues lifted by their header land there together. In All Issues, an issue on no board goes on the board,
+    /// at the end of the column. False when the drag carried nothing that can land there.
     @discardableResult
-    static func land(_ id: String?, in column: BoardColumn, at slot: Int?, model: AppModel, projectId: String, milestone: String?) -> Bool {
+    static func land(
+        _ id: String?, in column: BoardColumn, at slot: Int?, model: AppModel, projectId: String, milestone: String?,
+        allIssues: Bool = false
+    ) -> Bool {
+        // Nothing goes into All Issues' issues on no board: taking an issue off its board would lose what it has there.
+        guard !column.isOnNoBoard else { return false }
         if let id, let lifted = DraggedGroup(id) {
-            let members = model.columns(projectId: projectId).flatMap(\.nesting.members).filter { lifted.ids.contains($0.id) }
-            guard let group = lifted.group(model: model, projectId: projectId, milestone: milestone), !members.isEmpty else { return false }
+            let board = allIssues ? model.columns(for: .allIssues(projectId)) : model.columns(projectId: projectId)
+            let members = board.flatMap(\.nesting.members).filter { lifted.ids.contains($0.id) }
+            guard let group = lifted.group(model: model, projectId: projectId, milestone: milestone, allIssues: allIssues), !members.isEmpty else { return false }
             let index = column.items.prefix(slot ?? column.items.count).filter { !lifted.ids.contains($0.id) }.count
-            withAnimation(Theme.spring) { model.drop(group, members: members, in: column, at: index, milestone: milestone) }
+            withAnimation(Theme.spring) { model.drop(group, members: members, in: column, at: index, milestone: milestone, inAllIssues: allIssues) }
             return true
         }
-        guard let id, let item = model.item(id: id), item.projectId == projectId else { return false }
+        let scope = Self.scope(projectId: projectId, milestone: milestone, allIssues: allIssues)
+        guard let id, let item = model.item(id: id), model.fits(item, onBoardOf: scope) else { return false }
+        if !item.isOnBoard {
+            withAnimation(Theme.spring) { model.addToBoard([item], in: column, projectId: projectId) }
+            return true
+        }
         // The model counts the place among the column's other cards, without the sub-issues the card brings along.
         let others = Set(column.shown(without: item).map(\.id))
         let index = column.items.prefix(slot ?? column.items.count).filter { others.contains($0.id) }.count
-        withAnimation(Theme.spring) { model.drop(item, in: column, at: index, milestone: milestone) }
+        withAnimation(Theme.spring) { model.drop(item, in: column, at: index, milestone: milestone, inAllIssues: allIssues) }
         return true
     }
 }
@@ -124,7 +153,7 @@ struct MobileBoard: View {
 private struct MobileHiddenColumns: View {
     @Environment(AppModel.self) private var model
     var columns: [BoardColumn]
-    var view: ProjectView
+    var scope: Scope
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -135,7 +164,7 @@ private struct MobileHiddenColumns: View {
                 .padding(.bottom, 4)
             ForEach(columns) { column in
                 Button {
-                    model.setColumn(column.id, hidden: false, of: view)
+                    model.setColumn(column.id, hidden: false, in: scope)
                 } label: {
                     HStack(spacing: 8) {
                         ColumnIcon(column: column, size: 16)
@@ -169,6 +198,11 @@ struct BoardDropTarget: Equatable {
     var row: Int?
     /// Whether an epic's issues are dragged by their header, which land as one smaller card.
     var group = false
+    /// The card (item id) the dragged card is held over the middle of, and goes under as a sub-issue if let go there:
+    /// it lights up, and the gap, if one was open, keeps its room unseen, so that no card moves under the finger.
+    var nest: String? = nil
+    /// No gap at all: the card was held over another card's middle before any gap opened in this column.
+    var gapless = false
 }
 
 /// The issues of an epic standing together in a column, lifted by their header: what the drag carries, in place of a
@@ -200,8 +234,8 @@ struct DraggedGroup: Equatable {
 
     /// The group as the board shows it now.
     @MainActor
-    func group(model: AppModel, projectId: String, milestone: String?) -> Nesting.EpicGroup? {
-        let columns = milestone.map { model.columns(for: .milestone(projectId: projectId, title: $0)) } ?? model.columns(projectId: projectId)
+    func group(model: AppModel, projectId: String, milestone: String?, allIssues: Bool = false) -> Nesting.EpicGroup? {
+        let columns = model.columns(for: MobileBoard.scope(projectId: projectId, milestone: milestone, allIssues: allIssues))
         return (columns.first { $0.id == columnId }?.nesting.groups ?? columns.flatMap(\.nesting.groups))
             .first { $0.contentId == epic }
     }
@@ -221,11 +255,14 @@ struct MobileColumn: View {
     @Environment(\.openRoute) private var openRoute
     var projectId: String
     var milestone: String? = nil
+    var allIssues = false
     var column: BoardColumn
     var width: CGFloat
     @Binding var target: BoardDropTarget?
     @Binding var dragging: String?
     var onDrop: (String?, Int?) -> Void
+    /// A card let go over the middle of another one: the dragged card's id, and the other card's.
+    var onNest: (String?, String) -> Void
 
     @State private var frames = CardFrames()
     @State private var foldFeedback = 0
@@ -233,7 +270,7 @@ struct MobileColumn: View {
     var body: some View {
         let space = "column-\(column.id)"
         VStack(spacing: 6 - CardView.shadowRoom.top) {
-            MobileColumnHeader(projectId: projectId, milestone: milestone, column: column)
+            MobileColumnHeader(projectId: projectId, milestone: milestone, allIssues: allIssues, column: column)
                 .padding(.horizontal, Self.inset)
             ScrollView(.vertical) {
                 LazyVStack(spacing: 8) {
@@ -260,13 +297,17 @@ struct MobileColumn: View {
                 .animation(Theme.spring, value: column.nesting.rows.map(\.id))
             }
             .scrollIndicators(.hidden)
+            // Pull down: sync now, as on every list.
+            .refreshable { await model.refreshAndWait() }
             .coordinateSpace(.named(space))
             .frame(maxHeight: .infinity)
             .accessibilityIdentifier("column-\(column.title)")
             .sensoryFeedback(.selection, trigger: foldFeedback)
+            // A tick as a card lights up to take the dragged one under it.
+            .sensoryFeedback(trigger: nestTarget) { _, new in new == nil ? nil : .selection }
             .onDrop(of: [.plainText, .url], delegate: ColumnDrop(
-                model: model, projectId: projectId, column: column, frames: frames,
-                target: $target, dragging: $dragging, onDrop: onDrop
+                model: model, scope: MobileBoard.scope(projectId: projectId, milestone: milestone, allIssues: allIssues),
+                column: column, frames: frames, target: $target, dragging: $dragging, onDrop: onDrop, onNest: onNest
             ))
         }
         // The columns stand on the board's grey without lanes, and reach the bottom edge, where their cards scroll out
@@ -280,9 +321,14 @@ struct MobileColumn: View {
     /// The cards' width in the column.
     private var inner: CGFloat { width - 2 * Self.inset }
 
+    /// The card of this column a dragged card is held over the middle of, which would take it as a sub-issue.
+    private var nestTarget: String? {
+        target?.columnId == column.id ? target?.nest : nil
+    }
+
     /// Where the gap shows among all of the column's rows, the dragged card included.
     private var gapPosition: Int? {
-        guard let target, target.columnId == column.id else { return nil }
+        guard let target, target.columnId == column.id, !target.gapless else { return nil }
         if let row = target.row { return min(row, column.nesting.rows.count) }
         // Without knowing the card yet: in front of the card at the slot.
         guard target.slot < column.items.count else { return column.nesting.rows.count }
@@ -298,6 +344,9 @@ struct MobileColumn: View {
             )
             .frame(height: target?.group == true ? 52 : 76)
             .padding(.leading, CGFloat(min(target?.depth ?? 0, CardTreeLines.deepest)) * CardTreeLines.indent)
+            // Kept, unseen, while a card is lit to take the dragged one, so that nothing moves under the finger.
+            .opacity(nestTarget == nil ? 1 : 0)
+            .accessibilityHidden(true)
             .transition(.opacity.combined(with: .scale(scale: 0.96)))
     }
 
@@ -349,15 +398,29 @@ struct MobileColumn: View {
     }
 
     private func card(_ item: Item, space: String, width: CGFloat) -> some View {
-        Button {
+        let lit = nestTarget == item.id
+        return Button {
             openRoute(.issue(item.id))
         } label: {
-            CardView(card: model.cardModel(for: item, in: column.nesting, showsMilestone: milestone == nil), width: width, avatarVersion: model.avatarVersion)
+            CardView(card: model.cardModel(for: item, in: column.nesting, showsMilestone: milestone == nil), width: width, selected: lit, avatarVersion: model.avatarVersion)
                 .equatable()
         }
         .buttonStyle(CardPressStyle())
         .accessibilityIdentifier("card-\(item.displayNumber)")
         .hoverEffect(.lift)
+        // Lit to take the dragged card as a sub-issue: a ring a little outside the card and a card a little larger, so
+        // both show around the dragged card, which covers most of it.
+        .overlay {
+            if lit {
+                RoundedRectangle(cornerRadius: CardView.cornerRadius + Self.nestRingOutset, style: .continuous)
+                    .strokeBorder(Theme.accent, lineWidth: 2.5)
+                    .padding(-Self.nestRingOutset)
+                    .transition(.opacity)
+                    .accessibilityHidden(true)
+            }
+        }
+        .scaleEffect(lit ? 1.03 : 1)
+        .animation(Theme.quick, value: lit)
         .opacity((dragging == item.id || liftedIds.contains(item.id)) && target != nil ? 0.35 : 1)
         .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .named(space))
@@ -382,6 +445,9 @@ struct MobileColumn: View {
         .accessibilityAction(named: Text(.moveToPreviousStatus)) { step(item, by: -1) }
     }
 
+    /// How far outside a card the ring is that lights it up to take a dragged card.
+    static let nestRingOutset: CGFloat = 4
+
     /// What a card is outside the app: its link on GitHub, or its number and title.
     private func dragText(_ item: Item) -> String {
         item.url ?? "\(item.displayNumber) \(item.title)"
@@ -390,18 +456,20 @@ struct MobileColumn: View {
     /// For VoiceOver, which can't drag: moves the card to the neighbouring column.
     private func step(_ item: Item, by delta: Int) {
         guard let next = neighbour(delta) else { return }
-        withAnimation(Theme.spring) { model.drop(item, in: next, at: next.items.count, milestone: milestone) }
+        MobileBoard.land(item.id, in: next, at: nil, model: model, projectId: projectId, milestone: milestone, allIssues: allIssues)
     }
 
     /// For VoiceOver: moves an epic's issues here to the neighbouring column.
     private func step(_ group: Nesting.EpicGroup, by delta: Int) {
         guard let next = neighbour(delta) else { return }
         let members = column.members(of: group)
-        withAnimation(Theme.spring) { model.drop(group, members: members, in: next, at: next.items.count, milestone: milestone) }
+        withAnimation(Theme.spring) { model.drop(group, members: members, in: next, at: next.items.count, milestone: milestone, inAllIssues: allIssues) }
     }
 
+    /// The column beside this one a card can go to: past All Issues' issues on no board, which take none.
     private func neighbour(_ delta: Int) -> BoardColumn? {
-        let columns = model.shownColumns(for: milestone.map { .milestone(projectId: projectId, title: $0) } ?? .project(projectId))
+        let columns = model.shownColumns(for: MobileBoard.scope(projectId: projectId, milestone: milestone, allIssues: allIssues))
+            .filter { !$0.isOnNoBoard || $0.id == column.id }
         guard let index = columns.firstIndex(where: { $0.id == column.id }), columns.indices.contains(index + delta) else { return nil }
         return columns[index + delta]
     }
@@ -411,12 +479,14 @@ struct MobileColumn: View {
 /// may have started in another window.
 private struct ColumnDrop: DropDelegate {
     var model: AppModel
-    var projectId: String
+    /// The board: a project's, one of its milestones' or its All Issues'.
+    var scope: Scope
     var column: BoardColumn
     var frames: CardFrames
     @Binding var target: BoardDropTarget?
     @Binding var dragging: String?
     var onDrop: (String?, Int?) -> Void
+    var onNest: (String?, String) -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
         CardDragMark.isCard(info)
@@ -429,6 +499,8 @@ private struct ColumnDrop: DropDelegate {
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
         update(info)
+        // Going under another card adds to what is there, which the dragged card's badge says with a plus.
+        if target?.columnId == column.id, target?.nest != nil { return DropProposal(operation: .copy) }
         return DropProposal(operation: fits ? .move : .forbidden)
     }
 
@@ -438,20 +510,51 @@ private struct ColumnDrop: DropDelegate {
 
     func performDrop(info: DropInfo) -> Bool {
         guard CardDragMark.isCard(info) else { return false }
+        if target?.columnId == column.id, let parent = target?.nest {
+            CardDragMark.loadId(info) { id in onNest(id, parent) }
+            return true
+        }
+        guard fits else { return false }
         let slot = target?.columnId == column.id ? target?.slot : nil
         CardDragMark.loadId(info) { id in onDrop(id, slot) }
         return true
     }
 
-    /// A card of another project, dragged in from a window that shows that project, can't land here.
+    /// A card of another project, dragged in from a window that shows that project, can't land here, and nothing can
+    /// go into All Issues' issues on no board.
     private var fits: Bool {
+        guard !column.isOnNoBoard else { return false }
         guard let dragging else { return true }
         let id = DraggedGroup(dragging)?.ids.first ?? dragging
-        return MainActor.assumeIsolated { model.item(id: id)?.projectId == projectId }
+        return MainActor.assumeIsolated { model.item(id: id).map { model.fits($0, onBoardOf: scope) } ?? false }
     }
 
-    /// The position among the column's cards, from where the finger is.
+    /// The card the finger holds the dragged card over the middle of, if the dragged card can go under it: its item
+    /// id. Its top and bottom edges are left to placing the card above or below it, as the gaps between cards are.
+    private func nestTarget(at location: CGPoint) -> String? {
+        guard let dragging, DraggedGroup(dragging) == nil else { return nil }
+        return MainActor.assumeIsolated {
+            guard let child = model.item(id: dragging) else { return nil }
+            for item in column.items {
+                guard let frame = frames.frames[item.id], frame.minY <= location.y, location.y <= frame.maxY else { continue }
+                let edge = DropOntoIssue.edge(of: frame.height)
+                guard location.y > frame.minY + edge, location.y < frame.maxY - edge else { return nil }
+                return model.canNest([child], under: item) ? item.id : nil
+            }
+            return nil
+        }
+    }
+
+    /// The position among the column's cards, from where the finger is; or the card it would go under.
     private func update(_ info: DropInfo) {
+        if let parent = nestTarget(at: info.location) {
+            // The gap keeps its place, and its room, while the card is lit: closing it would move the card under the
+            // finger away from it.
+            var next = target?.columnId == column.id ? target ?? BoardDropTarget(columnId: column.id, slot: 0) : BoardDropTarget(columnId: column.id, slot: 0, gapless: true)
+            next.nest = parent
+            if next != target { target = next }
+            return
+        }
         guard fits else {
             if target?.columnId == column.id { target = nil }
             return
@@ -487,6 +590,11 @@ private struct ColumnDrop: DropDelegate {
                 slot = column.items.count
             }
             row = fullRow(landing.row, shown: column.rows(without: item))
+            // An issue on no board put on the board goes at the end of the column, where the board adds it.
+            if !item.isOnBoard {
+                let end = column.landing(of: item, at: others.count)
+                (slot, depth, row) = (column.items.count, end.depth, fullRow(end.row, shown: column.rows(without: item)))
+            }
         }
         let next = BoardDropTarget(columnId: column.id, slot: slot, depth: depth, row: row)
         if next != target { target = next }
@@ -554,6 +662,7 @@ private struct MobileColumnHeader: View {
     @Environment(\.colorScheme) private var scheme
     var projectId: String
     var milestone: String? = nil
+    var allIssues = false
     var column: BoardColumn
 
     @State private var renaming = false
@@ -569,21 +678,25 @@ private struct MobileColumnHeader: View {
                 Text(detail).font(.footnote).foregroundStyle(Theme.textTertiary).lineLimit(1)
             }
             Spacer(minLength: 0)
-            if canEdit && column.option != nil || hidingView != nil {
+            if editsStatuses && column.option != nil || hides {
                 Menu {
-                    if canEdit, let option = column.option {
+                    if editsStatuses, let option = column.option {
                         statusItems(option)
+                    } else if allIssues {
+                        // All Issues puts its columns in an order of its own, on this device.
+                        moveItems
+                        Divider()
                     }
-                    // Hidden here only, for a view's board; one column always stays.
-                    if let view = hidingView {
+                    // Hidden here only, for a view's board and All Issues'; one column always stays.
+                    if hides {
                         Button {
-                            model.setColumn(column.id, hidden: true, of: view)
+                            model.setColumn(column.id, hidden: true, in: scope)
                         } label: {
                             Label(.hideColumn, systemImage: "eye.slash")
                         }
-                        .disabled(model.shownColumns(for: .project(projectId)).count <= 1)
+                        .disabled(model.shownColumns(for: scope).count <= 1)
                     }
-                    if canEdit, column.option != nil {
+                    if editsStatuses, column.option != nil {
                         Divider()
                         Button(role: .destructive) {
                             confirmDelete = true
@@ -601,22 +714,27 @@ private struct MobileColumnHeader: View {
                 }
                 .accessibilityLabel(.optionsForStatus(status: column.title))
             }
-            Button {
-                // With the column's status or value, and what the view's filter asks for, as on the Mac.
-                let preset = milestone == nil ? model.newIssuePreset(projectId: projectId, column: column.value) : nil
-                // "No status" is a column too: an issue made there gets none, rather than the first status.
-                let statusId = column.option?.id ?? (column.id == BoardColumn.noStatusId ? column.id : nil)
-                navigation.sheet = .newIssue(NewIssueContext(projectId: projectId, statusId: statusId, milestoneTitle: milestone, preset: preset))
-            } label: {
-                Image(systemName: "plus")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Theme.textSecondary)
-                    .frame(width: 32, height: 32)
-                    .contentShape(Rectangle())
+            // A new issue in All Issues goes on the board, so not into the issues on none, and only where you may add one.
+            if !allIssues || canEdit && !column.isOnNoBoard {
+                Button {
+                    // With the column's status or value, and what the view's filter asks for, as on the Mac.
+                    let preset = milestone == nil && !allIssues ? model.newIssuePreset(projectId: projectId, column: column.value) : nil
+                    // "No status" is a column too: an issue made there gets none, rather than the first status.
+                    let statusId = column.option?.id ?? (column.id == BoardColumn.noStatusId ? column.id : nil)
+                    navigation.sheet = .newIssue(NewIssueContext(
+                        projectId: projectId, inAllIssues: allIssues, statusId: statusId, milestoneTitle: milestone, preset: preset
+                    ))
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Theme.textSecondary)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .hoverEffect(.highlight)
+                .accessibilityLabel(.newIssueInStatus(status: column.title))
             }
-            .buttonStyle(.plain)
-            .hoverEffect(.highlight)
-            .accessibilityLabel(.newIssueInStatus(status: column.title))
         }
         .padding(.horizontal, 4)
         .frame(minHeight: 36)
@@ -640,18 +758,27 @@ private struct MobileColumnHeader: View {
 
     private var canEdit: Bool { model.projects.first { $0.id == projectId }?.viewerCanUpdate == true }
 
-    /// The view whose board can hide this column: the open one, but not on a milestone's board.
-    private var hidingView: ProjectView? {
-        milestone == nil ? model.currentView(projectId: projectId) : nil
-    }
+    /// Whether the board's statuses can be changed here: on the board, not in All Issues, which shows them as they are.
+    private var editsStatuses: Bool { canEdit && !allIssues }
 
-    /// Rename, colour and move the status.
+    private var scope: Scope { MobileBoard.scope(projectId: projectId, milestone: milestone, allIssues: allIssues) }
+
+    /// Whether this board can hide its columns: a view's and All Issues', not a milestone's.
+    private var hides: Bool { model.canHideColumns(in: scope) }
+
+    /// Rename, give an icon and colour, and move the status.
     @ViewBuilder private func statusItems(_ option: FieldOption) -> some View {
         Button {
             name = option.name
             renaming = true
         } label: {
             Label(.renameEllipsis, systemImage: "pencil")
+        }
+        // What the status means, drawn as its circle; kept in iCloud, as GitHub has no icons.
+        Menu {
+            StatusKindPicker(option: option)
+        } label: {
+            Label(.statusIcon, systemImage: "circle.dashed")
         }
         Menu {
             Picker(.colour, selection: Binding(
@@ -672,6 +799,12 @@ private struct MobileColumnHeader: View {
             Label(.colour, systemImage: "paintpalette")
         }
         Divider()
+        moveItems
+        Divider()
+    }
+
+    /// Move Left and Move Right, among the columns the board shows.
+    @ViewBuilder private var moveItems: some View {
         let shown = shownStatuses
         Button {
             move(-1)
@@ -685,7 +818,6 @@ private struct MobileColumnHeader: View {
             Label(.moveRight, systemImage: "arrow.right")
         }
         .disabled(shown.last == column.id)
-        Divider()
     }
 
     private var statuses: [FieldOption] { model.statusOptions(projectId: projectId) }
@@ -698,15 +830,20 @@ private struct MobileColumnHeader: View {
         model.saveColumns(projectId: projectId, options)
     }
 
-    /// The status columns the board shows, which Move Left and Move Right step through.
+    /// The status columns the board shows, which Move Left and Move Right step through; in All Issues every column.
     private var shownStatuses: [String] {
-        model.shownColumns(for: milestone.map { .milestone(projectId: projectId, title: $0) } ?? .project(projectId)).compactMap { $0.option?.id }
+        let shown = model.shownColumns(for: scope)
+        return allIssues ? shown.map(\.id) : shown.compactMap { $0.option?.id }
     }
 
     private func move(_ delta: Int) {
         let shown = shownStatuses
         guard let index = shown.firstIndex(of: column.id), shown.indices.contains(index + delta) else { return }
-        model.moveColumn(column.id, among: shown, to: index + delta, projectId: projectId)
+        if allIssues {
+            model.moveColumn(column.id, among: shown, to: index + delta, allIssuesOf: projectId)
+        } else {
+            model.moveColumn(column.id, among: shown, to: index + delta, projectId: projectId)
+        }
     }
 
     private func delete() {

@@ -138,11 +138,20 @@ private struct ProjectFieldProperty: View {
     @State private var open = false
 
     private var value: FieldValue? { section.value(of: field) }
+    private var selectedOption: FieldChoice? {
+        if field.id == section.project.statusFieldId {
+            return model.statusOption(of: section.item).map { FieldChoice(id: $0.id, name: $0.name, color: $0.color, descr: $0.descr) }
+        }
+        if field.id == section.project.priorityFieldId {
+            return model.priorityOption(of: section.item).map { FieldChoice(id: $0.id, name: $0.name, color: $0.color, descr: $0.descr) }
+        }
+        return field.options.first { $0.id == value?.optionId }
+    }
 
     var body: some View {
         Button { open = true } label: {
             HStack(spacing: 7) {
-                if let option = field.options.first(where: { $0.id == value?.optionId }) {
+                if let option = selectedOption {
                     if field.id == section.project.statusFieldId {
                         StatusIcon(glyph: model.glyph(of: section.item))
                     } else if field.id == section.project.priorityFieldId {
@@ -200,7 +209,12 @@ private struct ProjectFieldProperty: View {
         }
     }
 
-    private var spokenValue: String { ProjectFieldEditing.label(field: field, value: value) }
+    private var spokenValue: String {
+        if field.id == section.project.statusFieldId || field.id == section.project.priorityFieldId {
+            return selectedOption?.name ?? String(localized: .projectFieldEmpty)
+        }
+        return ProjectFieldEditing.label(field: field, value: value)
+    }
 
     private func save(_ value: FieldValue?) {
         model.saveProjectField(ProjectFieldTarget(item: section.item, fieldId: field.id), value: value)
@@ -217,10 +231,14 @@ private struct ProjectFieldChoicePicker: View {
         if let item = model.item(targetedBy: target), let field = model.field(id: target.fieldId), let project = model.project(of: item) {
             let value = IssueProjectSection(project: project, item: item, fields: []).value(of: field)
             PickerList(placeholder: field.name, items: model.projectFieldChoices(field: field, value: value), multiple: field.kind == .multiSelect,
+                       creating: field.id == project.statusFieldId ? { model.newProjectStatusRow($0, target: target) } : nil,
                        onPick: { id in
-                model.saveProjectField(target, value: ProjectFieldEditing.picked(id, field: field, current: value))
+                model.pickProjectField(id, target: target)
             }, onClose: close)
             .disabled(!project.viewerCanUpdate || model.projectEdits.isSaving(target, in: model.db, remaps: model.status.idRemaps))
+            .onAppear {
+                if field.id == project.statusFieldId { model.refreshStatuses(projectId: project.id) }
+            }
         }
     }
 }

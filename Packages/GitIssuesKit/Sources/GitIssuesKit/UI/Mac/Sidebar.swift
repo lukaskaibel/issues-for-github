@@ -591,6 +591,12 @@ struct ToastView: View {
                     }
                     .buttonStyle(SecondaryButtonStyle())
                     .keyboardShortcut("z", modifiers: .command)
+                } else if case .openItem = notice.action {
+                    Button(.noticeOpenIssue) {
+                        if let action = notice.action { model.apply(action) }
+                        model.status.dismiss(notice.id)
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
                 } else if let label = notice.action?.adoptLabel {
                     HStack(spacing: 8) {
                         Button(.keepMineMac) { model.status.dismiss(notice.id) }
@@ -614,10 +620,12 @@ struct ToastView: View {
         .frame(width: 380, alignment: .leading)
         // Glass at the bottom of the window, as iOS shows what just happened with its Undo.
         .glassPanel(in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        // A right-click on it does nothing: it neither presses Undo nor opens the menu of the card under it.
+        .floatingContextMenu()
         .task {
-            // Notices that ask for a decision stay until answered; one that can be undone stays a little longer.
-            guard notice.action == nil || notice.action?.isUndo == true else { return }
-            try? await Task.sleep(for: .seconds(notice.isWarning || notice.action?.isUndo == true ? 10 : 4))
+            // Notices that ask for a decision stay until answered; one with a button stays a little longer.
+            guard notice.action?.adoptLabel == nil else { return }
+            try? await Task.sleep(for: .seconds(notice.isWarning || notice.action != nil ? 10 : 4))
             model.status.dismiss(notice.id)
         }
     }

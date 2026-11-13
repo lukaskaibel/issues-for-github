@@ -669,7 +669,10 @@ private struct CardPainter {
             let width = 7 + 10 + 5 + textWidth + 7
             guard start(x) + width <= size.width - padding.width else { break }
             let rect = CGRect(x: start(x), y: bottomY - 10, width: width, height: 20)
-            chip(rect)
+            // An iteration opens its picker, as the milestone does.
+            let kind: PickerKind? = field.icon == .iteration ? .iteration(fieldId: field.fieldId) : nil
+            if let kind { part(kind, rect) }
+            chip(rect, hovered: kind.map(hovered) ?? false)
             let icon = CGRect(x: rect.minX + 7, y: bottomY - 5, width: 10, height: 10)
             let center = CGPoint(x: icon.midX, y: icon.midY)
             switch field.icon {

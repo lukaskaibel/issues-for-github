@@ -193,7 +193,7 @@ struct DescriptionView: View {
     }
 
     private func save(_ text: String) {
-        // The latest copy, since the view may have been drawn before the last sync.
+        // The latest copy, including an issue's new ID after syncing or a change of project membership.
         guard let current = model.item(referencedBy: IssueReference(item)) else { return }
         // Leave untouched text exactly as GitHub stores it, line endings included.
         guard text != Diff3.normalize(current.body) else { return }
@@ -623,7 +623,7 @@ private struct EpicGroupHeader: View {
             // A closed milestone takes no new issues.
             if item.kind == .issue, group?.isOpen ?? true {
                 IconButton(systemName: "plus", label: String(localized: .newSubIssueInMilestone(milestone: title ?? String(localized: .noMilestone))), size: 20) {
-                    model.newIssuePlan = NewIssuePlan(milestoneTitle: title)
+                    model.newIssuePlan = NewIssuePlan(milestoneTitle: title, noMilestone: title == nil)
                     model.overlay = .newIssue(statusId: nil, parentItemId: item.id)
                 }
             }
@@ -877,7 +877,8 @@ struct CommentComposer: View {
                     .background(Circle().fill(canSend ? Theme.accentFill : Theme.field))
             }
             .buttonStyle(PlainPressStyle())
-            .keyboardShortcut(.return, modifiers: .command)
+            // Only while writing the comment: ⌘↵ in the title or elsewhere on the page doesn't post a half-written one.
+            .keyboardShortcut(focused ? KeyboardShortcut(.return, modifiers: .command) : nil)
             .disabled(!canSend)
             .help(Text(.titleWithShortcutKey(title: String(localized: .postComment), key: "⌘↵")))
             .accessibilityLabel(Text(.sendCommentButton))
@@ -888,6 +889,9 @@ struct CommentComposer: View {
         .contentShape(Rectangle())
         .onTapGesture { focused = true }
         .glassPanel(in: RoundedRectangle(cornerRadius: 21, style: .continuous))
+        // It floats over the page: its text keeps its own menu, and elsewhere a right-click neither sends the comment
+        // nor opens the menu of a sub-issue scrolled under it.
+        .floatingContextMenu()
         .onChange(of: draft) { _, text in model.commentDrafts[item.id] = text.isEmpty ? nil : text }
     }
 
@@ -1001,6 +1005,9 @@ struct IssueProperties: View {
                     }
                 }
             }
+            ForEach(model.iterationFields(for: item)) { field in
+                iterationRow(field)
+            }
             if let repo = item.repo {
                 row(.repository) {
                     Text(repo).foregroundStyle(Theme.textBody).lineLimit(1).truncationMode(.middle).padding(.horizontal, 8)
@@ -1093,8 +1100,12 @@ struct IssueProperties: View {
     }
 
     private func row<Content: View>(_ title: LocalizedStringResource, @ViewBuilder content: () -> Content) -> some View {
+        row(Text(title), content: content)
+    }
+
+    private func row<Content: View>(_ title: Text, @ViewBuilder content: () -> Content) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
-            Text(title)
+            title
                 .font(.small)
                 .foregroundStyle(Theme.textSecondary)
                 .fixedSize()
@@ -1104,6 +1115,27 @@ struct IssueProperties: View {
             Spacer(minLength: 0)
         }
         .frame(minHeight: 30)
+    }
+
+    /// One of the board's iteration fields, by the name the board gives it: the iteration with "Current", "Next" or
+    /// its days after it.
+    private func iterationRow(_ field: ProjectField) -> some View {
+        row(Text(verbatim: field.name)) {
+            PropertyButton(kind: .iteration(fieldId: field.id), item: item) {
+                if let iteration = model.iteration(of: item, field: field) {
+                    HStack(spacing: 7) {
+                        IterationIcon(size: 13)
+                            .foregroundStyle(model.isRunning(iteration, field: field) ? Theme.started : Theme.textSecondary)
+                        Text(iteration.title).lineLimit(1)
+                        if let when = model.iterationPlace(iteration, field: field) ?? model.iterationRange(iteration) {
+                            Text(when).foregroundStyle(Theme.textTertiary).lineLimit(1)
+                        }
+                    }
+                } else {
+                    Text(.addToIteration).foregroundStyle(Theme.textTertiary)
+                }
+            }
+        }
     }
 
     /// Blocked by or blocking: the issues' numbers, listed in full beside the description.

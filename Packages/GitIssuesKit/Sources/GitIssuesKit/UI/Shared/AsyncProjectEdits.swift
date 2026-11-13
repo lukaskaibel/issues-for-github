@@ -159,9 +159,11 @@ extension AppModel {
         let starts = epicStarts(after: mutations)
         let database = db
         let engine = engine
-        projectEdits.save(mutations + completions.mutations + starts.mutations, inserting: inserting, expected: expected, in: database,
+        let mutations = mutations + completions.mutations + starts.mutations
+        projectEdits.save(mutations, inserting: inserting, expected: expected, in: database,
                           onSaved: { [weak self] in
             if let self, self.db === database {
+                if self.finishesWork(mutations) { AppReview.shared.finishedSomething() }
                 for parent in completions.parents {
                     self.status.post(Notice(title: String(localized: .parentDoneWithSubIssues(number: parent.displayNumber)), message: parent.title, action: .openItem(parent.id)))
                 }

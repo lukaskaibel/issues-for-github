@@ -539,6 +539,13 @@ extension View {
         modifier(GlassContextMenu(menu: menu, outset: CGSize(width: 10, height: 8)))
     }
 
+    /// For a view floating over the page, as the peek, the selection bar or a notice: a right-click on it never opens
+    /// the menu of the card or line it covers, only its own `menu` if it has one. While `isShown` is false, as when an
+    /// issue's page hides it, it covers nothing.
+    func floatingContextMenu(isShown: Bool = true, _ menu: @escaping () -> NSMenu? = { nil }) -> some View {
+        modifier(FloatingContextMenu(isShown: isShown, menu: menu))
+    }
+
     /// A tooltip when there is one; without, none of the tracking that `.help("")` sets up for every row.
     @ViewBuilder
     func optionalHelp(_ text: String?) -> some View {
@@ -567,6 +574,46 @@ private struct GlassContextMenu: ViewModifier {
                 ContextMenus.shared.register(region, frame: frame.insetBy(dx: -outset.width, dy: -outset.height)) { _ in source.build() }
             }
             .onDisappear { [region] in ContextMenus.shared.remove(region) }
+    }
+}
+
+/// Where a floating view is and whether it shows, kept outside view state so moving it draws nothing again.
+@MainActor
+private final class FloatingArea {
+    let id = UUID()
+    var menu: () -> NSMenu? = { nil }
+    var frame = CGRect.null
+    var isShown = true
+
+    func update() {
+        if isShown, !frame.isEmpty {
+            ContextMenus.shared.register(id, frame: frame, floats: true) { [weak self] _ in self?.menu() }
+        } else {
+            ContextMenus.shared.remove(id)
+        }
+    }
+}
+
+private struct FloatingContextMenu: ViewModifier {
+    var isShown: Bool
+    var menu: () -> NSMenu?
+    @State private var area = FloatingArea()
+
+    func body(content: Content) -> some View {
+        // The latest closure, so the menu shows what the view shows now.
+        area.menu = menu
+        return content
+            .onGeometryChange(for: CGRect.self) { proxy in
+                proxy.frame(in: .global)
+            } action: { [area] frame in
+                area.frame = frame
+                area.update()
+            }
+            .onChange(of: isShown, initial: true) { [area] _, shown in
+                area.isShown = shown
+                area.update()
+            }
+            .onDisappear { [area] in ContextMenus.shared.remove(area.id) }
     }
 }
 

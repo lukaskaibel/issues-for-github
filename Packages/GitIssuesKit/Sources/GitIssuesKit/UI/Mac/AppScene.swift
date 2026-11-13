@@ -17,6 +17,9 @@ public struct GitIssuesScene: Scene {
         .windowToolbarStyle(.unified)
         .defaultSize(width: 1280, height: 820)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button(.rateIssuesMenu) { Platform.open(AppReview.writeReviewURL) }
+            }
             CommandGroup(replacing: .newItem) {
                 Button(.newIssue) {
                     model.overlay = .newIssue(statusId: nil, parentItemId: nil)
@@ -62,11 +65,12 @@ public struct GitIssuesScene: Scene {
                     }
                     .keyboardShortcut("2", modifiers: .command)
                 } else {
-                    // From anywhere, as G B and G L do: the project used last when none is on screen.
-                    Button(.board) { model.showProjectLayout(.board) }
+                    // From anywhere, as G B and G L do: the project used last when none is on screen. All Issues
+                    // switches itself.
+                    Button(.board) { model.showLayout(.board) }
                         .keyboardShortcut("1", modifiers: .command)
                         .disabled(model.openProjects.isEmpty)
-                    Button(.list) { model.showProjectLayout(.list) }
+                    Button(.list) { model.showLayout(.list) }
                         .keyboardShortcut("2", modifiers: .command)
                         .disabled(model.openProjects.isEmpty)
                 }
@@ -94,7 +98,9 @@ public struct GitIssuesScene: Scene {
                     if let view = model.currentView { model.saveFilter(of: view) }
                 }
                 .keyboardShortcut("s", modifiers: .command)
-                .disabled(model.currentView.map { !model.canSaveFilter(of: $0) } ?? true)
+                // Not from behind an issue's page or a new issue, where ⌘S out of habit would save a filter you can't
+                // see for everyone.
+                .disabled(model.currentView.map { !model.canSaveFilter(of: $0) } ?? true || model.openItem != nil || model.overlay != nil)
                 Divider()
                 Button(.syncWithGitHubNow) { model.refresh() }
                     .keyboardShortcut("r", modifiers: .command)
@@ -110,7 +116,7 @@ public struct GitIssuesScene: Scene {
                     if let item = model.targetItem { model.copyBranchName(item) }
                 }
                 .keyboardShortcut(".", modifiers: [.command, .shift])
-                .disabled(model.targetItem?.number == nil)
+                .disabled(model.targetItem?.branchName == nil)
                 Button(.openOnGitHub) {
                     if let item = model.targetItem { model.openOnGitHub(item) }
                 }

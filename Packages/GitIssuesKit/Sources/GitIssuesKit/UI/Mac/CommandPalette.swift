@@ -34,6 +34,8 @@ struct CommandPalette: View {
                 step(.milestone, id)
             case .epic(let id):
                 step(.epic, id)
+            case .iteration(let id, let fieldId):
+                step(.iteration(fieldId: fieldId), id)
             case .views:
                 PickerList(
                     placeholder: String(localized: .goToViewPlaceholder),
@@ -318,23 +320,43 @@ private struct RootPalette: View {
     private var results: [PaletteCommand] {
         let commands = self.commands
         guard !query.isEmpty else { return commands }
-        let matchedCommands = commands
+        let scoredCommands = commands
             .compactMap { command -> (PaletteCommand, Int)? in
                 // The shown title or the English one, whichever matches better.
                 let scores = [command.title, command.englishTitle].compactMap { $0.flatMap { fuzzyScore(query, $0) } }
                 return scores.max().map { (command, $0) }
             }
             .sorted { $0.1 > $1.1 }
-            .map(\.0)
-        let pool = model.scope == .myIssues || model.scope == .inbox ? model.allItems : model.scopedItems
+        let matchedCommands = scoredCommands.map(\.0)
+        let everywhere = model.scope == .myIssues || model.scope == .inbox
+        let pool = everywhere ? model.allItems : model.scopedItems
         let digits = query.trimmingCharacters(in: CharacterSet(charactersIn: "# "))
-        let issues = pool
-            .compactMap { item -> (Item, Int)? in
-                if let number = item.number, !digits.isEmpty, String(number).hasPrefix(digits) { return (item, 1000 - String(number).count) }
-                return fuzzyScore(query, item.title).map { (item, $0) }
-            }
-            .sorted { $0.1 > $1.1 }
-            .prefix(8)
+        func scored(_ items: [Item]) -> [(Item, Int)] {
+            items
+                .compactMap { item -> (Item, Int)? in
+                    if let number = item.number, !digits.isEmpty, String(number).hasPrefix(digits) { return (item, 1000 - String(number).count) }
+                    return fuzzyScore(query, item.title).map { (item, $0) }
+                }
+                .sorted { $0.1 > $1.1 }
+        }
+        var found = scored(pool)
+        if !everywhere, found.count < 8 {
+            // The issues on screen first; then any other, such as one the view's filter leaves out, an epic on the
+            // roadmap or an issue on another board, so that any can be jumped to. An issue on several boards once.
+            var seen = Set(pool.map { $0.contentId ?? $0.id })
+            let rest = model.allItems.filter { seen.insert($0.contentId ?? $0.id).inserted }
+            found += scored(rest)
+        }
+        let scoredIssues = found.prefix(8)
+        // "go to" is how "Go to View…" begins, while issues merely have those letters in order: when what was typed
+        // begins a command's name and no issue's title, the commands come first, so that Return runs it.
+        let typed = query.trimmingCharacters(in: .whitespaces)
+        let begins = { (text: String?) in
+            text?.range(of: typed, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
+        }
+        let commandsFirst = scoredCommands.contains { begins($0.0.title) || begins($0.0.englishTitle) }
+            && !scoredIssues.contains { begins($0.0.title) || ($0.1 >= 900) }
+        let issues = scoredIssues
             .map { item, _ in
                 let title = "\(item.displayNumber)  \(item.title)"
                 return PaletteCommand(
@@ -342,11 +364,14 @@ private struct RootPalette: View {
                     icon: AnyView(StatusIcon(glyph: model.glyph(of: item)))
                 ) { model.open(item) }
             }
-        return issues + matchedCommands.map { command in
+        let named = matchedCommands.map { command in
             var command = command
             command.section = String(localized: .commandsSection)
             return command
         }
+        guard commandsFirst else { return issues + named }
+        let beginning = named.filter { begins($0.title) || begins($0.englishTitle) }
+        return beginning + named.filter { !(begins($0.title) || begins($0.englishTitle)) } + issues
     }
 
     private var commands: [PaletteCommand] {
@@ -396,6 +421,11 @@ private struct RootPalette: View {
                         model.setMilestone(of: targets, to: nil)
                     })
                 }
+            }
+            if let field = model.iterationFields(for: item).first {
+                list.append(PaletteCommand(id: "iteration", title: .moveToIterationCommand, section: section, icon: AnyView(IterationIcon().foregroundStyle(Theme.textSecondary)), keys: ["⇧", "C"]) {
+                    model.overlay = .palette(.iteration(itemId: item.id, fieldId: field.id))
+                })
             }
             if model.canRelate(item), !item.isEpic {
                 list.append(PaletteCommand(id: "epic", title: .addToEpicCommand, section: section, icon: AnyView(EpicIcon()), keys: ["M", "E"]) {
@@ -472,7 +502,7 @@ private struct RootPalette: View {
             }
         }
         if model.scope == .inbox {
-            let entries = model.inboxPicked.isEmpty
+            let entries = model.inboxPicked.count <= 1
                 ? model.inboxSelected.map { [$0] } ?? []
                 : model.visibleInbox.filter { model.inboxPicked.contains($0.id) }
             let section = String(localized: entries.count > 1 ? .selectedNotificationCount(count: entries.count) : .inbox)
@@ -525,7 +555,8 @@ private struct RootPalette: View {
                 model.showProjectLayout(.list)
             })
         }
-        if model.currentView != nil || model.scope == .myIssues {
+        // Their buttons show only while no issue is open, as F and ⇧V work only then.
+        if model.openItem == nil, model.currentView != nil || model.scope == .myIssues {
             list.append(PaletteCommand(id: "filter", title: .filterEllipsis, section: go, icon: symbol("line.3.horizontal.decrease"), keys: ["F"]) {
                 model.overlay = nil
                 model.filterMenuRequest += 1

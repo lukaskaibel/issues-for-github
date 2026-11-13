@@ -144,11 +144,13 @@ struct MobileIssueProjects: View {
 
     private func fieldRow(_ section: IssueProjectSection, field: ProjectField, primary: Bool) -> some View {
         let target = ProjectFieldTarget(item: section.item, fieldId: field.id)
-        let text = ProjectFieldEditing.label(field: field, value: section.value(of: field))
+        let isStatus = field.id == section.project.statusFieldId
+        let text = isStatus ? model.statusText(of: section.item) : ProjectFieldEditing.label(field: field, value: section.value(of: field))
         return Button { editor = target } label: {
             LabeledContent {
                 HStack(spacing: 6) {
                     if model.projectEdits.isSaving(target, in: model.db, remaps: model.status.idRemaps) { ProgressView().controlSize(.small) }
+                    if isStatus { StatusIcon(glyph: model.glyph(of: section.item), size: 15) }
                     Text(verbatim: text)
                         .foregroundStyle(section.value(of: field) == nil ? Theme.textTertiary : Theme.text)
                         .multilineTextAlignment(.trailing)
@@ -174,6 +176,7 @@ struct MobileIssueProjects: View {
             if field.id == project.statusFieldId { return "property-status" }
             if field.id == project.priorityFieldId { return "property-priority" }
             if field.id == project.dueFieldId { return "property-due" }
+            if field.kind == .iteration { return "property-iteration" }
         }
         return "project-field-\(project.id)-\(field.id)"
     }
@@ -236,9 +239,14 @@ private struct MobileProjectFieldEditor: View {
                 case .singleSelect, .multiSelect, .iteration:
                     PickerSheet(title: .projectFieldEmpty, prompt: .projectFieldEmpty, multiple: field.kind == .multiSelect, fieldName: field.name, items: {
                         model.projectFieldChoices(field: field, value: value)
+                    }, creating: { query in
+                        model.newProjectStatusRow(query, target: target)
                     }, onPick: { id in
-                        model.saveProjectField(target, value: ProjectFieldEditing.picked(id, field: field, current: value))
+                        model.pickProjectField(id, target: target)
                     }, isEnabled: { _ in !model.projectEdits.isSaving(target, in: model.db, remaps: model.status.idRemaps) })
+                    .task {
+                        if field.id == project.statusFieldId { model.refreshStatuses(projectId: project.id) }
+                    }
                 case .date:
                     DueDateSheet(current: [value?.date], addsField: false, fieldName: field.name) { day in
                         model.saveProjectField(target, value: day.map { FieldValue(date: $0.string) })

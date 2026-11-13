@@ -146,6 +146,15 @@ struct NewIssueView: View {
                         (draft.milestoneTitle.map { Text($0) } ?? Text(.milestone))
                     }
                 }
+                // The board's iteration: the view's, when it is made in a view of one.
+                if let field = iterationField {
+                    chip(.iteration(fieldId: field.id)) {
+                        let iteration = draft.fieldValues[field.id]?.iterationId.flatMap { id in field.iterations.first { $0.id == id } }
+                        IterationIcon(size: 12)
+                            .foregroundStyle(iteration.map { model.isRunning($0, field: field) } == true ? Theme.started : Theme.textSecondary)
+                        (iteration.map { Text($0.title) } ?? Text(verbatim: field.name))
+                    }
+                }
                 if let parent = draft.parent {
                     HStack(spacing: 6) {
                         if parent.isEpic {
@@ -206,6 +215,10 @@ struct NewIssueView: View {
         // A glass panel over the window, as the command palette.
         .glassPanel(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .onAppear(perform: prepare)
+        .onChange(of: model.optionIdRemaps) { _, saved in
+            // A status made in this form, now saved on GitHub.
+            if let id = draft.statusId, let savedId = saved[id] { draft.statusId = savedId }
+        }
         .onDisappear {
             guard !created else { return }
             let typed = !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -226,6 +239,7 @@ struct NewIssueView: View {
         return groups.filter(\.isOpen)
     }
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
+    private var iterationField: ProjectField? { model.iterationFields(projectId: draft.projectId).first }
     /// The board's repositories, also for an issue started on none in All Issues.
     private var repos: [RepoRef] {
         if inAllIssues, let id = model.allIssuesProjectId { return model.repos(projectId: id) }
@@ -273,11 +287,18 @@ struct NewIssueView: View {
         guard id != draft.projectId else { return }
         draft.projectId = id
         // Another board brings its own repository along; in All Issues the issue stays in the one chosen.
-        if !inAllIssues { draft.repoId = id.flatMap { model.defaultRepoId(projectId: $0) } ?? draft.repoId }
+        if !inAllIssues, let repoId = id.flatMap({ model.defaultRepoId(projectId: $0) }), repoId != draft.repoId {
+            draft.repoId = repoId
+            // Labels belong to a repository: GitHub would refuse another one's, and the new issue with them.
+            draft.labels = []
+        }
         draft.statusId = defaultStatus(projectId: id)
         draft.priorityId = nil
         if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
+        // The fields of the board it was going on, such as its iteration, are no other board's.
+        draft.fieldValues = [:]
         if let id { model.loadRepoMeta(projectId: id) }
+        model.refreshStatuses(projectId: id)
     }
 
     /// What a new issue starts with in the view on screen; none for sub-issues and planned ones.
@@ -318,15 +339,20 @@ struct NewIssueView: View {
         // Begun in a milestone, or from the roadmap: in that milestone, or as an epic.
         let plan = model.newIssuePlan ?? NewIssuePlan()
         model.newIssuePlan = nil
-        let milestone = plan.milestoneTitle ?? model.currentMilestoneTitle
+        let milestone = plan.noMilestone ? nil : plan.milestoneTitle ?? model.currentMilestoneTitle
             ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
         // In All Issues, also one left on no board in one of its repositories.
         let onNoBoardHere = parent == nil && unsent(onNoBoardIn: model.allIssuesProjectId)
         if typed == nil, groupPreset == nil, let unsent = model.unsentNewIssue, unsent.parent?.id == parent?.id, unsent.isEpic == plan.isEpic,
            model.scopeProjectId == nil || unsent.projectId == projectId || onNoBoardHere {
             draft = unsent
-            if let statusId { draft.statusId = chosenStatus(statusId) }
+            if let statusId {
+                draft.statusId = chosenStatus(statusId)
+                // A column's plus puts it on that board, also when it was left on no board last time.
+                if draft.projectId == nil { draft.projectId = projectId }
+            }
             if let milestone { draft.milestoneTitle = milestone }
+            if plan.noMilestone { draft.milestoneTitle = nil }
             restored = true
             focus = .title
             model.loadRepoMeta(projectId: draft.projectId)
@@ -350,6 +376,7 @@ struct NewIssueView: View {
         draft = new
         focus = .title
         model.loadRepoMeta(projectId: projectId)
+        model.refreshStatuses(projectId: projectId)
         if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
     }
 
@@ -412,7 +439,8 @@ struct NewIssueView: View {
                     items: items(kind),
                     multiple: kind.multiple,
                     width: kind.width,
-                    creating: kind == .labels ? { model.newLabelRow($0, projectId: draft.projectId, repoId: draft.repoId) } : nil,
+                    creating: kind == .labels ? { model.newLabelRow($0, projectId: draft.projectId, repoId: draft.repoId) }
+                        : kind == .status ? { model.newStatusRow($0, projectId: draft.projectId) } : nil,
                     onPick: { pick(kind, $0) },
                     onClose: close
                 )
@@ -427,7 +455,11 @@ struct NewIssueView: View {
             let none = draft.statusId == nil && draft.projectId != nil
                 ? [PickerItem(id: "", title: String(localized: .noStatus), selected: true, icon: AnyView(StatusIcon(glyph: .none)))] : []
             return none + statuses.map { option in
-                PickerItem(id: option.id, title: option.name, selected: draft.statusId == option.id, icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id))))
+                PickerItem(
+                    id: option.id, title: option.name, selected: draft.statusId == option.id,
+                    icon: AnyView(StatusIcon(glyph: model.glyph(projectId: draft.projectId, optionId: option.id))),
+                    status: model.canCreateStatus(projectId: draft.projectId) ? option : nil
+                )
             }
         case .priority:
             return [PickerItem(id: "", title: String(localized: .noPriority), selected: draft.priorityId == nil, icon: AnyView(PriorityIcon(level: .none)))]
@@ -462,6 +494,9 @@ struct NewIssueView: View {
                     trailing: group.due.map { AnyView(Text($0.shortLabel()).font(.small).foregroundStyle(Theme.textTertiary)) }
                 )
             }
+        case .iteration(let fieldId):
+            guard let field = model.field(id: fieldId) else { return [] }
+            return model.iterationItems(field: field, current: [draft.fieldValues[fieldId]?.iterationId])
         case .dueDate, .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic:
             return []
         }
@@ -470,7 +505,12 @@ struct NewIssueView: View {
     private func pick(_ kind: PickerKind, _ id: String) {
         switch kind {
         case .status:
-            draft.statusId = id.isEmpty ? nil : id
+            if let name = AppModel.newStatusName(id), let projectId = draft.projectId {
+                // Shown at once; the form takes GitHub's id for it when it has one (see the onChange above).
+                draft.statusId = model.createStatus(named: name, projectId: projectId, for: []) ?? draft.statusId
+            } else {
+                draft.statusId = id.isEmpty ? nil : id
+            }
         case .priority:
             draft.priorityId = id.isEmpty ? nil : id
         case .assignees:
@@ -496,6 +536,8 @@ struct NewIssueView: View {
             draft.dueDate = CalendarDay(id)?.string
         case .milestone:
             draft.milestoneTitle = id.isEmpty ? nil : id
+        case .iteration(let fieldId):
+            draft.fieldValues[fieldId] = id.isEmpty ? nil : FieldValue(iterationId: id)
         case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic:
             break
         }

@@ -237,7 +237,8 @@ private struct InboxRow: View {
         let summary = model.inboxSummary(entry)
         let unread = model.isUnread(entry)
         let picked = model.inboxPicked.contains(entry.id)
-        let selected = model.inboxSelectedId == entry.id && model.inboxPicked.isEmpty
+        // With one picked, the keys act on the one on screen, so it keeps its colour unless it is that one.
+        let selected = model.inboxSelectedId == entry.id && model.inboxPicked.count <= 1 && !picked
         // As in Mail: the one on screen in the accent colour, picked ones tinted, the one under the pointer lit.
         let ground = selected ? Theme.accentFill : picked ? Theme.selectionFill : hovering ? Theme.hover : Theme.panel
         let onAccent = selected
@@ -427,6 +428,8 @@ private struct InboxUndoToast: View {
         .padding(.trailing, 8)
         .padding(.vertical, 8)
         .glassPanel(in: Capsule())
+        // A right-click on it does nothing: it neither presses Undo nor opens the menu of the notification under it.
+        .floatingContextMenu()
     }
 }
 

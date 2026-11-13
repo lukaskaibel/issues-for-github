@@ -74,6 +74,8 @@ struct MobileRoot: View {
                 NewViewSheet(projectId: projectId, sourceViewId: sourceViewId, duplicate: duplicate)
             case .projectIcon(let projectId):
                 ProjectIconSheet(projectId: projectId)
+            case .newStatus(let itemId):
+                IssuePickerSheet(kind: .status, itemId: itemId, focusesSearch: true)
             }
         }
         .modifier(ViewAlerts(navigation: navigation))
@@ -108,7 +110,9 @@ struct MobileRoot: View {
             }
         }
         .overlay(alignment: .top) {
+            // The overlay sits outside `.environment(navigation)` above, and a banner's Open needs the navigation.
             NoticeBanners()
+                .environment(navigation)
         }
         .onChange(of: model.status.idRemaps) { _, remaps in
             model.follow(remaps: remaps)
@@ -434,7 +438,7 @@ struct MainTabs: View {
     private func reveal(_ itemId: String) {
         guard let item = model.item(id: itemId) else { return }
         navigation.sheet = nil
-        let mine = model.assignedItems.contains { $0.id == item.id }
+        let mine = model.myItems.contains { $0.id == item.id }
         if mine {
             navigation.tab = .myIssues
             navigation.myIssuesPath = [.issue(item.id)]
@@ -677,6 +681,15 @@ struct MobileCommands: Commands {
     var model: AppModel
     @FocusedValue(\.mobileNavigation) private var navigation
 
+    /// ⌘1 and ⌘2: board or list for All Issues on screen, else for the project's open view or what is on screen.
+    private func showLayout(_ mode: ViewMode, projectId: String?, allIssuesOf allIssuesId: String?) {
+        if let allIssuesId {
+            withAnimation(Theme.spring) { model.setAllIssuesLayout(mode, projectId: allIssuesId) }
+        } else {
+            model.showLayout(mode, projectId: projectId)
+        }
+    }
+
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
             Button(.newIssue) {
@@ -700,17 +713,19 @@ struct MobileCommands: Commands {
             .keyboardShortcut("k", modifiers: .command)
             .disabled(unavailable)
             Divider()
-            // A project's open view keeps board or list as yours; a milestone switches what is on screen.
+            // A project's open view keeps board or list as yours, and so does All Issues, on any width; a milestone
+            // switches what is on screen.
             let projectId: String? = switch navigation?.tab {
             case .project(let id)?, .view(let id, _)?: id
             default: nil
             }
-            Button(.board) { model.showLayout(.board, projectId: projectId) }
+            let allIssuesId = navigation?.inAllIssues == true ? navigation?.currentProjectId : nil
+            Button(.board) { showLayout(.board, projectId: projectId, allIssuesOf: allIssuesId) }
                 .keyboardShortcut("1", modifiers: .command)
-                .disabled(noBoard)
-            Button(.list) { model.showLayout(.list, projectId: projectId) }
+                .disabled(noBoard && allIssuesId == nil)
+            Button(.list) { showLayout(.list, projectId: projectId, allIssuesOf: allIssuesId) }
                 .keyboardShortcut("2", modifiers: .command)
-                .disabled(noBoard)
+                .disabled(noBoard && allIssuesId == nil)
             Button(.myIssues) { navigation?.tab = .myIssues }
                 .keyboardShortcut("3", modifiers: .command)
                 .disabled(unavailable)

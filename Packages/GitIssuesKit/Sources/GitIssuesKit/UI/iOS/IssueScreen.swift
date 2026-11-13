@@ -114,6 +114,7 @@ struct IssueScreen: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
+            .refreshable { await model.refreshAndWait(issue: item) }
             .pageFootBar {
                 // While the description is edited, the keyboard bar is the only thing above the keyboard; while
                 // sub-issues are picked, the bar of what to do with them.
@@ -168,6 +169,9 @@ struct IssueScreen: View {
             }
             if model.canHaveDueDate(item) {
                 Button(.dueDateTitle) { navigation.requestPicker(.dueDate) }.keyboardShortcut("d", modifiers: [])
+            }
+            if let field = model.iterationFields(for: item).first {
+                Button(.iteration) { navigation.requestPicker(.iteration(fieldId: field.id)) }.keyboardShortcut("c", modifiers: .shift)
             }
         }
         .opacity(0)
@@ -294,9 +298,10 @@ struct IssueScreen: View {
     /// through them, as on the Mac. Each issue once, though one can be listed twice (in two people's groups).
     private func position(of item: Item) -> (index: Int, items: [Item])? {
         let scope = originScope ?? item.projectId.map { .project($0) } ?? model.noBoardHome(of: item)
-        // A board, as a project shows one, or a milestone on an iPad with room for one.
+        // A board, as a project or All Issues shows one, or a milestone on an iPad with room for one.
         let board = switch scope {
         case .project(let id): (model.currentView(projectId: id).map { model.layout(of: $0) } ?? model.viewMode) == .board
+        case .allIssues(let id): model.allIssuesLayout(projectId: id) == .board
         case .milestone: wide && model.viewMode == .board
         default: false
         }
@@ -590,6 +595,19 @@ private struct PropertyChips: View {
                 .accessibilityLabel(model.milestoneTitle(of: item).map { .milestoneTooltip(milestone: $0) } ?? .noMilestone)
                 .accessibilityIdentifier("chip-milestone")
             }
+            ForEach(model.iterationFields(for: item)) { field in
+                let iteration = model.iteration(of: item, field: field)
+                Menu {
+                    IterationMenuItems(item: item, field: field)
+                } label: {
+                    PropertyChip(text: iteration?.title ?? field.name, placeholder: iteration == nil) {
+                        IterationIcon(size: 13)
+                            .foregroundStyle(iteration.map { model.isRunning($0, field: field) ? Theme.started : Theme.textSecondary } ?? Theme.textTertiary)
+                    }
+                }
+                .accessibilityLabel(model.iterationDescription(of: item, field: field))
+                .accessibilityIdentifier("chip-iteration")
+            }
             if let parentNumber = item.parentNumber {
                 Button {
                     if let parentId = item.parentId, let parent = model.item(contentId: parentId) {
@@ -805,8 +823,12 @@ private struct PropertiesColumn: View {
     }
 
     private func row<Content: View>(_ title: LocalizedStringResource, @ViewBuilder content: () -> Content) -> some View {
+        row(Text(title), content: content)
+    }
+
+    private func row<Content: View>(_ title: Text, @ViewBuilder content: () -> Content) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
-            Text(title)
+            title
                 .font(.footnote)
                 .foregroundStyle(Theme.textTertiary)
                 .fixedSize()
@@ -860,6 +882,7 @@ private struct PropertiesColumn: View {
 /// The status options as menu items with their circles, the current one checked.
 struct StatusMenuItems: View {
     @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
     @Environment(\.colorScheme) private var scheme
     var item: Item
 
@@ -876,6 +899,12 @@ struct StatusMenuItems: View {
             AddToProjectMenuItems(item: item)
         } else {
             picker
+            // One the board doesn't have yet, typed into the status sheet.
+            if model.canCreateStatus(for: item) {
+                Button(.newStatusEllipsis, systemImage: "plus") {
+                    navigation.sheet = .newStatus(itemId: item.id)
+                }
+            }
         }
     }
 

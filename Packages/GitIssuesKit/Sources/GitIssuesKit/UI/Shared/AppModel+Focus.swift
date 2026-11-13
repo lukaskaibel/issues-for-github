@@ -38,7 +38,7 @@ extension AppModel {
     /// The issues the keyboard focus moves among, by column or by section: what takes the focus over from one that
     /// goes.
     var focusGroups: [[String]] {
-        if openItem == nil, viewMode == .board, currentProjectId != nil { return columns.map { $0.items.map(\.id) } }
+        if openItem == nil, showsBoard { return columns.map { $0.items.map(\.id) } }
         return sections.filter { !isFolded($0) }.map { $0.items.map(\.id) }
     }
 
@@ -72,7 +72,7 @@ extension AppModel {
         if let parentId = new.parentId, let parent = item(contentId: parentId), isFolded(parent) { setFolded(parent, false) }
         #if os(macOS)
         // The list on screen; iPhone and iPad keep a list per screen, whose sections fold where they are.
-        if viewMode == .list || currentProjectId == nil,
+        if !showsBoard,
            let section = sections.first(where: { $0.nesting.members.contains { $0.id == id } }), isFolded(section) {
             withAnimation(Theme.spring) { toggleSection(section.id) }
         }
@@ -94,7 +94,7 @@ extension AppModel {
         #if os(macOS)
         if openItem == nil, let view = currentView, showsTimeline(view) { return [] }
         #endif
-        if openItem == nil, viewMode == .board, currentProjectId != nil {
+        if openItem == nil, showsBoard {
             return columns.flatMap(\.items)
         }
         return sections.filter { !isFolded($0) }.flatMap(\.items)
@@ -111,13 +111,20 @@ extension AppModel {
     private var stepOrder: [Item] {
         let items: [Item] = if openItem == nil {
             orderedItems
-        } else if viewMode == .board, currentProjectId != nil, !columns.isEmpty {
+        } else if showsBoard, !columns.isEmpty {
             columns.flatMap(\.items)
         } else {
             sections.flatMap(\.items)
         }
         var seen = Set<String>()
         return items.filter { seen.insert($0.id).inserted }
+    }
+
+    /// Whether ↑ and ↓ have an issue to move to from the open one: not from one the board or list behind it doesn't
+    /// show, such as an issue opened from the Inbox or the command palette, where they scroll its page instead.
+    var stepsFromOpenIssue: Bool {
+        guard let openItemId else { return true }
+        return stepOrder.contains { $0.id == openItemId }
     }
 
     /// Moves to the next or previous issue: opens it when an issue is open, otherwise moves the focus.

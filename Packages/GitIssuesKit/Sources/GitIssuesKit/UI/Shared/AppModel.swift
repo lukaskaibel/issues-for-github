@@ -109,9 +109,33 @@ enum PaletteMode: Hashable {
     case blocking(itemId: String)
     case milestone(itemId: String)
     case epic(itemId: String)
+    /// The iteration of one of the board's iteration fields.
+    case iteration(itemId: String, fieldId: String)
     case projects
     /// Every saved view of the open projects, to go to.
     case views
+}
+
+extension PaletteMode {
+    /// The same step for an issue that GitHub has given its own id since it was made here.
+    func remapping(_ remaps: [String: String]) -> PaletteMode {
+        func id(_ old: String) -> String { remaps[old] ?? old }
+        return switch self {
+        case .status(let itemId): .status(itemId: id(itemId))
+        case .priority(let itemId): .priority(itemId: id(itemId))
+        case .assignees(let itemId): .assignees(itemId: id(itemId))
+        case .labels(let itemId): .labels(itemId: id(itemId))
+        case .dueDate(let itemId): .dueDate(itemId: id(itemId))
+        case .parent(let itemId): .parent(itemId: id(itemId))
+        case .addSubIssue(let itemId): .addSubIssue(itemId: id(itemId))
+        case .blockedBy(let itemId): .blockedBy(itemId: id(itemId))
+        case .blocking(let itemId): .blocking(itemId: id(itemId))
+        case .milestone(let itemId): .milestone(itemId: id(itemId))
+        case .epic(let itemId): .epic(itemId: id(itemId))
+        case .iteration(let itemId, let fieldId): .iteration(itemId: id(itemId), fieldId: fieldId)
+        case .root, .projects, .views: self
+        }
+    }
 }
 
 enum Overlay: Equatable {
@@ -230,11 +254,26 @@ public final class AppModel {
     private(set) var personal: PersonalStore
     /// Each project's glyph and colour, which GitHub has no place for either; shared through iCloud.
     private(set) var projectLooks: ProjectLooks
+    /// The kinds given to statuses in the app, which draw their circles (`StatusKinds`).
+    private(set) var statusKinds: StatusKinds
+    /// Statuses made here, from the id they were shown under until GitHub saved them to the id GitHub gave them, so a
+    /// new issue's form that picked one carries on with it.
+    var optionIdRemaps: [String: String] = [:]
     /// How My Issues' overview is arranged, the same on every device of yours.
     private(set) var overviewArrangement: OverviewArrangementStore
-    /// The Mac's Edit Widgets: every widget of My Issues' overview shows its size and can be taken out, and a shelf
-    /// offers what can be added.
-    var editingOverview = false
+    /// The page each card of My Issues' overview shows, by the card's id: the key of a column (`MineColumn.key`) or a
+    /// reason of Needs you. Kept on this device.
+    var overviewPages = UserDefaults.standard.dictionary(forKey: "mine.pages") as? [String: String] ?? [:] {
+        didSet { UserDefaults.standard.set(overviewPages, forKey: "mine.pages") }
+    }
+    /// How many issues a page of the overview's cards has room for, as the cards are drawn: the keyboard steps through
+    /// those only. Set by the overview with `setOverviewRowsPerPage`.
+    @ObservationIgnored var overviewRowsPerPage = 10
+    /// A card of the overview held by its name to move it (Mac).
+    let overviewDrag = OverviewCardDrag()
+    /// Where the overview's cards are in the window: a two-finger swipe over one turns its pages rather than going back
+    /// or forward (Mac).
+    @ObservationIgnored var overviewCardFrames: [String: CGRect] = [:]
 
     // Derived from the above for the current scope.
     /// The columns the board shows, without those you hid. The list has every status: see `listColumns`.
@@ -259,10 +298,14 @@ public final class AppModel {
         didSet {
             UserDefaults.standard.set(viewMode.rawValue, forKey: "viewMode")
             #if os(macOS)
-            // Board or list is part of how a view shows, which you may change for yourself. iPhone and iPad have a
-            // project on screen per window and say which (`showLayout`).
-            if !isFollowingView, oldValue != viewMode, let view = currentView {
-                setLayout(viewMode, of: view)
+            // Board or list is part of how a view shows, which you may change for yourself, and so is All Issues'.
+            // iPhone and iPad have a project on screen per window and say which (`showLayout`).
+            if !isFollowingView, oldValue != viewMode {
+                if let view = currentView {
+                    setLayout(viewMode, of: view)
+                } else if let projectId = allIssuesProjectId {
+                    setAllIssuesLayout(viewMode, projectId: projectId)
+                }
             }
             #endif
             recordNavigation()
@@ -379,6 +422,10 @@ public final class AppModel {
     var viewDisplays: [String: ViewDisplay] = AppModel.decoded("views.display") ?? [:] {
         didSet { AppModel.store(viewDisplays, "views.display") }
     }
+    /// How you see each project's All Issues, where it differs from its list, by project id. On this device.
+    var allIssuesDisplays: [String: AllIssuesDisplay] = AppModel.decoded("allIssues.display") ?? [:] {
+        didSet { AppModel.store(allIssuesDisplays, "allIssues.display") }
+    }
     /// How My Issues is grouped and ordered. GitHub has no view behind it, so this stays on the device.
     var mineDisplay = MineDisplay(stored: UserDefaults.standard.string(forKey: "mine.display")) ?? MineDisplay() {
         didSet { UserDefaults.standard.set(mineDisplay.stored, forKey: "mine.display") }
@@ -410,6 +457,8 @@ public final class AppModel {
     /// My Issues' overview, worked out once per change of the data.
     @ObservationIgnored var mineLanesCache: [MineLane]?
     @ObservationIgnored var needsYouCache: [NeedsYouEntry]?
+    /// Your issues (`myItems`), worked out once per change too.
+    @ObservationIgnored var myItemsCache: [Item]?
     /// Projects tucked away in the sidebar. They can still be found in the command palette.
     var hiddenProjectIds = Set(UserDefaults.standard.stringArray(forKey: "hiddenProjects") ?? []) {
         didSet { UserDefaults.standard.set(Array(hiddenProjectIds), forKey: "hiddenProjects") }
@@ -540,6 +589,7 @@ public final class AppModel {
         signedIn = false
         personal = PersonalStore(persistent: false)
         projectLooks = ProjectLooks(persistent: false)
+        statusKinds = StatusKinds(persistent: false)
         overviewArrangement = OverviewArrangementStore(persistent: false)
         viewMode = .board
         inboxBucket = .forYou
@@ -558,6 +608,7 @@ public final class AppModel {
         db = database
         personal = PersonalStore(persistent: !demo)
         projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
+        statusKinds = StatusKinds(persistent: !demo)
         overviewArrangement = OverviewArrangementStore(persistent: !demo)
         auth = AuthStore()
         // Logins saved by earlier versions move to iCloud Keychain, and a login shared by another device is used.
@@ -588,6 +639,7 @@ public final class AppModel {
         #endif
         if demo { seedDemoDisplays() }
         followArrangement()
+        followStatusKinds()
         startObserving()
         restoreScope()
         scheduleInboxWake()
@@ -609,6 +661,8 @@ public final class AppModel {
     // MARK: Session
 
     func startSyncing() {
+        // Your own GitHub, not the sample data: the days you use the app on count towards asking for a rating.
+        if !isDemo { AppReview.shared.start() }
         let engine = self.engine
         let project = currentProjectId
         Task {
@@ -720,8 +774,10 @@ public final class AppModel {
         isDemo = demo
         personal = PersonalStore(persistent: !demo)
         projectLooks = ProjectLooks(persistent: !demo, initial: demo ? DemoData.looks : [:])
+        statusKinds = StatusKinds(persistent: !demo)
         overviewArrangement = OverviewArrangementStore(persistent: !demo)
         followArrangement()
+        followStatusKinds()
         if demo { seedDemoDisplays() }
         resetNavigation()
         viewer = nil
@@ -860,7 +916,8 @@ public final class AppModel {
         }
         #endif
         if projects != listed { projects = listed }
-        if options != snapshot.options { options = snapshot.options }
+        let options = withChosenKinds(snapshot.options)
+        if self.options != options { self.options = options }
         if repos != snapshot.repos { repos = snapshot.repos }
         if allItems != snapshot.items {
             let replacements = IssueReference.replacements(from: allItems, to: snapshot.items, projects: listed, remaps: status.idRemaps)
@@ -912,6 +969,8 @@ public final class AppModel {
         let projectId = item.projectId
         let repoId = item.repoId
         let fetchable = item.kind != .draft && !contentId.hasPrefix(LocalID.prefix)
+        // Its status can be changed from here, also when its board isn't the one on screen.
+        refreshStatuses(projectId: projectId)
         let engine = self.engine
         return Task {
             // Polls skip local IDs; keeping the watch lets creation transfer it to the server issue.
@@ -958,6 +1017,21 @@ public final class AppModel {
         case .milestone(let id, _): id
         default: nil
         }
+    }
+
+    /// The project whose columns a board on screen would show: a project, one of its milestones, or its All Issues,
+    /// which has the board's columns after the issues on no board.
+    var boardProjectId: String? {
+        currentProjectId ?? allIssuesProjectId
+    }
+
+    /// Whether a board is on screen rather than a list (Mac): the issue page over it aside.
+    var showsBoard: Bool {
+        viewMode == .board && boardProjectId != nil
+    }
+
+    var boardProject: Project? {
+        boardProjectId.flatMap { id in projects.first { $0.id == id } }
     }
 
     /// The board the screen belongs to, the roadmap included.
@@ -1181,8 +1255,7 @@ public final class AppModel {
     /// they are empty: its issues are planned already.
     func columns(for scope: Scope) -> [BoardColumn] {
         _ = dataVersion
-        // All Issues is a list only.
-        guard let projectId = scope.projectId, scope != .allIssues(projectId) else { return [] }
+        guard let projectId = scope.projectId else { return [] }
         let key: String
         var view: ProjectView?
         switch scope {
@@ -1190,10 +1263,16 @@ public final class AppModel {
         case .project:
             view = currentView(projectId: projectId)
             key = view.map { "\(projectId)\u{1F}view\u{1F}\($0.id)" } ?? projectId
+        case .allIssues: key = "\(projectId)\u{1F}all"
         default: key = projectId
         }
         if let cached = columnCache[key] { return cached }
         let items = self.items(in: scope)
+        if case .allIssues = scope {
+            let result = allIssuesColumns(projectId: projectId, items: items)
+            columnCache[key] = result
+            return result
+        }
         if let view, let field = columnField(of: view), field.id != currentStatusFieldId(projectId: projectId) {
             let result = valueColumns(items, field: field, view: view)
             columnCache[key] = result
@@ -1363,6 +1442,7 @@ public final class AppModel {
         mineRulesCache = nil
         mineLanesCache = nil
         needsYouCache = nil
+        myItemsCache = nil
         planningCache = PlanningCache()
         dataVersion &+= 1
 
@@ -1371,7 +1451,7 @@ public final class AppModel {
         if let scope {
             newSections = sections(for: scope)
             switch scope {
-            case .project, .milestone: newColumns = shownColumns(for: scope)
+            case .project, .milestone, .allIssues: newColumns = shownColumns(for: scope)
             default: break
             }
         }
@@ -1430,11 +1510,23 @@ public final class AppModel {
         if let project = sidebarProject { select(.project(project.id)) }
     }
 
-    /// G B and G L, ⌘1 and ⌘2: the board or the list of the project on screen, or from anywhere else of the one used
-    /// last.
+    /// G B and G L: the board or the list of the project on screen, or from anywhere else of the one used last.
     func showProjectLayout(_ mode: ViewMode) {
         if currentProjectId == nil { selectLastProject() }
         guard currentProjectId != nil else { return }
+        closeDetail()
+        // A view's timeline is a list as far as `viewMode` goes, so the list would change nothing: the view is told.
+        if let view = currentView, showsTimeline(view) {
+            setLayout(mode, of: view)
+            followLayout(of: view)
+            return
+        }
+        withAnimation(Theme.spring) { viewMode = mode }
+    }
+
+    /// ⌘1 and ⌘2: board or list for what is on screen, All Issues too; from anywhere else, as G B and G L.
+    func showLayout(_ mode: ViewMode) {
+        guard allIssuesProjectId != nil else { return showProjectLayout(mode) }
         closeDetail()
         withAnimation(Theme.spring) { viewMode = mode }
     }
@@ -1536,6 +1628,8 @@ public final class AppModel {
         if let id = focusedItemId, let new = itemRemaps[id] { focusedItemId = new }
         if let id = hoveredItemId, let new = itemRemaps[id] { hoveredItemId = new }
         if let id = peekItemId, let new = itemRemaps[id] { peekItemId = new }
+        // A picker opened on an issue just made, such as S right after creating it, would otherwise go blank.
+        if case .palette(let mode)? = overlay, mode.remapping(itemRemaps) != mode { overlay = .palette(mode.remapping(itemRemaps)) }
         for (old, new) in remaps {
             if let draft = commentDrafts.removeValue(forKey: old) { commentDrafts[new] = draft }
         }
@@ -1599,6 +1693,13 @@ public final class AppModel {
         await engine.syncNow()
     }
 
+    /// Pulled down on an issue's screen: its comments and sub-issues as well, which a sync fetches only now and then.
+    func refreshAndWait(issue item: Item) async {
+        await refreshAndWait()
+        guard let contentId = item.contentId, item.kind != .draft, !item.isLocalOnly else { return }
+        try? await engine.loadIssueDetail(contentId: contentId)
+    }
+
     /// One sync round, for an issue a notification names that this device hasn't seen yet.
     func syncAndWait() async {
         guard signedIn else { return }
@@ -1636,13 +1737,18 @@ public final class AppModel {
         guard !mutations.isEmpty else { return }
         let completions = parentCompletions(after: mutations)
         let starts = epicStarts(after: mutations)
-        let mutations = mutations + completions.mutations + starts.mutations
+        // Made from a screen drawn before an issue made here got its id from GitHub, such as its page while you type,
+        // a change still names the one it had: it goes to the issue's id now, or GitHub would never hear of it.
+        let remaps = status.idRemaps
+        let mutations = (mutations + completions.mutations + starts.mutations).map { $0.remapping(remaps) }
         do {
             try db.writer.write { db in
                 for item in inserting { try item.insert(db, onConflict: .ignore) }
                 for mutation in mutations { try Outbox.enqueue(db, mutation) }
             }
             reloadNow()
+            // An issue finished is a moment to ask for a rating.
+            if finishesWork(mutations) { AppReview.shared.finishedSomething() }
             for parent in completions.parents {
                 status.post(Notice(
                     title: String(localized: .parentDoneWithSubIssues(number: parent.displayNumber)), message: parent.title,

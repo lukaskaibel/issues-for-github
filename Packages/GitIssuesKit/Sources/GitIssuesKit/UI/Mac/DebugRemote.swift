@@ -44,6 +44,12 @@ enum DebugRemote {
     }
 
     private static func item(_ token: String, _ model: AppModel) -> Item? {
+        // "Sandbox#17": the issue of that number on a project, by part of its title, whatever is on screen.
+        let parts = token.split(separator: "#", maxSplits: 1).map(String.init)
+        if parts.count == 2, let number = Int(parts[1]),
+           let project = model.projects.first(where: { $0.title.localizedCaseInsensitiveContains(parts[0]) }) {
+            return model.allItems.first { $0.projectId == project.id && $0.number == number }
+        }
         guard let number = Int(token) else { return nil }
         return model.scopedItems.first { $0.number == number } ?? model.allItems.first { $0.number == number }
     }
@@ -54,7 +60,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat", "rowcheck", "vscroll", "repaintcheck", "nesttarget", "statuses"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -107,36 +113,54 @@ enum DebugRemote {
             // filter <text>: changes the filter of the view on screen, here only, or My Issues'.
             if let view = model.currentView { model.setFilter(ProjectFilter(argument), of: view) }
             if model.scope == .myIssues { model.setMineFilter(ProjectFilter(argument)) }
-        case "widget":
-            // widget edit on|off, widget auto on|off, widget size <widget> small|medium|large, widget move <widget>|<onto>,
-            // widget remove <widget>, widget add <widget>, widget dump: My Issues' overview. A widget is a project's
-            // title or the arrangement's id: "project/<project id>", "No project", "smart/needsYou",
-            // "smart/dueThisWeek", "smart/doneThisWeek".
+        case "card":
+            // card auto on|off, card move <card>|<index>, card remove <card>, card add <card>, card page <card>|<key>,
+            // card lift <card> <x> <y> (held with its top left corner there, as in the middle of a drag), card drop,
+            // card cancel, card dump: My
+            // Issues' overview. A card is a project's title or the arrangement's id: "project/<project id>",
+            // "No project", "smart/needsYou".
             let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
             let rest = bits.count > 1 ? bits[1] : ""
-            func widget(_ name: String) -> String {
+            func card(_ name: String) -> String {
                 let name = name.trimmingCharacters(in: .whitespaces)
+                if name == "No project" { return ListSection.noProjectId }
                 return model.projects.first { $0.title.localizedCaseInsensitiveCompare(name) == .orderedSame }.map { "project/\($0.id)" } ?? name
             }
             switch bits.first {
-            case "edit": model.editingOverview = rest != "off"
             case "auto": model.setArrangesAutomatically(rest != "off")
-            case "size":
-                let words = rest.split(separator: " ").map(String.init)
-                if let last = words.last, let size = MineWidgetSize(rawValue: last) {
-                    model.setWidgetSize(widget(words.dropLast().joined(separator: " ")), size)
-                }
             case "move":
-                let ends = rest.split(separator: "|").map { widget(String($0)) }
-                if ends.count == 2 { model.moveWidget(ends[0], onto: ends[1]) }
-            case "remove": model.removeWidget(widget(rest))
-            case "add":
-                let target = widget(rest)
-                model.addWidget(MineWidget(id: target, size: model.lane(target).map(MineArrangement.size(of:)) ?? .medium))
+                let ends = rest.split(separator: "|").map(String.init)
+                if ends.count == 2, let index = Int(ends[1]) { withAnimation(Theme.spring) { model.moveCard(card(ends[0]), toShownIndex: index) } }
+            case "remove": model.removeCard(card(rest))
+            case "add": model.addCard(card(rest))
+            case "page":
+                let ends = rest.split(separator: "|").map(String.init)
+                if ends.count == 2 { model.showPage(ends[1], of: card(ends[0])) }
+            case "lift":
+                // Shows a card held part-way: lifted, the slot where it would land, the others out of its way.
+                let words = rest.split(separator: " ").map(String.init)
+                if words.count >= 3, let dx = Double(words[words.count - 2]), let dy = Double(words[words.count - 1]) {
+                    let id = card(words.dropLast(2).joined(separator: " "))
+                    let cards = model.overviewCards
+                    if cards.contains(id) {
+                        // The overview moves the others out of its way, as it does for the pointer.
+                        model.overviewDrag.lift(id, order: cards, from: .zero)
+                        model.overviewDrag.translation = CGSize(width: dx, height: dy)
+                    }
+                }
+            case "drop":
+                if let id = model.overviewDrag.liftedId, let index = model.overviewDrag.order?.firstIndex(of: id) {
+                    withAnimation(Theme.spring) {
+                        model.moveCard(id, toShownIndex: index)
+                        model.overviewDrag.end()
+                    }
+                }
+            case "cancel":
+                withAnimation(Theme.spring) { model.overviewDrag.end() }
             default:
                 break
             }
-            log("widgets: " + model.overviewWidgets.map { "\($0.id)=\($0.size.rawValue)" }.joined(separator: " ") + " auto=\(model.mineArrangement.automatic)")
+            log(overviewState(model))
         case "display" where model.scope == .myIssues:
             // display layout overview|list, display group status|project|priority|dueDate,
             // display sort priority|dueDate|updated|created|manual [desc], display reset: how My Issues shows.
@@ -187,7 +211,7 @@ enum DebugRemote {
             model.focusedItemId = item(argument, model)?.id
         case "overlay":
             // overlay palette|new|none, overlay parent|subissue|blockedby|blocking <number> for a relation picker, or
-            // overlay due <number> for the due date picker.
+            // overlay due <number> for the due date picker, overlay iteration <number> for the first iteration field's.
             let bits = argument.split(separator: " ").map(String.init)
             let target = bits.count > 1 ? item(bits[1], model)?.id : nil
             switch (bits.first, target) {
@@ -200,6 +224,10 @@ enum DebugRemote {
             case ("due", let id?): model.overlay = .palette(.dueDate(itemId: id))
             case ("milestone", let id?): model.overlay = .palette(.milestone(itemId: id))
             case ("epic", let id?): model.overlay = .palette(.epic(itemId: id))
+            case ("iteration", let id?):
+                if let item = model.item(id: id), let field = model.iterationFields(for: item).first {
+                    model.overlay = .palette(.iteration(itemId: id, fieldId: field.id))
+                }
             case ("labels", let id?): model.overlay = .palette(.labels(itemId: id))
             case ("assignees", let id?): model.overlay = .palette(.assignees(itemId: id))
             case ("newmilestone", _): model.overlay = .milestoneEditor(projectId: model.scopeProjectId, title: nil, assigning: [])
@@ -424,6 +452,25 @@ enum DebugRemote {
             if let character = argument.first {
                 sendKey(characters: String(character), code: 0, modifiers: .command)
             }
+        case "mousedrag":
+            // mousedrag <x1> <y1> <x2> <y2> [esc]: presses at the first point, moves to the second in steps and lets go,
+            // in points from the window's top-left corner, as a hand on the mouse would; "esc" presses Escape on the way.
+            // The events go straight to the window, which takes them in the background as well.
+            let bits = argument.split(separator: " ")
+            let numbers = bits.compactMap { Double($0) }
+            if numbers.count == 4 {
+                mouseDrag(from: CGPoint(x: numbers[0], y: numbers[1]), to: CGPoint(x: numbers[2], y: numbers[3]), escape: bits.last == "esc", model: model)
+            }
+        case "vscroll":
+            // vscroll <x> <y> <dy>: a two-finger scroll up or down over the point, from the touch to the lift, as a hand's
+            // reaches the list (positive dy moves the content down, as scrolling towards the top does).
+            let numbers = argument.split(separator: " ").compactMap { Double($0) }
+            if numbers.count == 3 { verticalScroll(at: CGPoint(x: numbers[0], y: numbers[1]), by: numbers[2]) }
+        case "hscroll":
+            // hscroll <x> <y> <dx>: a two-finger swipe sideways over the point, from the touch to the lift, through the
+            // app's own handling of scrolls (and its swipe to go back or forward).
+            let numbers = argument.split(separator: " ").compactMap { Double($0) }
+            if numbers.count == 3 { horizontalScroll(at: CGPoint(x: numbers[0], y: numbers[1]), by: numbers[2], model: model) }
         case "click", "rightclick", "clickmove":
             // click|rightclick <x> <y> in points from the window's top-left corner. clickmove: a click after which the
             // pointer moves on a point, as it does on a trackpad.
@@ -455,7 +502,7 @@ enum DebugRemote {
                 if bits.contains("opt") { modifiers.insert(.option) }
                 let arrows: [UInt16: String] = [125: "\u{F701}", 126: "\u{F700}", 123: "\u{F702}", 124: "\u{F703}"]
                 if arrows[code] != nil { modifiers.formUnion([.numericPad, .function]) }
-                let characters = arrows[code] ?? [36: "\r", 48: "\t", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a"][code] ?? ""
+                let characters = arrows[code] ?? [36: "\r", 48: "\t", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a", 8: "c"][code] ?? ""
                 sendKey(characters: modifiers.contains(.shift) ? characters.uppercased() : characters, code: code, modifiers: modifiers, toWindow: parts.first == "winkeycode")
             }
         case "status":
@@ -560,6 +607,82 @@ enum DebugRemote {
                 let summary: String = find(root)?.coordinator?.listSummary ?? "no table"
                 log("list: " + summary)
             }
+        case "rowcheck":
+            // rowcheck: for each list in a window, the rows on screen, the rows the table holds a view for (on screen
+            // and made ready around it), and the rows whose view shows something else than the row is now.
+            for window in NSApp.windows where window.isVisible {
+                func collect(_ view: NSView) -> [HoverTableView] {
+                    (view as? HoverTableView).map { [$0] } ?? view.subviews.flatMap(collect)
+                }
+                for table in window.contentView.map(collect) ?? [] {
+                    log("rowcheck: \(table.coordinator?.rowCheck ?? "no coordinator")")
+                }
+            }
+        case "repaintcheck":
+            // repaintcheck: draws the list's rows anew and names those that then look different, which showed an
+            // earlier paint.
+            for window in NSApp.windows where window.isVisible {
+                func collect(_ view: NSView) -> [HoverTableView] {
+                    (view as? HoverTableView).map { [$0] } ?? view.subviews.flatMap(collect)
+                }
+                for table in window.contentView.map(collect) ?? [] {
+                    log(table.coordinator?.repaintCheck() ?? "no coordinator")
+                }
+            }
+        case "listpress":
+            // listpress <number> <dy>: presses on an issue's row in the list and moves the mouse dy points down with the
+            // button held, then lets go, through the table's own handling of a drag, in-process: the table starts the
+            // drag as for a hand (up to its start); a real drop needs a real mouse.
+            let bits = argument.split(separator: " ").map(String.init)
+            guard bits.count == 2, let item = item(bits[0], model), let dy = Double(bits[1]),
+                  let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }), let content = window.contentView else { break }
+            func collect(_ view: NSView) -> [HoverTableView] {
+                (view as? HoverTableView).map { [$0] } ?? view.subviews.flatMap(collect)
+            }
+            guard let table = collect(content).first, let coordinator = table.coordinator,
+                  let row = (0..<table.numberOfRows).first(where: { coordinator.item(at: $0)?.id == item.id }) else {
+                log("listpress: no row")
+                break
+            }
+            let rect = table.rect(ofRow: row)
+            let start = table.convert(NSPoint(x: rect.minX + 300, y: rect.midY), to: nil)
+            func event(_ type: NSEvent.EventType, _ point: NSPoint) -> NSEvent? {
+                NSEvent.mouseEvent(
+                    with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                    windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1
+                )
+            }
+            for step in 1...12 {
+                if let dragged = event(.leftMouseDragged, NSPoint(x: start.x, y: start.y - dy * Double(step) / 12)) { NSApp.postEvent(dragged, atStart: false) }
+            }
+            if let up = event(.leftMouseUp, NSPoint(x: start.x, y: start.y - dy)) { NSApp.postEvent(up, atStart: false) }
+            if let down = event(.leftMouseDown, start) { table.mouseDown(with: down) }
+            log("listpress: row \(row) hidden=\(table.hiddenRowIndexes.map { $0 })")
+        case "nesttarget":
+            // nesttarget <number>|none: lights the list row of an issue as the one dragged issues would go under, as a
+            // drag over it does, or none; then names the rows that are lit.
+            for window in NSApp.windows where window.isVisible {
+                func collect(_ view: NSView) -> [HoverTableView] {
+                    (view as? HoverTableView).map { [$0] } ?? view.subviews.flatMap(collect)
+                }
+                for table in window.contentView.map(collect) ?? [] {
+                    guard let coordinator = table.coordinator else { continue }
+                    coordinator.showNestTarget(item(argument, model)?.id)
+                    let lit = IssueTable.loadedRows(of: table).filter {
+                        (table.rowView(atRow: $0, makeIfNecessary: false) as? PlainRowView)?.isNestTarget == true
+                    }
+                    log("nesttarget: lit \(lit.map { coordinator.item(at: $0)?.displayNumber ?? "row \($0)" })")
+                }
+            }
+        case "label":
+            // label <number> <name>: puts a label on an issue or takes it off, as its label picker does.
+            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            if bits.count == 2, let item = item(bits[0], model),
+               let label = model.labels(for: item).first(where: { $0.name.caseInsensitiveCompare(bits[1]) == .orderedSame }) {
+                model.pick(.labels, id: label.id, for: item)
+            } else {
+                log("label: no such issue or label")
+            }
         case "listdropepic":
             // listdropepic <epic number> <row>: drops the header over the epic's issues in the list above that row.
             let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
@@ -588,7 +711,9 @@ enum DebugRemote {
             // listdrop <number> <row>: drops the issue in the list above that row, as a drag would, with the other
             // picked ones when it is picked.
             // dragimage <number> <path>: the card an issue's row lifts off as, as a PNG.
-            let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
+            // dragimage <number> <path> <parent number>: the smaller card it turns into over that issue.
+            var bits = argument.split(separator: " ", maxSplits: 2).map(String.init)
+            let parent = bits.count == 3 ? item(bits.removeLast(), model) : nil
             guard bits.count == 2, let item = item(bits[0], model),
                   let root = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 })?.contentView else { break }
             func find(_ view: NSView) -> HoverTableView? {
@@ -604,7 +729,11 @@ enum DebugRemote {
                     log("listdrop: \(coordinator.dropItem(item.id, above: row))")
                 }
             } else if let row = (0..<table.numberOfRows).first(where: { coordinator.item(at: $0)?.id == item.id }),
-                      let image = coordinator.liftedImage(row, in: table, picked: coordinator.picked(from: item.id))?.image,
+                      let image = parent.flatMap({ parent in
+                          (table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell)?.dragImage().map {
+                              IssueTable.Coordinator.nestingImage($0, under: parent, count: coordinator.picked(from: item.id)?.items.count, appearance: table.effectiveAppearance)
+                          }
+                      }) ?? coordinator.liftedImage(row, in: table, picked: coordinator.picked(from: item.id))?.image,
                       let tiff = image.tiffRepresentation,
                       let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
                 try? png.write(to: URL(fileURLWithPath: bits[1]))
@@ -669,6 +798,32 @@ enum DebugRemote {
             // windows: every visible window and panel with its frame on screen, and the screen it is on.
             for window in NSApp.windows where window.isVisible {
                 log("window \(type(of: window)) \"\(window.title)\" frame=\(window.frame) screen=\(window.screen.map { "\($0.frame)" } ?? "nil") level=\(window.level.rawValue)")
+            }
+        case "iterations":
+            // iterations <number>: the issue's iteration in each iteration field of its board, the picker's rows, and the
+            // parts of its card that open a picker.
+            if let item = item(argument, model) {
+                for field in model.iterationFields(for: item) {
+                    let rows = model.pickerItems(.iteration(fieldId: field.id), for: item).map { row in
+                        "\(row.selected ? "✓" : "")\(row.shortcut ?? "-") \(row.title)\(row.subtitle.map { " (\($0))" } ?? "")"
+                    }
+                    log("iterations #\(argument) \(field.name)=\(model.iteration(of: item, field: field)?.title ?? "none") rows: \(rows.joined(separator: " | "))")
+                }
+                log("parts #\(argument): \(CardRegionStore.shared.parts(item.id).map { "\($0.kind)" }.joined(separator: " "))")
+            }
+        case "menuat":
+            // menuat <x> <y>: what a right-click there does, in window points from the top left: the entries of its
+            // menu, "view" when the view under the pointer gets it, or "nothing".
+            let bits = argument.split(separator: " ").compactMap { Double($0) }
+            if bits.count == 2, let window = model.mainWindow, let content = window.contentView {
+                let point = CGPoint(x: bits[0], y: bits[1])
+                let location = NSPoint(x: point.x, y: content.bounds.height - point.y)
+                switch ContextMenus.shared.click(at: point, onText: ContextMenus.isOnText(at: location, in: window)) {
+                case .menu(let menu):
+                    log("menuat: " + menu.items.map { $0.isSeparatorItem ? "—" : $0.title + ($0.state == .on ? " ✓" : "") }.joined(separator: " | "))
+                case .view: log("menuat: view")
+                case .nothing: log("menuat: nothing")
+                }
             }
         case "regions":
             // regions: the areas that have a right-click menu, in window points from the top left.
@@ -771,12 +926,13 @@ enum DebugRemote {
             // window <width> <height> [onscreen]: sizes the window in points for screenshots and moves it off the
             // screen, where the window is out of the way. With "onscreen", at the top left of the main screen
             // instead, where a capture of the screen sees it and dropdowns open beside it as they do for people.
-            // Either way the pointer goes through it, so it can't put hover states into the picture.
+            // Either way the pointer goes through it, so it can't put hover states into the picture; with "interactive"
+            // it takes the pointer, to be tried with a real one.
             let size = argument.split(separator: " ").compactMap { Double($0) }
             if size.count == 2, let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }) {
-                window.ignoresMouseEvents = true
-                Dropdown.offscreen = !argument.hasSuffix("onscreen")
-                if argument.hasSuffix("onscreen"), let screen = NSScreen.main?.visibleFrame {
+                window.ignoresMouseEvents = !argument.contains("interactive")
+                Dropdown.offscreen = !argument.contains("onscreen")
+                if argument.contains("onscreen"), let screen = NSScreen.main?.visibleFrame {
                     window.setFrame(CGRect(x: screen.minX, y: screen.maxY - size[1], width: size[0], height: size[1]), display: true)
                 } else {
                     let screens = NSScreen.screens.map(\.frame).reduce(CGRect.null) { $0.union($1) }
@@ -833,13 +989,33 @@ enum DebugRemote {
             log("  deletion=\(model.deletionCandidate?.displayNumber ?? "-") canDelete18=\(model.scopedItems.first { $0.number == 18 }.map { model.canDelete($0) } ?? false)")
             log("  overlay=\(String(describing: model.overlay)) open=\(model.openItem?.displayNumber ?? "-") focus=\(model.targetItem?.displayNumber ?? "-") phase=\(model.status.phase) pending=\(model.pendingCount)")
         case "hidecolumn", "showcolumn":
-            // hidecolumn <name> | showcolumn <name>: hides a column of the open view's board on this device, or shows
-            // it again, as its menu and the list after the board do.
-            let all = model.currentProjectId.map { model.columns(projectId: $0) } ?? []
-            if let view = model.currentView, let column = all.first(where: { $0.title.caseInsensitiveCompare(argument) == .orderedSame }) {
-                model.setColumn(column.id, hidden: parts.first == "hidecolumn", of: view)
+            // hidecolumn <name> | showcolumn <name>: hides a column of the open view's board or All Issues' on this
+            // device, or shows it again, as its menu and the list after the board do.
+            let all = model.scope.map { model.columns(for: $0) } ?? []
+            if let scope = model.scope, model.canHideColumns(in: scope),
+               let column = all.first(where: { $0.title.caseInsensitiveCompare(argument) == .orderedSame }) {
+                model.setColumn(column.id, hidden: parts.first == "hidecolumn", in: scope)
             }
-            log("columns " + model.columns.map(\.title).joined(separator: " | ") + " hidden " + (model.currentProjectId.map { model.hiddenColumns(projectId: $0).map(\.title) } ?? []).joined(separator: " | "))
+            log("columns " + model.columns.map(\.title).joined(separator: " | ") + " hidden " + (model.scope.map { model.hiddenColumns(in: $0).map(\.title) } ?? []).joined(separator: " | "))
+        case "statuses":
+            // statuses [project]: the statuses of the board on screen, or of a project by part of its title: name, id,
+            // colour, kind (* when chosen in the app) and how many cards.
+            let named = argument.isEmpty ? nil : model.projects.first { $0.title.localizedCaseInsensitiveContains(argument) }?.id
+            guard let projectId = named ?? model.currentProjectId else { break }
+            for option in model.statusOptions(projectId: projectId) {
+                let count = model.issueCount(projectId: projectId, statusId: option.id)
+                log("status \(option.name) id=\(option.id) color=\(option.color) kind=\(option.statusCategory)\(option.chosenKind == nil ? "" : "*") cards=\(count)")
+            }
+            log("statuses remaps=\(model.optionIdRemaps.count) pending=\(model.pendingCount)")
+        case "statuskind":
+            // statuskind <status name>=<backlog|unstarted|started|completed|canceled>
+            guard let projectId = model.currentProjectId else { break }
+            let names = argument.split(separator: "=").map(String.init)
+            let kinds: [String: StatusCategory] = ["backlog": .backlog, "unstarted": .unstarted, "started": .started, "completed": .completed, "canceled": .canceled]
+            if names.count == 2, let kind = kinds[names[1]],
+               let option = model.statusOptions(projectId: projectId).first(where: { $0.name == names[0] }) {
+                model.setKind(kind, of: option)
+            }
         case "column":
             // column add <name> | column delete <name> | column rename <old>=<new>
             guard let projectId = model.currentProjectId else { break }
@@ -1253,6 +1429,117 @@ enum DebugRemote {
         return nil
     }
 
+    /// The overview's cards in their order, each with the page it shows and its pages.
+    private static func overviewState(_ model: AppModel) -> String {
+        let cards = model.overviewCards.map { id in
+            "\(model.cardTitle(id))[\(model.currentPageKey(of: id) ?? "-")/\(model.overviewPages(of: id).map(\.key).joined(separator: ","))]"
+        }
+        return "cards: " + cards.joined(separator: " ") + " auto=\(model.mineArrangement.automatic) rows=\(model.overviewRowsPerPage) lifted=\(model.overviewDrag.liftedId ?? "-")"
+    }
+
+    private static func mouseDrag(from start: CGPoint, to end: CGPoint, escape: Bool, model: AppModel) {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
+              let content = window.contentView else { return }
+        func location(_ point: CGPoint) -> NSPoint { NSPoint(x: point.x, y: content.bounds.height - point.y) }
+        func event(_ type: NSEvent.EventType, _ point: CGPoint) -> NSEvent? {
+            NSEvent.mouseEvent(
+                with: type, location: location(point), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1
+            )
+        }
+        Task { @MainActor in
+            if let down = event(.leftMouseDown, start) { window.sendEvent(down) }
+            let steps = 24
+            for step in 1...steps {
+                try? await Task.sleep(for: .milliseconds(16))
+                let t = CGFloat(step) / CGFloat(steps)
+                let point = CGPoint(x: start.x + (end.x - start.x) * t, y: start.y + (end.y - start.y) * t)
+                if let dragged = event(.leftMouseDragged, point) { window.sendEvent(dragged) }
+                if escape, step == steps / 2 { sendKey(characters: "\u{1b}", code: 53) }
+            }
+            try? await Task.sleep(for: .milliseconds(120))
+            if let up = event(.leftMouseUp, end) { window.sendEvent(up) }
+            try? await Task.sleep(for: .milliseconds(600))
+            log("mousedrag done: " + overviewState(model))
+        }
+    }
+
+    private static func horizontalScroll(at point: CGPoint, by distance: Double, model: AppModel) {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
+              let content = window.contentView else { return }
+        let inWindow = NSPoint(x: point.x, y: content.bounds.height - point.y)
+        let onScreen = window.convertPoint(toScreen: inWindow)
+        // Quartz counts from the top of the main screen.
+        let quartz = CGPoint(x: onScreen.x, y: (NSScreen.screens.first?.frame.height ?? 0) - onScreen.y)
+        func scroll(_ dx: Int32, phase: Int64) -> NSEvent? {
+            guard let cg = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: 0, wheel2: dx, wheel3: 0) else { return nil }
+            cg.location = quartz
+            cg.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase)
+            cg.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+            return NSEvent(cgEvent: cg)
+        }
+        // The scroll view under the point that scrolls sideways, as a card's pages; the app's handling of swipes sees
+        // the events first, as it would see a hand's.
+        var view = content.hitTest(inWindow)
+        while let current = view, !((current as? NSScrollView).map { ($0.documentView?.frame.width ?? 0) > $0.contentView.bounds.width + 1 } ?? false) {
+            view = current.superview
+        }
+        let pager = view as? NSScrollView
+        log("hscroll over \(pager.map { "\(type(of: $0)) \(Int($0.contentView.bounds.width)) of \(Int($0.documentView?.frame.width ?? 0))" } ?? "no sideways scroll view")")
+        func send(_ event: NSEvent) {
+            if model.debugSwipeHandled(event) { return }
+            if let pager { pager.scrollWheel(with: event) } else { window.sendEvent(event) }
+        }
+        Task { @MainActor in
+            // Began, changed in steps, ended: CGScrollPhase's raw values.
+            let steps = 12
+            let step = Int32(distance / Double(steps))
+            if let began = scroll(step, phase: 1) { send(began) }
+            for _ in 1..<steps {
+                try? await Task.sleep(for: .milliseconds(12))
+                if let changed = scroll(step, phase: 2) { send(changed) }
+            }
+            try? await Task.sleep(for: .milliseconds(12))
+            if let ended = scroll(0, phase: 4) { send(ended) }
+            try? await Task.sleep(for: .milliseconds(900))
+            log("hscroll done: scope=\(String(describing: model.scope)) " + overviewState(model))
+        }
+    }
+
+    private static func verticalScroll(at point: CGPoint, by distance: Double) {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
+              let content = window.contentView else { return }
+        let inWindow = NSPoint(x: point.x, y: content.bounds.height - point.y)
+        let onScreen = window.convertPoint(toScreen: inWindow)
+        let quartz = CGPoint(x: onScreen.x, y: (NSScreen.screens.first?.frame.height ?? 0) - onScreen.y)
+        func scroll(_ dy: Int32, phase: Int64) -> NSEvent? {
+            guard let cg = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1, wheel1: dy, wheel2: 0, wheel3: 0) else { return nil }
+            cg.location = quartz
+            cg.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase)
+            cg.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+            return NSEvent(cgEvent: cg)
+        }
+        var view = content.hitTest(inWindow)
+        while let current = view, !(current is NSScrollView) { view = current.superview }
+        guard let scrollView = view as? NSScrollView else {
+            log("vscroll: no scroll view")
+            return
+        }
+        Task { @MainActor in
+            let steps = 12
+            let step = Int32(distance / Double(steps))
+            if let began = scroll(step, phase: 1) { scrollView.scrollWheel(with: began) }
+            for _ in 1..<steps {
+                try? await Task.sleep(for: .milliseconds(12))
+                if let changed = scroll(step, phase: 2) { scrollView.scrollWheel(with: changed) }
+            }
+            try? await Task.sleep(for: .milliseconds(12))
+            if let ended = scroll(0, phase: 4) { scrollView.scrollWheel(with: ended) }
+            try? await Task.sleep(for: .milliseconds(600))
+            log("vscroll done: y=\(Int(scrollView.contentView.bounds.minY))")
+        }
+    }
+
     private static func click(at point: CGPoint, right: Bool = false, move: Bool = false) {
         guard let main = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
               let content = main.contentView else { return }
@@ -1349,5 +1636,102 @@ extension EditorController {
         return "seen: \(seen)  text: \(nsText.substring(with: line.range))  caret \(caret) marks \(showsMarks ? "shown" : "hidden") typedHeading \(typedHeading.map(String.init) ?? "none") folding \(revealAnimator.isRunning) animates \(revealAnimator.isEnabled)"
     }
 }
+
+/// Checks of the list's rows for the debug remote: whether each row's view shows the row as it is now, stands where
+/// the table puts it, and looks as a fresh paint of it would.
+extension IssueTable.Coordinator {
+    /// Which rows have a view, on screen and around it, and those whose view shows something else than the row
+    /// is now, for the debug remote.
+    var rowCheck: String {
+        guard let table else { return "no table" }
+        let entries = debugEntries
+        let visible = table.rows(in: table.visibleRect)
+        var loaded: [Int] = []
+        var stale: [String] = []
+        table.enumerateAvailableRowViews { rowView, row in
+            guard row >= 0, entries.indices.contains(row) else { return }
+            loaded.append(row)
+            let view = rowView.numberOfColumns > 0 ? rowView.view(atColumn: 0) : nil
+            switch entries[row] {
+            case .row(let model):
+                let cell = view as? IssueRowCell
+                if cell?.row != model {
+                    let shown = cell?.row.map { "\($0.item.displayNumber) labels=\($0.item.labels.map(\.name))" } ?? "nothing"
+                    stale.append("\(row) \(model.item.displayNumber) labels=\(model.item.labels.map(\.name)) shows \(shown)")
+                }
+            case .header(let section):
+                if (view as? IssueHeaderCell)?.shownSection != section { stale.append("\(row) [\(section.title)]") }
+            case .epic(_, let group):
+                if (view as? EpicHeaderRowCell)?.shownGroup != group { stale.append("\(row) <\(group.epic.title)>") }
+            }
+        }
+        loaded.sort()
+        // Row views out of place, faded or hidden, and any the table no longer counts as a row: those would stand
+        // over other rows.
+        var misplaced: [String] = []
+        let counted = Set(loaded.compactMap { table.rowView(atRow: $0, makeIfNecessary: false).map(ObjectIdentifier.init) })
+        for case let rowView as NSTableRowView in table.subviews {
+            let row = table.row(for: rowView)
+            let cell = rowView.numberOfColumns > 0 ? rowView.view(atColumn: 0) as? NSView : nil
+            let alpha = min(rowView.alphaValue, cell?.alphaValue ?? 1)
+            let what = row >= 0 && entries.indices.contains(row) ? entries[row].id : "row \(row)"
+            if !counted.contains(ObjectIdentifier(rowView)) {
+                if !rowView.isHidden, alpha > 0.01 { misplaced.append("orphan \(what) frame=\(rowView.frame) alpha=\(alpha)") }
+            } else if rowView.frame.integral != table.rect(ofRow: row).integral || (alpha < 0.99 && debugDraggedIds.isEmpty) || rowView.isHidden {
+                misplaced.append("\(row) \(what) frame=\(rowView.frame) want=\(table.rect(ofRow: row)) alpha=\(alpha) hidden=\(rowView.isHidden)")
+            }
+        }
+        let ranges = loaded.isEmpty ? "none" : "\(loaded.first!)…\(loaded.last!) (\(loaded.count))"
+        return "visible=\(visible.location)..<\(visible.location + visible.length) loaded=\(ranges) stale=\(stale.count) misplaced=\(misplaced.count)"
+            + (stale.isEmpty ? "" : "\n  " + stale.joined(separator: "\n  "))
+            + (misplaced.isEmpty ? "" : "\n  " + misplaced.joined(separator: "\n  "))
+    }
+
+    /// Draws every row with a view anew and says which rows then look different from before: those showed pixels
+    /// from an earlier paint. For the debug remote.
+    func repaintCheck() -> String {
+        guard let table, let window = table.window, let root = window.contentView?.superview ?? window.contentView else { return "no table" }
+        let entries = debugEntries
+        func picture() -> [UInt8] {
+            let scale = window.backingScaleFactor
+            let width = Int(root.bounds.width * scale), height = Int(root.bounds.height * scale)
+            var bytes = [UInt8](repeating: 0, count: width * height * 4)
+            bytes.withUnsafeMutableBytes { buffer in
+                guard let context = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                                              space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+                      let layer = root.layer else { return }
+                context.scaleBy(x: scale, y: scale)
+                layer.render(in: context)
+            }
+            return bytes
+        }
+        let before = picture()
+        let rows = IssueTable.loadedRows(of: table)
+        for row in rows { table.view(atColumn: 0, row: row, makeIfNecessary: false)?.needsDisplay = true }
+        window.displayIfNeeded()
+        CATransaction.flush()
+        let after = picture()
+        let scale = window.backingScaleFactor
+        let width = Int(root.bounds.width * scale)
+        var differing: [String] = []
+        for row in rows {
+            let rect = root.convert(table.rect(ofRow: row), from: table).intersection(root.convert(table.visibleRect, from: table))
+            guard !rect.isEmpty else { continue }
+            // The bitmap's first row is the window's top.
+            let top = Int((root.bounds.height - rect.maxY) * scale), bottom = Int((root.bounds.height - rect.minY) * scale)
+            var changed = 0
+            for y in max(0, top)..<min(bottom, before.count / (width * 4)) {
+                let start = y * width * 4
+                for x in Int(rect.minX * scale)..<min(Int(rect.maxX * scale), width) where before[start + x * 4 + 3] != after[start + x * 4 + 3]
+                    || before[start + x * 4] != after[start + x * 4] {
+                    changed += 1
+                }
+            }
+            if changed > 0 { differing.append("\(row) \(entries.indices.contains(row) ? entries[row].id : "?") \(changed)px") }
+        }
+        return "repaint: \(rows.count) rows, \(differing.count) looked different" + (differing.isEmpty ? "" : "\n  " + differing.joined(separator: "\n  "))
+    }
+}
+
 #endif
 #endif

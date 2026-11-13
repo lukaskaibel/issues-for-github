@@ -140,6 +140,9 @@ struct ItemMenuContent: View {
         if targets.contains(where: model.canHaveMilestone) {
             MilestoneMenu(item: item)
         }
+        ForEach(model.iterationFields(for: item)) { field in
+            IterationMenu(item: item, field: field)
+        }
     }
 }
 
@@ -271,10 +274,58 @@ struct MilestoneMenu: View {
     static let mixed = "\u{1}"
 }
 
+/// One of the board's iteration fields as a submenu, named as the board names it ("Iteration", "Sprint").
+struct IterationMenu: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+    var field: ProjectField
+
+    var body: some View {
+        Menu {
+            IterationMenuItems(item: item, field: field)
+        } label: {
+            Label {
+                Text(model.iteration(of: item, field: field).map { String(localized: .fieldValueSpoken(field: field.name, value: $0.title)) } ?? field.name)
+            } icon: {
+                Image(systemName: "arrow.triangle.2.circlepath")
+            }
+        }
+    }
+}
+
+/// The iterations to choose from, inline: none, then the current one and those to come, the current and the next one
+/// saying so. With several picked issues, the one they share is checked.
+struct IterationMenuItems: View {
+    @Environment(AppModel.self) private var model
+    var item: Item
+    var field: ProjectField
+
+    var body: some View {
+        let ids = model.iterationIds(of: model.targets(for: item), field: field)
+        Picker(selection: Binding(
+            get: { ids.count == 1 ? ids.first ?? nil : String?.some(MilestoneMenu.mixed) },
+            set: { id in
+                let current = model.item(id: item.id) ?? item
+                model.setIteration(of: model.targets(for: current), field: field, to: field.iterations.first { $0.id == id })
+            }
+        )) {
+            Label(.noIteration, systemImage: "circle.dashed").tag(String?.none)
+            ForEach(model.iterationChoices(field, keeping: Set(ids.compactMap { $0 }))) { iteration in
+                Label(model.iterationMenuTitle(iteration, field: field), systemImage: "arrow.triangle.2.circlepath")
+                    .tag(Optional(iteration.id))
+            }
+        } label: {
+            Text(verbatim: field.name)
+        }
+        .pickerStyle(.inline)
+    }
+}
+
 /// Status as a submenu with the app's status circles, the current one checked: on several picked issues, the one they
 /// share.
 struct StatusMenu: View {
     @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
     @Environment(\.colorScheme) private var scheme
     var item: Item
 
@@ -311,6 +362,12 @@ struct StatusMenu: View {
                 }
             }
             .pickerStyle(.inline)
+            // One the board doesn't have yet, typed into the status sheet.
+            if model.canCreateStatus(for: item) {
+                Button(.newStatusEllipsis, systemImage: "plus") {
+                    navigation.sheet = .newStatus(itemId: item.id)
+                }
+            }
         } label: {
             Label {
                 Text(.status)
@@ -318,7 +375,7 @@ struct StatusMenu: View {
                 MenuImages.status(model.glyph(of: item), scheme)
             }
         }
-        .disabled(statuses.isEmpty)
+        .disabled(statuses.isEmpty && !model.canCreateStatus(for: item))
     }
 
     private var selection: Binding<String?> {
@@ -430,18 +487,17 @@ struct AssigneeMenu: View {
 
     var body: some View {
         let targets = model.targets(for: item)
+        let assigned = { (person: Person) in targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } } }
+        // The people assigned lately first, in a group of their own, as the pickers have them.
+        let people = model.splitRecent(model.people(for: item), .assignee, key: \.id, chosen: assigned)
         Menu {
-            ForEach(model.people(for: item)) { person in
-                Toggle(isOn: Binding(
-                    get: { targets.allSatisfy { target in target.assignees.contains { $0.id == person.id } } },
-                    set: { _ in model.pick(.assignees, id: person.id, for: item) }
-                )) {
-                    Label {
-                        Text(person.login)
-                    } icon: {
-                        MenuImages.avatar(person, scheme)
-                    }
+            if !people.recent.isEmpty {
+                Section {
+                    ForEach(people.recent) { toggle($0, isOn: false) }
                 }
+            }
+            Section {
+                ForEach(people.rest) { toggle($0, isOn: assigned($0)) }
             }
         } label: {
             Label {
@@ -456,6 +512,19 @@ struct AssigneeMenu: View {
         }
         .onAppear { model.loadRepoMeta(for: item) }
     }
+
+    private func toggle(_ person: Person, isOn: Bool) -> some View {
+        Toggle(isOn: Binding(
+            get: { isOn },
+            set: { _ in model.pick(.assignees, id: person.id, for: item) }
+        )) {
+            Label {
+                Text(person.login)
+            } icon: {
+                MenuImages.avatar(person, scheme)
+            }
+        }
+    }
 }
 
 /// The repository's labels, each with a checkmark when set (on all picked issues, with several).
@@ -465,26 +534,37 @@ struct LabelsMenu: View {
     var item: Item
 
     var body: some View {
-        let labels = model.labels(for: item)
         let targets = model.targets(for: item)
+        let has = { (label: LabelRef) in targets.allSatisfy { target in target.labels.contains { $0.name == label.name } } }
+        // The labels given lately first, in a group of their own, as the pickers have them.
+        let labels = model.splitRecent(model.labels(for: item), .label, key: \.name, chosen: has)
         Menu {
-            if labels.isEmpty {
+            if labels.recent.isEmpty, labels.rest.isEmpty {
                 Text(.noLabelsInRepository)
             }
-            ForEach(labels) { label in
-                Toggle(isOn: Binding(
-                    get: { targets.allSatisfy { target in target.labels.contains { $0.name == label.name } } },
-                    set: { _ in model.pick(.labels, id: label.id, for: item) }
-                )) {
-                    Label {
-                        Text(label.name)
-                    } icon: {
-                        MenuImages.label(label.color, scheme)
-                    }
+            if !labels.recent.isEmpty {
+                Section {
+                    ForEach(labels.recent) { toggle($0, isOn: false) }
                 }
+            }
+            Section {
+                ForEach(labels.rest) { toggle($0, isOn: has($0)) }
             }
         } label: {
             Label(.labels, systemImage: "tag")
+        }
+    }
+
+    private func toggle(_ label: LabelRef, isOn: Bool) -> some View {
+        Toggle(isOn: Binding(
+            get: { isOn },
+            set: { _ in model.pick(.labels, id: label.id, for: item) }
+        )) {
+            Label {
+                Text(label.name)
+            } icon: {
+                MenuImages.label(label.color, scheme)
+            }
         }
     }
 }

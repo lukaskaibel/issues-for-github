@@ -159,26 +159,32 @@ final class PhoneTests: AppTestCase {
     }
 
     func testMyIssuesOverviewShowsEachProject() {
-        launch(["-mine.display", #"{"layout":"overview"}"#])
+        launch(["-mine.display", defaultsString(#"{"layout":"overview"}"#)])
         wait(app.navigationBars["My Issues"])
-        wait(element("section-Git Issues"))
-        wait(element("row-#9"))
-        // In progress before what is next, in the same project; done issues are counted, not listed.
-        XCTAssertLessThan(element("row-#9").frame.minY, element("row-#25").frame.minY)
-        XCTAssertFalse(element("row-#21").exists)
+        // A card per project, Needs you first, as the overview arranges itself.
+        wait(element("card-Needs you"))
+        let project = element("card-Git Issues")
+        scrollTo(project)
+        // The card opens on its first column with issues of yours: In Progress. The next page waits beside it. Rows
+        // are looked for in the card: the project's own list, alive behind My Issues, has them too.
+        func row(_ number: Int) -> XCUIElement {
+            project.descendants(matching: .any).matching(identifier: "row-#\(number)").firstMatch
+        }
+        wait(row(9))
+        waitOnPage(row(9), of: project)
+        XCTAssertFalse(isOnPage(row(5), of: project))
         snapshot("My Issues overview")
 
-        // A project folds like a section.
-        element("section-Git Issues").tap()
-        waitGone(element("row-#9"))
-        element("section-Git Issues").tap()
-        wait(element("row-#9"))
+        // Its icons turn to another column's page.
+        project.buttons["In Review, 2"].tap()
+        waitOnPage(row(5), of: project)
+        XCTAssertFalse(isOnPage(row(9), of: project))
+        // A swipe sideways across the card turns back, as a finger does it: most of the way, quickly.
+        let start = project.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.7))
+        start.press(forDuration: 0.05, thenDragTo: project.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.7)), withVelocity: .fast, thenHoldForDuration: 0)
+        waitOnPage(row(9), of: project)
 
-        // What needs you comes after the projects with work started, as the overview arranges itself.
-        scrollTo(element("section-Needs you"))
-        wait(element("needs-#25"))
-
-        // Customize… lists the widgets, and whether the overview arranges itself.
+        // Customize… lists the cards, and whether the overview arranges itself.
         app.navigationBars.buttons["Options"].firstMatch.tap()
         wait(button("Customize…"))
         button("Customize…").tap()
@@ -195,6 +201,18 @@ final class PhoneTests: AppTestCase {
         wait(button("List"))
         button("List").tap()
         wait(element("section-In progress"))
+    }
+
+    /// Whether a row stands on the page a card shows, rather than on one beside it, waiting to be swiped to: on
+    /// iPhone the card is as wide as the screen, so the pages beside it are off the screen.
+    private func isOnPage(_ row: XCUIElement, of card: XCUIElement) -> Bool {
+        row.exists && app.windows.firstMatch.frame.contains(CGPoint(x: row.frame.midX, y: row.frame.midY))
+    }
+
+    private func waitOnPage(_ row: XCUIElement, of card: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        let deadline = Date().addingTimeInterval(6)
+        while !isOnPage(row, of: card), Date() < deadline { RunLoop.current.run(until: Date().addingTimeInterval(0.2)) }
+        XCTAssertTrue(isOnPage(row, of: card), "\(row) is not on the card's page", file: file, line: line)
     }
 
     func testPullToRefreshKeepsTheList() {
@@ -314,6 +332,49 @@ final class PhoneTests: AppTestCase {
         XCTAssertFalse(pickerRow("Create label").exists)
     }
 
+    func testTypingAStatusTheBoardLacksMakesIt() {
+        launch()
+        scrollTo(element("row-#13"))
+        element("row-#13").tap()
+        let chip = element("chip-status")
+        wait(chip)
+        // The chip's menu ends with New Status…, which opens the status sheet ready to type.
+        chip.tap()
+        wait(button("New Status…"))
+        button("New Status…").tap()
+        let search = app.searchFields.firstMatch
+        wait(search)
+        search.tap()
+        // A status of that name, whatever its case, is picked rather than made again.
+        search.typeText("todo")
+        wait(pickerRow("Todo"))
+        XCTAssertFalse(pickerRow("Create status").exists)
+        search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "QA")
+        let create = pickerRow("Create status “QA”")
+        wait(create)
+        snapshot("Status sheet, a status to make")
+        create.tap()
+        waitGone(app.navigationBars["Status"])
+        waitForLabel(chip, containing: "QA")
+
+        // One of the board's statuses from now on, after In Review, its icon and colour a touch and hold away.
+        chip.tap()
+        wait(button("New Status…"))
+        button("New Status…").tap()
+        wait(app.navigationBars["Status"])
+        let made = pickerRow("QA")
+        wait(made)
+        // Not compared with Done: the sheet's own button is called that too.
+        XCTAssertGreaterThan(made.frame.minY, pickerRow("In Review").frame.minY)
+        made.press(forDuration: 1.2)
+        button("Icon").tap()
+        // Not Done: the sheet's own button is called that too.
+        wait(button("Canceled"))
+        snapshot("A status's icons")
+        button("Canceled").tap()
+        XCTAssertTrue(app.navigationBars["Status"].exists, "Changing the icon keeps the sheet open")
+    }
+
     func testRecentChoicesComeFirst() {
         // As if "sync" had just been added to another issue: it leads the sheet, apart from the rest.
         launch(["-recentPicks", "{ label = (sync); }"])
@@ -332,6 +393,40 @@ final class PhoneTests: AppTestCase {
         _ = XCTWaiter.wait(for: [expectation(description: "The list settles")], timeout: 0.8)
         XCTAssertEqual(pickerRow("bug").frame.minY, place, accuracy: 1, "A picked row stays put")
         XCTAssertLessThan(sync.frame.minY, pickerRow("bug").frame.minY)
+    }
+
+    func testRecentEpicLeadsAboveRemove() {
+        // As if issues had just gone into "Drag and drop on the board" twice in a row: for #8, in another epic, it
+        // comes first, above taking #8 out of its epic, so the next pick is the same again.
+        launch(["-recentPicks", "{ parent = (demo-issue-40, demo-issue-40); }"])
+        scrollTo(element("row-#8"))
+        openCardMenu(element("row-#8"))
+        button("Add to Epic…").tap()
+        let recent = pickerRow("#40")
+        wait(recent)
+        XCTAssertLessThan(recent.frame.minY, pickerRow("Remove from").frame.minY, "The epic chosen lately comes first")
+        XCTAssertLessThan(recent.frame.minY, pickerRow("#41").frame.minY)
+        snapshot("Epic sheet with the recent one first")
+    }
+
+    func testRecentLabelsLeadTheLongPressMenu() {
+        // As if "ui" had just been added to other issues: the long-press menu's Labels lists it first.
+        launch(["-recentPicks", "{ label = (ui); }"])
+        scrollTo(element("row-#8"))
+        openCardMenu(element("row-#8"))
+        button("Labels").tap()
+        let ui = menuItem("ui")
+        wait(ui)
+        XCTAssertLessThan(ui.frame.minY, menuItem("auth").frame.minY, "The label given lately comes first")
+        XCTAssertLessThan(ui.frame.minY, menuItem("sync").frame.minY, "Before the one #8 has")
+        snapshot("Labels menu with the recent one first")
+        ui.tap()
+        waitForLabel(element("row-#8"), containing: "ui")
+    }
+
+    private func menuItem(_ name: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "label == %@ AND (elementType == %d OR elementType == %d)",
+            name, XCUIElement.ElementType.button.rawValue, XCUIElement.ElementType.switch.rawValue)).firstMatch
     }
 
     func testDueDateSheet() {
@@ -1054,8 +1149,9 @@ final class PhoneTests: AppTestCase {
         launch(["-mobile.tab", "home", "-demo.loadingProjects", "3"])
         wait(element("home-my-issues"))
         wait(labelled("Loading issues from 3 projects…"))
-        // What has come in so far is counted already.
-        waitForValue(element("home-my-issues"), equalTo: "12")
+        // What has come in so far is counted already: twelve assigned to Jordan, and the seven open posts of Jordan's
+        // blog, which nobody assigns.
+        waitForValue(element("home-my-issues"), equalTo: "19")
         snapshot("Home while projects load")
         element("home-my-issues").tap()
         wait(element("row-#9"))
@@ -1186,6 +1282,47 @@ final class PhoneTests: AppTestCase {
 
         goBack()
         waitForLabel(element("page-All Issues"), containing: "5 on no board")
+    }
+
+    /// All Issues as a board on the iPhone: a column at a time, the issues on no board first in the strip, and the
+    /// columns' menu moves and hides them.
+    func testAllIssuesAsABoard() {
+        launch()
+        openProjectPage("Git Issues")
+        let all = element("page-All Issues")
+        wait(all)
+        all.tap()
+        wait(app.navigationBars["All Issues"])
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        button("Board").tap()
+        let noBoard = element("strip-No project")
+        wait(noBoard)
+        XCTAssertLessThan(noBoard.frame.minX, element("strip-Backlog").frame.minX)
+        // The board opens on the work in progress; the issues on no board are its first column, off screen to the left.
+        let window = app.windows.firstMatch.frame
+        var swipes = 0
+        while !window.contains(noBoard.frame) && swipes < 6 {
+            app.swipeRight()
+            swipes += 1
+        }
+        noBoard.tap()
+        wait(element("card-#27"))
+        snapshot("All Issues as a board")
+
+        // Hidden from its menu, a column leaves the strip; the "…" menu brings it back.
+        app.buttons["Options for No project"].tap()
+        button("Hide Column").tap()
+        waitGone(element("strip-No project"))
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        let hidden = button("No project")
+        wait(hidden)
+        hidden.tap()
+        wait(element("strip-No project"))
+
+        // Back to the list, as it was.
+        app.navigationBars.buttons["Options"].firstMatch.tap()
+        button("List").tap()
+        wait(element("row-#27"))
     }
 
     func testProjectIconFromTheProjectMenu() {

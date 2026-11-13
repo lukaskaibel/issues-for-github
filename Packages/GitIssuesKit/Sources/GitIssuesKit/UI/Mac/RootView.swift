@@ -165,10 +165,11 @@ struct ContentPanel: View {
                         // GitHub's roadmap layout: the view's issues on a timeline.
                         ViewTimeline(view: view, open: { model.open($0) })
                             .transition(.opacity)
-                    } else if model.viewMode == .board, model.currentProjectId != nil {
-                        // Another view's board starts at its beginning, not where the last one was scrolled to.
+                    } else if model.showsBoard {
+                        // Another view's board starts at its beginning, not where the last one was scrolled to, and
+                        // so does All Issues'.
                         BoardView()
-                            .id(model.currentView?.id)
+                            .id(model.allIssuesProjectId.map { "all\u{1F}\($0)" } ?? model.currentView?.id)
                             // The board's grey goes on under the toolbar. With a bar over the board, as a view's filter
                             // or a milestone's description, the toolbar would draw a band of its own with a line under it.
                             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
@@ -254,7 +255,7 @@ struct ContentPanel: View {
     /// stand on the same grey.
     private var onBoard: Bool {
         if model.scope == .myIssues { return model.mineDisplay.layout == .overview && !model.mineLanes.isEmpty }
-        guard model.viewMode == .board, model.currentProjectId != nil, let scope = model.scope, scope != .inbox else { return false }
+        guard model.showsBoard, let scope = model.scope, scope != .inbox else { return false }
         if case .roadmap = scope { return false }
         if case .milestone(let projectId, let title) = scope { return model.milestoneGroup(projectId: projectId, title: title) != nil }
         return !(model.currentView.map { model.showsTimeline($0) } ?? false)

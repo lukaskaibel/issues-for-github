@@ -139,8 +139,8 @@ for theme in dark light; do
   say "overlay none" "focus" "mode list"; sleep 1.2; shot "list-$theme"
   # All Issues of the project: the issues on no board first, with their count in the sidebar.
   say "select all"; sleep 1.2; shot "all-issues-$theme"
-  # My Issues' overview as it arranges itself: a lane for each project with work started, Needs you, and the issues
-  # on no board as a small widget.
+  # My Issues' overview as it arranges itself: Needs you, then a card for each project with work started, each on its
+  # first page with the icons of its others, then the issues on no board.
   say "select mine" "filter" "display reset" "display layout overview"; sleep 1.5; shot "my-issues-$theme"
   say "display layout list"
   # The roadmap's timeline: the sample's epics over the milestones 0.3, 0.4 and 1.0.

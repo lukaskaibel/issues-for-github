@@ -18,6 +18,9 @@ struct PickerItem: Identifiable {
     var recent = false
     /// Makes what was typed, such as a new label: picked on its own, never ticked along with others.
     var creates = false
+    /// A status whose icon and colour can be changed right from its row: on the Mac with a button on the lit row, on
+    /// iPhone and iPad with a long press.
+    var status: FieldOption? = nil
 }
 
 /// Subsequence match: every character of the query appears in order. Higher is better; nil is no match.
@@ -75,7 +78,7 @@ func matching(_ query: String, in items: [PickerItem], creating typed: PickerIte
 
 // MARK: - Picker contents for an issue
 
-enum PickerKind: Equatable {
+enum PickerKind: Hashable {
     case status
     case priority
     case assignees
@@ -92,6 +95,8 @@ enum PickerKind: Equatable {
     case milestone
     /// The epic it belongs to: its parent, among the board's epics.
     case epic
+    /// The iteration of one of the board's iteration fields it is planned for.
+    case iteration(fieldId: String)
 
     var placeholder: String {
         switch self {
@@ -107,6 +112,7 @@ enum PickerKind: Equatable {
         case .blocking: String(localized: .markAsBlockingPlaceholder)
         case .milestone: String(localized: .moveToMilestonePlaceholder)
         case .epic: String(localized: .addToEpicPlaceholder)
+        case .iteration: String(localized: .moveToIterationPlaceholder)
         }
     }
 
@@ -119,6 +125,7 @@ enum PickerKind: Equatable {
         case .labels: "L"
         case .dueDate: "D"
         case .milestone: "⇧M"
+        case .iteration: "⇧C"
         case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic: nil
         }
     }
@@ -140,6 +147,7 @@ enum PickerKind: Equatable {
         case .blocking: String(localized: .blockingHelp)
         case .milestone: String(localized: .changeMilestone)
         case .epic: String(localized: .changeEpic)
+        case .iteration: String(localized: .changeIteration)
         }
     }
 
@@ -155,7 +163,13 @@ enum PickerKind: Equatable {
     /// takes one away, they open on the first that isn't.
     var opensOnSelection: Bool { self != .blockedBy && self != .blocking }
 
-    var width: CGFloat { self == .subIssues || picksIssues ? 460 : self == .milestone ? 300 : 280 }
+    var width: CGFloat {
+        switch self {
+        case .subIssues: 460
+        case .milestone, .iteration: 300
+        default: picksIssues ? 460 : 280
+        }
+    }
 }
 
 extension AppModel {
@@ -165,12 +179,14 @@ extension AppModel {
         switch kind {
         case .status:
             guard item.isOnBoard else { return stateItems(for: item, targets: targets) + addToProjectItems(for: item) }
+            let editable = canCreateStatus(projectId: item.projectId)
             return statusOptions(projectId: item.projectId).enumerated().map { index, option in
                 PickerItem(
                     id: option.id, title: option.name,
                     selected: targets.allSatisfy { target in statusOption(of: target)?.name == option.name },
                     icon: AnyView(StatusIcon(glyph: glyph(projectId: item.projectId, optionId: option.id))),
-                    shortcut: index < 9 ? "\(index + 1)" : nil
+                    shortcut: index < 9 ? "\(index + 1)" : nil,
+                    status: editable ? option : nil
                 )
             }
         case .priority:
@@ -257,14 +273,21 @@ extension AppModel {
                 ))
             }
             rows += candidates.filter(isParent).map { issueRow($0, near: item, selected: true) }
-            // The parent given last comes next, for the next issue to go under it too.
             let others = candidates.filter { !isParent($0) }.map { issueRow($0, near: item) }
-            return recentFirst(rows + others, .parent, after: rows.count)
+            // The parent given lately comes first, above Remove, for the next issue to go under it too.
+            return recentFirst(rows + others, .parent)
         case .addSubIssue:
             let excluded = ancestors(of: item).union(subIssueIds(of: item))
-            let rows = relatableIssues(near: item)
-                .filter { !excluded.contains($0.contentId ?? "") }
-                .map { issueRow($0, near: item) }
+            let candidates = relatableIssues(near: item).filter { !excluded.contains($0.contentId ?? "") }
+            // Issues you made lately and put under nothing yet come first: made one after another, they are sorted
+            // under their parents next.
+            let fresh = freshIssues(candidates)
+            let recent = fresh.map { candidate in
+                var row = issueRow(candidate, near: item)
+                row.recent = true
+                return row
+            }
+            let rows = recent + candidates.filter { !fresh.contains($0) }.map { issueRow($0, near: item) }
             #if os(macOS)
             // Typing a title and picking this carries the title into the new issue.
             let new = PickerItem(
@@ -272,7 +295,7 @@ extension AppModel {
                 icon: AnyView(Image(systemName: "plus").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary)),
                 alwaysShown: true
             )
-            return [new] + rows
+            return recent + [new] + rows.dropFirst(recent.count)
             #else
             return rows
             #endif
@@ -280,6 +303,9 @@ extension AppModel {
             return milestoneItems(for: item, targets: targets)
         case .epic:
             return epicItems(for: item, targets: targets)
+        case .iteration(let fieldId):
+            guard let field = field(id: fieldId) else { return [] }
+            return iterationItems(field: field, current: iterationIds(of: targets, field: field))
         case .blockedBy, .blocking:
             let ids = Set(targets.compactMap(\.contentId))
             let linked = { (candidate: Item) -> Bool in
@@ -292,7 +318,7 @@ extension AppModel {
             let candidates = relatableIssues(near: item).filter { !ids.contains($0.contentId ?? "") }
             let current = candidates.filter(linked).map { issueRow($0, near: item, selected: true) }
             let others = candidates.filter { !linked($0) }.map { issueRow($0, near: item) }
-            return recentFirst(current + others, kind == .blockedBy ? .blockedBy : .blocking, after: current.count)
+            return recentFirst(current + others, kind == .blockedBy ? .blockedBy : .blocking)
         }
     }
 
@@ -420,6 +446,9 @@ extension AppModel {
             text = milestoneTitle(of: item).map { .milestoneTooltip(milestone: $0) } ?? .noMilestone
         case .epic:
             text = epic(of: item).map { .epicTooltip(epic: $0.title) } ?? .noEpic
+        case .iteration(let fieldId):
+            guard let field = field(id: fieldId) else { return String(localized: .noIteration) }
+            return iterationDescription(of: item, field: field)
         case .blockedBy, .blocking:
             let relation: LinkedIssue.Relation = kind == .blockedBy ? .blockedBy : .blocking
             let open = links(of: item, relation).filter { !$0.isClosed }
@@ -447,6 +476,10 @@ extension AppModel {
         let targets = targets(for: current).map { target in allItems.first { $0.id == target.id } ?? target }
         switch kind {
         case .status:
+            if let name = Self.newStatusName(id), let projectId = current.projectId {
+                createStatus(named: name, projectId: projectId, for: targets)
+                return
+            }
             guard current.isOnBoard else {
                 if id == Self.toggleStateId {
                     let close = !targets.allSatisfy(\.isClosed)
@@ -515,6 +548,9 @@ extension AppModel {
             } else if let epic = issue(contentId: id) {
                 setParent(of: targets, to: epic)
             }
+        case .iteration(let fieldId):
+            guard let field = field(id: fieldId) else { return }
+            setIteration(of: targets, field: field, to: field.iterations.first { $0.id == id })
         }
     }
 
@@ -651,7 +687,7 @@ extension AppModel {
                 trailing: milestoneTitle(of: epic).map { AnyView(Text($0).font(.small).foregroundStyle(Theme.textTertiary).lineLimit(1)) }
             )
         }
-        // An epic is a parent too: the one issues went under last comes first.
-        return recentFirst(rows + epics, .parent, after: rows.count)
+        // An epic is a parent too: the one issues went under lately comes first.
+        return recentFirst(rows + epics, .parent)
     }
 }

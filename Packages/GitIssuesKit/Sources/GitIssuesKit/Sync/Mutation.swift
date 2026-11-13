@@ -432,6 +432,8 @@ extension Mutation {
             try db.execute(sql: "UPDATE subIssue SET title = ? WHERE id = ?", arguments: [m.value, m.contentId])
             try db.execute(sql: "UPDATE linkedIssue SET title = ? WHERE id = ?", arguments: [m.value, m.contentId])
             try db.execute(sql: "UPDATE item SET parentTitle = ? WHERE parentId = ?", arguments: [m.value, m.contentId])
+            // An issue seen only in the Inbox shows its new title there too.
+            try db.execute(sql: "UPDATE inboxEntry SET title = ? WHERE contentId = ?", arguments: [m.value, m.contentId])
 
         case .setBody(let m):
             try db.execute(sql: "UPDATE item SET body = ?, dirty = 1 WHERE contentId = ?", arguments: [m.value, m.contentId])
@@ -448,6 +450,11 @@ extension Mutation {
             )
             try db.execute(
                 sql: "UPDATE linkedIssue SET state = ?, stateReason = ? WHERE id = ?",
+                arguments: [state, m.closed ? m.reason : nil, m.contentId]
+            )
+            // An issue seen only in the Inbox is drawn from its entry, which then says closed or open as well.
+            try db.execute(
+                sql: "UPDATE inboxEntry SET state = ?, stateReason = ? WHERE contentId = ?",
                 arguments: [state, m.closed ? m.reason : nil, m.contentId]
             )
 

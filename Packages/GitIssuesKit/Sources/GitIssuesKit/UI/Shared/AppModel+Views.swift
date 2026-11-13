@@ -162,16 +162,24 @@ extension AppModel {
 
     /// Board or list as the view shows, without that counting as a choice of yours.
     func followLayout(of view: ProjectView) {
-        let mode = layout(of: view)
+        follow(layout(of: view))
+    }
+
+    /// Board or list as what is on screen has it, without that counting as a choice of yours.
+    private func follow(_ mode: ViewMode) {
         guard viewMode != mode else { return }
         isFollowingView = true
         withAnimation(Theme.spring) { viewMode = mode }
         isFollowingView = false
     }
 
-    /// After the scope changed: board or list as the view now on screen has it.
+    /// After the scope changed: board or list as the view now on screen has it, or All Issues.
     func followCurrentView() {
-        if let view = currentView { followLayout(of: view) }
+        if let view = currentView {
+            followLayout(of: view)
+        } else if let projectId = allIssuesProjectId {
+            follow(allIssuesLayout(projectId: projectId))
+        }
     }
 
     // MARK: Display
@@ -236,8 +244,10 @@ extension AppModel {
         // What is the same as the view's own isn't a choice of yours. A roadmap's own is its timeline, so a board or a
         // list chosen for it is.
         if view.layout != .roadmap, display.layout == (view.layout == .board ? .board : .list) { display.layout = nil }
-        if display.columnFieldId == view.columnFieldId { display.columnFieldId = nil }
-        if display.groupFieldId == view.groupByFieldId { display.groupFieldId = nil }
+        // A view without columns or groups of its own on GitHub has them by status here.
+        let status = currentStatusFieldId(projectId: view.projectId)
+        if display.columnFieldId == (view.columnFieldId ?? status) { display.columnFieldId = nil }
+        if display.groupFieldId == (view.groupByFieldId ?? status) { display.groupFieldId = nil }
         if display.sort == view.sortBy { display.sort = nil }
         if display.visibleFieldIds == view.visibleFieldIds { display.visibleFieldIds = nil }
         if display.hiddenColumnIds?.isEmpty == true { display.hiddenColumnIds = nil }
@@ -299,11 +309,15 @@ extension AppModel {
         if let hovered = hoveredItemId, gone.contains(hovered) { hoveredItemId = nil }
     }
 
-    /// The columns a board shows: a view's, without those you hid. A milestone's board shows every column.
+    /// The columns a board shows: a view's or All Issues', without those you hid. A milestone's board shows every
+    /// column.
     func shownColumns(for scope: Scope) -> [BoardColumn] {
         let all = columns(for: scope)
-        guard case .project(let projectId) = scope, let view = currentView(projectId: projectId) else { return all }
-        let hidden = hiddenColumnIds(of: view)
+        let hidden: Set<String> = switch scope {
+        case .project(let projectId): currentView(projectId: projectId).map { hiddenColumnIds(of: $0) } ?? []
+        case .allIssues(let projectId): Set(allIssuesDisplay(projectId: projectId).hiddenColumnIds ?? [])
+        default: []
+        }
         return hidden.isEmpty ? all : all.filter { !hidden.contains($0.id) }
     }
 
@@ -1000,10 +1014,6 @@ extension AppModel {
             ))
             return
         }
-        #if os(iOS)
-        // The iPhone has no board.
-        guard UIDevice.current.userInterfaceIdiom == .pad else { return }
-        #endif
         let hidden = hiddenColumnIds(of: view)
         guard layout(of: view) == .board, !hidden.isEmpty,
               let column = columns(projectId: projectId).first(where: { $0.nesting.members.contains { $0.id == item.id } }),

@@ -21,19 +21,65 @@ All notable changes to this project are recorded here. The format follows
   respect Reduce Motion. The project selector opens at full height on iPad, and Inbox-only issues can join projects.
   Membership and field changes save asynchronously without waiting on the UI thread, with animated project
   sections and a progress indicator while a local save is pending.
-- **My Issues as an overview of your work.** My Issues opens with a widget for each project you work in: what you
-  have started there, the three most pressing issues to do next (**3 more to do** shows the rest), and, as counts, what
-  waits in the backlog and what you finished this week. A large widget is a lane, In progress, Up next and Later side
-  by side, so large ones read down a column for everything you're doing; a medium one stacks them, a small one counts.
-  **Needs you** lists what wants you now, whatever the project: overdue, due today, urgent and not started, idle for a
-  week, or on no board; **Due this week** and **Done this week** can join it. The overview arranges itself, work in
-  progress first and large, until you move something: drag a widget by its header, or right-click it to change its
-  size or take it out, and **Edit Widgets** shows every size and what can be added. Your arrangement is the same on
-  your Mac, iPhone and iPad. On the Mac, drag an issue from Up next to In progress to start it, or back. A started issue
-  nobody has touched for a week says how long it has been idle, and a project's widget how many of its issues are
-  overdue; hidden projects stay out. On iPhone and iPad the widgets are a list, small projects two to a row, arranged
-  in **Customize…** in the "…" menu. **List** in the toolbar (`⌘2`, and `⌘1` back; on iPhone and iPad in the "…"
-  menu) shows everything as one list again, with its groups and order; the filter applies to both.
+- **Make a status where you pick one.** Type a name the board has no status of into any status picker, on the
+  Mac (the dropdown, `S`, the right-click menu, `⌘K` and the new issue) or on iPhone and iPad (the Status sheet, and
+  **New Status…** when you touch and hold an issue), and **Create status “…”** makes it in the project's Status field
+  on GitHub and moves the issue, or every picked one, into it: one pick. It goes next to the statuses of its kind, in
+  their colour, and shows at once. Making one needs a connection; offline, a notice says so.
+- **A status's icon and colour, right there.** The **⋯** on the highlighted status in a picker (on iPhone and iPad a
+  touch and hold) changes its colour on GitHub and its icon: Backlog, Todo, In progress, Done or Canceled. The icon is
+  also what the status means, so issues moved into a status you made Done are closed as completed. Columns' menus and
+  the Statuses screen on iPhone and iPad have **Icon** too. GitHub has no icons, so yours are kept in iCloud; a status
+  without one goes by its name, as before.
+- **Drop an issue onto another one to make it a sub-issue (Mac).** Drag a row of a list, a card of a board or an issue
+  in My Issues onto another issue, and it goes under that issue. Hold it over the middle of the issue: the issue lights
+  up, and on the board the card shrinks a little and says "Sub-issue of #9". Near the top or bottom edge of an issue,
+  or between issues, it still goes in front of or after it as before, and into another column or section. Picked
+  issues all go under it together. The dropped issue keeps its status and stays where it stands; a message says what
+  happened and takes it back with **Undo**. An issue can't go under itself or one of its own sub-issues, nor where
+  GitHub wouldn't take it: a pull request, a draft, a board you can only read, more than 100 sub-issues under one issue
+  or more than eight levels. On a board, dropping onto an epic's name makes the issue one of the epic's.
+- **Drop a card onto another one to make it a sub-issue, on iPhone and iPad.** Touch and hold a card, drag it over the
+  middle of another card, and that card lights up with a tick; let go and the dragged issue becomes its sub-issue, with
+  a notice that can undo it. It works on every board: a view's, All Issues' and a milestone's. Only the parent changes:
+  the issue keeps its status, so one dropped onto an issue in another column goes back to its own. Over the top or
+  bottom edge of a card, or between cards, the card moves there as before. An issue never goes under itself or one of
+  its own sub-issues.
+- **Put an issue into an iteration.** An issue's iteration is now one click or key away: the Iteration row on the
+  issue's page, the iteration chip on a card or row (when the view shows it), the right-click menu, **Move to
+  Iteration…** in the command palette, or `⇧C`, as in Linear. The picker lists the iteration under way and those to
+  come, says which one is current and which is next (on the Mac also each one's days), and `0` takes the issue out of
+  its iteration. Nobody sets which iteration is current: GitHub works it out from the dates, as it does for `@current`
+  and `@next`. Picked issues go in together, and a new issue shows the iteration it starts in, such as that of the view
+  it is made in, and takes another with one click. On iPhone and iPad the iteration is a chip under the issue's title, a
+  row beside it on a wide iPad, a submenu when you touch and hold an issue, and `⇧C` on an iPad keyboard. A field named
+  "Sprint" or "Cycle" keeps its name.
+- **All Issues as a board.** All Issues shows as a board too, not only as a list: **Board** in the toolbar (`⌘1`,
+  and `⌘2` back to the list; on iPhone in the "…" menu), kept for each project. The issues on no board stand in a
+  column of their own before the board's columns; drag one onto a status and it goes on the board with that status, at
+  the end of the column. Nothing can be dropped into that column, so no issue leaves its board by accident. Put the
+  columns in your own order with **Move Left** and **Move Right** in a column's menu (on the Mac also by dragging its
+  header), and take the ones you don't need off with **Hide Column**: they wait at the end of the board, a click away
+  from coming back. Both stay on your device; the board's statuses on GitHub keep their order.
+- **Rate Issues on the App Store.** Once you have used Issues on three days, the system asks you for a rating as you
+  finish an issue, closed as completed or moved into a done column: never as the app opens, never on sample data, and
+  at most once a version and two months apart (the system shows it at most three times a year). **Rate Issues on the
+  App Store** is always there too, in the app menu on the Mac and in the account sheet on iPhone and iPad.
+- **My Issues as an overview of your work.** My Issues opens with a card for each project you work in, all the same
+  size, so they fill the window side by side. A card pages sideways through the columns of its board that hold issues of
+  yours, what you have started first: swipe with two fingers, or click one of the status icons beside its name, under
+  which it says which column you see and how many issues are in it. When a column holds more than a page shows, "39 more
+  in Notebook" leads to the rest on the project. **Pages in Each Card** in Display picks the columns: what is in
+  progress and to do to start with, the backlog, cards without a status and **Done this week** when you ask for them.
+  **Needs you** pages through what wants you now, whatever the project: overdue, due today, urgent and not started, idle
+  for a week, or on no board. The overview arranges itself, what needs you first and work in progress next, until you
+  drag a card by its name: it lifts, a slot shows where it will land and the others make room; Esc puts it back.
+  Right-click a card to show its project or take it out, and beside the cards to add it back or let the overview arrange
+  itself again. Your order is the same on your Mac, iPhone and iPad. On the Mac, drop an issue on a status icon of its
+  card to move it to that column, and ← → turn the page of the card the keyboard is in. On iPad the cards stand two or
+  three to a row, on iPhone one under another, and **Customize…** in the "…" menu arranges them. **List** in the toolbar
+  (`⌘2`, and `⌘1` back; on iPhone and iPad in the "…" menu) shows everything as one list again, with its groups and
+  order; the filter applies to both.
 - **Zoom and date editing on timelines.** Pinch to zoom on a trackpad or iPad, use the zoom buttons, or on the Mac
   use ⌘+ and ⌘− or hold ⌘ while scrolling; ⌘0 or the Reset Zoom button resets to the selected Months or Quarters
   preset. Zoom stays between 1 and 40 points per day and keeps the date under the pointer or the centre of the
@@ -47,6 +93,15 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **Pickers offer the likeliest choice first.** The parent, epic, blocker, label and assignee you chose lately now come
+  at the very top of their pickers, above **Remove from #…** and the current one, with the likeliest lit so `Return`
+  takes it. A choice made twice in a row comes first and stays there when one issue in
+  between goes elsewhere, so going through many issues that all get the same parent is one key each. A change to
+  several issues at once counts as one choice. **Add Existing Issue…** offers the issues you made in the last day first,
+  and on iPhone and iPad the Assignee and Labels submenus of a touch and hold list the recent ones first too.
+- **My Issues finds your issues in projects you work on alone.** Where nobody else has an open issue in a project,
+  the issues assigned to nobody are yours too: they show in My Issues, its count and its overview, since in a project
+  of your own you rarely assign issues to yourself.
 - A timeline keeps the width of a day its zoom gives it. A short plan is no longer stretched across the window; the
   room after it shows the days to come.
 - **The sidebar says what each part covers.** On the Mac the Inbox and My Issues come first now, since they show
@@ -59,6 +114,26 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Fixed a crash on the Mac when switching boards while a column is adding row views.
+- **Return in a picker opened over the pointer picks what is lit.** A picker that opened under a pointer at rest, such
+  as **Set Parent Issue…** from the command palette, lit the row under the pointer instead of the recent choice, so
+  `Return` could take an issue out of its parent instead of moving it to the one chosen last. Rows now light under the
+  pointer only once it moves.
+- **New Sub-issue… stays at the top of Add Sub-issue on a large board** until you type; with more than 60 issues it
+  had moved to the end of the list.
+- A status added, renamed, recoloured or removed on github.com shows as soon as you pick a status, also for an issue
+  of a board that isn't open, such as from My Issues or the Inbox, instead of minutes later or after a restart.
+- Changing the statuses in the app (adding, renaming, recolouring, moving or deleting a column) no longer removes a
+  status someone added on github.com since the app last read the board: the change is made on GitHub's statuses as they
+  are now, so no issue loses its status.
+- Every row of a list on the Mac shows its issue as it is now: a change such as new labels from GitHub could miss a
+  row just out of view, which then showed it only once the pointer went over it. A part of a row lit under the
+  pointer, such as its labels, no longer stays lit while the list scrolls under a resting pointer, nor moves on to
+  other issues' rows.
+- Dragging an issue in All Issues' list on the Mac no longer turns its row blank until you leave the list. The
+  issue now moves as on All Issues' board: to another place or status, and one on no board onto the board with the
+  status you drop it on. In My Issues, and in a project you can only read, a row lifts only where it can go under
+  another issue, so none goes blank there either.
 - On a wide board on the Mac, a sideways swipe scrolls the columns instead of going back, also with the sidebar
   showing. Going back or forward takes a new swipe once the board is scrolled all the way to that side, and the arrow
   of a swipe no longer stays on screen after it.
@@ -69,9 +144,91 @@ All notable changes to this project are recorded here. The format follows
   GitHub could be left with the one before, which came back at the next refresh, and a title changed back that way
   asked you to choose between your own two versions.
 - Long timelines scroll more smoothly, also while the pointer passes over their rows.
+- An issue on the timeline of a roadmap view has its menu, as on a board. On the Mac right-click its name or anywhere
+  along its line, bar included; until now that opened the issue. On iPad touch and hold its name; holding its bar
+  still moves its dates.
+- On the Mac, right-clicking a group's line on the timeline of a roadmap view, such as a milestone, opens the group's
+  menu, as on a group's header in the list: **Fold** or **Unfold**, **Fold All**, **Back to the Usual Order** and
+  **New Issue** in that group. Until now the right-click folded or unfolded the group. The timeline also shows the
+  groups in the order you gave them in the list.
+- On iPad, **Open** in an epic's menu on the roadmap's timeline opens the epic. Until now it did nothing.
 - On the Mac, a second click on the project's name in the sidebar closes its menu again, as on any menu's
   button. Before, the menu often opened again at once, mostly on a trackpad, where the pointer moves a little as the
   finger lifts. The same goes for every button that opens a dropdown, such as Display and the pickers.
+- On the Mac, right-clicking an issue on a board opens its menu again after you switch views, such as from the board
+  to a view of this or the next iteration. Until now the right-click did nothing there until the window changed size.
+- On the Mac, a right-click on the peek opens the menu of the issue in it, with **Peek** ticked to put it away; its
+  description keeps the menu of text, with Copy. Until now it opened the menu of the card or timeline line under the
+  peek. A right-click on the bar of picked issues opens their menu, and one on a notice, the Inbox's Undo or the
+  comment field (outside its text) does nothing, instead of opening the menu of what is under it or pressing a button.
+- On the Mac, switching a board to its list with a card in focus keeps the list where it starts; the card stays in
+  view below its section's header. Until now the list jumped so the card sat at the top edge, under the pinned header,
+  which drew over it. `K` past the top of the list stops below that header too.
+- In the command palette, a command whose name begins with what you typed comes first: "go to" picks **Go to View…**,
+  not an issue that merely has those letters in order. Issues the view on screen leaves out, such as ones its filter
+  hides, the roadmap's issues or those on another board, are found as well, after the ones on screen.
+- In the Inbox on the Mac, with one notification picked (`X`) and another on screen, every key acts on the one on
+  screen, as its buttons and `S` `P` `A` `L` `I` do. Until now `E`, `U` and `⇧S` acted on the picked one.
+- In the Inbox, `⇧⌫` (archive everything read) no longer marks the notification that would move into the selection as
+  read.
+- On the Mac, ⌘- or Shift-clicking a sub-issue of the issue beside the Inbox opens it. Until now it was marked as
+  picked, with nothing to act on it and no way to let it go.
+- On an issue opened full size from the Inbox, `↑` `↓` go on to the next or previous notification, as `J` `K` do. On
+  an issue the board or list behind it doesn't show, such as one opened from the command palette, the arrow keys are
+  no longer swallowed.
+- On the Mac, choosing a board in another repository for a new issue drops the labels picked for the first one. GitHub
+  refused the issue with them, and it was lost.
+- In All Issues on the Mac, the plus of a column puts a new issue on that board, also when one left on no board last
+  time comes back.
+- On iPhone and iPad, a new issue begun on Home, in the Inbox or in My Issues no longer takes labels, people, an
+  iteration or a parent from the filter of the first project's view.
+- On iPhone and iPad, a new issue begun in My Issues stays assigned to you when you choose another project for it, so
+  it shows up there.
+- On iPhone and iPad, the plus of a list's **No status** section makes an issue without a status, as that column on
+  the board does.
+- Filters with an apostrophe in a value, such as the status "Won't do", match. Until now such a view showed what it
+  should hide.
+- In the filter menu, **Updated** and **Due date** take one value, so picking another replaces it. **No assignee**,
+  **Has date** and the like are ticked when they are set, and picking them again takes them away instead of adding
+  them a second time.
+- Choosing Status again under Group by or Columns in Display no longer counts as a change of yours, with its dot and
+  Reset.
+- **Complete** on a milestone leaves issues that are closed on GitHub where they are, even when their column still
+  says In Progress, and closed issues no longer get due reminders.
+- Messages about an issue, such as a parent finished with its last sub-issue, an epic started, or a new issue the view
+  doesn't show, have an **Open** button and go away by themselves, on Mac, iPhone and iPad. Until now they stayed
+  until closed, without a way to open the issue, and piled up.
+- Back and Forward bring a roadmap view back as its timeline, not as a list.
+- On a roadmap view's timeline on the Mac, `⌘2` and `G` `L` show the list. Until now they did nothing.
+- On the roadmap, grabbing a milestone's diamond and letting go where it was keeps its date. Until now it moved a day
+  later.
+- On the Mac, `⌘↵` in an issue's title, or anywhere on its page but the comment field, no longer posts a comment you
+  had begun.
+- On the Mac, `⌘S` no longer saves a view's changed filter for everyone while an issue or the new-issue window is in
+  front of it.
+- The command palette no longer offers **Filter…** and **Display Options** while an issue is open, where they did
+  nothing.
+- **Copy Branch Name** is offered for issues only, not for pull requests, which have a branch of their own.
+- With every card taken out of My Issues on the Mac, **Bring Back All Cards** puts them back. Until now it said
+  "Nothing assigned to you", with no way back.
+- Signing in on the Mac: **Cancel** on the code for GitHub lets you sign in another way at once. Until now every
+  button stayed grey until the code expired, a quarter of an hour later.
+- What you type on the page of an issue you just made keeps being saved when GitHub gives the issue its own number a
+  moment later.
+- On the Mac, a picker opened on an issue you just made, such as with `S` right after creating it, no longer goes
+  blank when GitHub gives the issue its own number.
+- On iPhone and iPad, an issue you made stays among the issues you opened last once GitHub has created it.
+- On iPhone and iPad, pull down on a board or an issue to sync now, as on the lists; an issue also fetches its
+  comments.
+- On iPad, choosing another view of the same project in the sidebar opens that view, not the issue that was open in
+  the one before.
+- On iPhone, a notification whose issue is still being read opens in the app once it is, instead of on github.com.
+- On iPhone and iPad, the milestone and New View sheets don't close with a swipe while they hold what you typed;
+  Cancel still does.
+- In the Inbox, closing, reopening or renaming an issue that is on none of your boards shows at once, in its row and
+  on its page. Until now the Inbox kept saying it was open, offered to close it again, and kept the old title.
+- On the Mac, the plus of an epic's **No milestone** group makes a sub-issue in no milestone, also when the epic was
+  opened from a milestone. Until now it went into that milestone.
 
 ## [1.1.0] - 2026-10-28
 

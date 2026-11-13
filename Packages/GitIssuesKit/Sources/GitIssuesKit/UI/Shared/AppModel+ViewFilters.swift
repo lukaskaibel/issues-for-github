@@ -352,20 +352,44 @@ extension AppModel {
         }
     }
 
-    /// The values of a term after picking `value` in its menu: added, or taken away when it was there.
-    func toggling(_ value: FilterValue, in filter: ProjectFilter, termIndex: Int?) -> ProjectFilter {
+    /// The values of a term after picking `value` in its menu: added, or taken away when it was there. A property
+    /// that takes one value, such as Updated or Due date, has it replaced instead.
+    func toggling(_ value: FilterValue, in filter: ProjectFilter, termIndex: Int?, takesSeveral: Bool = true) -> ProjectFilter {
+        Self.toggling(value, in: filter, termIndex: termIndex, takesSeveral: takesSeveral)
+    }
+
+    nonisolated static func toggling(_ value: FilterValue, in filter: ProjectFilter, termIndex: Int?, takesSeveral: Bool = true) -> ProjectFilter {
+        // "No assignee" or "Has date" is in a term of its own, `no:` or `has:`, not in the property's: picked again,
+        // it goes, rather than being written a second time.
+        if let presence = presenceTerm(of: value, in: filter) {
+            let term = filter.terms[presence]
+            let remaining = term.values.filter { $0.caseInsensitiveCompare(value.value) != .orderedSame }
+            return remaining.isEmpty ? filter.removing(presence) : filter.replacing(presence, with: term.changed { $0.values = remaining })
+        }
         if let index = termIndex, filter.terms.indices.contains(index) {
             let term = filter.terms[index]
             if term.values.contains(where: { $0.caseInsensitiveCompare(value.value) == .orderedSame }) {
                 let remaining = term.values.filter { $0.caseInsensitiveCompare(value.value) != .orderedSame }
                 return remaining.isEmpty ? filter.removing(index) : filter.replacing(index, with: term.changed { $0.values = remaining })
             }
-            if term.key == value.key, ProjectFilter.takesSeveral(value.key) {
+            if term.key == value.key, takesSeveral, ProjectFilter.takesSeveral(value.key) {
                 return filter.replacing(index, with: term.changed { $0.values.append(value.value) })
             }
             return filter.replacing(index, with: ProjectFilter.Term(negated: term.negated, key: value.key, values: [value.value]))
         }
         return filter.adding(key: value.key, value: value.value)
+    }
+
+    /// The `no:` or `has:` term that asks for `value`, such as `no:assignee` for "No assignee".
+    func presenceTerm(of value: FilterValue, in filter: ProjectFilter) -> Int? {
+        Self.presenceTerm(of: value, in: filter)
+    }
+
+    nonisolated static func presenceTerm(of value: FilterValue, in filter: ProjectFilter) -> Int? {
+        guard value.key == "no" || value.key == "has" else { return nil }
+        return filter.terms.firstIndex { term in
+            !term.negated && term.key == value.key && term.values.contains { $0.caseInsensitiveCompare(value.value) == .orderedSame }
+        }
     }
 
     /// The term of a filter that a property's values go into: the first that isn't turned around.
@@ -438,6 +462,10 @@ extension AppModel {
 
     /// "Oct 12 – 18".
     func iterationRange(_ iteration: IterationSpan) -> String? {
+        Self.iterationRange(iteration)
+    }
+
+    static func iterationRange(_ iteration: IterationSpan) -> String? {
         guard let start = iteration.start, let end = iteration.end else { return nil }
         let first = start.date().formatted(.dateTime.day().month(.abbreviated))
         let last = start.month == end.month ? end.date().formatted(.dateTime.day()) : end.date().formatted(.dateTime.day().month(.abbreviated))

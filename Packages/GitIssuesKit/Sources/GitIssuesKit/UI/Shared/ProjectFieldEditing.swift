@@ -21,19 +21,43 @@ enum ProjectFieldEditing {
 }
 
 extension AppModel {
-    func projectFieldChoices(field: ProjectField, value: FieldValue?) -> [PickerItem] {
+    func projectFieldChoices(field: ProjectField, value: FieldValue?, today: CalendarDay = .today()) -> [PickerItem] {
         let clear = PickerItem(id: "", title: String(localized: .projectFieldClear), selected: value == nil,
                                icon: AnyView(Image(systemName: "minus").foregroundStyle(Theme.textTertiary)))
         if field.kind == .iteration {
-            return [clear] + field.orderedIterations.map { iteration in
-                PickerItem(id: iteration.id, title: iteration.title, subtitle: iterationRange(iteration),
-                           selected: value?.iterationId == iteration.id, icon: AnyView(IterationIcon(size: 13)))
+            return Self.iterationItems(field: field, current: [value?.iterationId], today: today)
+        }
+        if field.id == currentStatusFieldId(projectId: field.projectId) {
+            return [clear] + statusOptions(projectId: field.projectId).map { option in
+                PickerItem(id: option.id, title: option.name, subtitle: option.descr.isEmpty ? nil : option.descr,
+                           selected: value?.optionId == option.id,
+                           icon: AnyView(StatusIcon(glyph: glyph(projectId: field.projectId, optionId: option.id))),
+                           status: canCreateStatus(projectId: field.projectId) ? option : nil)
             }
         }
         return [clear] + field.options.map { option in
             PickerItem(id: option.id, title: option.name, subtitle: option.descr.isEmpty ? nil : option.descr,
                        selected: value?.optionId == option.id || value?.optionIds?.contains(option.id) == true,
                        icon: AnyView(Circle().fill(Theme.optionColor(option.color) ?? Theme.textTertiary).frame(width: 9, height: 9)))
+        }
+    }
+
+    /// A project group's status picker changes its own card, regardless of what the board has selected.
+    func newProjectStatusRow(_ query: String, target: ProjectFieldTarget) -> PickerItem? {
+        guard let item = item(targetedBy: target), let project = project(of: item), !project.closed,
+              target.fieldId == project.statusFieldId else { return nil }
+        return newStatusRow(query, projectId: project.id)
+    }
+
+    func pickProjectField(_ id: String, target: ProjectFieldTarget) {
+        guard let item = item(targetedBy: target), let field = field(id: target.fieldId),
+              field.projectId == item.projectId, let project = project(of: item), !project.closed,
+              project.viewerCanUpdate, !projectEdits.isSaving(target, in: db, remaps: status.idRemaps) else { return }
+        if field.id == project.statusFieldId, let name = Self.newStatusName(id) {
+            createStatus(named: name, projectId: project.id, for: [item])
+        } else {
+            let value = IssueProjectSection(project: project, item: item, fields: []).value(of: field)
+            saveProjectField(target, value: ProjectFieldEditing.picked(id, field: field, current: value))
         }
     }
 
