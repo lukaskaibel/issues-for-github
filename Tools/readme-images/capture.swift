@@ -6,11 +6,23 @@ import ScreenCaptureKit
 // whatever lies in front of or behind them, cropped to the largest window.
 //   capture shot <pid> <out.png>
 //   capture rec <pid> <out.mov> <seconds>
+//   capture park
 // A shot of a window drawn inactive, with grey traffic lights, is still written but exits with 3, so the caller can
 // bring the app to the front again and take it once more.
 let args = CommandLine.arguments
+// park: the pointer to the right edge of the main screen, beside the window at its top left. SwiftUI lights up a view
+// that appears under a resting pointer even in a window that lets the pointer through, as a column's + button, a
+// row of the palette or of the Inbox; parked there, it rests on nothing of the app.
+if args.count == 2, args[1] == "park" {
+    let screen = CGDisplayBounds(CGMainDisplayID())
+    let point = CGPoint(x: screen.maxX - 40, y: screen.midY)
+    CGWarpMouseCursorPosition(point)
+    // A move as well, so what lit up under the pointer where it was goes out again.
+    CGEvent(mouseEventSource: nil, mouseType: .mouseMoved, mouseCursorPosition: point, mouseButton: .left)?.post(tap: .cghidEventTap)
+    exit(0)
+}
 guard args.count >= 4, let pid = pid_t(args[2]) else {
-    print("usage: capture shot <pid> <out.png> | capture rec <pid> <out.mov> <seconds>")
+    print("usage: capture shot <pid> <out.png> | capture rec <pid> <out.mov> <seconds> | capture park")
     exit(2)
 }
 let mode = args[1]

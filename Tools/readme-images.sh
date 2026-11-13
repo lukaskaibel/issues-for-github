@@ -3,9 +3,10 @@
 # as Design/screenshots/*.webp and Design/social-preview.png, and makes the website's pictures (Website/images).
 #   Tools/readme-images.sh
 # The Mac app runs on the sample data, so no GitHub account is needed and nothing is sent anywhere. It comes to the
-# front for about a minute; leave keyboard and mouse alone until the script is done. Needs an unlocked screen, a Retina
-# display, Screen Recording permission for the terminal, Python 3 with Pillow and NumPy, ffmpeg and img2webp
-# (brew install ffmpeg webp). Run Tools/app-store-screenshots.sh first when the iPhone or iPad app looks different.
+# front for about a minute and the pointer goes to the right edge of the screen, beside its window; leave keyboard and
+# mouse alone until the script is done. Needs an unlocked screen, a Retina display, Screen Recording permission for
+# the terminal, Python 3 with Pillow and NumPy, ffmpeg and img2webp (brew install ffmpeg webp). Run
+# Tools/app-store-screenshots.sh first when the iPhone or iPad app looks different.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -58,6 +59,30 @@ trap finish EXIT
 # say <command>…: drives the app through its debug remote (UI/Mac/DebugRemote.swift).
 say() { for line in "$@"; do echo "$line" >> "$work/cmd"; done; }
 
+# spot <number> <across> <down>: a point in an issue's card on the board, in board points, as fractions of its width
+# and of the way down to the card under it, from where the debug remote says the cards are.
+spot() {
+  say dump; sleep 0.6
+  python3 - "$work/cmd.log" "#$1" "$2" "$3" <<'PY'
+import re, sys
+log, number, across, down = sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4])
+for line in reversed(open(log).read().splitlines()):
+    found = re.search(r"column .* frame=\(([-\d.]+), [-\d.]+, ([-\d.]+), [-\d.]+\) cards=(.*)", line)
+    if not found or f" {number}:" not in f" {found[3]}":
+        continue
+    tops = {n: tuple(map(int, p.split(","))) for n, p in (card.split(":") for card in found[3].split())}
+    x, y = tops[number]
+    below = min((top for _, top in tops.values() if top > y), default=y + 100)
+    # Sub-issues are indented on the left only: every card ends as far from the column's right edge as the outermost
+    # one starts from its left edge.
+    left, column = float(found[1]), float(found[2])
+    width = left + column - (min(p[0] for p in tops.values()) - left) - x
+    print(round(x + width * across), round(y + (below - y) * down))
+    sys.exit()
+sys.exit(f"No card {number} on the board.")
+PY
+}
+
 front_pid() { lsappinfo info -only pid "$(lsappinfo front)" | sed -nE 's/.*pid ?= ?([0-9]+).*/\1/p'; }
 
 forward() {
@@ -87,6 +112,8 @@ shot() {
 launch() {
   : > "$work/cmd"
   rm -f "$work/cmd.log"
+  # The pointer out of the way first: what appears under it lights up, even though the window lets it through.
+  "$work/capture" park
   open -n -g "$app" --args -demo.active YES -screenshotMode YES -viewMode board -timeline.scale 5 -appearance "$1" \
     -AppleLanguages '(en)' -AppleLocale en_US -debugCommandFile "$PWD/$work/cmd" "-NSWindow Frame main" "160 80 1280 820 0 0 1512 949"
   for _ in $(seq 40); do
@@ -117,18 +144,29 @@ for theme in dark light; do
   # Switching views lays the board out afresh, so the debug remote knows where every card is.
   say "mode list"; sleep 0.8; say "mode board" "focus"; sleep 1.5
 
-  # A drag first: after a cancelled drag the debug remote can't start another until the app restarts.
+  # A drag first, recorded: #9 and its two sub-issues to the end of In Review, then Esc. It goes below the cards there:
+  # on its way up to a place between two of them it would cross the middle of one, which lights up to take it as its
+  # sub-issue.
   rm -f "$raw/drag-$theme.mov"
   "$work/capture" rec "$pid" "$raw/drag-$theme.mov" 4.6 > "$work/rec.log" &
   recorder=$!
   for _ in $(seq 40); do grep -q recording "$work/rec.log" 2>/dev/null && break; sleep 0.1; done
   sleep 0.8
-  say "drag 9 1 hold In Review"; sleep 1.8
+  say "drag 9 3 hold In Review"; sleep 1.8
   say "canceldrag"
   wait $recorder
   sleep 0.8
+  # A cancelled drag ends for good only when the pointer lets go; until then no other drag starts.
+  say "drop"; sleep 0.3
 
   shot "board-$theme"
+  # A card held over the middle of another one goes under it when dropped: #24 lifted in Todo, then held low in #9 and
+  # near its right edge, so #9's number and title show beside it.
+  at=$(spot 9 0.95 0.68)
+  say "drag 24 0 hold Todo"; sleep 1
+  say "dragto $at"; sleep 1.2
+  shot "nest-$theme"
+  say "canceldrag"; sleep 0.8; say "drop"; sleep 0.5
   # The issue with its properties in the inspector beside it, whether or not the inspector was last left open.
   say "inspector on" "open 9"; sleep 1.5; shot "issue-$theme"
   # Issue #16's description, drawn as on GitHub, with the caret in "bold": its stars show beside it, faintly.

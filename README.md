@@ -72,14 +72,22 @@ an assignee or a label opens its picker right where you clicked, ready to type i
 The board is quiet: white cards on grey, without borders or lanes, labels as a dot and a name, and colour only where
 something needs you, such as a date that's due, an urgent issue or a blocker. Drag a card and it lifts off the board,
 tilts with the motion and settles with a spring, while its neighbours make room. Press Esc mid-drag and it goes back
-to where it came from. Pick several cards with ⌘-click and drag one of them, and they all go, together. Hold a card
-over the middle of another one and that issue lights up while the card says "Sub-issue of #9": let go, and it becomes
-that issue's sub-issue, keeping its own status. Near a card's top or bottom edge it goes in between, as before. The
-move shows in the same frame and reaches GitHub in the background.
+to where it came from. Pick several cards with ⌘-click and drag one of them, and they all go, together. The move
+shows in the same frame and reaches GitHub in the background.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/drag-dark.webp">
-  <img alt="A card is dragged from In Progress to In Review, taking the two sub-issues under it along; the cards there make room, and Esc sends it back" src="Design/screenshots/drag-light.webp">
+  <img alt="A card is dragged from In Progress to the end of In Review, taking the two sub-issues under it along, and Esc sends it back" src="Design/screenshots/drag-light.webp">
+</picture>
+
+Hold a card over the middle of another one and that issue lights up while the card says "Sub-issue of #9": let go,
+and it becomes that issue's sub-issue, keeping its own status. Near a card's top or bottom edge it goes in between,
+as before. Rows of a list and issues in My Issues go under another issue the same way, and so do cards on the
+iPhone and iPad boards.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/nest-dark.webp">
+  <img alt="Issue #24 lifted out of Todo and held over the middle of #9 in In Progress: #9 is outlined and tinted, and the lifted card, a little smaller, says Sub-issue of #9" src="Design/screenshots/nest-light.webp">
 </picture>
 
 A sub-issue with the same status as its parent hangs right under it, indented, so a parent and the sub-issues you
@@ -193,7 +201,7 @@ labels, `D` due date, `I` assign to me.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/new-issue-dark.webp">
-  <img alt="The new-issue dialog with a title typed in and buttons for status, priority, assignee, labels, due date and milestone" src="Design/screenshots/new-issue-light.webp">
+  <img alt="The new-issue dialog with a title typed in and buttons for status, priority, assignee, labels, due date, milestone and iteration" src="Design/screenshots/new-issue-light.webp">
 </picture>
 
 ### A list, in light or dark
