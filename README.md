@@ -77,7 +77,7 @@ shows in the same frame and reaches GitHub in the background.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/drag-dark.webp">
-  <img alt="A card is dragged from In Progress to In Review, taking the two sub-issues under it along; the cards there make room, and Esc sends it back" src="Design/screenshots/drag-light.webp">
+  <img alt="A card is dragged from In Progress to the end of In Review, taking the two sub-issues under it along, and Esc sends it back" src="Design/screenshots/drag-light.webp">
 </picture>
 
 Hold a card over the middle of another one and that issue lights up while the card says "Sub-issue of #9": let go,

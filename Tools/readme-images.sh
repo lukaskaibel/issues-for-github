@@ -144,13 +144,15 @@ for theme in dark light; do
   # Switching views lays the board out afresh, so the debug remote knows where every card is.
   say "mode list"; sleep 0.8; say "mode board" "focus"; sleep 1.5
 
-  # A drag first: after a cancelled drag the debug remote can't start another until the app restarts.
+  # A drag first, recorded: #9 and its two sub-issues to the end of In Review, then Esc. It goes below the cards there:
+  # on its way up to a place between two of them it would cross the middle of one, which lights up to take it as its
+  # sub-issue.
   rm -f "$raw/drag-$theme.mov"
   "$work/capture" rec "$pid" "$raw/drag-$theme.mov" 4.6 > "$work/rec.log" &
   recorder=$!
   for _ in $(seq 40); do grep -q recording "$work/rec.log" 2>/dev/null && break; sleep 0.1; done
   sleep 0.8
-  say "drag 9 1 hold In Review"; sleep 1.8
+  say "drag 9 3 hold In Review"; sleep 1.8
   say "canceldrag"
   wait $recorder
   sleep 0.8
