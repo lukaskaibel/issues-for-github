@@ -8,6 +8,8 @@ struct PickerSheet: View {
     var title: LocalizedStringResource
     var prompt: LocalizedStringResource
     var multiple: Bool
+    /// GitHub field names are user data, not localization keys.
+    var fieldName: String? = nil
     /// Opened with a key on an iPad keyboard: typing goes straight to the search, and Return picks the first match.
     var focusesSearch = false
     var items: () -> [PickerItem]
@@ -16,6 +18,8 @@ struct PickerSheet: View {
     /// What is typed into the search, for a row such as New Milestone… to start with.
     var onQueryChange: ((String) -> Void)? = nil
     var onPick: (String) -> Void
+    var isEnabled: (PickerItem) -> Bool = { _ in true }
+    var detents: Set<PresentationDetent> = [.medium, .large]
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
     @State private var picked = 0
@@ -50,7 +54,7 @@ struct PickerSheet: View {
                     }
                 }
             }
-            .searchable(text: $query, isPresented: $searching, placement: .navigationBarDrawer(displayMode: .always), prompt: Text(prompt))
+            .searchable(text: $query, isPresented: $searching, placement: .navigationBarDrawer(displayMode: .always), prompt: fieldName.map { Text(verbatim: $0) } ?? Text(prompt))
             .onChange(of: query) { _, typed in onQueryChange?(typed) }
             .onSubmit(of: .search) {
                 // Return picks the first match of what was typed. With nothing typed it makes the recent choice at the
@@ -66,7 +70,7 @@ struct PickerSheet: View {
             }
             .onAppear { if focusesSearch { searching = true } }
             .searchPresentationToolbarBehavior(.avoidHidingContent)
-            .navigationTitle(title)
+            .navigationTitle(fieldName.map { Text(verbatim: $0) } ?? Text(title))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -75,7 +79,7 @@ struct PickerSheet: View {
             }
         }
         .sensoryFeedback(.selection, trigger: picked)
-        .presentationDetents([.medium, .large])
+        .presentationDetents(detents)
         .presentationDragIndicator(.visible)
     }
 
@@ -100,7 +104,7 @@ struct PickerSheet: View {
                     Image(systemName: item.selected ? "checkmark.circle.fill" : "circle")
                         .font(.title3)
                         .foregroundStyle(item.selected ? Theme.accent : Theme.textTertiary)
-                        .frame(width: 28, height: 36)
+                        .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.borderless)
@@ -124,6 +128,7 @@ struct PickerSheet: View {
                             Text(subtitle).font(.footnote).foregroundStyle(Theme.textSecondary)
                         }
                     }
+                    .multilineTextAlignment(.leading)
                     Spacer(minLength: 8)
                     if let trailing = item.trailing { trailing }
                     if item.selected, !multiple {
@@ -138,9 +143,11 @@ struct PickerSheet: View {
             .accessibilityAddTraits(item.selected ? .isSelected : [])
         }
         .modifier(StatusRowMenu(option: item.status))
+        .disabled(!isEnabled(item))
     }
 
     private func pick(_ item: PickerItem, keepOpen: Bool) {
+        guard isEnabled(item) else { return }
         if keepOpen, held == nil {
             held = Dictionary(rows.enumerated().map { ($1.id, (place: $0, recent: $1.recent)) }) { first, _ in first }
         }

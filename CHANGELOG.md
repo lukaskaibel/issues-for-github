@@ -8,6 +8,19 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Issue details show every synced open project the issue belongs to, with each project's editable fields:
+  status, priority, version and other single or multiple-choice selections, dates, iterations, text and numbers.
+  Empty fields appear too.
+  Click a value to change or clear it; changes use the offline sync queue and keep each project's values separate.
+  Closed projects stay out of the issue sidebar. **+ Add to project**, below the current projects, opens a picker
+  to add or remove memberships; the × beside a project removes just that membership, keeping the issue and its
+  other projects intact, also when working offline. On a wide iPad window these groups appear in the inspector;
+  on iPhone and narrow iPad windows, tap **Projects** for the same fields and memberships in a sheet, with native
+  selection, date, text and number editors. Removing the current or last project keeps the issue open.
+  Click or tap a project's name to collapse or expand its fields with animation; project changes and the accordion
+  respect Reduce Motion. The project selector opens at full height on iPad, and Inbox-only issues can join projects.
+  Membership and field changes save asynchronously without waiting on the UI thread, with animated project
+  sections and a progress indicator while a local save is pending.
 - **Make a status where you pick one.** Type a name the board has no status of into any status picker, on the
   Mac (the dropdown, `S`, the right-click menu, `⌘K` and the new issue) or on iPhone and iPad (the Status sheet, and
   **New Status…** when you touch and hold an issue), and **Create status “…”** makes it in the project's Status field
@@ -101,6 +114,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Fixed a crash on the Mac when switching boards while a column is adding row views.
 - **Return in a picker opened over the pointer picks what is lit.** A picker that opened under a pointer at rest, such
   as **Set Parent Issue…** from the command palette, lit the row under the pointer instead of the recent choice, so
   `Return` could take an issue out of its parent instead of moving it to the one chosen last. Rows now light under the

@@ -116,7 +116,11 @@ struct MobileRoot: View {
         }
         .onChange(of: model.status.idRemaps) { _, remaps in
             model.follow(remaps: remaps)
-            navigation.follow(remaps: remaps)
+            navigation.follow(remaps: IssueReference.observedRemaps(remaps, in: model.allItems))
+        }
+        .onChange(of: model.allItems) { previous, items in
+            // Each iPad window follows the issue independently when one of its project cards disappears.
+            navigation.follow(remaps: IssueReference.replacements(from: previous, to: items, projects: model.projects, remaps: model.status.idRemaps))
         }
         .onChange(of: model.milestoneMove) { _, move in
             guard let move else { return }

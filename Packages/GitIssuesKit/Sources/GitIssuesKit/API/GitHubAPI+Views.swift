@@ -68,6 +68,36 @@ extension GitHubAPI {
         let _: Ack = try await client.run(query, variables: ["p": projectId, "i": itemId, "f": fieldId, "v": iterationId])
     }
 
+    public func setTextValue(projectId: String, itemId: String, fieldId: String, text: String) async throws {
+        struct Ack: Decodable {}
+        let query = """
+        mutation($p: ID!, $i: ID!, $f: ID!, $v: String!) {
+          updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: {text: $v}}) { clientMutationId }
+        }
+        """
+        let _: Ack = try await client.run(query, variables: ["p": projectId, "i": itemId, "f": fieldId, "v": text])
+    }
+
+    public func setNumberValue(projectId: String, itemId: String, fieldId: String, number: Double) async throws {
+        struct Ack: Decodable {}
+        let query = """
+        mutation($p: ID!, $i: ID!, $f: ID!, $v: Float!) {
+          updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: {number: $v}}) { clientMutationId }
+        }
+        """
+        let _: Ack = try await client.run(query, variables: ["p": projectId, "i": itemId, "f": fieldId, "v": number])
+    }
+
+    public func setMultiSelectValue(projectId: String, itemId: String, fieldId: String, optionIds: [String]) async throws {
+        struct Ack: Decodable {}
+        let query = """
+        mutation($p: ID!, $i: ID!, $f: ID!, $v: [String!]!) {
+          updateProjectV2ItemFieldValue(input: {projectId: $p, itemId: $i, fieldId: $f, value: {multiSelectOptionIds: $v}}) { clientMutationId }
+        }
+        """
+        let _: Ack = try await client.run(query, variables: ["p": projectId, "i": itemId, "f": fieldId, "v": optionIds])
+    }
+
     /// What to change about a view; nil leaves a part as it is. Grouping, columns and order can't be changed once a
     /// view exists: GitHub's API takes them only when it is created.
     public struct ViewChange: Sendable, Equatable {
