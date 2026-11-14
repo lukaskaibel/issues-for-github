@@ -19,19 +19,20 @@ All notable changes to this project are recorded here. The format follows
   the Statuses screen on iPhone and iPad have **Icon** too. GitHub has no icons, so yours are kept in iCloud; a status
   without one goes by its name, as before.
 - **Drop an issue onto another one to make it a sub-issue (Mac).** Drag a row of a list, a card of a board or an issue
-  in My Issues onto another issue, and it goes under that issue. Hold it over the middle of the issue: the issue lights
-  up, and on the board the card shrinks a little and says "Sub-issue of #9". Near the top or bottom edge of an issue,
-  or between issues, it still goes in front of or after it as before, and into another column or section. Picked
-  issues all go under it together. The dropped issue keeps its status and stays where it stands; a message says what
-  happened and takes it back with **Undo**. An issue can't go under itself or one of its own sub-issues, nor where
-  GitHub wouldn't take it: a pull request, a draft, a board you can only read, more than 100 sub-issues under one issue
-  or more than eight levels. On a board, dropping onto an epic's name makes the issue one of the epic's.
+  in My Issues onto another issue, and it goes under that issue. Hold it over the middle of the issue for a moment: the
+  issue lights up, and on the board the card shrinks a little and says "Sub-issue of #9". A card only passing over
+  issues on its way somewhere else lights none of them up. Near the top or bottom edge of an issue, or between issues,
+  it still goes in front of or after it as before, and into another column or section. Picked issues all go under it
+  together. The dropped issue keeps its status and stays where it stands; a message says what happened and takes it back
+  with **Undo**. An issue can't go under itself or one of its own sub-issues, nor where GitHub wouldn't take it: a pull
+  request, a draft, a board you can only read, more than 100 sub-issues under one issue or more than eight levels. On a
+  board, dropping onto an epic's name makes the issue one of the epic's.
 - **Drop a card onto another one to make it a sub-issue, on iPhone and iPad.** Touch and hold a card, drag it over the
-  middle of another card, and that card lights up with a tick; let go and the dragged issue becomes its sub-issue, with
-  a notice that can undo it. It works on every board: a view's, All Issues' and a milestone's. Only the parent changes:
-  the issue keeps its status, so one dropped onto an issue in another column goes back to its own. Over the top or
-  bottom edge of a card, or between cards, the card moves there as before. An issue never goes under itself or one of
-  its own sub-issues.
+  middle of another card and hold it there for a moment, and that card lights up with a tick; let go and the dragged
+  issue becomes its sub-issue, with a notice that can undo it. Cards it only passes over on its way stay as they are. It
+  works on every board: a view's, All Issues' and a milestone's. Only the parent changes: the issue keeps its status, so
+  one dropped onto an issue in another column goes back to its own. Over the top or bottom edge of a card, or between
+  cards, the card moves there as before. An issue never goes under itself or one of its own sub-issues.
 - **Put an issue into an iteration.** An issue's iteration is now one click or key away: the Iteration row on the
   issue's page, the iteration chip on a card or row (when the view shows it), the right-click menu, **Move to
   Iteration…** in the command palette, or `⇧C`, as in Linear. The picker lists the iteration under way and those to

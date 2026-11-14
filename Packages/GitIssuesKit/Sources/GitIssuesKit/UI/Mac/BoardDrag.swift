@@ -43,8 +43,8 @@ final class BoardDrag {
         /// Where it shows among the column's rows, epic headers included, not counting the dragged card.
         var row = 0
         /// The issue the lifted ones would go under instead, when held over the middle of its card or of its header as
-        /// an epic, and where that is on the board. The slot stays where it was meanwhile, so nothing moves under the
-        /// pointer.
+        /// an epic for a moment (`NestDwell`), and where that is on the board. The slot stays where it was meanwhile, so
+        /// nothing moves under the pointer.
         var nest: Nest?
     }
 
@@ -166,6 +166,11 @@ final class BoardDrag {
     @ObservationIgnored private var origin: Target?
     /// Whether the lifted issues can go under an issue, by its id, as worked out once per drag.
     @ObservationIgnored private var nestable: [String: Bool] = [:]
+    /// How long the pointer has rested over the middle of an issue, which lights up only after a moment.
+    @ObservationIgnored private var dwell = NestDwell()
+    /// The model of the drag going on, to look again once the pointer has rested over an issue long enough.
+    @ObservationIgnored private weak var model: AppModel?
+    @ObservationIgnored private var retargeting = false
     @ObservationIgnored private var ignoringGesture = false
     @ObservationIgnored private var timer: Timer?
 
@@ -296,6 +301,8 @@ final class BoardDrag {
         }
         target = origin
         nestable = [:]
+        dwell = NestDwell()
+        self.model = model
         active = Active(
             item: item, picked: picked, size: frame.size,
             grab: CGSize(width: point.x - frame.minX, height: point.y - frame.minY),
@@ -363,18 +370,34 @@ final class BoardDrag {
 
     // MARK: Where would it land?
 
-    /// Recomputes the landing spot from the card's centre. Called on pointer movement and after auto-scroll.
+    /// Recomputes the landing spot from the card's centre. Called on pointer movement, after auto-scroll, and once the
+    /// pointer has rested over the middle of an issue long enough for it to light up.
     func retarget(model: AppModel) {
-        guard let current = active, !current.settling else { return }
+        // Setting the target lets SwiftUI run the board's pending changes at once, auto-scroll among them, which would
+        // work it out again in the middle of working it out.
+        guard !retargeting, let current = active, !current.settling else { return }
+        retargeting = true
+        defer { retargeting = false }
+        #if DEBUG
+        let wasLit = target?.nest?.item
+        defer {
+            if target?.nest?.item.id != wasLit?.id {
+                DebugRemote.log(String(format: "nest %@ at %.3f", target?.nest?.item.displayNumber ?? "off", ProcessInfo.processInfo.systemUptime))
+            }
+        }
+        #endif
         let centre = CGPoint(
             x: current.location.x - current.grab.width + current.size.width / 2,
             y: current.location.y - current.grab.height + current.size.height / 2
         )
         let candidates = model.columns.compactMap { column in columnFrames[column.id].map { (column, $0) } }
         guard let (column, _) = candidates.min(by: { distance(centre.x, to: $0.1) < distance(centre.x, to: $1.1) }) else { return }
-        // The pointer in the middle of a card that can take the lifted issues as its sub-issues: they would go under it.
-        // Near its top or bottom edge they go in front of it or after it, as anywhere else.
-        if let nest = nestTarget(at: current.location, model: model), var next = target ?? origin {
+        // The pointer resting in the middle of a card that can take the lifted issues as its sub-issues: they would go
+        // under it. Passing over it, or near its top or bottom edge, they go in front of it or after it, as anywhere
+        // else, so that a card on its way somewhere else lights up nothing it passes.
+        let over = nestTarget(at: current.location, model: model)
+        let lit = dwell.update(over: over?.item.id, at: current.location, time: ProcessInfo.processInfo.systemUptime)
+        if let nest = over, lit == nest.item.id, var next = target ?? origin {
             next.nest = nest
             // In the issue's column the slot stays where it is, so nothing moves under the pointer; elsewhere it goes,
             // as nothing will land there.
@@ -403,6 +426,11 @@ final class BoardDrag {
             }
         }
         if !anyAbove { index = firstVisible ?? others.count }
+        // Over the middle of an issue that would light up after a moment, the slot goes beside it on the side where it
+        // is already, or after it: in front of it, the issue would move away from under the pointer before it lit up.
+        if let over, !over.isHeader, let held = others.firstIndex(where: { $0.id == over.item.id }) {
+            index = target?.columnId == column.id && (target?.index ?? 0) <= held ? held : held + 1
+        }
         // A sub-issue goes among its parent's sub-issues, any other card never between a parent and its sub-issues.
         // An epic's issues go together, among the epic's other issues where the column has some.
         let landing = if let group = current.group {
@@ -533,7 +561,14 @@ final class BoardDrag {
     private func startTimer() {
         timer?.invalidate()
         let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.tick &+= 1 }
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.tick &+= 1
+                // A pointer at rest sends no moves: the issue it rests over lights up from here.
+                if let due = self.dwell.due, ProcessInfo.processInfo.systemUptime >= due, let model = self.model {
+                    self.retarget(model: model)
+                }
+            }
         }
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
