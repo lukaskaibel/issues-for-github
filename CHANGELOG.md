@@ -116,6 +116,9 @@ All notable changes to this project are recorded here. The format follows
   row just out of view, which then showed it only once the pointer went over it. A part of a row lit under the
   pointer, such as its labels, no longer stays lit while the list scrolls under a resting pointer, nor moves on to
   other issues' rows.
+- Going back from an issue to a list on the Mac shows its rows as they should look. With the inspector beside the
+  issue, the rows kept part of their narrower picture until the pointer went over them: the repository and date stood
+  too far left, a trail of cut-off avatars ran across the row, and the line under a status's header came out dashed.
 - Dragging an issue in All Issues' list on the Mac no longer turns its row blank until you leave the list. The
   issue now moves as on All Issues' board: to another place or status, and one on no board onto the board with the
   status you drop it on. In My Issues, and in a project you can only read, a row lifts only where it can go under

@@ -1230,7 +1230,7 @@ final class HoverTableView: NSTableView {
 /// issues' status icons, where the line down to them starts, its name, how many of its issues are there, and the
 /// arrow that folds them away. A click opens the epic, one on the arrow folds its issues or shows them again, and
 /// dragging it moves them all.
-final class EpicHeaderRowCell: NSView {
+final class EpicHeaderRowCell: PaintedCell {
     private var group: Nesting.EpicGroup?
     /// What the header shows now.
     var shownGroup: Nesting.EpicGroup? { group }
@@ -1253,8 +1253,6 @@ final class EpicHeaderRowCell: NSView {
 
     override init(frame: NSRect) {
         super.init(frame: frame)
-        wantsLayer = true
-        layerContentsRedrawPolicy = .onSetNeedsDisplay
     }
 
     @available(*, unavailable)
@@ -1430,8 +1428,30 @@ final class PlainRowView: NSTableRowView {
 
 // MARK: - Cells
 
+/// A row of the list that paints itself in `draw(_:)`, into a layer of its own that is painted again only when it asks.
+/// When it gets wider, as the list does while the issue's inspector slides away on going back, AppKit would paint just
+/// the new strip on the right and keep the old picture beside it: what sits at the right edge stayed where it was, and
+/// each step of the slide left a sliver of the avatars behind, until the pointer went over the row. So a row painted at
+/// another size is painted all over again.
+class PaintedCell: NSView {
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        layerContentsRedrawPolicy = .onSetNeedsDisplay
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Not used") }
+
+    override func setFrameSize(_ newSize: NSSize) {
+        let resized = newSize != frame.size
+        super.setFrameSize(newSize)
+        if resized { needsDisplay = true }
+    }
+}
+
 /// One issue, drawn directly. Configuring and drawing a recycled cell takes a fraction of a millisecond.
-final class IssueRowCell: NSView, NSViewToolTipOwner {
+final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     weak var model: AppModel?
     /// What the row shows now.
     private(set) var row: IssueRowModel?
@@ -1497,8 +1517,6 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
     override init(frame: NSRect) {
         super.init(frame: frame)
-        wantsLayer = true
-        layerContentsRedrawPolicy = .onSetNeedsDisplay
     }
 
     @available(*, unavailable)
@@ -2117,7 +2135,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 }
 
 /// A status group's header: icon, name, count, and a button to add an issue with that status.
-final class IssueHeaderCell: NSView {
+final class IssueHeaderCell: PaintedCell {
     private var section: IssueSectionModel?
     /// What the header shows now.
     var shownSection: IssueSectionModel? { section }
@@ -2128,8 +2146,6 @@ final class IssueHeaderCell: NSView {
 
     override init(frame: NSRect) {
         super.init(frame: frame)
-        wantsLayer = true
-        layerContentsRedrawPolicy = .onSetNeedsDisplay
         addButton.isBordered = false
         addButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: String(localized: .newIssueAction))?
             .withSymbolConfiguration(.init(pointSize: 11, weight: .medium))
