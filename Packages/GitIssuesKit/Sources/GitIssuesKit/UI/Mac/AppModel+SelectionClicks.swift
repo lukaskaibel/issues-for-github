@@ -30,6 +30,12 @@ extension AppModel {
         if !isSelected(item.id) { clearSelection() }
     }
 
+    /// A plain click on a part of a sub-issue on an issue's page, as on a list's row: on a picked one the dropdown
+    /// changes every picked one, so they stay picked; on any other, they go.
+    func releaseSubIssuePicks(unlessPicked item: Item) {
+        if !pickedSubIssueIds.contains(item.id) { pickedSubIssueIds = [] }
+    }
+
     /// The same on a sub-issue on an issue's page, among `order`, the sub-issues as listed there. One that is on
     /// GitHub only can't be changed with the others, so the click does nothing to it.
     func handleSubIssueClick(on item: Item?, in order: [String]) -> Bool {

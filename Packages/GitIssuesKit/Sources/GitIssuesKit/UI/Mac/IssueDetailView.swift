@@ -259,7 +259,6 @@ struct SubIssuesSection: View {
     var body: some View {
         let detail = item.contentId.map { model.detail(for: $0) }
         let subs = model.orderedSubIssues(of: item)
-        let showsPriority = model.project(of: item)?.priorityFieldId != nil
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 10) {
                 Text(.subIssues).font(.sectionTitle)
@@ -294,9 +293,10 @@ struct SubIssuesSection: View {
                 let order = lines.compactMap { model.item(contentId: $0.sub.id)?.id }
                 VStack(spacing: 0) {
                     ForEach(lines) { line in
-                        SubIssueRow(line: line, showsPriority: showsPriority, order: order, block: order)
+                        SubIssueRow(line: line, order: order)
                     }
                 }
+                .issueRowsOnPage()
                 .animation(Theme.spring, value: lines.map(\.id))
             }
         }
@@ -322,213 +322,78 @@ private struct SubIssueOrderButton: View {
     }
 }
 
-/// A sub-issue in an issue's list of them. One with sub-issues of its own shows how far they are and an arrow that
-/// unfolds them under it, indented, with lines from it as in the board's lists. A click opens it; ⌘-click and
-/// Shift-click pick several, as in the list, and their right-click menu and pickers then change all of them, such as
-/// moving them under another parent.
+/// A sub-issue in an issue's list of them, as the lists show every issue (`IssueRowView`). One with sub-issues of its
+/// own has the arrow that unfolds them under it, indented, with lines from it as in the lists. A click opens it; the
+/// checkbox, ⌘-click and Shift-click pick several, and their pickers and right-click menu then change all of them,
+/// such as moving them under another parent.
 private struct SubIssueRow: View {
     @Environment(AppModel.self) private var model
     var line: SubIssueLine
-    var showsPriority: Bool
     /// The sub-issues as listed, unfolded ones included, for Shift-click to pick a run of them.
     var order: [String]
-    /// The sub-issues listed together with this one, under the same heading.
-    var block: [String]
-    @State private var hovering = false
-    @State private var menuRegion = UUID()
-
-    /// How much further in each level of sub-issues is: as far as the arrow takes the title, so a sub-issue's
-    /// status icon stands under its parent's arrow and their titles line up.
-    static let indent: CGFloat = 20
+    /// Whether the row names its milestone: not under its milestone's heading.
+    var showsMilestone = true
 
     private var sub: SubIssue { line.sub }
 
     var body: some View {
-        let boardItem = model.item(contentId: sub.id)
-        let picked = boardItem.map { model.pickedSubIssueIds.contains($0.id) } ?? false
-        // A checklist, as in Reminders: the status where the checkbox is, the title, then the rest on the right.
-        HStack(spacing: 10) {
-            HStack(spacing: 0) {
-                status(boardItem)
-                if line.progress != nil {
-                    foldArrow
+        let item = model.rowItem(for: sub)
+        IssueRowView(
+            row: row(item),
+            open: {
+                if !item.isStandIn {
+                    model.open(item)
+                } else if let url = sub.url.flatMap(URL.init(string:)) {
+                    NSWorkspace.shared.open(url)
                 }
-            }
-
-            Text(sub.title)
-                .font(.system(size: 14))
-                .foregroundStyle(sub.isClosed ? Theme.textSecondary : Theme.text)
-                .lineLimit(1)
-            // Right after the title, as in the list: what has to be done first, a click away on its card's picker.
-            if let blocker = model.blockerMark(for: sub) {
-                if let boardItem, model.canRelate(boardItem) {
-                    PartButton(kind: .blockedBy, itemId: boardItem.id, help: model.blockedText(for: sub)) {
-                        BlockerFlag(mark: blocker)
-                    }
-                } else {
-                    BlockerFlag(mark: blocker).help(model.blockedText(for: sub))
+            },
+            pick: { checkbox in
+                // One the app knows only from GitHub can't be changed with the others.
+                guard !item.isStandIn else { return model.handleSubIssueClick(on: nil, in: order) }
+                if checkbox {
+                    model.toggleSubIssuePick(item)
+                    return true
                 }
-            }
-            Spacer(minLength: 8)
-            if let progress = line.progress {
-                SubIssueChip(completed: progress.done, total: progress.total)
-                    .help(Text(.subIssuesDone(done: progress.done.formatted(), total: progress.total)))
-            }
-            if showsPriority, let boardItem {
-                PartButton(kind: .priority, itemId: boardItem.id) {
-                    PriorityIcon(level: model.priorityLevel(of: boardItem))
+                return model.handleSubIssueClick(on: item, in: order)
+            },
+            fold: { model.toggleSubIssues(of: sub.id) },
+            toggleClosed: { withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) } },
+            willOpenPart: { model.releaseSubIssuePicks(unlessPicked: item) },
+            menu: { [model, sub, item] in
+                // One the app has gets the same menu as its card; one known only from GitHub, its own.
+                if !item.isStandIn { return model.allItems.first { $0.id == item.id }.map { ItemMenuBuilder(model: model, item: $0).menu() } }
+                let menu = MenuBuilder()
+                menu.item(sub.isClosed ? .reopen : .markAsDone, sub.isClosed ? "arrow.uturn.backward" : "checkmark.circle") {
+                    withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
                 }
-                .frame(width: 14, height: 12)
-            }
-            (sub.number > 0 ? Text("#\(sub.number)") : Text(.unsentIssueNumber))
-                .font(.small)
-                .monospacedDigit()
-                .foregroundStyle(Theme.textTertiary)
-            if boardItem == nil, sub.url != nil {
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Theme.textTertiary)
-                    .help(Text(.subIssueOpensOnGitHub))
-            }
-            if let boardItem {
-                PartButton(kind: .assignees, itemId: boardItem.id) {
-                    if boardItem.assignees.isEmpty {
-                        Image(systemName: "person.crop.circle.dashed")
-                            .font(.system(size: 14))
-                            .foregroundStyle(Theme.textTertiary)
-                            .opacity(hovering ? 1 : 0)
-                    } else {
-                        AvatarStack(people: boardItem.assignees)
+                menu.item(.removeFromParentMenuItem, "arrow.uturn.left") { model.removeFromParent(sub) }
+                if let url = sub.url {
+                    menu.divider()
+                    menu.item(.copyLink, "link") { model.copyLink(url, for: "#\(sub.number) \(sub.title)") }
+                    menu.item(.openOnGitHub, "arrow.up.right.square") {
+                        if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
                     }
                 }
-            } else if !sub.assignees.isEmpty {
-                AvatarStack(people: sub.assignees)
+                return menu.build()
             }
-        }
-        .padding(.leading, 8 + indent)
-        .padding(.trailing, 8)
-        .frame(height: 38)
-        .background {
-            // Picked ones tinted, as picked notifications in the Inbox; picked neighbours join into one shape, as a
-            // selection does in Finder.
-            shape(picked: picked, of: boardItem).fill(picked ? Theme.selectionFill : hovering ? Theme.hover : .clear)
-            TreeLines(place: line.place, firstLine: 16, indent: Self.indent, iconRadius: 8, linesDown: line.childrenShow)
-        }
-        .overlay(alignment: .bottom) {
-            // A hairline from where the title starts, as between a checklist's lines.
-            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 34 + indent).opacity(hovering || picked ? 0 : 1)
-        }
-        .contentShape(Rectangle())
-        .accessibilityAddTraits(picked ? .isSelected : [])
-        .onHover { hovering = $0 }
+        )
         // Unfolded, its sub-issues are read again each time the list shows.
         .task(id: line.unfolded) {
             if line.unfolded { await model.loadSubIssues(of: sub) }
         }
-        .onTapGesture {
-            if model.handleSubIssueClick(on: boardItem, in: order) { return }
-            if let boardItem {
-                model.open(boardItem)
-            } else if let url = sub.url.flatMap(URL.init(string:)) {
-                NSWorkspace.shared.open(url)
-            }
-        }
-        .onGeometryChange(for: CGRect.self) { proxy in
-            proxy.frame(in: .global)
-        } action: { frame in
-            // A sub-issue on the board gets the same menu as its card.
-            if let id = model.item(contentId: sub.id)?.id {
-                ContextMenus.shared.register(menuRegion, frame: frame) { [model] _ in
-                    model.allItems.first { $0.id == id }.map { ItemMenuBuilder(model: model, item: $0).menu() }
-                }
-            }
-        }
-        .onDisappear { ContextMenus.shared.remove(menuRegion) }
-        // On no board, it has only its own menu; one on a board has its card's (registered above).
-        .glassContextMenu { [model, sub] in
-            guard model.item(contentId: sub.id) == nil else { return nil }
-            let menu = MenuBuilder()
-            menu.item(sub.isClosed ? .reopen : .markAsDone, sub.isClosed ? "arrow.uturn.backward" : "checkmark.circle") {
-                withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
-            }
-            menu.item(.removeFromParentMenuItem, "arrow.uturn.left") { model.removeFromParent(sub) }
-            if let url = sub.url {
-                menu.divider()
-                menu.item(.copyLink, "link") { model.copyLink(url, for: "#\(sub.number) \(sub.title)") }
-                menu.item(.openOnGitHub, "arrow.up.right.square") {
-                    if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
-                }
-            }
-            return menu.build()
-        }
     }
 
-    private var indent: CGFloat {
-        CGFloat(min(line.place.depth, 5)) * Self.indent
-    }
-
-    private func shape(picked: Bool, of boardItem: Item?) -> UnevenRoundedRectangle {
-        let index = picked ? boardItem.flatMap { block.firstIndex(of: $0.id) } : nil
-        let above = index.map { $0 > 0 && model.pickedSubIssueIds.contains(block[$0 - 1]) } ?? false
-        let below = index.map { $0 < block.count - 1 && model.pickedSubIssueIds.contains(block[$0 + 1]) } ?? false
-        return UnevenRoundedRectangle(
-            topLeadingRadius: above ? 0 : 8, bottomLeadingRadius: below ? 0 : 8,
-            bottomTrailingRadius: below ? 0 : 8, topTrailingRadius: above ? 0 : 8, style: .continuous
-        )
-    }
-
-    @ViewBuilder
-    private func status(_ boardItem: Item?) -> some View {
-        if let boardItem {
-            // On the board it has a status column; pick one, as on its card.
-            PartButton(kind: .status, itemId: boardItem.id) {
-                StatusIcon(glyph: glyph(boardItem), size: 16)
-            }
-        } else {
-            // Elsewhere it is only open or closed.
-            Button {
-                withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
-            } label: {
-                StatusIcon(glyph: glyph(boardItem), size: 16)
-            }
-            .buttonStyle(PlainPressStyle())
-            .help(sub.isClosed ? Text(.reopen) : Text(.markAsDoneTooltip))
-            .accessibilityLabel(sub.isClosed ? Text(.reopenSubIssue) : Text(.markSubIssueAsDone))
-        }
-    }
-
-    /// Right after the status icon, as in the board's lists; a spinner while its sub-issues are read the first time.
-    private var foldArrow: some View {
-        Button {
-            model.toggleSubIssues(of: sub.id)
-        } label: {
-            ZStack {
-                if line.waiting {
-                    ProgressView().controlSize(.mini)
-                } else {
-                    FoldArrow(unfolded: line.unfolded)
-                }
-            }
-            .frame(width: 16, height: 16)
-            .hoverFill(radius: 5, fill: Theme.partHover)
-        }
-        .buttonStyle(PlainPressStyle())
-        .padding(.leading, 4)
-        .help(foldLabel)
-        .accessibilityLabel(foldLabel)
-    }
-
-    private var foldLabel: Text {
-        line.unfolded ? Text(.foldSubIssuesTooltip) : Text(.unfoldSubIssuesTooltip(count: line.progress?.total ?? 0))
-    }
-
-    private func glyph(_ boardItem: Item?) -> StatusGlyph {
-        if let boardItem, boardItem.statusId != nil { return model.glyph(of: boardItem) }
-        if !sub.isClosed { return StatusGlyph(category: .unstarted, progress: 0, color: Theme.textBody) }
-        if sub.stateReason == "NOT_PLANNED" || sub.stateReason == "DUPLICATE" {
-            return StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary)
-        }
-        return StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
+    private func row(_ item: Item) -> IssueRowModel {
+        var row = item.isStandIn
+            ? model.issueRow(standingInFor: item, nest: line.place, nested: line.progress?.total, folded: !line.unfolded)
+            : model.issueRow(
+                item, selected: model.pickedSubIssueIds.contains(item.id), selecting: !model.pickedSubIssueIds.isEmpty,
+                nest: line.place, nested: line.progress?.total, folded: !line.unfolded,
+                milestone: showsMilestone ? model.milestoneTitle(of: item) : nil,
+                chips: model.fieldChips(of: item, in: item.projectId.map { .project($0) })
+            )
+        row.foldWaiting = line.waiting
+        return row
     }
 }
 
@@ -545,7 +410,6 @@ struct EpicWorkSection: View {
         let detail = item.contentId.map { model.detail(for: $0) }
         let subs = model.orderedSubIssues(of: item)
         let groups = model.subIssuesByMilestone(of: item, subs)
-        let showsPriority = model.project(of: item)?.priorityFieldId != nil
         let done = subs.filter { sub in model.issue(contentId: sub.id).map { model.isDone($0) } ?? sub.isClosed }.count
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
@@ -591,13 +455,14 @@ struct EpicWorkSection: View {
                 VStack(spacing: 0) {
                     ForEach(Array(groups.enumerated()), id: \.offset) { index, group in
                         EpicGroupHeader(item: item, group: group.group, title: group.title, count: group.subs.count)
-                        let groupLines = lines.indices.contains(index) ? lines[index] : []
-                        let block = groupLines.compactMap { model.item(contentId: $0.sub.id)?.id }
-                        ForEach(groupLines) { line in
-                            SubIssueRow(line: line, showsPriority: showsPriority, order: order, block: block)
+                            .outOfIssueRows()
+                        // Under its milestone's heading, a row doesn't name the milestone again.
+                        ForEach(lines.indices.contains(index) ? lines[index] : []) { line in
+                            SubIssueRow(line: line, order: order, showsMilestone: false)
                         }
                     }
                 }
+                .issueRowsOnPage()
                 .animation(Theme.spring, value: lines.map { $0.map(\.id) })
             }
         }
@@ -686,98 +551,66 @@ private struct RelationGroup: View {
                     LinkedIssueRow(item: item, link: link)
                 }
             }
+            .issueRowsOnPage()
             .animation(Theme.spring, value: links.map(\.key))
         }
     }
 }
 
+/// An issue the open one is blocked by or blocks, as the lists show every issue (`IssueRowView`), with a button at its
+/// end under the pointer that takes it off the list.
 private struct LinkedIssueRow: View {
     @Environment(AppModel.self) private var model
     var item: Item
     var link: LinkedIssue
-    @State private var hovering = false
-    @State private var menuRegion = UUID()
 
     var body: some View {
-        let boardItem = model.item(contentId: link.id)
-        // Laid out like a sub-issue row, so the two lists line up: status, title, then the rest on the right.
-        HStack(spacing: 10) {
-            if let boardItem {
-                PartButton(kind: .status, itemId: boardItem.id) {
-                    StatusIcon(glyph: model.glyph(of: boardItem), size: 16)
+        let linked = model.rowItem(for: link)
+        IssueRowView(
+            row: row(linked),
+            open: {
+                if !linked.isStandIn {
+                    model.open(linked)
+                } else if let url = link.url.flatMap(URL.init(string:)) {
+                    NSWorkspace.shared.open(url)
                 }
-            } else {
-                StatusIcon(glyph: .openOrClosed(link.state, reason: link.stateReason), size: 16)
-            }
-            Text(link.title)
-                .font(.system(size: 14))
-                .foregroundStyle(link.isClosed ? Theme.textSecondary : Theme.text)
-                .lineLimit(1)
-            Spacer(minLength: 8)
-            if model.project(of: item)?.priorityFieldId != nil, let boardItem, boardItem.projectId == item.projectId {
-                PartButton(kind: .priority, itemId: boardItem.id) {
-                    PriorityIcon(level: model.priorityLevel(of: boardItem))
+            },
+            remove: { model.removeLink(link, of: item) },
+            menu: { [model, link, item, linked] in
+                let menu = MenuBuilder()
+                menu.item(.removeRelationMenuItem, "xmark") { model.removeLink(link, of: item) }
+                if !linked.isStandIn, let current = model.allItems.first(where: { $0.id == linked.id }) {
+                    // One the app has gets its card's menu below.
+                    let card = ItemMenuBuilder(model: model, item: current).menu()
+                    menu.divider()
+                    for entry in card.items {
+                        card.removeItem(entry)
+                        menu.menu.addItem(entry)
+                    }
+                } else if let url = link.url {
+                    menu.divider()
+                    menu.item(.copyLink, "link") { model.copyLink(url, for: "\(link.displayNumber) \(link.title)") }
+                    menu.item(.openOnGitHub, "arrow.up.right.square") {
+                        if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
+                    }
                 }
-                .frame(width: 14, height: 12)
+                return menu.build()
             }
-            Text(link.displayNumber)
-                .font(.small)
-                .monospacedDigit()
-                .foregroundStyle(Theme.textTertiary)
-            if boardItem == nil, link.url != nil {
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Theme.textTertiary)
-                    .help(Text(.notOnYourBoardsOpensOnGitHub))
-            }
-            if let assignees = boardItem?.assignees, !assignees.isEmpty {
-                AvatarStack(people: assignees)
-            }
-            IconButton(systemName: "xmark", label: String(localized: .removeRelation), size: 20) {
-                model.removeLink(link, of: item)
-            }
-            .opacity(hovering ? 1 : 0)
-        }
-        .padding(.leading, 8)
-        .padding(.trailing, 4)
-        .frame(height: 38)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(hovering ? Theme.hover : .clear))
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 34).opacity(hovering ? 0 : 1)
-        }
-        .contentShape(Rectangle())
-        .onHover { hovering = $0 }
-        .onTapGesture {
-            if let boardItem {
-                model.open(boardItem)
-            } else if let url = link.url.flatMap(URL.init(string:)) {
-                NSWorkspace.shared.open(url)
-            }
-        }
-        .onGeometryChange(for: CGRect.self) { proxy in
-            proxy.frame(in: .global)
-        } action: { frame in
-            // An issue on a board gets the same menu as its card.
-            if let id = model.item(contentId: link.id)?.id {
-                ContextMenus.shared.register(menuRegion, frame: frame) { [model] _ in
-                    model.allItems.first { $0.id == id }.map { ItemMenuBuilder(model: model, item: $0).menu() }
-                }
-            }
-        }
-        .onDisappear { ContextMenus.shared.remove(menuRegion) }
-        .glassContextMenu { [model, link, item] in
-            guard model.item(contentId: link.id) == nil else { return nil }
-            let menu = MenuBuilder()
-            menu.item(.removeRelationMenuItem, "xmark") { model.removeLink(link, of: item) }
-            if let url = link.url {
-                menu.divider()
-                menu.item(.copyLink, "link") { model.copyLink(url, for: "\(link.displayNumber) \(link.title)") }
-                menu.item(.openOnGitHub, "arrow.up.right.square") {
-                    if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
-                }
-            }
-            return menu.build()
-        }
+        )
+    }
+
+    private func row(_ linked: Item) -> IssueRowModel {
+        var row = linked.isStandIn
+            ? model.issueRow(standingInFor: linked)
+            : model.issueRow(
+                linked, milestone: model.milestoneTitle(of: linked),
+                chips: model.fieldChips(of: linked, in: linked.projectId.map { .project($0) })
+            )
+        // Picking is for sub-issues; and the status of one known only from GitHub is changed on its own page there.
+        row.pickable = false
+        if linked.isStandIn { row.showsStatus = false }
+        row.removable = true
+        return row
     }
 }
 

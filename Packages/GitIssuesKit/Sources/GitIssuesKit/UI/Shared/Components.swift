@@ -209,14 +209,49 @@ struct Chip<Content: View>: View {
     }
 }
 
+/// A label, as every issue shows its labels: a dot in the label's colour and its name, as Reminders writes its tags,
+/// not a pill tinted with the colour, which turns a board or a list into a field of coloured blobs. An issue's labels
+/// light up together under the pointer, in one grey capsule around them all, as the one button to change them that
+/// they are. Cards and list rows paint them by these measures; `LabelChip` is the same as a view.
+enum LabelMark {
+    /// The dot, and the room between it and the name.
+    static let dot: CGFloat = 7
+    static let gap: CGFloat = 5
+    /// The room inside the capsule on either side, its height, and the room between labels.
+    static let inset: CGFloat = 7
+    static let height: CGFloat = 20
+    static let spacing: CGFloat = 6
+    /// How many of an issue's labels a card shows, and a row, before "+2" says how many more it has.
+    static let onCard = 2
+    static let inRow = 3
+
+    /// How wide a label is whose name is `name` wide.
+    static func width(name: CGFloat) -> CGFloat {
+        inset + dot + gap + name + inset
+    }
+}
+
+extension Item {
+    /// The labels its cards and rows show: an epic's own label says what its icon says already.
+    var shownLabels: [LabelRef] {
+        labels.filter { !(isEpic && Item.isEpicLabel($0.name)) }
+    }
+}
+
+/// A label as a view, as cards and rows paint it (`LabelMark`).
 struct LabelChip: View {
     var label: LabelRef
 
     var body: some View {
-        Chip {
-            Circle().fill(Theme.labelColor(label.color)).frame(width: 7, height: 7)
+        HStack(spacing: LabelMark.gap) {
+            Circle().fill(Theme.labelColor(label.color)).frame(width: LabelMark.dot, height: LabelMark.dot)
             Text(label.name)
         }
+        .font(.tiny)
+        .foregroundStyle(Theme.textSecondary)
+        .lineLimit(1)
+        .padding(.horizontal, LabelMark.inset)
+        .frame(height: LabelMark.height)
     }
 }
 

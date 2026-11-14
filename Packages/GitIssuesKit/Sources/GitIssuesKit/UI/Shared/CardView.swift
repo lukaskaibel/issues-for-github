@@ -576,35 +576,38 @@ private struct CardPainter {
         // Labels are measured first, so the highlight can sit behind all of them.
         var labelLayout: [(label: LabelRef, text: GraphicsContext.ResolvedText, rect: CGRect)] = []
         var labelX = start(x)
-        for label in item.labels.prefix(2) {
+        let labels = item.shownLabels
+        for label in labels.prefix(LabelMark.onCard) {
             let name = text(.label(label.name))
-            let width = name.width + 7 + 7 + 5 + 7
+            let width = LabelMark.width(name: name.width)
             guard labelX + width <= limit else { break }
-            labelLayout.append((label, name.text, CGRect(x: labelX, y: bottomY - 10, width: width, height: 20)))
-            labelX += width + 6
+            labelLayout.append((label, name.text, CGRect(x: labelX, y: bottomY - 10, width: width, height: LabelMark.height)))
+            labelX += width + LabelMark.spacing
+        }
+        // "+2" for the labels that don't fit, when it fits itself: part of the labels, which it opens too.
+        var moreLayout: (text: GraphicsContext.ResolvedText, rect: CGRect)?
+        if let last = labelLayout.last, labels.count > labelLayout.count {
+            let more = text(.moreLabels(labels.count - labelLayout.count))
+            let rect = CGRect(x: last.rect.maxX + LabelMark.spacing, y: bottomY - 10, width: LabelMark.inset + more.width + LabelMark.inset, height: LabelMark.height)
+            if rect.maxX <= limit { moreLayout = (more.text, rect) }
         }
         if item.kind != .draft, let first = labelLayout.first, let last = labelLayout.last {
-            let labels = first.rect.union(last.rect)
+            let labels = first.rect.union(moreLayout?.rect ?? last.rect)
             part(.labels, labels)
             chip(labels, hovered: hovered(.labels))
         }
         // A label is a dot in its colour and its name, as Reminders writes its tags, rather than a tinted pill: a
         // board of pills is a board of coloured blobs.
         for (label, name, rect) in labelLayout {
-            context.fill(Path(ellipseIn: CGRect(x: rect.minX + 7, y: bottomY - 3.5, width: 7, height: 7)), with: .color(ink(.label(hex: label.color))))
-            context.draw(name, at: CGPoint(x: rect.minX + 19, y: bottomY), anchor: .leading)
-            x = rect.maxX + 6
+            let dot = CGRect(x: rect.minX + LabelMark.inset, y: bottomY - LabelMark.dot / 2, width: LabelMark.dot, height: LabelMark.dot)
+            context.fill(Path(ellipseIn: dot), with: .color(ink(.label(hex: label.color))))
+            context.draw(name, at: CGPoint(x: dot.maxX + LabelMark.gap, y: bottomY), anchor: .leading)
+            x = rect.maxX + LabelMark.spacing
             shown += 1
         }
-        if item.labels.count > shown, shown > 0 {
-            let more = text(.moreLabels(item.labels.count - shown))
-            let width = more.width + 14
-            if x + width <= limit {
-                let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
-                chip(rect)
-                context.draw(more.text, at: CGPoint(x: rect.minX + 7, y: bottomY), anchor: .leading)
-                x = rect.maxX + 6
-            }
+        if let moreLayout, shown > 0 {
+            context.draw(moreLayout.text, at: CGPoint(x: moreLayout.rect.minX + LabelMark.inset, y: bottomY), anchor: .leading)
+            x = moreLayout.rect.maxX + LabelMark.spacing
         }
         if item.subTotal > 0 {
             let progress = text(.progress(done: item.subCompleted, of: item.subTotal))

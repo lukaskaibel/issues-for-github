@@ -2,7 +2,9 @@
 import AppKit
 import SwiftUI
 
-/// What one list row shows, gathered up front so drawing needs no lookups.
+/// What one row of issues shows, gathered up front so drawing needs no lookups. The same row stands for an issue
+/// wherever the Mac lists issues: a project's list, My Issues and All Issues, and on an issue's page its sub-issues
+/// and the issues it is blocked by or blocks (`IssueRowView`).
 struct IssueRowModel: Equatable {
     var item: Item
     var glyph: StatusGlyph
@@ -33,6 +35,51 @@ struct IssueRowModel: Equatable {
     var milestoneMark: MilestoneMark = .upcoming
     /// The project's own fields the view shows, such as an iteration or a "Workstream".
     var chips: [FieldChip] = []
+    /// Whether its parts open their pickers. Not for an issue known only from GitHub, such as a sub-issue on none of
+    /// your boards, whose status icon only opens or closes it.
+    var editable = true
+    /// Whether it can be picked, with its checkbox or a ⌘-click: in the lists and among an issue's sub-issues.
+    var pickable = true
+    /// While the sub-issues under it are read for the first time, a spinner stands where its fold arrow goes.
+    var foldWaiting = false
+    /// A button at the end of the row under the pointer, which takes it off the list it is in: an issue another one is
+    /// blocked by or blocks.
+    var removable = false
+}
+
+extension AppModel {
+    /// The row of `item`. What every row shows the same way is worked out here; what depends on the list, such as where
+    /// the row hangs in it and what its groups say already, is passed in.
+    func issueRow(
+        _ item: Item, projectTitle: String? = nil, selected: Bool = false, selecting: Bool = false,
+        nest: Nesting.Place = Nesting.Place(), nested: Int? = nil, folded: Bool = false, showsParent: Bool = false,
+        milestone: String?, chips: [FieldChip]
+    ) -> IssueRowModel {
+        IssueRowModel(
+            item: item, glyph: glyph(of: item), priority: priorityLevel(of: item),
+            showsPriority: project(of: item)?.priorityFieldId != nil,
+            showsStatus: !item.isOnBoard || project(of: item)?.statusFieldId != nil,
+            projectTitle: projectTitle,
+            due: dueBadge(for: item),
+            blocker: blockerMark(for: item),
+            selected: selected, selecting: selecting,
+            nest: nest, nested: nested, folded: folded, showsParent: showsParent,
+            parentIsEpic: item.parentId.flatMap { issue(contentId: $0) }?.isEpic ?? false,
+            milestone: milestone,
+            milestoneMark: milestoneMark(of: item),
+            chips: chips
+        )
+    }
+
+    /// The row of an issue the app knows only from another one's sub-issues or relations: open or closed, its number,
+    /// title and people, and what blocks it as far as known.
+    func issueRow(standingInFor item: Item, nest: Nesting.Place = Nesting.Place(), nested: Int? = nil, folded: Bool = false) -> IssueRowModel {
+        IssueRowModel(
+            item: item, glyph: .openOrClosed(item.state, reason: item.stateReason), priority: .none,
+            showsPriority: false, blocker: blockerMark(for: item),
+            nest: nest, nested: nested, folded: folded, editable: false, pickable: false
+        )
+    }
 }
 
 /// One issue, drawn directly. Configuring and drawing a recycled cell takes a fraction of a millisecond.
@@ -57,6 +104,9 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     private var dueText: NSAttributedString?
     private var dueIcon: NSImage?
     private var labels: [(text: NSAttributedString, size: NSSize, color: NSColor)] = []
+    /// How many labels the issue shows in all, and "+2" for each number of them that may not fit.
+    private var labelCount = 0
+    private var moreLabels: [Int: (text: NSAttributedString, size: NSSize)] = [:]
     // Measured once when the row is configured; measuring text on every draw is what makes drawing slow.
     private var numberSize = NSSize.zero
     private var titleSize = NSSize.zero
@@ -85,6 +135,25 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
     func isOnFold(_ point: NSPoint) -> Bool {
         foldRect?.insetBy(dx: -3, dy: -4).contains(point) ?? false
+    }
+
+    /// The button that takes the issue off the list it is in, at the end of a removable row; where it was drawn last.
+    private(set) var removeRect: NSRect?
+    var hoveringRemove = false {
+        didSet { if hoveringRemove != oldValue { needsDisplay = true } }
+    }
+
+    func isOnRemove(_ point: NSPoint) -> Bool {
+        removeRect?.contains(point) ?? false
+    }
+
+    /// What VoiceOver's press does: opens the issue. The list's table does that for its own rows.
+    var pressAction: (() -> Void)?
+
+    override func accessibilityPerformPress() -> Bool {
+        guard let pressAction else { return super.accessibilityPerformPress() }
+        pressAction()
+        return true
     }
 
     /// Sub-issues hang this much further in per level, down to a few levels.
@@ -120,8 +189,10 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             if row.item.id != self.row?.item.id {
                 hoveredPart = nil
                 hoveringFold = false
+                hoveringRemove = false
                 parts = []
                 foldRect = nil
+                removeRect = nil
             }
             self.row = row
             let item = row.item
@@ -192,13 +263,20 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                 ])
             }
             milestoneSize = milestoneText?.size() ?? .zero
-            // An epic's own label says what the row shows already.
-            labels = item.labels.filter { !(item.isEpic && Item.isEpicLabel($0.name)) }.prefix(3).map { label in
-                let text = NSAttributedString(string: label.name, attributes: [
-                    .font: NSFont.systemFont(ofSize: 11, weight: .medium),
-                    .foregroundColor: onAccent ? NSColor.white : NSColor(Theme.textBody),
-                ])
+            // Labels as cards show them (`LabelMark`), and "+2" for those that don't fit, made for each number of them
+            // that can be left over.
+            let shownLabels = item.shownLabels
+            labelCount = shownLabels.count
+            labels = shownLabels.prefix(LabelMark.inRow).map { label in
+                let text = NSAttributedString(string: label.name, attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: secondary])
                 return (text, text.size(), NSColor(Theme.labelColor(label.color)))
+            }
+            moreLabels = [:]
+            if labelCount > 1 {
+                for count in max(1, labelCount - LabelMark.inRow)..<labelCount {
+                    let text = NSAttributedString(string: "+\(count)", attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: secondary])
+                    moreLabels[count] = (text, text.size())
+                }
             }
             numberSize = number.size()
             titleSize = title.size()
@@ -279,9 +357,29 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             NSColor(Theme.selected).setFill()
             NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
         }
-        // The checkbox sits under the section headers' fold arrow; it shows on hover and while picking.
-        if row.selected || row.selecting || highlighted {
+        // The checkbox sits under the section headers' fold arrow; it shows on hover and while picking. A row that can't
+        // be picked but can be taken off its list has the button for that there instead, so the row's columns stay in
+        // line with the rows around it.
+        if row.pickable, row.selected || row.selecting || highlighted {
             drawCheckbox(checked: row.selected, center: NSPoint(x: IssueTable.inset + 15, y: midY))
+        }
+        if row.removable, !row.pickable {
+            let rect = NSRect(x: IssueTable.inset + 6, y: midY - 9, width: 18, height: 18)
+            removeRect = rect
+            if highlighted {
+                if hoveringRemove {
+                    NSColor(Theme.partHover).setFill()
+                    NSBezierPath(roundedRect: rect, xRadius: 5, yRadius: 5).fill()
+                }
+                if let mark = Self.removeMark {
+                    mark.draw(
+                        in: NSRect(x: rect.midX - mark.size.width / 2, y: midY - mark.size.height / 2, width: mark.size.width, height: mark.size.height),
+                        from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
+                    )
+                }
+            }
+        } else {
+            removeRect = nil
         }
         // Each part lights up in a shape that suits it, as in Linear: a small square behind an icon, a halo
         // around avatars, and chips in their own shape.
@@ -326,7 +424,10 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                 partHover.setFill()
                 NSBezierPath(roundedRect: rect.insetBy(dx: -2, dy: -2), xRadius: 5, yRadius: 5).fill()
             }
-            Self.drawFoldArrow(folded: row.folded, center: NSPoint(x: rect.midX, y: rect.midY), color: onAccent ? .white : NSColor(Theme.textSecondary))
+            // While its sub-issues are read the first time, the view holding the row shows a spinner here.
+            if !row.foldWaiting {
+                Self.drawFoldArrow(folded: row.folded, center: NSPoint(x: rect.midX, y: rect.midY), color: onAccent ? .white : NSColor(Theme.textSecondary))
+            }
             x = rect.maxX + 8
         } else {
             foldRect = nil
@@ -357,7 +458,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             }
         }
         drawAvatars(row.item.assignees, rightEdge: right, midY: midY, ring: avatarRing, context: context)
-        right -= 30 + 10
+        // Room for two avatars, so dates stand in line; a third one pushes its row's date over rather than under it.
+        right -= max(31, 18 + CGFloat(max(min(row.item.assignees.count, 3), 1) - 1) * 13) + 10
         date.draw(at: NSPoint(x: right - dateSize.width, y: midY - dateSize.height / 2))
         dateRect = NSRect(x: right - dateSize.width, y: midY - 9, width: dateSize.width, height: 18)
         right -= 52 + 10
@@ -421,24 +523,42 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             )
             right = rect.minX - 6
         }
-        var labelsRect: NSRect?
-        for label in labels.reversed() {
-            let textSize = label.size
-            let width = textSize.width + 7 + 7 + 5 + 7
-            let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
-            guard rect.minX > x + 120 else { break }
-            labelsRect = labelsRect.map { $0.union(rect) } ?? rect
-            let tint = onAccent ? NSColor.white.withAlphaComponent(canEditFields && hoveredPart == .labels ? 0.3 : 0.2)
-                : label.color.withAlphaComponent(canEditFields && hoveredPart == .labels ? 0.24 : 0.14)
-            tint.setFill()
-            NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2).fill()
-            label.color.setFill()
-            NSBezierPath(ovalIn: NSRect(x: rect.minX + 7, y: midY - 3.5, width: 7, height: 7)).fill()
-            label.text.draw(at: NSPoint(x: rect.minX + 19, y: midY - textSize.height / 2))
-            right = rect.minX - 6
+        // Labels as cards show them (`LabelMark`): a dot in each one's colour and its name, as many as leave the title
+        // its room, then "+2" for the others. Under the pointer they light up together, as the one button they are.
+        func labelsWidth(_ count: Int) -> CGFloat {
+            guard count > 0 else { return 0 }
+            var width = labels.prefix(count).map { LabelMark.width(name: $0.size.width) }.reduce(0, +)
+                + CGFloat(count - 1) * LabelMark.spacing
+            if let more = moreLabels[labelCount - count] { width += LabelMark.spacing + LabelMark.inset + more.size.width + LabelMark.inset }
+            return width
         }
-
-        if canEditFields, let labelsRect { parts.append((.labels, labelsRect)) }
+        var fitting = labels.count
+        while fitting > 0, right - labelsWidth(fitting) <= x + 120 { fitting -= 1 }
+        if fitting > 0 {
+            let width = labelsWidth(fitting)
+            let labelsRect = NSRect(x: right - width, y: midY - LabelMark.height / 2, width: width, height: LabelMark.height)
+            if canEditFields { parts.append((.labels, labelsRect)) }
+            drawChip(labelsRect, hovered: canEditFields && hoveredPart == .labels)
+            var labelX = labelsRect.minX
+            for label in labels.prefix(fitting) {
+                let dot = NSRect(x: labelX + LabelMark.inset, y: midY - LabelMark.dot / 2, width: LabelMark.dot, height: LabelMark.dot)
+                label.color.setFill()
+                NSBezierPath(ovalIn: dot).fill()
+                if onAccent {
+                    // On the accent of a picked row, a ring keeps a dot of a like colour apart from it.
+                    NSColor.white.withAlphaComponent(0.9).setStroke()
+                    let ring = NSBezierPath(ovalIn: dot.insetBy(dx: -0.5, dy: -0.5))
+                    ring.lineWidth = 1
+                    ring.stroke()
+                }
+                label.text.draw(at: NSPoint(x: dot.maxX + LabelMark.gap, y: midY - label.size.height / 2))
+                labelX += LabelMark.width(name: label.size.width) + LabelMark.spacing
+            }
+            if let more = moreLabels[labelCount - fitting] {
+                more.text.draw(at: NSPoint(x: labelX + LabelMark.inset, y: midY - more.size.height / 2))
+            }
+            right = labelsRect.minX - 6
+        }
 
         // The title takes what is left, with the sub-issue count and, when blocked, a flag with what blocks it
         // directly after it, and the parent of a sub-issue whose parent is elsewhere.
@@ -518,14 +638,19 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                 )
             }
         }
+        // An issue known only from GitHub has nothing to pick from, but its status icon opens or closes it.
+        if !row.editable { parts = parts.filter { $0.kind == .status } }
         // Tooltips follow the parts; rebuilt only when they moved.
-        if parts.map(\.rect) != self.parts.map(\.rect) || foldRect != tooltipFoldRect || numberRect != self.numberRect || toolTipsNeedUpdate {
+        if parts.map(\.rect) != self.parts.map(\.rect) || foldRect != tooltipFoldRect || removeRect != tooltipRemoveRect
+            || numberRect != self.numberRect || toolTipsNeedUpdate {
             toolTipsNeedUpdate = false
             tooltipFoldRect = foldRect
+            tooltipRemoveRect = removeRect
             self.numberRect = numberRect
             removeAllToolTips()
             for part in parts { addToolTip(part.rect.insetBy(dx: -3, dy: -4), owner: self, userData: nil) }
             if let foldRect { addToolTip(foldRect.insetBy(dx: -3, dy: -4), owner: self, userData: nil) }
+            if let removeRect { addToolTip(removeRect, owner: self, userData: nil) }
             addToolTip(numberRect.insetBy(dx: -3, dy: -4), owner: self, userData: nil)
             if dateRect.width > 0 { addToolTip(dateRect, owner: self, userData: nil) }
         }
@@ -533,6 +658,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     }
 
     private var toolTipsNeedUpdate = true
+    private var tooltipRemoveRect: NSRect?
     private var tooltipFoldRect: NSRect?
 
     /// Lines from the parents above down to this row: a straight one through the row for each level whose
@@ -619,8 +745,16 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         )
     }
 
+    /// The mark of the button that takes the issue off its list, as the header's icon buttons draw theirs.
+    private static var removeMark: NSImage? {
+        NSImage(systemSymbolName: "xmark", accessibilityDescription: nil)?.withSymbolConfiguration(
+            NSImage.SymbolConfiguration(pointSize: 11, weight: .medium).applying(.init(paletteColors: [NSColor(Theme.textSecondary)]))
+        )
+    }
+
     func view(_ view: NSView, stringForToolTip tag: NSView.ToolTipTag, point: NSPoint, userData data: UnsafeMutableRawPointer?) -> String {
         guard let row else { return "" }
+        if isOnRemove(point) { return String(localized: .removeRelation) }
         if isOnFold(point) {
             return String(localized: row.folded ? .unfoldSubIssuesTooltip(count: row.nested ?? 0) : .foldSubIssuesTooltip)
         }
@@ -718,6 +852,232 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                 initials.draw(at: NSPoint(x: rect.midX - initialsSize.width / 2, y: rect.midY - initialsSize.height / 2))
             }
         }
+    }
+}
+
+// MARK: - A row outside the list
+
+/// An issue's row where the Mac lists issues outside the list: on an issue's page, its sub-issues and the issues it is
+/// blocked by or blocks. It is the list's own row (`IssueRowCell`), and the pointer and clicks do what they do in the
+/// list: a part lights up and opens its picker, the checkbox and ⌘- or Shift-clicks pick, the arrow folds what is under
+/// it, a click elsewhere opens the issue, and a right-click shows its menu.
+struct IssueRowView: View {
+    @Environment(AppModel.self) private var model
+    var row: IssueRowModel
+    /// A click away from the row's parts.
+    var open: () -> Void
+    /// A click with ⌘ or Shift held, or one on the checkbox (`checkbox`): whether it picked the issue or let it go.
+    var pick: (_ checkbox: Bool) -> Bool = { _ in false }
+    /// The arrow of a row with sub-issues under it.
+    var fold: () -> Void = {}
+    /// The status icon of an issue known only from GitHub, which closes it or opens it again.
+    var toggleClosed: () -> Void = {}
+    /// Before a part opens its picker; picks of other issues go then, as in the list.
+    var willOpenPart: () -> Void = {}
+    /// The button at the end of a removable row.
+    var remove: () -> Void = {}
+    var menu: () -> NSMenu?
+
+    var body: some View {
+        IssueRowHostView(
+            row: row, avatarVersion: model.avatarVersion,
+            actions: IssueRowHost.Actions(
+                open: open, pick: pick, fold: fold, toggleClosed: toggleClosed, willOpenPart: willOpenPart, remove: remove
+            )
+        )
+        .frame(height: Theme.rowHeight)
+        .glassContextMenu(menu)
+    }
+}
+
+extension View {
+    /// Rows of issues on a page hang into its margin by the room before their first icon, so that their priority icons
+    /// line up with the headings and text above them, and the checkbox shows in the margin, as in the list it shows
+    /// under the arrow of a section's header.
+    func issueRowsOnPage() -> some View {
+        padding(.leading, -(IssueTable.inset + 28)).padding(.trailing, -IssueTable.inset)
+    }
+
+    /// A heading among such rows stays in line with the page.
+    func outOfIssueRows() -> some View {
+        padding(.leading, IssueTable.inset + 28).padding(.trailing, IssueTable.inset)
+    }
+}
+
+private struct IssueRowHostView: NSViewRepresentable {
+    @Environment(AppModel.self) private var model
+    var row: IssueRowModel
+    var avatarVersion: Int
+    var actions: IssueRowHost.Actions
+
+    func makeNSView(context: Context) -> IssueRowHost {
+        IssueRowHost()
+    }
+
+    func updateNSView(_ host: IssueRowHost, context: Context) {
+        host.model = model
+        host.actions = actions
+        host.show(row, avatarVersion: avatarVersion)
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: IssueRowHost, context: Context) -> CGSize? {
+        CGSize(width: proposal.width ?? 480, height: Theme.rowHeight)
+    }
+}
+
+/// Holds a list row outside the list's table and does for it what the table does for its rows: follows the pointer
+/// over it and its parts, and acts on clicks.
+final class IssueRowHost: NSView {
+    struct Actions {
+        var open: () -> Void
+        var pick: (_ checkbox: Bool) -> Bool
+        var fold: () -> Void
+        var toggleClosed: () -> Void
+        var willOpenPart: () -> Void
+        var remove: () -> Void
+    }
+
+    weak var model: AppModel?
+    var actions = Actions(open: {}, pick: { _ in false }, fold: {}, toggleClosed: {}, willOpenPart: {}, remove: {})
+    let cell = IssueRowCell()
+    private var row: IssueRowModel?
+    private var avatarVersion = 0
+    private var hovering = false
+    private var pressed = false
+    private var tracking: NSTrackingArea?
+    /// Turns where the fold arrow goes while the sub-issues under the row are read the first time.
+    private let spinner: NSProgressIndicator = {
+        let spinner = NSProgressIndicator()
+        spinner.style = .spinning
+        spinner.controlSize = .mini
+        spinner.isDisplayedWhenStopped = false
+        return spinner
+    }()
+
+    override var isFlipped: Bool { true }
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        cell.frame = bounds
+        cell.autoresizingMask = [.width, .height]
+        addSubview(cell)
+        addSubview(spinner)
+        cell.pressAction = { [weak self] in self?.actions.open() }
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Not used") }
+
+    func show(_ row: IssueRowModel, avatarVersion: Int) {
+        cell.model = model
+        self.row = row
+        cell.configure(row, highlighted: hovering)
+        if avatarVersion != self.avatarVersion {
+            self.avatarVersion = avatarVersion
+            cell.needsDisplay = true
+        }
+        placeSpinner()
+    }
+
+    /// The row and its parts take their clicks here, not in the row's own view.
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        frame.contains(point) ? self : nil
+    }
+
+    /// A click in a window in the background acts at once, as on the page's other buttons.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
+
+    override func layout() {
+        super.layout()
+        placeSpinner()
+    }
+
+    private func placeSpinner() {
+        guard let row, row.foldWaiting else {
+            spinner.stopAnimation(nil)
+            return
+        }
+        // The fold arrow's place is known once the row has been drawn at this width.
+        cell.displayIfNeeded()
+        guard let fold = cell.foldRect else { return }
+        spinner.frame = NSRect(x: fold.midX - 8, y: fold.midY - 8, width: 16, height: 16)
+        spinner.startAnimation(nil)
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let tracking { removeTrackingArea(tracking) }
+        let area = NSTrackingArea(
+            rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+            owner: self, userInfo: nil
+        )
+        addTrackingArea(area)
+        tracking = area
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        point(at: event)
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        point(at: event)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        hovering = false
+        cell.hoveredPart = nil
+        cell.hoveringFold = false
+        cell.hoveringRemove = false
+        if let row { cell.configure(row, highlighted: false) }
+    }
+
+    /// Lights up the row, and the part under the pointer, as the list does.
+    private func point(at event: NSEvent) {
+        let local = cell.convert(event.locationInWindow, from: nil)
+        hovering = true
+        if let row { cell.configure(row, highlighted: true) }
+        cell.hoveredPart = cell.part(at: local)?.kind
+        cell.hoveringFold = cell.isOnFold(local)
+        cell.hoveringRemove = cell.isOnRemove(local)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        pressed = true
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        guard pressed else { return }
+        pressed = false
+        let local = cell.convert(event.locationInWindow, from: nil)
+        guard cell.bounds.contains(local), let row, let model else { return }
+        // In the order the list takes them: picking first, then the checkbox, the arrow, the parts, and the issue.
+        if actions.pick(false) { return }
+        if row.pickable, cell.checkboxRect.contains(local) {
+            _ = actions.pick(true)
+            return
+        }
+        if cell.isOnFold(local) {
+            actions.fold()
+            return
+        }
+        if cell.isOnRemove(local) {
+            actions.remove()
+            return
+        }
+        if let part = cell.part(at: local) {
+            if !row.editable {
+                actions.toggleClosed()
+                return
+            }
+            actions.willOpenPart()
+            Dropdown.show(below: part.rect, in: cell, model: model) { close in
+                ItemPicker(kind: part.kind, itemId: row.item.id, close: close)
+            }
+            return
+        }
+        actions.open()
     }
 }
 #endif

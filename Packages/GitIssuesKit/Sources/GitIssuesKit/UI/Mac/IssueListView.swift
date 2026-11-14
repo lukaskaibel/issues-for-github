@@ -59,13 +59,9 @@ struct IssueListView: View {
                             case .epic(let group):
                                 return .epic(group)
                             case .item(let item):
-                                return .row(IssueRowModel(
-                                    item: item, glyph: model.glyph(of: item), priority: model.priorityLevel(of: item),
-                                    showsPriority: model.project(of: item)?.priorityFieldId != nil,
-                                    showsStatus: !item.isOnBoard || model.project(of: item)?.statusFieldId != nil,
+                                return .row(model.issueRow(
+                                    item,
                                     projectTitle: showsProject ? place(of: item, groupsByProject: groupsByProject) : nil,
-                                    due: model.dueBadge(for: item),
-                                    blocker: model.blockerMark(for: item),
                                     selected: model.isSelected(item.id),
                                     selecting: !model.selectedIds.isEmpty,
                                     nest: section.nesting.place(of: item.id),
@@ -74,9 +70,7 @@ struct IssueListView: View {
                                     // Under its parent or its epic's header, the parent goes without saying.
                                     showsParent: section.nesting.namesParent(of: item) && section.kind != .epic(contentId: item.parentId)
                                         && section.kind != .group(.parent(contentId: item.parentId)),
-                                    parentIsEpic: item.parentId.flatMap { model.issue(contentId: $0) }?.isEpic ?? false,
                                     milestone: showsMilestone ? model.milestoneTitle(of: item) : spanOnRoadmap(item),
-                                    milestoneMark: model.milestoneMark(of: item),
                                     chips: model.fieldChips(of: item, in: model.scope)
                                 ))
                             }
