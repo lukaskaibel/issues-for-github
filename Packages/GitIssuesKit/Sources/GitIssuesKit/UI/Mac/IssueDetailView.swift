@@ -885,7 +885,7 @@ struct IssueProperties: View {
                         }
                         .padding(.horizontal, 8)
                         .frame(minHeight: 28)
-                        .hoverFill()
+                        .hoverFill(radius: 8, fill: Theme.partHover)
                     }
                     .buttonStyle(PlainPressStyle())
                     .help(Text(.openEpic))
@@ -919,7 +919,7 @@ struct IssueProperties: View {
                             .lineLimit(1)
                             .padding(.horizontal, 8)
                             .frame(minHeight: 28)
-                            .hoverFill()
+                            .hoverFill(radius: 8, fill: Theme.partHover)
                     }
                     .buttonStyle(PlainPressStyle())
                     .disabled(parent == nil)

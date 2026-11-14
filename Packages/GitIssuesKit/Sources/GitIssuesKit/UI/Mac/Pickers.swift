@@ -366,10 +366,11 @@ struct PropertyButton<Label: View>: View {
         Button {
             open = true
         } label: {
+            // Under the pointer it lights up in the grey every clickable part of an issue takes, on cards and rows too.
             label
                 .padding(.horizontal, 8)
                 .frame(minHeight: 28)
-                .hoverFill(active: open, radius: 8)
+                .hoverFill(active: open, radius: 8, fill: Theme.partHover)
         }
         .buttonStyle(PlainPressStyle())
         .dropdown(isPresented: $open) { close in
