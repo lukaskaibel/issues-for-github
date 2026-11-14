@@ -443,72 +443,22 @@ struct MobileChip<Content: View>: View {
     }
 }
 
-/// The header over the issues of an epic standing together in a list's section: the arrow that folds them away
-/// left of the epic's icon, as sub-issues fold, the icon where the issues' status icons stand and the line down to
-/// them starts, its name on up to two lines and how many of its issues are there. A tap opens the epic, one on the
-/// arrow or the icon folds its issues or shows them again; touching and holding offers its menu.
+/// The header over the issues of an epic standing together in a list's section, as every list and board shows it
+/// (`EpicHeader`): its icon in the issues' status column, where the line down to them starts, and its name on up to two
+/// lines. A tap opens the epic, one on the arrow at the end folds its issues or shows them again; touching and holding
+/// offers its menu.
 struct EpicGroupRow: View {
-    @Environment(AppModel.self) private var model
     var group: Nesting.EpicGroup
     /// The board's column the section shows, whose issues of the epic its menu can move.
     var column: BoardColumn?
     var open: () -> Void
-    @ScaledMetric(relativeTo: .callout) private var glyphSize: CGFloat = 16
+    /// As wide as the issues' status icons, whose column the icon stands in.
+    @ScaledMetric(relativeTo: .body) private var statusSize: CGFloat = 20
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            Button {
-                model.toggleEpicGroup(group)
-            } label: {
-                HStack(spacing: 0) {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Theme.textSecondary)
-                        .rotationEffect(.degrees(group.folded ? -90 : 0))
-                        .frame(width: IssueRow.leading)
-                    EpicIcon(size: glyphSize)
-                }
-                .frame(height: glyphSize)
-                .padding(.top, 12)
-                .padding(.bottom, 6)
-                .padding(.trailing, 12)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text(group.folded ? .unfoldEpicGroupTooltip(count: group.count) : .foldEpicGroupTooltip))
-            .accessibilityIdentifier("fold-epic-\(group.epic.title)")
-            Button(action: open) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(group.epic.title)
-                        .font(.uiSemibold)
-                        .foregroundStyle(Theme.text)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                    Text("\(group.count)")
-                        .font(.ui)
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.textTertiary)
-                    Spacer(minLength: 0)
-                }
-                .padding(.top, 12)
-                .padding(.bottom, 6)
-                .padding(.trailing, 18)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text(.epicGroupSpoken(epic: group.epic.title, count: group.count)))
-            .accessibilityValue(Text(group.folded ? .sectionFolded : .sectionOpen))
-            .accessibilityIdentifier("epic-group-\(group.epic.title)")
-        }
-        .background(alignment: .topLeading) {
-            // The start of the line down to the epic's issues.
-            if !group.folded {
-                Rectangle()
-                    .fill(Theme.treeLine)
-                    .frame(width: 1)
-                    .padding(.top, 12 + glyphSize + 3)
-                    .padding(.leading, IssueRow.leading + glyphSize / 2 - 0.5)
-            }
+        // The arrow under the section header's +.
+        EpicHeaderTaps(group: group, open: open) {
+            EpicHeader(group: group, iconColumn: (IssueRow.leading, statusSize), trailing: 16, lineLimit: 2)
         }
         .contextMenu {
             EpicGroupMenuItems(group: group, column: column, open: open)
@@ -516,54 +466,52 @@ struct EpicGroupRow: View {
     }
 }
 
-/// The header over the issues of an epic standing together in a column of the iPad's board: its icon where the
-/// line to them starts, its name on up to three lines, how many of its issues are there, and the arrow that folds
-/// them away. As in the list, a tap opens the epic and one on the arrow folds its issues; touching and holding
-/// offers its menu, and dragging it moves them all.
+/// The header over the issues of an epic standing together in a column of the board (`EpicHeader`): its icon in the
+/// gutter the epic's cards hang in, and its name on up to three lines. As in the list, a tap opens the epic and one on
+/// the arrow folds its issues; touching and holding offers its menu, and dragging it moves them all.
 struct EpicGroupCardHeader: View {
-    @Environment(AppModel.self) private var model
     var group: Nesting.EpicGroup
     var column: BoardColumn
     var open: () -> Void
     /// Moves the epic's issues to the column beside this one, for VoiceOver, which can't drag.
     var step: (Int) -> Void = { _ in }
-    @ScaledMetric(relativeTo: .subheadline) private var line: CGFloat = 20
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            Button(action: open) {
-                HStack(alignment: .top, spacing: 6) {
-                    EpicIcon(size: 13)
-                        .frame(width: CardTreeLines.indent, height: line)
-                    Text(group.epic.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.text)
-                        .lineLimit(3)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("\(group.count)")
-                        .font(.subheadline)
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.textTertiary)
-                    Spacer(minLength: 0)
-                }
-                .padding(.vertical, 6)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text(.epicGroupSpoken(epic: group.epic.title, count: group.count)))
-            .accessibilityValue(Text(group.folded ? .sectionFolded : .sectionOpen))
-            .accessibilityAction(named: Text(.moveToNextStatus)) { step(1) }
-            .accessibilityAction(named: Text(.moveToPreviousStatus)) { step(-1) }
-            .accessibilityIdentifier("epic-group-\(group.epic.title)")
+        EpicHeaderTaps(group: group, open: open, step: step) {
+            EpicHeader(group: group, iconColumn: (0, CardTreeLines.indent), trailing: 6, lineLimit: 3)
+        }
+        .contextMenu {
+            EpicGroupMenuItems(group: group, column: column, open: open)
+        }
+    }
+}
+
+/// What a tap on an epic's header does on iPhone and iPad: anywhere it opens the epic, on the arrow at its end it folds
+/// the epic's issues or shows them again, with room around the arrow for a finger.
+private struct EpicHeaderTaps<Header: View>: View {
+    @Environment(AppModel.self) private var model
+    var group: Nesting.EpicGroup
+    var open: () -> Void
+    /// Moves the epic's issues to a neighbouring column, for VoiceOver on the board.
+    var step: ((Int) -> Void)? = nil
+    @ViewBuilder var header: Header
+
+    var body: some View {
+        Button(action: open) {
+            header.contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(.epicGroupSpoken(epic: group.epic.title, count: group.count)))
+        .accessibilityValue(Text(group.folded ? .sectionFolded : .sectionOpen))
+        .modifier(StepActions(step: step))
+        .accessibilityIdentifier("epic-group-\(group.epic.title)")
+        .overlay(alignment: .trailing) {
             Button {
                 model.toggleEpicGroup(group)
             } label: {
-                Image(systemName: "chevron.down")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(Theme.textTertiary)
-                    .rotationEffect(.degrees(group.folded ? -90 : 0))
-                    .frame(width: 40, height: line + 12)
+                Color.clear
+                    .frame(width: 44)
+                    .frame(maxHeight: .infinity)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -571,19 +519,20 @@ struct EpicGroupCardHeader: View {
             .accessibilityLabel(Text(group.folded ? .unfoldEpicGroupTooltip(count: group.count) : .foldEpicGroupTooltip))
             .accessibilityIdentifier("fold-epic-\(group.epic.title)")
         }
-        .frame(minHeight: 32)
-        .background(alignment: .topLeading) {
-            // The start of the line down to the epic's issues, from under its icon.
-            if !group.folded {
-                Rectangle()
-                    .fill(Theme.treeLine)
-                    .frame(width: 1)
-                    .padding(.top, 6 + line / 2 + 9)
-                    .offset(x: CardTreeLines.indent / 2 - 0.5)
+    }
+
+    /// On the board, VoiceOver moves the epic's issues to a neighbouring column, as it can't drag them.
+    private struct StepActions: ViewModifier {
+        var step: ((Int) -> Void)?
+
+        func body(content: Content) -> some View {
+            if let step {
+                content
+                    .accessibilityAction(named: Text(.moveToNextStatus)) { step(1) }
+                    .accessibilityAction(named: Text(.moveToPreviousStatus)) { step(-1) }
+            } else {
+                content
             }
-        }
-        .contextMenu {
-            EpicGroupMenuItems(group: group, column: column, open: open)
         }
     }
 }

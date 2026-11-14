@@ -53,11 +53,12 @@ open an issue that describes the change instead.
   if you can't translate it, say so in the pull request. `swift test` checks this.
 - **Colours and animation timings come from `UI/Theme.swift`.** Every colour needs a light and a dark value.
 - **What shows in several places is one component.** An issue in a list, among an issue's sub-issues or in search is
-  the same row (`IssueRowView` on the Mac, `IssueRow` on iPhone and iPad), a card is `CardView` on every board, and a
-  card being dragged has `liftedShadow` (the Mac's list draws its drag image from the board's views, in `LiftedImage`).
-  The marks they carry (status, priority, labels, the sub-issue glyph, fold arrows, tree lines, milestones, checkboxes)
-  are defined once in `UI/Shared/Marks.swift` and `LabelMark`, for views and painters alike. Use them, or change them
-  there, rather than drawing another copy.
+  the same row (`IssueRowView` on the Mac, `IssueRow` on iPhone and iPad), a card is `CardView` on every board, an
+  epic's header is `EpicHeader` in every list and on every board (the Mac's list paints it from `EpicHeaderLook`), and
+  a card being dragged has `liftedShadow` (the Mac's list draws its drag image from the board's views, in
+  `LiftedImage`). The marks they carry (status, priority, labels, the sub-issue and epic glyphs, fold arrows, tree
+  lines, milestones, checkboxes) are defined once in `UI/Shared/Marks.swift` and `LabelMark`, for views and painters
+  alike. Use them, or change them there, rather than drawing another copy.
 - **Smoothness is a feature.** Lists and cards are drawn in one pass on purpose, and a card keeps its texts and colours
   from one paint to the next: what a new part of a card shows goes into its `CardText` or `CardInk`, so that it is kept
   by everything it depends on. A row of a board column is one view as well: the card paints what the column shows

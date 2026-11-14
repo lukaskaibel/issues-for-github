@@ -135,20 +135,30 @@ extension Marks {
 // MARK: - Folding
 
 extension Marks {
-    /// The arrow that folds the sub-issues under an issue in or out: to the right while they are folded in, down while
-    /// they show.
-    static func foldArrow(folded: Bool, center: CGPoint) -> [Shape] {
+    /// The arrow that folds the sub-issues under an issue in or out, or an epic's issues under its header: to the right
+    /// while they are folded in, down while they show. `scale` grows it with the text around it, as on iPhone and iPad.
+    static func foldArrow(folded: Bool, center: CGPoint, scale: CGFloat = 1) -> [Shape] {
+        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: center.x + x * scale, y: center.y + y * scale) }
         var path = Path()
         if folded {
-            path.move(to: CGPoint(x: center.x - 1.5, y: center.y - 3.5))
-            path.addLine(to: CGPoint(x: center.x + 2, y: center.y))
-            path.addLine(to: CGPoint(x: center.x - 1.5, y: center.y + 3.5))
+            path.move(to: point(-1.5, -3.5))
+            path.addLine(to: point(2, 0))
+            path.addLine(to: point(-1.5, 3.5))
         } else {
-            path.move(to: CGPoint(x: center.x - 3.5, y: center.y - 1.5))
-            path.addLine(to: CGPoint(x: center.x, y: center.y + 2))
-            path.addLine(to: CGPoint(x: center.x + 3.5, y: center.y - 1.5))
+            path.move(to: point(-3.5, -1.5))
+            path.addLine(to: point(0, 2))
+            path.addLine(to: point(3.5, -1.5))
         }
-        return [Shape(path: path, stroke: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))]
+        return [Shape(path: path, stroke: StrokeStyle(lineWidth: 1.5 * scale, lineCap: .round, lineJoin: .round))]
+    }
+}
+
+// MARK: - Epics
+
+extension Marks {
+    /// An epic's stack of layers in a square (`PlanningGlyph.layers`), stroked in a line that grows with it.
+    static func epic(in rect: CGRect) -> [Shape] {
+        [Shape(path: PlanningGlyph.layers(in: rect), stroke: StrokeStyle(lineWidth: 1.4 * rect.width / 14, lineCap: .round, lineJoin: .round))]
     }
 }
 

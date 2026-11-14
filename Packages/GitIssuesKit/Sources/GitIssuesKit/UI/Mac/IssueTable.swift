@@ -1105,8 +1105,9 @@ final class HoverTableView: NSTableView {
     }
 }
 
-/// The header over the issues of an epic standing together in a section: the epic's icon in line with the
-/// issues' status icons, where the line down to them starts, its name, how many of its issues are there, and the
+/// The header over the issues of an epic standing together in a section, painted as `EpicHeader` draws it on the
+/// board and on iPhone and iPad: the epic's icon in line with the issues' status icons, where the line down to them
+/// starts, its name, how many of its issues are there, and at the end of the row, under the section header's +, the
 /// arrow that folds them away. A click opens the epic, one on the arrow folds its issues or shows them again, and
 /// dragging it moves them all.
 final class EpicHeaderRowCell: PaintedCell {
@@ -1152,12 +1153,12 @@ final class EpicHeaderRowCell: PaintedCell {
         let truncating = NSMutableParagraphStyle()
         truncating.lineBreakMode = .byTruncatingTail
         title = NSAttributedString(string: group?.epic.title ?? "", attributes: [
-            .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
+            .font: EpicHeaderLook.nameFont,
             .foregroundColor: NSColor(Theme.text),
             .paragraphStyle: truncating,
         ])
         count = NSAttributedString(string: group.map { "\($0.count)" } ?? "", attributes: [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular),
+            .font: EpicHeaderLook.countFont,
             .foregroundColor: NSColor(Theme.textTertiary),
         ])
         if let group {
@@ -1174,44 +1175,51 @@ final class EpicHeaderRowCell: PaintedCell {
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
 
+    /// The icon stands in the issues' status column, after their priority and number, where the line down to them
+    /// starts.
+    static let iconColumn = (x: IssueTable.inset + 28 + 14 + 10 + 40 + 10, width: CGFloat(14))
+    /// The arrow stands under the section headers' + button.
+    static let trailing = IssueTable.inset + 12
+
     override func draw(_ dirtyRect: NSRect) {
         guard let group, let context = NSGraphicsContext.current?.cgContext else { return }
-        let midY = bounds.height / 2
+        let look = EpicHeaderLook.self
         if highlighted {
-            // As the rows under it light up.
+            // As the rows around it light up.
             NSColor(Theme.selected).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: look.highlightRadius, yRadius: look.highlightRadius).fill()
         }
-        // In line with the issues' status icons: after the priority and number columns.
-        var x: CGFloat = IssueTable.inset + 28 + 14 + 10 + 40 + 10
-        PlanningGlyph.drawEpic(in: CGRect(x: x, y: midY - 7, width: 14, height: 14), cg: context)
+        // The first line stands at the foot of the row, closer to the issues under it than to the row above.
+        let midY = bounds.height - look.bottom - look.line / 2
+        let column = Self.iconColumn
+        let icon = CGRect(x: column.x + (column.width - look.iconSize) / 2, y: midY - look.iconSize / 2, width: look.iconSize, height: look.iconSize)
         if !group.folded {
-            let line = NSBezierPath()
-            line.move(to: NSPoint(x: x + 7, y: midY + 9))
-            line.line(to: NSPoint(x: x + 7, y: bounds.height))
-            line.lineWidth = 1
-            NSColor(Theme.treeLine).setStroke()
-            line.stroke()
+            // On a whole device pixel, as the lines through the rows under it are.
+            let scale = window?.backingScaleFactor ?? 2
+            let x = ((column.x + column.width / 2 - 0.5) * scale).rounded() / scale
+            NSColor(Theme.treeLine).setFill()
+            NSRect(x: x, y: icon.maxY + 3, width: 1, height: max(0, bounds.height - icon.maxY - 3)).fill()
         }
-        x += 14 + 10
-        let titleSize = title.size()
-        let countSize = count.size()
-        let room = bounds.width - x - IssueTable.inset - 14 - countSize.width - 30
-        let titleWidth = min(titleSize.width, max(room, 40))
-        title.draw(in: NSRect(x: x, y: midY - titleSize.height / 2, width: titleWidth, height: titleSize.height))
-        x += titleWidth + 8
-        count.draw(at: NSPoint(x: x, y: midY - countSize.height / 2))
-        x += countSize.width + 6
-        let rect = NSRect(x: x, y: midY - 7, width: 14, height: 14)
-        foldRect = rect
+        PlanningGlyph.drawEpic(in: icon, cg: context)
+        let arrow = NSRect(x: bounds.width - Self.trailing - look.arrowBox, y: midY - look.arrowBox / 2, width: look.arrowBox, height: look.arrowBox)
+        foldRect = arrow
         if hoveringFold {
             NSColor(Theme.partHover).setFill()
-            NSBezierPath(roundedRect: rect.insetBy(dx: -2, dy: -2), xRadius: 5, yRadius: 5).fill()
+            NSBezierPath(roundedRect: arrow, xRadius: 5, yRadius: 5).fill()
         }
         IssueRowCell.drawFoldArrow(
-            folded: group.folded, center: NSPoint(x: rect.midX, y: rect.midY),
+            folded: group.folded, center: NSPoint(x: arrow.midX, y: arrow.midY),
             color: NSColor(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
         )
+        var x = column.x + column.width + look.spacing
+        let titleSize = title.size()
+        let countSize = count.size()
+        let gap = (look.countGap as NSString).size(withAttributes: [.font: look.countFont]).width
+        let room = arrow.minX - look.arrowGap - countSize.width - gap - x
+        let titleWidth = min(titleSize.width, max(room, 40))
+        title.draw(in: NSRect(x: x, y: midY - titleSize.height / 2, width: titleWidth, height: titleSize.height))
+        x += titleWidth + gap
+        count.draw(at: NSPoint(x: x, y: midY - countSize.height / 2))
     }
 }
 

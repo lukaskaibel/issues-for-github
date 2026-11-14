@@ -1,5 +1,8 @@
 import SwiftUI
 import Testing
+#if os(macOS)
+import AppKit
+#endif
 @testable import GitIssuesKit
 
 /// The pieces every place draws an issue with, on every platform: an issue known only from another one's page as a row
@@ -132,4 +135,63 @@ struct SharedPiecesTests {
         #expect(empty.count == 1)
         #expect(empty[0].stroke != nil && empty[0].ink == .off)
     }
+
+    @Test("An epic's icon is the stack of layers in its square, stroked thinner when smaller")
+    func epicMark() {
+        let big = Marks.epic(in: CGRect(x: 0, y: 0, width: 14, height: 14))
+        let small = Marks.epic(in: CGRect(x: 0, y: 0, width: 7, height: 7))
+        #expect(big.count == 1 && big[0].ink == .mark)
+        #expect(big[0].path.boundingRect.maxX <= 14 && big[0].path.boundingRect.minX >= 0)
+        #expect((small[0].stroke?.lineWidth ?? 0) * 2 == big[0].stroke?.lineWidth)
+    }
+
+    @Test("A fold arrow grows with the text around it, from the same middle")
+    func foldArrowScale() {
+        let center = CGPoint(x: 50, y: 30)
+        let plain = Marks.foldArrow(folded: false, center: center)[0]
+        let larger = Marks.foldArrow(folded: false, center: center, scale: 2)[0]
+        #expect(abs(larger.path.boundingRect.width - 2 * plain.path.boundingRect.width) < 0.01)
+        #expect(abs(larger.path.boundingRect.midX - plain.path.boundingRect.midX) < 0.01)
+        #expect(larger.stroke?.lineWidth == 2 * (plain.stroke?.lineWidth ?? 0))
+    }
+
+    #if os(macOS)
+    @Test("An epic's header is a line of its name high with room above and below, and its arrow ends the first line")
+    @MainActor
+    func epicHeader() {
+        let epic = Item(id: "e", kind: .issue, position: 0, title: "Offline-first sync", body: "", state: "OPEN")
+        let group = Nesting.EpicGroup(epic: epic, count: 2, folded: false)
+        let look = EpicHeaderLook.self
+        let oneLine = EpicHeader.height(of: group, width: 240, iconColumn: (0, 16), trailing: 6, lineLimit: 3)
+        #expect(oneLine == look.line + look.top + look.bottom)
+        // A long name wraps on a narrow board, up to the limit.
+        var long = group
+        long.epic.title = String(repeating: "A long name for an epic ", count: 8)
+        let wrapped = EpicHeader.height(of: long, width: 240, iconColumn: (0, 16), trailing: 6, lineLimit: 3)
+        #expect(wrapped > oneLine)
+        #expect(wrapped <= MeasuredHeights.textHeight(lines: 3, font: look.nameFont) + look.top + look.bottom)
+        // The arrow's square ends `trailing` before the header's edge, on the first line.
+        let frame = CGRect(x: 100, y: 200, width: 240, height: oneLine)
+        let fold = EpicHeader.foldFrame(in: frame, trailing: 6)
+        #expect(fold.maxX == frame.maxX - 6)
+        #expect(abs(fold.midY - (frame.minY + look.top + look.line / 2)) < 0.01)
+    }
+
+    @Test("The list's epic header draws its arrow where a click folds it, under the section header's +")
+    @MainActor
+    func listEpicHeaderFold() {
+        let epic = Item(id: "e", kind: .issue, position: 0, title: "Offline-first sync", body: "", state: "OPEN")
+        let cell = EpicHeaderRowCell(frame: NSRect(x: 0, y: 0, width: 900, height: Theme.rowHeight))
+        cell.configure(Nesting.EpicGroup(epic: epic, count: 2, folded: false))
+        let image = NSImage(size: cell.bounds.size, flipped: true) { _ in
+            cell.draw(cell.bounds)
+            return true
+        }
+        _ = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        let arrow = NSPoint(x: 900 - EpicHeaderRowCell.trailing - EpicHeaderLook.arrowBox / 2, y: Theme.rowHeight - EpicHeaderLook.bottom - EpicHeaderLook.line / 2)
+        #expect(cell.isOnFold(arrow))
+        #expect(!cell.isOnFold(NSPoint(x: 200, y: arrow.y)))
+    }
+    #endif
 }
+
