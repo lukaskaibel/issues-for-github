@@ -94,7 +94,7 @@ extension AppModel {
 }
 
 /// One issue, drawn directly. Configuring and drawing a recycled cell takes a fraction of a millisecond.
-final class IssueRowCell: NSView, NSViewToolTipOwner {
+final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     weak var model: AppModel?
     /// What the row shows now.
     private(set) var row: IssueRowModel?
@@ -184,8 +184,6 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
     override init(frame: NSRect) {
         super.init(frame: frame)
-        wantsLayer = true
-        layerContentsRedrawPolicy = .onSetNeedsDisplay
     }
 
     @available(*, unavailable)

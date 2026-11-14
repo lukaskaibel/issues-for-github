@@ -620,7 +620,8 @@ enum DebugRemote {
             }
         case "repaintcheck":
             // repaintcheck: draws the list's rows anew and names those that then look different, which showed an
-            // earlier paint.
+            // earlier paint. Blind to a row's layer that still holds an old picture: `render(in:)` has the views draw
+            // themselves for the picture, as `snapshot` does, instead of showing what their layers hold.
             for window in NSApp.windows where window.isVisible {
                 func collect(_ view: NSView) -> [HoverTableView] {
                     (view as? HoverTableView).map { [$0] } ?? view.subviews.flatMap(collect)
@@ -1682,7 +1683,9 @@ extension IssueTable.Coordinator {
             }
         }
         let ranges = loaded.isEmpty ? "none" : "\(loaded.first!)…\(loaded.last!) (\(loaded.count))"
-        return "visible=\(visible.location)..<\(visible.location + visible.length) loaded=\(ranges) stale=\(stale.count) misplaced=\(misplaced.count)"
+        // How wide the list is laid out, which changes while the issue's inspector stands beside it.
+        let width = "width=\(Int(table.bounds.width)) on screen=\(Int(table.visibleRect.width))"
+        return "visible=\(visible.location)..<\(visible.location + visible.length) loaded=\(ranges) \(width) stale=\(stale.count) misplaced=\(misplaced.count)"
             + (stale.isEmpty ? "" : "\n  " + stale.joined(separator: "\n  "))
             + (misplaced.isEmpty ? "" : "\n  " + misplaced.joined(separator: "\n  "))
     }
