@@ -9,6 +9,7 @@ import SwiftUI
 /// does besides opening its issue, the fold arrow and the status menu, is `issueRowControls`.
 struct IssueRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.rowsOnPage) private var onPage
     var item: Item
     /// In My Issues and search, where rows come from several projects.
     var showsProject = false
@@ -39,6 +40,9 @@ struct IssueRow: View {
     var picked: Bool? = nil
     /// Whether it can be picked with the others: not one known only from GitHub, whose circle is faint.
     var pickable = true
+    /// Whether a hairline runs under it: on a page not under the last row, and not next to a picked one, as picked
+    /// neighbours join into one shape.
+    var hairline = true
     /// The row's name for UI tests, "row-#12" unless given.
     var identifier: String? = nil
     @ScaledMetric(relativeTo: .body) private var glyphSize: CGFloat = 20
@@ -53,6 +57,11 @@ struct IssueRow: View {
     static let leading: CGFloat = 22
     /// The status icon's top, from the row's.
     static let statusTop: CGFloat = 13
+    /// How far rows on a page (`issueRowsOnPage()`) reach past its trailing margin, so that the people stand at the
+    /// margin as they stand at a list's edge.
+    static let pageOverhang: CGFloat = 16
+    /// How far a row on a page lights up past the page's margins, the same on both sides.
+    static let highlightOutset: CGFloat = 6
 
     var body: some View {
         let indent = CGFloat(min(place.depth, Self.deepestIndent)) * Self.indent
@@ -89,9 +98,14 @@ struct IssueRow: View {
         .background(alignment: .topLeading) {
             if place.depth > 0 || nested != nil { tree }
         }
-        // A hairline from where the title starts, as between Reminders' rows.
+        // A hairline from where the title starts, as between Reminders' rows: to the list's edge, or on a page to its
+        // margin.
         .overlay(alignment: .bottom) {
-            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, Self.leading + indent + glyphSize + 12)
+            if hairline {
+                Rectangle().fill(Theme.rowSeparator).frame(height: 1)
+                    .padding(.leading, Self.leading + indent + glyphSize + 12)
+                    .padding(.trailing, onPage ? Self.pageOverhang : 0)
+            }
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
@@ -360,11 +374,55 @@ private struct IssueRowControls<Menu: View>: ViewModifier {
 /// A list row that highlights while pressed, as a system row does, without tinting its text.
 struct RowButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(configuration.isPressed ? Theme.selected : Color.clear)
-            .contentShape(Rectangle())
-            .hoverEffect(.highlight)
+        PressedRow(configuration: configuration)
     }
+
+    /// Pressed or under the pointer, a row lights up across a list, or on a page in its rounded shape (`RowHighlight`).
+    private struct PressedRow: View {
+        @Environment(\.rowsOnPage) private var onPage
+        var configuration: Configuration
+
+        var body: some View {
+            if onPage {
+                configuration.label
+                    .background { if configuration.isPressed { RowHighlight(onPage: true).fill(Theme.selected) } }
+                    .contentShape(Rectangle())
+                    .contentShape(.hoverEffect, RowHighlight(onPage: true))
+                    .hoverEffect(.highlight)
+            } else {
+                // Into the safe area too, as a list's row is lit in landscape.
+                configuration.label
+                    .background(configuration.isPressed ? Theme.selected : Color.clear)
+                    .contentShape(Rectangle())
+                    .hoverEffect(.highlight)
+            }
+        }
+    }
+}
+
+/// What a row of issues lights up as when it is pressed, picked or under the pointer: the whole row in a list; on a page
+/// (`issueRowsOnPage()`), a rounded shape reaching the same small way past the page's margins on both sides, which
+/// picked neighbours join into one.
+struct RowHighlight: Shape {
+    var onPage: Bool
+    var joinedAbove = false
+    var joinedBelow = false
+
+    func path(in rect: CGRect) -> Path {
+        guard onPage else { return Path(rect) }
+        // The row reaches `pageOverhang` past the trailing margin and starts at the leading one.
+        let outset = IssueRow.highlightOutset
+        let lit = CGRect(x: rect.minX - outset, y: rect.minY, width: rect.width + 2 * outset - IssueRow.pageOverhang, height: rect.height)
+        return UnevenRoundedRectangle(
+            topLeadingRadius: joinedAbove ? 0 : 10, bottomLeadingRadius: joinedBelow ? 0 : 10,
+            bottomTrailingRadius: joinedBelow ? 0 : 10, topTrailingRadius: joinedAbove ? 0 : 10, style: .continuous
+        ).path(in: lit)
+    }
+}
+
+extension EnvironmentValues {
+    /// Whether rows of issues stand on a page, inside its margins, rather than across a list (`issueRowsOnPage()`).
+    @Entry var rowsOnPage = false
 }
 
 /// A small part of a row's line of details: a symbol and text, as Reminders writes a date; a label in a capsule

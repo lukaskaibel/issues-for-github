@@ -1310,7 +1310,8 @@ private struct MobileSubIssueRows: View {
         ForEach(Array(lines.enumerated()), id: \.element.id) { index, line in
             MobileSubIssueRow(
                 line: line, parent: parent, order: order, showsMilestone: showsMilestone,
-                above: index > 0 ? ids[index - 1] : nil, below: index + 1 < ids.count ? ids[index + 1] : nil
+                above: index > 0 ? ids[index - 1] : nil, below: index + 1 < ids.count ? ids[index + 1] : nil,
+                last: index == lines.count - 1
             )
         }
         .issueRowsOnPage()
@@ -1320,9 +1321,11 @@ private struct MobileSubIssueRows: View {
 extension View {
     /// Rows of issues on a page stay inside its margins, unlike the Mac's, which hang into the margin by the room before
     /// their status icons: on iPhone the arrow that folds a row's sub-issues would stand at the screen's edge, where a
-    /// swipe goes back. Only the room after the people is the page's.
+    /// swipe goes back. Only the room after the people is the page's; their lines end at the margin, and they light up
+    /// the same small way past both margins.
     func issueRowsOnPage() -> some View {
-        padding(.trailing, -16)
+        padding(.trailing, -IssueRow.pageOverhang)
+            .environment(\.rowsOnPage, true)
     }
 }
 
@@ -1335,6 +1338,7 @@ private struct MobileSubIssueRow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openRoute) private var openRoute
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.rowsOnPage) private var onPage
     var line: SubIssueLine
     /// The issue whose page lists it.
     var parent: Item
@@ -1344,6 +1348,8 @@ private struct MobileSubIssueRow: View {
     /// The issues of the rows right above and below it under the same heading, whose picks join with its own.
     var above: String?
     var below: String?
+    /// The last row under its heading, with no hairline under it.
+    var last = false
     /// The keys held as the row was last touched or clicked.
     @State private var keys: UIKeyModifierFlags = []
 
@@ -1365,7 +1371,7 @@ private struct MobileSubIssueRow: View {
                 item: item, place: line.place, nested: line.progress?.total, folded: !line.unfolded, foldWaiting: line.waiting,
                 showsMilestone: showsMilestone, showsEpic: false,
                 chips: model.fieldChips(of: item, in: item.projectId.map { .project($0) }),
-                picked: picking ? picked : nil, pickable: pickable,
+                picked: picking ? picked : nil, pickable: pickable, hairline: !last && !picked && !pickedBelow,
                 identifier: "sub-\(item.displayNumber)"
             )
         }
@@ -1380,7 +1386,10 @@ private struct MobileSubIssueRow: View {
             statusMenu(item)
         }
         // Picked ones tinted, and picked neighbours joined into one shape, as on the Mac.
-        .background(shape(joinedAbove: picked && pickedAbove, joinedBelow: picked && pickedBelow).fill(picked ? Theme.selectionFill : .clear))
+        .background(
+            RowHighlight(onPage: onPage, joinedAbove: picked && pickedAbove, joinedBelow: picked && pickedBelow)
+                .fill(picked ? Theme.selectionFill : .clear)
+        )
         .gesture(HeldKeys { keys = $0 })
         // Unfolded, its sub-issues are read again each time the list shows.
         .task(id: line.unfolded) {
@@ -1452,13 +1461,6 @@ private struct MobileSubIssueRow: View {
 
     private func select(_ boardItem: Item) {
         withAnimation(Theme.spring) { model.startPickingSubIssues(of: parent, with: boardItem) }
-    }
-
-    private func shape(joinedAbove: Bool, joinedBelow: Bool) -> UnevenRoundedRectangle {
-        UnevenRoundedRectangle(
-            topLeadingRadius: joinedAbove ? 0 : 10, bottomLeadingRadius: joinedBelow ? 0 : 10,
-            bottomTrailingRadius: joinedBelow ? 0 : 10, topTrailingRadius: joinedAbove ? 0 : 10, style: .continuous
-        )
     }
 
     /// The statuses to pick from, as on any row; one known only from GitHub is only open or closed there.
@@ -1560,7 +1562,7 @@ private struct MobileRelations: View {
                     }
                     VStack(spacing: 0) {
                         ForEach(links, id: \.key) { link in
-                            MobileLinkedIssueRow(item: item, link: link)
+                            MobileLinkedIssueRow(item: item, link: link, last: link.key == links.last?.key)
                         }
                     }
                     .issueRowsOnPage()
@@ -1578,6 +1580,8 @@ private struct MobileLinkedIssueRow: View {
     @Environment(\.openRoute) private var openRoute
     var item: Item
     var link: LinkedIssue
+    /// The last row under its heading, with no hairline under it.
+    var last = false
 
     var body: some View {
         let linked = model.rowItem(for: link)
@@ -1590,7 +1594,7 @@ private struct MobileLinkedIssueRow: View {
         } label: {
             IssueRow(
                 item: linked, showsEpic: false, chips: model.fieldChips(of: linked, in: linked.projectId.map { .project($0) }),
-                identifier: "link-\(link.displayNumber)"
+                hairline: !last, identifier: "link-\(link.displayNumber)"
             )
         }
         .buttonStyle(RowButtonStyle())
