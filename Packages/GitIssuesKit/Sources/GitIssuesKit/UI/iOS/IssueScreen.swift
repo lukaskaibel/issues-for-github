@@ -1296,8 +1296,7 @@ private struct MobileSubIssueOptionsMenu: View {
     }
 }
 
-/// The rows of `lines`, each told which rows stand next to it, so picked neighbours join into one shape. They hang into
-/// the page's margin by the room before their status icons, so those line up with the text above, as on the Mac.
+/// The rows of `lines`, each told which rows stand next to it, so picked neighbours join into one shape.
 private struct MobileSubIssueRows: View {
     @Environment(AppModel.self) private var model
     var lines: [SubIssueLine]
@@ -1319,10 +1318,11 @@ private struct MobileSubIssueRows: View {
 }
 
 extension View {
-    /// Rows of issues on a page hang into its margin by the room before their status icons, so those line up with the
-    /// text above, as the Mac's do.
+    /// Rows of issues on a page stay inside its margins, unlike the Mac's, which hang into the margin by the room before
+    /// their status icons: on iPhone the arrow that folds a row's sub-issues would stand at the screen's edge, where a
+    /// swipe goes back. Only the room after the people is the page's.
     func issueRowsOnPage() -> some View {
-        padding(.leading, -(IssueRow.leading - 2)).padding(.trailing, -16)
+        padding(.trailing, -16)
     }
 }
 
