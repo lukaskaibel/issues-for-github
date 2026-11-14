@@ -823,3 +823,15 @@ struct CardStackEdge: View {
             .accessibilityHidden(true)
     }
 }
+
+extension CardView {
+    /// The deep shadow under a card lifted off a board or a list while it is dragged.
+    static let liftedShadow = (radius: CGFloat(22), y: CGFloat(16))
+}
+
+extension View {
+    /// The shadow of a card being dragged (`CardView.liftedShadow`), while it is lifted.
+    func liftedShadow(_ lifted: Bool = true) -> some View {
+        shadow(color: lifted ? Theme.shadow : .clear, radius: lifted ? CardView.liftedShadow.radius : 0, y: lifted ? CardView.liftedShadow.y : 0)
+    }
+}

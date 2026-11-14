@@ -100,6 +100,10 @@ All notable changes to this project are recorded here. The format follows
   calendar is drawn at the date's size, and as a property (inspector, peek, iPad's column, the long-press preview) a
   due date reads the same everywhere, coloured only while overdue or today. iPhone and iPad menus show milestones with
   their coloured diamonds, and their Inbox rows the issue's state before its title, as the Mac does.
+- **A row dragged in the Mac's list lifts off as a card does on the board**: the lifted card's colour, round corners and
+  deep shadow, and no border. Picked rows carry the edge of a second card and how many they are, an epic's header lifts
+  off as the card its issues lift off as on the board, and held over an issue the smaller card says "Sub-issue of #9" as
+  the board's card does.
 - **Escape in an issue's title takes the edit back on iPhone and iPad too**, as on the Mac.
 - **Pickers offer the likeliest choice first.** The parent, epic, blocker, label and assignee you chose lately now come
   at the very top of their pickers, above **Remove from #…** and the current one, with the likeliest lit so `Return`
