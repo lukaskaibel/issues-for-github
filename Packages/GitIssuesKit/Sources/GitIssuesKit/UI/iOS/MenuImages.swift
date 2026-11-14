@@ -20,6 +20,13 @@ enum MenuImages {
         }
     }
 
+    /// A milestone's diamond in its mark's colour, as the Mac's menus and every other view show it.
+    static func milestone(_ mark: MilestoneMark, _ scheme: ColorScheme) -> Image {
+        image("milestone-\(mark)", scheme) {
+            MilestoneIcon(mark: mark, size: 15)
+        }
+    }
+
     static func label(_ hex: String, _ scheme: ColorScheme) -> Image {
         image("label-\(hex)", scheme) {
             Circle().fill(Theme.labelColor(hex)).frame(width: 10, height: 10)
