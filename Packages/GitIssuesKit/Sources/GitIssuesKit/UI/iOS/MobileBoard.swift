@@ -427,24 +427,17 @@ struct MobileColumn: View {
         return Button {
             openRoute(.issue(item.id))
         } label: {
-            CardView(card: model.cardModel(for: item, in: column.nesting, showsMilestone: milestone == nil), width: width, selected: lit, avatarVersion: model.avatarVersion)
+            CardView(card: model.cardModel(for: item, in: column.nesting, showsMilestone: milestone == nil), width: width, avatarVersion: model.avatarVersion)
                 .equatable()
         }
         .buttonStyle(CardPressStyle())
         .accessibilityIdentifier("card-\(item.displayNumber)")
         .hoverEffect(.lift)
-        // Lit to take the dragged card as a sub-issue: a ring a little outside the card and a card a little larger, so
-        // both show around the dragged card, which covers most of it.
+        // Lit to take the dragged card as a sub-issue, as on every board: its ring stands a little outside the card, so
+        // that it shows around the dragged card, which covers most of it.
         .overlay {
-            if lit {
-                RoundedRectangle(cornerRadius: CardView.cornerRadius + Self.nestRingOutset, style: .continuous)
-                    .strokeBorder(Theme.accent, lineWidth: 2.5)
-                    .padding(-Self.nestRingOutset)
-                    .transition(.opacity)
-                    .accessibilityHidden(true)
-            }
+            if lit { NestTargetMark(cornerRadius: CardView.cornerRadius).transition(.opacity) }
         }
-        .scaleEffect(lit ? 1.03 : 1)
         .animation(Theme.quick, value: lit)
         .opacity((dragging == item.id || liftedIds.contains(item.id)) && target != nil ? 0.35 : 1)
         .onGeometryChange(for: CGRect.self) { proxy in
@@ -469,9 +462,6 @@ struct MobileColumn: View {
         .accessibilityAction(named: Text(.moveToNextStatus)) { step(item, by: 1) }
         .accessibilityAction(named: Text(.moveToPreviousStatus)) { step(item, by: -1) }
     }
-
-    /// How far outside a card the ring is that lights it up to take a dragged card.
-    static let nestRingOutset: CGFloat = 4
 
     /// What a card is outside the app: its link on GitHub, or its number and title.
     private func dragText(_ item: Item) -> String {

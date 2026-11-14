@@ -322,11 +322,11 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
 
-    /// The row as a card lifted off the list, to drag around.
-    func dragImage() -> NSImage? {
+    /// The row's own picture as it lifts off the list, which `LiftedImage` puts on a card: without the hover fill and
+    /// checkbox, which belong to the pointer, not to the issue, nor the accent fill of a picked row; lifted, it is a
+    /// card like any other, as on the board.
+    func liftedContent() -> NSImage? {
         guard let content = bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
-        // Without the hover fill and checkbox, which belong to the pointer, not to the issue, nor the accent fill of a
-        // picked row: lifted, it is a card like any other, as on the board.
         let wasHighlighted = highlighted, wasHovered = hoveredPart, wasRow = row
         if var lifted = row, lifted.selected || lifted.selecting {
             lifted.selected = false
@@ -342,22 +342,9 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
         highlighted = wasHighlighted
         hoveredPart = wasHovered
         needsDisplay = true
-        let appearance = effectiveAppearance
-        return NSImage(size: bounds.size, flipped: false) { rect in
-            appearance.performAsCurrentDrawingAppearance {
-                let card = NSBezierPath(
-                    roundedRect: rect.insetBy(dx: IssueTable.inset, dy: 1).insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7
-                )
-                NSColor(Theme.cardLifted).setFill()
-                card.fill()
-                NSColor(Theme.cardLiftedBorder).setStroke()
-                card.lineWidth = 1
-                card.stroke()
-            }
-            // On top of the card; a plain `draw(in:)` would copy the transparent pixels over it.
-            content.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-            return true
-        }
+        let image = NSImage(size: bounds.size)
+        image.addRepresentation(content)
+        return image
     }
 
     override func draw(_ dirtyRect: NSRect) {
