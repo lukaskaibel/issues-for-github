@@ -253,9 +253,11 @@ enum LabelMark {
 }
 
 extension Item {
-    /// The labels its cards and rows show: an epic's own label says what its icon says already.
+    /// The labels its cards and rows show: an epic's own label says what its icon says already. Asked on every paint
+    /// of a card, so whether it is an epic is worked out once, and most issues keep their labels as they are.
     var shownLabels: [LabelRef] {
-        labels.filter { !(isEpic && Item.isEpicLabel($0.name)) }
+        guard isEpic else { return labels }
+        return labels.filter { !Item.isEpicLabel($0.name) }
     }
 }
 
