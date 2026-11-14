@@ -360,48 +360,6 @@ struct FilterTextEditor: View {
     }
 }
 
-/// Lays its children out in rows, starting a new row when one is full.
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 6
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.width ?? .infinity
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var line: CGFloat = 0
-        var widest: CGFloat = 0
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x > 0, x + size.width > width {
-                y += line + spacing
-                x = 0
-                line = 0
-            }
-            x += size.width + spacing
-            widest = max(widest, x - spacing)
-            line = max(line, size.height)
-        }
-        return CGSize(width: min(widest, width), height: y + line)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var line: CGFloat = 0
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x > bounds.minX, x + size.width > bounds.maxX {
-                y += line + spacing
-                x = bounds.minX
-                line = 0
-            }
-            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing
-            line = max(line, size.height)
-        }
-    }
-}
-
 // MARK: - The header's buttons
 
 /// The header's filter button: adds a filter to the view open, or to My Issues (F).

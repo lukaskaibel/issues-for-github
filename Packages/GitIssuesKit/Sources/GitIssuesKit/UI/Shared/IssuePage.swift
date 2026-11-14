@@ -1,5 +1,8 @@
 import Foundation
 
+// What an issue's page does the same way on the Mac and on iPhone and iPad: its sub-issues and relations as rows,
+// saving its description, and the banner over a change GitHub has changed too.
+
 /// An issue the app knows only from another one's page, as one of its sub-issues or an issue it is blocked by or
 /// blocks, made into an issue of its own for that page's rows: they are drawn as every other row of issues is, with
 /// what is known of it. Such an issue is on none of your boards and can't be changed from the row, only opened on

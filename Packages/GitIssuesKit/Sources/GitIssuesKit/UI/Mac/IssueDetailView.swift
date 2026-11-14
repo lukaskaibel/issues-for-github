@@ -1002,15 +1002,18 @@ struct IssueProperties: View {
     }
 }
 
+/// An issue's labels in its properties, side by side on as many lines as they need, as iPad's properties show them.
 private struct WrappingLabels: View {
     var labels: [LabelRef]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        FlowLayout(spacing: 2) {
             ForEach(labels) { label in
                 LabelChip(label: label)
             }
         }
+        // The first label's dot under the other properties' icons.
+        .padding(.leading, -LabelMark.inset)
         .padding(.vertical, 4)
     }
 }
