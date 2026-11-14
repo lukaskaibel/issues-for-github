@@ -284,22 +284,16 @@ struct PickerRow: View {
     }
 }
 
-/// The box at the start of a row in a picker that takes several values, drawn like the list's checkboxes.
+/// The box at the start of a row in a picker that takes several values, the list's checkbox (`Marks.checkbox`): on
+/// the picker's light row an accent box with a white tick.
 private struct PickerCheckbox: View {
     var checked: Bool
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 4.5, style: .continuous)
-            .fill(checked ? Theme.accentFill : .clear)
-            .strokeBorder(checked ? .clear : Theme.textTertiary.opacity(0.7), lineWidth: 1.2)
-            .frame(width: 14, height: 14)
-            .overlay {
-                if checked {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 8.5, weight: .bold))
-                        .foregroundStyle(.white)
-                }
-            }
+        Canvas { context, size in
+            context.draw(Marks.checkbox(checked: checked, in: CGRect(origin: .zero, size: size)), mark: Theme.accentFill, off: Theme.textTertiary, onColor: .white)
+        }
+        .frame(width: 14, height: 14)
     }
 }
 
@@ -372,10 +366,11 @@ struct PropertyButton<Label: View>: View {
         Button {
             open = true
         } label: {
+            // Under the pointer it lights up in the grey every clickable part of an issue takes, on cards and rows too.
             label
                 .padding(.horizontal, 8)
                 .frame(minHeight: 28)
-                .hoverFill(active: open, radius: 8)
+                .hoverFill(active: open, radius: 8, fill: Theme.partHover)
         }
         .buttonStyle(PlainPressStyle())
         .dropdown(isPresented: $open) { close in

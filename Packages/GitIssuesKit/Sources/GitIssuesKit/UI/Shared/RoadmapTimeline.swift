@@ -535,17 +535,7 @@ private struct TimelinePainter {
             if hovered == .milestone(index) || dueDrag?.window == index {
                 context.fill(Path(roundedRect: diamondRect.insetBy(dx: -4, dy: -4), cornerRadius: 5), with: .color(Theme.partHover))
             }
-            let outline = PlanningGlyph.diamond(in: diamondRect)
-            let style = StrokeStyle(lineWidth: 1.5, lineJoin: .round, dash: window.undated ? [2, 2] : [])
-            switch mark {
-            case .completed:
-                context.fill(outline, with: .color(mark.color))
-            case .current, .late:
-                context.stroke(outline, with: .color(mark.color), style: style)
-                context.fill(PlanningGlyph.diamond(in: diamondRect, inset: 4.8), with: .color(mark.color))
-            case .upcoming, .none:
-                context.stroke(outline, with: .color(mark.color), style: style)
-            }
+            context.draw(Marks.milestone(mark, in: diamondRect, dashed: window.undated), mark: mark.color)
             // Title and date, right-aligned before the diamond, as long as they fit the stretch.
             let dateText = window.undated ? String(localized: .noDate) : day.shortLabel(today: today)
             let title = context.resolve(

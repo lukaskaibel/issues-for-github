@@ -129,12 +129,7 @@ struct ProjectDropdown: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(.projects)
-                .font(.tinySemibold)
-                .foregroundStyle(Theme.textTertiary)
-                .padding(.horizontal, 12)
-                .padding(.top, 10)
-                .padding(.bottom, 4)
+            MenuHeading(Text(.projects), inset: 12, top: 10, bottom: 4)
             ForEach(listedProjects) { project in
                 row(.project(project.id))
             }
@@ -487,10 +482,10 @@ private struct SidebarViewRow: View {
 
     @ViewBuilder
     private var icon: some View {
-        if view.layout == .roadmap, model.display(of: view).layout == nil {
-            RoadmapIcon(size: 14)
+        if let symbol = model.layoutSymbol(of: view) {
+            Image(systemName: symbol)
         } else {
-            Image(systemName: model.layout(of: view) == .board ? "rectangle.split.3x1" : "list.bullet")
+            RoadmapIcon(size: 14)
         }
     }
 

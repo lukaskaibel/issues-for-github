@@ -97,9 +97,8 @@ struct PickerSheet: View {
                 Button {
                     pick(item, keepOpen: true)
                 } label: {
-                    Image(systemName: item.selected ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
-                        .foregroundStyle(item.selected ? Theme.accent : Theme.textTertiary)
+                    // The circle that picks a sub-issue on an issue's page, too.
+                    PickMark(picked: item.selected)
                         .frame(width: 28, height: 36)
                         .contentShape(Rectangle())
                 }

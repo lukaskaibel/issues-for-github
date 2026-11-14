@@ -673,7 +673,7 @@ private struct EpicGroupHeader: View {
                 .foregroundStyle(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
                 .rotationEffect(.degrees(group.folded ? -90 : 0))
                 .frame(width: Self.arrow, height: Self.arrow)
-                .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(hoveringFold ? Theme.hover : .clear))
+                .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(hoveringFold ? Theme.partHover : .clear))
                 .padding(.vertical, (Self.line - Self.arrow) / 2)
                 .opacity(hovered || group.folded ? 1 : 0)
         }

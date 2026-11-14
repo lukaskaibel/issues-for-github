@@ -211,7 +211,7 @@ struct FilterIconView: View {
             case .milestone(let mark): MilestoneIcon(mark: mark, size: size)
             case .dot(let color): GroupIcon(icon: .dot(color), size: size + 1)
             case .iteration(let current): IterationIcon(size: size + 1).foregroundStyle(current ? Theme.started : Theme.textSecondary)
-            case .priority(let level): PriorityIcon(level: level).scaleEffect(size / 14)
+            case .priority(let level): PriorityIcon(level: level, size: size)
             case .project(let look): ProjectGlyphImage(look: look, size: size + 1)
             case .none: EmptyView()
             }
@@ -360,48 +360,6 @@ struct FilterTextEditor: View {
     }
 }
 
-/// Lays its children out in rows, starting a new row when one is full.
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 6
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.width ?? .infinity
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var line: CGFloat = 0
-        var widest: CGFloat = 0
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x > 0, x + size.width > width {
-                y += line + spacing
-                x = 0
-                line = 0
-            }
-            x += size.width + spacing
-            widest = max(widest, x - spacing)
-            line = max(line, size.height)
-        }
-        return CGSize(width: min(widest, width), height: y + line)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var line: CGFloat = 0
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x > bounds.minX, x + size.width > bounds.maxX {
-                y += line + spacing
-                x = bounds.minX
-                line = 0
-            }
-            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing
-            line = max(line, size.height)
-        }
-    }
-}
-
 // MARK: - The header's buttons
 
 /// The header's filter button: adds a filter to the view open, or to My Issues (F).
@@ -520,7 +478,7 @@ struct DisplayOptions: View {
             .font(.small)
             let candidates = model.chipCandidates(projectId: view.projectId)
             if !candidates.isEmpty {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                PopoverDivider(outset: 14)
                 VStack(alignment: .leading, spacing: 8) {
                     Text(.properties).font(.small).foregroundStyle(Theme.textSecondary)
                     FlowLayout(spacing: 5) {
@@ -546,7 +504,7 @@ struct DisplayOptions: View {
             }
             let hidden = mode == .board ? model.hiddenColumns(projectId: view.projectId) : []
             if !hidden.isEmpty {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                PopoverDivider(outset: 14)
                 VStack(alignment: .leading, spacing: 8) {
                     Text(.hiddenColumns).font(.small).foregroundStyle(Theme.textSecondary)
                     // A click shows the column on the board again.
@@ -573,7 +531,7 @@ struct DisplayOptions: View {
                 }
             }
             if model.displayDiffers(view) {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                PopoverDivider(outset: 14)
                 HStack(spacing: 8) {
                     Text(.changedForYou).font(.small).foregroundStyle(Theme.textTertiary)
                     Spacer(minLength: 8)

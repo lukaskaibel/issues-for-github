@@ -115,30 +115,17 @@ struct InboxSubjectIcon: View {
 
     var body: some View {
         if let item, item.isOnBoard, item.statusId != nil {
-            StatusIcon(glyph: tinted(model.glyph(of: item)))
+            StatusIcon(glyph: tint == nil ? model.glyph(of: item) : model.glyph(of: item).onAccent)
         } else if entry.isPullRequest {
             Image(systemName: entry.state == "MERGED" ? "arrow.triangle.merge" : "arrow.triangle.pull")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(tint ?? (entry.state == "MERGED" ? Theme.accent : entry.state == "CLOSED" ? Theme.textTertiary : Theme.positive))
                 .frame(width: 14, height: 14)
         } else {
-            StatusIcon(glyph: tinted(openClosedGlyph))
-        }
-    }
-
-    private func tinted(_ glyph: StatusGlyph) -> StatusGlyph {
-        guard let tint else { return glyph }
-        var glyph = glyph
-        glyph.color = tint
-        return glyph
-    }
-
-    /// As a sub-issue that isn't on the board shows it: open, done or not planned.
-    private var openClosedGlyph: StatusGlyph {
-        switch (entry.state, entry.stateReason) {
-        case ("CLOSED", "NOT_PLANNED"), ("CLOSED", "DUPLICATE"): StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary)
-        case ("CLOSED", _): StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
-        default: StatusGlyph(category: .unstarted, progress: 0, color: Theme.textBody)
+            // As a sub-issue that isn't on a board shows it: open, done or not planned; on a picked row as a picked
+            // list row shows it.
+            let glyph = StatusGlyph.openOrClosed(entry.state ?? "OPEN", reason: entry.stateReason)
+            StatusIcon(glyph: tint == nil ? glyph : glyph.onAccent)
         }
     }
 }

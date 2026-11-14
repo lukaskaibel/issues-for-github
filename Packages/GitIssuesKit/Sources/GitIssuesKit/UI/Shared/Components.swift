@@ -17,8 +17,7 @@ struct StatusGlyph: Equatable {
     /// An issue on none of your boards has no status, only open or closed.
     static func withoutProject(_ item: Item) -> StatusGlyph {
         guard item.isClosed else { return .noProject }
-        if item.stateReason == "NOT_PLANNED" { return StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary) }
-        return StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
+        return openOrClosed(item.state, reason: item.stateReason)
     }
 
     /// An issue known only as open or closed: a sub-issue or a related issue that isn't on one of your boards.
@@ -28,6 +27,15 @@ struct StatusGlyph: Equatable {
             return StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary)
         }
         return StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
+    }
+
+    /// On a row filled with the accent colour, as a picked one is: white, but done and canceled keep their filled
+    /// circle, whose check or cross shows on it.
+    var onAccent: StatusGlyph {
+        guard category != .completed, category != .canceled else { return self }
+        var glyph = self
+        glyph.color = .white
+        return glyph
     }
 
     /// Glyphs for all statuses of one project. Later "started" columns fill the circle further.
@@ -69,31 +77,27 @@ struct StatusIcon: View {
 
 struct PriorityIcon: View {
     var level: PriorityLevel
+    /// Its width; 14 points as on cards and rows, wider where the text around it is larger.
+    var size: CGFloat = 14
+    /// White on a picked row's accent, as a picked row of the list shows it; Urgent keeps its colour, as a flag does.
+    var onAccent = false
 
     var body: some View {
-        Group {
+        // The same shapes as cards and rows paint (`Marks.priority`), in their 14 by 12 box, scaled to the size.
+        Canvas { context, canvas in
+            var context = context
+            context.scaleBy(x: canvas.width / 14, y: canvas.width / 14)
+            let box = CGRect(x: 0, y: 0, width: 14, height: 12)
+            let mark = level == .urgent ? Theme.urgent : onAccent ? .white : Theme.textBody
+            context.draw(Marks.priority(level, in: box), mark: mark, off: onAccent ? .white.opacity(0.35) : Theme.barOff)
             if level == .urgent {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous).fill(Theme.urgent)
-                    Text("!")
-                        .font(.system(size: 10, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Theme.onColor)
-                }
-                .frame(width: 12, height: 12)
-            } else {
-                HStack(alignment: .bottom, spacing: 2) {
-                    bar(height: 4, on: level >= .low)
-                    bar(height: 7, on: level >= .medium)
-                    bar(height: 10, on: level >= .high)
-                }
+                let square = Marks.urgentSquare(in: box)
+                context.draw(Marks.urgentMark.foregroundStyle(Theme.onColor), at: CGPoint(x: square.midX, y: square.midY))
             }
         }
-        .frame(width: 14, height: 12, alignment: .bottom)
+        .frame(width: size, height: size * 12 / 14)
+        .accessibilityElement()
         .accessibilityLabel(label)
-    }
-
-    private func bar(height: CGFloat, on: Bool) -> some View {
-        RoundedRectangle(cornerRadius: 1).fill(on ? Theme.textBody : Theme.barOff).frame(width: 3, height: height)
     }
 
     private var label: LocalizedStringResource {
@@ -181,20 +185,38 @@ struct Avatar: View {
     }
 }
 
+/// An issue's people, as cards and rows paint them: up to three, overlapping, the first on top, each kept apart from
+/// the one under it by a thin gap, which is cut out rather than drawn so it shows the ground on any ground.
 struct AvatarStack: View {
     var people: [Person]
     var size: CGFloat = 18
 
     var body: some View {
-        HStack(spacing: -5) {
-            ForEach(people.prefix(3)) { person in
+        let shown = Array(people.prefix(3))
+        // As much of each avatar as cards and rows let the next one cover: 5 of 18 points.
+        let overlap = size * 5 / 18
+        HStack(spacing: -overlap) {
+            ForEach(Array(shown.enumerated()), id: \.element.id) { index, person in
                 Avatar(login: person.login, url: person.avatarUrl, size: size)
-                    .overlay(Circle().stroke(Theme.card, lineWidth: 1.5))
+                    .mask {
+                        Rectangle().overlay(alignment: .leading) {
+                            if index > 0 {
+                                Circle()
+                                    .frame(width: size + 3, height: size + 3)
+                                    .offset(x: -(size - overlap) - 1.5)
+                                    .blendMode(.destinationOut)
+                            }
+                        }
+                        .compositingGroup()
+                    }
+                    .zIndex(Double(shown.count - index))
             }
         }
     }
 }
 
+/// A quiet part of an issue as a view, as cards and rows paint theirs: a symbol and text, as Reminders writes a date,
+/// with no outline; the button around it lights up under the pointer.
 struct Chip<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -205,18 +227,54 @@ struct Chip<Content: View>: View {
             .lineLimit(1)
             .padding(.horizontal, 7)
             .frame(height: 20)
-            .overlay(Capsule().stroke(Theme.chipBorder, lineWidth: 1))
     }
 }
 
+/// A label, as every issue shows its labels: a dot in the label's colour and its name, as Reminders writes its tags,
+/// not a pill tinted with the colour, which turns a board or a list into a field of coloured blobs. An issue's labels
+/// light up together under the pointer, in one grey capsule around them all, as the one button to change them that
+/// they are. Cards and list rows paint them by these measures; `LabelChip` is the same as a view.
+enum LabelMark {
+    /// The dot, and the room between it and the name.
+    static let dot: CGFloat = 7
+    static let gap: CGFloat = 5
+    /// The room inside the capsule on either side, its height, and the room between labels.
+    static let inset: CGFloat = 7
+    static let height: CGFloat = 20
+    static let spacing: CGFloat = 6
+    /// How many of an issue's labels a card shows, and a row, before "+2" says how many more it has.
+    static let onCard = 2
+    static let inRow = 3
+
+    /// How wide a label is whose name is `name` wide.
+    static func width(name: CGFloat) -> CGFloat {
+        inset + dot + gap + name + inset
+    }
+}
+
+extension Item {
+    /// The labels its cards and rows show: an epic's own label says what its icon says already. Asked on every paint
+    /// of a card, so whether it is an epic is worked out once, and most issues keep their labels as they are.
+    var shownLabels: [LabelRef] {
+        guard isEpic else { return labels }
+        return labels.filter { !Item.isEpicLabel($0.name) }
+    }
+}
+
+/// A label as a view, as cards and rows paint it (`LabelMark`).
 struct LabelChip: View {
     var label: LabelRef
 
     var body: some View {
-        Chip {
-            Circle().fill(Theme.labelColor(label.color)).frame(width: 7, height: 7)
+        HStack(spacing: LabelMark.gap) {
+            Circle().fill(Theme.labelColor(label.color)).frame(width: LabelMark.dot, height: LabelMark.dot)
             Text(label.name)
         }
+        .font(.tiny)
+        .foregroundStyle(Theme.textSecondary)
+        .lineLimit(1)
+        .padding(.horizontal, LabelMark.inset)
+        .frame(height: LabelMark.height)
     }
 }
 
@@ -251,6 +309,8 @@ struct BlockedIcon: View {
 struct BlockerFlag: View {
     var mark: BlockerMark
     var size: CGFloat = 12
+    /// One colour in place of red, such as white on a picked row's accent, as the list's rows have it.
+    var tint: Color? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -259,7 +319,7 @@ struct BlockerFlag: View {
                 Text(text).font(.system(size: size)).monospacedDigit()
             }
         }
-        .foregroundStyle(Theme.blocked)
+        .foregroundStyle(tint ?? Theme.blocked)
         .lineLimit(1)
         .fixedSize()
     }
@@ -277,104 +337,61 @@ struct BlockingIcon: View {
     }
 }
 
+/// The sub-issue mark (`Marks.subIssue`) in the view's foreground style.
 struct SubIssueGlyph: View {
     var body: some View {
         Canvas { context, size in
-            let s = size.width / 12
-            var path = Path()
-            path.move(to: CGPoint(x: 2.5 * s, y: 2 * s))
-            path.addLine(to: CGPoint(x: 2.5 * s, y: 6 * s))
-            path.addQuadCurve(to: CGPoint(x: 4.5 * s, y: 8 * s), control: CGPoint(x: 2.5 * s, y: 8 * s))
-            path.addLine(to: CGPoint(x: 6.6 * s, y: 8 * s))
-            context.stroke(path, with: .foreground, style: StrokeStyle(lineWidth: 1.3 * s, lineCap: .round))
-            context.stroke(
-                Path(ellipseIn: CGRect(x: 6.8 * s, y: 6.3 * s, width: 3.4 * s, height: 3.4 * s)),
-                with: .foreground, lineWidth: 1.3 * s
-            )
+            context.draw(Marks.subIssue(in: CGRect(origin: .zero, size: size)), shading: .foreground)
         }
     }
 }
 
-/// The arrow that folds a sub-issue's own sub-issues in or out: to the right while they are folded in, down while
-/// they show. The Mac draws it as its lists do; iPhone and iPad use the symbol their lists use.
-struct FoldArrow: View {
-    var unfolded: Bool
+/// Views side by side, on as many lines as they need, each line's views centred on it: chips under an issue's title,
+/// labels in its properties, a filter's tokens.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
 
-    var body: some View {
-        #if os(macOS)
-        Chevron()
-            .stroke(Theme.textSecondary, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
-            .frame(width: 7, height: 7)
-            .rotationEffect(.degrees(unfolded ? 90 : 0))
-        #else
-        Image(systemName: "chevron.right")
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(Theme.textSecondary)
-            .rotationEffect(.degrees(unfolded ? 90 : 0))
-        #endif
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = arrange(proposal: proposal, subviews: subviews)
+        let height = rows.map(\.height).reduce(0, +) + CGFloat(max(rows.count - 1, 0)) * spacing
+        let width = rows.map(\.width).max() ?? 0
+        return CGSize(width: proposal.width ?? width, height: height)
     }
 
-    private struct Chevron: Shape {
-        func path(in rect: CGRect) -> Path {
-            var path = Path()
-            path.move(to: CGPoint(x: rect.midX - rect.width / 4, y: rect.minY))
-            path.addLine(to: CGPoint(x: rect.midX + rect.width / 4, y: rect.midY))
-            path.addLine(to: CGPoint(x: rect.midX - rect.width / 4, y: rect.maxY))
-            return path
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in arrange(proposal: ProposedViewSize(width: bounds.width, height: nil), subviews: subviews) {
+            var x = bounds.minX
+            for index in row.indices {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                subviews[index].place(at: CGPoint(x: x, y: y + (row.height - size.height) / 2), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+            }
+            y += row.height + spacing
         }
     }
-}
 
-/// The lines of a tree of sub-issues through one row, as the board's lists draw them: a straight one for each level
-/// above whose sub-issues go on below the row, a branch into the row's status icon, and a line from that icon down
-/// to the row's own sub-issues while they show.
-struct TreeLines: View {
-    var place: Nesting.Place
-    /// Where the line of the first level runs, under the status icons of the rows that stand on their own.
-    var firstLine: CGFloat
-    /// How much further in each level is.
-    var indent: CGFloat
-    /// Half the status icon's width: lines stop short of it.
-    var iconRadius: CGFloat
-    /// The deepest level drawn further in; deeper ones stay there.
-    var deepest = 5
-    var linesDown: Bool
+    private struct Row {
+        var indices: [Int] = []
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+    }
 
-    var body: some View {
-        Canvas { context, size in
-            let depth = min(place.depth, deepest)
-            let midY = size.height / 2
-            let iconX = firstLine + CGFloat(depth) * indent
-            var path = Path()
-            for level in 0..<depth {
-                let lineX = firstLine + CGFloat(level) * indent
-                let continues = place.continues.indices.contains(level) && place.continues[level]
-                if level < depth - 1 {
-                    if continues {
-                        path.move(to: CGPoint(x: lineX, y: 0))
-                        path.addLine(to: CGPoint(x: lineX, y: size.height))
-                    }
-                    continue
-                }
-                if continues {
-                    path.move(to: CGPoint(x: lineX, y: 0))
-                    path.addLine(to: CGPoint(x: lineX, y: size.height))
-                    path.move(to: CGPoint(x: lineX, y: midY))
-                } else {
-                    path.move(to: CGPoint(x: lineX, y: 0))
-                    path.addLine(to: CGPoint(x: lineX, y: midY - 5))
-                    path.addQuadCurve(to: CGPoint(x: lineX + 5, y: midY), control: CGPoint(x: lineX, y: midY))
-                }
-                path.addLine(to: CGPoint(x: iconX - iconRadius - 3, y: midY))
+    private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> [Row] {
+        let limit = proposal.width ?? .infinity
+        var rows: [Row] = [Row()]
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            let extra = rows[rows.count - 1].indices.isEmpty ? size.width : size.width + spacing
+            if rows[rows.count - 1].width + extra > limit, !rows[rows.count - 1].indices.isEmpty {
+                rows.append(Row())
             }
-            if linesDown {
-                path.move(to: CGPoint(x: iconX, y: midY + iconRadius + 3))
-                path.addLine(to: CGPoint(x: iconX, y: size.height))
-            }
-            context.stroke(path, with: .color(Theme.treeLine), lineWidth: 1)
+            let gap = rows[rows.count - 1].indices.isEmpty ? 0 : spacing
+            rows[rows.count - 1].indices.append(index)
+            rows[rows.count - 1].width += size.width + gap
+            rows[rows.count - 1].height = max(rows[rows.count - 1].height, size.height)
         }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
+        return rows.filter { !$0.indices.isEmpty }
     }
 }
 
@@ -493,6 +510,8 @@ struct PrimaryButtonStyle: ButtonStyle {
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.small)
@@ -501,6 +520,8 @@ struct SecondaryButtonStyle: ButtonStyle {
             .frame(height: 26)
             .background(Capsule().fill(configuration.isPressed ? Theme.controlActive : Theme.control))
             .contentShape(Capsule())
+            // A button that can't be used now looks it, as a primary one does.
+            .opacity(isEnabled ? 1 : 0.4)
     }
 }
 

@@ -75,6 +75,9 @@ struct CardView: View, Equatable {
     var tree: Nesting.Place? = nil
 
     static let padding = CGSize(width: 12, height: 10)
+    /// The middle of a card's first line, where the number and the people are, and where the line from its parent meets
+    /// a sub-issue's card.
+    static let firstLineY = padding.height + 9
     /// Rounder than a button, as Reminders' cards and Apple's grouped rows are.
     static let cornerRadius: CGFloat = 12
     /// A card stands on the board on a soft shadow rather than inside a border, and on a deeper one under the pointer.
@@ -397,7 +400,7 @@ enum CardText: Hashable {
         case .symbol(.textField):
             Text(Image(systemName: "text.alignleft")).font(.system(size: CardView.chipSize - 3)).foregroundStyle(Theme.textTertiary)
         case .symbol(.urgent):
-            Text("!").font(.system(size: 10, weight: .heavy, design: .rounded)).foregroundStyle(Theme.onColor)
+            Marks.urgentMark.foregroundStyle(Theme.onColor)
         }
     }
 
@@ -480,7 +483,7 @@ private struct CardPainter {
         // Top line: the arrow that folds the sub-issues under the card, number, pull-request mark, the parent of a
         // sub-issue whose parent is elsewhere, and assignees on the right. A board belongs to one project, so the
         // repository is left to the number's tooltip.
-        let topY = padding.height + 9
+        let topY = CardView.firstLineY
         var x = padding.width
         if card.nested != nil {
             let rect = CGRect(x: x - 3, y: topY - 7, width: 14, height: 14)
@@ -488,10 +491,7 @@ private struct CardPainter {
             if view.hoveringFold, !view.lifted {
                 context.fill(Path(roundedRect: rect.insetBy(dx: -2, dy: -2), cornerRadius: 5), with: .color(ink(.partHover)))
             }
-            context.stroke(
-                Self.foldArrow(folded: card.folded, center: CGPoint(x: rect.midX, y: rect.midY)),
-                with: .color(ink(.textSecondary)), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
-            )
+            context.draw(Marks.foldArrow(folded: card.folded, center: CGPoint(x: rect.midX, y: rect.midY)), mark: ink(.textSecondary))
             x = rect.maxX + 5
         }
         let number = text(.number(item.displayNumber, lifted: view.lifted))
@@ -576,35 +576,38 @@ private struct CardPainter {
         // Labels are measured first, so the highlight can sit behind all of them.
         var labelLayout: [(label: LabelRef, text: GraphicsContext.ResolvedText, rect: CGRect)] = []
         var labelX = start(x)
-        for label in item.labels.prefix(2) {
+        let labels = item.shownLabels
+        for label in labels.prefix(LabelMark.onCard) {
             let name = text(.label(label.name))
-            let width = name.width + 7 + 7 + 5 + 7
+            let width = LabelMark.width(name: name.width)
             guard labelX + width <= limit else { break }
-            labelLayout.append((label, name.text, CGRect(x: labelX, y: bottomY - 10, width: width, height: 20)))
-            labelX += width + 6
+            labelLayout.append((label, name.text, CGRect(x: labelX, y: bottomY - 10, width: width, height: LabelMark.height)))
+            labelX += width + LabelMark.spacing
+        }
+        // "+2" for the labels that don't fit, when it fits itself: part of the labels, which it opens too.
+        var moreLayout: (text: GraphicsContext.ResolvedText, rect: CGRect)?
+        if let last = labelLayout.last, labels.count > labelLayout.count {
+            let more = text(.moreLabels(labels.count - labelLayout.count))
+            let rect = CGRect(x: last.rect.maxX + LabelMark.spacing, y: bottomY - 10, width: LabelMark.inset + more.width + LabelMark.inset, height: LabelMark.height)
+            if rect.maxX <= limit { moreLayout = (more.text, rect) }
         }
         if item.kind != .draft, let first = labelLayout.first, let last = labelLayout.last {
-            let labels = first.rect.union(last.rect)
+            let labels = first.rect.union(moreLayout?.rect ?? last.rect)
             part(.labels, labels)
             chip(labels, hovered: hovered(.labels))
         }
         // A label is a dot in its colour and its name, as Reminders writes its tags, rather than a tinted pill: a
         // board of pills is a board of coloured blobs.
         for (label, name, rect) in labelLayout {
-            context.fill(Path(ellipseIn: CGRect(x: rect.minX + 7, y: bottomY - 3.5, width: 7, height: 7)), with: .color(ink(.label(hex: label.color))))
-            context.draw(name, at: CGPoint(x: rect.minX + 19, y: bottomY), anchor: .leading)
-            x = rect.maxX + 6
+            let dot = CGRect(x: rect.minX + LabelMark.inset, y: bottomY - LabelMark.dot / 2, width: LabelMark.dot, height: LabelMark.dot)
+            context.fill(Path(ellipseIn: dot), with: .color(ink(.label(hex: label.color))))
+            context.draw(name, at: CGPoint(x: dot.maxX + LabelMark.gap, y: bottomY), anchor: .leading)
+            x = rect.maxX + LabelMark.spacing
             shown += 1
         }
-        if item.labels.count > shown, shown > 0 {
-            let more = text(.moreLabels(item.labels.count - shown))
-            let width = more.width + 14
-            if x + width <= limit {
-                let rect = CGRect(x: x, y: bottomY - 10, width: width, height: 20)
-                chip(rect)
-                context.draw(more.text, at: CGPoint(x: rect.minX + 7, y: bottomY), anchor: .leading)
-                x = rect.maxX + 6
-            }
+        if let moreLayout, shown > 0 {
+            context.draw(moreLayout.text, at: CGPoint(x: moreLayout.rect.minX + LabelMark.inset, y: bottomY), anchor: .leading)
+            x = moreLayout.rect.maxX + LabelMark.spacing
         }
         if item.subTotal > 0 {
             let progress = text(.progress(done: item.subCompleted, of: item.subTotal))
@@ -613,17 +616,7 @@ private struct CardPainter {
                 let rect = CGRect(x: start(x), y: bottomY - 10, width: width, height: 20)
                 part(.subIssues, rect)
                 chip(rect, hovered: hovered(.subIssues))
-                let origin = CGPoint(x: rect.minX + 7, y: bottomY - 5.5)
-                var glyph = Path()
-                glyph.move(to: CGPoint(x: origin.x + 2.3, y: origin.y + 1.8))
-                glyph.addLine(to: CGPoint(x: origin.x + 2.3, y: origin.y + 5.5))
-                glyph.addQuadCurve(to: CGPoint(x: origin.x + 4.1, y: origin.y + 7.3), control: CGPoint(x: origin.x + 2.3, y: origin.y + 7.3))
-                glyph.addLine(to: CGPoint(x: origin.x + 6, y: origin.y + 7.3))
-                context.stroke(glyph, with: .color(ink(.textSecondary)), style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
-                context.stroke(
-                    Path(ellipseIn: CGRect(x: origin.x + 6.2, y: origin.y + 5.8, width: 3.1, height: 3.1)),
-                    with: .color(ink(.textSecondary)), lineWidth: 1.2
-                )
+                context.draw(Marks.subIssue(in: CGRect(x: rect.minX + 7, y: bottomY - 5.5, width: 11, height: 11)), mark: ink(.textSecondary))
                 context.draw(progress.text, at: CGPoint(x: rect.minX + 7 + 11 + 4, y: bottomY), anchor: .leading)
                 x = rect.maxX + 6
             }
@@ -644,20 +637,10 @@ private struct CardPainter {
                 let rect = CGRect(x: start(x), y: bottomY - 10, width: width, height: 20)
                 part(.milestone, rect)
                 chip(rect, hovered: hovered(.milestone))
-                let diamond = CGRect(x: rect.minX + 7, y: bottomY - 5, width: 10, height: 10)
-                let outline = PlanningGlyph.diamond(in: diamond, inset: 1.1)
                 // Grey, as the same milestone repeats down the board; its shape still tells the current one, and only
-                // a milestone past its date keeps its colour.
-                let color = ink(card.milestoneMark == .late ? .milestone(.late) : .textTertiary)
-                switch card.milestoneMark {
-                case .completed:
-                    context.fill(outline, with: .color(color))
-                case .current, .late:
-                    context.stroke(outline, with: .color(color), lineWidth: 1.3)
-                    context.fill(PlanningGlyph.diamond(in: diamond, inset: 3.4), with: .color(color))
-                case .upcoming, .none:
-                    context.stroke(outline, with: .color(color), lineWidth: 1.3)
-                }
+                // a milestone past its date keeps its colour (`MilestoneMark.quietColor`).
+                let diamond = CGRect(x: rect.minX + 7, y: bottomY - 5, width: 10, height: 10)
+                context.draw(Marks.milestone(card.milestoneMark, in: diamond), mark: ink(card.milestoneMark == .late ? .milestone(.late) : .textTertiary))
                 context.draw(name.text, in: CGRect(x: rect.minX + 7 + 10 + 5, y: bottomY - 8, width: textWidth, height: 16))
                 x = rect.maxX + 6
             }
@@ -707,7 +690,7 @@ private struct CardPainter {
         let height = gap + size.height + (edge ? CardStackEdge.height : 0)
         var lines = context
         lines.translateBy(x: -gutter, y: -gap)
-        lines.stroke(CardTreeLines.path(place: place, gap: gap, branchY: 19, height: height), with: .color(ink(.treeLine)), lineWidth: 1)
+        lines.stroke(CardTreeLines.path(place: place, gap: gap, branchY: CardView.firstLineY, height: height), with: .color(ink(.treeLine)), lineWidth: 1)
     }
 
     /// Where the card being dragged would land: a dashed card as big as the lifted one.
@@ -715,21 +698,6 @@ private struct CardPainter {
         let path = RoundedRectangle(cornerRadius: CardView.cornerRadius, style: .continuous).path(in: CGRect(origin: .zero, size: size))
         context.fill(path, with: .color(Theme.accent.opacity(0.10)))
         context.stroke(path, with: .color(Theme.accent.opacity(0.55)), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-    }
-
-    /// A chevron that points down while the sub-issues show and to the right while they are folded in.
-    static func foldArrow(folded: Bool, center: CGPoint) -> Path {
-        var path = Path()
-        if folded {
-            path.move(to: CGPoint(x: center.x - 1.5, y: center.y - 3.5))
-            path.addLine(to: CGPoint(x: center.x + 2, y: center.y))
-            path.addLine(to: CGPoint(x: center.x - 1.5, y: center.y + 3.5))
-        } else {
-            path.move(to: CGPoint(x: center.x - 3.5, y: center.y - 1.5))
-            path.addLine(to: CGPoint(x: center.x, y: center.y + 2))
-            path.addLine(to: CGPoint(x: center.x + 3.5, y: center.y - 1.5))
-        }
-        return path
     }
 
     /// The quiet parts of a card (labels, due date, sub-issues, milestone, fields) are text with a symbol, as
@@ -746,16 +714,11 @@ private struct CardPainter {
     }
 
     private func drawPriority(_ level: PriorityLevel, x: CGFloat, midY: CGFloat) {
+        let box = CGRect(x: x, y: midY - 6, width: 14, height: 12)
+        context.draw(Marks.priority(level, in: box), mark: ink(level == .urgent ? .urgent : .textBody), off: ink(.barOff))
         if level == .urgent {
-            let rect = CGRect(x: x + 1, y: midY - 6, width: 12, height: 12)
-            context.fill(Path(roundedRect: rect, cornerRadius: 3), with: .color(ink(.urgent)))
-            context.draw(text(.symbol(.urgent)).text, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
-            return
-        }
-        let bars: [(CGFloat, Bool)] = [(4, level >= .low), (7, level >= .medium), (10, level >= .high)]
-        for (index, bar) in bars.enumerated() {
-            let rect = CGRect(x: x + CGFloat(index) * 5, y: midY + 6 - bar.0, width: 3, height: bar.0)
-            context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(ink(bar.1 ? .textBody : .barOff)))
+            let square = Marks.urgentSquare(in: box)
+            context.draw(text(.symbol(.urgent)).text, at: CGPoint(x: square.midX, y: square.midY), anchor: .center)
         }
     }
 
@@ -794,7 +757,7 @@ struct CardTreeLines: View {
     /// The gap between cards, which the lines bridge.
     var gap: CGFloat
     /// Where the branch meets the card, from the card's top: beside its first line.
-    var branchY: CGFloat = 19
+    var branchY: CGFloat = CardView.firstLineY
 
     var body: some View {
         Canvas { context, size in
@@ -807,34 +770,10 @@ struct CardTreeLines: View {
 
     /// The lines for a card's place, from the bottom of the card above, `height` tall in all.
     static func path(place: Nesting.Place, gap: CGFloat, branchY: CGFloat, height: CGFloat) -> Path {
-        let depth = min(place.depth, Self.deepest)
-        var path = Path()
-        for level in 0..<depth {
-            let lineX = CGFloat(level) * Self.indent + Self.indent / 2
-            let continues = place.continues.indices.contains(level) && place.continues[level]
-            if level < depth - 1 {
-                if continues {
-                    path.move(to: CGPoint(x: lineX, y: 0))
-                    path.addLine(to: CGPoint(x: lineX, y: height))
-                }
-                continue
-            }
-            let y = gap + branchY
-            let end = CGFloat(depth) * Self.indent
-            if continues {
-                path.move(to: CGPoint(x: lineX, y: 0))
-                path.addLine(to: CGPoint(x: lineX, y: height))
-                path.move(to: CGPoint(x: lineX, y: y))
-                path.addLine(to: CGPoint(x: end, y: y))
-            } else {
-                let radius: CGFloat = 5
-                path.move(to: CGPoint(x: lineX, y: 0))
-                path.addLine(to: CGPoint(x: lineX, y: y - radius))
-                path.addQuadCurve(to: CGPoint(x: lineX + radius, y: y), control: CGPoint(x: lineX, y: y))
-                path.addLine(to: CGPoint(x: end, y: y))
-            }
-        }
-        return path
+        Marks.treeLines(
+            place, deepest: Self.deepest, lineX: { CGFloat($0) * Self.indent + Self.indent / 2 },
+            branchY: gap + branchY, branchEnd: CGFloat(min(place.depth, Self.deepest)) * Self.indent, height: height
+        )
     }
 }
 

@@ -262,6 +262,10 @@ struct MobileInboxRow: View {
                 .padding(.top, 1)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    // The issue's state before its title, as the Mac's Inbox shows it: its status on a board, else open,
+                    // closed or merged.
+                    InboxSubjectIcon(entry: entry, item: item)
+                        .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 6 }
                     Text(entry.title)
                         .font(unread ? .body.weight(.semibold) : .body)
                         .foregroundStyle(Theme.text)
@@ -413,7 +417,7 @@ private struct MobileInboxUndo: View {
             .contentShape(.capsule)
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: .capsule)
+        .glassPanel(in: Capsule(), interactive: true)
         .accessibilityLabel(.undoNoticeSpoken(message: undo.message))
         .accessibilityIdentifier("inbox-undo")
     }

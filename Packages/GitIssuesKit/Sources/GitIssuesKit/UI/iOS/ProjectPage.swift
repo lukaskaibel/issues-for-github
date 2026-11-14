@@ -258,11 +258,10 @@ struct EntryIcon: View {
             case .allIssues:
                 Image(systemName: "rectangle.stack").font(.system(size: size * 0.88, weight: .medium))
             case .view(let view):
-                if view.layout == .roadmap, model.display(of: view).layout == nil {
-                    RoadmapIcon(size: size)
+                if let symbol = model.layoutSymbol(of: view) {
+                    Image(systemName: symbol).font(.system(size: size * 0.82, weight: .medium))
                 } else {
-                    Image(systemName: model.layout(of: view) == .board ? "rectangle.split.3x1" : "list.bullet")
-                        .font(.system(size: size * 0.82, weight: .medium))
+                    RoadmapIcon(size: size)
                 }
             case .milestone(let projectId, let title):
                 let mark = model.milestoneGroup(projectId: projectId, title: title).map { model.mark(of: $0, projectId: projectId) }

@@ -57,32 +57,8 @@ enum PlanningGlyph {
     }
 
     /// Draws a milestone's diamond into a Core Graphics context, as the list and menus need.
-    static func drawMilestone(_ mark: MilestoneMark, in rect: CGRect, cg context: CGContext) {
-        let color = PlatformColor(mark.color).cgColor
-        context.saveGState()
-        defer { context.restoreGState() }
-        context.setStrokeColor(color)
-        context.setFillColor(color)
-        context.setLineWidth(1.5)
-        context.setLineJoin(.round)
-        let outline = diamond(in: rect).cgPath
-        switch mark {
-        case .completed:
-            context.addPath(outline)
-            context.fillPath()
-        case .none:
-            context.setLineDash(phase: 0, lengths: [2, 2])
-            context.addPath(outline)
-            context.strokePath()
-        case .current, .late:
-            context.addPath(outline)
-            context.strokePath()
-            context.addPath(diamond(in: rect, inset: rect.width * 0.34).cgPath)
-            context.fillPath()
-        case .upcoming:
-            context.addPath(outline)
-            context.strokePath()
-        }
+    static func drawMilestone(_ mark: MilestoneMark, in rect: CGRect, cg context: CGContext, color: Color? = nil) {
+        context.draw(Marks.milestone(mark, in: rect), mark: PlatformColor(color ?? mark.color).cgColor, onColor: PlatformColor(Theme.onColor).cgColor)
     }
 
     static func drawEpic(in rect: CGRect, cg context: CGContext, color: Color = Theme.epic) {
@@ -107,18 +83,7 @@ struct MilestoneIcon: View {
     var body: some View {
         let color = tint ?? mark.color
         Canvas { context, canvas in
-            let rect = CGRect(origin: .zero, size: canvas)
-            let outline = PlanningGlyph.diamond(in: rect, inset: rect.width * 0.114)
-            let line = StrokeStyle(lineWidth: 1.5 * canvas.width / 14, lineJoin: .round, dash: mark == .none ? [2, 2] : [])
-            switch mark {
-            case .completed:
-                context.fill(outline, with: .color(color))
-            case .current, .late:
-                context.stroke(outline, with: .color(color), style: line)
-                context.fill(PlanningGlyph.diamond(in: rect, inset: rect.width * 0.34), with: .color(color))
-            case .upcoming, .none:
-                context.stroke(outline, with: .color(color), style: line)
-            }
+            context.draw(Marks.milestone(mark, in: CGRect(origin: .zero, size: canvas)), mark: color)
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
@@ -138,6 +103,34 @@ struct EpicIcon: View {
             )
         }
         .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+extension AppModel {
+    /// The symbol of a view's layout, as its icon shows it everywhere: a board's columns or a list's lines; nil for a
+    /// roadmap, which has an icon of its own (`RoadmapIcon`).
+    func layoutSymbol(of view: ProjectView) -> String? {
+        if view.layout == .roadmap, display(of: view).layout == nil { return nil }
+        return layout(of: view) == .board ? "rectangle.split.3x1" : "list.bullet"
+    }
+}
+
+/// A view's icon, by its layout (`layoutSymbol`), wherever a view is named: the sidebar, the palette, a project's page.
+struct ViewLayoutIcon: View {
+    @Environment(AppModel.self) private var model
+    var view: ProjectView
+    var size: CGFloat = 11
+
+    var body: some View {
+        Group {
+            if let symbol = model.layoutSymbol(of: view) {
+                Image(systemName: symbol).font(.system(size: size, weight: .medium))
+            } else {
+                RoadmapIcon(size: size + 1)
+            }
+        }
+        .frame(width: size + 3, height: size + 3)
         .accessibilityHidden(true)
     }
 }
@@ -168,7 +161,8 @@ struct ProgressRing: View {
     var done: Int
     var total: Int
     var size: CGFloat = 14
-    var color: Color = Theme.epic
+    /// Green, as done work is in the bars of groups and in the list's headers.
+    var color: Color = Theme.positive
 
     var body: some View {
         let fraction = total > 0 ? Double(done) / Double(total) : 0
@@ -303,11 +297,11 @@ struct GroupIcon: View {
         case .person(let person):
             Avatar(login: person.login, url: person.avatarUrl, size: size + 2)
         case .progress(let done, let total):
-            ProgressRing(done: done, total: total, size: size, color: Theme.positive)
+            ProgressRing(done: done, total: total, size: size)
         case .repository:
             RepositoryIcon(size: size - 2).foregroundStyle(Theme.textSecondary)
         case .priority(let level):
-            PriorityIcon(level: level)
+            PriorityIcon(level: level, size: size)
         case .project(let look):
             ProjectGlyphImage(look: look, size: size)
         case .due(let tone):

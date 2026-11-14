@@ -805,11 +805,7 @@ private struct ViewTimelinePainter {
             line.move(to: CGPoint(x: x, y: ViewTimelineLayout.headerHeight))
             line.addLine(to: CGPoint(x: x, y: bottom))
             context.stroke(line, with: .color(mark.color.opacity(0.55)), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
-            let diamond = CGRect(x: x - 6, y: midY - 6, width: 12, height: 12)
-            context.stroke(PlanningGlyph.diamond(in: diamond), with: .color(mark.color), style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
-            if mark == .current || mark == .late || mark == .completed {
-                context.fill(PlanningGlyph.diamond(in: diamond, inset: 4), with: .color(mark.color))
-            }
+            context.draw(Marks.milestone(mark, in: CGRect(x: x - 6, y: midY - 6, width: 12, height: 12)), mark: mark.color)
             let title = context.resolve(Text(group.title).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.text))
             let width = title.measure(in: CGSize(width: 300, height: 20)).width
             if x - 10 - width > previousEnd + 8 {

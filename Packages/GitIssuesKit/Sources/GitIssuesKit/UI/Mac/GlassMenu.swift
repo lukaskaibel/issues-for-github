@@ -168,12 +168,7 @@ struct GlassMenuView: View {
             MenuDivider()
         } else if !item.isEnabled, item.action == nil, item.submenu == nil {
             // A title, such as how many issues the menu acts on.
-            Text(item.title)
-                .font(.tinySemibold)
-                .foregroundStyle(Theme.textTertiary)
-                .padding(.horizontal, 15)
-                .padding(.top, 4)
-                .padding(.bottom, 2)
+            MenuHeading(Text(item.title))
         } else {
             GlassMenuRow(entry: entry, index: index, cursor: cursor, frames: frames) {
                 activate(entry, index: index, withKeys: false)

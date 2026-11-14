@@ -1113,6 +1113,8 @@ public final class AppModel {
     }
 
     func glyph(of item: Item) -> StatusGlyph {
+        // One known only from another issue's page can't be put on a board from its row: only open or closed.
+        if item.isStandIn { return .openOrClosed(item.state, reason: item.stateReason) }
         guard item.isOnBoard else { return .withoutProject(item) }
         return glyph(projectId: item.projectId, optionId: item.statusId)
     }

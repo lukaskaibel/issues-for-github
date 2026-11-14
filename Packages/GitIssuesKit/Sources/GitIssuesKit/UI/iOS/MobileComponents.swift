@@ -3,10 +3,13 @@ import SwiftUI
 
 // MARK: - Rows
 
-/// One issue in a list: status, title over two lines, and a line of details underneath, with the
-/// assignees on the right. The same order as on the Mac, folded for a narrow screen.
+/// One issue as a row, wherever iPhone and iPad list issues: a project's or a view's list, My Issues, All Issues, search,
+/// an issue's sub-issues and the issues it is blocked by or blocks. Status, title over two lines, and a line of details
+/// underneath, with the assignees on the right: the same order as on the Mac, folded for a narrow screen. What the row
+/// does besides opening its issue, the fold arrow and the status menu, is `issueRowControls`.
 struct IssueRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.rowsOnPage) private var onPage
     var item: Item
     /// In My Issues and search, where rows come from several projects.
     var showsProject = false
@@ -22,6 +25,8 @@ struct IssueRow: View {
     /// How many sub-issues hang under it in its group, folded or not; nil when none do.
     var nested: Int? = nil
     var folded = false
+    /// While the sub-issues under it are read for the first time, a spinner stands where its fold arrow goes.
+    var foldWaiting = false
     /// A sub-issue whose parent is in another group names the parent.
     var showsParent = false
     /// The milestone, where the list isn't a milestone's.
@@ -30,19 +35,49 @@ struct IssueRow: View {
     var showsEpic = true
     /// The project's own fields the view shows, such as an iteration.
     var chips: [FieldChip] = []
+    /// While issues are picked, as an issue's sub-issues can be: whether this one is, shown by a circle in place of
+    /// its status; nil while nothing is picked.
+    var picked: Bool? = nil
+    /// Whether it can be picked with the others: not one known only from GitHub, whose circle is faint.
+    var pickable = true
+    /// Whether a hairline runs under it: on a page not under the last row, and not next to a picked one, as picked
+    /// neighbours join into one shape.
+    var hairline = true
+    /// The row's name for UI tests, "row-#12" unless given.
+    var identifier: String? = nil
     @ScaledMetric(relativeTo: .body) private var glyphSize: CGFloat = 20
     @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 26
+    /// The priority's bars grow with the line of details they stand in.
+    @ScaledMetric(relativeTo: .footnote) private var priorityWidth: CGFloat = 14
 
     /// Sub-issues hang this much further in per level, down to a few levels.
     static let indent: CGFloat = 18
     static let deepestIndent = 3
+    /// The room before the status icon, where the arrow that folds the sub-issues under a row stands.
     static let leading: CGFloat = 22
+    /// The status icon's top, from the row's.
+    static let statusTop: CGFloat = 13
+    /// How far rows on a page (`issueRowsOnPage()`) reach past its trailing margin, so that the people stand at the
+    /// margin as they stand at a list's edge.
+    static let pageOverhang: CGFloat = 16
+    /// How far a row on a page lights up past the page's margins, the same on both sides.
+    static let highlightOutset: CGFloat = 6
 
     var body: some View {
         let indent = CGFloat(min(place.depth, Self.deepestIndent)) * Self.indent
         HStack(alignment: .top, spacing: 12) {
-            StatusIcon(glyph: model.glyph(of: item), size: glyphSize)
-                .padding(.top, 2)
+            Group {
+                if let picked {
+                    PickMark(picked: picked, size: glyphSize)
+                        .opacity(pickable ? 1 : 0.35)
+                        .transition(.scale(scale: 0.5).combined(with: .opacity))
+                } else {
+                    StatusIcon(glyph: model.glyph(of: item), size: glyphSize)
+                        .transition(.scale(scale: 0.5).combined(with: .opacity))
+                }
+            }
+            .frame(width: glyphSize, height: glyphSize)
+            .padding(.top, Self.statusTop - 11)
             VStack(alignment: .leading, spacing: 4) {
                 title
                     .font(.body)
@@ -63,57 +98,52 @@ struct IssueRow: View {
         .background(alignment: .topLeading) {
             if place.depth > 0 || nested != nil { tree }
         }
-        // A hairline from where the title starts, as between Reminders' rows.
+        // A hairline from where the title starts, as between Reminders' rows: to the list's edge, or on a page to its
+        // margin.
         .overlay(alignment: .bottom) {
-            Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, Self.leading + indent + glyphSize + 12)
+            if hairline {
+                Rectangle().fill(Theme.rowSeparator).frame(height: 1)
+                    .padding(.leading, Self.leading + indent + glyphSize + 12)
+                    .padding(.trailing, onPage ? Self.pageOverhang : 0)
+            }
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
-        .accessibilityIdentifier("row-\(item.displayNumber)")
+        .accessibilityAddTraits(picked == true ? .isSelected : [])
+        .accessibilityIdentifier(identifier ?? "row-\(item.displayNumber)")
     }
 
     /// Lines from the parents above down to this row, and from this row down to its own sub-issues, with the
     /// arrow that folds them left of the status icon.
     private var tree: some View {
         let depth = min(place.depth, Self.deepestIndent)
-        let midY = 13 + glyphSize / 2
+        let midY = Self.statusTop + glyphSize / 2
         let statusX = Self.leading + CGFloat(depth) * Self.indent
         return Canvas { context, size in
-            var path = Path()
-            for level in 0..<depth {
-                let lineX = Self.leading + CGFloat(level) * Self.indent + glyphSize / 2
-                let continues = place.continues.indices.contains(level) && place.continues[level]
-                if level < depth - 1 {
-                    if continues {
-                        path.move(to: CGPoint(x: lineX, y: 0))
-                        path.addLine(to: CGPoint(x: lineX, y: size.height))
-                    }
-                    continue
-                }
-                if continues {
-                    path.move(to: CGPoint(x: lineX, y: 0))
-                    path.addLine(to: CGPoint(x: lineX, y: size.height))
-                    path.move(to: CGPoint(x: lineX, y: midY))
-                } else {
-                    path.move(to: CGPoint(x: lineX, y: 0))
-                    path.addLine(to: CGPoint(x: lineX, y: midY - 5))
-                    path.addQuadCurve(to: CGPoint(x: lineX + 5, y: midY), control: CGPoint(x: lineX, y: midY))
-                }
-                path.addLine(to: CGPoint(x: statusX - 4, y: midY))
-            }
+            var path = Marks.treeLines(
+                place, deepest: Self.deepestIndent, lineX: { Self.leading + CGFloat($0) * Self.indent + glyphSize / 2 },
+                branchY: midY, branchEnd: statusX - 4, height: size.height
+            )
             if nested != nil, !folded {
                 let lineX = statusX + glyphSize / 2
                 path.move(to: CGPoint(x: lineX, y: midY + glyphSize / 2 + 4))
                 path.addLine(to: CGPoint(x: lineX, y: size.height))
             }
             context.stroke(path, with: .color(Theme.treeLine), lineWidth: 1)
-            if nested != nil {
+            if nested != nil, !foldWaiting {
                 context.draw(
                     Text(Image(systemName: folded ? "chevron.right" : "chevron.down"))
                         .font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.textSecondary),
                     at: CGPoint(x: statusX - 11, y: midY), anchor: .center
                 )
+            }
+        }
+        .overlay(alignment: .topLeading) {
+            if nested != nil, foldWaiting {
+                ProgressView()
+                    .controlSize(.mini)
+                    .position(x: statusX - 11, y: midY)
             }
         }
         .accessibilityHidden(true)
@@ -131,7 +161,7 @@ struct IssueRow: View {
     private var details: some View {
         HStack(spacing: 7) {
             if model.project(of: item)?.priorityFieldId != nil {
-                PriorityIcon(level: model.priorityLevel(of: item))
+                PriorityIcon(level: model.priorityLevel(of: item), size: priorityWidth)
             }
             Text(item.displayNumber)
                 .monospacedDigit()
@@ -140,10 +170,14 @@ struct IssueRow: View {
             }
             let epicParent = item.parentId.flatMap { model.issue(contentId: $0) }.flatMap { $0.isEpic ? $0 : nil }
             if showsParent, let parent = item.parentNumber, epicParent == nil {
+                // The parent as cards and the Mac's rows name it, number and title; a long title gives way to what follows.
                 HStack(spacing: 3) {
                     Image(systemName: "arrow.turn.left.up")
                     Text("#\(parent)").monospacedDigit()
+                    if let title = item.parentTitle { Text(title).truncationMode(.tail) }
                 }
+                .frame(maxWidth: 160, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
             }
             // Before the project and labels, so the fade at the end never hides it.
             if let due = model.dueBadge(for: item) {
@@ -153,9 +187,10 @@ struct IssueRow: View {
                 }
             }
             if showsParent, let epic = epicParent {
-                // An epic by its icon and name, like a project in Linear; a long name gives way to what follows.
+                // An epic by its icon and name, like a project in Linear, in the grey of its name as on cards; a long
+                // name gives way to what follows.
                 HStack(spacing: 4) {
-                    EpicIcon(size: 11)
+                    EpicIcon(size: 11, color: Theme.textTertiary)
                     Text(epic.title).truncationMode(.tail)
                 }
                 .frame(maxWidth: 160, alignment: .leading)
@@ -185,8 +220,10 @@ struct IssueRow: View {
                 }
             }
             if showsMilestone, let milestone = model.milestoneTitle(of: item) {
+                let mark = model.milestoneMark(of: item)
                 MobileChip {
-                    MilestoneIcon(mark: model.milestoneMark(of: item), size: 9)
+                    // Grey, as on cards: the same milestone repeats down the list; only a late one keeps its colour.
+                    MilestoneIcon(mark: mark, size: 9, tint: mark == .late ? nil : Theme.textTertiary)
                     Text(milestone)
                 }
             }
@@ -196,12 +233,16 @@ struct IssueRow: View {
                     Text(chip.text)
                 }
             }
-            // An epic's own label says what the row shows already.
-            ForEach(item.labels.filter { !(item.isEpic && Item.isEpicLabel($0.name)) }.prefix(3)) { label in
-                MobileChip(tint: Theme.textBody, fill: Theme.labelColor(label.color).opacity(0.14)) {
-                    Circle().fill(Theme.labelColor(label.color)).frame(width: 7, height: 7)
+            // Labels as cards and the Mac's rows show them (`LabelMark`): a dot in each one's colour and its name.
+            let labels = item.shownLabels
+            ForEach(labels.prefix(LabelMark.inRow)) { label in
+                MobileChip {
+                    Circle().fill(Theme.labelColor(label.color)).frame(width: LabelMark.dot, height: LabelMark.dot)
                     Text(label.name)
                 }
+            }
+            if labels.count > LabelMark.inRow {
+                MobileChip { Text(verbatim: "+\(labels.count - LabelMark.inRow)") }
             }
         }
         .font(.footnote)
@@ -218,14 +259,18 @@ struct IssueRow: View {
     private var accessibilityText: String {
         let status = item.isOnBoard
             ? model.statusOption(of: item)?.name ?? String(localized: .noStatus)
-            : String(localized: item.isClosed ? LocalizedStringResource.stateClosed : .noProject)
+            : String(localized: item.isClosed ? LocalizedStringResource.stateClosed : item.isStandIn ? .stateOpen : .noProject)
         var parts = [item.displayNumber, item.title, status]
         let epic = model.epic(of: item)
-        // Right under an epic, the epic says it (or its group does).
+        // Right under an epic, the epic says it (or its group does). Under its parent it says so all the same, for
+        // VoiceOver, which doesn't see where the row hangs.
         if let parent = item.parentNumber, epic?.contentId != item.parentId {
             parts.append(String(localized: .subIssueOf(number: "#\(parent)")))
         }
         if let nested, folded { parts.append(String(localized: .unfoldSubIssuesTooltip(count: nested))) }
+        if item.subTotal > 0 {
+            parts.append(String(localized: .subIssuesDone(done: item.subCompleted.formatted(), total: item.subTotal)))
+        }
         if let priority = model.priorityOption(of: item)?.name { parts.append(String(localized: .priorityLevelSpoken(priority: priority))) }
         if item.blockedByCount > 0 { parts.append(model.tooltip(.blockedBy, for: item)) }
         if !item.labels.isEmpty {
@@ -243,18 +288,141 @@ struct IssueRow: View {
         if showsProject, let place = item.isOnBoard && !namesRepository ? (namesBoard ? model.project(of: item)?.title : nil) : item.repoShortName {
             parts.append(place)
         }
+        if item.isStandIn { parts.append(String(localized: .opensOnGitHub)) }
         return parts.joined(separator: ", ")
+    }
+}
+
+/// The circle that stands for a row's status while issues are picked, filled with a checkmark once picked, as in Mail.
+struct PickMark: View {
+    var picked: Bool
+    var size: CGFloat = 20
+
+    var body: some View {
+        Image(systemName: picked ? "checkmark.circle.fill" : "circle")
+            .font(.system(size: size))
+            .foregroundStyle(picked ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.textTertiary))
+            .contentTransition(.symbolEffect(.replace))
+            .accessibilityHidden(true)
+    }
+}
+
+extension View {
+    /// What a row of issues does besides opening its issue, wherever it stands: the arrow left of its status folds the
+    /// sub-issues under it in or out, and a tap on its status shows the statuses to pick from, as the status chip and the
+    /// Mac's rows do. `prefix` names them for UI tests ("fold-#12", "status-#12"; "sub-fold-#12" among sub-issues).
+    func issueRowControls(
+        _ item: Item, place: Nesting.Place, nested: Int?, folded: Bool, changesStatus: Bool, prefix: String = "",
+        spokenStatus: String, fold: @escaping () -> Void, @ViewBuilder statusMenu: @escaping () -> some View
+    ) -> some View {
+        modifier(IssueRowControls(
+            item: item, place: place, nested: nested, folded: folded, changesStatus: changesStatus, prefix: prefix,
+            spokenStatus: spokenStatus, fold: fold, statusMenu: statusMenu
+        ))
+    }
+}
+
+private struct IssueRowControls<Menu: View>: ViewModifier {
+    var item: Item
+    var place: Nesting.Place
+    var nested: Int?
+    var folded: Bool
+    var changesStatus: Bool
+    var prefix: String
+    var spokenStatus: String
+    var fold: () -> Void
+    @ViewBuilder var statusMenu: () -> Menu
+    @ScaledMetric(relativeTo: .body) private var glyphSize: CGFloat = 20
+    @State private var foldFeedback = 0
+
+    func body(content: Content) -> some View {
+        let statusX = IssueRow.leading + CGFloat(min(place.depth, IssueRow.deepestIndent)) * IssueRow.indent
+        let height = IssueRow.statusTop + glyphSize + IssueRow.statusTop
+        content
+            .overlay(alignment: .topLeading) {
+                HStack(spacing: 0) {
+                    // The arrow, and the room before the status icon around it.
+                    if let nested {
+                        Button {
+                            foldFeedback += 1
+                            fold()
+                        } label: {
+                            Color.clear.frame(width: statusX - 4, height: height).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .sensoryFeedback(.selection, trigger: foldFeedback)
+                        .accessibilityLabel(folded ? Text(.unfoldSubIssuesTooltip(count: nested)) : Text(.foldSubIssuesTooltip))
+                        .accessibilityIdentifier("\(prefix)fold-\(item.displayNumber)")
+                    } else {
+                        Color.clear.frame(width: statusX - 4, height: 0).allowsHitTesting(false)
+                    }
+                    if changesStatus {
+                        SwiftUI.Menu {
+                            statusMenu()
+                        } label: {
+                            Color.clear.frame(width: glyphSize + 8, height: height).contentShape(Rectangle())
+                        }
+                        .accessibilityLabel(spokenStatus)
+                        .accessibilityIdentifier("\(prefix)status-\(item.displayNumber)")
+                        .sensoryFeedback(.selection, trigger: spokenStatus)
+                    }
+                }
+            }
     }
 }
 
 /// A list row that highlights while pressed, as a system row does, without tinting its text.
 struct RowButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(configuration.isPressed ? Theme.selected : Color.clear)
-            .contentShape(Rectangle())
-            .hoverEffect(.highlight)
+        PressedRow(configuration: configuration)
     }
+
+    /// Pressed or under the pointer, a row lights up across a list, or on a page in its rounded shape (`RowHighlight`).
+    private struct PressedRow: View {
+        @Environment(\.rowsOnPage) private var onPage
+        var configuration: Configuration
+
+        var body: some View {
+            if onPage {
+                configuration.label
+                    .background { if configuration.isPressed { RowHighlight(onPage: true).fill(Theme.selected) } }
+                    .contentShape(Rectangle())
+                    .contentShape(.hoverEffect, RowHighlight(onPage: true))
+                    .hoverEffect(.highlight)
+            } else {
+                // Into the safe area too, as a list's row is lit in landscape.
+                configuration.label
+                    .background(configuration.isPressed ? Theme.selected : Color.clear)
+                    .contentShape(Rectangle())
+                    .hoverEffect(.highlight)
+            }
+        }
+    }
+}
+
+/// What a row of issues lights up as when it is pressed, picked or under the pointer: the whole row in a list; on a page
+/// (`issueRowsOnPage()`), a rounded shape reaching the same small way past the page's margins on both sides, which
+/// picked neighbours join into one.
+struct RowHighlight: Shape {
+    var onPage: Bool
+    var joinedAbove = false
+    var joinedBelow = false
+
+    func path(in rect: CGRect) -> Path {
+        guard onPage else { return Path(rect) }
+        // The row reaches `pageOverhang` past the trailing margin and starts at the leading one.
+        let outset = IssueRow.highlightOutset
+        let lit = CGRect(x: rect.minX - outset, y: rect.minY, width: rect.width + 2 * outset - IssueRow.pageOverhang, height: rect.height)
+        return UnevenRoundedRectangle(
+            topLeadingRadius: joinedAbove ? 0 : 10, bottomLeadingRadius: joinedBelow ? 0 : 10,
+            bottomTrailingRadius: joinedBelow ? 0 : 10, topTrailingRadius: joinedAbove ? 0 : 10, style: .continuous
+        ).path(in: lit)
+    }
+}
+
+extension EnvironmentValues {
+    /// Whether rows of issues stand on a page, inside its margins, rather than across a list (`issueRowsOnPage()`).
+    @Entry var rowsOnPage = false
 }
 
 /// A small part of a row's line of details: a symbol and text, as Reminders writes a date; a label in a capsule
@@ -592,7 +760,7 @@ extension MobileEmptyState where Accessory == EmptyView {
 
 // MARK: - Properties
 
-/// A property of an issue as a chip under its title: icon and value, outlined like the Mac's chips.
+/// A property of an issue as a chip under its title: icon and value, on glass as iOS draws what floats over a page.
 struct PropertyChip<Icon: View>: View {
     var text: String
     var placeholder = false

@@ -419,9 +419,12 @@ private struct IssueTitleField: View {
             .onSubmit {
                 focused = false
             }
-            // ⌘↵ and Escape finish the title, as on the Mac.
+            // ⌘↵ finishes the title and Escape takes the edit back, as on the Mac.
             .screenKey(.done, "\r", modifiers: .command, isActive: focused) { focused = false }
-            .screenKey(.done, UIKeyCommand.inputEscape, isActive: focused) { focused = false }
+            .screenKey(.cancel, UIKeyCommand.inputEscape, isActive: focused) {
+                title = item.title
+                focused = false
+            }
             .accessibilityLabel(.issueTitle)
     }
 
@@ -456,11 +459,7 @@ private struct DescriptionEditor: View {
     }
 
     private func save(_ text: String) {
-        // The latest copy, since the view may have been drawn before the last sync.
-        guard let current = model.item(id: item.id) else { return }
-        // Leave untouched text exactly as GitHub stores it, line endings included.
-        guard text != Diff3.normalize(current.body) else { return }
-        model.setBody(current, to: text)
+        model.saveDescription(of: item, text)
     }
 }
 
@@ -544,7 +543,7 @@ private struct PropertyChips: View {
                     picker = .dueDate
                 } label: {
                     if let due = model.dueBadge(for: item) {
-                        PropertyChip(text: due.day.mediumLabel(), tint: due.tone == .overdue || due.tone == .today ? due.tone.color : nil) {
+                        PropertyChip(text: due.day.mediumLabel(), tint: due.emphasis) {
                             DueDateIcon(tone: due.tone, size: 13)
                         }
                     } else {
@@ -704,9 +703,7 @@ private struct PropertiesColumn: View {
                         Button { picker = .dueDate } label: {
                             value {
                                 if let due = model.dueBadge(for: item) {
-                                    DueDateIcon(tone: due.tone, size: 13)
-                                    Text(due.day.mediumLabel())
-                                        .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.text)
+                                    DueDateValue(due: due, iconSize: 13).foregroundStyle(Theme.text)
                                 } else {
                                     Text(.addDueDate).foregroundStyle(Theme.textTertiary)
                                 }
@@ -1053,17 +1050,8 @@ private struct MobileConflictBanner: View {
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Theme.warning.opacity(0.45), lineWidth: 1))
     }
 
-    private var message: LocalizedStringResource {
-        if case .setTitle = entry.mutation { return .conflictTitleEditedOnGitHub }
-        return .conflictDescriptionEditedOnGitHub
-    }
-
-    private var theirs: String? {
-        switch entry.mutation {
-        case .setTitle(let m), .setBody(let m): m.theirs
-        default: nil
-        }
-    }
+    private var message: LocalizedStringResource { entry.conflictMessage }
+    private var theirs: String? { entry.theirText }
 }
 
 // MARK: - Sub-issues
@@ -1092,7 +1080,7 @@ private struct MobileSubIssues: View {
             if let detail, !subs.isEmpty {
                 let lines = model.subIssueLines(subs, in: detail)
                 VStack(spacing: 0) {
-                    MobileSubIssueRows(lines: lines, parent: item, order: order, separatesFirst: false)
+                    MobileSubIssueRows(lines: lines, parent: item, order: order)
                 }
                 .animation(Theme.spring, value: lines.map(\.id))
             }
@@ -1193,7 +1181,8 @@ private struct MobileEpicWork: View {
                         .overlay(alignment: .top) {
                             if index > 0 { Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32) }
                         }
-                        MobileSubIssueRows(lines: lines.indices.contains(index) ? lines[index] : [], parent: item, order: order, separatesFirst: true)
+                        // Under its milestone's heading, a row doesn't name the milestone again.
+                        MobileSubIssueRows(lines: lines.indices.contains(index) ? lines[index] : [], parent: item, order: order, showsMilestone: false)
                     }
                 }
                 .animation(Theme.spring, value: lines.map { $0.map(\.id) })
@@ -1313,165 +1302,110 @@ private struct MobileSubIssueRows: View {
     var lines: [SubIssueLine]
     var parent: Item
     var order: [String]
-    /// Whether the first row has a hairline over it too, as under a milestone's heading.
-    var separatesFirst: Bool
+    /// Whether the rows name their milestones: not under a milestone's heading.
+    var showsMilestone = true
 
     var body: some View {
         let ids = lines.map { model.item(contentId: $0.sub.id)?.id }
         ForEach(Array(lines.enumerated()), id: \.element.id) { index, line in
             MobileSubIssueRow(
-                line: line, separated: separatesFirst || index > 0, parent: parent, order: order,
-                above: index > 0 ? ids[index - 1] : nil, below: index + 1 < ids.count ? ids[index + 1] : nil
+                line: line, parent: parent, order: order, showsMilestone: showsMilestone,
+                above: index > 0 ? ids[index - 1] : nil, below: index + 1 < ids.count ? ids[index + 1] : nil,
+                last: index == lines.count - 1
             )
         }
+        .issueRowsOnPage()
     }
 }
 
-/// A sub-issue in an issue's list of them. One with sub-issues of its own shows how far they are and an arrow that
-/// unfolds them under it, indented, with lines from it as in the lists. After Select, or a ⌘- or Shift-click with a
-/// pointer on an iPad, a tap picks it instead of opening it, and the long-press menu of a picked one and the bar at
-/// the foot change all picked ones, as on the Mac.
+extension View {
+    /// Rows of issues on a page stay inside its margins, unlike the Mac's, which hang into the margin by the room before
+    /// their status icons: on iPhone the arrow that folds a row's sub-issues would stand at the screen's edge, where a
+    /// swipe goes back. Only the room after the people is the page's; their lines end at the margin, and they light up
+    /// the same small way past both margins.
+    func issueRowsOnPage() -> some View {
+        padding(.trailing, -IssueRow.pageOverhang)
+            .environment(\.rowsOnPage, true)
+    }
+}
+
+/// A sub-issue in an issue's list of them, as every list shows an issue (`IssueRow`, with `issueRowControls`): a tap on
+/// its status shows the statuses to pick from, and one with sub-issues of its own has the arrow that unfolds them under
+/// it, indented, with lines from it. After Select, or a ⌘- or Shift-click with a pointer on an iPad, a tap picks it
+/// instead of opening it, and the long-press menu of a picked one and the bar at the foot change all picked ones, as
+/// on the Mac.
 private struct MobileSubIssueRow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openRoute) private var openRoute
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.rowsOnPage) private var onPage
     var line: SubIssueLine
-    /// With a hairline over it, from where its text starts.
-    var separated: Bool
     /// The issue whose page lists it.
     var parent: Item
     /// The sub-issues that can be picked, as listed (unfolded ones too), for Shift-click to pick a run of them.
     var order: [String]
+    var showsMilestone: Bool
     /// The issues of the rows right above and below it under the same heading, whose picks join with its own.
     var above: String?
     var below: String?
+    /// The last row under its heading, with no hairline under it.
+    var last = false
     /// The keys held as the row was last touched or clicked.
     @State private var keys: UIKeyModifierFlags = []
 
-    /// How much further in each level of sub-issues is: as wide as the arrow, so a sub-issue's status icon stands
-    /// under its parent's arrow and their numbers line up.
-    private static let indent: CGFloat = 28
-    /// How far a picked row's tint reaches before its circle, which stands a little left of the text above.
-    private static let tintOutset: CGFloat = 9
-
     private var sub: SubIssue { line.sub }
 
-    private var indent: CGFloat {
-        CGFloat(min(line.place.depth, 4)) * Self.indent
-    }
-
     var body: some View {
-        let boardItem = model.item(contentId: sub.id)
+        let item = model.rowItem(for: sub)
+        let boardItem = item.isStandIn ? nil : item
         // One the app only knows from GitHub can't change with the others.
         let pickable = boardItem.map { order.contains($0.id) } ?? false
         let picking = model.isPickingSubIssues(of: parent)
         let picked = picking && boardItem.map { model.pickedSubIssueIds.contains($0.id) } == true
         let pickedAbove = picking && above.map(model.pickedSubIssueIds.contains) == true
         let pickedBelow = picking && below.map(model.pickedSubIssueIds.contains) == true
-        HStack(spacing: 10) {
-            HStack(spacing: 0) {
-                if picking {
-                    // In place of the status circle, so a done one's checkmark can't pass for a picked one.
-                    PickMark(picked: picked)
-                        .opacity(pickable ? 1 : 0.35)
-                        .onTapGesture { tap(boardItem, pickable: pickable, picking: true) }
-                        .transition(.scale(scale: 0.5).combined(with: .opacity))
-                } else {
-                    // A tap shows the statuses to pick from, as the status chip does, so another pick takes a wrong one
-                    // back.
-                    Menu {
-                        statusMenu(boardItem)
-                    } label: {
-                        StatusIcon(glyph: glyph(boardItem), size: 17)
-                            .frame(width: 32, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .accessibilityLabel(.subIssueStatusLabel(number: sub.number, status: statusText(boardItem)))
-                    .accessibilityIdentifier("sub-status-#\(sub.number)")
-                    .sensoryFeedback(.selection, trigger: statusText(boardItem))
-                    .transition(.scale(scale: 0.5).combined(with: .opacity))
-                }
-                // While picking too, so sub-issues further down can be unfolded and picked with the rest.
-                if line.progress != nil {
-                    foldArrow
-                }
-            }
-            Button {
-                tap(boardItem, pickable: pickable, picking: picking)
-            } label: {
-                HStack(spacing: 10) {
-                    Text(sub.number > 0 ? "#\(sub.number)" : String(localized: .unsentIssueNumber))
-                        .font(.footnote)
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.textTertiary)
-                    Text(sub.title)
-                        .font(.subheadline)
-                        .foregroundStyle(sub.isClosed ? Theme.textSecondary : Theme.text)
-                        .lineLimit(1)
-                    if let blocker = model.blockerMark(for: sub) {
-                        BlockerFlag(mark: blocker, size: 13)
-                            .accessibilityLabel(model.blockedText(for: sub))
-                    }
-                    Spacer(minLength: 8)
-                    if let progress = line.progress {
-                        MobileChip {
-                            SubIssueGlyph().frame(width: 11, height: 11)
-                            Text("\(progress.done)/\(progress.total)").monospacedDigit()
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(.subIssuesDone(done: progress.done.formatted(), total: progress.total))
-                    }
-                    if boardItem == nil, sub.url != nil {
-                        Image(systemName: "arrow.up.right")
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(Theme.textTertiary)
-                            .accessibilityLabel(.opensOnGitHub)
-                    }
-                    // The card's people, which change at once; the sub-issue's are as GitHub last sent them.
-                    let people = boardItem?.assignees ?? sub.assignees
-                    if !people.isEmpty {
-                        AvatarStack(people: people, size: 20)
-                    }
-                }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(PlainPressStyle())
-            .disabled(picking && !pickable)
-            .accessibilityAddTraits(picked ? .isSelected : [])
-            .accessibilityIdentifier("sub-#\(sub.number)")
+        let row = Button {
+            tap(boardItem, pickable: pickable, picking: picking)
+        } label: {
+            IssueRow(
+                item: item, place: line.place, nested: line.progress?.total, folded: !line.unfolded, foldWaiting: line.waiting,
+                showsMilestone: showsMilestone, showsEpic: false,
+                chips: model.fieldChips(of: item, in: item.projectId.map { .project($0) }),
+                picked: picking ? picked : nil, pickable: pickable, hairline: !last && !picked && !pickedBelow,
+                identifier: "sub-\(item.displayNumber)"
+            )
         }
-        .padding(.leading, indent)
-        .background {
-            TreeLines(place: line.place, firstLine: 16, indent: Self.indent, iconRadius: 8.5, deepest: 4, linesDown: line.childrenShow)
+        .buttonStyle(RowButtonStyle())
+        .disabled(picking && !pickable)
+        // While picking, a tap on the circle picks too, so its status can't be changed from there.
+        .issueRowControls(
+            item, place: line.place, nested: line.progress?.total, folded: !line.unfolded,
+            changesStatus: !picking && (item.isStandIn || model.canToggleDone(item)), prefix: "sub-",
+            spokenStatus: model.spokenStatus(of: item), fold: { model.toggleSubIssues(of: sub.id) }
+        ) {
+            statusMenu(item)
         }
-        .overlay(alignment: .top) {
-            // None next to a picked row: picked neighbours join into one shape.
-            if separated, !picked, !pickedAbove {
-                Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 39 + indent)
-            }
-        }
-        // The status circle stands where a checklist's box does, in line with the text above.
-        .padding(.leading, -7)
-        .padding(.trailing, 2)
         // Picked ones tinted, and picked neighbours joined into one shape, as on the Mac.
         .background(
-            shape(joinedAbove: picked && pickedAbove, joinedBelow: picked && pickedBelow)
+            RowHighlight(onPage: onPage, joinedAbove: picked && pickedAbove, joinedBelow: picked && pickedBelow)
                 .fill(picked ? Theme.selectionFill : .clear)
-                .padding(.leading, -Self.tintOutset)
-                .padding(.trailing, -6)
         )
         .gesture(HeldKeys { keys = $0 })
         // Unfolded, its sub-issues are read again each time the list shows.
         .task(id: line.unfolded) {
             if line.unfolded { await model.loadSubIssues(of: sub) }
         }
-        .contextMenu {
-            if let boardItem {
+        if let boardItem {
+            row.contextMenu {
                 ItemMenuContent(item: boardItem, onSelect: pickable && !picking ? { select(boardItem) } : nil) {
                     openRoute(.issue(boardItem.id))
                 }
-            } else {
+            } preview: {
+                IssuePreview(item: boardItem)
+                    .environment(model)
+            }
+        } else {
+            row.contextMenu {
                 Button {
                     withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
                 } label: {
@@ -1529,42 +1463,11 @@ private struct MobileSubIssueRow: View {
         withAnimation(Theme.spring) { model.startPickingSubIssues(of: parent, with: boardItem) }
     }
 
-    private func shape(joinedAbove: Bool, joinedBelow: Bool) -> UnevenRoundedRectangle {
-        UnevenRoundedRectangle(
-            topLeadingRadius: joinedAbove ? 0 : 10, bottomLeadingRadius: joinedBelow ? 0 : 10,
-            bottomTrailingRadius: joinedBelow ? 0 : 10, topTrailingRadius: joinedAbove ? 0 : 10, style: .continuous
-        )
-    }
-
-    /// Right after the status circle; a spinner while its sub-issues are read the first time.
-    private var foldArrow: some View {
-        Button {
-            model.toggleSubIssues(of: sub.id)
-        } label: {
-            ZStack {
-                if line.waiting {
-                    ProgressView().controlSize(.mini)
-                } else {
-                    FoldArrow(unfolded: line.unfolded)
-                }
-            }
-            // The arrow stands over the status circles of the sub-issues it unfolds.
-            .frame(width: 24, height: 44)
-            .frame(width: Self.indent, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PlainPressStyle())
-        .sensoryFeedback(.selection, trigger: line.unfolded)
-        .accessibilityLabel(line.unfolded ? Text(.foldSubIssuesTooltip) : Text(.unfoldSubIssuesTooltip(count: line.progress?.total ?? 0)))
-        .accessibilityIdentifier("sub-fold-#\(sub.number)")
-    }
-
-    /// On a board, its columns with the current one checked. Elsewhere it is only open or closed, and an issue the
-    /// app knows can go onto one of your boards too.
+    /// The statuses to pick from, as on any row; one known only from GitHub is only open or closed there.
     @ViewBuilder
-    private func statusMenu(_ boardItem: Item?) -> some View {
-        if let card = card(boardItem) {
-            StatusMenuItems(item: card)
+    private func statusMenu(_ item: Item) -> some View {
+        if !item.isStandIn {
+            StatusMenuItems(item: item)
         } else {
             Picker(.status, selection: Binding(
                 get: { sub.isClosed },
@@ -1584,46 +1487,7 @@ private struct MobileSubIssueRow: View {
                 .tag(true)
             }
             .pickerStyle(.inline)
-            if let boardItem, !model.boards(toAdd: boardItem).isEmpty {
-                Divider()
-                AddToProjectMenuItems(item: boardItem)
-            }
         }
-    }
-
-    private func statusText(_ boardItem: Item?) -> String {
-        if let card = card(boardItem) { return model.statusText(of: card) }
-        return String(localized: sub.isClosed ? .stateClosed : .stateOpen)
-    }
-
-    /// The sub-issue as a card on a board with columns to pick from.
-    private func card(_ boardItem: Item?) -> Item? {
-        guard let boardItem, boardItem.isOnBoard, !model.statusOptions(projectId: boardItem.projectId).isEmpty else { return nil }
-        return boardItem
-    }
-
-    private func glyph(_ boardItem: Item?) -> StatusGlyph {
-        if let boardItem, boardItem.statusId != nil { return model.glyph(of: boardItem) }
-        if !sub.isClosed { return StatusGlyph(category: .unstarted, progress: 0, color: Theme.textBody) }
-        if sub.stateReason == "NOT_PLANNED" || sub.stateReason == "DUPLICATE" {
-            return StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary)
-        }
-        return StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
-    }
-}
-
-/// The circle that stands for a sub-issue's status while picking, filled with a checkmark once picked, as in Mail.
-private struct PickMark: View {
-    var picked: Bool
-
-    var body: some View {
-        Image(systemName: picked ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 20))
-            .foregroundStyle(picked ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.textTertiary))
-            .contentTransition(.symbolEffect(.replace))
-            .frame(width: 32, height: 44)
-            .contentShape(Rectangle())
-            .accessibilityHidden(true)
     }
 }
 
@@ -1697,13 +1561,11 @@ private struct MobileRelations: View {
                         .accessibilityLabel(relation == .blockedBy ? LocalizedStringResource.markAsBlockedByCommand : .markAsBlockingCommand)
                     }
                     VStack(spacing: 0) {
-                        ForEach(Array(links.enumerated()), id: \.element.key) { index, link in
-                            MobileLinkedIssueRow(item: item, link: link)
-                            if index < links.count - 1 {
-                                Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 32)
-                            }
+                        ForEach(links, id: \.key) { link in
+                            MobileLinkedIssueRow(item: item, link: link, last: link.key == links.last?.key)
                         }
                     }
+                    .issueRowsOnPage()
                     .animation(Theme.spring, value: links.map(\.key))
                 }
                 .padding(.top, 28)
@@ -1712,64 +1574,65 @@ private struct MobileRelations: View {
     }
 }
 
+/// An issue the open one is blocked by or blocks, as every list shows an issue (`IssueRow`).
 private struct MobileLinkedIssueRow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openRoute) private var openRoute
     var item: Item
     var link: LinkedIssue
+    /// The last row under its heading, with no hairline under it.
+    var last = false
 
     var body: some View {
-        let boardItem = model.item(contentId: link.id)
-        Button {
-            if let boardItem {
-                openRoute(.issue(boardItem.id))
+        let linked = model.rowItem(for: link)
+        let row = Button {
+            if !linked.isStandIn {
+                openRoute(.issue(linked.id))
             } else if let url = link.url.flatMap(URL.init(string:)) {
                 Platform.open(url)
             }
         } label: {
-            HStack(spacing: 10) {
-                StatusIcon(glyph: boardItem.map { model.glyph(of: $0) } ?? .openOrClosed(link.state, reason: link.stateReason), size: 17)
-                    .frame(width: 24)
-                Text(link.displayNumber)
-                    .font(.footnote)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.textTertiary)
-                Text(link.title)
-                    .font(.subheadline)
-                    .foregroundStyle(link.isClosed ? Theme.textSecondary : Theme.text)
-                    .lineLimit(1)
-                Spacer(minLength: 8)
-                if boardItem == nil, link.url != nil {
-                    Image(systemName: "arrow.up.right")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(Theme.textTertiary)
-                        .accessibilityLabel(.opensOnGitHub)
-                }
-            }
-            .padding(.leading, 8)
-            .padding(.trailing, 12)
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
+            IssueRow(
+                item: linked, showsEpic: false, chips: model.fieldChips(of: linked, in: linked.projectId.map { .project($0) }),
+                hairline: !last, identifier: "link-\(link.displayNumber)"
+            )
         }
-        .buttonStyle(PlainPressStyle())
-        .accessibilityIdentifier("link-\(link.displayNumber)")
-        .contextMenu {
-            Button(role: .destructive) {
-                model.removeLink(link, of: item)
-            } label: {
-                Label(.removeRelationMenuItem, systemImage: "xmark")
+        .buttonStyle(RowButtonStyle())
+        .issueRowControls(
+            linked, place: Nesting.Place(), nested: nil, folded: false, changesStatus: !linked.isStandIn && model.canToggleDone(linked),
+            prefix: "link-", spokenStatus: model.spokenStatus(of: linked), fold: {}
+        ) {
+            StatusMenuItems(item: linked)
+        }
+        if !linked.isStandIn {
+            row.contextMenu {
+                removeButton
+                Divider()
+                ItemMenuContent(item: linked) { openRoute(.issue(linked.id)) }
+            } preview: {
+                IssuePreview(item: linked)
+                    .environment(model)
             }
-            if let boardItem {
-                Divider()
-                ItemMenuContent(item: boardItem) { openRoute(.issue(boardItem.id)) }
-            } else if let url = link.url {
-                Divider()
-                Button {
-                    model.copyLink(url, for: "\(link.displayNumber) \(link.title)")
-                } label: {
-                    Label(.copyLink, systemImage: "link")
+        } else {
+            row.contextMenu {
+                removeButton
+                if let url = link.url {
+                    Divider()
+                    Button {
+                        model.copyLink(url, for: "\(link.displayNumber) \(link.title)")
+                    } label: {
+                        Label(.copyLink, systemImage: "link")
+                    }
                 }
             }
+        }
+    }
+
+    private var removeButton: some View {
+        Button(role: .destructive) {
+            model.removeLink(link, of: item)
+        } label: {
+            Label(.removeRelationMenuItem, systemImage: "xmark")
         }
     }
 }
@@ -1883,7 +1746,7 @@ private struct CommentComposer: View {
             .accessibilityLabel(.sendCommentButton)
             .accessibilityIdentifier("comment-send")
         }
-        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22))
+        .glassPanel(in: RoundedRectangle(cornerRadius: 22), interactive: true)
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 8)
@@ -1900,53 +1763,4 @@ private struct CommentComposer: View {
     }
 }
 
-// MARK: - Layout
-
-/// Lays children out in rows, wrapping to the next row when one is full.
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let rows = arrange(proposal: proposal, subviews: subviews)
-        let height = rows.map(\.height).reduce(0, +) + CGFloat(max(rows.count - 1, 0)) * spacing
-        let width = rows.map(\.width).max() ?? 0
-        return CGSize(width: proposal.width ?? width, height: height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var y = bounds.minY
-        for row in arrange(proposal: ProposedViewSize(width: bounds.width, height: nil), subviews: subviews) {
-            var x = bounds.minX
-            for index in row.indices {
-                let size = subviews[index].sizeThatFits(.unspecified)
-                subviews[index].place(at: CGPoint(x: x, y: y + (row.height - size.height) / 2), proposal: ProposedViewSize(size))
-                x += size.width + spacing
-            }
-            y += row.height + spacing
-        }
-    }
-
-    private struct Row {
-        var indices: [Int] = []
-        var width: CGFloat = 0
-        var height: CGFloat = 0
-    }
-
-    private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> [Row] {
-        let limit = proposal.width ?? .infinity
-        var rows: [Row] = [Row()]
-        for index in subviews.indices {
-            let size = subviews[index].sizeThatFits(.unspecified)
-            let extra = rows[rows.count - 1].indices.isEmpty ? size.width : size.width + spacing
-            if rows[rows.count - 1].width + extra > limit, !rows[rows.count - 1].indices.isEmpty {
-                rows.append(Row())
-            }
-            let gap = rows[rows.count - 1].indices.isEmpty ? 0 : spacing
-            rows[rows.count - 1].indices.append(index)
-            rows[rows.count - 1].width += size.width + gap
-            rows[rows.count - 1].height = max(rows[rows.count - 1].height, size.height)
-        }
-        return rows.filter { !$0.indices.isEmpty }
-    }
-}
 #endif

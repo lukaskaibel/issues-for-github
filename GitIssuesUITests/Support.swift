@@ -133,7 +133,8 @@ class AppTestCase: XCTestCase {
 
     /// Under the comment field at the bottom of an issue, where a touch may reach the field instead.
     private func behindCommentField(_ element: XCUIElement) -> Bool {
-        let field = app.textFields["comment-field"].firstMatch
+        // A text view since comments are written in Markdown.
+        let field = app.descendants(matching: .any).matching(identifier: "comment-field").firstMatch
         let send = app.buttons["comment-send"].firstMatch
         guard field.exists, send.exists, !["comment-field", "comment-send"].contains(element.identifier) else { return false }
         let bar = field.frame.union(send.frame)
