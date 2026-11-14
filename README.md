@@ -80,10 +80,10 @@ shows in the same frame and reaches GitHub in the background.
   <img alt="A card is dragged from In Progress to the end of In Review, taking the two sub-issues under it along, and Esc sends it back" src="Design/screenshots/drag-light.webp">
 </picture>
 
-Hold a card over the middle of another one and that issue lights up while the card says "Sub-issue of #9": let go,
-and it becomes that issue's sub-issue, keeping its own status. Near a card's top or bottom edge it goes in between,
-as before. Rows of a list and issues in My Issues go under another issue the same way, and so do cards on the
-iPhone and iPad boards.
+Hold a card over the middle of another one for a moment and that issue lights up while the card says "Sub-issue of
+#9": let go, and it becomes that issue's sub-issue, keeping its own status. Cards it only passes over on its way stay
+as they are, and near a card's top or bottom edge it goes in between, as before. Rows of a list and issues in My
+Issues go under another issue the same way, and so do cards on the iPhone and iPad boards.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/nest-dark.webp">
@@ -345,7 +345,7 @@ The interface uses the system's own parts.
   in Notes. A project's board shows one column at a
   time, with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and hold a card and drop it on a column in the strip to move it
   there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards.
-  Held over the middle of another card, that card lights up, and the card you let go there becomes its sub-issue.
+  Held a moment over the middle of another card, that card lights up, and the card you let go there becomes its sub-issue.
   Lists for the views that are lists, and each project's All Issues, grouped by status, with sections that fold and
   headers that stay pinned (All Issues turns into a board with **Board** in its "…" menu, its issues on no board a
   column of their own); My Issues shows its cards, one under another on iPhone and two or three to a row on iPad,
@@ -782,7 +782,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap at the end of bold text | Type on in bold: on the touch keyboard its stars stay hidden, and Delete takes the letter you see and keeps the bold |
 | Tap a checkbox, a link, a table or a diagram in a description | Tick it, open it, or edit its source |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
-| Touch and hold a card, then drag it over the middle of another card | That card lights up: let go to make the dragged issue its sub-issue. It keeps its status, and the notice that says so undoes it. Over a card's top or bottom edge it goes above or below that card instead |
+| Touch and hold a card, then hold it a moment over the middle of another card | That card lights up: let go to make the dragged issue its sub-issue. It keeps its status, and the notice that says so undoes it. Over a card's top or bottom edge it goes above or below that card instead |
 | "…" in All Issues | Show it as a board or a list (on a wide iPad, the switch beside its name); on the board, the hidden columns, a tap away from coming back |
 | "…" over a column of All Issues' board | Move it left or right, or hide it, on that device |
 | Swipe sideways on a board, or tap a column in the strip over it (iPhone) | Turn to that column |
