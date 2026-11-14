@@ -301,7 +301,7 @@ struct GroupIcon: View {
         case .repository:
             RepositoryIcon(size: size - 2).foregroundStyle(Theme.textSecondary)
         case .priority(let level):
-            PriorityIcon(level: level)
+            PriorityIcon(level: level, size: size)
         case .project(let look):
             ProjectGlyphImage(look: look, size: size)
         case .due(let tone):

@@ -156,7 +156,8 @@ extension AppModel {
         if current.contains(where: { $0 != nil }) {
             rows.append(PickerItem(
                 id: "", title: String(localized: .removeDueDateRow),
-                icon: AnyView(Image(systemName: "xmark").font(.system(size: 11, weight: .medium)).foregroundStyle(Theme.textSecondary))
+                // As the menus and the palette mark taking the date off.
+                icon: AnyView(Image(systemName: "calendar.badge.minus").font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.textSecondary))
             ))
         }
         return rows

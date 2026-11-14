@@ -43,6 +43,8 @@ struct IssueRow: View {
     var identifier: String? = nil
     @ScaledMetric(relativeTo: .body) private var glyphSize: CGFloat = 20
     @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 26
+    /// The priority's bars grow with the line of details they stand in.
+    @ScaledMetric(relativeTo: .footnote) private var priorityWidth: CGFloat = 14
 
     /// Sub-issues hang this much further in per level, down to a few levels.
     static let indent: CGFloat = 18
@@ -145,7 +147,7 @@ struct IssueRow: View {
     private var details: some View {
         HStack(spacing: 7) {
             if model.project(of: item)?.priorityFieldId != nil {
-                PriorityIcon(level: model.priorityLevel(of: item))
+                PriorityIcon(level: model.priorityLevel(of: item), size: priorityWidth)
             }
             Text(item.displayNumber)
                 .monospacedDigit()
@@ -700,7 +702,7 @@ extension MobileEmptyState where Accessory == EmptyView {
 
 // MARK: - Properties
 
-/// A property of an issue as a chip under its title: icon and value, outlined like the Mac's chips.
+/// A property of an issue as a chip under its title: icon and value, on glass as iOS draws what floats over a page.
 struct PropertyChip<Icon: View>: View {
     var text: String
     var placeholder = false

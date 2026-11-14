@@ -211,7 +211,7 @@ struct FilterIconView: View {
             case .milestone(let mark): MilestoneIcon(mark: mark, size: size)
             case .dot(let color): GroupIcon(icon: .dot(color), size: size + 1)
             case .iteration(let current): IterationIcon(size: size + 1).foregroundStyle(current ? Theme.started : Theme.textSecondary)
-            case .priority(let level): PriorityIcon(level: level).scaleEffect(size / 14)
+            case .priority(let level): PriorityIcon(level: level, size: size)
             case .project(let look): ProjectGlyphImage(look: look, size: size + 1)
             case .none: EmptyView()
             }

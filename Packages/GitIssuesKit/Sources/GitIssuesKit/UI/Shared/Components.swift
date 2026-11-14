@@ -77,18 +77,25 @@ struct StatusIcon: View {
 
 struct PriorityIcon: View {
     var level: PriorityLevel
+    /// Its width; 14 points as on cards and rows, wider where the text around it is larger.
+    var size: CGFloat = 14
+    /// White on a picked row's accent, as a picked row of the list shows it; Urgent keeps its colour, as a flag does.
+    var onAccent = false
 
     var body: some View {
-        // The same shapes as cards and rows paint (`Marks.priority`).
-        Canvas { context, size in
-            let box = CGRect(origin: .zero, size: size)
-            context.draw(Marks.priority(level, in: box), mark: level == .urgent ? Theme.urgent : Theme.textBody, off: Theme.barOff)
+        // The same shapes as cards and rows paint (`Marks.priority`), in their 14 by 12 box, scaled to the size.
+        Canvas { context, canvas in
+            var context = context
+            context.scaleBy(x: canvas.width / 14, y: canvas.width / 14)
+            let box = CGRect(x: 0, y: 0, width: 14, height: 12)
+            let mark = level == .urgent ? Theme.urgent : onAccent ? .white : Theme.textBody
+            context.draw(Marks.priority(level, in: box), mark: mark, off: onAccent ? .white.opacity(0.35) : Theme.barOff)
             if level == .urgent {
                 let square = Marks.urgentSquare(in: box)
                 context.draw(Marks.urgentMark.foregroundStyle(Theme.onColor), at: CGPoint(x: square.midX, y: square.midY))
             }
         }
-        .frame(width: 14, height: 12)
+        .frame(width: size, height: size * 12 / 14)
         .accessibilityElement()
         .accessibilityLabel(label)
     }
@@ -300,6 +307,8 @@ struct BlockedIcon: View {
 struct BlockerFlag: View {
     var mark: BlockerMark
     var size: CGFloat = 12
+    /// One colour in place of red, such as white on a picked row's accent, as the list's rows have it.
+    var tint: Color? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -308,7 +317,7 @@ struct BlockerFlag: View {
                 Text(text).font(.system(size: size)).monospacedDigit()
             }
         }
-        .foregroundStyle(Theme.blocked)
+        .foregroundStyle(tint ?? Theme.blocked)
         .lineLimit(1)
         .fixedSize()
     }
