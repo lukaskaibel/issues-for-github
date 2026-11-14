@@ -42,9 +42,18 @@ struct IssueRowModel: Equatable {
     var pickable = true
     /// While the sub-issues under it are read for the first time, a spinner stands where its fold arrow goes.
     var foldWaiting = false
-    /// A button at the end of the row under the pointer, which takes it off the list it is in: an issue another one is
+    /// A button at the start of the row under the pointer, which takes it off the list it is in: an issue another one is
     /// blocked by or blocks.
     var removable = false
+    /// An issue known only from GitHub, as another one's sub-issue or as an issue it is blocked by or blocks: a click
+    /// opens it on GitHub, which its tooltip says.
+    var standIn: StandIn?
+
+    enum StandIn: Equatable {
+        /// Its status icon closes it or opens it again.
+        case subIssue
+        case relation
+    }
 }
 
 extension AppModel {
@@ -73,11 +82,13 @@ extension AppModel {
 
     /// The row of an issue the app knows only from another one's sub-issues or relations: open or closed, its number,
     /// title and people, and what blocks it as far as known.
-    func issueRow(standingInFor item: Item, nest: Nesting.Place = Nesting.Place(), nested: Int? = nil, folded: Bool = false) -> IssueRowModel {
+    func issueRow(
+        standingInFor item: Item, as standIn: IssueRowModel.StandIn, nest: Nesting.Place = Nesting.Place(), nested: Int? = nil, folded: Bool = false
+    ) -> IssueRowModel {
         IssueRowModel(
-            item: item, glyph: .openOrClosed(item.state, reason: item.stateReason), priority: .none,
-            showsPriority: false, blocker: blockerMark(for: item),
-            nest: nest, nested: nested, folded: folded, editable: false, pickable: false
+            item: item, glyph: glyph(of: item), priority: .none,
+            showsPriority: false, showsStatus: standIn == .subIssue, blocker: blockerMark(for: item),
+            nest: nest, nested: nested, folded: folded, editable: false, pickable: false, standIn: standIn
         )
     }
 }
@@ -104,6 +115,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     private var dueText: NSAttributedString?
     private var dueIcon: NSImage?
     private var labels: [(text: NSAttributedString, size: NSSize, color: NSColor)] = []
+    /// The texts of the project's fields the view shows.
+    private var chipTexts: [(text: NSAttributedString, size: NSSize)] = []
     /// How many labels the issue shows in all, and "+2" for each number of them that may not fit.
     private var labelCount = 0
     private var moreLabels: [Int: (text: NSAttributedString, size: NSSize)] = [:]
@@ -248,8 +261,9 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                     .font: NSFont.systemFont(ofSize: 11),
                     .foregroundColor: color,
                 ])
+                // The calendar at the size and weight of the date, as cards write it.
                 dueIcon = NSImage(systemSymbolName: "calendar", accessibilityDescription: nil)?
-                    .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 10, weight: .medium)
+                    .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 11, weight: .regular)
                         .applying(NSImage.SymbolConfiguration(paletteColors: [color])))
             } else {
                 dueText = nil
@@ -263,6 +277,10 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                 ])
             }
             milestoneSize = milestoneText?.size() ?? .zero
+            chipTexts = row.chips.map { chip in
+                let text = NSAttributedString(string: chip.text, attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: secondary])
+                return (text, text.size())
+            }
             // Labels as cards show them (`LabelMark`), and "+2" for those that don't fit, made for each number of them
             // that can be left over.
             let shownLabels = item.shownLabels
@@ -399,7 +417,9 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             parts.append((.priority, rect))
             iconHover(.priority, rect)
         }
-        drawPriority(row.priority, x: x, midY: midY, onAccent: onAccent)
+        // Without a Priority field in the project there is nothing to show, as on a card; the place stays, so numbers and
+        // titles line up with the rows around.
+        if row.showsPriority { drawPriority(row.priority, x: x, midY: midY, onAccent: onAccent) }
         x += 14 + 10
         number.draw(at: NSPoint(x: x, y: midY - numberSize.height / 2))
         let numberRect = NSRect(x: x, y: midY - 9, width: numberSize.width, height: 18)
@@ -412,8 +432,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             parts.append((.status, rect))
             iconHover(.status, rect)
         }
-        var glyph = row.glyph
-        if onAccent, glyph.category != .completed, glyph.category != .canceled { glyph.color = .white }
+        let glyph = onAccent ? row.glyph.onAccent : row.glyph
         StatusPainter.draw(glyph, in: CGRect(x: x, y: midY - 7, width: 14, height: 14), cg: context)
         x += 14 + 10
         // The arrow that folds the sub-issues under this issue in or out.
@@ -431,6 +450,14 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             x = rect.maxX + 8
         } else {
             foldRect = nil
+        }
+        // A pull request says so before its title, with the mark its card shows after the number.
+        if row.item.kind == .pullRequest, let mark = onAccent ? Self.pullRequestMarkOnAccent : Self.pullRequestMark {
+            mark.draw(
+                in: NSRect(x: x, y: midY - mark.size.height / 2, width: mark.size.width, height: mark.size.height),
+                from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
+            )
+            x += mark.size.width + 6
         }
 
         // Right to left: assignees, date, project, labels.
@@ -465,7 +492,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         right -= 52 + 10
         if let dueText {
             let icon = dueIcon?.size ?? .zero
-            let width = 7 + icon.width + 4 + dueSize.width + 7
+            let width = 7 + icon.width + 3 + dueSize.width + 7
             let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
             parts.append((.dueDate, rect))
             drawChip(rect, hovered: hoveredPart == .dueDate)
@@ -473,7 +500,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                 in: NSRect(x: rect.minX + 7, y: midY - icon.height / 2, width: icon.width, height: icon.height),
                 from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
             )
-            dueText.draw(at: NSPoint(x: rect.minX + 7 + icon.width + 4, y: midY - dueSize.height / 2))
+            dueText.draw(at: NSPoint(x: rect.minX + 7 + icon.width + 3, y: midY - dueSize.height / 2))
             right = rect.minX - 10
         }
         if let project {
@@ -488,7 +515,10 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             if rect.minX > x + 160 {
                 parts.append((.milestone, rect))
                 drawChip(rect, hovered: hoveredPart == .milestone)
-                PlanningGlyph.drawMilestone(row.milestoneMark, in: CGRect(x: rect.minX + 7, y: midY - 5, width: 10, height: 10), cg: context)
+                // Grey, as on cards: the same milestone repeats down the list; its shape still tells the current one, and
+                // only one past its date keeps its colour. White on a picked row.
+                let color: Color = onAccent ? .white : row.milestoneMark == .late ? Theme.overdue : Theme.textTertiary
+                PlanningGlyph.drawMilestone(row.milestoneMark, in: CGRect(x: rect.minX + 7, y: midY - 5, width: 10, height: 10), cg: context, color: color)
                 milestoneText.draw(
                     with: NSRect(x: rect.minX + 7 + 10 + 5, y: midY - milestoneSize.height / 2, width: textWidth, height: milestoneSize.height),
                     options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
@@ -497,11 +527,9 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             }
         }
         // The project's own fields the view shows, as far as there is room.
-        for field in row.chips.reversed() {
-            let text = NSAttributedString(string: field.text, attributes: [
-                .font: NSFont.systemFont(ofSize: 11.5), .foregroundColor: NSColor(Theme.textSecondary),
-            ])
-            let textSize = text.size()
+        for (field, chip) in zip(row.chips, chipTexts).reversed() {
+            let text = chip.text
+            let textSize = chip.size
             let textWidth = min(textSize.width, 120)
             let width = 7 + 10 + 5 + textWidth + 7
             let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
@@ -511,11 +539,14 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             if let kind { parts.append((kind, rect)) }
             drawChip(rect, hovered: kind != nil && hoveredPart == kind)
             let icon = CGRect(x: rect.minX + 7, y: midY - 5, width: 10, height: 10)
-            switch field.icon {
-            case .option(let color): PlanningGlyph.drawDot(color, in: icon.insetBy(dx: -1, dy: -1), cg: context)
-            case .iteration: MenuIcons.symbol("arrow.triangle.2.circlepath", color: Theme.textTertiary)?.draw(in: icon)
-            case .date: MenuIcons.symbol("calendar", color: Theme.textTertiary)?.draw(in: icon)
-            case .text: MenuIcons.symbol("text.alignleft", color: Theme.textTertiary)?.draw(in: icon)
+            if case .option(let color) = field.icon {
+                NSColor(Theme.optionColor(color) ?? Theme.textTertiary).setFill()
+                NSBezierPath(ovalIn: icon.insetBy(dx: 1.5, dy: 1.5)).fill()
+            } else if let symbol = Self.fieldSymbol(field.icon, onAccent: onAccent) {
+                symbol.draw(
+                    in: NSRect(x: icon.midX - symbol.size.width / 2, y: icon.midY - symbol.size.height / 2, width: symbol.size.width, height: symbol.size.height),
+                    from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
+                )
             }
             text.draw(
                 with: NSRect(x: rect.minX + 7 + 10 + 5, y: midY - textSize.height / 2, width: textWidth, height: textSize.height),
@@ -571,6 +602,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         let reserve = right - 12 - x - beside - hintRoom >= 200 ? hintRoom : 0
         let available = max(40, right - 12 - x - beside - reserve)
         let titleWidth = min(titleSize.width, available)
+        titleRect = NSRect(x: x, y: midY - 9, width: titleWidth, height: 18)
         title.draw(
             with: NSRect(x: x, y: midY - titleSize.height / 2, width: available, height: titleSize.height),
             options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
@@ -579,23 +611,10 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             let rect = NSRect(x: x + titleWidth + 10, y: midY - 10, width: subWidth, height: 20)
             parts.append((.subIssues, rect))
             drawChip(rect, hovered: hoveredPart == .subIssues)
-            let origin = NSPoint(x: rect.minX + 7, y: midY - 5.5)
-            let glyph = NSBezierPath()
-            glyph.move(to: NSPoint(x: origin.x + 2.3, y: origin.y + 1.8))
-            glyph.line(to: NSPoint(x: origin.x + 2.3, y: origin.y + 5.5))
-            glyph.curve(
-                to: NSPoint(x: origin.x + 4.1, y: origin.y + 7.3),
-                controlPoint1: NSPoint(x: origin.x + 2.3, y: origin.y + 6.7),
-                controlPoint2: NSPoint(x: origin.x + 2.9, y: origin.y + 7.3)
+            context.draw(
+                Marks.subIssue(in: CGRect(x: rect.minX + 7, y: midY - 5.5, width: 11, height: 11)),
+                mark: (onAccent ? NSColor.white : NSColor(Theme.textSecondary)).cgColor, onColor: NSColor.white.cgColor
             )
-            glyph.line(to: NSPoint(x: origin.x + 6, y: origin.y + 7.3))
-            glyph.lineWidth = 1.2
-            glyph.lineCapStyle = .round
-            (onAccent ? NSColor.white : NSColor(Theme.textSecondary)).setStroke()
-            glyph.stroke()
-            let dot = NSBezierPath(ovalIn: NSRect(x: origin.x + 6.2, y: origin.y + 5.8, width: 3.1, height: 3.1))
-            dot.lineWidth = 1.2
-            dot.stroke()
             subCount.draw(at: NSPoint(x: rect.minX + 7 + 11 + 4, y: midY - subCountSize.height / 2))
         }
         var afterTitle = x + titleWidth + 10 + (subWidth.map { $0 + 6 } ?? 0)
@@ -623,8 +642,12 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
                 parts.append((kind, rect))
                 if hoveredPart == kind { drawChip(rect, hovered: true) }
                 if row.parentIsEpic {
-                    PlanningGlyph.drawEpic(in: CGRect(x: rect.minX + 6, y: midY - 6, width: 12, height: 12), cg: context)
-                } else if let arrow = Self.parentArrow {
+                    // In the grey of the epic's name, as on cards: the epic's own colour is for its header and the roadmap.
+                    PlanningGlyph.drawEpic(
+                        in: CGRect(x: rect.minX + 6, y: midY - 6, width: 12, height: 12), cg: context,
+                        color: onAccent ? Color.white.opacity(0.8) : Theme.textTertiary
+                    )
+                } else if let arrow = onAccent ? Self.parentArrowOnAccent : Self.parentArrow {
                     let size = arrow.size
                     arrow.draw(
                         in: NSRect(x: rect.minX + 7, y: midY - size.height / 2, width: size.width, height: size.height),
@@ -651,6 +674,7 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
             for part in parts { addToolTip(part.rect.insetBy(dx: -3, dy: -4), owner: self, userData: nil) }
             if let foldRect { addToolTip(foldRect.insetBy(dx: -3, dy: -4), owner: self, userData: nil) }
             if let removeRect { addToolTip(removeRect, owner: self, userData: nil) }
+            if row.standIn != nil { addToolTip(titleRect, owner: self, userData: nil) }
             addToolTip(numberRect.insetBy(dx: -3, dy: -4), owner: self, userData: nil)
             if dateRect.width > 0 { addToolTip(dateRect, owner: self, userData: nil) }
         }
@@ -659,6 +683,8 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
 
     private var toolTipsNeedUpdate = true
     private var tooltipRemoveRect: NSRect?
+    /// Where the title was drawn, whose tooltip says that an issue known only from GitHub opens there.
+    private var titleRect = NSRect.zero
     private var tooltipFoldRect: NSRect?
 
     /// Lines from the parents above down to this row: a straight one through the row for each level whose
@@ -707,29 +733,53 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
         path.stroke()
     }
 
-    /// A chevron that points down while the sub-issues show and to the right while they are folded in.
+    /// The arrow that folds sub-issues in or out (`Marks.foldArrow`), for the list's views.
     static func drawFoldArrow(folded: Bool, center: NSPoint, color: NSColor) {
-        let path = NSBezierPath()
-        if folded {
-            path.move(to: NSPoint(x: center.x - 1.5, y: center.y - 3.5))
-            path.line(to: NSPoint(x: center.x + 2, y: center.y))
-            path.line(to: NSPoint(x: center.x - 1.5, y: center.y + 3.5))
-        } else {
-            path.move(to: NSPoint(x: center.x - 3.5, y: center.y - 1.5))
-            path.line(to: NSPoint(x: center.x, y: center.y + 2))
-            path.line(to: NSPoint(x: center.x + 3.5, y: center.y - 1.5))
-        }
-        path.lineWidth = 1.5
-        path.lineCapStyle = .round
-        path.lineJoinStyle = .round
-        color.setStroke()
-        path.stroke()
+        NSGraphicsContext.current?.cgContext.draw(Marks.foldArrow(folded: folded, center: center), mark: color.cgColor, onColor: color.cgColor)
     }
 
     private static var parentArrow: NSImage? {
         NSImage(systemSymbolName: "arrow.turn.left.up", accessibilityDescription: nil)?.withSymbolConfiguration(
             NSImage.SymbolConfiguration(pointSize: 9, weight: .medium).applying(.init(paletteColors: [NSColor(Theme.textTertiary)]))
         )
+    }
+
+    private static var pullRequestMark: NSImage? {
+        NSImage(systemSymbolName: "arrow.triangle.pull", accessibilityDescription: nil)?.withSymbolConfiguration(
+            NSImage.SymbolConfiguration(pointSize: 10, weight: .medium).applying(.init(paletteColors: [NSColor(Theme.textTertiary)]))
+        )
+    }
+
+    private static var pullRequestMarkOnAccent: NSImage? {
+        NSImage(systemSymbolName: "arrow.triangle.pull", accessibilityDescription: nil)?.withSymbolConfiguration(
+            NSImage.SymbolConfiguration(pointSize: 10, weight: .medium).applying(.init(paletteColors: [NSColor.white.withAlphaComponent(0.8)]))
+        )
+    }
+
+    private static var parentArrowOnAccent: NSImage? {
+        NSImage(systemSymbolName: "arrow.turn.left.up", accessibilityDescription: nil)?.withSymbolConfiguration(
+            NSImage.SymbolConfiguration(pointSize: 9, weight: .medium).applying(.init(paletteColors: [NSColor.white.withAlphaComponent(0.8)]))
+        )
+    }
+
+    /// A field's icon, as cards draw it: a symbol a little smaller than the text.
+    private static var fieldSymbols: [String: NSImage] = [:]
+
+    private static func fieldSymbol(_ icon: FieldChip.Icon, onAccent: Bool) -> NSImage? {
+        let (name, size, weight): (String, CGFloat, NSFont.Weight) = switch icon {
+        case .iteration: ("arrow.triangle.2.circlepath", 8, .semibold)
+        case .date: ("calendar", 9, .regular)
+        case .text: ("text.alignleft", 8, .regular)
+        case .option: ("", 0, .regular)
+        }
+        guard !name.isEmpty else { return nil }
+        let key = "\(name) \(onAccent)"
+        if let image = fieldSymbols[key] { return image }
+        let color = onAccent ? NSColor.white.withAlphaComponent(0.8) : NSColor(Theme.textTertiary)
+        let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: size, weight: weight).applying(.init(paletteColors: [color])))
+        fieldSymbols[key] = image
+        return image
     }
 
     private static var blockedFlag: NSImage? {
@@ -755,6 +805,12 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     func view(_ view: NSView, stringForToolTip tag: NSView.ToolTipTag, point: NSPoint, userData data: UnsafeMutableRawPointer?) -> String {
         guard let row else { return "" }
         if isOnRemove(point) { return String(localized: .removeRelation) }
+        if let standIn = row.standIn {
+            if part(at: point)?.kind == .status { return String(localized: row.item.isClosed ? .reopen : .markAsDoneTooltip) }
+            if titleRect.contains(point) {
+                return String(localized: standIn == .subIssue ? .subIssueOpensOnGitHub : .notOnYourBoardsOpensOnGitHub)
+            }
+        }
         if isOnFold(point) {
             return String(localized: row.folded ? .unfoldSubIssuesTooltip(count: row.nested ?? 0) : .foldSubIssuesTooltip)
         }
@@ -803,26 +859,14 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     }
 
     private func drawPriority(_ level: PriorityLevel, x: CGFloat, midY: CGFloat, onAccent: Bool = false) {
-        if level == .urgent {
-            let rect = NSRect(x: x + 1, y: midY - 6, width: 12, height: 12)
-            NSColor(Theme.urgent).setFill()
-            NSBezierPath(roundedRect: rect, xRadius: 3, yRadius: 3).fill()
-            let mark = NSAttributedString(string: "!", attributes: [
-                .font: NSFont.systemFont(ofSize: 10, weight: .heavy),
-                .foregroundColor: NSColor(Theme.onColor),
-            ])
-            let markSize = mark.size()
-            mark.draw(at: NSPoint(x: rect.midX - markSize.width / 2, y: rect.midY - markSize.height / 2))
-            return
-        }
-        let bars: [(CGFloat, Bool)] = [(4, level >= .low), (7, level >= .medium), (10, level >= .high)]
-        for (index, bar) in bars.enumerated() {
-            (onAccent ? NSColor.white.withAlphaComponent(bar.1 ? 1 : 0.35) : NSColor(bar.1 ? Theme.textBody : Theme.barOff)).setFill()
-            NSBezierPath(
-                roundedRect: NSRect(x: x + CGFloat(index) * 5, y: midY + 6 - bar.0, width: 3, height: bar.0),
-                xRadius: 1, yRadius: 1
-            ).fill()
-        }
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        let box = CGRect(x: x, y: midY - 6, width: 14, height: 12)
+        // The same shapes as cards and every view of a priority (`Marks.priority`); white on a picked row, but Urgent
+        // keeps its colour, as a flag does.
+        let mark = level == .urgent ? NSColor(Theme.urgent) : onAccent ? .white : NSColor(Theme.textBody)
+        let off = onAccent ? NSColor.white.withAlphaComponent(0.35) : NSColor(Theme.barOff)
+        context.draw(Marks.priority(level, in: box), mark: mark.cgColor, off: off.cgColor, onColor: NSColor(Theme.onColor).cgColor)
+        if level == .urgent { Marks.drawUrgentMark(on: Marks.urgentSquare(in: box)) }
     }
 
     private func drawAvatars(_ people: [Person], rightEdge: CGFloat, midY: CGFloat, ring: NSColor, context: CGContext) {
@@ -970,6 +1014,15 @@ final class IssueRowHost: NSView {
 
     func show(_ row: IssueRowModel, avatarVersion: Int) {
         cell.model = model
+        if row.standIn != self.row?.standIn || row.item.isClosed != self.row?.item.isClosed {
+            // A sub-issue known only from GitHub is closed or opened again from its row, also with VoiceOver.
+            cell.setAccessibilityCustomActions(row.standIn == .subIssue ? [
+                NSAccessibilityCustomAction(name: String(localized: row.item.isClosed ? .reopenSubIssue : .markSubIssueAsDone)) { [weak self] in
+                    self?.actions.toggleClosed()
+                    return true
+                },
+            ] : [])
+        }
         self.row = row
         cell.configure(row, highlighted: hovering)
         if avatarVersion != self.avatarVersion {

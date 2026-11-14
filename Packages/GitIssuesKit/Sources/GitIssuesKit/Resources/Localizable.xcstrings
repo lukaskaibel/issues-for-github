@@ -36626,7 +36626,7 @@
       }
     },
     "markSubIssueAsDone" : {
-      "comment" : "Mac, issue view, list of sub-issues: VoiceOver label of the status icon of an open sub-issue; activating it closes the sub-issue as completed (GitHub term: an issue that belongs to another one).",
+      "comment" : "Mac, issue view, list of sub-issues: VoiceOver action on an open sub-issue that isn't on the user's boards; it closes the sub-issue as completed (GitHub term: an issue that belongs to another one).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -43922,7 +43922,7 @@
       }
     },
     "notOnYourBoardsOpensOnGitHub" : {
-      "comment" : "Mac, issue view, list of blocking or blocked issues: tooltip of the arrow beside an issue that is on none of the user's boards; clicking opens it on github.com.",
+      "comment" : "Mac, issue view, list of blocking or blocked issues: tooltip of the title of an issue that is on none of the user's boards; clicking the row opens it on github.com.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -73400,7 +73400,7 @@
       }
     },
     "reopenSubIssue" : {
-      "comment" : "Mac, issue view, list of sub-issues: VoiceOver label of the status icon of a closed sub-issue; activating it reopens the sub-issue (GitHub term: an issue that belongs to another one).",
+      "comment" : "Mac, issue view, list of sub-issues: VoiceOver action on a closed sub-issue that isn't on the user's boards; it reopens the sub-issue (GitHub term: an issue that belongs to another one).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -83096,7 +83096,7 @@
       }
     },
     "subIssueOpensOnGitHub" : {
-      "comment" : "Mac, issue view, list of sub-issues: tooltip of the small arrow on a sub-issue that isn't on this project board; a click on the row opens it on github.com in the web browser.",
+      "comment" : "Mac, issue view, list of sub-issues: tooltip of the title of a sub-issue that isn't on this project board; a click on the row opens it on github.com in the web browser.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

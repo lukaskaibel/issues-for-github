@@ -17,8 +17,7 @@ struct StatusGlyph: Equatable {
     /// An issue on none of your boards has no status, only open or closed.
     static func withoutProject(_ item: Item) -> StatusGlyph {
         guard item.isClosed else { return .noProject }
-        if item.stateReason == "NOT_PLANNED" { return StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary) }
-        return StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
+        return openOrClosed(item.state, reason: item.stateReason)
     }
 
     /// An issue known only as open or closed: a sub-issue or a related issue that isn't on one of your boards.
@@ -28,6 +27,15 @@ struct StatusGlyph: Equatable {
             return StatusGlyph(category: .canceled, progress: 0, color: Theme.textTertiary)
         }
         return StatusGlyph(category: .completed, progress: 1, color: Theme.accent)
+    }
+
+    /// On a row filled with the accent colour, as a picked one is: white, but done and canceled keep their filled
+    /// circle, whose check or cross shows on it.
+    var onAccent: StatusGlyph {
+        guard category != .completed, category != .canceled else { return self }
+        var glyph = self
+        glyph.color = .white
+        return glyph
     }
 
     /// Glyphs for all statuses of one project. Later "started" columns fill the circle further.
@@ -71,29 +79,18 @@ struct PriorityIcon: View {
     var level: PriorityLevel
 
     var body: some View {
-        Group {
+        // The same shapes as cards and rows paint (`Marks.priority`).
+        Canvas { context, size in
+            let box = CGRect(origin: .zero, size: size)
+            context.draw(Marks.priority(level, in: box), mark: level == .urgent ? Theme.urgent : Theme.textBody, off: Theme.barOff)
             if level == .urgent {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous).fill(Theme.urgent)
-                    Text("!")
-                        .font(.system(size: 10, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Theme.onColor)
-                }
-                .frame(width: 12, height: 12)
-            } else {
-                HStack(alignment: .bottom, spacing: 2) {
-                    bar(height: 4, on: level >= .low)
-                    bar(height: 7, on: level >= .medium)
-                    bar(height: 10, on: level >= .high)
-                }
+                let square = Marks.urgentSquare(in: box)
+                context.draw(Marks.urgentMark.foregroundStyle(Theme.onColor), at: CGPoint(x: square.midX, y: square.midY))
             }
         }
-        .frame(width: 14, height: 12, alignment: .bottom)
+        .frame(width: 14, height: 12)
+        .accessibilityElement()
         .accessibilityLabel(label)
-    }
-
-    private func bar(height: CGFloat, on: Bool) -> some View {
-        RoundedRectangle(cornerRadius: 1).fill(on ? Theme.textBody : Theme.barOff).frame(width: 3, height: height)
     }
 
     private var label: LocalizedStringResource {
@@ -181,15 +178,31 @@ struct Avatar: View {
     }
 }
 
+/// An issue's people, as cards and rows paint them: up to three, overlapping, the first on top, each kept apart from
+/// the one under it by a thin gap, which is cut out rather than drawn so it shows the ground on any ground.
 struct AvatarStack: View {
     var people: [Person]
     var size: CGFloat = 18
 
     var body: some View {
-        HStack(spacing: -5) {
-            ForEach(people.prefix(3)) { person in
+        let shown = Array(people.prefix(3))
+        // As much of each avatar as cards and rows let the next one cover: 5 of 18 points.
+        let overlap = size * 5 / 18
+        HStack(spacing: -overlap) {
+            ForEach(Array(shown.enumerated()), id: \.element.id) { index, person in
                 Avatar(login: person.login, url: person.avatarUrl, size: size)
-                    .overlay(Circle().stroke(Theme.card, lineWidth: 1.5))
+                    .mask {
+                        Rectangle().overlay(alignment: .leading) {
+                            if index > 0 {
+                                Circle()
+                                    .frame(width: size + 3, height: size + 3)
+                                    .offset(x: -(size - overlap) - 1.5)
+                                    .blendMode(.destinationOut)
+                            }
+                        }
+                        .compositingGroup()
+                    }
+                    .zIndex(Double(shown.count - index))
             }
         }
     }
@@ -312,20 +325,11 @@ struct BlockingIcon: View {
     }
 }
 
+/// The sub-issue mark (`Marks.subIssue`) in the view's foreground style.
 struct SubIssueGlyph: View {
     var body: some View {
         Canvas { context, size in
-            let s = size.width / 12
-            var path = Path()
-            path.move(to: CGPoint(x: 2.5 * s, y: 2 * s))
-            path.addLine(to: CGPoint(x: 2.5 * s, y: 6 * s))
-            path.addQuadCurve(to: CGPoint(x: 4.5 * s, y: 8 * s), control: CGPoint(x: 2.5 * s, y: 8 * s))
-            path.addLine(to: CGPoint(x: 6.6 * s, y: 8 * s))
-            context.stroke(path, with: .foreground, style: StrokeStyle(lineWidth: 1.3 * s, lineCap: .round))
-            context.stroke(
-                Path(ellipseIn: CGRect(x: 6.8 * s, y: 6.3 * s, width: 3.4 * s, height: 3.4 * s)),
-                with: .foreground, lineWidth: 1.3 * s
-            )
+            context.draw(Marks.subIssue(in: CGRect(origin: .zero, size: size)), shading: .foreground)
         }
     }
 }
@@ -337,26 +341,18 @@ struct FoldArrow: View {
 
     var body: some View {
         #if os(macOS)
-        Chevron()
-            .stroke(Theme.textSecondary, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
-            .frame(width: 7, height: 7)
-            .rotationEffect(.degrees(unfolded ? 90 : 0))
+        // The arrow the list's rows and the board's cards paint (`Marks.foldArrow`), turned rather than redrawn.
+        Canvas { context, size in
+            context.draw(Marks.foldArrow(folded: true, center: CGPoint(x: size.width / 2, y: size.height / 2)), mark: Theme.textSecondary)
+        }
+        .frame(width: 9, height: 9)
+        .rotationEffect(.degrees(unfolded ? 90 : 0))
         #else
         Image(systemName: "chevron.right")
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(Theme.textSecondary)
             .rotationEffect(.degrees(unfolded ? 90 : 0))
         #endif
-    }
-
-    private struct Chevron: Shape {
-        func path(in rect: CGRect) -> Path {
-            var path = Path()
-            path.move(to: CGPoint(x: rect.midX - rect.width / 4, y: rect.minY))
-            path.addLine(to: CGPoint(x: rect.midX + rect.width / 4, y: rect.midY))
-            path.addLine(to: CGPoint(x: rect.midX - rect.width / 4, y: rect.maxY))
-            return path
-        }
     }
 }
 

@@ -1607,67 +1607,9 @@ enum GroupBars {
 // MARK: - Shared drawing
 
 extension StatusPainter {
-    /// The same glyph as the SwiftUI version, for views that draw with Core Graphics.
+    /// The same glyph for views that draw with Core Graphics.
     static func draw(_ glyph: StatusGlyph, in frame: CGRect, cg context: CGContext) {
-        let rect = frame.insetBy(dx: 1.25, dy: 1.25)
-        let color = NSColor(glyph.color).cgColor
-        let inner = NSColor(Theme.onColor).cgColor
-        let s = frame.width / 14
-        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: frame.minX + x * s, y: frame.minY + y * s) }
-        context.saveGState()
-        defer { context.restoreGState() }
-        context.setStrokeColor(color)
-        context.setFillColor(color)
-        context.setLineWidth(1.5)
-        if glyph.addsToProject {
-            context.strokeEllipse(in: rect)
-            context.setLineWidth(1.4 * s)
-            context.setLineCap(.round)
-            context.move(to: point(7, 4.6))
-            context.addLine(to: point(7, 9.4))
-            context.move(to: point(4.6, 7))
-            context.addLine(to: point(9.4, 7))
-            context.strokePath()
-            return
-        }
-        switch glyph.category {
-        case .backlog:
-            context.setLineDash(phase: 0, lengths: [2, 2.3])
-            context.strokeEllipse(in: rect)
-        case .unstarted:
-            context.strokeEllipse(in: rect)
-        case .started:
-            context.strokeEllipse(in: rect)
-            let center = CGPoint(x: frame.midX, y: frame.midY)
-            context.move(to: center)
-            // Clockwise from twelve o'clock in a flipped (top-left origin) coordinate system.
-            context.addArc(
-                center: center, radius: rect.width / 2 - 2.5,
-                startAngle: -.pi / 2, endAngle: -.pi / 2 + 2 * .pi * glyph.progress, clockwise: false
-            )
-            context.closePath()
-            context.fillPath()
-        case .completed:
-            context.fillEllipse(in: rect.insetBy(dx: -0.75, dy: -0.75))
-            context.setStrokeColor(inner)
-            context.setLineWidth(1.6 * s)
-            context.setLineCap(.round)
-            context.setLineJoin(.round)
-            context.move(to: point(4.4, 7.2))
-            context.addLine(to: point(6.2, 9))
-            context.addLine(to: point(9.6, 5.2))
-            context.strokePath()
-        case .canceled:
-            context.fillEllipse(in: rect.insetBy(dx: -0.75, dy: -0.75))
-            context.setStrokeColor(inner)
-            context.setLineWidth(1.5 * s)
-            context.setLineCap(.round)
-            context.move(to: point(4.8, 4.8))
-            context.addLine(to: point(9.2, 9.2))
-            context.move(to: point(9.2, 4.8))
-            context.addLine(to: point(4.8, 9.2))
-            context.strokePath()
-        }
+        context.draw(Marks.status(glyph, in: frame), mark: NSColor(glyph.color).cgColor, onColor: NSColor(Theme.onColor).cgColor)
     }
 }
 

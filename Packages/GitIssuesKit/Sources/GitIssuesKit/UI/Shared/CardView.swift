@@ -397,7 +397,7 @@ enum CardText: Hashable {
         case .symbol(.textField):
             Text(Image(systemName: "text.alignleft")).font(.system(size: CardView.chipSize - 3)).foregroundStyle(Theme.textTertiary)
         case .symbol(.urgent):
-            Text("!").font(.system(size: 10, weight: .heavy, design: .rounded)).foregroundStyle(Theme.onColor)
+            Marks.urgentMark.foregroundStyle(Theme.onColor)
         }
     }
 
@@ -488,10 +488,7 @@ private struct CardPainter {
             if view.hoveringFold, !view.lifted {
                 context.fill(Path(roundedRect: rect.insetBy(dx: -2, dy: -2), cornerRadius: 5), with: .color(ink(.partHover)))
             }
-            context.stroke(
-                Self.foldArrow(folded: card.folded, center: CGPoint(x: rect.midX, y: rect.midY)),
-                with: .color(ink(.textSecondary)), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
-            )
+            context.draw(Marks.foldArrow(folded: card.folded, center: CGPoint(x: rect.midX, y: rect.midY)), mark: ink(.textSecondary))
             x = rect.maxX + 5
         }
         let number = text(.number(item.displayNumber, lifted: view.lifted))
@@ -616,17 +613,7 @@ private struct CardPainter {
                 let rect = CGRect(x: start(x), y: bottomY - 10, width: width, height: 20)
                 part(.subIssues, rect)
                 chip(rect, hovered: hovered(.subIssues))
-                let origin = CGPoint(x: rect.minX + 7, y: bottomY - 5.5)
-                var glyph = Path()
-                glyph.move(to: CGPoint(x: origin.x + 2.3, y: origin.y + 1.8))
-                glyph.addLine(to: CGPoint(x: origin.x + 2.3, y: origin.y + 5.5))
-                glyph.addQuadCurve(to: CGPoint(x: origin.x + 4.1, y: origin.y + 7.3), control: CGPoint(x: origin.x + 2.3, y: origin.y + 7.3))
-                glyph.addLine(to: CGPoint(x: origin.x + 6, y: origin.y + 7.3))
-                context.stroke(glyph, with: .color(ink(.textSecondary)), style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
-                context.stroke(
-                    Path(ellipseIn: CGRect(x: origin.x + 6.2, y: origin.y + 5.8, width: 3.1, height: 3.1)),
-                    with: .color(ink(.textSecondary)), lineWidth: 1.2
-                )
+                context.draw(Marks.subIssue(in: CGRect(x: rect.minX + 7, y: bottomY - 5.5, width: 11, height: 11)), mark: ink(.textSecondary))
                 context.draw(progress.text, at: CGPoint(x: rect.minX + 7 + 11 + 4, y: bottomY), anchor: .leading)
                 x = rect.maxX + 6
             }
@@ -647,20 +634,10 @@ private struct CardPainter {
                 let rect = CGRect(x: start(x), y: bottomY - 10, width: width, height: 20)
                 part(.milestone, rect)
                 chip(rect, hovered: hovered(.milestone))
-                let diamond = CGRect(x: rect.minX + 7, y: bottomY - 5, width: 10, height: 10)
-                let outline = PlanningGlyph.diamond(in: diamond, inset: 1.1)
                 // Grey, as the same milestone repeats down the board; its shape still tells the current one, and only
-                // a milestone past its date keeps its colour.
-                let color = ink(card.milestoneMark == .late ? .milestone(.late) : .textTertiary)
-                switch card.milestoneMark {
-                case .completed:
-                    context.fill(outline, with: .color(color))
-                case .current, .late:
-                    context.stroke(outline, with: .color(color), lineWidth: 1.3)
-                    context.fill(PlanningGlyph.diamond(in: diamond, inset: 3.4), with: .color(color))
-                case .upcoming, .none:
-                    context.stroke(outline, with: .color(color), lineWidth: 1.3)
-                }
+                // a milestone past its date keeps its colour (`MilestoneMark.quietColor`).
+                let diamond = CGRect(x: rect.minX + 7, y: bottomY - 5, width: 10, height: 10)
+                context.draw(Marks.milestone(card.milestoneMark, in: diamond), mark: ink(card.milestoneMark == .late ? .milestone(.late) : .textTertiary))
                 context.draw(name.text, in: CGRect(x: rect.minX + 7 + 10 + 5, y: bottomY - 8, width: textWidth, height: 16))
                 x = rect.maxX + 6
             }
@@ -720,21 +697,6 @@ private struct CardPainter {
         context.stroke(path, with: .color(Theme.accent.opacity(0.55)), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
     }
 
-    /// A chevron that points down while the sub-issues show and to the right while they are folded in.
-    static func foldArrow(folded: Bool, center: CGPoint) -> Path {
-        var path = Path()
-        if folded {
-            path.move(to: CGPoint(x: center.x - 1.5, y: center.y - 3.5))
-            path.addLine(to: CGPoint(x: center.x + 2, y: center.y))
-            path.addLine(to: CGPoint(x: center.x - 1.5, y: center.y + 3.5))
-        } else {
-            path.move(to: CGPoint(x: center.x - 3.5, y: center.y - 1.5))
-            path.addLine(to: CGPoint(x: center.x, y: center.y + 2))
-            path.addLine(to: CGPoint(x: center.x + 3.5, y: center.y - 1.5))
-        }
-        return path
-    }
-
     /// The quiet parts of a card (labels, due date, sub-issues, milestone, fields) are text with a symbol, as
     /// Reminders writes them; under the pointer they light up as the button they are.
     private func chip(_ rect: CGRect, hovered: Bool = false) {
@@ -749,16 +711,11 @@ private struct CardPainter {
     }
 
     private func drawPriority(_ level: PriorityLevel, x: CGFloat, midY: CGFloat) {
+        let box = CGRect(x: x, y: midY - 6, width: 14, height: 12)
+        context.draw(Marks.priority(level, in: box), mark: ink(level == .urgent ? .urgent : .textBody), off: ink(.barOff))
         if level == .urgent {
-            let rect = CGRect(x: x + 1, y: midY - 6, width: 12, height: 12)
-            context.fill(Path(roundedRect: rect, cornerRadius: 3), with: .color(ink(.urgent)))
-            context.draw(text(.symbol(.urgent)).text, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
-            return
-        }
-        let bars: [(CGFloat, Bool)] = [(4, level >= .low), (7, level >= .medium), (10, level >= .high)]
-        for (index, bar) in bars.enumerated() {
-            let rect = CGRect(x: x + CGFloat(index) * 5, y: midY + 6 - bar.0, width: 3, height: bar.0)
-            context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(ink(bar.1 ? .textBody : .barOff)))
+            let square = Marks.urgentSquare(in: box)
+            context.draw(text(.symbol(.urgent)).text, at: CGPoint(x: square.midX, y: square.midY), anchor: .center)
         }
     }
 

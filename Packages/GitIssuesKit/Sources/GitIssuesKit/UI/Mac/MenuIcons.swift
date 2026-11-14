@@ -15,19 +15,7 @@ enum MenuIcons {
     }
 
     static func priority(_ level: PriorityLevel) -> NSImage {
-        image { _, rect in
-            if level == .urgent {
-                let badge = NSRect(x: rect.midX - 6, y: rect.midY - 6, width: 12, height: 12)
-                NSColor(Theme.urgent).setFill()
-                NSBezierPath(roundedRect: badge, xRadius: 3, yRadius: 3).fill()
-                let mark = NSAttributedString(string: "!", attributes: [
-                    .font: NSFont.systemFont(ofSize: 10, weight: .heavy),
-                    .foregroundColor: NSColor(Theme.onColor),
-                ])
-                let markSize = mark.size()
-                mark.draw(at: NSPoint(x: badge.midX - markSize.width / 2, y: badge.midY - markSize.height / 2))
-                return
-            }
+        image { context, rect in
             if level == .none {
                 // Three dashes, as Linear shows "No priority".
                 NSColor(Theme.textTertiary).setFill()
@@ -36,14 +24,11 @@ enum MenuIcons {
                 }
                 return
             }
-            let bars: [(CGFloat, Bool)] = [(4, level >= .low), (7, level >= .medium), (10, level >= .high)]
-            for (index, bar) in bars.enumerated() {
-                NSColor(bar.1 ? Theme.textBody : Theme.barOff).setFill()
-                NSBezierPath(
-                    roundedRect: NSRect(x: rect.minX + 1 + CGFloat(index) * 5, y: rect.midY + 5 - bar.0, width: 3, height: bar.0),
-                    xRadius: 1, yRadius: 1
-                ).fill()
-            }
+            // The shapes every view of a priority draws (`Marks.priority`), in a box centred in the icon.
+            let box = CGRect(x: rect.midX - 7, y: rect.midY - 6, width: 14, height: 12)
+            let mark = NSColor(level == .urgent ? Theme.urgent : Theme.textBody)
+            context.draw(Marks.priority(level, in: box), mark: mark.cgColor, off: NSColor(Theme.barOff).cgColor, onColor: NSColor(Theme.onColor).cgColor)
+            if level == .urgent { Marks.drawUrgentMark(on: Marks.urgentSquare(in: box)) }
         }
     }
 
@@ -108,27 +93,12 @@ enum MenuIcons {
     static var blocked: NSImage? { symbol("flag.fill", color: Theme.blocked) }
     static var blocking: NSImage? { symbol("flag", color: Theme.urgent) }
 
-    /// The hook and dot of a sub-issue, as on cards.
+    /// The hook and ring of a sub-issue, as on cards (`Marks.subIssue`).
     static var subIssue: NSImage {
-        image { _, rect in
-            let s: CGFloat = 1.1
-            let origin = NSPoint(x: rect.midX - 6 * s, y: rect.midY - 6 * s)
-            let hook = NSBezierPath()
-            hook.move(to: NSPoint(x: origin.x + 2.5 * s, y: origin.y + 2 * s))
-            hook.line(to: NSPoint(x: origin.x + 2.5 * s, y: origin.y + 6 * s))
-            hook.curve(
-                to: NSPoint(x: origin.x + 4.5 * s, y: origin.y + 8 * s),
-                controlPoint1: NSPoint(x: origin.x + 2.5 * s, y: origin.y + 7.2 * s),
-                controlPoint2: NSPoint(x: origin.x + 3.3 * s, y: origin.y + 8 * s)
-            )
-            hook.line(to: NSPoint(x: origin.x + 6.6 * s, y: origin.y + 8 * s))
-            hook.lineWidth = 1.3 * s
-            hook.lineCapStyle = .round
-            NSColor.labelColor.setStroke()
-            hook.stroke()
-            let dot = NSBezierPath(ovalIn: NSRect(x: origin.x + 6.8 * s, y: origin.y + 6.3 * s, width: 3.4 * s, height: 3.4 * s))
-            dot.lineWidth = 1.3 * s
-            dot.stroke()
+        image { context, rect in
+            let side: CGFloat = 13.2
+            let box = CGRect(x: rect.midX - side / 2, y: rect.midY - side / 2, width: side, height: side)
+            context.draw(Marks.subIssue(in: box), mark: NSColor.labelColor.cgColor, onColor: NSColor.labelColor.cgColor)
         }
     }
 

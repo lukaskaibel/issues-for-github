@@ -9,7 +9,7 @@ enum MenuImages {
     private static var cache: [String: UIImage] = [:]
 
     static func status(_ glyph: StatusGlyph, _ scheme: ColorScheme) -> Image {
-        image("status-\(glyph.category.rawValue)-\(glyph.progress)-\(key(glyph.color, scheme))", scheme) {
+        image("status-\(glyph.category.rawValue)-\(glyph.progress)-\(glyph.addsToProject)-\(key(glyph.color, scheme))", scheme) {
             StatusIcon(glyph: glyph, size: 16)
         }
     }

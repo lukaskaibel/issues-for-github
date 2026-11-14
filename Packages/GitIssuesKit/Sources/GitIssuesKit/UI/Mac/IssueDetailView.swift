@@ -385,7 +385,7 @@ private struct SubIssueRow: View {
 
     private func row(_ item: Item) -> IssueRowModel {
         var row = item.isStandIn
-            ? model.issueRow(standingInFor: item, nest: line.place, nested: line.progress?.total, folded: !line.unfolded)
+            ? model.issueRow(standingInFor: item, as: .subIssue, nest: line.place, nested: line.progress?.total, folded: !line.unfolded)
             : model.issueRow(
                 item, selected: model.pickedSubIssueIds.contains(item.id), selecting: !model.pickedSubIssueIds.isEmpty,
                 nest: line.place, nested: line.progress?.total, folded: !line.unfolded,
@@ -601,14 +601,13 @@ private struct LinkedIssueRow: View {
 
     private func row(_ linked: Item) -> IssueRowModel {
         var row = linked.isStandIn
-            ? model.issueRow(standingInFor: linked)
+            ? model.issueRow(standingInFor: linked, as: .relation)
             : model.issueRow(
                 linked, milestone: model.milestoneTitle(of: linked),
                 chips: model.fieldChips(of: linked, in: linked.projectId.map { .project($0) })
             )
-        // Picking is for sub-issues; and the status of one known only from GitHub is changed on its own page there.
+        // Picking is for sub-issues.
         row.pickable = false
-        if linked.isStandIn { row.showsStatus = false }
         row.removable = true
         return row
     }
