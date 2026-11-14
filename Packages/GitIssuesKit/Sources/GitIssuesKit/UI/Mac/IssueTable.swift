@@ -1230,56 +1230,72 @@ final class PlainRowView: NSTableRowView {
         set {}
     }
 
-    /// An issue that dragged issues would go under if dropped now: tinted, with a ring over the row, as a My Issues
-    /// card's page lights up for an issue dragged onto it.
+    /// An issue that dragged issues would go under if dropped now: lit up as a card is on the board, tinted and with a
+    /// ring around it (`Marks.nestTarget`).
     var isNestTarget = false {
         didSet {
             guard isNestTarget != oldValue else { return }
-            needsDisplay = true
-            ring.isHidden = !isNestTarget
-            if isNestTarget { placeRing() }
+            mark.isHidden = !isNestTarget
+            if isNestTarget { placeMark() }
         }
     }
 
-    /// Over the row's cell, which may fill itself, so the ring always shows.
-    private lazy var ring: NSView = {
-        let view = NSView()
-        view.wantsLayer = true
-        view.layer?.cornerRadius = 8
-        view.layer?.cornerCurve = .continuous
-        view.layer?.borderWidth = 1.5
+    /// Over the row's cell, which may fill itself, so that the mark always shows.
+    private lazy var mark: NestMarkView = {
+        let view = NestMarkView()
         view.isHidden = true
         return view
     }()
 
-    private func placeRing() {
-        ring.frame = bounds.insetBy(dx: IssueTable.inset, dy: 1)
-        effectiveAppearance.performAsCurrentDrawingAppearance {
-            ring.layer?.borderColor = NSColor(Theme.selectionBorder).cgColor
-        }
-        if subviews.last !== ring { addSubview(ring, positioned: .above, relativeTo: nil) }
+    /// The row's own shape is a little shorter than the row, so that the ring around it stays inside the row.
+    private func placeMark() {
+        mark.frame = bounds.insetBy(dx: IssueTable.inset - Marks.nestOutset, dy: 0)
+        if subviews.last !== mark { addSubview(mark, positioned: .above, relativeTo: nil) }
     }
 
     override func layout() {
         super.layout()
-        if isNestTarget { placeRing() }
+        if isNestTarget { placeMark() }
     }
 
-    override func viewDidChangeEffectiveAppearance() {
-        super.viewDidChangeEffectiveAppearance()
-        if isNestTarget { placeRing() }
-    }
-
-    override func drawBackground(in dirtyRect: NSRect) {
-        guard isNestTarget else { return }
-        NSColor(Theme.selectionFill).setFill()
-        NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
-    }
-
+    /// The cells paint the row; the table's own background isn't drawn.
+    override func drawBackground(in dirtyRect: NSRect) {}
     override func drawSelection(in dirtyRect: NSRect) {}
     override func drawSeparator(in dirtyRect: NSRect) {}
     /// The list lights up the issue to drop onto itself; the table's own blue marks are not drawn.
     override func drawDraggingDestinationFeedback(in dirtyRect: NSRect) {}
+}
+
+/// A row of the list lit up to take the issues dragged onto it (`Marks.nestTarget`), around the row's rounded shape.
+final class NestMarkView: NSView {
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        layerContentsRedrawPolicy = .onSetNeedsDisplay
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Not used") }
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    override func viewDidChangeEffectiveAppearance() {
+        needsDisplay = true
+    }
+
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        needsDisplay = true
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        let shape = bounds.insetBy(dx: Marks.nestOutset, dy: Marks.nestOutset)
+        context.draw(
+            Marks.nestTarget(around: shape, cornerRadius: EpicHeaderLook.highlightRadius),
+            mark: NSColor(Theme.accent).cgColor, off: NSColor(Theme.nestTint).cgColor, onColor: NSColor(Theme.onColor).cgColor
+        )
+    }
 }
 
 // MARK: - Cells

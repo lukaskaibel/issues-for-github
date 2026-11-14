@@ -162,6 +162,28 @@ extension Marks {
     }
 }
 
+// MARK: - Dropping onto an issue
+
+extension Marks {
+    /// How far outside an issue's own shape the ring stands that lights it up to take the issues dragged onto it: far
+    /// enough to show around a dragged card held over it.
+    static let nestOutset: CGFloat = 3
+    static let nestLine: CGFloat = 2
+
+    /// An issue lit up to take the issues dragged onto it as its sub-issues, the same on every board, list and card:
+    /// a soft tint of the accent over it (the second colour, `Theme.nestTint`) and a ring in the accent around it,
+    /// `nestOutset` outside its own rounded shape `rect`.
+    static func nestTarget(around rect: CGRect, cornerRadius: CGFloat) -> [Shape] {
+        let outer = rect.insetBy(dx: -nestOutset, dy: -nestOutset)
+        let radius = cornerRadius + nestOutset
+        let ring = outer.insetBy(dx: nestLine / 2, dy: nestLine / 2)
+        return [
+            Shape(path: Path(roundedRect: outer, cornerRadius: radius, style: .continuous), ink: .off),
+            Shape(path: Path(roundedRect: ring, cornerRadius: radius - nestLine / 2, style: .continuous), stroke: StrokeStyle(lineWidth: nestLine)),
+        ]
+    }
+}
+
 // MARK: - Sub-issues hanging under their parent
 
 extension Marks {

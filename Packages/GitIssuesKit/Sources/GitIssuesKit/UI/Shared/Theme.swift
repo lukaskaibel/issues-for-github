@@ -59,6 +59,11 @@ enum Theme {
     static let menuHighlight = Color(platformColor: .dynamic { isDark in
         PlatformColor(hex: isDark ? 0x8F96F2 : 0x5B63D3).withAlphaComponent(isDark ? 0.24 : 0.14)
     })
+    /// Over an issue lit up to take the issues dragged onto it as its sub-issues, inside a ring in the accent
+    /// (`Marks.nestTarget`): a soft tint of the accent, light enough to read the issue through.
+    static let nestTint = Color(platformColor: .dynamic { isDark in
+        PlatformColor(hex: isDark ? 0x8F96F2 : 0x5B63D3).withAlphaComponent(isDark ? 0.16 : 0.10)
+    })
     /// The search field at the top of a dropdown and other fields drawn on glass.
     static let field = Color(platformColor: .dynamic { isDark in
         isDark ? PlatformColor.white.withAlphaComponent(0.08) : PlatformColor.black.withAlphaComponent(0.05)

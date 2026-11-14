@@ -835,3 +835,21 @@ extension View {
         shadow(color: lifted ? Theme.shadow : .clear, radius: lifted ? CardView.liftedShadow.radius : 0, y: lifted ? CardView.liftedShadow.y : 0)
     }
 }
+
+/// An issue lit up to take the issues dragged onto it as its sub-issues (`Marks.nestTarget`), laid over the issue in
+/// its own frame and reaching a little past it: a card on any board, a row of the Mac's list, an issue in My Issues'
+/// overview, an epic's header.
+struct NestTargetMark: View {
+    /// The corner radius of the issue's own shape.
+    var cornerRadius: CGFloat
+
+    var body: some View {
+        Canvas { context, size in
+            let rect = CGRect(origin: .zero, size: size).insetBy(dx: Marks.nestOutset, dy: Marks.nestOutset)
+            context.draw(Marks.nestTarget(around: rect, cornerRadius: cornerRadius), mark: Theme.accent, off: Theme.nestTint)
+        }
+        .padding(-Marks.nestOutset)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}

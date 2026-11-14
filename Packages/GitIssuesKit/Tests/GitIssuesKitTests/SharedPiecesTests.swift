@@ -136,6 +136,21 @@ struct SharedPiecesTests {
         #expect(empty[0].stroke != nil && empty[0].ink == .off)
     }
 
+    @Test("An issue lit up to take dropped issues has a tint and a ring a little outside its own shape, round as it is")
+    func nestTarget() {
+        let card = CGRect(x: 10, y: 20, width: 240, height: 100)
+        let shapes = Marks.nestTarget(around: card, cornerRadius: 12)
+        #expect(shapes.count == 2)
+        // The tint fills all of it, in the mark's second colour; the ring is stroked in the accent.
+        #expect(shapes[0].ink == .off && shapes[0].stroke == nil)
+        #expect(shapes[1].ink == .mark && shapes[1].stroke?.lineWidth == Marks.nestLine)
+        let outer = card.insetBy(dx: -Marks.nestOutset, dy: -Marks.nestOutset)
+        #expect(shapes[0].path.boundingRect == outer)
+        // The ring's outer edge is the tint's edge.
+        let ring = shapes[1].path.boundingRect.insetBy(dx: -Marks.nestLine / 2, dy: -Marks.nestLine / 2)
+        #expect(abs(ring.minX - outer.minX) < 0.01 && abs(ring.maxY - outer.maxY) < 0.01)
+    }
+
     @Test("An epic's icon is the stack of layers in its square, stroked thinner when smaller")
     func epicMark() {
         let big = Marks.epic(in: CGRect(x: 0, y: 0, width: 14, height: 14))

@@ -101,7 +101,10 @@ struct BoardView: View {
                         ZStack(alignment: .topLeading) {
                             // The issue the lifted card would go under lights up beneath it.
                             if let nest = drag.target?.nest, !active.settling {
-                                NestTargetMark(frame: nest.frame, isHeader: nest.isHeader)
+                                NestTargetMark(cornerRadius: nest.isHeader ? EpicHeaderLook.highlightRadius : CardView.cornerRadius)
+                                    .frame(width: nest.frame.width, height: nest.frame.height)
+                                    .offset(x: nest.frame.minX, y: nest.frame.minY)
+                                    .transition(.opacity)
                             }
                             let nesting = model.columns.first { $0.nesting.members.contains { $0.id == active.item.id } }?.nesting
                             LiftedCard(
@@ -229,24 +232,6 @@ private struct LiftedCard: View {
             .liftedShadow(active.lifted)
             .offset(x: active.location.x - active.grab.width, y: active.location.y - active.grab.height)
             .allowsHitTesting(false)
-    }
-}
-
-/// The issue a lifted card would go under if dropped now, lit up under it: tinted, with a ring, as a page of a My Issues
-/// card lights up for an issue dragged onto it.
-private struct NestTargetMark: View {
-    var frame: CGRect
-    var isHeader: Bool
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: isHeader ? 8 : CardView.cornerRadius, style: .continuous)
-        shape.fill(Theme.selectionBorder.opacity(0.14))
-            .overlay(shape.strokeBorder(Theme.selectionBorder, lineWidth: 2))
-            .frame(width: frame.width + 6, height: frame.height + 6)
-            .offset(x: frame.minX - 3, y: frame.minY - 3)
-            .allowsHitTesting(false)
-            .transition(.opacity)
-            .accessibilityHidden(true)
     }
 }
 
