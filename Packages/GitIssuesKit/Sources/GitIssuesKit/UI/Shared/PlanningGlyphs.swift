@@ -107,6 +107,34 @@ struct EpicIcon: View {
     }
 }
 
+extension AppModel {
+    /// The symbol of a view's layout, as its icon shows it everywhere: a board's columns or a list's lines; nil for a
+    /// roadmap, which has an icon of its own (`RoadmapIcon`).
+    func layoutSymbol(of view: ProjectView) -> String? {
+        if view.layout == .roadmap, display(of: view).layout == nil { return nil }
+        return layout(of: view) == .board ? "rectangle.split.3x1" : "list.bullet"
+    }
+}
+
+/// A view's icon, by its layout (`layoutSymbol`), wherever a view is named: the sidebar, the palette, a project's page.
+struct ViewLayoutIcon: View {
+    @Environment(AppModel.self) private var model
+    var view: ProjectView
+    var size: CGFloat = 11
+
+    var body: some View {
+        Group {
+            if let symbol = model.layoutSymbol(of: view) {
+                Image(systemName: symbol).font(.system(size: size, weight: .medium))
+            } else {
+                RoadmapIcon(size: size + 1)
+            }
+        }
+        .frame(width: size + 3, height: size + 3)
+        .accessibilityHidden(true)
+    }
+}
+
 /// The roadmap: a few bars of different length, offset like a timeline.
 struct RoadmapIcon: View {
     var size: CGFloat = 14

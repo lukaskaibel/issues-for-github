@@ -318,7 +318,7 @@ struct ProjectScreen: View {
                         // The view open, which the sidebar lists under the project; the project itself before
                         // GitHub's views are read.
                         if let view = model.currentView(projectId: project.id) {
-                            ViewLayoutGlyph(view: view)
+                            ViewLayoutIcon(view: view)
                                 .foregroundStyle(Theme.textSecondary)
                             Text(view.name)
                                 .font(.headline)

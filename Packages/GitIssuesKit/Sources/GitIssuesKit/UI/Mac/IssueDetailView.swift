@@ -193,12 +193,7 @@ struct DescriptionView: View {
     }
 
     private func save(_ text: String) {
-        // The latest copy, since the view may have been drawn before the last sync, also under the id GitHub gave an
-        // issue made here while it was being written.
-        guard let current = model.item(id: model.status.idRemaps[item.id] ?? item.id) else { return }
-        // Leave untouched text exactly as GitHub stores it, line endings included.
-        guard text != Diff3.normalize(current.body) else { return }
-        model.setBody(current, to: text)
+        model.saveDescription(of: item, text)
     }
 }
 

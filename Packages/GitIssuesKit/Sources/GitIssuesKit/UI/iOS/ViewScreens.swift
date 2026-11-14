@@ -29,22 +29,7 @@ struct ViewBar: View {
 }
 
 /// A view's layout as a small icon: a board, a list or a roadmap.
-struct ViewLayoutGlyph: View {
-    @Environment(AppModel.self) private var model
-    var view: ProjectView
 
-    var body: some View {
-        Group {
-            if view.layout == .roadmap, model.display(of: view).layout == nil {
-                RoadmapIcon(size: 12)
-            } else {
-                Image(systemName: model.layout(of: view) == .board ? "rectangle.split.3x1" : "list.bullet")
-                    .font(.system(size: 11, weight: .semibold))
-            }
-        }
-        .accessibilityHidden(true)
-    }
-}
 
 /// What a view's menu offers: its filter, renaming, a copy, GitHub, deleting.
 struct ViewMenuItems: View {

@@ -413,10 +413,8 @@ struct MainTabs: View {
 
     /// A view's layout, as the sidebar's icons are images.
     private func layoutImage(of view: ProjectView) -> Image {
-        if view.layout == .roadmap, model.display(of: view).layout == nil {
-            return Image(uiImage: PlanningImages.roadmap(scheme))
-        }
-        return Image(systemName: model.layout(of: view) == .board ? "rectangle.split.3x1" : "list.bullet")
+        guard let symbol = model.layoutSymbol(of: view) else { return Image(uiImage: PlanningImages.roadmap(scheme)) }
+        return Image(systemName: symbol)
     }
 
     /// A board's next milestones in the sidebar, and the one on screen while it stays there: completed or renamed

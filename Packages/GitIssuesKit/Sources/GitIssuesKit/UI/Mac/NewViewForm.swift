@@ -3,24 +3,6 @@ import AppKit
 import SwiftUI
 
 /// A view's layout as you see it: a board, a list or GitHub's roadmap.
-struct ViewLayoutIcon: View {
-    @Environment(AppModel.self) private var model
-    var view: ProjectView
-    var size: CGFloat = 11
-
-    var body: some View {
-        Group {
-            if view.layout == .roadmap, model.display(of: view).layout == nil {
-                RoadmapIcon(size: size + 1)
-            } else {
-                Image(systemName: model.layout(of: view) == .board ? "rectangle.split.3x1" : "list.bullet")
-                    .font(.system(size: size, weight: .medium))
-            }
-        }
-        .frame(width: size + 3, height: size + 3)
-        .accessibilityHidden(true)
-    }
-}
 
 // MARK: - A new view
 

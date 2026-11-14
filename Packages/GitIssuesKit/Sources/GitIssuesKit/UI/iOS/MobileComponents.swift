@@ -246,11 +246,15 @@ struct IssueRow: View {
             : String(localized: item.isClosed ? LocalizedStringResource.stateClosed : item.isStandIn ? .stateOpen : .noProject)
         var parts = [item.displayNumber, item.title, status]
         let epic = model.epic(of: item)
-        // Right under an epic, the epic says it (or its group does).
-        if showsParent, let parent = item.parentNumber, epic?.contentId != item.parentId {
+        // Right under an epic, the epic says it (or its group does). Under its parent it says so all the same, for
+        // VoiceOver, which doesn't see where the row hangs.
+        if let parent = item.parentNumber, epic?.contentId != item.parentId {
             parts.append(String(localized: .subIssueOf(number: "#\(parent)")))
         }
         if let nested, folded { parts.append(String(localized: .unfoldSubIssuesTooltip(count: nested))) }
+        if item.subTotal > 0 {
+            parts.append(String(localized: .subIssuesDone(done: item.subCompleted.formatted(), total: item.subTotal)))
+        }
         if let priority = model.priorityOption(of: item)?.name { parts.append(String(localized: .priorityLevelSpoken(priority: priority))) }
         if item.blockedByCount > 0 { parts.append(model.tooltip(.blockedBy, for: item)) }
         if !item.labels.isEmpty {

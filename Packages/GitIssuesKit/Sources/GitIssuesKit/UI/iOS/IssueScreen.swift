@@ -419,9 +419,12 @@ private struct IssueTitleField: View {
             .onSubmit {
                 focused = false
             }
-            // ⌘↵ and Escape finish the title, as on the Mac.
+            // ⌘↵ finishes the title and Escape takes the edit back, as on the Mac.
             .screenKey(.done, "\r", modifiers: .command, isActive: focused) { focused = false }
-            .screenKey(.done, UIKeyCommand.inputEscape, isActive: focused) { focused = false }
+            .screenKey(.cancel, UIKeyCommand.inputEscape, isActive: focused) {
+                title = item.title
+                focused = false
+            }
             .accessibilityLabel(.issueTitle)
     }
 
@@ -456,11 +459,7 @@ private struct DescriptionEditor: View {
     }
 
     private func save(_ text: String) {
-        // The latest copy, since the view may have been drawn before the last sync.
-        guard let current = model.item(id: item.id) else { return }
-        // Leave untouched text exactly as GitHub stores it, line endings included.
-        guard text != Diff3.normalize(current.body) else { return }
-        model.setBody(current, to: text)
+        model.saveDescription(of: item, text)
     }
 }
 
@@ -1743,7 +1742,7 @@ private struct CommentComposer: View {
             .accessibilityLabel(.sendCommentButton)
             .accessibilityIdentifier("comment-send")
         }
-        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 22))
+        .glassPanel(in: RoundedRectangle(cornerRadius: 22), interactive: true)
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 8)

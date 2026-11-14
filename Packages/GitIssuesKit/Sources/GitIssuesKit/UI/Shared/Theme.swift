@@ -211,12 +211,14 @@ extension Font {
 extension View {
     /// Liquid Glass, as the system draws what floats over the content: bars, panels, the comment field. Debug runs
     /// can ask for a solid ground instead (`-debugSolidGlass YES`), since the app's own snapshots can't draw glass.
+    /// `interactive` for glass that is touched, such as the comment field, which then answers the finger as the
+    /// system's controls do.
     @ViewBuilder
-    func glassPanel<S: Shape>(in shape: S) -> some View {
+    func glassPanel<S: Shape>(in shape: S, interactive: Bool = false) -> some View {
         if Theme.solidGlass {
             background(shape.fill(Theme.popover)).overlay(shape.stroke(Theme.popoverBorder, lineWidth: 0.5))
         } else {
-            glassEffect(.regular, in: shape)
+            glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
         }
     }
 

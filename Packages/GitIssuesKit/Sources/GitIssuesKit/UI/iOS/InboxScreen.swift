@@ -413,7 +413,7 @@ private struct MobileInboxUndo: View {
             .contentShape(.capsule)
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: .capsule)
+        .glassPanel(in: Capsule(), interactive: true)
         .accessibilityLabel(.undoNoticeSpoken(message: undo.message))
         .accessibilityIdentifier("inbox-undo")
     }

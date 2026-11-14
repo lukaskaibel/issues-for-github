@@ -482,10 +482,10 @@ private struct SidebarViewRow: View {
 
     @ViewBuilder
     private var icon: some View {
-        if view.layout == .roadmap, model.display(of: view).layout == nil {
-            RoadmapIcon(size: 14)
+        if let symbol = model.layoutSymbol(of: view) {
+            Image(systemName: symbol)
         } else {
-            Image(systemName: model.layout(of: view) == .board ? "rectangle.split.3x1" : "list.bullet")
+            RoadmapIcon(size: 14)
         }
     }
 
