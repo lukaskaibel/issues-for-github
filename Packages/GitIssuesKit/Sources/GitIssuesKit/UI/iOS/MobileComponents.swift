@@ -105,28 +105,10 @@ struct IssueRow: View {
         let midY = Self.statusTop + glyphSize / 2
         let statusX = Self.leading + CGFloat(depth) * Self.indent
         return Canvas { context, size in
-            var path = Path()
-            for level in 0..<depth {
-                let lineX = Self.leading + CGFloat(level) * Self.indent + glyphSize / 2
-                let continues = place.continues.indices.contains(level) && place.continues[level]
-                if level < depth - 1 {
-                    if continues {
-                        path.move(to: CGPoint(x: lineX, y: 0))
-                        path.addLine(to: CGPoint(x: lineX, y: size.height))
-                    }
-                    continue
-                }
-                if continues {
-                    path.move(to: CGPoint(x: lineX, y: 0))
-                    path.addLine(to: CGPoint(x: lineX, y: size.height))
-                    path.move(to: CGPoint(x: lineX, y: midY))
-                } else {
-                    path.move(to: CGPoint(x: lineX, y: 0))
-                    path.addLine(to: CGPoint(x: lineX, y: midY - 5))
-                    path.addQuadCurve(to: CGPoint(x: lineX + 5, y: midY), control: CGPoint(x: lineX, y: midY))
-                }
-                path.addLine(to: CGPoint(x: statusX - 4, y: midY))
-            }
+            var path = Marks.treeLines(
+                place, deepest: Self.deepestIndent, lineX: { Self.leading + CGFloat($0) * Self.indent + glyphSize / 2 },
+                branchY: midY, branchEnd: statusX - 4, height: size.height
+            )
             if nested != nil, !folded {
                 let lineX = statusX + glyphSize / 2
                 path.move(to: CGPoint(x: lineX, y: midY + glyphSize / 2 + 4))

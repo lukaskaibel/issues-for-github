@@ -75,6 +75,9 @@ struct CardView: View, Equatable {
     var tree: Nesting.Place? = nil
 
     static let padding = CGSize(width: 12, height: 10)
+    /// The middle of a card's first line, where the number and the people are, and where the line from its parent meets
+    /// a sub-issue's card.
+    static let firstLineY = padding.height + 9
     /// Rounder than a button, as Reminders' cards and Apple's grouped rows are.
     static let cornerRadius: CGFloat = 12
     /// A card stands on the board on a soft shadow rather than inside a border, and on a deeper one under the pointer.
@@ -480,7 +483,7 @@ private struct CardPainter {
         // Top line: the arrow that folds the sub-issues under the card, number, pull-request mark, the parent of a
         // sub-issue whose parent is elsewhere, and assignees on the right. A board belongs to one project, so the
         // repository is left to the number's tooltip.
-        let topY = padding.height + 9
+        let topY = CardView.firstLineY
         var x = padding.width
         if card.nested != nil {
             let rect = CGRect(x: x - 3, y: topY - 7, width: 14, height: 14)
@@ -687,7 +690,7 @@ private struct CardPainter {
         let height = gap + size.height + (edge ? CardStackEdge.height : 0)
         var lines = context
         lines.translateBy(x: -gutter, y: -gap)
-        lines.stroke(CardTreeLines.path(place: place, gap: gap, branchY: 19, height: height), with: .color(ink(.treeLine)), lineWidth: 1)
+        lines.stroke(CardTreeLines.path(place: place, gap: gap, branchY: CardView.firstLineY, height: height), with: .color(ink(.treeLine)), lineWidth: 1)
     }
 
     /// Where the card being dragged would land: a dashed card as big as the lifted one.
@@ -754,7 +757,7 @@ struct CardTreeLines: View {
     /// The gap between cards, which the lines bridge.
     var gap: CGFloat
     /// Where the branch meets the card, from the card's top: beside its first line.
-    var branchY: CGFloat = 19
+    var branchY: CGFloat = CardView.firstLineY
 
     var body: some View {
         Canvas { context, size in
@@ -767,34 +770,10 @@ struct CardTreeLines: View {
 
     /// The lines for a card's place, from the bottom of the card above, `height` tall in all.
     static func path(place: Nesting.Place, gap: CGFloat, branchY: CGFloat, height: CGFloat) -> Path {
-        let depth = min(place.depth, Self.deepest)
-        var path = Path()
-        for level in 0..<depth {
-            let lineX = CGFloat(level) * Self.indent + Self.indent / 2
-            let continues = place.continues.indices.contains(level) && place.continues[level]
-            if level < depth - 1 {
-                if continues {
-                    path.move(to: CGPoint(x: lineX, y: 0))
-                    path.addLine(to: CGPoint(x: lineX, y: height))
-                }
-                continue
-            }
-            let y = gap + branchY
-            let end = CGFloat(depth) * Self.indent
-            if continues {
-                path.move(to: CGPoint(x: lineX, y: 0))
-                path.addLine(to: CGPoint(x: lineX, y: height))
-                path.move(to: CGPoint(x: lineX, y: y))
-                path.addLine(to: CGPoint(x: end, y: y))
-            } else {
-                let radius: CGFloat = 5
-                path.move(to: CGPoint(x: lineX, y: 0))
-                path.addLine(to: CGPoint(x: lineX, y: y - radius))
-                path.addQuadCurve(to: CGPoint(x: lineX + radius, y: y), control: CGPoint(x: lineX, y: y))
-                path.addLine(to: CGPoint(x: end, y: y))
-            }
-        }
-        return path
+        Marks.treeLines(
+            place, deepest: Self.deepest, lineX: { CGFloat($0) * Self.indent + Self.indent / 2 },
+            branchY: gap + branchY, branchEnd: CGFloat(min(place.depth, Self.deepest)) * Self.indent, height: height
+        )
     }
 }
 

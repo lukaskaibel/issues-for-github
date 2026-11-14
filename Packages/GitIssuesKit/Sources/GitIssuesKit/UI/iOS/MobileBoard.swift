@@ -393,7 +393,7 @@ struct MobileColumn: View {
             .padding(.bottom, folded ? CardStackEdge.height : 0)
             .padding(.leading, indent)
             .background(alignment: .topLeading) {
-                if place.depth > 0 { CardTreeLines(place: place, gap: 8, branchY: 21) }
+                if place.depth > 0 { CardTreeLines(place: place, gap: 8) }
             }
     }
 

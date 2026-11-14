@@ -152,6 +152,44 @@ extension Marks {
     }
 }
 
+// MARK: - Sub-issues hanging under their parent
+
+extension Marks {
+    /// The lines of a tree of sub-issues through one row or card, as lists, cards and an issue's sub-issues draw them:
+    /// a straight line for each level above whose sub-issues go on below, and a branch from the line of its own level,
+    /// round at the corner, into the issue at `branchY`, ending at `branchEnd`. `lineX` is where each level's line runs;
+    /// `height` how far down the lines go.
+    static func treeLines(
+        _ place: Nesting.Place, deepest: Int, lineX: (Int) -> CGFloat, branchY: CGFloat, branchEnd: CGFloat, height: CGFloat
+    ) -> Path {
+        let depth = min(place.depth, deepest)
+        var path = Path()
+        for level in 0..<depth {
+            let x = lineX(level)
+            let continues = place.continues.indices.contains(level) && place.continues[level]
+            if level < depth - 1 {
+                if continues {
+                    path.move(to: CGPoint(x: x, y: 0))
+                    path.addLine(to: CGPoint(x: x, y: height))
+                }
+                continue
+            }
+            if continues {
+                path.move(to: CGPoint(x: x, y: 0))
+                path.addLine(to: CGPoint(x: x, y: height))
+                path.move(to: CGPoint(x: x, y: branchY))
+            } else {
+                let radius: CGFloat = 5
+                path.move(to: CGPoint(x: x, y: 0))
+                path.addLine(to: CGPoint(x: x, y: branchY - radius))
+                path.addQuadCurve(to: CGPoint(x: x + radius, y: branchY), control: CGPoint(x: x, y: branchY))
+            }
+            path.addLine(to: CGPoint(x: branchEnd, y: branchY))
+        }
+        return path
+    }
+}
+
 // MARK: - Milestones
 
 extension Marks {

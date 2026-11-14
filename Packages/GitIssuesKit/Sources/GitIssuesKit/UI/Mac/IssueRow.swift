@@ -691,46 +691,19 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     /// sub-issues go on below it, a branch into this row's status icon, and a line from this row's status icon
     /// down to its own sub-issues when they show.
     private func drawTree(_ row: IssueRowModel, from base: CGFloat, midY: CGFloat) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
         let depth = min(row.nest.depth, Self.deepestIndent)
-        let height = bounds.height
-        let path = NSBezierPath()
-        for level in 0..<depth {
-            let lineX = base + CGFloat(level) * Self.indent + 7
-            let continues = row.nest.continues.indices.contains(level) && row.nest.continues[level]
-            if level < depth - 1 {
-                if continues {
-                    path.move(to: NSPoint(x: lineX, y: 0))
-                    path.line(to: NSPoint(x: lineX, y: height))
-                }
-                continue
-            }
-            let end = base + CGFloat(depth) * Self.indent - 3
-            if continues {
-                path.move(to: NSPoint(x: lineX, y: 0))
-                path.line(to: NSPoint(x: lineX, y: height))
-                path.move(to: NSPoint(x: lineX, y: midY))
-                path.line(to: NSPoint(x: end, y: midY))
-            } else {
-                let radius: CGFloat = 5
-                path.move(to: NSPoint(x: lineX, y: 0))
-                path.line(to: NSPoint(x: lineX, y: midY - radius))
-                path.curve(
-                    to: NSPoint(x: lineX + radius, y: midY),
-                    controlPoint1: NSPoint(x: lineX, y: midY - radius * 0.45),
-                    controlPoint2: NSPoint(x: lineX + radius * 0.45, y: midY)
-                )
-                path.line(to: NSPoint(x: end, y: midY))
-            }
-        }
+        var path = Marks.treeLines(
+            row.nest, deepest: Self.deepestIndent, lineX: { base + CGFloat($0) * Self.indent + 7 },
+            branchY: midY, branchEnd: base + CGFloat(depth) * Self.indent - 3, height: bounds.height
+        )
         if row.nested != nil, !row.folded {
             let lineX = base + CGFloat(depth) * Self.indent + 7
-            path.move(to: NSPoint(x: lineX, y: midY + 10))
-            path.line(to: NSPoint(x: lineX, y: height))
+            path.move(to: CGPoint(x: lineX, y: midY + 10))
+            path.addLine(to: CGPoint(x: lineX, y: bounds.height))
         }
         guard !path.isEmpty else { return }
-        path.lineWidth = 1
-        NSColor(Theme.treeLine).setStroke()
-        path.stroke()
+        context.draw([Marks.Shape(path: path, stroke: StrokeStyle(lineWidth: 1))], mark: NSColor(Theme.treeLine).cgColor, onColor: NSColor(Theme.treeLine).cgColor)
     }
 
     /// The arrow that folds sub-issues in or out (`Marks.foldArrow`), for the list's views.
