@@ -520,7 +520,7 @@ struct DisplayOptions: View {
             .font(.small)
             let candidates = model.chipCandidates(projectId: view.projectId)
             if !candidates.isEmpty {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                PopoverDivider(outset: 14)
                 VStack(alignment: .leading, spacing: 8) {
                     Text(.properties).font(.small).foregroundStyle(Theme.textSecondary)
                     FlowLayout(spacing: 5) {
@@ -546,7 +546,7 @@ struct DisplayOptions: View {
             }
             let hidden = mode == .board ? model.hiddenColumns(projectId: view.projectId) : []
             if !hidden.isEmpty {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                PopoverDivider(outset: 14)
                 VStack(alignment: .leading, spacing: 8) {
                     Text(.hiddenColumns).font(.small).foregroundStyle(Theme.textSecondary)
                     // A click shows the column on the board again.
@@ -573,7 +573,7 @@ struct DisplayOptions: View {
                 }
             }
             if model.displayDiffers(view) {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                PopoverDivider(outset: 14)
                 HStack(spacing: 8) {
                     Text(.changedForYou).font(.small).foregroundStyle(Theme.textTertiary)
                     Spacer(minLength: 8)

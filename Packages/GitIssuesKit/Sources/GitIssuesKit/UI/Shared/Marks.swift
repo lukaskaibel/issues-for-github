@@ -231,3 +231,24 @@ extension Marks {
         }
     }
 }
+
+// MARK: - Picking
+
+extension Marks {
+    /// The box that picks a row, 14 points: an outline, or filled with a tick once picked. The box takes the mark's
+    /// colour and the tick the second one: on the accent of a picked row of the list, a white box with an accent tick;
+    /// in a picker's row, an accent box with a white tick.
+    static func checkbox(checked: Bool, in box: CGRect) -> [Shape] {
+        guard checked else {
+            return [Shape(path: Path(roundedRect: box.insetBy(dx: 0.6, dy: 0.6), cornerRadius: 4, style: .continuous), ink: .off, stroke: StrokeStyle(lineWidth: 1.2))]
+        }
+        var tick = Path()
+        tick.move(to: CGPoint(x: box.minX + 3.6, y: box.midY + 0.2))
+        tick.addLine(to: CGPoint(x: box.minX + 6, y: box.midY + 2.6))
+        tick.addLine(to: CGPoint(x: box.maxX - 3.4, y: box.midY - 2.6))
+        return [
+            Shape(path: Path(roundedRect: box, cornerRadius: 4, style: .continuous)),
+            Shape(path: tick, ink: .onColor, stroke: StrokeStyle(lineWidth: 1.7, lineCap: .round, lineJoin: .round)),
+        ]
+    }
+}

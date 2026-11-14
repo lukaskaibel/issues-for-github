@@ -129,12 +129,7 @@ struct ProjectDropdown: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(.projects)
-                .font(.tinySemibold)
-                .foregroundStyle(Theme.textTertiary)
-                .padding(.horizontal, 12)
-                .padding(.top, 10)
-                .padding(.bottom, 4)
+            MenuHeading(Text(.projects), inset: 12, top: 10, bottom: 4)
             ForEach(listedProjects) { project in
                 row(.project(project.id))
             }

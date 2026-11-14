@@ -544,7 +544,7 @@ private struct PropertyChips: View {
                     picker = .dueDate
                 } label: {
                     if let due = model.dueBadge(for: item) {
-                        PropertyChip(text: due.day.mediumLabel(), tint: due.tone == .overdue || due.tone == .today ? due.tone.color : nil) {
+                        PropertyChip(text: due.day.mediumLabel(), tint: due.emphasis) {
                             DueDateIcon(tone: due.tone, size: 13)
                         }
                     } else {
@@ -704,9 +704,7 @@ private struct PropertiesColumn: View {
                         Button { picker = .dueDate } label: {
                             value {
                                 if let due = model.dueBadge(for: item) {
-                                    DueDateIcon(tone: due.tone, size: 13)
-                                    Text(due.day.mediumLabel())
-                                        .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.text)
+                                    DueDateValue(due: due, iconSize: 13).foregroundStyle(Theme.text)
                                 } else {
                                     Text(.addDueDate).foregroundStyle(Theme.textTertiary)
                                 }
@@ -1053,17 +1051,8 @@ private struct MobileConflictBanner: View {
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Theme.warning.opacity(0.45), lineWidth: 1))
     }
 
-    private var message: LocalizedStringResource {
-        if case .setTitle = entry.mutation { return .conflictTitleEditedOnGitHub }
-        return .conflictDescriptionEditedOnGitHub
-    }
-
-    private var theirs: String? {
-        switch entry.mutation {
-        case .setTitle(let m), .setBody(let m): m.theirs
-        default: nil
-        }
-    }
+    private var message: LocalizedStringResource { entry.conflictMessage }
+    private var theirs: String? { entry.theirText }
 }
 
 // MARK: - Sub-issues

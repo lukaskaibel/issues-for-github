@@ -488,12 +488,7 @@ struct QueueList: View {
     var body: some View {
         let waiting = model.outbox.filter { $0.state != .sent }
         VStack(alignment: .leading, spacing: 0) {
-            Text(waiting.isEmpty ? .everythingSavedToGitHub : .queuedChanges)
-                .font(.tinySemibold)
-                .foregroundStyle(Theme.textSecondary)
-                .padding(.horizontal, 14)
-                .padding(.top, 12)
-                .padding(.bottom, 6)
+            MenuHeading(Text(waiting.isEmpty ? .everythingSavedToGitHub : .queuedChanges), inset: 14, top: 12, bottom: 6)
 
             ForEach(waiting.prefix(12)) { entry in
                 let summary = model.summary(of: entry)

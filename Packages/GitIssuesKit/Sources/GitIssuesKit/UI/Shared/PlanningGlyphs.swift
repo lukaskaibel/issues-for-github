@@ -133,7 +133,8 @@ struct ProgressRing: View {
     var done: Int
     var total: Int
     var size: CGFloat = 14
-    var color: Color = Theme.epic
+    /// Green, as done work is in the bars of groups and in the list's headers.
+    var color: Color = Theme.positive
 
     var body: some View {
         let fraction = total > 0 ? Double(done) / Double(total) : 0
@@ -268,7 +269,7 @@ struct GroupIcon: View {
         case .person(let person):
             Avatar(login: person.login, url: person.avatarUrl, size: size + 2)
         case .progress(let done, let total):
-            ProgressRing(done: done, total: total, size: size, color: Theme.positive)
+            ProgressRing(done: done, total: total, size: size)
         case .repository:
             RepositoryIcon(size: size - 2).foregroundStyle(Theme.textSecondary)
         case .priority(let level):

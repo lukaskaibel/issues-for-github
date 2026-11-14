@@ -208,6 +208,8 @@ struct AvatarStack: View {
     }
 }
 
+/// A quiet part of an issue as a view, as cards and rows paint theirs: a symbol and text, as Reminders writes a date,
+/// with no outline; the button around it lights up under the pointer.
 struct Chip<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -218,7 +220,6 @@ struct Chip<Content: View>: View {
             .lineLimit(1)
             .padding(.horizontal, 7)
             .frame(height: 20)
-            .overlay(Capsule().stroke(Theme.chipBorder, lineWidth: 1))
     }
 }
 
@@ -524,6 +525,8 @@ struct PrimaryButtonStyle: ButtonStyle {
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.small)
@@ -532,6 +535,8 @@ struct SecondaryButtonStyle: ButtonStyle {
             .frame(height: 26)
             .background(Capsule().fill(configuration.isPressed ? Theme.controlActive : Theme.control))
             .contentShape(Capsule())
+            // A button that can't be used now looks it, as a primary one does.
+            .opacity(isEnabled ? 1 : 0.4)
     }
 }
 

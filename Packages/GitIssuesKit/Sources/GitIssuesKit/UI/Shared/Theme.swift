@@ -45,9 +45,6 @@ enum Theme {
     static let control = Color(light: 0xE9E9ED, dark: 0x2C2C2F)
     static let controlActive = Color(light: 0xE1E1E6, dark: 0x3A3A3E)
     static let chipBorder = Color(light: 0xDCDCE1, dark: 0x3A3A3E)
-    /// A chip under the pointer lights up in its own shape rather than getting a box behind it.
-    static let chipHover = Color(light: 0xEFEFF3, dark: 0x343438)
-    static let chipHoverBorder = Color(light: 0xC7C7CC, dark: 0x4A4A4F)
     /// A picked issue: a tint of the accent behind it and the accent around it.
     static let selectionFill = Color(light: 0xEDEEFC, dark: 0x2A2C47)
     static let selectionBorder = Color(light: 0x8D93E6, dark: 0x6E75D8)
@@ -115,7 +112,6 @@ enum Theme {
     static let sidebarWidth: CGFloat = 220
     /// The Inbox's list beside the issue, as wide as Linear's.
     static let inboxListWidth: CGFloat = 372
-    static let headerHeight: CGFloat = 44
     static let rowHeight: CGFloat = 36
 
     /// GitHub's eight option colours, tuned for each ground.

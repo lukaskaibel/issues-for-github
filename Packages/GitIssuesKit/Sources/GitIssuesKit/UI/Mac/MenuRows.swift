@@ -236,4 +236,57 @@ struct MenuKeys: NSViewRepresentable {
         }
     }
 }
+
+/// A small heading over rows in a menu or popover, such as how many issues a menu acts on or a palette's group, in
+/// line with the text of the rows under it: `inset` from the edge.
+struct MenuHeading: View {
+    var text: Text
+    var inset: CGFloat = 15
+    var top: CGFloat = 4
+    var bottom: CGFloat = 2
+
+    init(_ text: Text, inset: CGFloat = 15, top: CGFloat = 4, bottom: CGFloat = 2) {
+        self.text = text
+        self.inset = inset
+        self.top = top
+        self.bottom = bottom
+    }
+
+    var body: some View {
+        text
+            .font(.tinySemibold)
+            .foregroundStyle(Theme.textTertiary)
+            .padding(.horizontal, inset)
+            .padding(.top, top)
+            .padding(.bottom, bottom)
+    }
+}
+
+/// The line between the parts of a popover, such as the Display and filter panels: from edge to edge, through the
+/// panel's padding of `outset`.
+struct PopoverDivider: View {
+    var outset: CGFloat = 0
+
+    var body: some View {
+        Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -outset)
+    }
+}
+
+/// The button beside an order's field that turns it around: an arrow up or down.
+struct SortDirectionButton: View {
+    var descending: Bool
+    var toggle: () -> Void
+
+    var body: some View {
+        Button(action: toggle) {
+            Image(systemName: descending ? "arrow.down" : "arrow.up")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(Theme.textSecondary)
+                .frame(width: 24, height: 24)
+                .hoverFill()
+        }
+        .buttonStyle(PlainPressStyle())
+        .help(Text(descending ? .descending : .ascending))
+    }
+}
 #endif

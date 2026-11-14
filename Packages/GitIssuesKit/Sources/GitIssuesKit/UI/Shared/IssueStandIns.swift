@@ -43,3 +43,19 @@ extension AppModel {
         item(contentId: link.id) ?? Item(standingInFor: link)
     }
 }
+
+extension OutboxEntry {
+    /// What the banner over an issue says about a change of its title or description that GitHub has changed too.
+    var conflictMessage: LocalizedStringResource {
+        if case .setTitle = mutation { return .conflictTitleEditedOnGitHub }
+        return .conflictDescriptionEditedOnGitHub
+    }
+
+    /// GitHub's version of that text, shown beside one's own.
+    var theirText: String? {
+        switch mutation {
+        case .setTitle(let m), .setBody(let m): m.theirs
+        default: nil
+        }
+    }
+}

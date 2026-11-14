@@ -53,25 +53,20 @@ struct ProjectIconPicker: View {
                 .onSubmit {
                     if let active = cursor.key { pick(active, look: look) } else { close() }
                 }
-            Rectangle().fill(Theme.popoverBorder).frame(height: 1)
+            PopoverDivider()
             HStack(spacing: 2) {
                 ForEach(Array(Defaults.optionColors.enumerated()), id: \.offset) { index, color in
                     colorButton(color, index: index, look: look)
                 }
             }
             .padding(6)
-            Rectangle().fill(Theme.popoverBorder).frame(height: 1)
+            PopoverDivider()
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 2) {
                         ForEach(lines) { line in
                             if let title = line.title {
-                                Text(title)
-                                    .font(.tinySemibold)
-                                    .foregroundStyle(Theme.textTertiary)
-                                    .padding(.horizontal, 6)
-                                    .padding(.top, line.id == lines.first?.id ? 2 : 10)
-                                    .padding(.bottom, 2)
+                                MenuHeading(Text(title), inset: 6, top: line.id == lines.first?.id ? 2 : 10)
                                     .id(line.id)
                             } else {
                                 HStack(spacing: 2) {
@@ -109,7 +104,7 @@ struct ProjectIconPicker: View {
                     }
                 }
             }
-            Rectangle().fill(Theme.popoverBorder).frame(height: 1)
+            PopoverDivider()
             Text(.projectIconNote)
                 .font(.tiny)
                 .foregroundStyle(Theme.textTertiary)

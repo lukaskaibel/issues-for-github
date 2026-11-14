@@ -828,26 +828,11 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     }
 
     private func drawCheckbox(checked: Bool, center: NSPoint) {
-        let box = NSRect(x: center.x - 7, y: center.y - 7, width: 14, height: 14)
-        let shape = NSBezierPath(roundedRect: box.insetBy(dx: checked ? 0 : 0.6, dy: checked ? 0 : 0.6), xRadius: 4, yRadius: 4)
-        if checked {
-            // On the accent-filled row the box is white with the mark in the accent colour.
-            NSColor.white.setFill()
-            shape.fill()
-            let mark = NSBezierPath()
-            mark.move(to: NSPoint(x: box.minX + 3.6, y: box.midY + 0.2))
-            mark.line(to: NSPoint(x: box.minX + 6, y: box.midY + 2.6))
-            mark.line(to: NSPoint(x: box.maxX - 3.4, y: box.midY - 2.6))
-            mark.lineWidth = 1.7
-            mark.lineCapStyle = .round
-            mark.lineJoinStyle = .round
-            NSColor(Theme.accentFill).setStroke()
-            mark.stroke()
-        } else {
-            shape.lineWidth = 1.2
-            NSColor(Theme.textTertiary).setStroke()
-            shape.stroke()
-        }
+        // On the accent-filled row the box is white with the tick in the accent colour (`Marks.checkbox`).
+        NSGraphicsContext.current?.cgContext.draw(
+            Marks.checkbox(checked: checked, in: CGRect(x: center.x - 7, y: center.y - 7, width: 14, height: 14)),
+            mark: NSColor.white.cgColor, off: NSColor(Theme.textTertiary).cgColor, onColor: NSColor(Theme.accentFill).cgColor
+        )
     }
 
     /// The quiet parts of a row (due date, sub-issues, milestone, fields) are text with a symbol, as Mail and

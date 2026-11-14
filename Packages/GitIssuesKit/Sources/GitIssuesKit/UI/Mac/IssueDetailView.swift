@@ -236,17 +236,8 @@ struct ConflictBanner: View {
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Theme.warning.opacity(0.45), lineWidth: 1))
     }
 
-    private var message: LocalizedStringResource {
-        if case .setTitle = entry.mutation { return .conflictTitleEditedOnGitHub }
-        return .conflictDescriptionEditedOnGitHub
-    }
-
-    private var theirs: String? {
-        switch entry.mutation {
-        case .setTitle(let m), .setBody(let m): m.theirs
-        default: nil
-        }
-    }
+    private var message: LocalizedStringResource { entry.conflictMessage }
+    private var theirs: String? { entry.theirText }
 }
 
 // MARK: - Sub-issues
@@ -811,12 +802,7 @@ struct IssueProperties: View {
                 row(.dueDate) {
                     PropertyButton(kind: .dueDate, item: item) {
                         if let due = model.dueBadge(for: item) {
-                            HStack(spacing: 7) {
-                                DueDateIcon(tone: due.tone, size: 12)
-                                Text(due.day.mediumLabel())
-                                    .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.text)
-                            }
-                            .help(due.tooltip)
+                            DueDateValue(due: due).foregroundStyle(Theme.text)
                         } else {
                             Text(.addDueDate).foregroundStyle(Theme.textTertiary)
                         }

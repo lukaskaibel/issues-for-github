@@ -115,7 +115,7 @@ struct MilestoneEditor: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 14)
 
-            Rectangle().fill(Theme.popoverBorder).frame(height: 1)
+            PopoverDivider()
 
             HStack(spacing: 10) {
                 if nameTaken {

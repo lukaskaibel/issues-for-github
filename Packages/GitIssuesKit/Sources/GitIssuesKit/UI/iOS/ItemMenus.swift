@@ -606,8 +606,9 @@ struct IssuePreview: View {
                     }
                 }
                 if let due = model.dueBadge(for: item) {
-                    PropertyChip(text: due.label, tint: due.tone == .overdue || due.tone == .today ? due.tone.color : nil) {
-                        DueDateIcon(tone: due.tone, size: 12)
+                    // As the issue's own chip shows it.
+                    PropertyChip(text: due.day.mediumLabel(), tint: due.emphasis) {
+                        DueDateIcon(tone: due.tone, size: 13)
                     }
                 }
             }

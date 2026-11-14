@@ -87,7 +87,7 @@ struct NewViewForm: View {
                 .font(.tiny)
                 .foregroundStyle(Theme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
-            Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+            PopoverDivider(outset: 14)
             HStack(spacing: 8) {
                 if let source {
                     Text(.startsFrom(view: source.name))
@@ -225,17 +225,9 @@ struct SortMenu: View {
                 sort = id.isEmpty ? [] : [ViewSort(fieldId: id, descending: first?.descending ?? false)]
             }
             if let first {
-                Button {
+                SortDirectionButton(descending: first.descending) {
                     sort = [ViewSort(fieldId: first.fieldId, descending: !first.descending)] + sort.dropFirst()
-                } label: {
-                    Image(systemName: first.descending ? "arrow.down" : "arrow.up")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Theme.textSecondary)
-                        .frame(width: 24, height: 24)
-                        .hoverFill()
                 }
-                .buttonStyle(PlainPressStyle())
-                .help(Text(first.descending ? .descending : .ascending))
             }
         }
     }

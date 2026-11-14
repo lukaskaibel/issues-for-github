@@ -1300,8 +1300,9 @@ final class EpicHeaderRowCell: NSView {
         guard let group, let context = NSGraphicsContext.current?.cgContext else { return }
         let midY = bounds.height / 2
         if highlighted {
+            // As the rows under it light up.
             NSColor(Theme.selected).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 7, yRadius: 7).fill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
         }
         // In line with the issues' status icons: after the priority and number columns.
         var x: CGFloat = IssueTable.inset + 28 + 14 + 10 + 40 + 10
