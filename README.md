@@ -129,9 +129,11 @@ Descriptions are Markdown, edited in place: click and type. It types like a note
 `**` brings its closing pair and `##` makes a heading, Return continues a list and leaves bold text, `-` starts a
 bullet and `- []` a checkbox, and a style's marks are kept and deleted as a pair; a change of style eases in. Tab and
 ↓ go from the title into the description, and ↑ at its top goes back. Sub-issues come
-with a progress bar, the most urgent first and the done ones last, and the plus beside them adds a new one or an issue
-that exists already. A sub-issue with sub-issues of its own says how many of them are done, and the arrow beside it
-unfolds them under it, level by level, as a tree. What blocks the issue and what it blocks are listed below. A blocked
+with a progress bar, the most urgent first and the done ones last, as rows of the list, whose parts open their
+pickers and whose checkbox picks several, and the plus beside them adds a new one or an issue that exists already. A
+sub-issue with sub-issues of its own says how many of them are done, and the arrow beside it unfolds them under it,
+level by level, as a tree. What blocks the issue and what it blocks are listed below, as rows too, with the × to take
+one off where the checkbox stands. A blocked
 issue carries a red flag with the number of the issue to finish first, as in `#5`, on its card, its list row and its
 line among its parent's sub-issues. Comments sit below, with the field
 for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
@@ -197,7 +199,10 @@ labels, `D` due date, `I` assign to me.
 
 The list groups issues by status. Each header stays pinned while you scroll through its section and folds it with
 a click. Drag an issue up or down to give it a new place, or into another section to change its status, as on the
-board; drop it on the middle of another issue, which lights up, to make it that issue's sub-issue. The app follows the system appearance, or stays light or dark if you prefer.
+board; drop it on the middle of another issue, which lights up, to make it that issue's sub-issue. A row shows an
+issue as its card does, labels as a dot and a name and the milestone in grey, and it is the same row wherever issues
+are listed: in an issue's sub-issues and the issues it blocks or is blocked by too. The app follows the system
+appearance, or stays light or dark if you prefer.
 
 Its icon is a card with a done mark, lifted off a board of faint tiles. Settings (on iPhone and iPad, your account)
 offers it on its light page, on graphite or as a white card on indigo. Each follows light and dark mode.
@@ -364,7 +369,7 @@ The interface uses the system's own parts.
   checkbox, moving a list item in or out, and opening a link. On the touch keyboard the stars of bold and the other
   styles' marks stay hidden, as in Notes: a tap at the end of bold text types on in bold, and Delete takes the letter
   you see. The properties are glass chips under the title, the
-  sub-issues a checklist (by priority, or another order from the "…" beside its plus; the arrow beside one with
+  sub-issues rows as in the lists (by priority, or another order from the "…" beside its plus; the arrow beside one with
   sub-issues of its own unfolds them under it), the comments a conversation, and the comment field stays at the bottom
   as in Messages. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
   unfolded ones too, then move them all under another parent with the bar at the bottom, or change their status,
@@ -756,6 +761,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 |---|---|
 | Tap a section header | Fold it in or out |
 | Tap the arrow beside an issue | Fold the sub-issues hanging under it in or out |
+| Tap an issue's status circle | Pick its status, in every list, in search and among an issue's sub-issues |
 | Tap an epic's name over its issues | Open the epic; the arrow beside its icon folds them in or out |
 | Touch and hold an epic's name over its issues | Open the epic, move all of them to another status, fold them |
 | Touch and hold an epic's name, then drag | Move all of its issues there to another column (iPad) or another place in their section |

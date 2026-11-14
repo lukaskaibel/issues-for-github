@@ -80,6 +80,25 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **An issue looks the same wherever it is listed.** On an issue's page, its sub-issues, an epic's issues and the
+  issues it is blocked by or blocks are now the rows the lists show, on the Mac and on iPhone and iPad: priority,
+  number, status, title, sub-issues, the blocker's flag, labels, milestone, due date and people, in the list's order,
+  type and spacing. On the Mac a sub-issue's parts open their pickers as in the list, its checkbox or ⌘-click picks it,
+  picked ones fill with the accent, and a related issue's × to take it off the list stands where a row's checkbox
+  does. On iPhone and iPad a tap on any row's status circle, in the lists and search too, shows the statuses to pick
+  from, the arrow left of it folds what hangs under it, and touching and holding a sub-issue or a related issue shows
+  the preview as everywhere else. An issue known only from GitHub is such a row too, open or closed, and opens there.
+- **Labels look the same everywhere.** A label is a dot in its colour and its name, as on the board's cards, in the
+  Mac's lists, an issue's sub-issues, the inspector and the peek, and in iPhone and iPad's lists: no tinted pills and no
+  outlines. Under the pointer an issue's labels light up together in one grey capsule, as the one button that changes
+  them; `+2` says how many more there are and opens them too. An epic's own label is left out on cards as well.
+- **Milestones, epics and fields read alike on rows and cards.** A milestone's diamond is grey in lists as on cards,
+  and only a late one keeps its colour; an epic is named in the grey of its name; a project field's chip is drawn as on
+  a card; a pull request has its mark in the Mac's list too. Picked rows show all of it in white. The due date's
+  calendar is drawn at the date's size, and as a property (inspector, peek, iPad's column, the long-press preview) a
+  due date reads the same everywhere, coloured only while overdue or today. iPhone and iPad menus show milestones with
+  their coloured diamonds, and their Inbox rows the issue's state before its title, as the Mac does.
+- **Escape in an issue's title takes the edit back on iPhone and iPad too**, as on the Mac.
 - **Pickers offer the likeliest choice first.** The parent, epic, blocker, label and assignee you chose lately now come
   at the very top of their pickers, above **Remove from #…** and the current one, with the likeliest lit so `Return`
   takes it. A choice made twice in a row comes first and stays there when one issue in
@@ -101,6 +120,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **A third assignee no longer runs under the date** in a row of the Mac's list.
+- **An issue closed as a duplicate shows as canceled everywhere**, also when it is on none of your boards.
+- **A picked notification in the Mac's Inbox keeps the check of a done issue visible.**
+- **A disabled secondary button looks disabled.**
+- **On iPhone and iPad boards a sub-issue's line meets its card at the first line**, as on the Mac, not lower.
+- **A description written on iPhone or iPad while its new issue reaches GitHub is kept**, as on the Mac.
 - **Return in a picker opened over the pointer picks what is lit.** A picker that opened under a pointer at rest, such
   as **Set Parent Issue…** from the command palette, lit the row under the pointer instead of the recent choice, so
   `Return` could take an issue out of its parent instead of moving it to the one chosen last. Rows now light under the
