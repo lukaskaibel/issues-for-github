@@ -92,7 +92,8 @@ All notable changes to this project are recorded here. The format follows
 - **Labels look the same everywhere.** A label is a dot in its colour and its name, as on the board's cards, in the
   Mac's lists, an issue's sub-issues, the inspector and the peek, and in iPhone and iPad's lists: no tinted pills and no
   outlines. Under the pointer an issue's labels light up together in one grey capsule, as the one button that changes
-  them; `+2` says how many more there are and opens them too. An epic's own label is left out on cards as well.
+  them, and the properties in the Mac's inspector and peek light up in that grey too; `+2` says how many more there
+  are and opens them too. An epic's own label is left out on cards as well.
 - **Milestones, epics and fields read alike on rows and cards.** A milestone's diamond is grey in lists as on cards,
   and only a late one keeps its colour; an epic is named in the grey of its name; a project field's chip is drawn as on
   a card; a pull request has its mark in the Mac's list too. Picked rows show all of it in white. The due date's
