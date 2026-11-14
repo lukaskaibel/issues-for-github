@@ -174,11 +174,11 @@ struct IssueTable: NSViewRepresentable {
         /// Whether the dragged issues can go under an issue, by its id, as worked out once per drag.
         private var nestable: [String: Bool] = [:]
         /// What the dragged row lifted off as: the card under the pointer, where it sits from the pointer, and the row's
-        /// own card with how many issues the drag carries, for the smaller card it turns into over an issue.
+        /// own picture with how many issues the drag carries, for the smaller card it turns into over an issue.
         private struct Lifted {
             var image: NSImage
             var offset: NSPoint
-            var card: NSImage?
+            var content: NSImage?
             var count: Int?
         }
         private var lifted: Lifted?
@@ -388,17 +388,16 @@ struct IssueTable: NSViewRepresentable {
             // are, and their rows stay behind faded.
             let picked: PickedIssues? = if case .row(let issue) = entries[row] { self.picked(from: issue.item.id) } else { nil }
             lifted = nil
-            if let (image, above) = liftedImage(row, in: tableView, picked: picked) {
+            if let (image, corner, content) = liftedImage(row, in: tableView, picked: picked) {
                 let start = tableView.convert(tableView.window?.convertPoint(fromScreen: screenPoint) ?? .zero, from: nil)
-                let card = (tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell)?.dragImage()
                 session.enumerateDraggingItems(options: [], for: tableView, classes: [NSPasteboardItem.self], searchOptions: [:]) { dragged, _, _ in
                     // From where the table lifted the row: by now the row has closed up and `rect(ofRow:)` has no
                     // height, and a frame without one throws, which ends the drag before it starts and leaves the
                     // row hidden.
-                    let origin = NSPoint(x: dragged.draggingFrame.origin.x, y: dragged.draggingFrame.origin.y - above)
+                    let origin = NSPoint(x: dragged.draggingFrame.origin.x + corner.x, y: dragged.draggingFrame.origin.y + corner.y)
                     dragged.setDraggingFrame(NSRect(origin: origin, size: image.size), contents: image)
                     self.lifted = Lifted(
-                        image: image, offset: NSPoint(x: origin.x - start.x, y: origin.y - start.y), card: card, count: picked?.items.count
+                        image: image, offset: NSPoint(x: origin.x - start.x, y: origin.y - start.y), content: content, count: picked?.items.count
                     )
                 }
             }
@@ -446,47 +445,19 @@ struct IssueTable: NSViewRepresentable {
             entries.indices.filter { if case .header = entries[$0] { return true } else { return false } } + [entries.count]
         }
 
-        /// The card a row lifts off as, with how far it reaches above the row: for a picked issue, with the others
-        /// picked with it.
-        func liftedImage(_ row: Int, in tableView: NSTableView, picked: PickedIssues?) -> (image: NSImage, above: CGFloat)? {
+        /// The card a row lifts off as, the board's lifted card (`LiftedImage`), with where the image's top left corner
+        /// is from the row's, and the row's own picture for the smaller card it turns into over an issue: for a picked
+        /// issue, with the others picked with it; for an epic's header, the card its issues lift off as together.
+        func liftedImage(_ row: Int, in tableView: NSTableView, picked: PickedIssues?) -> (image: NSImage, origin: NSPoint, content: NSImage?)? {
             let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false)
-            guard let image = (cell as? IssueRowCell)?.dragImage() ?? (cell as? EpicHeaderRowCell)?.dragImage(),
-                  image.size.width > 0, image.size.height > 0 else { return nil }
-            return picked.map { Self.stacked(image, count: $0.items.count, appearance: tableView.effectiveAppearance) } ?? (image, 0)
-        }
-
-        /// A row's card with the edge of a second one under it and, on its corner, how many issues the drag carries,
-        /// as the board shows picked cards lifted together; with how far it reaches above the row.
-        private static func stacked(_ card: NSImage, count: Int, appearance: NSAppearance) -> (image: NSImage, above: CGFloat) {
-            let badge = NSAttributedString(string: "\(count)", attributes: [
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold), .foregroundColor: NSColor.white,
-            ])
-            let above: CGFloat = 6, below = CardStackEdge.height - 1
-            let size = NSSize(width: card.size.width, height: card.size.height + above + below)
-            let image = NSImage(size: size, flipped: true) { _ in
-                let row = NSRect(x: 0, y: above, width: card.size.width, height: card.size.height)
-                let outline = row.insetBy(dx: IssueTable.inset, dy: 1)
-                let edge = NSBezierPath(
-                    roundedRect: outline.insetBy(dx: 6, dy: 0).offsetBy(dx: 0, dy: CardStackEdge.height).insetBy(dx: 0.5, dy: 0.5),
-                    xRadius: 7, yRadius: 7
-                )
-                let width = max(20, badge.size().width + 12)
-                let pill = NSRect(x: outline.maxX + 7 - width, y: outline.minY - 7, width: width, height: 20)
-                appearance.performAsCurrentDrawingAppearance {
-                    NSColor(Theme.card).setFill()
-                    edge.fill()
-                    NSColor(Theme.cardBorder).setStroke()
-                    edge.stroke()
-                }
-                card.draw(in: row, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-                appearance.performAsCurrentDrawingAppearance {
-                    NSColor(Theme.accentFill).setFill()
-                    NSBezierPath(roundedRect: pill, xRadius: 10, yRadius: 10).fill()
-                }
-                badge.draw(at: NSPoint(x: pill.midX - badge.size().width / 2, y: pill.midY - badge.size().height / 2))
-                return true
+            let appearance = tableView.effectiveAppearance
+            if let cell = cell as? IssueRowCell, let content = cell.liftedContent() {
+                return LiftedImage.row(content, inset: IssueTable.inset, count: picked?.items.count, appearance: appearance).map { ($0.image, $0.origin, content) }
             }
-            return (image, above)
+            if let cell = cell as? EpicHeaderRowCell, let group = cell.shownGroup {
+                return LiftedImage.group(group, rowWidth: cell.bounds.width, inset: IssueTable.inset, appearance: appearance).map { ($0.image, $0.origin, nil) }
+            }
+            return nil
         }
 
         /// The picked issues a drag that starts on issue `id` carries: all of them, when it is one of two or more.
@@ -789,72 +760,13 @@ struct IssueTable: NSViewRepresentable {
             let pointer = tableView.convert(info.draggingLocation, from: nil)
             var image = lifted.image
             var origin = NSPoint(x: pointer.x + lifted.offset.x, y: pointer.y + lifted.offset.y)
-            if let parent, let card = lifted.card {
-                image = Self.nestingImage(card, under: parent, count: lifted.count, appearance: tableView.effectiveAppearance)
-                origin = NSPoint(x: pointer.x - 24, y: pointer.y + 20)
+            if let parent, let content = lifted.content,
+               let nesting = LiftedImage.nesting(content, inset: IssueTable.inset, under: parent, count: lifted.count, appearance: tableView.effectiveAppearance) {
+                image = nesting.image
+                origin = NSPoint(x: pointer.x - 24 + nesting.origin.x, y: pointer.y + 20 + nesting.origin.y)
             }
             info.enumerateDraggingItems(options: [], for: tableView, classes: [NSPasteboardItem.self], searchOptions: [:]) { item, _, _ in
                 item.setDraggingFrame(NSRect(origin: origin, size: image.size), contents: image)
-            }
-        }
-
-        /// The start of a row's card, as wide as a title reads, with a label under it naming the issue it goes under,
-        /// and how many issues the drag carries on its corner when it carries several.
-        static func nestingImage(_ card: NSImage, under parent: Item, count: Int?, appearance: NSAppearance) -> NSImage {
-            let inset = IssueTable.inset
-            let width = min(card.size.width - 2 * inset, 380)
-            let height = card.size.height - 2
-            let top: CGFloat = count != nil ? 7 : 0
-            let label = NSAttributedString(string: String(localized: .subIssueOf(number: parent.displayNumber)), attributes: [
-                .font: NSFont.systemFont(ofSize: 11, weight: .semibold), .foregroundColor: NSColor.white,
-            ])
-            let arrow = NSImage(systemSymbolName: "arrow.turn.down.right", accessibilityDescription: nil)?
-                .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 10, weight: .semibold).applying(.init(paletteColors: [.white])))
-            let pill = NSRect(x: 10, y: top + height + 5, width: label.size().width + 16 + (arrow == nil ? 0 : 15), height: 22)
-            let badge = count.map { NSAttributedString(string: "\($0)", attributes: [
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold), .foregroundColor: NSColor.white,
-            ]) }
-            let size = NSSize(width: max(width + 8, pill.maxX + 2), height: pill.maxY + 2)
-            return NSImage(size: size, flipped: true) { _ in
-                let rect = NSRect(x: 0, y: top, width: width, height: height)
-                let shape = NSBezierPath(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7)
-                appearance.performAsCurrentDrawingAppearance {
-                    NSColor(Theme.cardLifted).setFill()
-                    shape.fill()
-                }
-                NSGraphicsContext.saveGraphicsState()
-                shape.addClip()
-                card.draw(
-                    in: NSRect(x: -inset, y: top - 1, width: card.size.width, height: card.size.height), from: .zero,
-                    operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
-                )
-                // The title fades out where the card ends instead of being cut off.
-                appearance.performAsCurrentDrawingAppearance {
-                    let surface = NSColor(Theme.cardLifted)
-                    NSGradient(starting: surface.withAlphaComponent(0), ending: surface)?
-                        .draw(in: NSRect(x: rect.maxX - 56, y: rect.minY, width: 56, height: rect.height), angle: 0)
-                }
-                NSGraphicsContext.restoreGraphicsState()
-                appearance.performAsCurrentDrawingAppearance {
-                    NSColor(Theme.cardLiftedBorder).setStroke()
-                    shape.lineWidth = 1
-                    shape.stroke()
-                    NSColor(Theme.accentFill).setFill()
-                    NSBezierPath(roundedRect: pill, xRadius: pill.height / 2, yRadius: pill.height / 2).fill()
-                    if let badge {
-                        let badgeWidth = max(20, badge.size().width + 12)
-                        let spot = NSRect(x: rect.maxX + 7 - badgeWidth, y: 0, width: badgeWidth, height: 20)
-                        NSBezierPath(roundedRect: spot, xRadius: 10, yRadius: 10).fill()
-                        badge.draw(at: NSPoint(x: spot.midX - badge.size().width / 2, y: spot.midY - badge.size().height / 2))
-                    }
-                }
-                var x = pill.minX + 8
-                if let arrow {
-                    arrow.draw(in: NSRect(x: x, y: pill.midY - 5.5, width: 11, height: 11), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-                    x += 15
-                }
-                label.draw(at: NSPoint(x: x, y: pill.midY - label.size().height / 2))
-                return true
             }
         }
 
@@ -1193,8 +1105,9 @@ final class HoverTableView: NSTableView {
     }
 }
 
-/// The header over the issues of an epic standing together in a section: the epic's icon in line with the
-/// issues' status icons, where the line down to them starts, its name, how many of its issues are there, and the
+/// The header over the issues of an epic standing together in a section, painted as `EpicHeader` draws it on the
+/// board and on iPhone and iPad: the epic's icon in line with the issues' status icons, where the line down to them
+/// starts, its name, how many of its issues are there, and at the end of the row, under the section header's +, the
 /// arrow that folds them away. A click opens the epic, one on the arrow folds its issues or shows them again, and
 /// dragging it moves them all.
 final class EpicHeaderRowCell: PaintedCell {
@@ -1240,12 +1153,12 @@ final class EpicHeaderRowCell: PaintedCell {
         let truncating = NSMutableParagraphStyle()
         truncating.lineBreakMode = .byTruncatingTail
         title = NSAttributedString(string: group?.epic.title ?? "", attributes: [
-            .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
+            .font: EpicHeaderLook.nameFont,
             .foregroundColor: NSColor(Theme.text),
             .paragraphStyle: truncating,
         ])
         count = NSAttributedString(string: group.map { "\($0.count)" } ?? "", attributes: [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular),
+            .font: EpicHeaderLook.countFont,
             .foregroundColor: NSColor(Theme.textTertiary),
         ])
         if let group {
@@ -1262,76 +1175,51 @@ final class EpicHeaderRowCell: PaintedCell {
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
 
-    /// The header as a card lifting off the list, for dragging the epic's issues.
-    func dragImage() -> NSImage? {
-        guard let content = bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
-        let wasHighlighted = highlighted, wasHovering = hoveringFold
-        highlighted = false
-        hoveringFold = false
-        drawsLine = false
-        cacheDisplay(in: bounds, to: content)
-        drawsLine = true
-        highlighted = wasHighlighted
-        hoveringFold = wasHovering
-        needsDisplay = true
-        let appearance = effectiveAppearance
-        return NSImage(size: bounds.size, flipped: false) { rect in
-            appearance.performAsCurrentDrawingAppearance {
-                let card = NSBezierPath(
-                    roundedRect: rect.insetBy(dx: IssueTable.inset, dy: 1).insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7
-                )
-                NSColor(Theme.cardLifted).setFill()
-                card.fill()
-                NSColor(Theme.cardLiftedBorder).setStroke()
-                card.lineWidth = 1
-                card.stroke()
-            }
-            content.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-            return true
-        }
-    }
-
-    /// Off while the header is drawn as a card being dragged.
-    private var drawsLine = true
+    /// The icon stands in the issues' status column, after their priority and number, where the line down to them
+    /// starts.
+    static let iconColumn = (x: IssueTable.inset + 28 + 14 + 10 + 40 + 10, width: CGFloat(14))
+    /// The arrow stands under the section headers' + button.
+    static let trailing = IssueTable.inset + 12
 
     override func draw(_ dirtyRect: NSRect) {
         guard let group, let context = NSGraphicsContext.current?.cgContext else { return }
-        let midY = bounds.height / 2
+        let look = EpicHeaderLook.self
         if highlighted {
-            // As the rows under it light up.
+            // As the rows around it light up.
             NSColor(Theme.selected).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: look.highlightRadius, yRadius: look.highlightRadius).fill()
         }
-        // In line with the issues' status icons: after the priority and number columns.
-        var x: CGFloat = IssueTable.inset + 28 + 14 + 10 + 40 + 10
-        PlanningGlyph.drawEpic(in: CGRect(x: x, y: midY - 7, width: 14, height: 14), cg: context)
-        if !group.folded, drawsLine {
-            let line = NSBezierPath()
-            line.move(to: NSPoint(x: x + 7, y: midY + 9))
-            line.line(to: NSPoint(x: x + 7, y: bounds.height))
-            line.lineWidth = 1
-            NSColor(Theme.treeLine).setStroke()
-            line.stroke()
+        // The first line stands at the foot of the row, closer to the issues under it than to the row above.
+        let midY = bounds.height - look.bottom - look.line / 2
+        let column = Self.iconColumn
+        let icon = CGRect(x: column.x + (column.width - look.iconSize) / 2, y: midY - look.iconSize / 2, width: look.iconSize, height: look.iconSize)
+        if !group.folded {
+            // On a whole device pixel, as the lines through the rows under it are.
+            let scale = window?.backingScaleFactor ?? 2
+            let x = ((column.x + column.width / 2 - 0.5) * scale).rounded() / scale
+            NSColor(Theme.treeLine).setFill()
+            NSRect(x: x, y: icon.maxY + 3, width: 1, height: max(0, bounds.height - icon.maxY - 3)).fill()
         }
-        x += 14 + 10
-        let titleSize = title.size()
-        let countSize = count.size()
-        let room = bounds.width - x - IssueTable.inset - 14 - countSize.width - 30
-        let titleWidth = min(titleSize.width, max(room, 40))
-        title.draw(in: NSRect(x: x, y: midY - titleSize.height / 2, width: titleWidth, height: titleSize.height))
-        x += titleWidth + 8
-        count.draw(at: NSPoint(x: x, y: midY - countSize.height / 2))
-        x += countSize.width + 6
-        let rect = NSRect(x: x, y: midY - 7, width: 14, height: 14)
-        foldRect = rect
+        PlanningGlyph.drawEpic(in: icon, cg: context)
+        let arrow = NSRect(x: bounds.width - Self.trailing - look.arrowBox, y: midY - look.arrowBox / 2, width: look.arrowBox, height: look.arrowBox)
+        foldRect = arrow
         if hoveringFold {
             NSColor(Theme.partHover).setFill()
-            NSBezierPath(roundedRect: rect.insetBy(dx: -2, dy: -2), xRadius: 5, yRadius: 5).fill()
+            NSBezierPath(roundedRect: arrow, xRadius: 5, yRadius: 5).fill()
         }
         IssueRowCell.drawFoldArrow(
-            folded: group.folded, center: NSPoint(x: rect.midX, y: rect.midY),
+            folded: group.folded, center: NSPoint(x: arrow.midX, y: arrow.midY),
             color: NSColor(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
         )
+        var x = column.x + column.width + look.spacing
+        let titleSize = title.size()
+        let countSize = count.size()
+        let gap = (look.countGap as NSString).size(withAttributes: [.font: look.countFont]).width
+        let room = arrow.minX - look.arrowGap - countSize.width - gap - x
+        let titleWidth = min(titleSize.width, max(room, 40))
+        title.draw(in: NSRect(x: x, y: midY - titleSize.height / 2, width: titleWidth, height: titleSize.height))
+        x += titleWidth + gap
+        count.draw(at: NSPoint(x: x, y: midY - countSize.height / 2))
     }
 }
 
@@ -1342,56 +1230,72 @@ final class PlainRowView: NSTableRowView {
         set {}
     }
 
-    /// An issue that dragged issues would go under if dropped now: tinted, with a ring over the row, as a My Issues
-    /// card's page lights up for an issue dragged onto it.
+    /// An issue that dragged issues would go under if dropped now: lit up as a card is on the board, tinted and with a
+    /// ring around it (`Marks.nestTarget`).
     var isNestTarget = false {
         didSet {
             guard isNestTarget != oldValue else { return }
-            needsDisplay = true
-            ring.isHidden = !isNestTarget
-            if isNestTarget { placeRing() }
+            mark.isHidden = !isNestTarget
+            if isNestTarget { placeMark() }
         }
     }
 
-    /// Over the row's cell, which may fill itself, so the ring always shows.
-    private lazy var ring: NSView = {
-        let view = NSView()
-        view.wantsLayer = true
-        view.layer?.cornerRadius = 8
-        view.layer?.cornerCurve = .continuous
-        view.layer?.borderWidth = 1.5
+    /// Over the row's cell, which may fill itself, so that the mark always shows.
+    private lazy var mark: NestMarkView = {
+        let view = NestMarkView()
         view.isHidden = true
         return view
     }()
 
-    private func placeRing() {
-        ring.frame = bounds.insetBy(dx: IssueTable.inset, dy: 1)
-        effectiveAppearance.performAsCurrentDrawingAppearance {
-            ring.layer?.borderColor = NSColor(Theme.selectionBorder).cgColor
-        }
-        if subviews.last !== ring { addSubview(ring, positioned: .above, relativeTo: nil) }
+    /// The row's own shape is a little shorter than the row, so that the ring around it stays inside the row.
+    private func placeMark() {
+        mark.frame = bounds.insetBy(dx: IssueTable.inset - Marks.nestOutset, dy: 0)
+        if subviews.last !== mark { addSubview(mark, positioned: .above, relativeTo: nil) }
     }
 
     override func layout() {
         super.layout()
-        if isNestTarget { placeRing() }
+        if isNestTarget { placeMark() }
     }
 
-    override func viewDidChangeEffectiveAppearance() {
-        super.viewDidChangeEffectiveAppearance()
-        if isNestTarget { placeRing() }
-    }
-
-    override func drawBackground(in dirtyRect: NSRect) {
-        guard isNestTarget else { return }
-        NSColor(Theme.selectionFill).setFill()
-        NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
-    }
-
+    /// The cells paint the row; the table's own background isn't drawn.
+    override func drawBackground(in dirtyRect: NSRect) {}
     override func drawSelection(in dirtyRect: NSRect) {}
     override func drawSeparator(in dirtyRect: NSRect) {}
     /// The list lights up the issue to drop onto itself; the table's own blue marks are not drawn.
     override func drawDraggingDestinationFeedback(in dirtyRect: NSRect) {}
+}
+
+/// A row of the list lit up to take the issues dragged onto it (`Marks.nestTarget`), around the row's rounded shape.
+final class NestMarkView: NSView {
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        layerContentsRedrawPolicy = .onSetNeedsDisplay
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Not used") }
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    override func viewDidChangeEffectiveAppearance() {
+        needsDisplay = true
+    }
+
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        needsDisplay = true
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        let shape = bounds.insetBy(dx: Marks.nestOutset, dy: Marks.nestOutset)
+        context.draw(
+            Marks.nestTarget(around: shape, cornerRadius: EpicHeaderLook.highlightRadius),
+            mark: NSColor(Theme.accent).cgColor, off: NSColor(Theme.nestTint).cgColor, onColor: NSColor(Theme.onColor).cgColor
+        )
+    }
 }
 
 // MARK: - Cells

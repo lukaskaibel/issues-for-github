@@ -140,13 +140,14 @@ private struct OverviewIssueInteractions: ViewModifier {
                     .fill(selected ? Theme.accentFill : hovering || focused ? Theme.cardRowHover : .clear)
                     .padding(.vertical, 1)
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(targeted ? Theme.selectionBorder : .clear, lineWidth: 1.5)
-                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(targeted ? Theme.selectionBorder.opacity(0.14) : .clear))
-                    .padding(.vertical, 1)
-                    .allowsHitTesting(false)
-            )
+            .overlay {
+                // Lit up to take the dragged issues as its sub-issues, as a card on the board is.
+                if targeted {
+                    NestTargetMark(cornerRadius: 6)
+                        .padding(.vertical, 1)
+                        .transition(.opacity)
+                }
+            }
             .padding(.horizontal, -6)
             .contentShape(Rectangle())
             .onDrop(of: [.plainText], delegate: IssueDrop(target: item, model: model, drag: drag, targeted: $targeted))

@@ -62,14 +62,8 @@ enum PlanningGlyph {
     }
 
     static func drawEpic(in rect: CGRect, cg context: CGContext, color: Color = Theme.epic) {
-        context.saveGState()
-        defer { context.restoreGState() }
-        context.setStrokeColor(PlatformColor(color).cgColor)
-        context.setLineWidth(1.4 * rect.width / 14)
-        context.setLineJoin(.round)
-        context.setLineCap(.round)
-        context.addPath(layers(in: rect).cgPath)
-        context.strokePath()
+        let ink = PlatformColor(color).cgColor
+        context.draw(Marks.epic(in: rect), mark: ink, onColor: ink)
     }
 }
 
@@ -97,10 +91,7 @@ struct EpicIcon: View {
 
     var body: some View {
         Canvas { context, canvas in
-            context.stroke(
-                PlanningGlyph.layers(in: CGRect(origin: .zero, size: canvas)), with: .color(color),
-                style: StrokeStyle(lineWidth: 1.4 * canvas.width / 14, lineCap: .round, lineJoin: .round)
-            )
+            context.draw(Marks.epic(in: CGRect(origin: .zero, size: canvas)), mark: color)
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)

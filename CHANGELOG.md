@@ -100,6 +100,18 @@ All notable changes to this project are recorded here. The format follows
   calendar is drawn at the date's size, and as a property (inspector, peek, iPad's column, the long-press preview) a
   due date reads the same everywhere, coloured only while overdue or today. iPhone and iPad menus show milestones with
   their coloured diamonds, and their Inbox rows the issue's state before its title, as the Mac does.
+- **An epic's header is the same in every list and on every board**, on the Mac and on iPhone and iPad: the epic's icon
+  where the line down to its issues starts, its name in the type of a column's header, how many of its issues are there,
+  and at the end of the line the arrow that folds them away, always in sight and drawn like every other fold arrow.
+  Before, it came in four sizes, with its arrow in three different places. It sits a little closer to its issues than to
+  what is above it, and on the Mac it lights up under the pointer as a row does.
+- **An issue lights up the same way wherever you drop issues onto it**: a ring in the accent colour a little outside its
+  edge, over a light tint, on the Mac's boards, lists and My Issues and on iPhone and iPad's boards. Before, each place
+  had a ring of its own width and colour, and on iPhone and iPad the card also grew and took on the look of a picked card.
+- **A row dragged in the Mac's list lifts off as a card does on the board**: the lifted card's colour, round corners and
+  deep shadow, and no border. Picked rows carry the edge of a second card and how many they are, an epic's header lifts
+  off as the card its issues lift off as on the board, and held over an issue the smaller card says "Sub-issue of #9" as
+  the board's card does.
 - **Escape in an issue's title takes the edit back on iPhone and iPad too**, as on the Mac.
 - **Pickers offer the likeliest choice first.** The parent, epic, blocker, label and assignee you chose lately now come
   at the very top of their pickers, above **Remove from #…** and the current one, with the likeliest lit so `Return`

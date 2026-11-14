@@ -135,20 +135,52 @@ extension Marks {
 // MARK: - Folding
 
 extension Marks {
-    /// The arrow that folds the sub-issues under an issue in or out: to the right while they are folded in, down while
-    /// they show.
-    static func foldArrow(folded: Bool, center: CGPoint) -> [Shape] {
+    /// The arrow that folds the sub-issues under an issue in or out, or an epic's issues under its header: to the right
+    /// while they are folded in, down while they show. `scale` grows it with the text around it, as on iPhone and iPad.
+    static func foldArrow(folded: Bool, center: CGPoint, scale: CGFloat = 1) -> [Shape] {
+        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: center.x + x * scale, y: center.y + y * scale) }
         var path = Path()
         if folded {
-            path.move(to: CGPoint(x: center.x - 1.5, y: center.y - 3.5))
-            path.addLine(to: CGPoint(x: center.x + 2, y: center.y))
-            path.addLine(to: CGPoint(x: center.x - 1.5, y: center.y + 3.5))
+            path.move(to: point(-1.5, -3.5))
+            path.addLine(to: point(2, 0))
+            path.addLine(to: point(-1.5, 3.5))
         } else {
-            path.move(to: CGPoint(x: center.x - 3.5, y: center.y - 1.5))
-            path.addLine(to: CGPoint(x: center.x, y: center.y + 2))
-            path.addLine(to: CGPoint(x: center.x + 3.5, y: center.y - 1.5))
+            path.move(to: point(-3.5, -1.5))
+            path.addLine(to: point(0, 2))
+            path.addLine(to: point(3.5, -1.5))
         }
-        return [Shape(path: path, stroke: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))]
+        return [Shape(path: path, stroke: StrokeStyle(lineWidth: 1.5 * scale, lineCap: .round, lineJoin: .round))]
+    }
+}
+
+// MARK: - Epics
+
+extension Marks {
+    /// An epic's stack of layers in a square (`PlanningGlyph.layers`), stroked in a line that grows with it.
+    static func epic(in rect: CGRect) -> [Shape] {
+        [Shape(path: PlanningGlyph.layers(in: rect), stroke: StrokeStyle(lineWidth: 1.4 * rect.width / 14, lineCap: .round, lineJoin: .round))]
+    }
+}
+
+// MARK: - Dropping onto an issue
+
+extension Marks {
+    /// How far outside an issue's own shape the ring stands that lights it up to take the issues dragged onto it: far
+    /// enough to show around a dragged card held over it.
+    static let nestOutset: CGFloat = 3
+    static let nestLine: CGFloat = 2
+
+    /// An issue lit up to take the issues dragged onto it as its sub-issues, the same on every board, list and card:
+    /// a soft tint of the accent over it (the second colour, `Theme.nestTint`) and a ring in the accent around it,
+    /// `nestOutset` outside its own rounded shape `rect`.
+    static func nestTarget(around rect: CGRect, cornerRadius: CGFloat) -> [Shape] {
+        let outer = rect.insetBy(dx: -nestOutset, dy: -nestOutset)
+        let radius = cornerRadius + nestOutset
+        let ring = outer.insetBy(dx: nestLine / 2, dy: nestLine / 2)
+        return [
+            Shape(path: Path(roundedRect: outer, cornerRadius: radius, style: .continuous), ink: .off),
+            Shape(path: Path(roundedRect: ring, cornerRadius: radius - nestLine / 2, style: .continuous), stroke: StrokeStyle(lineWidth: nestLine)),
+        ]
     }
 }
 
