@@ -493,6 +493,9 @@ struct OverviewCard: View {
                     .scrollTargetLayout()
                 }
                 .scrollTargetBehavior(.paging)
+                // The ring of an issue lit up to take dropped issues (`Marks.nestTarget`) reaches a little past its
+                // row, above the first one of a page too; the card's own shape still bounds the pages beside it.
+                .scrollClipDisabled()
                 .scrollPosition(id: $pageKey)
                 .scrollIndicators(.never)
                 .onAppear { pageKey = current }
