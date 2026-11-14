@@ -711,7 +711,8 @@ enum DebugRemote {
         case "listdrop", "dragimage":
             // listdrop <number> <row>: drops the issue in the list above that row, as a drag would, with the other
             // picked ones when it is picked.
-            // dragimage <number> <path>: the card an issue's row lifts off as, as a PNG.
+            // dragimage <number> <path>: the card an issue's row lifts off as, as a PNG; for an epic's number, the card
+            // its header lifts off as.
             // dragimage <number> <path> <parent number>: the smaller card it turns into over that issue.
             var bits = argument.split(separator: " ", maxSplits: 2).map(String.init)
             let parent = bits.count == 3 ? item(bits.removeLast(), model) : nil
@@ -729,10 +730,17 @@ enum DebugRemote {
                 } else {
                     log("listdrop: \(coordinator.dropItem(item.id, above: row))")
                 }
-            } else if let row = (0..<table.numberOfRows).first(where: { coordinator.item(at: $0)?.id == item.id }),
+            } else if let row = (0..<table.numberOfRows).first(where: {
+                coordinator.item(at: $0)?.id == item.id
+                    // An epic's number: the card its issues lift off as by its header.
+                    || (table.view(atColumn: 0, row: $0, makeIfNecessary: false) as? EpicHeaderRowCell)?.shownGroup?.epic.id == item.id
+            }),
                       let image = parent.flatMap({ parent in
-                          (table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell)?.dragImage().map {
-                              IssueTable.Coordinator.nestingImage($0, under: parent, count: coordinator.picked(from: item.id)?.items.count, appearance: table.effectiveAppearance)
+                          (table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell)?.liftedContent().flatMap {
+                              LiftedImage.nesting(
+                                  $0, inset: IssueTable.inset, under: parent, count: coordinator.picked(from: item.id)?.items.count,
+                                  appearance: table.effectiveAppearance
+                              )?.image
                           }
                       }) ?? coordinator.liftedImage(row, in: table, picked: coordinator.picked(from: item.id))?.image,
                       let tiff = image.tiffRepresentation,

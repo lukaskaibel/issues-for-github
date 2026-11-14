@@ -101,7 +101,10 @@ struct BoardView: View {
                         ZStack(alignment: .topLeading) {
                             // The issue the lifted card would go under lights up beneath it.
                             if let nest = drag.target?.nest, !active.settling {
-                                NestTargetMark(frame: nest.frame, isHeader: nest.isHeader)
+                                NestTargetMark(cornerRadius: nest.isHeader ? EpicHeaderLook.highlightRadius : CardView.cornerRadius)
+                                    .frame(width: nest.frame.width, height: nest.frame.height)
+                                    .offset(x: nest.frame.minX, y: nest.frame.minY)
+                                    .transition(.opacity)
                             }
                             let nesting = model.columns.first { $0.nesting.members.contains { $0.id == active.item.id } }?.nesting
                             LiftedCard(
@@ -226,27 +229,9 @@ private struct LiftedCard: View {
             .scaleEffect(active.lifted ? 1.03 : 1)
             .rotationEffect(.degrees(active.lifted ? 1.5 + active.tilt : 0))
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: active.tilt)
-            .shadow(color: active.lifted ? Theme.shadow : .clear, radius: active.lifted ? 22 : 0, y: active.lifted ? 16 : 0)
+            .liftedShadow(active.lifted)
             .offset(x: active.location.x - active.grab.width, y: active.location.y - active.grab.height)
             .allowsHitTesting(false)
-    }
-}
-
-/// The issue a lifted card would go under if dropped now, lit up under it: tinted, with a ring, as a page of a My Issues
-/// card lights up for an issue dragged onto it.
-private struct NestTargetMark: View {
-    var frame: CGRect
-    var isHeader: Bool
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: isHeader ? 8 : CardView.cornerRadius, style: .continuous)
-        shape.fill(Theme.selectionBorder.opacity(0.14))
-            .overlay(shape.strokeBorder(Theme.selectionBorder, lineWidth: 2))
-            .frame(width: frame.width + 6, height: frame.height + 6)
-            .offset(x: frame.minX - 3, y: frame.minY - 3)
-            .allowsHitTesting(false)
-            .transition(.opacity)
-            .accessibilityHidden(true)
     }
 }
 
@@ -294,7 +279,7 @@ private struct LiftedGroup: View {
             .scaleEffect(active.lifted ? 1.03 : 1)
             .rotationEffect(.degrees(active.lifted ? 1.5 + active.tilt : 0))
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: active.tilt)
-            .shadow(color: active.lifted ? Theme.shadow : .clear, radius: active.lifted ? 22 : 0, y: active.lifted ? 16 : 0)
+            .liftedShadow(active.lifted)
             .offset(x: active.location.x - active.grab.width, y: active.location.y - active.grab.height)
             .allowsHitTesting(false)
     }
@@ -615,10 +600,10 @@ private struct ColumnTooltip: ViewModifier {
     }
 }
 
-/// Over the issues of an epic standing together in a column: the epic's icon where the line down to them starts,
-/// its name on up to three lines, how many of its issues are there, and the arrow that folds them away. A click
-/// opens the epic, one on the arrow folds its issues or shows them again, and dragging it moves them all. The
-/// column handles the clicks and the board the drag, from where the column placed the header.
+/// Over the issues of an epic standing together in a column: the header they have in every list and on every board
+/// (`EpicHeader`), its name on up to three lines. A click opens the epic, one on the arrow folds its issues or shows
+/// them again, and dragging it moves them all. The column handles the clicks and the board the drag, from where the
+/// column placed the header.
 private struct EpicGroupHeader: View {
     var group: Nesting.EpicGroup
     var width: CGFloat
@@ -626,82 +611,35 @@ private struct EpicGroupHeader: View {
     var dragging: Bool
     var measured: MeasuredHeights
 
-    /// The height of a line of its name, which the icon, the count and the arrow line up with.
-    private static let line: CGFloat = 16
-    private static let padding: CGFloat = 4
-    private static let spacing: CGFloat = 6
-    private static let arrow: CGFloat = 20
+    /// The icon stands in the gutter sub-issue cards hang in, where the line down to the epic's cards runs.
+    static let iconColumn = (x: CGFloat(0), width: CardTreeLines.indent)
+    /// The arrow ends about where the text of the cards under it does.
+    static let trailing: CGFloat = 6
+    static let lineLimit = 3
 
-    /// Where the fold arrow is in a header with this frame: at its trailing edge, centred on the first line.
+    /// Where the fold arrow is in a header with this frame.
     static func foldFrame(in frame: CGRect) -> CGRect {
-        CGRect(
-            x: frame.maxX - padding - arrow, y: frame.minY + padding + (line - arrow) / 2,
-            width: arrow, height: arrow
-        )
+        EpicHeader.foldFrame(in: frame, trailing: trailing)
     }
 
     /// How tall a header is depends on how many lines its name takes beside the count and the arrow. Until its view
     /// has been drawn, that is worked out from the name's width.
     static func measure(_ group: Nesting.EpicGroup, width: CGFloat) -> MeasuredHeights.Measure {
         MeasuredHeights.Measure(key: "header \(Int(width)) \(group.count) \(group.epic.title)") {
-            let count = MeasuredHeights.width(of: "\(group.count)", font: .monospacedDigitSystemFont(ofSize: 12, weight: .regular))
-            let name = width - (CardTreeLines.indent + spacing) - padding - 3 * spacing - 4 - arrow - count
-            let lines = MeasuredHeights.lines(of: group.epic.title, font: .systemFont(ofSize: 12, weight: .medium), width: name, limit: 3)
-            return max(line, MeasuredHeights.textHeight(lines: lines, font: .systemFont(ofSize: 12, weight: .medium))) + 2 * padding
+            EpicHeader.height(of: group, width: width, iconColumn: iconColumn, trailing: trailing, lineLimit: lineLimit)
         }
     }
 
     var body: some View {
         let pointer = dragging ? nil : hover[header: group.contentId]
-        let hovered = pointer != nil
-        let hoveringFold = pointer?.onFold ?? false
-        HStack(alignment: .top, spacing: Self.spacing) {
-            Text(group.epic.title)
-                .font(.smallMedium)
-                .foregroundStyle(Theme.text)
-                .lineLimit(3)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(minHeight: Self.line)
-            Text("\(group.count)")
-                .font(.small)
-                .monospacedDigit()
-                .foregroundStyle(Theme.textTertiary)
-                .frame(height: Self.line)
-            Spacer(minLength: 4)
-            Image(systemName: "chevron.down")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
-                .rotationEffect(.degrees(group.folded ? -90 : 0))
-                .frame(width: Self.arrow, height: Self.arrow)
-                .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(hoveringFold ? Theme.partHover : .clear))
-                .padding(.vertical, (Self.line - Self.arrow) / 2)
-                .opacity(hovered || group.folded ? 1 : 0)
-        }
-        // Room for the icon, which the Canvas behind draws.
-        .padding(.leading, CardTreeLines.indent + Self.spacing)
-        .padding(.vertical, Self.padding)
-        .padding(.trailing, Self.padding)
-        .background {
-            // The epic's icon, and the start of the line down to its issues from under the icon, in one pass.
-            Canvas { context, size in
-                if !group.folded {
-                    // On a whole device pixel, as a rectangle view is drawn.
-                    let scale = context.environment.displayScale
-                    let x = ((CardTreeLines.indent / 2 - 0.5) * scale).rounded() / scale
-                    context.fill(Path(CGRect(x: x, y: 19, width: 1, height: size.height - 19)), with: .color(Theme.treeLine))
-                }
-                let icon = CGRect(x: 2, y: Self.padding + 2, width: 12, height: 12)
-                context.stroke(
-                    PlanningGlyph.layers(in: icon), with: .color(Theme.epic),
-                    style: StrokeStyle(lineWidth: 1.4 * icon.width / 14, lineCap: .round, lineJoin: .round)
-                )
-            }
-        }
-        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(hovered && !hoveringFold ? Theme.hover : .clear))
-        .animation(Theme.quick, value: hovered)
-        // Placed as a whole: without it the name, the count and the icon each take on the hover fade themselves, so
-        // they are drawn again on every frame of it, each time waiting for the window server, and the pointer
-        // stutters over an epic's header.
+        EpicHeader(
+            group: group, iconColumn: Self.iconColumn, trailing: Self.trailing, lineLimit: Self.lineLimit,
+            highlighted: pointer != nil, hoveringFold: pointer?.onFold ?? false
+        )
+        .animation(Theme.quick, value: pointer != nil)
+        // Placed as a whole: without it the name and the count each take on the hover fade themselves, so they are
+        // drawn again on every frame of it, each time waiting for the window server, and the pointer stutters over an
+        // epic's header.
         .geometryGroup()
         .contentShape(Rectangle())
         .reportsHeight(Self.measure(group, width: width).key, to: measured)
