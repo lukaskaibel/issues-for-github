@@ -157,5 +157,70 @@ struct ListRowsTests {
         #expect(!cell.hoveringFold)
         #expect(cell.parts.isEmpty)
     }
+
+    /// A row that paints as the list's rows do, and notes what each paint covered.
+    final class PaintProbe: PaintedCell {
+        var painted: [NSRect] = []
+
+        override func draw(_ dirtyRect: NSRect) {
+            painted.append(dirtyRect)
+        }
+    }
+
+    @MainActor
+    final class ProbeSource: NSObject, NSTableViewDataSource, NSTableViewDelegate {
+        func numberOfRows(in tableView: NSTableView) -> Int { 3 }
+
+        func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+            PaintProbe()
+        }
+    }
+
+    @Test("The list's rows and headers paint themselves again when their size changes")
+    func cellsArePaintedAgainOnResize() {
+        let cells: [NSView] = [IssueRowCell(), IssueHeaderCell(), EpicHeaderRowCell()]
+        #expect(cells.allSatisfy { $0 is PaintedCell })
+    }
+
+    @Test("A row that gets wider, as the list does while the inspector slides away, is painted from edge to edge")
+    func widerRowIsPaintedWhole() throws {
+        let source = ProbeSource()
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 200), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        let table = NSTableView()
+        let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("issue"))
+        column.resizingMask = .autoresizingMask
+        table.addTableColumn(column)
+        table.headerView = nil
+        table.style = .plain
+        table.rowHeight = Theme.rowHeight
+        table.intercellSpacing = .zero
+        table.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
+        table.dataSource = source
+        table.delegate = source
+        let scroll = NSScrollView(frame: window.contentView!.bounds)
+        scroll.documentView = table
+        window.contentView = scroll
+        table.reloadData()
+        table.sizeLastColumnToFit()
+        scroll.layoutSubtreeIfNeeded()
+        // Paints what is waiting, as the next frame on screen would.
+        CATransaction.flush()
+        let cell = try #require(table.view(atColumn: 0, row: 0, makeIfNecessary: false) as? PaintProbe)
+        #expect(!cell.painted.isEmpty)
+
+        // The slide widens the list a step per frame. AppKit alone paints just the strip each step adds.
+        var width = cell.bounds.width
+        for step in [40.0, 80, 100, 60, 20] {
+            cell.painted = []
+            window.setContentSize(NSSize(width: window.contentView!.frame.width + step, height: 200))
+            scroll.layoutSubtreeIfNeeded()
+            CATransaction.flush()
+            #expect(cell.bounds.width > width)
+            width = cell.bounds.width
+            #expect(cell.painted.contains { $0.minX <= cell.bounds.minX && $0.maxX >= cell.bounds.maxX })
+        }
+    }
 }
 #endif
