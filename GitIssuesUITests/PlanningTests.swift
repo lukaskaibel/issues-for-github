@@ -154,7 +154,8 @@ final class PhonePlanningTests: AppTestCase {
         scrollTo(row)
         wait(row)
         row.press(forDuration: 1.2)
-        let milestone = labelled("Milestone", type: .button)
+        // The menu's item, by all of its label: the rows behind the menu say their milestone too.
+        let milestone = button("Milestone: 0.3")
         wait(milestone)
         milestone.tap()
         wait(button("1.0"))
@@ -163,7 +164,10 @@ final class PhonePlanningTests: AppTestCase {
         waitForLabel(element("row-#17"), containing: "Milestone: 1.0")
 
         element("row-#17").press(forDuration: 1.2)
-        button("Add to Epic…").tap()
+        wait(button("Status"))
+        let addToEpic = button("Add to Epic…")
+        scrollMenu(to: addToEpic)
+        addToEpic.tap()
         let epic = pickerRow("#43")
         wait(epic)
         epic.tap()
@@ -171,8 +175,10 @@ final class PhonePlanningTests: AppTestCase {
 
         // An epic leaves My Issues for the roadmap.
         element("row-#17").press(forDuration: 1.2)
-        wait(button("Make Epic"))
-        button("Make Epic").tap()
+        wait(button("Status"))
+        let makeEpic = button("Make Epic")
+        scrollMenu(to: makeEpic)
+        makeEpic.tap()
         waitGone(element("row-#17"))
     }
 
