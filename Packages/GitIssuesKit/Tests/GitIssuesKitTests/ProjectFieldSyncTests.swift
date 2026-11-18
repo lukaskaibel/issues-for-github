@@ -89,11 +89,10 @@ struct ProjectFieldSyncTests {
             }
         }
         try AppDatabase.migrator.migrate(queue)
-        try queue.read { db in
-            #expect(try Item.fetchOne(db, key: "P1-card")?.remoteUpdatedAt == nil)
-            #expect(try Project.fetchOne(db, key: "P1")?.remoteUpdatedAt == nil)
-            #expect(try Item.fetchOne(db, key: "P2-card")?.remoteUpdatedAt != nil)
-            #expect(try Project.fetchOne(db, key: "P2")?.remoteUpdatedAt != nil)
-        }
+        let (items, projects) = try queue.read { db in (try Item.fetchAll(db), try Project.fetchAll(db)) }
+        #expect(items.first { $0.id == "P1-card" }?.remoteUpdatedAt == nil)
+        #expect(projects.first { $0.id == "P1" }?.remoteUpdatedAt == nil)
+        #expect(items.first { $0.id == "P2-card" }?.remoteUpdatedAt != nil)
+        #expect(projects.first { $0.id == "P2" }?.remoteUpdatedAt != nil)
     }
 }
