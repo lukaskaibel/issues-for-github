@@ -39,6 +39,56 @@ final class DropOntoIssueTests: AppTestCase {
         app.staticTexts.matching(NSPredicate(format: "label == %@", text)).firstMatch
     }
 
+    /// The page of #9, whose sub-issues are, in order, #13, #28, #10, #11, #12 and #23.
+    private func openSubIssues() {
+        if isPad {
+            XCUIDevice.shared.orientation = .landscapeLeft
+            launch()
+            openPadProject("Git Issues")
+            element("card-#9").tap()
+        } else {
+            launch()
+            element("row-#9").tap()
+        }
+        wait(element("issue-title"))
+    }
+
+    func testASubIssueDroppedOntoAnotherOneGoesUnderItAndUndoTakesItBack() {
+        openSubIssues()
+        let (child, parent) = (element("sub-#28"), element("sub-#13"))
+        scrollTo(child)
+        wait(parent)
+        drag(child, onto: parent)
+        wait(notice("1 issue made a sub-issue of #13"), 15)
+        snapshot("Sub-issue dropped onto another one")
+        // It hangs under #13 now, which is folded.
+        waitGone(child)
+        waitForLabel(parent, containing: "1 of 3 sub-issues done")
+        element("notice-undo").tap()
+        wait(child)
+        waitForLabel(parent, containing: "1 of 2 sub-issues done")
+    }
+
+    func testPickedSubIssuesDroppedOntoAnotherOneGoUnderItTogether() {
+        openSubIssues()
+        let options = element("sub-options")
+        scrollTo(options)
+        options.tap()
+        wait(button("Select"))
+        button("Select").tap()
+        wait(element("sub-pick-done"))
+        let (first, second, parent) = (element("sub-#10"), element("sub-#11"), element("sub-#28"))
+        scrollTo(second)
+        first.tap()
+        second.tap()
+        wait(labelled("2 selected"))
+        drag(second, onto: parent)
+        wait(notice("2 issues made a sub-issue of #28"), 15)
+        snapshot("Picked sub-issues dropped onto another one")
+        waitGone(first)
+        waitGone(second)
+    }
+
     func testACardDroppedOntoAnotherCardBecomesItsSubIssueAndUndoTakesItBack() {
         openBoard()
         // Both stand on their own, in Todo, #17 above #25.

@@ -277,13 +277,10 @@ struct SubIssuesSection: View {
             if let detail, !subs.isEmpty {
                 let lines = model.subIssueLines(subs, in: detail)
                 let order = lines.compactMap { model.item(contentId: $0.sub.id)?.id }
-                VStack(spacing: 0) {
-                    ForEach(lines) { line in
-                        SubIssueRow(line: line, order: order)
-                    }
-                }
-                .issueRowsOnPage()
-                .animation(Theme.spring, value: lines.map(\.id))
+                IssueRowList(rows: lines.map { model.subIssueRow($0, order: order) })
+                    .issueRowsOnPage()
+                    .animation(Theme.spring, value: lines.map(\.id))
+                    .readingUnfoldedSubIssues(of: lines)
             }
         }
     }
@@ -308,78 +305,128 @@ private struct SubIssueOrderButton: View {
     }
 }
 
-/// A sub-issue in an issue's list of them, as the lists show every issue (`IssueRowView`). One with sub-issues of its
-/// own has the arrow that unfolds them under it, indented, with lines from it as in the lists. A click opens it; the
-/// checkbox, ⌘-click and Shift-click pick several, and their pickers and right-click menu then change all of them,
-/// such as moving them under another parent.
-private struct SubIssueRow: View {
+private extension View {
+    /// Unfolded, sub-issues' own sub-issues are read again each time the list shows.
+    func readingUnfoldedSubIssues(of lines: [SubIssueLine]) -> some View {
+        modifier(ReadsUnfoldedSubIssues(lines: lines))
+    }
+}
+
+private struct ReadsUnfoldedSubIssues: ViewModifier {
     @Environment(AppModel.self) private var model
-    var line: SubIssueLine
-    /// The sub-issues as listed, unfolded ones included, for Shift-click to pick a run of them.
-    var order: [String]
-    /// Whether the row names its milestone: not under its milestone's heading.
-    var showsMilestone = true
+    var lines: [SubIssueLine]
 
-    private var sub: SubIssue { line.sub }
+    func body(content: Content) -> some View {
+        let unfolded = lines.filter(\.unfolded)
+        content.task(id: unfolded.map(\.id)) {
+            for line in unfolded { await model.loadSubIssues(of: line.sub) }
+        }
+    }
+}
 
-    var body: some View {
-        let item = model.rowItem(for: sub)
-        IssueRowView(
-            row: row(item),
-            open: {
+private extension AppModel {
+    /// A sub-issue in an issue's list of them, as the lists show every issue. One with sub-issues of its own has the
+    /// arrow that unfolds them under it, indented, with lines from it as in the lists. A click opens it; the checkbox,
+    /// ⌘-click and Shift-click pick several, and their pickers and right-click menu then change all of them. Dragged
+    /// onto another issue of the page, it goes under that one, with the others picked.
+    /// - Parameters:
+    ///   - order: the sub-issues as listed, unfolded ones included, for Shift-click to pick a run of them.
+    ///   - showsMilestone: whether the row names its milestone: not under its milestone's heading.
+    func subIssueRow(_ line: SubIssueLine, order: [String], showsMilestone: Bool = true) -> IssueListRow {
+        let sub = line.sub
+        let item = rowItem(for: sub)
+        var row = item.isStandIn
+            ? issueRow(standingInFor: item, as: .subIssue, nest: line.place, nested: line.progress?.total, folded: !line.unfolded)
+            : issueRow(
+                item, selected: pickedSubIssueIds.contains(item.id), selecting: !pickedSubIssueIds.isEmpty,
+                nest: line.place, nested: line.progress?.total, folded: !line.unfolded,
+                milestone: showsMilestone ? milestoneTitle(of: item) : nil,
+                chips: fieldChips(of: item, in: item.projectId.map { .project($0) })
+            )
+        row.foldWaiting = line.waiting
+        return IssueListRow(row: row, actions: IssueRowActions(
+            open: { [self] in
                 if !item.isStandIn {
-                    model.open(item)
+                    open(item)
                 } else if let url = sub.url.flatMap(URL.init(string:)) {
                     NSWorkspace.shared.open(url)
                 }
             },
-            pick: { checkbox in
+            pick: { [self] checkbox in
                 // One the app knows only from GitHub can't be changed with the others.
-                guard !item.isStandIn else { return model.handleSubIssueClick(on: nil, in: order) }
+                guard !item.isStandIn else { return handleSubIssueClick(on: nil, in: order) }
                 if checkbox {
-                    model.toggleSubIssuePick(item)
+                    toggleSubIssuePick(item)
                     return true
                 }
-                return model.handleSubIssueClick(on: item, in: order)
+                return handleSubIssueClick(on: item, in: order)
             },
-            fold: { model.toggleSubIssues(of: sub.id) },
-            toggleClosed: { withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) } },
-            willOpenPart: { model.releaseSubIssuePicks(unlessPicked: item) },
-            menu: { [model, sub, item] in
+            fold: { [self] in toggleSubIssues(of: sub.id) },
+            toggleClosed: { [self] in withAnimation(Theme.spring) { setClosed(sub, !sub.isClosed) } },
+            willOpenPart: { [self] in releaseSubIssuePicks(unlessPicked: item) },
+            menu: { [self] in
                 // One the app has gets the same menu as its card; one known only from GitHub, its own.
-                if !item.isStandIn { return model.allItems.first { $0.id == item.id }.map { ItemMenuBuilder(model: model, item: $0).menu() } }
+                if !item.isStandIn { return allItems.first { $0.id == item.id }.map { ItemMenuBuilder(model: self, item: $0).menu() } }
                 let menu = MenuBuilder()
                 menu.item(sub.isClosed ? .reopen : .markAsDone, sub.isClosed ? "arrow.uturn.backward" : "checkmark.circle") {
-                    withAnimation(Theme.spring) { model.setClosed(sub, !sub.isClosed) }
+                    withAnimation(Theme.spring) { self.setClosed(sub, !sub.isClosed) }
                 }
-                menu.item(.removeFromParentMenuItem, "arrow.uturn.left") { model.removeFromParent(sub) }
+                menu.item(.removeFromParentMenuItem, "arrow.uturn.left") { self.removeFromParent(sub) }
                 if let url = sub.url {
                     menu.divider()
-                    menu.item(.copyLink, "link") { model.copyLink(url, for: "#\(sub.number) \(sub.title)") }
+                    menu.item(.copyLink, "link") { self.copyLink(url, for: "#\(sub.number) \(sub.title)") }
                     menu.item(.openOnGitHub, "arrow.up.right.square") {
                         if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
                     }
                 }
                 return menu.build()
             }
-        )
-        // Unfolded, its sub-issues are read again each time the list shows.
-        .task(id: line.unfolded) {
-            if line.unfolded { await model.loadSubIssues(of: sub) }
-        }
+        ))
     }
 
-    private func row(_ item: Item) -> IssueRowModel {
-        var row = item.isStandIn
-            ? model.issueRow(standingInFor: item, as: .subIssue, nest: line.place, nested: line.progress?.total, folded: !line.unfolded)
-            : model.issueRow(
-                item, selected: model.pickedSubIssueIds.contains(item.id), selecting: !model.pickedSubIssueIds.isEmpty,
-                nest: line.place, nested: line.progress?.total, folded: !line.unfolded,
-                milestone: showsMilestone ? model.milestoneTitle(of: item) : nil,
-                chips: model.fieldChips(of: item, in: item.projectId.map { .project($0) })
+    /// An issue the open one is blocked by or blocks, as the lists show every issue, with a button at its end under the
+    /// pointer that takes it off the list.
+    func linkedIssueRow(_ link: LinkedIssue, of item: Item) -> IssueListRow {
+        let linked = rowItem(for: link)
+        var row = linked.isStandIn
+            ? issueRow(standingInFor: linked, as: .relation)
+            : issueRow(
+                linked, milestone: milestoneTitle(of: linked),
+                chips: fieldChips(of: linked, in: linked.projectId.map { .project($0) })
             )
-        row.foldWaiting = line.waiting
-        return row
+        // Picking is for sub-issues.
+        row.pickable = false
+        row.removable = true
+        return IssueListRow(row: row, actions: IssueRowActions(
+            open: { [self] in
+                if !linked.isStandIn {
+                    open(linked)
+                } else if let url = link.url.flatMap(URL.init(string:)) {
+                    NSWorkspace.shared.open(url)
+                }
+            },
+            remove: { [self] in removeLink(link, of: item) },
+            menu: { [self] in
+                let menu = MenuBuilder()
+                menu.item(.removeRelationMenuItem, "xmark") { self.removeLink(link, of: item) }
+                if !linked.isStandIn, let current = allItems.first(where: { $0.id == linked.id }) {
+                    // One the app has gets its card's menu below.
+                    let card = ItemMenuBuilder(model: self, item: current).menu()
+                    menu.divider()
+                    for entry in card.items {
+                        card.removeItem(entry)
+                        menu.menu.addItem(entry)
+                    }
+                } else if let url = link.url {
+                    menu.divider()
+                    menu.item(.copyLink, "link") { self.copyLink(url, for: "\(link.displayNumber) \(link.title)") }
+                    menu.item(.openOnGitHub, "arrow.up.right.square") {
+                        if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
+                    }
+                }
+                return menu.build()
+            }
+        ))
     }
 }
 
@@ -443,13 +490,14 @@ struct EpicWorkSection: View {
                         EpicGroupHeader(item: item, group: group.group, title: group.title, count: group.subs.count)
                             .outOfIssueRows()
                         // Under its milestone's heading, a row doesn't name the milestone again.
-                        ForEach(lines.indices.contains(index) ? lines[index] : []) { line in
-                            SubIssueRow(line: line, order: order, showsMilestone: false)
-                        }
+                        IssueRowList(rows: (lines.indices.contains(index) ? lines[index] : []).map {
+                            model.subIssueRow($0, order: order, showsMilestone: false)
+                        })
                     }
                 }
                 .issueRowsOnPage()
                 .animation(Theme.spring, value: lines.map { $0.map(\.id) })
+                .readingUnfoldedSubIssues(of: Array(lines.joined()))
             }
         }
     }
@@ -532,70 +580,10 @@ private struct RelationGroup: View {
                 }
             }
             .frame(height: 32)
-            VStack(spacing: 0) {
-                ForEach(links, id: \.key) { link in
-                    LinkedIssueRow(item: item, link: link)
-                }
-            }
+            IssueRowList(rows: links.map { model.linkedIssueRow($0, of: item) })
             .issueRowsOnPage()
             .animation(Theme.spring, value: links.map(\.key))
         }
-    }
-}
-
-/// An issue the open one is blocked by or blocks, as the lists show every issue (`IssueRowView`), with a button at its
-/// end under the pointer that takes it off the list.
-private struct LinkedIssueRow: View {
-    @Environment(AppModel.self) private var model
-    var item: Item
-    var link: LinkedIssue
-
-    var body: some View {
-        let linked = model.rowItem(for: link)
-        IssueRowView(
-            row: row(linked),
-            open: {
-                if !linked.isStandIn {
-                    model.open(linked)
-                } else if let url = link.url.flatMap(URL.init(string:)) {
-                    NSWorkspace.shared.open(url)
-                }
-            },
-            remove: { model.removeLink(link, of: item) },
-            menu: { [model, link, item, linked] in
-                let menu = MenuBuilder()
-                menu.item(.removeRelationMenuItem, "xmark") { model.removeLink(link, of: item) }
-                if !linked.isStandIn, let current = model.allItems.first(where: { $0.id == linked.id }) {
-                    // One the app has gets its card's menu below.
-                    let card = ItemMenuBuilder(model: model, item: current).menu()
-                    menu.divider()
-                    for entry in card.items {
-                        card.removeItem(entry)
-                        menu.menu.addItem(entry)
-                    }
-                } else if let url = link.url {
-                    menu.divider()
-                    menu.item(.copyLink, "link") { model.copyLink(url, for: "\(link.displayNumber) \(link.title)") }
-                    menu.item(.openOnGitHub, "arrow.up.right.square") {
-                        if let parsed = URL(string: url) { NSWorkspace.shared.open(parsed) }
-                    }
-                }
-                return menu.build()
-            }
-        )
-    }
-
-    private func row(_ linked: Item) -> IssueRowModel {
-        var row = linked.isStandIn
-            ? model.issueRow(standingInFor: linked, as: .relation)
-            : model.issueRow(
-                linked, milestone: model.milestoneTitle(of: linked),
-                chips: model.fieldChips(of: linked, in: linked.projectId.map { .project($0) })
-            )
-        // Picking is for sub-issues.
-        row.pickable = false
-        row.removable = true
-        return row
     }
 }
 

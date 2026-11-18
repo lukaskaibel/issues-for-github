@@ -4,7 +4,7 @@ import SwiftUI
 
 /// What one row of issues shows, gathered up front so drawing needs no lookups. The same row stands for an issue
 /// wherever the Mac lists issues: a project's list, My Issues and All Issues, and on an issue's page its sub-issues
-/// and the issues it is blocked by or blocks (`IssueRowView`).
+/// and the issues it is blocked by or blocks (`IssueRowList`).
 struct IssueRowModel: Equatable {
     var item: Item
     var glyph: StatusGlyph
@@ -160,8 +160,30 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
         removeRect?.contains(point) ?? false
     }
 
-    /// What VoiceOver's press does: opens the issue. The list's table does that for its own rows.
+    /// What VoiceOver's press does on an issue's page: opens the issue. The main list's table does that for its rows.
     var pressAction: (() -> Void)?
+
+    /// Turns where the fold arrow goes while the sub-issues under the row are read the first time.
+    private var foldSpinner: NSProgressIndicator?
+
+    /// Where the arrow was drawn is known after drawing, so the spinner takes its place then.
+    private func placeFoldSpinner() {
+        guard row?.foldWaiting == true, let foldRect else {
+            foldSpinner?.stopAnimation(nil)
+            return
+        }
+        let spinner = foldSpinner ?? {
+            let spinner = NSProgressIndicator()
+            spinner.style = .spinning
+            spinner.controlSize = .mini
+            spinner.isDisplayedWhenStopped = false
+            addSubview(spinner)
+            foldSpinner = spinner
+            return spinner
+        }()
+        spinner.frame = NSRect(x: foldRect.midX - 8, y: foldRect.midY - 8, width: 16, height: 16)
+        spinner.startAnimation(nil)
+    }
 
     override func accessibilityPerformPress() -> Bool {
         guard let pressAction else { return super.accessibilityPerformPress() }
@@ -181,6 +203,14 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     }
 
     override var isFlipped: Bool { true }
+
+    /// The click lands on the row, so it answers as its table does: on an issue's page, one in a window in the
+    /// background acts at once.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        var view = superview
+        while let current = view, !(current is HoverTableView) { view = current.superview }
+        return view?.acceptsFirstMouse(for: event) ?? false
+    }
 
     override init(frame: NSRect) {
         super.init(frame: frame)
@@ -317,6 +347,7 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
             self.highlighted = highlighted
             needsDisplay = true
         }
+        if !row.foldWaiting { foldSpinner?.stopAnimation(nil) }
     }
 
     override func isAccessibilityElement() -> Bool { true }
@@ -428,7 +459,7 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
                 partHover.setFill()
                 NSBezierPath(roundedRect: rect.insetBy(dx: -2, dy: -2), xRadius: 5, yRadius: 5).fill()
             }
-            // While its sub-issues are read the first time, the view holding the row shows a spinner here.
+            // While its sub-issues are read the first time, the cell shows a spinner here (placeFoldSpinner).
             if !row.foldWaiting {
                 Self.drawFoldArrow(folded: row.folded, center: NSPoint(x: rect.midX, y: rect.midY), color: onAccent ? .white : NSColor(Theme.textSecondary))
             }
@@ -664,6 +695,7 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
             if dateRect.width > 0 { addToolTip(dateRect, owner: self, userData: nil) }
         }
         self.parts = parts
+        if row.foldWaiting { DispatchQueue.main.async { [weak self] in self?.placeFoldSpinner() } }
     }
 
     private var toolTipsNeedUpdate = true
@@ -842,15 +874,11 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     }
 }
 
-// MARK: - A row outside the list
+// MARK: - Rows on a page
 
-/// An issue's row where the Mac lists issues outside the list: on an issue's page, its sub-issues and the issues it is
-/// blocked by or blocks. It is the list's own row (`IssueRowCell`), and the pointer and clicks do what they do in the
-/// list: a part lights up and opens its picker, the checkbox and ⌘- or Shift-clicks pick, the arrow folds what is under
-/// it, a click elsewhere opens the issue, and a right-click shows its menu.
-struct IssueRowView: View {
-    @Environment(AppModel.self) private var model
-    var row: IssueRowModel
+/// What a row of a list on an issue's page does, where the main list asks the model: its sub-issues, an epic's work,
+/// and the issues it is blocked by or blocks.
+struct IssueRowActions {
     /// A click away from the row's parts.
     var open: () -> Void
     /// A click with ⌘ or Shift held, or one on the checkbox (`checkbox`): whether it picked the issue or let it go.
@@ -864,17 +892,12 @@ struct IssueRowView: View {
     /// The button at the end of a removable row.
     var remove: () -> Void = {}
     var menu: () -> NSMenu?
+}
 
-    var body: some View {
-        IssueRowHostView(
-            row: row, avatarVersion: model.avatarVersion,
-            actions: IssueRowHost.Actions(
-                open: open, pick: pick, fold: fold, toggleClosed: toggleClosed, willOpenPart: willOpenPart, remove: remove
-            )
-        )
-        .frame(height: Theme.rowHeight)
-        .glassContextMenu(menu)
-    }
+/// A row of a list on an issue's page.
+struct IssueListRow {
+    var row: IssueRowModel
+    var actions: IssueRowActions
 }
 
 extension View {
@@ -888,192 +911,6 @@ extension View {
     /// A heading among such rows stays in line with the page.
     func outOfIssueRows() -> some View {
         padding(.leading, IssueTable.inset + 28).padding(.trailing, IssueTable.inset)
-    }
-}
-
-private struct IssueRowHostView: NSViewRepresentable {
-    @Environment(AppModel.self) private var model
-    var row: IssueRowModel
-    var avatarVersion: Int
-    var actions: IssueRowHost.Actions
-
-    func makeNSView(context: Context) -> IssueRowHost {
-        IssueRowHost()
-    }
-
-    func updateNSView(_ host: IssueRowHost, context: Context) {
-        host.model = model
-        host.actions = actions
-        host.show(row, avatarVersion: avatarVersion)
-    }
-
-    func sizeThatFits(_ proposal: ProposedViewSize, nsView: IssueRowHost, context: Context) -> CGSize? {
-        CGSize(width: proposal.width ?? 480, height: Theme.rowHeight)
-    }
-}
-
-/// Holds a list row outside the list's table and does for it what the table does for its rows: follows the pointer
-/// over it and its parts, and acts on clicks.
-final class IssueRowHost: NSView {
-    struct Actions {
-        var open: () -> Void
-        var pick: (_ checkbox: Bool) -> Bool
-        var fold: () -> Void
-        var toggleClosed: () -> Void
-        var willOpenPart: () -> Void
-        var remove: () -> Void
-    }
-
-    weak var model: AppModel?
-    var actions = Actions(open: {}, pick: { _ in false }, fold: {}, toggleClosed: {}, willOpenPart: {}, remove: {})
-    let cell = IssueRowCell()
-    private var row: IssueRowModel?
-    private var avatarVersion = 0
-    private var hovering = false
-    private var pressed = false
-    private var tracking: NSTrackingArea?
-    /// Turns where the fold arrow goes while the sub-issues under the row are read the first time.
-    private let spinner: NSProgressIndicator = {
-        let spinner = NSProgressIndicator()
-        spinner.style = .spinning
-        spinner.controlSize = .mini
-        spinner.isDisplayedWhenStopped = false
-        return spinner
-    }()
-
-    override var isFlipped: Bool { true }
-
-    override init(frame: NSRect) {
-        super.init(frame: frame)
-        cell.frame = bounds
-        cell.autoresizingMask = [.width, .height]
-        addSubview(cell)
-        addSubview(spinner)
-        cell.pressAction = { [weak self] in self?.actions.open() }
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError("Not used") }
-
-    func show(_ row: IssueRowModel, avatarVersion: Int) {
-        cell.model = model
-        if row.standIn != self.row?.standIn || row.item.isClosed != self.row?.item.isClosed {
-            // A sub-issue known only from GitHub is closed or opened again from its row, also with VoiceOver.
-            cell.setAccessibilityCustomActions(row.standIn == .subIssue ? [
-                NSAccessibilityCustomAction(name: String(localized: row.item.isClosed ? .reopenSubIssue : .markSubIssueAsDone)) { [weak self] in
-                    self?.actions.toggleClosed()
-                    return true
-                },
-            ] : [])
-        }
-        self.row = row
-        cell.configure(row, highlighted: hovering)
-        if avatarVersion != self.avatarVersion {
-            self.avatarVersion = avatarVersion
-            cell.needsDisplay = true
-        }
-        placeSpinner()
-    }
-
-    /// The row and its parts take their clicks here, not in the row's own view.
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        frame.contains(point) ? self : nil
-    }
-
-    /// A click in a window in the background acts at once, as on the page's other buttons.
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
-        true
-    }
-
-    override func layout() {
-        super.layout()
-        placeSpinner()
-    }
-
-    private func placeSpinner() {
-        guard let row, row.foldWaiting else {
-            spinner.stopAnimation(nil)
-            return
-        }
-        // The fold arrow's place is known once the row has been drawn at this width.
-        cell.displayIfNeeded()
-        guard let fold = cell.foldRect else { return }
-        spinner.frame = NSRect(x: fold.midX - 8, y: fold.midY - 8, width: 16, height: 16)
-        spinner.startAnimation(nil)
-    }
-
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        if let tracking { removeTrackingArea(tracking) }
-        let area = NSTrackingArea(
-            rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
-            owner: self, userInfo: nil
-        )
-        addTrackingArea(area)
-        tracking = area
-    }
-
-    override func mouseEntered(with event: NSEvent) {
-        point(at: event)
-    }
-
-    override func mouseMoved(with event: NSEvent) {
-        point(at: event)
-    }
-
-    override func mouseExited(with event: NSEvent) {
-        hovering = false
-        cell.hoveredPart = nil
-        cell.hoveringFold = false
-        cell.hoveringRemove = false
-        if let row { cell.configure(row, highlighted: false) }
-    }
-
-    /// Lights up the row, and the part under the pointer, as the list does.
-    private func point(at event: NSEvent) {
-        let local = cell.convert(event.locationInWindow, from: nil)
-        hovering = true
-        if let row { cell.configure(row, highlighted: true) }
-        cell.hoveredPart = cell.part(at: local)?.kind
-        cell.hoveringFold = cell.isOnFold(local)
-        cell.hoveringRemove = cell.isOnRemove(local)
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        pressed = true
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        guard pressed else { return }
-        pressed = false
-        let local = cell.convert(event.locationInWindow, from: nil)
-        guard cell.bounds.contains(local), let row, let model else { return }
-        // In the order the list takes them: picking first, then the checkbox, the arrow, the parts, and the issue.
-        if actions.pick(false) { return }
-        if row.pickable, cell.checkboxRect.contains(local) {
-            _ = actions.pick(true)
-            return
-        }
-        if cell.isOnFold(local) {
-            actions.fold()
-            return
-        }
-        if cell.isOnRemove(local) {
-            actions.remove()
-            return
-        }
-        if let part = cell.part(at: local) {
-            if !row.editable {
-                actions.toggleClosed()
-                return
-            }
-            actions.willOpenPart()
-            Dropdown.show(below: part.rect, in: cell, model: model) { close in
-                ItemPicker(kind: part.kind, itemId: row.item.id, close: close)
-            }
-            return
-        }
-        actions.open()
     }
 }
 #endif

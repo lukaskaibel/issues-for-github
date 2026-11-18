@@ -130,7 +130,8 @@ Descriptions are Markdown, edited in place: click and type. It types like a note
 bullet and `- []` a checkbox, and a style's marks are kept and deleted as a pair; a change of style eases in. Tab and
 ↓ go from the title into the description, and ↑ at its top goes back. Sub-issues come
 with a progress bar, the most urgent first and the done ones last, as rows of the list, whose parts open their
-pickers and whose checkbox picks several, and the plus beside them adds a new one or an issue that exists already. A
+pickers and whose checkbox picks several, and the plus beside them adds a new one or an issue that exists already.
+Drag one, or several picked ones, onto another issue on the page to put them under it. A
 sub-issue with sub-issues of its own says how many of them are done, and the arrow beside it unfolds them under it,
 level by level, as a tree. What blocks the issue and what it blocks are listed below, as rows too, with the × to take
 one off where the checkbox stands. A blocked
@@ -200,7 +201,7 @@ labels, `D` due date, `I` assign to me.
 The list groups issues by status. Each header stays pinned while you scroll through its section and folds it with
 a click. Drag an issue up or down to give it a new place, or into another section to change its status, as on the
 board; drop it on the middle of another issue, which lights up, to make it that issue's sub-issue. A row shows an
-issue as its card does, labels as a dot and a name and the milestone in grey, and it is the same row wherever issues
+issue as its card does, labels as a dot and a name and the milestone in grey, and it is the same list wherever issues
 are listed: in an issue's sub-issues and the issues it blocks or is blocked by too. The app follows the system
 appearance, or stays light or dark if you prefer.
 
@@ -370,7 +371,8 @@ The interface uses the system's own parts.
   styles' marks stay hidden, as in Notes: a tap at the end of bold text types on in bold, and Delete takes the letter
   you see. The properties are glass chips under the title, the
   sub-issues rows as in the lists (by priority, or another order from the "…" beside its plus; the arrow beside one with
-  sub-issues of its own unfolds them under it), the comments a conversation, and the comment field stays at the bottom
+  sub-issues of its own unfolds them under it; touch and hold one and drop it onto another to put it under that one),
+  the comments a conversation, and the comment field stays at the bottom
   as in Messages. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
   unfolded ones too, then move them all under another parent with the bar at the bottom, or change their status,
   priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its cards on
@@ -788,6 +790,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap at the end of bold text | Type on in bold: on the touch keyboard its stars stay hidden, and Delete takes the letter you see and keeps the bold |
 | Tap a checkbox, a link, a table or a diagram in a description | Tick it, open it, or edit its source |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
+| Touch and hold a sub-issue on an issue's page, then drop it onto another one | Put it, with any others picked, under that one |
 | Touch and hold a card, then hold it a moment over the middle of another card | That card lights up: let go to make the dragged issue its sub-issue. It keeps its status, and the notice that says so undoes it. Over a card's top or bottom edge it goes above or below that card instead |
 | "…" in All Issues | Show it as a board or a list (on a wide iPad, the switch beside its name); on the board, the hidden columns, a tap away from coming back |
 | "…" over a column of All Issues' board | Move it left or right, or hide it, on that device |

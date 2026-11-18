@@ -87,6 +87,14 @@ extension AppModel {
         ))
     }
 
+    /// What a drag that starts on the sub-issue `id` on an issue's page carries: it, or all those picked there when it is
+    /// one of several.
+    func draggedSubIssues(from id: String) -> [Item] {
+        guard let item = item(id: id) else { return [] }
+        let picked = pickedSubIssues
+        return picked.count > 1 && picked.contains { $0.id == id } ? picked : [item]
+    }
+
     /// Whether you may change an issue's parent or sub-issues here: on a board you can only read you can't, as you
     /// can't move its cards. An issue on none of your boards GitHub decides about.
     func canChangeRelations(of item: Item) -> Bool {

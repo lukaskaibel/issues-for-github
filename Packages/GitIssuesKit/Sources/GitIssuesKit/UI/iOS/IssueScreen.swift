@@ -1304,6 +1304,10 @@ private struct MobileSubIssueRows: View {
     var order: [String]
     /// Whether the rows name their milestones: not under a milestone's heading.
     var showsMilestone = true
+    /// The issue the dragged ones would go under if let go now, which lights up.
+    @State private var dropTarget: String?
+    /// The issues being dragged over these rows, which fade.
+    @State private var carried: Set<String> = []
 
     var body: some View {
         let ids = lines.map { model.item(contentId: $0.sub.id)?.id }
@@ -1311,10 +1315,118 @@ private struct MobileSubIssueRows: View {
             MobileSubIssueRow(
                 line: line, parent: parent, order: order, showsMilestone: showsMilestone,
                 above: index > 0 ? ids[index - 1] : nil, below: index + 1 < ids.count ? ids[index + 1] : nil,
-                last: index == lines.count - 1
+                last: index == lines.count - 1, dropTarget: $dropTarget, carried: $carried
             )
         }
         .issueRowsOnPage()
+        // A tick as a row lights up to take the dragged issues under it.
+        .sensoryFeedback(trigger: dropTarget) { _, new in new == nil ? nil : .selection }
+    }
+}
+
+/// Lets a sub-issue be lifted off its row: touch and hold, then drag. A picked one brings the others picked along.
+private struct SubIssueLift: ViewModifier {
+    @Environment(AppModel.self) private var model
+    /// Nil for a row that stays, as one known only from GitHub.
+    var item: Item?
+
+    func body(content: Content) -> some View {
+        if let item {
+            content
+                .onDrag {
+                    CardDragMark.lifted = item.id
+                    return CardDragMark.provider(id: item.id, text: item.url ?? "\(item.displayNumber) \(item.title)")
+                } preview: {
+                    SubIssueLiftPreview(item: item, count: model.draggedSubIssues(from: item.id).count)
+                }
+        } else {
+            content
+        }
+    }
+}
+
+/// The issue under the finger while it is dragged: its number and title, and how many issues the drag carries.
+private struct SubIssueLiftPreview: View {
+    var item: Item
+    var count: Int
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(item.displayNumber).font(.small).monospacedDigit().foregroundStyle(Theme.textTertiary)
+            Text(item.title).font(.smallMedium).foregroundStyle(Theme.text).lineLimit(1)
+            Spacer(minLength: 0)
+            if count > 1 {
+                Text("\(count)")
+                    .font(.tinySemibold)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.onColor)
+                    .padding(.horizontal, 7)
+                    .frame(height: 18)
+                    .background(Capsule().fill(Theme.accent))
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(width: 280, height: 44)
+        .background(Theme.panel, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+}
+
+/// Takes issues let go over a row: they become its sub-issues, wherever on the row, since these lists have no order of
+/// their own to drop into.
+private struct SubIssueRowDrop: DropDelegate {
+    var model: AppModel
+    /// The row's issue; nil for one known only from GitHub, which takes none.
+    var target: Item?
+    @Binding var dropTarget: String?
+    @Binding var carried: Set<String>
+
+    private var dragged: [Item] {
+        MainActor.assumeIsolated { CardDragMark.lifted.map(model.draggedSubIssues(from:)) ?? [] }
+    }
+
+    private var canTake: Bool {
+        guard let target else { return false }
+        let dragged = dragged
+        return MainActor.assumeIsolated { model.canNest(dragged, under: target) }
+    }
+
+    func validateDrop(info: DropInfo) -> Bool {
+        CardDragMark.isCard(info)
+    }
+
+    private func update() {
+        let ids = Set(dragged.map(\.id))
+        if carried != ids { carried = ids }
+        let lit = canTake ? target?.id : nil
+        if lit != nil, dropTarget != lit { dropTarget = lit }
+    }
+
+    func dropEntered(info: DropInfo) {
+        update()
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        update()
+        // Going under an issue adds to what is there, which the dragged row's badge says with a plus.
+        return DropProposal(operation: canTake ? .copy : .forbidden)
+    }
+
+    func dropExited(info: DropInfo) {
+        if dropTarget == target?.id { dropTarget = nil }
+        if dropTarget == nil { carried = [] }
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        dropTarget = nil
+        carried = []
+        guard canTake, let target else { return false }
+        CardDragMark.loadId(info) { id in
+            MainActor.assumeIsolated {
+                guard let id else { return }
+                model.nest(model.draggedSubIssues(from: id), under: target)
+            }
+        }
+        return true
     }
 }
 
@@ -1350,6 +1462,8 @@ private struct MobileSubIssueRow: View {
     var below: String?
     /// The last row under its heading, with no hairline under it.
     var last = false
+    @Binding var dropTarget: String?
+    @Binding var carried: Set<String>
     /// The keys held as the row was last touched or clicked.
     @State private var keys: UIKeyModifierFlags = []
 
@@ -1395,6 +1509,21 @@ private struct MobileSubIssueRow: View {
         .task(id: line.unfolded) {
             if line.unfolded { await model.loadSubIssues(of: sub) }
         }
+        .opacity(carried.contains(item.id) ? 0.35 : 1)
+        // Lit up, as a card on the board is, while the dragged issues would go under it.
+        .overlay {
+            if dropTarget == item.id {
+                NestTargetMark(cornerRadius: 10)
+                    .padding(.leading, -IssueRow.highlightOutset)
+                    .padding(.trailing, IssueRow.pageOverhang - IssueRow.highlightOutset)
+            }
+        }
+        .zIndex(dropTarget == item.id ? 1 : 0)
+        .animation(Theme.quick, value: dropTarget == item.id)
+        .modifier(SubIssueLift(item: boardItem.flatMap { model.canNestSomewhere($0) ? $0 : nil }))
+        .onDrop(of: [.plainText, .url], delegate: SubIssueRowDrop(
+            model: model, target: boardItem, dropTarget: $dropTarget, carried: $carried
+        ))
         if let boardItem {
             row.contextMenu {
                 ItemMenuContent(item: boardItem, onSelect: pickable && !picking ? { select(boardItem) } : nil) {

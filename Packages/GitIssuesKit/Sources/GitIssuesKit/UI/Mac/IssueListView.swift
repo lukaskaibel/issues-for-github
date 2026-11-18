@@ -82,6 +82,7 @@ struct IssueListView: View {
                 // My Issues mixes projects, so there is no one order to put an issue into; there an issue only goes
                 // under another one. All Issues takes issues to a status, as its board does.
                 canMoveRows: canEdit,
+                isCovered: model.openItem != nil,
                 focusedId: model.focusedItemId,
                 focusScrollToken: model.focusScrollToken,
                 avatarVersion: model.avatarVersion,
