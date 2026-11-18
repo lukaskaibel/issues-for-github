@@ -163,6 +163,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **A new issue always finds a repository.** On a project with no repository yet, the new issue form left the
+  repository and **Create issue** switched off, and on the Mac it didn't say why. Now you choose one of your
+  repositories right there, on Mac, iPhone and iPad: the issue is created in it and added to the project, which knows
+  that repository from then on. While the project is still loading, the form says so and fills in the repository by
+  itself, also in a draft you come back to. On the Mac, moving a new issue to a project with no repository no longer
+  leaves a **Create issue** that does nothing.
 - **`⌘⇧Z` no longer undoes an archived notification** in the Mac's Inbox: it is Redo now.
 - **A label recoloured or renamed on GitHub changes in the app too**, on every card and row, within a minute. GitHub
   doesn't count that as a change of the issues, so they kept the old colour until something else about them changed.

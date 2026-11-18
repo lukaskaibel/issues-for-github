@@ -1479,6 +1479,12 @@ public actor SyncEngine {
         return try await api.repoMeta(repoId: repoId)
     }
 
+    /// The repositories you can open issues in, for a new issue on a board that has none yet.
+    public func yourRepositories() async throws -> [RepoRef] {
+        if isDemo { return DemoData.yourRepositories }
+        return try await api.viewerRepositories()
+    }
+
     /// Labels and assignable people of a repository, for the pickers. Cached for ten minutes.
     public func loadRepoMeta(projectId: String?, repoId: String, force: Bool = false) async throws {
         guard !isDemo else { return }
