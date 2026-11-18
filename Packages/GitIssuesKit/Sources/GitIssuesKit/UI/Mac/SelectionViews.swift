@@ -223,6 +223,7 @@ struct PeekPanel: View {
         .glassPanel(in: Self.shape)
         // A click on the panel's empty parts stays on it, and doesn't reach the dimmed window, which would close it.
         .contentShape(Self.shape)
+        .opensIssueLinks(of: item, in: model) { model.open($0) }
         // A right-click on the peek is about its issue: the issue's menu, as on its card, never the menu of the card or
         // line under the peek. Its description keeps the menu of text, to copy from.
         .floatingContextMenu { [model, id = item.id] in

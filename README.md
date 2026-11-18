@@ -371,7 +371,7 @@ The interface uses the system's own parts.
   Format panel); on its left, buttons come in for what the caret is in: its style, which a tap takes off, the line's
   checkbox, moving a list item in or out, and opening a link. On the touch keyboard the stars of bold and the other
   styles' marks stay hidden, as in Notes: a tap at the end of bold text types on in bold, and Delete takes the letter
-  you see. The properties are glass chips under the title, the
+  you see. A link to another issue the app has opens that issue. The properties are glass chips under the title, the
   sub-issues rows as in the lists (by priority, or another order from the "…" beside its plus; the arrow beside one with
   sub-issues of its own unfolds them under it), the comments a conversation, and the comment field stays at the bottom
   as in Messages, showing `⌘↵` beside its button while you write with a keyboard attached. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
@@ -708,8 +708,9 @@ A view of one iteration has the cycle over its issues; the arrows beside it show
 filter until you save it. On a roadmap view's timeline, click a group to fold it and an issue's name to open it;
 **Display** switches between timeline, board and list.
 
-A description is drawn as on GitHub and edited right there. Click a checkbox to tick it, a link to open it, and
-anywhere else to type: the Markdown of what the caret is in shows faintly beside it. Click into a table, a diagram or a
+A description is drawn as on GitHub and edited right there. Click a checkbox to tick it, a link to open it (one to
+another issue the app has opens that issue here, in comments too), and anywhere else to type: the Markdown of what the
+caret is in shows faintly beside it. Click into a table, a diagram or a
 formula to edit its source, with the diagram or formula drawn under it as you type; when the caret leaves, it is drawn
 again. The pencil after a link changes its address, and the button in the corner of a code block copies the code.
 `Esc` or `⌘↵` leaves the description, which saves it; it is also saved a moment after you stop typing.

@@ -46,6 +46,12 @@ extension AppModel {
     func rowItem(for link: LinkedIssue) -> Item {
         item(contentId: link.id) ?? Item(standingInFor: link)
     }
+
+    /// The issue a link in the description or a comment of `page` leads to, if the app has it.
+    func issue(linkedBy url: URL, from page: Item) -> Item? {
+        guard let issue = GitHubIssueLink(url)?.issue(in: allItems, from: page) else { return nil }
+        return issue.contentId.flatMap(localItem(contentId:)) ?? issue
+    }
 }
 
 extension AppModel {
