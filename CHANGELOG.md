@@ -8,6 +8,16 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Undo and redo for what you do in the app.** `⌘Z` takes back the last change and `⌘⇧Z` brings it back, step by step,
+  on the Mac and on an iPad with a keyboard, and **Edit › Undo** and **Redo** name what they are about, such as **Undo
+  Change Status**. It works for an issue's status, priority, due date and project fields, its place on the board, title
+  and description, open or closed, assignees, labels, parent, blockers, milestone and epic; what you changed on several
+  picked issues at once is one step. It also takes back changes to a milestone, a board's columns (order, name, colour,
+  one added, an empty one deleted), a view's name, a project hidden from the sidebar, and in the Inbox marking read or
+  unread, snoozing, and for its few seconds archiving or unsubscribing. A short message says what happened. Undoing is a
+  change like any other: it reaches GitHub the same way, also after being offline. While you type, the keys go on
+  undoing your typing. A description you keep writing is one step. New issues, comments, deleted issues and issues put
+  on a board can't be taken back this way.
 - **Make a status where you pick one.** Type a name the board has no status of into any status picker, on the
   Mac (the dropdown, `S`, the right-click menu, `⌘K` and the new issue) or on iPhone and iPad (the Status sheet, and
   **New Status…** when you touch and hold an issue), and **Create status “…”** makes it in the project's Status field
@@ -134,6 +144,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **`⌘⇧Z` no longer undoes an archived notification** in the Mac's Inbox: it is Redo now.
 - **A third assignee no longer runs under the date** in a row of the Mac's list.
 - **An issue closed as a duplicate shows as canceled everywhere**, also when it is on none of your boards.
 - **A picked notification in the Mac's Inbox keeps the check of a done issue visible.**
