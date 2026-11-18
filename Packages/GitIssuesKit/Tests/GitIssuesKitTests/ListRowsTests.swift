@@ -176,6 +176,40 @@ struct ListRowsTests {
         }
     }
 
+    /// Paints a cell at a row's size, which is when it places its parts.
+    private static func paint(_ cell: NSView) throws {
+        cell.frame = NSRect(x: 0, y: 0, width: 900, height: Theme.rowHeight)
+        let bitmap = try #require(cell.bitmapImageRepForCachingDisplay(in: cell.bounds))
+        cell.cacheDisplay(in: cell.bounds, to: bitmap)
+    }
+
+    @Test("A sub-issue moves in whole: its priority and status stand one step further in than its parent's")
+    func subIssueMovesInWhole() throws {
+        func columns(_ nest: Nesting.Place) throws -> (priority: CGFloat, status: CGFloat) {
+            var row = Self.row(1)
+            row.nest = nest
+            let cell = IssueRowCell()
+            cell.configure(row, highlighted: false)
+            try Self.paint(cell)
+            let priority = try #require(cell.parts.first { $0.kind == .priority })
+            let status = try #require(cell.parts.first { $0.kind == .status })
+            return (priority.rect.minX, status.rect.minX)
+        }
+        let parent = try columns(Nesting.Place())
+        let child = try columns(Nesting.Place(depth: 1, continues: [false]))
+        #expect(parent.priority == IssueRowCell.firstColumn)
+        #expect(child.priority == parent.priority + IssueRowCell.indent)
+        #expect(child.status == parent.status + IssueRowCell.indent)
+    }
+
+    @Test("An epic's header stands in the middle of its row, and so of the highlight under the pointer")
+    func epicHeaderIsCentredInItsRow() throws {
+        let cell = EpicHeaderRowCell()
+        cell.configure(Nesting.EpicGroup(epic: Self.row(1).item, count: 2, folded: false))
+        try Self.paint(cell)
+        #expect(try #require(cell.foldRect).midY == cell.bounds.midY)
+    }
+
     @Test("The list's rows and headers paint themselves again when their size changes")
     func cellsArePaintedAgainOnResize() {
         let cells: [NSView] = [IssueRowCell(), IssueHeaderCell(), EpicHeaderRowCell()]

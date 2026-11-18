@@ -81,6 +81,11 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **Sub-issues in a Mac list are indented as a whole.** A sub-issue's priority and number now move in with its status
+  and title, right of the line from its parent, so a row shows that it belongs there from its first icon, in lists and
+  among an issue's sub-issues. An epic's icon stands at the start of its row, where the line down to its issues begins,
+  with no empty space before it, and its name lines up with their priorities. Under the pointer the epic's name stands
+  in the middle of the grey highlight.
 - **An issue looks the same wherever it is listed.** On an issue's page, its sub-issues, an epic's issues and the
   issues it is blocked by or blocks are now the rows the lists show, on the Mac and on iPhone and iPad: priority,
   number, status, title, sub-issues, the blocker's flag, labels, milestone, due date and people, in the list's order,
