@@ -474,6 +474,8 @@ public final class AppModel {
     /// The app's main window, to tell it apart from popovers and the settings window.
     @ObservationIgnored weak var mainWindow: NSWindow?
     @ObservationIgnored var keyMonitorToken: Any?
+    /// The press on the trackpad going on now, which may turn into a peek.
+    @ObservationIgnored var deepPress = DeepPress()
     /// The start of a two-finger swipe, held back until it is clear whether it goes back or forward or scrolls.
     @ObservationIgnored var pendingSwipe: PendingSwipe?
     /// The timeline's viewport, read when a gesture starts without invalidating its drawing on each scroll tick.

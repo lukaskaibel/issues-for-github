@@ -119,9 +119,9 @@ struct OverviewRow: View {
     }
 }
 
-/// What every issue in the overview does: the pointer and the keyboard focus light it up, a click opens it (⌘ and
-/// Shift pick), a right-click has its menu, and it can be dragged onto another column's icon of its card, or onto
-/// another issue to go under it.
+/// What every issue in the overview does: the pointer and the keyboard focus light it up, the peek marks it, a click
+/// opens it (⌘ and Shift pick), a right-click has its menu, and it can be dragged onto another column's icon of its
+/// card, or onto another issue to go under it.
 private struct OverviewIssueInteractions: ViewModifier {
     @Environment(AppModel.self) private var model
     @Environment(OverviewDrag.self) private var drag
@@ -138,6 +138,7 @@ private struct OverviewIssueInteractions: ViewModifier {
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(selected ? Theme.accentFill : hovering || focused ? Theme.cardRowHover : .clear)
+                    .overlay { if model.isPeeked(item.id) { PeekMark(cornerRadius: 6, onAccent: selected) } }
                     .padding(.vertical, 1)
             )
             .overlay {

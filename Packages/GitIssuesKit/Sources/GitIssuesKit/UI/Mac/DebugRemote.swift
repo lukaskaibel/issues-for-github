@@ -472,6 +472,12 @@ enum DebugRemote {
             // app's own handling of scrolls (and its swipe to go back or forward).
             let numbers = argument.split(separator: " ").compactMap { Double($0) }
             if numbers.count == 3 { horizontalScroll(at: CGPoint(x: numbers[0], y: numbers[1]), by: numbers[2], model: model) }
+        case "deeppress":
+            // deeppress <x> <y> [number]: a press at the point that goes on to a deep press, then lets go, through the
+            // event queue. With a number, that issue counts as the one under the pointer, as a hand would have it.
+            let bits = argument.split(separator: " ").map(String.init)
+            guard bits.count >= 2, let x = Double(bits[0]), let y = Double(bits[1]) else { return }
+            deepPress(at: CGPoint(x: x, y: y), over: bits.count > 2 ? item(bits[2], model) : nil, model: model)
         case "click", "rightclick", "clickmove":
             // click|rightclick <x> <y> in points from the window's top-left corner. clickmove: a click after which the
             // pointer moves on a point, as it does on a trackpad.
@@ -1388,9 +1394,10 @@ enum DebugRemote {
     private static func renderCards(model: AppModel, folder: String) {
         let dark = NSApp.effectiveAppearance.isDark
         let cards = model.columns.flatMap { column in column.items.map { (column, $0) } }.prefix(60)
-        struct Look { var name: String; var highlighted = false; var selected = false; var lifted = false; var part: PickerKind?; var fold = false }
+        struct Look { var name: String; var highlighted = false; var selected = false; var peeked = false; var lifted = false; var part: PickerKind?; var fold = false }
         var looks = [Look(name: "plain"), Look(name: "hover", highlighted: true), Look(name: "selected", selected: true),
-                     Look(name: "selected-hover", highlighted: true, selected: true), Look(name: "lifted", lifted: true),
+                     Look(name: "selected-hover", highlighted: true, selected: true), Look(name: "peeked", peeked: true),
+                     Look(name: "selected-peeked", selected: true, peeked: true), Look(name: "lifted", lifted: true),
                      Look(name: "fold", highlighted: true, fold: true)]
         for kind in [PickerKind.priority, .labels, .subIssues, .assignees, .dueDate, .milestone, .blockedBy, .parent, .epic] {
             looks.append(Look(name: "part-\(kind)", highlighted: true, part: kind))
@@ -1400,7 +1407,7 @@ enum DebugRemote {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Array(cards), id: \.1.id) { column, item in
                         CardView(card: model.cardModel(for: item, in: column.nesting), width: 232, highlighted: look.highlighted,
-                                 selected: look.selected, lifted: look.lifted, avatarVersion: model.avatarVersion,
+                                 selected: look.selected, peeked: look.peeked, lifted: look.lifted, avatarVersion: model.avatarVersion,
                                  hoveredPart: look.part, hoveringFold: look.fold)
                     }
                 }
@@ -1547,6 +1554,39 @@ enum DebugRemote {
             if let ended = scroll(0, phase: 4) { scrollView.scrollWheel(with: ended) }
             try? await Task.sleep(for: .milliseconds(600))
             log("vscroll done: y=\(Int(scrollView.contentView.bounds.minY))")
+        }
+    }
+
+    /// A press event as a Force Touch trackpad sends it. AppKit has no way to make one, so it comes from a gesture
+    /// event of the kind pressure arrives as; the numbers are the fields AppKit reads it from.
+    private static func pressureEvent(stage: Int64) -> NSEvent? {
+        guard let event = CGEvent(source: nil), let type = CGEventType(rawValue: 29),
+              let kind = CGEventField(rawValue: 110), let stageField = CGEventField(rawValue: 143) else { return nil }
+        event.type = type
+        event.setIntegerValueField(kind, value: 32)
+        event.setIntegerValueField(stageField, value: stage)
+        return NSEvent(cgEvent: event)
+    }
+
+    private static func deepPress(at point: CGPoint, over item: Item?, model: AppModel) {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
+              let content = window.contentView else { return }
+        let location = NSPoint(x: point.x, y: content.bounds.height - point.y)
+        func mouse(_ type: NSEvent.EventType) -> NSEvent? {
+            NSEvent.mouseEvent(with: type, location: location, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                               windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1)
+        }
+        Task { @MainActor in
+            if let down = mouse(.leftMouseDown) { NSApp.postEvent(down, atStart: false) }
+            try? await Task.sleep(for: .milliseconds(80))
+            if let item { model.hoveredItemId = item.id }
+            for stage: Int64 in [1, 2] {
+                if let press = pressureEvent(stage: stage) { NSApp.postEvent(press, atStart: false) }
+                try? await Task.sleep(for: .milliseconds(80))
+            }
+            if let up = mouse(.leftMouseUp) { NSApp.postEvent(up, atStart: false) }
+            try? await Task.sleep(for: .milliseconds(400))
+            log("deeppress: peek=\(model.peekItem?.displayNumber ?? "none") open=\(model.openItem?.displayNumber ?? "none")")
         }
     }
 

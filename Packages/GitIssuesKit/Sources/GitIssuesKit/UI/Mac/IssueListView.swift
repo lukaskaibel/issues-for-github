@@ -64,6 +64,7 @@ struct IssueListView: View {
                                     projectTitle: showsProject ? place(of: item, groupsByProject: groupsByProject) : nil,
                                     selected: model.isSelected(item.id),
                                     selecting: !model.selectedIds.isEmpty,
+                                    peeked: model.isPeeked(item.id),
                                     nest: section.nesting.place(of: item.id),
                                     nested: section.nesting.nestedCounts[item.id],
                                     folded: section.nesting.folded.contains(item.id),

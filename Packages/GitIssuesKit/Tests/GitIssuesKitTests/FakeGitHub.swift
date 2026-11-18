@@ -242,6 +242,10 @@ final class FakeGitHub: @unchecked Sendable {
                 let name = variables["name"] as? String ?? ""
                 log.append("label \(name)")
                 data = ["node": ["label": label(named: name).map { $0 as Any } ?? NSNull()]]
+            } else if query.contains("... on Label {") {
+                let ids = variables["ids"] as? [String] ?? []
+                log.append("labels \(ids.joined(separator: ", "))")
+                data = ["nodes": ids.map { id -> Any in labels.first { $0["id"] as? String == id } ?? NSNull() }]
             } else if query.contains("addLabelsToLabelable(") {
                 log.append("add labels \((variables["ids"] as? [String] ?? []).joined(separator: ", "))")
                 data = ["addLabelsToLabelable": ["clientMutationId": NSNull()]]

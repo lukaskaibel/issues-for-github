@@ -63,7 +63,7 @@ GitHub Projects, issues, sub-issues, labels, assignees and comments, and stores 
 
 ## A quick tour
 
-The window is built the way Mail and Notes are: a sidebar, a toolbar with the page's title and its buttons, the
+The window is built the way Mail and Notes are: a sidebar, a toolbar with New Issue and the page's buttons, the
 details of an issue in an inspector beside it, and Liquid Glass. What you click works the way Linear does: a status,
 an assignee or a label opens its picker right where you clicked, ready to type in, and closes when you pick.
 
@@ -179,7 +179,7 @@ them itself, and leaves out the ones you assigned yourself to in the app.
 
 ### Keyboard first
 
-⌘K, or the magnifying glass in the toolbar, opens the command palette: every action, and a search across your issues.
+⌘K, or Search at the top of the sidebar, opens the command palette: every action, and a search across your issues.
 Single keys act on the issue you hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `T` type,
 `L` labels, `D` due date, `I` assign to me.
 
@@ -200,8 +200,10 @@ Single keys act on the issue you hover or reach with the arrow keys: `S` status,
 The list groups issues by status. Each header stays pinned while you scroll through its section and folds it with
 a click. Drag an issue up or down to give it a new place, or into another section to change its status, as on the
 board; drop it on the middle of another issue, which lights up, to make it that issue's sub-issue. A row shows an
-issue as its card does, its type and labels first among the tags and the milestone in grey, and it is the same row wherever issues
-are listed: in an issue's sub-issues and the issues it blocks or is blocked by too. The app follows the system
+issue as its card does, its type first among the tags, labels as a dot and a name and the milestone in grey, and it is
+the same row wherever issues
+are listed: in an issue's sub-issues and the issues it blocks or is blocked by too. A sub-issue is indented as a whole,
+right of the line from its parent, and an epic's issues hang the same way under its name. The app follows the system
 appearance, or stays light or dark if you prefer.
 
 Its icon is a card with a done mark, lifted off a board of faint tiles. Settings (on iPhone and iPad, your account)
@@ -607,7 +609,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
 | `⌥↑` `⌥↓` or `⌥K` `⌥J` | Move the issue up or down its column or list section |
 | `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
-| `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
+| `Space` | Peek at the issue in a panel over the board or list; `J` `K` move the peek along. On a Force Touch trackpad, a deep press on the issue does the same |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
 | `⌘+` `⌘−` / `⌘0` | Zoom a timeline in or out / reset to Months or Quarters; pinch, zoom buttons and ⌘-scroll work too |

@@ -112,8 +112,6 @@ struct MainLayout: View {
 struct ContentPanel: View {
     @Environment(AppModel.self) private var model
     @AppStorage("showsIssueInspector") private var showsInspector = true
-    /// Ticks so the subtitle's "Synced 2 min ago" stays true.
-    @State private var clock = Date()
 
     var body: some View {
         let openItem = model.openItem
@@ -186,22 +184,12 @@ struct ContentPanel: View {
                 }
             }
             .animation(Theme.overlay, value: model.isLoadingProject)
-            // Picked issues get a bar of changes at the bottom; Space peeks at an issue on the right.
+            // Picked issues get a bar of changes at the bottom.
             .overlay(alignment: .bottom) {
-                // Centred in what the peek leaves free.
                 SelectionBar()
                     .padding(.bottom, 18)
-                    .padding(.trailing, model.peekItemId == nil ? 0 : 470)
-            }
-            .overlay(alignment: .trailing) {
-                if let item = model.peekItem {
-                    PeekPanel(item: item)
-                        .padding(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 10))
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                }
             }
             .animation(Theme.overlay, value: model.selectedIds.isEmpty)
-            .animation(Theme.overlay, value: model.peekItemId == nil)
             .opacity(openItem == nil ? 1 : 0)
             .allowsHitTesting(openItem == nil)
 
@@ -224,8 +212,9 @@ struct ContentPanel: View {
         }
         .overlay { SwipeIndicator() }
         .animation(Theme.overlay, value: model.openItemId)
+        // Still the window's name for the Window menu, Mission Control and VoiceOver, but not shown in the toolbar.
         .navigationTitle(title(openItem))
-        .navigationSubtitle(subtitle(openItem))
+        .toolbar(removing: .title)
         .toolbar {
             MainToolbar(model: model, openItem: openItem, showsInspector: $showsInspector)
         }
@@ -243,12 +232,6 @@ struct ContentPanel: View {
             }
             .inspectorColumnWidth(min: 250, ideal: 290, max: 380)
         }
-        .task {
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(20))
-                clock = Date()
-            }
-        }
     }
 
     /// Whether the page is a board, or about to be one while its project loads, or My Issues' overview, whose widgets
@@ -261,7 +244,7 @@ struct ContentPanel: View {
         return !(model.currentView.map { model.showsTimeline($0) } ?? false)
     }
 
-    /// The window's title, as Mail names the mailbox: the view, the issue or the place on screen.
+    /// The window's name: the view, the issue or the place on screen.
     private func title(_ openItem: Item?) -> String {
         if let openItem { return openItem.displayNumber }
         switch model.scope {
@@ -280,30 +263,6 @@ struct ContentPanel: View {
             return String(localized: .roadmap)
         case nil:
             return "Issues"
-        }
-    }
-
-    /// Under the title: where it belongs and how syncing is going, as Mail writes "Updated Just Now".
-    private func subtitle(_ openItem: Item?) -> String {
-        let sync = model.syncLine(at: clock)
-        if let openItem {
-            if let project = model.project(of: openItem) { return project.title }
-            return openItem.repo ?? ""
-        }
-        switch model.scope {
-        case .project:
-            guard model.currentView != nil, let project = model.currentProject else { return sync }
-            return "\(project.title) · \(sync)"
-        case .milestone(let projectId, _), .roadmap(let projectId):
-            return model.projects.first { $0.id == projectId }?.title ?? sync
-        case .allIssues(let projectId):
-            guard let project = model.projects.first(where: { $0.id == projectId }) else { return sync }
-            return "\(project.title) · \(sync)"
-        case .inbox:
-            let unread = model.inboxUnreadCount
-            return unread > 0 ? String(localized: .unreadCount(count: unread)) : sync
-        case .myIssues, nil:
-            return sync
         }
     }
 }
@@ -430,18 +389,37 @@ struct MyIssuesLoadingState: View {
     }
 }
 
-/// Dimmed backdrop plus whichever modal is open: command palette or new issue.
+/// Dimmed backdrop plus the peek and whichever modal is open: command palette or new issue. The peek is no modal: its
+/// keys stay with the app, and a picker opened from them comes over it, on the same backdrop.
 struct OverlayHost: View {
     @Environment(AppModel.self) private var model
 
+    private static let appearing = AnyTransition.opacity.combined(with: .scale(scale: 0.97, anchor: .top)).combined(with: .offset(y: -6))
+
     var body: some View {
+        let peekItem = model.openItem == nil ? model.peekItem : nil
         ZStack(alignment: .top) {
-            if let overlay = model.overlay {
+            if model.overlay != nil || peekItem != nil {
                 Theme.scrim
                     .ignoresSafeArea()
-                    .onTapGesture { model.overlay = nil }
+                    .onTapGesture {
+                        if model.overlay != nil { model.overlay = nil } else { model.togglePeek() }
+                    }
+                    // A right-click beside the peek is not about the card under the dimming.
+                    .floatingContextMenu(isShown: peekItem != nil)
                     .transition(.opacity)
+                    .zIndex(0)
+            }
 
+            if let peekItem {
+                PeekPanel(item: peekItem)
+                    .padding(.top, 110)
+                    .padding(.bottom, 40)
+                    .transition(Self.appearing)
+                    .zIndex(1)
+            }
+
+            if let overlay = model.overlay {
                 Group {
                     switch overlay {
                     case .palette(let mode):
@@ -456,11 +434,13 @@ struct OverlayHost: View {
                             .padding(.top, 110)
                     }
                 }
-                .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .top)).combined(with: .offset(y: -6)))
+                .transition(Self.appearing)
+                .zIndex(2)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(Theme.overlay, value: model.overlay)
+        .animation(Theme.overlay, value: model.peekItemId == nil)
     }
 }
 #endif
