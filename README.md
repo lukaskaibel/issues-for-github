@@ -63,7 +63,7 @@ GitHub Projects, issues, sub-issues, labels, assignees and comments, and stores 
 
 ## A quick tour
 
-The window is built the way Mail and Notes are: a sidebar, a toolbar with the page's title and its buttons, the
+The window is built the way Mail and Notes are: a sidebar, a toolbar with New Issue and the page's buttons, the
 details of an issue in an inspector beside it, and Liquid Glass. What you click works the way Linear does: a status,
 an assignee or a label opens its picker right where you clicked, ready to type in, and closes when you pick.
 
