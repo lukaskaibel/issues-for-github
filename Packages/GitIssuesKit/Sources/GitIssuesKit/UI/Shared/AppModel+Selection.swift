@@ -266,9 +266,13 @@ extension AppModel {
         if peekItemId != nil {
             withAnimation(Theme.overlay) { peekItemId = nil }
         } else if let item = targetItem {
-            withAnimation(Theme.overlay) { peekItemId = item.id }
-            loadRepoMeta(for: item)
+            peek(at: item)
         }
+    }
+
+    func peek(at item: Item) {
+        withAnimation(Theme.overlay) { peekItemId = item.id }
+        loadRepoMeta(for: item)
     }
 
     /// The peek follows the keyboard as it moves through issues.
