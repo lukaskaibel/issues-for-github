@@ -153,6 +153,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **Switching boards on the Mac no longer crashes** while a column is adding cards.
 - **A third assignee no longer runs under the date** in a row of the Mac's list.
 - **An issue closed as a duplicate shows as canceled everywhere**, also when it is on none of your boards.
 - **A picked notification in the Mac's Inbox keeps the check of a done issue visible.**
