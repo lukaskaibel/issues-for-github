@@ -110,6 +110,8 @@ All notable changes to this project are recorded here. The format follows
   glass panel as a new issue, over the dimmed board or list, and only as tall as the issue needs. A click beside it puts
   it away, as do Space and Esc; `J` `K` and the keys that change the issue work as before.
 
+- While you write a comment, `⌘↵` shows beside the send button, to say that it posts the comment: on the Mac, and on
+  iPhone and iPad with a keyboard attached.
 - **An issue looks the same wherever it is listed.** On an issue's page, its sub-issues, an epic's issues and the
   issues it is blocked by or blocks are now the rows the lists show, on the Mac and on iPhone and iPad: priority,
   number, status, title, sub-issues, the blocker's flag, labels, milestone, due date and people, in the list's order,
