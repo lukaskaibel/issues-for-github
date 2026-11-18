@@ -63,14 +63,14 @@ GitHub Projects, issues, sub-issues, labels, assignees and comments, and stores 
 
 ## A quick tour
 
-The window is built the way Mail and Notes are: a sidebar, a toolbar with the page's title and its buttons, the
+The window is built the way Mail and Notes are: a sidebar, a toolbar with New Issue and the page's buttons, the
 details of an issue in an inspector beside it, and Liquid Glass. What you click works the way Linear does: a status,
 an assignee or a label opens its picker right where you clicked, ready to type in, and closes when you pick.
 
 ### A board you can pick up
 
-The board is quiet: white cards on grey, without borders or lanes, labels as a dot and a name, and colour only where
-something needs you, such as a date that's due, an urgent issue or a blocker. Drag a card and it lifts off the board,
+The board is quiet: white cards on grey, without borders or lanes, an issue's type as a small square and its name,
+labels as a dot and a name, and colour only where something needs you, such as a date that's due, an urgent issue or a blocker. Drag a card and it lifts off the board,
 tilts with the motion and settles with a spring, while its neighbours make room. Press Esc mid-drag and it goes back
 to where it came from. Pick several cards with ⌘-click and drag one of them, and they all go, together. The move
 shows in the same frame and reaches GitHub in the background.
@@ -96,8 +96,8 @@ sub-issue whose parent has another status stays in its own column and says which
 one is done, the parent moves to Done by itself. The issues of an epic in the same column stand together the same
 way, under the epic's name; drag the name to another column and they all go.
 
-Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count and a
-dropdown opens right there. Type to filter, press a number to pick; the pick closes it, and so does another click on
+Every property is one click away: click a card's priority, status, type, labels, assignees, due date or sub-issue count
+and a dropdown opens right there. Type to filter, press a number to pick; the pick closes it, and so does another click on
 what opened it. For several assignees or labels, tick their checkboxes or Shift-click them, and it stays open. Type a
 label the repository doesn't have and **Create label “…”** makes it there, in one of GitHub's colours, and adds it.
 Type a status the board doesn't have and **Create status “…”** makes it in the project's Status field on GitHub, next
@@ -107,7 +107,7 @@ Pickers put what you chose lately at the very top, above a line, with the likeli
 parent, epic, label or assignee with one key. A choice made twice in a row stays on top even after a single pick of
 another, so a run of issues under one parent isn't broken by the one that went elsewhere. Right-click a card for
 everything at once: the menu has rows as big as the pickers' and a search field, so
-typing "rev" finds Status › In Review, and Status, Priority, Assignee, Labels, Due Date and Milestone open the same
+typing "rev" finds Status › In Review, and Status, Priority, Assignee, Type, Labels, Due Date and Milestone open the same
 pickers as a click on the card.
 
 ### Due dates that remind you
@@ -137,7 +137,8 @@ level by level, as a tree. What blocks the issue and what it blocks are listed b
 one off where the checkbox stands. A blocked
 issue carries a red flag with the number of the issue to finish first, as in `#5`, on its card, its list row and its
 line among its parent's sub-issues. Comments sit below, with the field
-for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
+for a new one at the bottom of the window (while you write, `⌘↵` beside its button says how to post without the
+mouse), and status, priority, assignees, labels, parent and blockers are in the
 inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arrows in the toolbar.
 
 <picture>
@@ -180,16 +181,17 @@ them itself, and leaves out the ones you assigned yourself to in the app.
 
 ### Keyboard first
 
-⌘K, or the magnifying glass in the toolbar, opens the command palette: every action, and a search across your issues.
-Single keys act on the issue you hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `L`
-labels, `D` due date, `I` assign to me.
+⌘K, or Search at the top of the sidebar, opens the command palette: every action, and a search across your issues.
+Single keys act on the issue you hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `T` type,
+`L` labels, `D` due date, `I` assign to me.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/palette-dark.webp">
   <img alt="The command palette with actions for the selected issue and their single-key shortcuts" src="Design/screenshots/palette-light.webp">
 </picture>
 
-`C` starts a new issue wherever you are. Type the title, set its properties, and ⌘↵ creates it.
+`C` starts a new issue wherever you are. Type the title, set its properties, and ⌘↵ creates it. On a project with no
+repository yet, here and on iPhone and iPad, you choose one of yours for its first issue.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/new-issue-dark.webp">
@@ -201,9 +203,10 @@ labels, `D` due date, `I` assign to me.
 The list groups issues by status. Each header stays pinned while you scroll through its section and folds it with
 a click. Drag an issue up or down to give it a new place, or into another section to change its status, as on the
 board; drop it on the middle of another issue, which lights up, to make it that issue's sub-issue. A row shows an
-issue as its card does, labels as a dot and a name and the milestone in grey, and it is the same list wherever issues
-are listed: in an issue's sub-issues and the issues it blocks or is blocked by too. The app follows the system
-appearance, or stays light or dark if you prefer.
+issue as its card does, its type first among the tags, labels as a dot and a name and the milestone in grey, and it is
+the same list wherever issues are listed: in an issue's sub-issues and the issues it blocks or is blocked by too. A
+sub-issue is indented as a whole, right of the line from its parent, and an epic's issues hang the same way under its
+name. The app follows the system appearance, or stays light or dark if you prefer.
 
 Its icon is a card with a done mark, lifted off a board of faint tiles. Settings (on iPhone and iPad, your account)
 offers it on its light page, on graphite or as a white card on indigo. Each follows light and dark mode.
@@ -369,11 +372,11 @@ The interface uses the system's own parts.
   Format panel); on its left, buttons come in for what the caret is in: its style, which a tap takes off, the line's
   checkbox, moving a list item in or out, and opening a link. On the touch keyboard the stars of bold and the other
   styles' marks stay hidden, as in Notes: a tap at the end of bold text types on in bold, and Delete takes the letter
-  you see. The properties are glass chips under the title, the
+  you see. A link to another issue the app has opens that issue. The properties are glass chips under the title, the
   sub-issues rows as in the lists (by priority, or another order from the "…" beside its plus; the arrow beside one with
   sub-issues of its own unfolds them under it; touch and hold one and drop it onto another to put it under that one),
   the comments a conversation, and the comment field stays at the bottom
-  as in Messages. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
+  as in Messages, showing `⌘↵` beside its button while you write with a keyboard attached. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
   unfolded ones too, then move them all under another parent with the bar at the bottom, or change their status,
   priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its cards on
   grey without borders or lanes, as on the Mac; a column's "…" hides it on that iPad, and the hidden ones wait at the end of the
@@ -385,7 +388,7 @@ The interface uses the system's own parts.
   drop (touch and hold, then drag), and one dropped onto the middle of another card becomes its sub-issue. A milestone opens as the board's columns or a list, the roadmap as the timeline,
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
-  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
+  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[, ⌘↵, ⌘Z and ⇧⌘Z, and in the Inbox U, E, H and ⇧S. S, P, A and L open
   their picker ready to type in; Return picks the first match. While writing, the Mac's Format shortcuts work too
   (⌘B, ⌘I, ⇧⌘H, ⇧⌘L and the others), listed while you hold ⌘, the Markdown shows next to the caret as on the Mac, and
   Tab and the arrow keys go between an issue's title and its description. With a pointer, ⌘-click and Shift-click pick several
@@ -410,6 +413,9 @@ The interface uses the system's own parts.
   names what blocks it, on its card and in its parent's sub-issues. Sub-issues with their parent's status hang under it
   on the board and in the list, and a parent is done when its last sub-issue is. An issue lists its sub-issues by
   priority, or by status, newest first or in GitHub's order, and unfolds sub-issues of sub-issues as a tree.
+- **Issue types.** Bug, Feature, Task and the types your organisation adds, in their GitHub colours on cards, rows and
+  the issue's page. Change them from the same pickers and menus as every other property, and filter or group a view by
+  them.
 - **Milestones, epics and a roadmap.** A board's milestones with their own board and progress, epics whose
   sub-issues are the work, and a roadmap of the epics over the milestones, on a timeline or as a list. Completing a
   milestone closes it on GitHub and moves what is left to the next one. Issues go into the board's iterations too: the
@@ -440,6 +446,13 @@ The interface uses the system's own parts.
   last choices first, so a run of similar changes takes one key each. Back and forward work like a browser: ⌘[ and ⌘],
   the side buttons of a mouse, or a two-finger swipe. On a wide board or a timeline a swipe scrolls instead, until it
   is scrolled all the way to that side.
+- **Undo and redo.** ⌘Z takes back the last change and ⇧⌘Z brings it back, step by step, and the Edit menu
+  says which: an issue's status, priority, dates and fields, its place on the board, title and description, assignees,
+  labels, type, parent, blockers, milestone and epic, also for several picked issues at once; a milestone's details, a
+  board's columns, a view's name, a hidden project, and reading, snoozing or archiving in the Inbox. What undoing does
+  goes to GitHub like any other change, offline too. New issues, comments and deleted issues stay as they are, since
+  taking them back would mean deleting something on GitHub for good or can't be done there at all, and so does an issue
+  put on a board.
 - **Due dates and reminders.** The day an issue is due, typed in a few words or picked in a month, and a notification
   on that day for issues assigned to you, from each of your devices.
 - **In nine languages.** English, German, French, Spanish, Portuguese (Brazil), Russian, Japanese, Korean and Chinese
@@ -474,9 +487,10 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | The order of an issue's sub-issues | Only how the app lists them, kept on each device; GitHub's order stays as it is |
 | A parent done with its last sub-issue | The parent's status moves to the done column and it is closed, as if you had moved it there |
 | Blocked by and blocking | GitHub's issue dependencies |
+| Issue type | GitHub's issue types, with their colours; the choices are those of the issue's repository |
 | Milestone | GitHub's milestones of the board's repositories; those of the same name are one, and a repository gets a copy when an issue of it goes in |
 | Completing a milestone | Closing it on GitHub; its unfinished issues get the next milestone if you choose |
-| Epic | An issue with the label *epic* (made in the repository the first time) or, in organisations, the issue type *Epic* |
+| Epic | An issue with the label *epic* (made in the repository the first time) or the issue type *Epic* |
 | An epic's issues | Its sub-issues |
 | Roadmap | Only how the app lays out the epics over the milestones; the stretches end on the milestones' due dates |
 | A project's views in the sidebar | The project's views, in GitHub's order; board views as a board, table views as a list, roadmap views as a timeline |
@@ -595,6 +609,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘K` or `/` | Command palette: run a command or jump to an issue |
 | `C` or `⌘N` | New issue |
 | `S` `P` `A` `L` | Change status, priority, assignee, labels; `S` puts an issue on no board onto one |
+| `T` | Set the issue's type, such as Bug or Feature, or take it away (`0`) |
 | `I` | Assign to me, or unassign |
 | `D` | Set the due date: type "fri", "next week", "in 3 days" or "12.10.", or pick a day |
 | `M` then `P` / `B` / `X` | Set the parent issue, mark as blocked by another issue, mark as blocking one |
@@ -604,7 +619,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
 | `⌥↑` `⌥↓` or `⌥K` `⌥J` | Move the issue up or down its column or list section |
 | `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
-| `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
+| `Space` | Peek at the issue in a panel over the board or list; `J` `K` move the peek along. On a Force Touch trackpad, a deep press on the issue does the same |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
 | `⌘+` `⌘−` / `⌘0` | Zoom a timeline in or out / reset to Months or Quarters; pinch, zoom buttons and ⌘-scroll work too |
@@ -619,6 +634,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘↵` | Save a description, send a comment, create the issue |
 | `⌘⇧C` / `⌘⇧O` | Copy the issue's GitHub link / open it on GitHub |
 | `⌘⇧.` | Copy a branch name for the issue, as GitHub suggests it |
+| `⌘Z` / `⌘⇧Z` | Undo / redo the last change, as named in the Edit menu; while you type, the typing |
 | `⌘⌫` | Delete the issue (asks first; needs admin rights in the repository) |
 | `⌘R` | Sync with GitHub now |
 | `⌘,` | Settings: light, dark or system appearance, the app icon, and reminders of due issues |
@@ -630,7 +646,7 @@ In the Inbox:
 | `J` `K` or `↑` `↓` | Next or previous notification; its issue opens beside the list and counts as read |
 | `Return` | Open the issue full size; `Esc` goes back to the Inbox |
 | `U` / `⌥U` | Mark read or unread / mark everything read |
-| `E` or `⌫` | Archive (GitHub's *Done*); `⌘Z` or the message at the bottom undoes it for a few seconds |
+| `E` or `⌫` | Archive (GitHub's *Done*); `⌘Z` or the message at the bottom undoes it for a few seconds, until it has gone to GitHub |
 | `⇧⌫` | Archive everything read |
 | `H` | Snooze until later today, tomorrow, next week or a date |
 | `⇧S` | Unsubscribe: GitHub tells you about it again only if you're mentioned or comment |
@@ -639,7 +655,7 @@ In the Inbox:
 `X` or `⌘`-click picks a notification, `⇧J` `⇧K` or Shift-click a run of them, to read, snooze or archive together;
 `S` `P` `A` `L` `I` then change all of their issues, and `Esc` lets them go. Right-click one for everything at once.
 
-Click an issue's priority, status, labels, assignees, due date or sub-issue count to change it in place, or right-click
+Click an issue's priority, status, type, labels, assignees, due date or sub-issue count to change it in place, or right-click
 it for everything at once. The right-click menu takes the keys at once: type to find an entry, also one inside a
 submenu, `↑` `↓` to move, `→` to open a submenu or picker, `Return` to pick and `Esc` to close. A pick closes the
 dropdown, and so does a second click on what opened it; for several assignees or labels, tick the checkbox at the start
@@ -694,8 +710,9 @@ A view of one iteration has the cycle over its issues; the arrows beside it show
 filter until you save it. On a roadmap view's timeline, click a group to fold it and an issue's name to open it;
 **Display** switches between timeline, board and list.
 
-A description is drawn as on GitHub and edited right there. Click a checkbox to tick it, a link to open it, and
-anywhere else to type: the Markdown of what the caret is in shows faintly beside it. Click into a table, a diagram or a
+A description is drawn as on GitHub and edited right there. Click a checkbox to tick it, a link to open it (one to
+another issue the app has opens that issue here, in comments too), and anywhere else to type: the Markdown of what the
+caret is in shows faintly beside it. Click into a table, a diagram or a
 formula to edit its source, with the diagram or formula drawn under it as you type; when the caret leaves, it is drawn
 again. The pencil after a link changes its address, and the button in the corner of a code block copies the code.
 `Esc` or `⌘↵` leaves the description, which saves it; it is also saved a moment after you stop typing.
@@ -737,7 +754,7 @@ they are renamed, coloured and deleted on the board. Its **No project** column t
 onto a status to put it on the board. All Issues' list takes drags the same way.
 
 To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
-Shift-click. A bar at the bottom then sets status, priority, assignee, labels or the due date for all of them, and so
+Shift-click. A bar at the bottom then sets status, priority, assignee, type, labels or the due date for all of them, and so
 do the usual keys, dropdowns and right-click menu. Drag one of them and they all go: on the board and in the list they
 lift off together and land one after the other where you drop them. `Esc` or a click beside the issues clears the
 pick, and a plain click on an issue opens it and lets the picked ones go. Sub-issues hanging under
@@ -769,7 +786,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold an epic's name, then drag | Move all of its issues there to another column (iPad) or another place in their section |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
-| Touch and hold an issue | Status, priority, assignee, labels, due date, milestone and iteration as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
+| Touch and hold an issue | Status, priority, assignee, type, labels, due date, milestone and iteration as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
 | Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
 | Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several. Your recent choices are listed first, as in every sheet that picks a parent, epic or blocker and in the Assignee and Labels submenus of a touch and hold |
 | Type a label the repository doesn't have in the Labels sheet | Create label “…” makes it in the repository and adds it |

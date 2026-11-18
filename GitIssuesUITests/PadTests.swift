@@ -294,6 +294,41 @@ final class PadTests: AppTestCase {
         wait(element("card-#9"))
     }
 
+    /// ⌘Z takes changes back one at a time, last first, and ⇧⌘Z brings them back in order.
+    func testUndoAndRedoFromTheKeyboard() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openProject("Git Issues")
+        element("card-#9").tap()
+        let status = element("property-status")
+        let labels = element("property-labels")
+        wait(status)
+        let originalStatus = status.label
+        XCTAssertFalse(labels.label.contains("bug"))
+
+        app.typeKey("s", modifierFlags: [])
+        wait(app.navigationBars["Status"])
+        button("In Review").tap()
+        waitForLabel(status, containing: "In Review")
+        app.typeKey("l", modifierFlags: [])
+        wait(app.navigationBars["Labels"])
+        app.typeText("bug\n")
+        waitGone(app.navigationBars["Labels"])
+        waitForLabel(labels, containing: "bug")
+
+        app.typeKey("z", modifierFlags: .command)
+        waitForLabel(labels, notContaining: "bug")
+        XCTAssertTrue(status.label.contains("In Review"), "Only the last change goes back")
+        app.typeKey("z", modifierFlags: .command)
+        waitForLabel(status, containing: originalStatus)
+
+        app.typeKey("z", modifierFlags: [.command, .shift])
+        waitForLabel(status, containing: "In Review")
+        XCTAssertFalse(labels.label.contains("bug"), "Only the change undone last comes back")
+        app.typeKey("z", modifierFlags: [.command, .shift])
+        waitForLabel(labels, containing: "bug")
+    }
+
     /// ⌘-click and Shift-click pick sub-issues, as in Mail, and the keys then change all of them. (Escape, which lets
     /// them go too, can't be tested: XCTest's Escape never reaches an app in the simulator, though other keys do.)
     func testPickSubIssuesWithPointerAndKeys() {

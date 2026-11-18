@@ -21,7 +21,8 @@ extension Item {
             number: sub.number > 0 ? sub.number : nil, title: sub.title, body: "", state: sub.state,
             stateReason: sub.stateReason, url: sub.url, repo: sub.repo, createdAt: sub.createdAt,
             subTotal: sub.subTotal ?? 0, subCompleted: sub.subCompleted ?? 0, assignees: sub.assignees,
-            blockedByCount: blockedBy, milestoneId: sub.milestoneId, milestoneTitle: sub.milestoneTitle
+            blockedByCount: blockedBy, milestoneId: sub.milestoneId, milestoneTitle: sub.milestoneTitle,
+            issueType: sub.issueType, issueTypeColor: sub.issueTypeColor
         )
     }
 
@@ -44,6 +45,12 @@ extension AppModel {
     /// The same for an issue another one is blocked by or blocks.
     func rowItem(for link: LinkedIssue) -> Item {
         item(contentId: link.id) ?? Item(standingInFor: link)
+    }
+
+    /// The issue a link in the description or a comment of `page` leads to, if the app has it.
+    func issue(linkedBy url: URL, from page: Item) -> Item? {
+        guard let issue = GitHubIssueLink(url)?.issue(in: allItems, from: page) else { return nil }
+        return issue.contentId.flatMap(localItem(contentId:)) ?? issue
     }
 }
 

@@ -19,6 +19,8 @@ struct CardModel: Equatable {
     /// The milestone it is planned for, on boards that aren't a milestone's.
     var milestone: String?
     var milestoneMark: MilestoneMark = .upcoming
+    /// Whether its type opens the picker that changes it.
+    var changesType = false
     /// The project's own fields the view shows, such as an iteration or a "Workstream".
     var chips: [FieldChip] = []
     /// The chips as VoiceOver reads them, with their fields' names.
@@ -43,6 +45,7 @@ extension AppModel {
             parentIsEpic: item.parentId.flatMap { issue(contentId: $0) }?.isEpic ?? false,
             milestone: showsMilestone && !viewPinsMilestone(projectId: item.projectId) ? milestoneTitle(of: item) : nil,
             milestoneMark: milestoneMark(of: item),
+            changesType: canHaveIssueType(item),
             chips: chips,
             spokenChips: chips.map(spokenChip)
         )
@@ -58,6 +61,8 @@ struct CardView: View, Equatable {
     var highlighted = false
     /// Picked for a change to several issues at once.
     var selected = false
+    /// The issue open in the peek.
+    var peeked = false
     var lifted = false
     /// Changes when avatar images finish loading, so cards repaint with them.
     var avatarVersion = 0
@@ -125,7 +130,9 @@ struct CardView: View, Equatable {
 
     /// What VoiceOver reads for a card.
     static func spokenLabel(_ card: CardModel) -> String {
-        "\(card.item.displayNumber) \(card.item.title)" + (card.spokenBlocker.map { ", \($0)" } ?? "")
+        "\(card.item.displayNumber) \(card.item.title)"
+            + (card.item.shownType.map { ", " + String(localized: .issueTypeTooltip(type: $0.name)) } ?? "")
+            + (card.spokenBlocker.map { ", \($0)" } ?? "")
             + (card.due.map { ", \($0.tooltip)" } ?? "")
             + (card.item.parentNumber.map { number in
                 ", " + String(localized: card.parentIsEpic
@@ -312,8 +319,8 @@ final class CardPaintCache: @unchecked Sendable {
 
 /// A colour a card is painted with, named so that it can be kept once worked out.
 enum CardInk: Hashable {
-    case card, cardHover, cardLifted, selectionFill, cardBehind
-    case cardShadow, cardRaisedShadow, cardOutline, selectionBorder
+    case card, cardHover, cardLifted, selectionFill, peekFill, cardBehind
+    case cardShadow, cardRaisedShadow, cardOutline, selectionBorder, peekRing
     case partHover, textSecondary, textTertiary, textBody, barOff, urgent, treeLine
     case milestone(MilestoneMark)
     case label(hex: String)
@@ -325,11 +332,13 @@ enum CardInk: Hashable {
         case .cardHover: Theme.cardHover
         case .cardLifted: Theme.cardLifted
         case .selectionFill: Theme.selectionFill
+        case .peekFill: Theme.peekGround()
         case .cardBehind: Theme.cardBehind
         case .cardShadow: Theme.cardShadow
         case .cardRaisedShadow: Theme.cardRaisedShadow
         case .cardOutline: Theme.cardLiftedBorder
         case .selectionBorder: Theme.selectionBorder
+        case .peekRing: Theme.peekRing()
         case .partHover: Theme.partHover
         case .textSecondary: Theme.textSecondary
         case .textTertiary: Theme.textTertiary
@@ -460,18 +469,22 @@ private struct CardPainter {
         if view.stackEdge { drawStackEdge() }
         defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts, fold: fold, number: numberRect) } }
         let shape = Path(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: CardView.cornerRadius, style: .continuous)
-        let fill = ink(view.lifted ? .cardLifted : view.selected ? .selectionFill : (view.highlighted ? .cardHover : .card))
+        let fill = ink(view.lifted ? .cardLifted : view.selected ? .selectionFill : view.peeked ? .peekFill : (view.highlighted ? .cardHover : .card))
         if view.lifted {
             context.fill(shape, with: .color(fill))
         } else {
-            // No border: the card stands on a soft shadow, and seems to rise under the pointer.
-            let shadow = view.highlighted ? CardView.raisedShadow : CardView.shadow
+            // No border: the card stands on a soft shadow, and seems to rise under the pointer and in the peek.
+            let raised = view.highlighted || view.peeked
+            let shadow = raised ? CardView.raisedShadow : CardView.shadow
             context.drawLayer { layer in
-                layer.addFilter(.shadow(color: ink(view.highlighted ? .cardRaisedShadow : .cardShadow), radius: shadow.radius, y: shadow.y))
+                layer.addFilter(.shadow(color: ink(raised ? .cardRaisedShadow : .cardShadow), radius: shadow.radius, y: shadow.y))
                 layer.fill(shape, with: .color(fill))
             }
         }
-        if view.selected && !view.lifted {
+        if view.peeked && !view.lifted {
+            // The ground is the card's own, already under its shadow, and a picked card keeps its tint.
+            context.draw(Marks.peek(in: CGRect(origin: .zero, size: size), cornerRadius: CardView.cornerRadius), mark: ink(.peekRing))
+        } else if view.selected && !view.lifted {
             let ring = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.75, dy: 0.75), cornerRadius: CardView.cornerRadius - 0.75, style: .continuous)
             context.stroke(ring, with: .color(ink(.selectionBorder)), lineWidth: 1.5)
         } else if look.contrast == .increased {
@@ -572,12 +585,23 @@ private struct CardPainter {
             context.draw(flag.text, at: CGPoint(x: rect.midX, y: bottomY), anchor: .center)
             x = rect.maxX + 6
         }
-        var shown = 0
         // Labels are measured first, so the highlight can sit behind all of them.
         var labelLayout: [(label: LabelRef, text: GraphicsContext.ResolvedText, rect: CGRect)] = []
         var labelX = start(x)
         let labels = item.shownLabels
-        for label in labels.prefix(LabelMark.onCard) {
+        // The type stands first of them and takes one of the card's places for tags, so that a card with a type is no
+        // busier than one without: it stays when labels have to give way.
+        var typeLayout: (color: String?, text: GraphicsContext.ResolvedText, textWidth: CGFloat, rect: CGRect)?
+        if let type = item.shownType {
+            let name = text(.label(type.name))
+            let width = IssueTypeMark.width(name: name.width)
+            if labelX + width <= limit {
+                let textWidth = min(name.width, IssueTypeMark.longestName)
+                typeLayout = (type.color, name.text, textWidth, CGRect(x: labelX, y: bottomY - 10, width: width, height: IssueTypeMark.height))
+                labelX += width + LabelMark.spacing
+            }
+        }
+        for label in labels.prefix(LabelMark.onCard - (typeLayout == nil ? 0 : 1)) {
             let name = text(.label(label.name))
             let width = LabelMark.width(name: name.width)
             guard labelX + width <= limit else { break }
@@ -586,15 +610,33 @@ private struct CardPainter {
         }
         // "+2" for the labels that don't fit, when it fits itself: part of the labels, which it opens too.
         var moreLayout: (text: GraphicsContext.ResolvedText, rect: CGRect)?
-        if let last = labelLayout.last, labels.count > labelLayout.count {
+        if let last = labelLayout.last?.rect ?? typeLayout?.rect, labels.count > labelLayout.count {
             let more = text(.moreLabels(labels.count - labelLayout.count))
-            let rect = CGRect(x: last.rect.maxX + LabelMark.spacing, y: bottomY - 10, width: LabelMark.inset + more.width + LabelMark.inset, height: LabelMark.height)
+            let rect = CGRect(x: last.maxX + LabelMark.spacing, y: bottomY - 10, width: LabelMark.inset + more.width + LabelMark.inset, height: LabelMark.height)
             if rect.maxX <= limit { moreLayout = (more.text, rect) }
         }
-        if item.kind != .draft, let first = labelLayout.first, let last = labelLayout.last {
-            let labels = first.rect.union(moreLayout?.rect ?? last.rect)
-            part(.labels, labels)
-            chip(labels, hovered: hovered(.labels))
+        if let typeLayout {
+            let rect = typeLayout.rect
+            if card.changesType {
+                part(.issueType, rect)
+                chip(rect, hovered: hovered(.issueType))
+            }
+            let square = CGRect(
+                x: rect.minX + IssueTypeMark.inset, y: bottomY - IssueTypeMark.square / 2,
+                width: IssueTypeMark.square, height: IssueTypeMark.square
+            )
+            context.draw(Marks.issueType(in: square), mark: ink(.option(typeLayout.color ?? "GRAY")))
+            context.draw(
+                typeLayout.text,
+                in: CGRect(x: square.maxX + IssueTypeMark.gap, y: bottomY - 8, width: typeLayout.textWidth, height: 16)
+            )
+            x = rect.maxX + LabelMark.spacing
+        }
+        if item.kind != .draft, let tags = labelLayout.first.map({ first in
+            first.rect.union(moreLayout?.rect ?? labelLayout[labelLayout.count - 1].rect)
+        }) ?? moreLayout?.rect {
+            part(.labels, tags)
+            chip(tags, hovered: hovered(.labels))
         }
         // A label is a dot in its colour and its name, as Reminders writes its tags, rather than a tinted pill: a
         // board of pills is a board of coloured blobs.
@@ -603,9 +645,8 @@ private struct CardPainter {
             context.fill(Path(ellipseIn: dot), with: .color(ink(.label(hex: label.color))))
             context.draw(name, at: CGPoint(x: dot.maxX + LabelMark.gap, y: bottomY), anchor: .leading)
             x = rect.maxX + LabelMark.spacing
-            shown += 1
         }
-        if let moreLayout, shown > 0 {
+        if let moreLayout {
             context.draw(moreLayout.text, at: CGPoint(x: moreLayout.rect.minX + LabelMark.inset, y: bottomY), anchor: .leading)
             x = moreLayout.rect.maxX + LabelMark.spacing
         }
@@ -833,6 +874,26 @@ extension View {
     /// The shadow of a card being dragged (`CardView.liftedShadow`), while it is lifted.
     func liftedShadow(_ lifted: Bool = true) -> some View {
         shadow(color: lifted ? Theme.shadow : .clear, radius: lifted ? CardView.liftedShadow.radius : 0, y: lifted ? CardView.liftedShadow.y : 0)
+    }
+}
+
+/// The issue open in the peek (`Marks.peek`), behind the issue and as big as its shape, for what is drawn with views: an
+/// issue in My Issues' overview, a line of a timeline. Cards and the list's rows paint the same mark themselves.
+struct PeekMark: View {
+    /// The corner radius of the issue's own shape.
+    var cornerRadius: CGFloat
+    /// On a picked row, which is filled with the accent.
+    var onAccent = false
+
+    var body: some View {
+        Canvas { context, size in
+            context.draw(
+                Marks.peek(in: CGRect(origin: .zero, size: size), cornerRadius: cornerRadius, onAccent: onAccent),
+                mark: Theme.peekRing(onAccent: onAccent), off: Theme.peekGround(onAccent: onAccent)
+            )
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 

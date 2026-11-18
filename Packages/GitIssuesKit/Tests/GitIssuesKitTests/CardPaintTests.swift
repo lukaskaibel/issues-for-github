@@ -20,7 +20,7 @@ struct CardPaintTests {
             assignees: [Person(id: "u1", login: "mira"), Person(id: "u2", login: "theo")],
             labels: [LabelRef(id: "l1", name: "ui", color: "8F96F2"), LabelRef(id: "l2", name: "bug", color: "D73A4A"),
                      LabelRef(id: "l3", name: "sync", color: "4CB782")],
-            blockedByCount: 2, milestoneTitle: "0.3"
+            blockedByCount: 2, milestoneTitle: "0.3", issueType: "Bug", issueTypeColor: "RED"
         )
         let blocker = LinkedIssue(id: "issue-5", issueId: "issue-13", relation: .blockedBy, number: 5, title: "Keyboard navigation",
                                   state: "OPEN", position: 0)
@@ -28,7 +28,7 @@ struct CardPaintTests {
             item: item, priority: .high, showsPriority: true,
             due: DueBadge(day: CalendarDay(year: 2026, month: 10, day: 21), label: "Tomorrow", tone: .upcoming),
             blocker: BlockerMark(blockers: [blocker], count: 2), nested: 2, showsParent: true, milestone: "0.3",
-            milestoneMark: .current, chips: [FieldChip(fieldId: "cycle", text: "Cycle 4", icon: .iteration)]
+            milestoneMark: .current, changesType: true, chips: [FieldChip(fieldId: "cycle", text: "Cycle 4", icon: .iteration)]
         )
     }()
 
@@ -40,13 +40,14 @@ struct CardPaintTests {
 
     /// The card in each look it can have, one under the other, as pixels.
     private func picture(dark: Bool) -> Data {
-        struct Look: Hashable { var highlighted = false, selected = false, lifted = false, fold = false; var part: PickerKind? }
-        let looks = [Look(), Look(highlighted: true), Look(selected: true), Look(lifted: true), Look(highlighted: true, fold: true)]
-            + [PickerKind.priority, .labels, .subIssues, .assignees, .dueDate, .milestone, .blockedBy, .parent].map { Look(highlighted: true, part: $0) }
+        struct Look: Hashable { var highlighted = false, selected = false, peeked = false, lifted = false, fold = false; var part: PickerKind? }
+        let looks = [Look(), Look(highlighted: true), Look(selected: true), Look(peeked: true), Look(selected: true, peeked: true),
+                     Look(lifted: true), Look(highlighted: true, fold: true)]
+            + [PickerKind.priority, .issueType, .labels, .subIssues, .assignees, .dueDate, .milestone, .blockedBy, .parent].map { Look(highlighted: true, part: $0) }
         let renderer = ImageRenderer(content:
             VStack(spacing: 6) {
                 ForEach(looks, id: \.self) { look in
-                    CardView(card: Self.card, width: 300, highlighted: look.highlighted, selected: look.selected, lifted: look.lifted,
+                    CardView(card: Self.card, width: 300, highlighted: look.highlighted, selected: look.selected, peeked: look.peeked, lifted: look.lifted,
                              hoveredPart: look.part, hoveringFold: look.fold)
                 }
             }
@@ -70,6 +71,18 @@ struct CardPaintTests {
         a.count == b.count && zip(a, b).allSatisfy { abs(Int($0) - Int($1)) <= 2 }
     }
 
+    @Test("A card's type stands first of its tags, and opens its own picker")
+    func typeComesFirst() {
+        let renderer = ImageRenderer(content: CardView(card: Self.card, width: 300).environment(\.colorScheme, .light))
+        renderer.scale = 1
+        #expect(renderer.cgImage != nil)
+        let parts = CardRegionStore.shared.parts(Self.card.item.id)
+        let type = parts.first { $0.kind == .issueType }?.rect
+        let labels = parts.first { $0.kind == .labels }?.rect
+        #expect(type != nil && labels != nil)
+        if let type, let labels { #expect(type.maxX < labels.minX) }
+    }
+
     @Test("A card painted with kept texts and colours looks as one painted from nothing")
     func keptLooksAsFresh() {
         warmUp()
@@ -79,6 +92,31 @@ struct CardPaintTests {
             let kept = picture(dark: dark)
             #expect(!fresh.isEmpty)
             #expect(alike(kept, fresh))
+        }
+    }
+
+    /// One card, as pixels.
+    private func picture(of card: CardView, dark: Bool) -> Data {
+        let renderer = ImageRenderer(content: card.padding(10).background(Theme.board).environment(\.colorScheme, dark ? .dark : .light))
+        renderer.scale = 2
+        guard let image = renderer.cgImage, let data = image.dataProvider?.data else { return Data() }
+        return data as Data
+    }
+
+    @Test("The card in the peek stands out from a plain, a hovered and a picked one, and a lifted card leaves the mark behind")
+    func peekedCard() {
+        warmUp()
+        for dark in [false, true] {
+            let peeked = picture(of: CardView(card: Self.card, width: 300, peeked: true), dark: dark)
+            #expect(!peeked.isEmpty)
+            for other in [CardView(card: Self.card, width: 300), CardView(card: Self.card, width: 300, highlighted: true),
+                          CardView(card: Self.card, width: 300, selected: true)] {
+                #expect(!alike(peeked, picture(of: other, dark: dark)))
+            }
+            // Picked as well, it keeps the picked tint under the ring.
+            #expect(!alike(picture(of: CardView(card: Self.card, width: 300, selected: true, peeked: true), dark: dark), peeked))
+            #expect(alike(picture(of: CardView(card: Self.card, width: 300, peeked: true, lifted: true), dark: dark),
+                          picture(of: CardView(card: Self.card, width: 300, lifted: true), dark: dark)))
         }
     }
 

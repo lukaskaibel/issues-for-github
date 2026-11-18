@@ -8,6 +8,7 @@ struct NewIssueView: View {
 
     @State private var draft = NewIssueDraft(projectId: nil)
     @State private var openPicker: PickerKind?
+    @State private var choosingRepository = false
     /// Whether this is a draft from last time, which can be thrown away to start over.
     @State private var restored = false
     @State private var created = false
@@ -176,28 +177,25 @@ struct NewIssueView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 14)
 
+            if draft.parent == nil, case .unavailable = repositories {
+                Label(.projectHasNoRepository, systemImage: "exclamationmark.triangle")
+                    .font(.small)
+                    .foregroundStyle(Theme.warning)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 12)
+            }
+
             PopoverDivider()
 
             HStack(spacing: 10) {
                 Text(.repository).font(.small).foregroundStyle(Theme.textSecondary)
-                GlassMenuPicker {
-                    let menu = MenuBuilder()
-                    for repo in repos {
-                        menu.item(repo.nameWithOwner, "book.closed", checked: draft.repoId == repo.id) { selectRepo(repo.id) }
-                    }
-                    return menu.build()
-                } label: {
-                    HStack(spacing: 4) {
-                        (repos.first { $0.id == draft.repoId }.map { Text($0.nameWithOwner) } ?? Text(.chooseRepositoryPlaceholder))
-                        if !(draft.parent != nil || repos.count < 2) {
-                            Image(systemName: "chevron.up.chevron.down").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.textTertiary)
-                        }
-                    }
-                    .font(.small)
-                    .foregroundStyle(Theme.textBody)
+                repositoryPicker
+                    .fixedSize()
+                    .disabled(!picksRepository)
+                if case .yours = repositories, draft.repoId == nil {
+                    Text(.projectHasNoRepositoryYet).font(.small).foregroundStyle(Theme.textTertiary).lineLimit(1)
                 }
-                .fixedSize()
-                .disabled(draft.parent != nil || repos.count < 2)
                 Spacer()
                 Text("⌘↵").font(.tiny).foregroundStyle(Theme.textSecondary)
                 Button(draft.isEpic ? .createEpicButton : .createIssueMac, action: create)
@@ -218,6 +216,11 @@ struct NewIssueView: View {
         .onChange(of: model.optionIdRemaps) { _, saved in
             // A status made in this form, now saved on GitHub.
             if let id = draft.statusId, let savedId = saved[id] { draft.statusId = savedId }
+        }
+        // The board's first read can end while the form is open.
+        .onChange(of: repositories) {
+            settleRepository()
+            if statusId == nil, draft.statusId == nil { draft.statusId = defaultStatus(projectId: draft.projectId) }
         }
         .onDisappear {
             guard !created else { return }
@@ -240,10 +243,70 @@ struct NewIssueView: View {
     }
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
     private var iterationField: ProjectField? { model.iterationFields(projectId: draft.projectId).first }
-    /// The board's repositories, also for an issue started on none in All Issues.
-    private var repos: [RepoRef] {
-        if inAllIssues, let id = model.allIssuesProjectId { return model.repos(projectId: id) }
-        return model.repos(forNewIssueIn: draft.projectId, repoId: draft.repoId)
+    /// The board's repositories, also for an issue started on none in All Issues, or yours for a board with none.
+    private var repositories: NewIssueRepositories {
+        model.newIssueRepositories(projectId: draft.projectId, repoId: draft.repoId, allIssuesOf: allIssuesBoard)
+    }
+    private var repos: [RepoRef] { repositories.choices }
+    private var allIssuesBoard: String? { inAllIssues ? model.allIssuesProjectId : nil }
+    private var picksRepository: Bool { draft.parent == nil && repos.count > 1 }
+
+    @ViewBuilder
+    private var repositoryPicker: some View {
+        if case .yours = repositories {
+            // Any of up to a hundred, so a list that scrolls and can be searched.
+            Button {
+                choosingRepository = true
+            } label: {
+                repositoryLabel
+            }
+            .buttonStyle(PlainPressStyle())
+            .dropdown(isPresented: $choosingRepository) { close in
+                PickerList(
+                    placeholder: String(localized: .chooseARepositoryPlaceholder),
+                    items: repos.map { repo in
+                        PickerItem(
+                            id: repo.id, title: repo.nameWithOwner, selected: draft.repoId == repo.id,
+                            icon: AnyView(RepositoryIcon(size: 12))
+                        )
+                    },
+                    width: 320,
+                    onPick: selectRepo,
+                    onClose: close
+                )
+            }
+        } else {
+            GlassMenuPicker {
+                let menu = MenuBuilder()
+                for repo in repos {
+                    menu.item(repo.nameWithOwner, "book.closed", checked: draft.repoId == repo.id) { selectRepo(repo.id) }
+                }
+                return menu.build()
+            } label: {
+                repositoryLabel
+            }
+        }
+    }
+
+    private var repositoryLabel: some View {
+        HStack(spacing: 4) {
+            if draft.parent == nil, repositories == .loading {
+                ProgressView().controlSize(.mini)
+                Text(.loadingRepositories)
+            } else {
+                let chosen = repos.first { $0.id == draft.repoId } ?? draft.parent.flatMap { _ in draft.repoId.flatMap(model.anyRepository(id:)) }
+                (chosen.map { Text($0.nameWithOwner) } ?? Text(.chooseRepositoryPlaceholder))
+                if picksRepository {
+                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 8, weight: .semibold)).foregroundStyle(Theme.textTertiary)
+                }
+            }
+        }
+        .font(.small)
+        .foregroundStyle(Theme.textBody)
+    }
+
+    private func settleRepository() {
+        model.settleRepository(of: &draft, allIssuesOf: allIssuesBoard)
     }
 
     /// A new issue started in All Issues chooses between the board and none, and one started where no board is on
@@ -286,12 +349,16 @@ struct NewIssueView: View {
     private func selectProject(_ id: String?) {
         guard id != draft.projectId else { return }
         draft.projectId = id
-        // Another board brings its own repository along; in All Issues the issue stays in the one chosen.
-        if !inAllIssues, let repoId = id.flatMap({ model.defaultRepoId(projectId: $0) }), repoId != draft.repoId {
-            draft.repoId = repoId
-            // Labels belong to a repository: GitHub would refuse another one's, and the new issue with them.
-            draft.labels = []
+        // Another board brings its own repository along, or none yet; in All Issues the issue stays in the one chosen.
+        if !inAllIssues {
+            let repoId = id.flatMap { model.defaultRepoId(projectId: $0) }
+            if repoId != draft.repoId {
+                draft.repoId = repoId
+                // Labels belong to a repository: GitHub would refuse another one's, and the new issue with them.
+                draft.labels = []
+            }
         }
+        settleRepository()
         draft.statusId = defaultStatus(projectId: id)
         draft.priorityId = nil
         if let title = draft.milestoneTitle, !milestones.contains(where: { $0.title == title }) { draft.milestoneTitle = nil }
@@ -355,6 +422,7 @@ struct NewIssueView: View {
             if plan.noMilestone { draft.milestoneTitle = nil }
             restored = true
             focus = .title
+            settleRepository()
             model.loadRepoMeta(projectId: draft.projectId)
             return
         }
@@ -375,6 +443,7 @@ struct NewIssueView: View {
         }
         draft = new
         focus = .title
+        settleRepository()
         model.loadRepoMeta(projectId: projectId)
         model.refreshStatuses(projectId: projectId)
         if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
@@ -391,6 +460,7 @@ struct NewIssueView: View {
         draft.repoId = id
         // Labels belong to a repository, so a choice made for another one no longer applies.
         draft.labels = []
+        settleRepository()
     }
 
     private func create() {
@@ -497,7 +567,7 @@ struct NewIssueView: View {
         case .iteration(let fieldId):
             guard let field = model.field(id: fieldId) else { return [] }
             return model.iterationItems(field: field, current: [draft.fieldValues[fieldId]?.iterationId])
-        case .dueDate, .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic:
+        case .dueDate, .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic, .issueType:
             return []
         }
     }
@@ -538,7 +608,7 @@ struct NewIssueView: View {
             draft.milestoneTitle = id.isEmpty ? nil : id
         case .iteration(let fieldId):
             draft.fieldValues[fieldId] = id.isEmpty ? nil : FieldValue(iterationId: id)
-        case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic:
+        case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic, .issueType:
             break
         }
     }

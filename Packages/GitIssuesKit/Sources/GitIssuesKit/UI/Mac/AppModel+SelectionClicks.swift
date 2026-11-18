@@ -20,6 +20,8 @@ extension AppModel {
     /// A plain click on an issue opens it, and the picked issues go: the click is about this one now, as a click on
     /// another file is in the Finder.
     func openFromClick(_ item: Item) {
+        // The release of a deep press, which has opened the peek instead.
+        guard !deepPress.openedPeek else { return }
         clearSelection()
         open(item)
     }

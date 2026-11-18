@@ -48,6 +48,33 @@ extension Mutation {
         /// The label shown until GitHub has the real one: the repository's own when it is known.
         public var label: LabelRef
     }
+
+    /// Gives an issue a type, or takes its type away.
+    public struct SetIssueType: Codable, Sendable, Equatable {
+        public var contentId: String
+        /// The type on GitHub, its name and its colour; all nil to take the issue's type away.
+        public var typeId: String?
+        public var name: String?
+        public var color: String?
+        /// The type before the first of the still-unsent changes to it, which is the one GitHub knows.
+        public var baseName: String?
+        public var baseColor: String?
+        /// The type this change replaces, by the id GitHub sets it with, so that the change can be taken back.
+        public var baseTypeId: String?
+    }
+}
+
+extension Mutation.SetIssueType {
+    func apply(_ db: Database) throws {
+        try db.execute(
+            sql: "UPDATE item SET issueType = ?, issueTypeColor = ?, dirty = 1 WHERE contentId = ?",
+            arguments: [name, color, contentId]
+        )
+        try db.execute(
+            sql: "UPDATE subIssue SET issueType = ?, issueTypeColor = ? WHERE id = ?",
+            arguments: [name, color, contentId]
+        )
+    }
 }
 
 extension Mutation.SetMilestone {
@@ -111,7 +138,10 @@ extension Mutation.SetEpic {
                 }
             } else {
                 item.labels.removeAll { Item.isEpicLabel($0.name) }
-                if item.issueType.map(Item.isEpicType) == true { item.issueType = nil }
+                if item.issueType.map(Item.isEpicType) == true {
+                    item.issueType = nil
+                    item.issueTypeColor = nil
+                }
             }
             item.dirty = true
             try item.update(db)

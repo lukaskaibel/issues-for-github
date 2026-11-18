@@ -159,7 +159,7 @@ extension AppModel {
     }
 
     /// An issue can be on several boards; the one on screen or opened last wins, and any board over none.
-    private func localItem(contentId: String) -> Item? {
+    func localItem(contentId: String) -> Item? {
         let copies = allItems.filter { $0.contentId == contentId }
         guard copies.count > 1 else { return copies.first }
         let preferred = currentProjectId ?? UserDefaults.standard.string(forKey: "selectedProject")
@@ -181,7 +181,7 @@ extension AppModel {
         let engine = self.engine
         Task {
             if let meta = try? await engine.repoMeta(repoId: repoId) {
-                otherRepoMeta[repoId] = (meta.labels, meta.users)
+                otherRepoMeta[repoId] = (meta.labels, meta.users, meta.types)
             }
         }
     }
@@ -313,15 +313,30 @@ extension AppModel {
     func toggleRead(_ entries: [InboxEntry]) {
         guard let first = entries.first else { return }
         if isUnread(first) {
-            markRead(entries)
+            markReadUndoably(entries)
         } else {
-            for entry in entries { personal.setMarkedUnread(entry.id, entry.updatedAt) }
+            markUnreadUndoably(entries)
         }
     }
 
     /// ⌥U: everything in the half on screen.
     func markAllRead() {
-        markRead(visibleInbox.filter(isUnread))
+        markReadUndoably(visibleInbox.filter(isUnread))
+    }
+
+    /// Reading on purpose, which ⌘Z takes back; opening an entry reads it without that.
+    private func markReadUndoably(_ entries: [InboxEntry]) {
+        let ids = entries.filter(isUnread).map(\.id)
+        guard !ids.isEmpty else { return }
+        markRead(entries)
+        recordUndo(.restore { $0.markUnreadUndoably(ids.compactMap($0.inboxEntry(id:))) }, name: .markAsRead)
+    }
+
+    private func markUnreadUndoably(_ entries: [InboxEntry]) {
+        guard !entries.isEmpty else { return }
+        let ids = entries.map(\.id)
+        for entry in entries { personal.setMarkedUnread(entry.id, entry.updatedAt) }
+        recordUndo(.restore { $0.markReadUndoably(ids.compactMap($0.inboxEntry(id:))) }, name: .markAsUnread)
     }
 
     // MARK: Archiving
@@ -332,7 +347,7 @@ extension AppModel {
         let message = entries.count == 1
             ? String(localized: .archivedNotification(number: entries[0].displayNumber(withRepo: false)))
             : String(localized: .archivedNotifications(count: entries.count))
-        change(entries, message: message, icon: "archivebox") { entry in
+        change(entries, message: message, icon: "archivebox", name: .archive, again: { $0.archive($1) }) { entry in
             entry.isAppMade ? [] : [.archiveThread(.init(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label))]
         }
     }
@@ -353,13 +368,16 @@ extension AppModel {
         let message = entries.count == 1
             ? String(localized: .unsubscribedFromIssue(number: entries[0].displayNumber(withRepo: false)))
             : String(localized: .unsubscribedFromIssues(count: entries.count))
-        change(entries, message: message, icon: "bell.slash") { entry in
+        change(entries, message: message, icon: "bell.slash", name: .unsubscribe, again: { $0.unsubscribe($1) }) { entry in
             let change = Mutation.ThreadChange(threadId: entry.id, updatedAt: entry.updatedAt, label: entry.label)
             return [.unsubscribeThread(change), .archiveThread(change)]
         }
     }
 
-    private func change(_ entries: [InboxEntry], message: String, icon: String, mutations: (InboxEntry) -> [Mutation]) {
+    private func change(
+        _ entries: [InboxEntry], message: String, icon: String, name: LocalizedStringResource,
+        again: @escaping @MainActor (AppModel, [InboxEntry]) -> Void, mutations: (InboxEntry) -> [Mutation]
+    ) {
         let before = visibleInbox
         let ids = entries.map(\.id)
         var records: [String: PersonalStore.Record?] = [:]
@@ -382,23 +400,32 @@ extension AppModel {
             inboxPicked = []
             selectNeighbour(after: Set(ids), in: before)
         }
-        inboxUndo = InboxUndo(message: message, icon: icon, threadIds: ids, outboxIds: added, records: records, unread: unread)
+        let undo = InboxUndo(message: message, icon: icon, threadIds: ids, outboxIds: added, records: records, unread: unread)
+        inboxUndo = undo
+        recordUndo(.restore { model in
+            guard model.putBack(undo) else { return }
+            model.recordUndo(.restore { again($0, entries) }, name: name)
+        }, name: name, tag: undo.id)
         let engine = self.engine
-        let undoId = inboxUndo?.id
         Task {
-            // Send once the moment to undo has passed, and let the message go.
+            // Send once the moment to undo has passed, and let the message go. GitHub can't bring the entries back after.
             try? await Task.sleep(for: .seconds(SyncEngine.undoWindow + 0.2))
-            if inboxUndo?.id == undoId { withAnimation(Theme.overlay) { inboxUndo = nil } }
+            if inboxUndo?.id == undo.id { withAnimation(Theme.overlay) { inboxUndo = nil } }
+            undoHistory.remove(tag: undo.id)
             await engine.kick()
         }
     }
 
-    /// ⌘Z or the Undo button: puts the entries back, as long as nothing has been sent.
-    func undoInbox() {
-        guard let undo = inboxUndo else { return }
-        inboxUndo = nil
+    /// ⌘Z or the Undo button: puts the entries back, as long as nothing has been sent. Returns whether it could.
+    private func putBack(_ undo: InboxUndo) -> Bool {
+        if inboxUndo?.id == undo.id { inboxUndo = nil }
         do {
-            try db.writer.write { db in
+            let waiting = try db.writer.write { db -> Bool in
+                let pending = try OutboxEntry
+                    .filter(keys: undo.outboxIds)
+                    .filter(Column("state") == OutboxState.pending.rawValue)
+                    .fetchCount(db)
+                guard pending == undo.outboxIds.count else { return false }
                 for id in undo.outboxIds {
                     try db.execute(sql: "DELETE FROM outbox WHERE id = ? AND state = ?", arguments: [id, OutboxState.pending.rawValue])
                 }
@@ -408,15 +435,18 @@ extension AppModel {
                         arguments: [undo.unread[threadId] ?? false, threadId]
                     )
                 }
+                return true
             }
+            guard waiting else { return false }
         } catch {
-            return
+            return false
         }
         for (threadId, record) in undo.records {
             personal.restore(threadId, record)
         }
         withAnimation(Theme.spring) { reloadNow() }
         if let first = undo.threadIds.first { inboxSelectedId = first }
+        return true
     }
 
     // MARK: Snoozing
@@ -425,6 +455,14 @@ extension AppModel {
     func snooze(_ entries: [InboxEntry], until: Date) {
         guard !entries.isEmpty else { return }
         let before = visibleInbox
+        var records: [String: PersonalStore.Record?] = [:]
+        for entry in entries { records[entry.id] = personal.records[entry.id] }
+        recordUndo(.restore { model in
+            for (id, record) in records { model.personal.restore(id, record) }
+            model.inboxSelectedId = entries.first?.id
+            model.scheduleInboxWake()
+            model.recordUndo(.restore { $0.snooze(entries, until: until) }, name: .snooze)
+        }, name: .snooze)
         withAnimation(Theme.spring) {
             for entry in entries {
                 personal.setSnooze(entry.id, .init(until: until, threadUpdatedAt: entry.updatedAt))

@@ -23,6 +23,8 @@ public actor SyncEngine {
     private var lastAssignedPull: Date?
     /// When each repository's milestones were last read.
     var lastMilestonePull: [String: Date] = [:]
+    /// When the labels on show were last compared with GitHub's.
+    var lastLabelPull: Date?
     /// Items GitHub lists but will not show us (no access); remembered so they are not re-requested forever.
     private var unhydratable: [String: String] = [:]
     /// Repositories whose issue events GitHub won't list, so they aren't asked again.
@@ -160,6 +162,7 @@ public actor SyncEngine {
         lastFullRepoPull = [:]
         lastAssignedPull = nil
         lastMilestonePull = [:]
+        lastLabelPull = nil
         kick()
     }
 
@@ -219,6 +222,7 @@ public actor SyncEngine {
             try await pullOneBackgroundProject()
             try await pullRepositories()
             try await pullMilestones()
+            try await refreshLabels()
 
             wasOffline = false
             await finish(.idle, syncedAt: Date())
@@ -1166,6 +1170,10 @@ public actor SyncEngine {
         case .setEpic(let m):
             try await sendEpic(m)
 
+        case .setIssueType(let m):
+            guard m.name != m.baseName else { break }
+            try await api.setIssueType(contentId: m.contentId, typeId: m.typeId)
+
         case .setProjectField(let m):
             guard m.value != m.base else { break }
             try await sendFieldValue(m.value, projectId: m.projectId, itemId: m.itemId, fieldId: m.fieldId)
@@ -1338,6 +1346,11 @@ public actor SyncEngine {
             m.milestoneTitle = try m.base.flatMap { try String.fetchOne(db, sql: "SELECT title FROM milestone WHERE id = ?", arguments: [$0]) }
             try m.apply(db)
         }
+        if case .setIssueType(var m) = entry.mutation {
+            m.name = m.baseName
+            m.color = m.baseColor
+            try m.apply(db)
+        }
         if case .createMilestone(let m) = entry.mutation, m.createdId == nil {
             // Nothing may wait for a milestone that won't be made.
             try db.execute(sql: "DELETE FROM milestone WHERE id = ?", arguments: [m.milestoneId])
@@ -1470,9 +1483,15 @@ public actor SyncEngine {
     }
 
     /// Labels and assignable people of a repository that is on no board, for an issue seen only in the Inbox.
-    public func repoMeta(repoId: String) async throws -> (labels: [LabelRef], users: [Person]) {
+    public func repoMeta(repoId: String) async throws -> (labels: [LabelRef], users: [Person], types: [IssueTypeRef]) {
         if isDemo { return DemoData.repoMeta(repoId: repoId) }
         return try await api.repoMeta(repoId: repoId)
+    }
+
+    /// The repositories you can open issues in, for a new issue on a board that has none yet.
+    public func yourRepositories() async throws -> [RepoRef] {
+        if isDemo { return DemoData.yourRepositories }
+        return try await api.viewerRepositories()
     }
 
     /// Labels and assignable people of a repository, for the pickers. Cached for ten minutes.
@@ -1487,10 +1506,11 @@ public actor SyncEngine {
         let meta = try await api.repoMeta(repoId: repoId)
         try await db.writer.write { db in
             try db.execute(
-                sql: "UPDATE repo SET labels = ?, assignableUsers = ?, metaLoadedAt = ? WHERE id = ?",
+                sql: "UPDATE repo SET labels = ?, assignableUsers = ?, issueTypes = ?, metaLoadedAt = ? WHERE id = ?",
                 arguments: [
                     String(decoding: try JSONEncoder().encode(meta.labels), as: UTF8.self),
                     String(decoding: try JSONEncoder().encode(meta.users), as: UTF8.self),
+                    String(decoding: try JSONEncoder().encode(meta.types), as: UTF8.self),
                     Date(), repoId,
                 ]
             )

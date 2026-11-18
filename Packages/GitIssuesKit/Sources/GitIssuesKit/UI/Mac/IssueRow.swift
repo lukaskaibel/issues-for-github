@@ -21,6 +21,8 @@ struct IssueRowModel: Equatable {
     /// row's checkbox.
     var selected = false
     var selecting = false
+    /// The issue open in the peek.
+    var peeked = false
     /// How the row hangs under a parent in its group.
     var nest = Nesting.Place()
     /// How many sub-issues hang under this one in its group, folded or not; nil when none do.
@@ -35,6 +37,10 @@ struct IssueRowModel: Equatable {
     var milestoneMark: MilestoneMark = .upcoming
     /// The project's own fields the view shows, such as an iteration or a "Workstream".
     var chips: [FieldChip] = []
+    /// Whether it shows its type: not in a list grouped by type, whose group says it.
+    var showsType = true
+    /// Whether its type opens the picker that changes it.
+    var changesType = false
     /// Whether its parts open their pickers. Not for an issue known only from GitHub, such as a sub-issue on none of
     /// your boards, whose status icon only opens or closes it.
     var editable = true
@@ -60,9 +66,9 @@ extension AppModel {
     /// The row of `item`. What every row shows the same way is worked out here; what depends on the list, such as where
     /// the row hangs in it and what its groups say already, is passed in.
     func issueRow(
-        _ item: Item, projectTitle: String? = nil, selected: Bool = false, selecting: Bool = false,
+        _ item: Item, projectTitle: String? = nil, selected: Bool = false, selecting: Bool = false, peeked: Bool = false,
         nest: Nesting.Place = Nesting.Place(), nested: Int? = nil, folded: Bool = false, showsParent: Bool = false,
-        milestone: String?, chips: [FieldChip]
+        milestone: String?, chips: [FieldChip], showsType: Bool = true
     ) -> IssueRowModel {
         IssueRowModel(
             item: item, glyph: glyph(of: item), priority: priorityLevel(of: item),
@@ -71,12 +77,14 @@ extension AppModel {
             projectTitle: projectTitle,
             due: dueBadge(for: item),
             blocker: blockerMark(for: item),
-            selected: selected, selecting: selecting,
+            selected: selected, selecting: selecting, peeked: peeked,
             nest: nest, nested: nested, folded: folded, showsParent: showsParent,
             parentIsEpic: item.parentId.flatMap { issue(contentId: $0) }?.isEpic ?? false,
             milestone: milestone,
             milestoneMark: milestoneMark(of: item),
-            chips: chips
+            chips: chips,
+            showsType: showsType,
+            changesType: canHaveIssueType(item)
         )
     }
 
@@ -114,6 +122,9 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     private var milestoneSize = NSSize.zero
     private var dueText: NSAttributedString?
     private var dueIcon: NSImage?
+    private var typeText: NSAttributedString?
+    private var typeSize = NSSize.zero
+    private var typeColor = NSColor.clear
     private var labels: [(text: NSAttributedString, size: NSSize, color: NSColor)] = []
     /// The texts of the project's fields the view shows.
     private var chipTexts: [(text: NSAttributedString, size: NSSize)] = []
@@ -191,6 +202,10 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
         return true
     }
 
+    /// Where a row's first icon, its priority, stands, in line with the status icon of the section's header.
+    static let firstColumn = IssueTable.inset + 28
+    /// From the priority to the number.
+    private static let priorityStep: CGFloat = 14 + 10
     /// Sub-issues hang this much further in per level, down to a few levels.
     static let indent: CGFloat = 20
     static let deepestIndent = 5
@@ -309,6 +324,17 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
                 let text = NSAttributedString(string: chip.text, attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: secondary])
                 return (text, text.size())
             }
+            // The type, as cards show it (`IssueTypeMark`).
+            let shownType = row.showsType ? item.shownType : nil
+            typeText = shownType.map {
+                NSAttributedString(string: $0.name, attributes: [
+                    .font: NSFont.systemFont(ofSize: 11),
+                    .foregroundColor: secondary,
+                    .paragraphStyle: truncating,
+                ])
+            }
+            typeSize = typeText?.size() ?? .zero
+            typeColor = NSColor(Theme.issueTypeColor(shownType?.color))
             // Labels as cards show them (`LabelMark`), and "+2" for those that don't fit, made for each number of them
             // that can be left over.
             let shownLabels = item.shownLabels
@@ -354,14 +380,16 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
 
     /// The row's own picture as it lifts off the list, which `LiftedImage` puts on a card: without the hover fill and
-    /// checkbox, which belong to the pointer, not to the issue, nor the accent fill of a picked row; lifted, it is a
-    /// card like any other, as on the board.
+    /// checkbox, which belong to the pointer, not to the issue, nor the accent fill of a picked row, the mark of the peek
+    /// or the indent of a sub-issue; lifted, it is a card like any other, as on the board.
     func liftedContent() -> NSImage? {
         guard let content = bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
         let wasHighlighted = highlighted, wasHovered = hoveredPart, wasRow = row
-        if var lifted = row, lifted.selected || lifted.selecting {
+        if var lifted = row, lifted.selected || lifted.selecting || lifted.peeked || lifted.nest.depth > 0 {
             lifted.selected = false
             lifted.selecting = false
+            lifted.peeked = false
+            lifted.nest = Nesting.Place()
             configure(lifted, highlighted: false)
         }
         highlighted = false
@@ -384,12 +412,19 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
         let midY = size.height / 2
 
         let onAccent = row.selected
-        if row.selected {
+        let shape = bounds.insetBy(dx: IssueTable.inset, dy: 1)
+        if row.peeked {
+            context.draw(
+                Marks.peek(in: shape, cornerRadius: 8, onAccent: onAccent),
+                mark: NSColor(Theme.peekRing(onAccent: onAccent)).cgColor, off: NSColor(Theme.peekGround(onAccent: onAccent)).cgColor,
+                onColor: NSColor(Theme.onColor).cgColor
+            )
+        } else if row.selected {
             NSColor(Theme.accentFill).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
+            NSBezierPath(roundedRect: shape, xRadius: 8, yRadius: 8).fill()
         } else if highlighted {
             NSColor(Theme.selected).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
+            NSBezierPath(roundedRect: shape, xRadius: 8, yRadius: 8).fill()
         }
         // The checkbox sits under the section headers' fold arrow; it shows on hover and while picking. A row that can't
         // be picked but can be taken off its list has the button for that there instead, so the row's columns stay in
@@ -426,8 +461,10 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
         var parts: [(kind: PickerKind, rect: NSRect)] = []
         let canEditFields = row.item.kind != .draft
 
-        // Left to right: priority, number, status. The priority lines up with the headers' status icon.
-        var x: CGFloat = IssueTable.inset + 28
+        // Left to right: priority, number, status. A sub-issue hangs under its parent: the whole row moves in, right of
+        // the line coming down from the parent's priority.
+        if drawsTree { drawTree(row, midY: midY) }
+        var x = Self.firstColumn + CGFloat(min(row.nest.depth, Self.deepestIndent)) * Self.indent
         if row.showsPriority {
             let rect = NSRect(x: x, y: midY - 7, width: 14, height: 14)
             parts.append((.priority, rect))
@@ -436,13 +473,10 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
         // Without a Priority field in the project there is nothing to show, as on a card; the place stays, so numbers and
         // titles line up with the rows around.
         if row.showsPriority { drawPriority(row.priority, x: x, midY: midY, onAccent: onAccent) }
-        x += 14 + 10
+        x += Self.priorityStep
         number.draw(at: NSPoint(x: x, y: midY - numberSize.height / 2))
         let numberRect = NSRect(x: x, y: midY - 9, width: numberSize.width, height: 18)
         x += 40 + 10
-        // A sub-issue hangs under its parent: status and title move in, with a line from the parent's status.
-        if drawsTree { drawTree(row, from: x, midY: midY) }
-        x += CGFloat(min(row.nest.depth, Self.deepestIndent)) * Self.indent
         if row.showsStatus {
             let rect = NSRect(x: x, y: midY - 7, width: 14, height: 14)
             parts.append((.status, rect))
@@ -478,7 +512,7 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
 
         // Right to left: assignees, date, project, labels.
         var right = size.width - IssueTable.inset - 14
-        var avatarRing = NSColor(row.selected ? Theme.accentFill : highlighted ? Theme.selected : Theme.panel)
+        var avatarRing = NSColor(row.selected ? Theme.accentFill : row.peeked ? Theme.peekFill : highlighted ? Theme.selected : Theme.panel)
         if canEditFields {
             let count = CGFloat(max(min(row.item.assignees.count, 3), 1))
             let width = 18 + (count - 1) * 13
@@ -579,8 +613,11 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
             if let more = moreLabels[labelCount - count] { width += LabelMark.spacing + LabelMark.inset + more.size.width + LabelMark.inset }
             return width
         }
+        // The type stands first of them, and stays when labels have to give way.
+        let typeWidth: CGFloat? = typeText == nil ? nil : IssueTypeMark.width(name: typeSize.width)
+        let typeRoom = typeWidth.map { $0 + LabelMark.spacing } ?? 0
         var fitting = labels.count
-        while fitting > 0, right - labelsWidth(fitting) <= x + 120 { fitting -= 1 }
+        while fitting > 0, right - typeRoom - labelsWidth(fitting) <= x + 120 { fitting -= 1 }
         if fitting > 0 {
             let width = labelsWidth(fitting)
             let labelsRect = NSRect(x: right - width, y: midY - LabelMark.height / 2, width: width, height: LabelMark.height)
@@ -605,6 +642,29 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
                 more.text.draw(at: NSPoint(x: labelX + LabelMark.inset, y: midY - more.size.height / 2))
             }
             right = labelsRect.minX - 6
+        }
+        if let typeText, let typeWidth, right - typeWidth > x + 120 {
+            let rect = NSRect(x: right - typeWidth, y: midY - IssueTypeMark.height / 2, width: typeWidth, height: IssueTypeMark.height)
+            if row.changesType { parts.append((.issueType, rect)) }
+            drawChip(rect, hovered: row.changesType && hoveredPart == .issueType)
+            let square = CGRect(
+                x: rect.minX + IssueTypeMark.inset, y: midY - IssueTypeMark.square / 2,
+                width: IssueTypeMark.square, height: IssueTypeMark.square
+            )
+            context.draw(Marks.issueType(in: square), mark: typeColor.cgColor, onColor: NSColor.white.cgColor)
+            if onAccent {
+                // On the accent of a picked row, an edge keeps a square of a like colour apart from it, as a label's dot.
+                context.draw(
+                    Marks.issueType(in: square.insetBy(dx: -0.5, dy: -0.5), empty: true),
+                    mark: NSColor.white.withAlphaComponent(0.9).cgColor, onColor: NSColor.white.cgColor
+                )
+            }
+            let textX = square.maxX + IssueTypeMark.gap
+            typeText.draw(
+                with: NSRect(x: textX, y: midY - typeSize.height / 2, width: min(typeSize.width, IssueTypeMark.longestName), height: typeSize.height),
+                options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
+            )
+            right = rect.minX - 6
         }
 
         // The title takes what is left, with the sub-issue count and, when blocked, a flag with what blocks it
@@ -704,18 +764,20 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     private var titleRect = NSRect.zero
     private var tooltipFoldRect: NSRect?
 
-    /// Lines from the parents above down to this row: a straight one through the row for each level whose
-    /// sub-issues go on below it, a branch into this row's status icon, and a line from this row's status icon
-    /// down to its own sub-issues when they show.
-    private func drawTree(_ row: IssueRowModel, from base: CGFloat, midY: CGFloat) {
+    /// Lines from the parents above down to this row, left of everything in it: a straight one through the row for
+    /// each level whose sub-issues go on below it, a branch to this row's priority icon, or to its number where it has
+    /// none, and a line from under that icon down to its own sub-issues when they show.
+    private func drawTree(_ row: IssueRowModel, midY: CGFloat) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
+        let base = Self.firstColumn
         let depth = min(row.nest.depth, Self.deepestIndent)
+        let start = base + CGFloat(depth) * Self.indent
         var path = Marks.treeLines(
             row.nest, deepest: Self.deepestIndent, lineX: { base + CGFloat($0) * Self.indent + 7 },
-            branchY: midY, branchEnd: base + CGFloat(depth) * Self.indent - 3, height: bounds.height
+            branchY: midY, branchEnd: start + (row.showsPriority ? 0 : Self.priorityStep) - 3, height: bounds.height
         )
         if row.nested != nil, !row.folded {
-            let lineX = base + CGFloat(depth) * Self.indent + 7
+            let lineX = start + 7
             path.move(to: CGPoint(x: lineX, y: midY + 10))
             path.addLine(to: CGPoint(x: lineX, y: bounds.height))
         }

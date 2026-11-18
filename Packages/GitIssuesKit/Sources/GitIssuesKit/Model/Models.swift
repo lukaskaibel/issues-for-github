@@ -45,6 +45,20 @@ public struct LabelRef: Codable, Hashable, Sendable, Identifiable {
     }
 }
 
+/// An issue type a repository's issues can have, such as Bug or Feature. GitHub keeps them per owner.
+public struct IssueTypeRef: Codable, Hashable, Sendable, Identifiable {
+    public var id: String
+    public var name: String
+    /// GitHub's colour enum: GRAY, BLUE, GREEN, YELLOW, ORANGE, RED, PINK, PURPLE.
+    public var color: String
+
+    public init(id: String, name: String, color: String) {
+        self.id = id
+        self.name = name
+        self.color = color
+    }
+}
+
 public enum ItemKind: String, Codable, Sendable {
     case issue = "ISSUE"
     case pullRequest = "PULL_REQUEST"
@@ -170,8 +184,9 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
     /// The milestone of the issue or pull request (node id), and its title for when the milestone itself isn't here.
     public var milestoneId: String?
     public var milestoneTitle: String?
-    /// The issue's type, in organisations that use them ("Bug", "Epic").
+    /// The issue's type ("Bug", "Epic") and the colour GitHub gives it (BLUE, RED…).
     public var issueType: String?
+    public var issueTypeColor: String?
     /// What the item has in the project's own fields other than Status, Priority and the due date, such as an
     /// iteration or a "Workstream", by field id.
     public var fieldValues: [String: FieldValue] = [:]
@@ -282,6 +297,9 @@ public struct SubIssue: Codable, FetchableRecord, PersistableRecord, Identifiabl
     /// How many sub-issues it has itself, and how many of them are closed, as GitHub counts them. Nil until read.
     public var subTotal: Int?
     public var subCompleted: Int?
+    /// Its type and the type's colour. Nil until its parent is read from GitHub again.
+    public var issueType: String?
+    public var issueTypeColor: String?
 
     public var isClosed: Bool { state != "OPEN" }
 }
@@ -349,6 +367,8 @@ public struct RepoRef: Codable, FetchableRecord, PersistableRecord, Identifiable
     public var projectId: String
     public var labels: [LabelRef] = []
     public var assignableUsers: [Person] = []
+    /// The issue types its issues can have.
+    public var issueTypes: [IssueTypeRef] = []
     public var metaLoadedAt: Date?
 
     public var shortName: String { nameWithOwner.split(separator: "/").last.map(String.init) ?? nameWithOwner }

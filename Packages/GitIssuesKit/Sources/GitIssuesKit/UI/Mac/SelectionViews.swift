@@ -49,6 +49,12 @@ struct SelectionBar: View {
                         Image(systemName: "tag").font(.system(size: 12))
                     }
                 }
+                if let typed = items.first(where: model.canHaveIssueType) {
+                    let shared = Set(items.map(\.issueType)).count == 1 ? typed.issueType : nil
+                    BarAction(kind: .issueType, item: typed, title: .issueTypeTitle, key: "T") {
+                        IssueTypeSquare(color: typed.issueTypeColor, empty: shared == nil, size: 10)
+                    }
+                }
                 if items.contains(where: model.canHaveDueDate) {
                     BarAction(kind: .dueDate, item: first, title: .dueDate, key: "D") {
                         Image(systemName: "calendar").font(.system(size: 12))
@@ -139,11 +145,16 @@ private struct BarAction<Icon: View>: View {
 
 // MARK: - Peek
 
-/// Space: a quick look at an issue on top of the board or list, without leaving it. Moving with the
-/// keyboard moves the peek along; Space or Escape puts it away, Return opens the issue.
+/// Space or a deep press on the trackpad: a quick look at an issue over the board or list, in the place and the glass
+/// of the new issue dialog. Moving with the keyboard moves the peek along; Space, Escape or a click beside it puts it
+/// away, Return opens the issue.
 struct PeekPanel: View {
     @Environment(AppModel.self) private var model
     var item: Item
+    /// As tall as the issue, up to what the window leaves; a first guess until the issue is measured.
+    @State private var contentHeight: CGFloat = 240
+
+    private static let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -161,15 +172,14 @@ struct PeekPanel: View {
                     .help(Text(.openIssueWithShortcut))
                 IconButton(systemName: "xmark", label: String(localized: .closeWithSpaceShortcut)) { model.togglePeek() }
             }
-            .padding(.leading, 16)
-            .padding(.trailing, 10)
-            .frame(height: 44)
-            .overlay(alignment: .bottom) { PopoverDivider() }
+            .padding(.leading, 18)
+            .padding(.trailing, 14)
+            .padding(.top, 14)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 14) {
                     Text(item.title)
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 21, weight: .semibold))
                         .foregroundStyle(Theme.text)
                         .fixedSize(horizontal: false, vertical: true)
                         .onTapGesture { model.open(item) }
@@ -182,10 +192,17 @@ struct PeekPanel: View {
                         MarkdownText(text: Diff3.normalize(item.body), onChange: item.isEditableContent ? setBody : nil)
                     }
                 }
-                .padding(18)
+                .padding(.horizontal, 18)
+                .padding(.top, 14)
+                .padding(.bottom, 8)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
             }
+            // The next issue starts at its top.
+            .id(item.id)
             .scrollIndicators(.never)
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(maxHeight: contentHeight)
 
             HStack(spacing: 14) {
                 hint(String(localized: .spaceKeyCap), .peekHintClose)
@@ -196,17 +213,17 @@ struct PeekPanel: View {
                     Text(.updatedOnDateTooltip(date: relativeDate(updated))).font(.tiny).foregroundStyle(Theme.textTertiary)
                 }
             }
-            .padding(.horizontal, 16)
-            .frame(height: 36)
-            .overlay(alignment: .top) { PopoverDivider() }
+            .padding(.leading, 18)
+            .padding(.trailing, 14)
+            .padding(.vertical, 12)
         }
-        .frame(width: 460)
-        .frame(maxHeight: .infinity)
-        // Like a Quick Look window: a page of its own, floating over the board.
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Theme.panel))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Theme.popoverBorder, lineWidth: 0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .shadow(color: Theme.shadow, radius: 30, y: 12)
+        .frame(width: 720)
+        .font(.ui)
+        .foregroundStyle(Theme.text)
+        .glassPanel(in: Self.shape)
+        // A click on the panel's empty parts stays on it, and doesn't reach the dimmed window, which would close it.
+        .contentShape(Self.shape)
+        .opensIssueLinks(of: item, in: model) { model.open($0) }
         // A right-click on the peek is about its issue: the issue's menu, as on its card, never the menu of the card or
         // line under the peek. Its description keeps the menu of text, to copy from.
         .floatingContextMenu { [model, id = item.id] in
@@ -287,13 +304,23 @@ struct PropertyChipRow: View {
             }
             if item.kind != .draft || item.subTotal > 0 {
                 HStack(spacing: 6) {
+                    if let type = item.shownType {
+                        Group {
+                            if model.canHaveIssueType(item) {
+                                PropertyButton(kind: .issueType, item: item) { IssueTypeChip(name: type.name, color: type.color) }
+                            } else {
+                                IssueTypeChip(name: type.name, color: type.color).padding(.horizontal, 8)
+                            }
+                        }
+                        .padding(.leading, -8)
+                    }
                     if !item.labels.isEmpty {
                         PropertyButton(kind: .labels, item: item) {
                             HStack(spacing: 6) {
                                 ForEach(item.labels) { LabelChip(label: $0) }
                             }
                         }
-                        .padding(.leading, -8)
+                        .padding(.leading, item.shownType == nil ? -8 : 0)
                     }
                     if item.subTotal > 0 {
                         PropertyButton(kind: .subIssues, item: item) {

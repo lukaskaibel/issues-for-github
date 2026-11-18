@@ -48,6 +48,9 @@ enum Theme {
     /// A picked issue: a tint of the accent behind it and the accent around it.
     static let selectionFill = Color(light: 0xEDEEFC, dark: 0x2A2C47)
     static let selectionBorder = Color(light: 0x8D93E6, dark: 0x6E75D8)
+    /// The issue open in the peek (`Marks.peek`): a stronger tint of the accent than a picked issue's, solid, as avatars
+    /// ring themselves in the colour under them.
+    static let peekFill = Color(light: 0xE3E5FB, dark: 0x30335C)
     /// Behind a small icon or avatar under the pointer.
     static let partHover = Color(light: 0xE5E5EA, dark: 0x3A3A3E)
 
@@ -131,6 +134,20 @@ enum Theme {
         case "PURPLE": Color(light: 0x5B63D3, dark: 0x8F96F2)
         default: nil
         }
+    }
+
+    /// An issue type's square. GitHub's grey, and a type whose colour isn't known yet, are the grey of quiet text.
+    static func issueTypeColor(_ name: String?) -> Color {
+        name.flatMap(optionColor) ?? textTertiary
+    }
+
+    /// The colours of the issue in the peek. On a picked row, which is filled with the accent, the ring turns white.
+    static func peekRing(onAccent: Bool = false) -> Color {
+        onAccent ? .white : accent
+    }
+
+    static func peekGround(onAccent: Bool = false) -> Color {
+        onAccent ? accentFill : peekFill
     }
 
     /// A project's glyph in one of GitHub's option colours; grey is the grey of secondary text, like other icons.

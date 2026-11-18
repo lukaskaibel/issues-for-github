@@ -1260,6 +1260,35 @@ final class HoverTableView: NSTableView {
         }
     }
 
+    /// A press on an issue is followed here until it is clearly a click, a drag or a deep press: the table's own tracking
+    /// leaves pressure events in the queue until the button is up, too late to peek. A click or drag then goes to the
+    /// table as it came, and a deep press never does, so it can't open the issue as well.
+    /// An issue's page has no peek to open, so its rows skip this.
+    override func mouseDown(with event: NSEvent) {
+        let row = self.row(at: convert(event.locationInWindow, from: nil))
+        guard let coordinator, !coordinator.isOnPage, let window, let item = coordinator.item(at: row),
+              event.modifierFlags.intersection(.deviceIndependentFlagsMask).isDisjoint(with: [.command, .shift, .option, .control]) else {
+            super.mouseDown(with: event)
+            return
+        }
+        let model = coordinator.model
+        while let next = window.nextEvent(matching: [.leftMouseUp, .leftMouseDragged, .pressure]) {
+            switch next.type {
+            case .pressure:
+                if model.pressureChanged(to: next.stage, over: item) { return }
+            case .leftMouseDragged:
+                // A finger pressing hard moves a little without meaning to.
+                let distance = hypot(next.locationInWindow.x - event.locationInWindow.x, next.locationInWindow.y - event.locationInWindow.y)
+                guard distance > DeepPress.allowedMovement else { continue }
+                fallthrough
+            default:
+                window.postEvent(next, atStart: true)
+                super.mouseDown(with: event)
+                return
+            }
+        }
+    }
+
     /// The row under `point`, in the table's coordinates; none where something else lies over the list, as the comment
     /// field or the toolbar over an issue's page.
     private func rowUnderPointer(_ point: NSPoint) -> Int {
@@ -1330,11 +1359,12 @@ final class HoverTableView: NSTableView {
     }
 }
 
-/// The header over the issues of an epic standing together in a section, painted as `EpicHeader` draws it on the
-/// board and on iPhone and iPad: the epic's icon in line with the issues' status icons, where the line down to them
-/// starts, its name, how many of its issues are there, and at the end of the row, under the section header's +, the
-/// arrow that folds them away. A click opens the epic, one on the arrow folds its issues or shows them again, and
-/// dragging it moves them all.
+/// The header over the issues of an epic standing together in a section, with the marks `EpicHeader` draws on the board
+/// and on iPhone and iPad: the epic's icon at the start of the row, in the column of the priorities, where the line down
+/// to its issues starts, its name, in line with the issues' priorities, how many of its issues are there, and at the end
+/// of the row, under the section header's +, the arrow that folds them away. All of it stands in the middle of the row,
+/// and so of the highlight under the pointer. A click opens the epic, one on the arrow folds its issues or shows them
+/// again, and dragging it moves them all.
 final class EpicHeaderRowCell: PaintedCell {
     private var group: Nesting.EpicGroup?
     /// What the header shows now.
@@ -1400,9 +1430,8 @@ final class EpicHeaderRowCell: PaintedCell {
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
 
-    /// The icon stands in the issues' status column, after their priority and number, where the line down to them
-    /// starts.
-    static let iconColumn = (x: IssueTable.inset + 28 + 14 + 10 + 40 + 10, width: CGFloat(14))
+    /// The icon stands where a row's priority does, and the line down to the epic's issues starts under it.
+    static let iconColumn = (x: IssueRowCell.firstColumn, width: CGFloat(14))
     /// The arrow stands under the section headers' + button.
     static let trailing = IssueTable.inset + 12
 
@@ -1414,8 +1443,7 @@ final class EpicHeaderRowCell: PaintedCell {
             NSColor(Theme.selected).setFill()
             NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: look.highlightRadius, yRadius: look.highlightRadius).fill()
         }
-        // The first line stands at the foot of the row, closer to the issues under it than to the row above.
-        let midY = bounds.height - look.bottom - look.line / 2
+        let midY = bounds.midY
         let column = Self.iconColumn
         let icon = CGRect(x: column.x + (column.width - look.iconSize) / 2, y: midY - look.iconSize / 2, width: look.iconSize, height: look.iconSize)
         if !group.folded {
@@ -1436,7 +1464,8 @@ final class EpicHeaderRowCell: PaintedCell {
             folded: group.folded, center: NSPoint(x: arrow.midX, y: arrow.midY),
             color: NSColor(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
         )
-        var x = column.x + column.width + look.spacing
+        // The name starts where the priorities of the issues under it do.
+        var x = column.x + IssueRowCell.indent
         let titleSize = title.size()
         let countSize = count.size()
         let gap = (look.countGap as NSString).size(withAttributes: [.font: look.countFont]).width
@@ -1666,6 +1695,12 @@ final class IssueHeaderCell: PaintedCell {
         case .epic: PlanningGlyph.drawEpic(in: iconRect, cg: context)
         case .plain: break
         case .dot(let color): PlanningGlyph.drawDot(color, in: iconRect, cg: context)
+        case .issueType(let color):
+            let side = iconRect.width * 0.62
+            context.draw(
+                Marks.issueType(in: CGRect(x: iconRect.midX - side / 2, y: iconRect.midY - side / 2, width: side, height: side)),
+                mark: NSColor(Theme.issueTypeColor(color)).cgColor, onColor: NSColor.white.cgColor
+            )
         case .progress(let done, let total): PlanningGlyph.drawProgress(done: done, total: total, in: iconRect, cg: context)
         case .iteration(let current):
             MenuIcons.symbol("arrow.triangle.2.circlepath", color: current ? Theme.started : Theme.textSecondary)?
@@ -2034,6 +2069,10 @@ struct ItemMenuBuilder {
                 entries.append(assignMe)
             }
         }
+        if targets.contains(where: model.canHaveIssueType), !model.issueTypes(for: item).isEmpty {
+            let icon = MenuIcons.issueType(item.issueTypeColor, empty: item.issueType == nil)
+            entries.append(submenu(String(localized: .issueTypeTitle), icon, issueTypeMenu(targets), picker: .issueType))
+        }
         if targets.contains(where: model.canHaveDueDate) {
             entries.append(submenu(String(localized: .dueDateTitle), MenuIcons.symbol("calendar"), dueDateMenu(targets), picker: .dueDate))
         }
@@ -2067,6 +2106,28 @@ struct ItemMenuBuilder {
             entry.image = MenuIcons.symbol("arrow.triangle.2.circlepath", color: model.isRunning(iteration, field: field) ? Theme.started : Theme.textSecondary)
             entry.toolTip = model.iterationRange(iteration)
             if numbered { number(entry, index + 1) }
+            menu.addItem(entry)
+        }
+        return menu
+    }
+
+    /// No type, and the repository's types with the one they share checked.
+    private func issueTypeMenu(_ targets: [Item]) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let names = Set(targets.map(\.issueType))
+        let none = ClosureMenuItem(String(localized: .noIssueType), checked: names == [nil]) { [model] in
+            model.setIssueType(of: targets, named: nil)
+        }
+        none.image = MenuIcons.issueType(nil, empty: true)
+        number(none, 0)
+        menu.addItem(none)
+        for (index, type) in model.issueTypes(for: item).enumerated() {
+            let entry = ClosureMenuItem(type.name, checked: names == [type.name]) { [model] in
+                model.setIssueType(of: targets, named: type.name)
+            }
+            entry.image = MenuIcons.issueType(type.color)
+            number(entry, index + 1)
             menu.addItem(entry)
         }
         return menu

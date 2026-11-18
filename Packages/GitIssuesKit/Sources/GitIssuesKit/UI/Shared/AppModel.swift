@@ -106,6 +106,7 @@ enum PaletteMode: Hashable {
     case blockedBy(itemId: String)
     case blocking(itemId: String)
     case milestone(itemId: String)
+    case issueType(itemId: String)
     case epic(itemId: String)
     /// The iteration of one of the board's iteration fields.
     case iteration(itemId: String, fieldId: String)
@@ -129,6 +130,7 @@ extension PaletteMode {
         case .blockedBy(let itemId): .blockedBy(itemId: id(itemId))
         case .blocking(let itemId): .blocking(itemId: id(itemId))
         case .milestone(let itemId): .milestone(itemId: id(itemId))
+        case .issueType(let itemId): .issueType(itemId: id(itemId))
         case .epic(let itemId): .epic(itemId: id(itemId))
         case .iteration(let itemId, let fieldId): .iteration(itemId: id(itemId), fieldId: fieldId)
         case .root, .projects, .views: self
@@ -470,8 +472,12 @@ public final class AppModel {
     @ObservationIgnored var heldKeys: [NSEvent] = []
     @ObservationIgnored var heldKeysTimer: Timer?
     /// The app's main window, to tell it apart from popovers and the settings window.
-    @ObservationIgnored weak var mainWindow: NSWindow?
+    @ObservationIgnored weak var mainWindow: NSWindow? {
+        didSet { textKeyboardWatcher?.refresh() }
+    }
     @ObservationIgnored var keyMonitorToken: Any?
+    /// The press on the trackpad going on now, which may turn into a peek.
+    @ObservationIgnored var deepPress = DeepPress()
     /// The start of a two-finger swipe, held back until it is clear whether it goes back or forward or scrolls.
     @ObservationIgnored var pendingSwipe: PendingSwipe?
     /// The timeline's viewport, read when a gesture starts without invalidating its drawing on each scroll tick.
@@ -516,11 +522,21 @@ public final class AppModel {
     @ObservationIgnored var inboxPickRange: Set<String> = []
     /// The last archive or unsubscribe, which can be undone for a few seconds.
     var inboxUndo: InboxUndo?
+    /// What ⌘Z and ⇧⌘Z go through.
+    var undoHistory = UndoHistory<UndoAction>()
+    /// The message saying what ⌘Z or ⇧⌘Z did last.
+    @ObservationIgnored var undoNoticeId: Notice.ID?
+    /// Whether text being typed in has the keyboard, which then keeps ⌘Z and ⇧⌘Z for itself.
+    var textHasKeyboard = false
+    @ObservationIgnored var textKeyboardWatcher: TextKeyboardWatcher?
     /// Bumped when a snoozed entry is due back, so the Inbox shows it.
     var inboxClock = Date()
     @ObservationIgnored var inboxWake: Task<Void, Never>?
     /// Labels and assignable people of repositories none of your boards use, for issues of them.
-    var otherRepoMeta: [String: (labels: [LabelRef], people: [Person])] = [:]
+    var otherRepoMeta: [String: (labels: [LabelRef], people: [Person], types: [IssueTypeRef])] = [:]
+    /// The repositories you can open issues in, read when a new issue's board has none; nil until then.
+    var yourRepositories: [RepoRef]?
+    @ObservationIgnored var yourRepositoriesReadAt: Date?
     /// Bumped to open the snooze menu of what is selected in the Inbox (H, or "Pick a Date…" in the right-click menu).
     var inboxSnoozeRequest = InboxSnoozeRequest()
     #if os(macOS)
@@ -620,6 +636,7 @@ public final class AppModel {
         startObserving()
         restoreScope()
         scheduleInboxWake()
+        textKeyboardWatcher = TextKeyboardWatcher(model: self)
         #if os(macOS)
         installKeyMonitor()
         installNavigationMonitors()
@@ -696,7 +713,10 @@ public final class AppModel {
         inboxSelectedId = nil
         inboxPicked = []
         inboxUndo = nil
+        undoHistory = UndoHistory()
         otherRepoMeta = [:]
+        yourRepositories = nil
+        yourRepositoriesReadAt = nil
         history = []
         historyIndex = -1
         overlay = nil
@@ -1658,23 +1678,28 @@ public final class AppModel {
     // MARK: Writing
 
     /// Applies mutations locally and queues them for GitHub. `inserting` are items to keep first, in the same
-    /// write, such as an issue only the Inbox knew that is being put on a board.
-    func perform(_ mutations: [Mutation], inserting: [Item] = []) {
+    /// write, such as an issue only the Inbox knew that is being put on a board. What they do goes into the undo history
+    /// unless `undoable` is false, for changes that follow from something else.
+    func perform(_ mutations: [Mutation], inserting: [Item] = [], undoable: Bool = true) {
         guard !mutations.isEmpty else { return }
-        let completions = parentCompletions(after: mutations)
-        let starts = epicStarts(after: mutations)
+        // Undo and Redo put back what was, and nothing follows from that.
+        let replaying = undoHistory.mode != .recording
+        let completions = replaying ? (mutations: [], parents: []) : parentCompletions(after: mutations)
+        let starts = replaying ? (mutations: [], epics: []) : epicStarts(after: mutations)
         // Made from a screen drawn before an issue made here got its id from GitHub, such as its page while you type,
         // a change still names the one it had: it goes to the issue's id now, or GitHub would never hear of it.
         let remaps = status.idRemaps
         let mutations = (mutations + completions.mutations + starts.mutations).map { $0.remapping(remaps) }
         do {
-            try db.writer.write { db in
+            let reversal = try db.writer.write { db -> [Mutation]? in
                 for item in inserting { try item.insert(db, onConflict: .ignore) }
-                for mutation in mutations { try Outbox.enqueue(db, mutation) }
+                let applying = replaying ? try mutations.filter { try $0.canStillApply(db) } : mutations
+                return try Outbox.enqueueReversibly(db, applying)
             }
             reloadNow()
+            if undoable { recordUndo(of: mutations, reversal: reversal) }
             // An issue finished is a moment to ask for a rating.
-            if finishesWork(mutations) { AppReview.shared.finishedSomething() }
+            if !replaying, finishesWork(mutations) { AppReview.shared.finishedSomething() }
             for parent in completions.parents {
                 status.post(Notice(
                     title: String(localized: .parentDoneWithSubIssues(number: parent.displayNumber)), message: parent.title,

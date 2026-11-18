@@ -117,6 +117,11 @@ extension AppModel {
             return true
         }
         let key = event.charactersIgnoringModifiers?.lowercased() ?? ""
+        // ⌘Z and ⇧⌘Z, here too so they never wait for the Edit menu to catch up with a change made a moment ago.
+        if modifiers == .command, key == "z" {
+            if event.modifierFlags.contains(.shift) { redo() } else { undo() }
+            return true
+        }
         if modifiers == .command, showsTimelineCanvas {
             switch key {
             case "+", "=": zoomTimeline(by: 1)
@@ -339,6 +344,10 @@ extension AppModel {
         case "d":
             guard targets(for: item).contains(where: canHaveDueDate) else { return false }
             overlay = .palette(.dueDate(itemId: item.id))
+        case "t":
+            // Of picks that can't all have a type, the first that can opens the picker.
+            guard let typed = targets(for: item).first(where: canHaveIssueType) else { return false }
+            overlay = .palette(.issueType(itemId: typed.id))
         case "m":
             guard targets(for: item).allSatisfy(canRelate) else { return false }
             pendingMark = Date()
@@ -353,10 +362,6 @@ extension AppModel {
     /// rest, such as S, P, A, L and I, which act on the selected entry's issue as anywhere else.
     private func handleInboxKey(_ event: NSEvent, key: String, modifiers: NSEvent.ModifierFlags) -> Bool? {
         let shift = event.modifierFlags.contains(.shift)
-        if modifiers == .command, key == "z", inboxUndo != nil {
-            undoInbox()
-            return true
-        }
         // With the issue open full size, J and K, and the arrows, go on to the next notification's issue.
         if let openItem {
             let delta = [125: 1, 126: -1][Int(event.keyCode)] ?? ["j": 1, "k": -1][key]

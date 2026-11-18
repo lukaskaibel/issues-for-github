@@ -632,7 +632,8 @@ struct IssueList: View {
                     && section.kind != .group(.parent(contentId: item.parentId)),
                 showsMilestone: showsMilestone,
                 showsEpic: section.kind != .epic(contentId: epic) && section.nesting.groupOf[item.id] == nil,
-                chips: model.fieldChips(of: item, in: scope)
+                chips: model.fieldChips(of: item, in: scope),
+                showsType: !model.typeIsImplied(for: item, in: scope)
             )
         }
         .buttonStyle(RowButtonStyle())

@@ -89,6 +89,12 @@ class AppTestCase: XCTestCase {
         XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed, "\(element.label) lacks \(text)", file: file, line: line)
     }
 
+    func waitForLabel(_ element: XCUIElement, notContaining text: String, _ timeout: TimeInterval = 6, file: StaticString = #filePath, line: UInt = #line) {
+        let predicate = NSPredicate(format: "NOT (label CONTAINS %@)", text)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        XCTAssertEqual(XCTWaiter().wait(for: [expectation], timeout: timeout), .completed, "\(element.label) still has \(text)", file: file, line: line)
+    }
+
     func waitForValue(_ element: XCUIElement, equalTo value: String?, _ timeout: TimeInterval = 6, file: StaticString = #filePath, line: UInt = #line) {
         let predicate = NSPredicate { object, _ in ((object as? XCUIElement)?.value as? String) == value }
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)

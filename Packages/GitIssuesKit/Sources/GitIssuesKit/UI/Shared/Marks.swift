@@ -162,6 +162,18 @@ extension Marks {
     }
 }
 
+// MARK: - Issue types
+
+extension Marks {
+    /// An issue's type: a small rounded square, which tells it from the round dots of labels. An outline for no type.
+    static func issueType(in rect: CGRect, empty: Bool = false) -> [Shape] {
+        let line: CGFloat = 1.1
+        let box = empty ? rect.insetBy(dx: line / 2, dy: line / 2) : rect
+        let path = Path(roundedRect: box, cornerRadius: box.width * 0.29, style: .continuous)
+        return [Shape(path: path, stroke: empty ? StrokeStyle(lineWidth: line) : nil)]
+    }
+}
+
 // MARK: - Dropping onto an issue
 
 extension Marks {
@@ -180,6 +192,26 @@ extension Marks {
         return [
             Shape(path: Path(roundedRect: outer, cornerRadius: radius, style: .continuous), ink: .off),
             Shape(path: Path(roundedRect: ring, cornerRadius: radius - nestLine / 2, style: .continuous), stroke: StrokeStyle(lineWidth: nestLine)),
+        ]
+    }
+}
+
+// MARK: - The issue in the peek
+
+extension Marks {
+    static let peekLine: CGFloat = 2
+
+    /// The issue the peek shows, the same on every board, list and timeline, and still there when the pointer has moved
+    /// on: its rounded shape `rect` filled with the second colour (`Theme.peekGround`) and a ring in the first
+    /// (`Theme.peekRing`) along the inside of its edge, so that the mark takes no room around the issue. On a picked
+    /// row's accent fill the white ring stands a line further in: at the edge it would melt into a white page, and the
+    /// row would only look narrower.
+    static func peek(in rect: CGRect, cornerRadius: CGFloat, onAccent: Bool = false) -> [Shape] {
+        let inset = (onAccent ? peekLine : 0) + peekLine / 2
+        let ring = rect.insetBy(dx: inset, dy: inset)
+        return [
+            Shape(path: Path(roundedRect: rect, cornerRadius: cornerRadius, style: .continuous), ink: .off),
+            Shape(path: Path(roundedRect: ring, cornerRadius: cornerRadius - inset, style: .continuous), stroke: StrokeStyle(lineWidth: peekLine)),
         ]
     }
 }

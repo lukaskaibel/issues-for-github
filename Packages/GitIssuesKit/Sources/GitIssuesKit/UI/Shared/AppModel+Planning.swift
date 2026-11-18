@@ -273,6 +273,14 @@ extension AppModel {
         (item.kind == .issue || item.kind == .pullRequest) && item.contentId != nil && !item.isDetached && item.repoId != nil
     }
 
+    /// Whether an issue's type can be changed here (`Item.canHaveIssueType`).
+    func canHaveIssueType(_ item: Item) -> Bool { item.canHaveIssueType }
+
+    /// Whether an issue's page lists its type: when it has one, or its repository has types to give it.
+    func showsIssueTypeProperty(_ item: Item) -> Bool {
+        canHaveIssueType(item) && (item.issueType != nil || !issueTypes(for: item).isEmpty)
+    }
+
     /// The milestones an epic's issues are in, first to last: "5.3.2 → 5.7".
     func milestoneSpan(of epic: Item) -> String? {
         guard let projectId = epic.projectId else { return nil }

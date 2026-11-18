@@ -52,6 +52,7 @@ struct IssueDetailView: View {
             }
         }
         .background(Theme.panel)
+        .opensIssueLinks(of: item, in: model) { model.open($0) }
         .onAppear { model.detailAppeared(item) }
         .onDisappear { model.detailDisappeared(item) }
     }
@@ -676,19 +677,22 @@ struct CommentComposer: View {
             .scrollBounceBehavior(.basedOnSize)
             .frame(height: min(max(height, 18), 220))
             .padding(.vertical, 9)
-            Button(action: send) {
-                Image(systemName: "arrow.up")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(canSend ? Color.white : Theme.textTertiary)
-                    .frame(width: 28, height: 28)
-                    .background(Circle().fill(canSend ? Theme.accentFill : Theme.field))
+            HStack(spacing: 8) {
+                SendShortcutHint(isShown: focused && canSend)
+                Button(action: send) {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(canSend ? Color.white : Theme.textTertiary)
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(canSend ? Theme.accentFill : Theme.field))
+                }
+                .buttonStyle(PlainPressStyle())
+                // Only while writing the comment: ⌘↵ in the title or elsewhere on the page doesn't post a half-written one.
+                .keyboardShortcut(focused ? KeyboardShortcut(.return, modifiers: .command) : nil)
+                .disabled(!canSend)
+                .help(Text(.titleWithShortcutKey(title: String(localized: .postComment), key: "⌘↵")))
+                .accessibilityLabel(Text(.sendCommentButton))
             }
-            .buttonStyle(PlainPressStyle())
-            // Only while writing the comment: ⌘↵ in the title or elsewhere on the page doesn't post a half-written one.
-            .keyboardShortcut(focused ? KeyboardShortcut(.return, modifiers: .command) : nil)
-            .disabled(!canSend)
-            .help(Text(.titleWithShortcutKey(title: String(localized: .postComment), key: "⌘↵")))
-            .accessibilityLabel(Text(.sendCommentButton))
             .padding(.bottom, 7)
         }
         .padding(.leading, 14)
@@ -769,6 +773,11 @@ struct IssueProperties: View {
                                     .lineLimit(1)
                             }
                         }
+                    }
+                }
+                if model.showsIssueTypeProperty(item) {
+                    row(.issueTypeTitle) {
+                        PropertyButton(kind: .issueType, item: item) { IssueTypeValue(item: item) }
                     }
                 }
                 row(.labels) {

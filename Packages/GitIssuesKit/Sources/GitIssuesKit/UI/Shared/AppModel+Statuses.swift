@@ -165,7 +165,7 @@ extension AppModel {
                 reloadNow()
                 // The issues' new status goes to GitHub as any change of status does, closing them in a Done one.
                 guard let option = statusOptions(projectId: projectId).first(where: { $0.id == id }) else { return }
-                perform(items.flatMap { statusMutations($0, option) })
+                perform(items.flatMap { statusMutations($0, option) }, undoable: false)
             } catch {
                 // Back as it was, and what was given the status meanwhile without it.
                 try? await db.writer.write { db in

@@ -111,6 +111,26 @@ public enum DemoData {
         var milestone: String?
     }
 
+    /// The types GitHub gives every owner.
+    private static let issueTypes = [
+        IssueTypeRef(id: "demo-type-task", name: "Task", color: "YELLOW"),
+        IssueTypeRef(id: "demo-type-bug", name: "Bug", color: "RED"),
+        IssueTypeRef(id: "demo-type-feature", name: "Feature", color: "BLUE"),
+    ]
+
+    /// The kind of work the issues without a "bug" or "feature" label are. The others, such as #14, have no type.
+    private static let issueTypeNames: [Int: String] = [
+        4: "Feature", 5: "Feature", 6: "Feature", 7: "Feature", 8: "Task", 9: "Feature", 10: "Task", 11: "Task", 12: "Task",
+        13: "Task", 15: "Bug", 16: "Feature", 17: "Feature", 18: "Task", 23: "Task", 24: "Task", 26: "Feature", 28: "Task",
+        29: "Task", 30: "Bug", 31: "Feature", 32: "Task", 33: "Task", 34: "Task", 35: "Feature",
+    ]
+
+    private static func issueType(of issue: IssueSpec) -> IssueTypeRef? {
+        guard !issue.labels.contains("epic") else { return nil }
+        let name = issue.labels.contains("bug") ? "Bug" : issue.labels.contains("feature") ? "Feature" : issueTypeNames[issue.number]
+        return issueTypes.first { $0.name == name }
+    }
+
     /// The app's weekly cycles, as GitHub's Iteration field has them: two done, this week's and the next two.
     private static let cycles: [(id: String, title: String, weeks: Int)] = [
         ("demo-cycle-2", "Cycle 2", -2), ("demo-cycle-3", "Cycle 3", -1), ("demo-cycle-4", "Cycle 4", 0),
@@ -186,7 +206,7 @@ public enum DemoData {
         IssueSpec(number: 28, title: "Tilt the lifted card with the pointer's speed", status: "In Progress", priority: "Low", labels: ["ui"], assignees: [mira], parent: 9, hoursAgo: 0.6, milestone: "0.3"),
         IssueSpec(number: 15, title: "Conflict banner when text changed on GitHub", status: "In Progress", priority: "High", labels: ["sync"], assignees: [theo], parent: 41, hoursAgo: 7, milestone: "0.3"),
         IssueSpec(number: 17, title: "Command palette with fuzzy search", status: "Todo", priority: "High", labels: ["ui"], assignees: [viewer.person], hoursAgo: 20, due: 1, milestone: "0.3"),
-        IssueSpec(number: 14, title: "Sign in with GitHub device flow", status: "Todo", priority: "Medium", labels: ["auth"], assignees: [viewer.person, kai], parent: 42, hoursAgo: 22, due: 3, milestone: "0.4"),
+        IssueSpec(number: 14, title: "Sign in with GitHub device flow", status: "Todo", priority: "Medium", labels: ["auth"], assignees: [viewer.person, kai], body: "[Sign-in and accounts](https://github.com/acme/git-issues/issues/42) waits for this: the app shows a code, you confirm it on GitHub, and nobody types a token by hand.", parent: 42, hoursAgo: 22, due: 3, milestone: "0.4"),
         IssueSpec(number: 25, title: "Crash when a label name contains an emoji", status: "Todo", priority: "Urgent", labels: ["bug"], assignees: [kai, viewer.person], body: "Steps to reproduce:\n\n1. Add a label named `🔥 hot`\n2. Open the labels picker\n3. The app quits", hoursAgo: 12, due: -2, milestone: "0.3"),
         IssueSpec(number: 18, title: "Notarized builds and automatic updates", status: "Backlog", priority: "Low", labels: ["release"], parent: 43, hoursAgo: 70, due: 24, blockedBy: [25], milestone: "1.0"),
         IssueSpec(number: 19, title: "Show linked pull requests and CI state", status: "Backlog", priority: "Low", labels: ["feature"], parent: 43, hoursAgo: 80, milestone: "1.0"),
@@ -310,7 +330,8 @@ public enum DemoData {
             }
             try RepoRef(
                 id: spec.repoId, nameWithOwner: spec.repo, projectId: spec.id,
-                labels: spec.labels, assignableUsers: spec.ownerIsOrg ? team : [viewer.person], metaLoadedAt: now
+                labels: spec.labels, assignableUsers: spec.ownerIsOrg ? team : [viewer.person], issueTypes: issueTypes,
+                metaLoadedAt: now
             ).insert(db)
             try seedFieldsAndViews(db, spec: spec, today: today)
 
@@ -339,6 +360,7 @@ public enum DemoData {
                     blockedByCount: blockers.filter { $0.status != "Done" }.count,
                     blockingCount: blocked.filter { $0.status != "Done" }.count,
                     milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone,
+                    issueType: issueType(of: issue)?.name, issueTypeColor: issueType(of: issue)?.color,
                     fieldValues: fieldValues(of: issue, in: spec, today: today)
                 ).insert(db)
                 for (relation, others) in [(LinkedIssue.Relation.blockedBy, blockers), (.blocking, blocked)] {
@@ -386,7 +408,8 @@ public enum DemoData {
                 assignees: issue.assignees,
                 labels: app.labels.filter { issue.labels.contains($0.name) },
                 viewerCanDelete: true,
-                milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone
+                milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone,
+                issueType: issueType(of: issue)?.name, issueTypeColor: issueType(of: issue)?.color
             ).insert(db)
             // On no board, but the sub-issue of an issue on one: the issue lists it.
             if let parent {
@@ -448,6 +471,7 @@ public enum DemoData {
             add("priority", "Priority", "SINGLE_SELECT", options: Defaults.priorityOptions.map { FieldChoice(id: optionId(spec, $0.name), name: $0.name, color: $0.color) })
         }
         if spec.hasDueField { add("due", "Due date", "DATE") }
+        add("type", "Type", "ISSUE_TYPE")
         let isApp = spec.id == app.id
         if isApp {
             add("start", "Start date", "DATE")
@@ -491,13 +515,18 @@ public enum DemoData {
     ]
 
     /// Labels and people of the sample repositories, for issues seen only in the Inbox.
-    static func repoMeta(repoId: String) -> (labels: [LabelRef], users: [Person]) {
+    static func repoMeta(repoId: String) -> (labels: [LabelRef], users: [Person], types: [IssueTypeRef]) {
         switch repoId {
-        case app.repoId: (appLabels, team)
-        case site.repoId: (siteLabels, team)
-        case blog.repoId: ([], [viewer.person])
-        default: (brandLabels, team)
+        case app.repoId: (appLabels, team, issueTypes)
+        case site.repoId: (siteLabels, team, issueTypes)
+        case blog.repoId: ([], [viewer.person], issueTypes)
+        default: (brandLabels, team, issueTypes)
         }
+    }
+
+    /// Jordan's repositories, for a new issue on a board that has none.
+    static var yourRepositories: [RepoRef] {
+        [app, site, blog].map { RepoRef(id: $0.repoId, nameWithOwner: $0.repo, projectId: "") }
     }
 
     /// The Inbox of the sample data: what Mira, Theo and Kai did that Jordan should know about, as GitHub would

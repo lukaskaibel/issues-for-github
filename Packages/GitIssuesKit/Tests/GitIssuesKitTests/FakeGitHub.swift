@@ -14,6 +14,8 @@ final class FakeGitHub: @unchecked Sendable {
         var body = ""
         /// The milestone's id, as the app last set it. Reads don't list it.
         var milestone: String?
+        /// The type's id, as the app last set it. Reads don't list it.
+        var issueType: String?
         var updatedAt = "2026-10-01T10:00:00Z"
         var closed = false
         /// The issues that block it, and how many more GitHub counts but won't show (in repositories you can't see).
@@ -52,6 +54,8 @@ final class FakeGitHub: @unchecked Sendable {
     /// The repository's labels, as GitHub lists them, and whether it refuses to make more, as for someone who can't.
     var labels: [[String: Any]] = []
     var refusesLabels = false
+    /// The repositories of whoever is signed in, as GitHub lists them; nil entries are ones it can't show.
+    var viewerRepositories: [Any] = []
     /// The Status field's options, as GitHub lists them; `updateProjectV2Field` replaces them, giving new ones an id.
     var statusOptions: [[String: Any]] = [["id": "todo", "name": "Todo", "color": "GRAY", "description": ""]]
     private var nextOptionId = 1
@@ -240,6 +244,10 @@ final class FakeGitHub: @unchecked Sendable {
                 let name = variables["name"] as? String ?? ""
                 log.append("label \(name)")
                 data = ["node": ["label": label(named: name).map { $0 as Any } ?? NSNull()]]
+            } else if query.contains("... on Label {") {
+                let ids = variables["ids"] as? [String] ?? []
+                log.append("labels \(ids.joined(separator: ", "))")
+                data = ["nodes": ids.map { id -> Any in labels.first { $0["id"] as? String == id } ?? NSNull() }]
             } else if query.contains("addLabelsToLabelable(") {
                 log.append("add labels \((variables["ids"] as? [String] ?? []).joined(separator: ", "))")
                 data = ["addLabelsToLabelable": ["clientMutationId": NSNull()]]
@@ -329,6 +337,9 @@ final class FakeGitHub: @unchecked Sendable {
                 log.append("issues")
                 let ids = variables["ids"] as? [String] ?? []
                 data = ["nodes": ids.map { id -> Any in issues.first { $0.contentId == id }.map(issueNode) ?? NSNull() }]
+            } else if query.contains("ownerAffiliations") {
+                log.append("your repositories")
+                data = ["viewer": ["repositories": ["nodes": viewerRepositories]]]
             } else if query.contains("subIssues(first: 100)") {
                 let id = variables["id"] as? String ?? ""
                 log.append("detail")
@@ -364,6 +375,11 @@ final class FakeGitHub: @unchecked Sendable {
                 log.append("update \(issues[i].contentId)")
             }
             return "updateIssue"
+        }
+        if query.contains("updateIssueIssueType("), let i = index(variables["id"]) {
+            issues[i].issueType = variables["t"] as? String
+            log.append("type \(issues[i].contentId): \(issues[i].issueType ?? "none")")
+            return "updateIssueIssueType"
         }
         if query.contains("addSubIssue("), let i = index(variables["c"]), let parent = variables["p"] as? String {
             issues[i].parent = parent

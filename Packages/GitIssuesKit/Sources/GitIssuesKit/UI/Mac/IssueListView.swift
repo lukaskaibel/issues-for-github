@@ -64,6 +64,7 @@ struct IssueListView: View {
                                     projectTitle: showsProject ? place(of: item, groupsByProject: groupsByProject) : nil,
                                     selected: model.isSelected(item.id),
                                     selecting: !model.selectedIds.isEmpty,
+                                    peeked: model.isPeeked(item.id),
                                     nest: section.nesting.place(of: item.id),
                                     nested: section.nesting.nestedCounts[item.id],
                                     folded: section.nesting.folded.contains(item.id),
@@ -71,7 +72,8 @@ struct IssueListView: View {
                                     showsParent: section.nesting.namesParent(of: item) && section.kind != .epic(contentId: item.parentId)
                                         && section.kind != .group(.parent(contentId: item.parentId)),
                                     milestone: showsMilestone ? model.milestoneTitle(of: item) : spanOnRoadmap(item),
-                                    chips: model.fieldChips(of: item, in: model.scope)
+                                    chips: model.fieldChips(of: item, in: model.scope),
+                                    showsType: !model.typeIsImplied(for: item, in: model.scope)
                                 ))
                             }
                         },
