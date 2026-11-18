@@ -103,6 +103,8 @@ final class IssueProjectsTests: AppTestCase {
         undo.tap()
         showProjectsSheetIfNeeded()
         wait(element("issue-project-\(project)"))
+        // The page moved on to the issue's other project, so this one is back below it, folded.
+        unfold(project)
         waitForValue(field("version"), equalTo: "0.3")
     }
 

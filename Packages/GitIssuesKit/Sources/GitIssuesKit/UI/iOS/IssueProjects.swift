@@ -80,7 +80,8 @@ struct MobileIssueProjects: View {
         let unfolded = model.isIssueProjectUnfolded(section)
         return HStack(spacing: 8) {
             if section.isPrimary {
-                title(section)
+                name(section)
+                Spacer(minLength: 4)
             } else {
                 Button {
                     withAnimation(reduceMotion ? nil : Theme.spring) { model.toggleIssueProject(section) }
@@ -91,12 +92,20 @@ struct MobileIssueProjects: View {
                             .foregroundStyle(Theme.textTertiary)
                             .rotationEffect(.degrees(unfolded ? 90 : 0))
                             .frame(width: 12)
-                        title(section)
+                        name(section)
+                            .layoutPriority(1)
+                        Spacer(minLength: 4)
                         if !unfolded, section.project.statusFieldId != nil {
-                            StatusIcon(glyph: model.glyph(of: section.item), size: 15)
-                            Text(model.statusText(of: section.item))
-                                .foregroundStyle(Theme.textSecondary)
-                                .lineLimit(1)
+                            // The iPad's narrow column keeps the project's name and shows the status by its icon.
+                            ViewThatFits(in: .horizontal) {
+                                HStack(spacing: 8) {
+                                    StatusIcon(glyph: model.glyph(of: section.item), size: 15)
+                                    Text(model.statusText(of: section.item))
+                                        .foregroundStyle(Theme.textSecondary)
+                                        .lineLimit(1)
+                                }
+                                StatusIcon(glyph: model.glyph(of: section.item), size: 15)
+                            }
                         }
                     }
                     .frame(minHeight: 44)
@@ -127,13 +136,12 @@ struct MobileIssueProjects: View {
         .frame(minHeight: 44)
     }
 
-    private func title(_ section: IssueProjectSection) -> some View {
+    private func name(_ section: IssueProjectSection) -> some View {
         HStack(spacing: 8) {
             ProjectIcon(projectId: section.project.id)
             Text(section.project.title)
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
-            Spacer(minLength: 4)
         }
     }
 
@@ -156,6 +164,8 @@ struct MobileIssueProjects: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(!section.project.viewerCanUpdate)
+                .accessibilityLabel(.dueDate)
+                .accessibilityValue(section.item.due.map { $0.mediumLabel() } ?? String(localized: .addDueDate))
                 .accessibilityIdentifier("project-due-\(section.project.id)")
             }
             if section.hiddenCount > 0 {

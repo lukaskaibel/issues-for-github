@@ -871,6 +871,7 @@ private struct PropertiesColumn: View {
             .padding(.leading, 18)
             .padding(.trailing, 14)
         }
+        .accessibilityIdentifier("issue-properties-scroll")
         .background(Theme.panel)
         .sensoryFeedback(.selection, trigger: item.statusId)
         .sensoryFeedback(.selection, trigger: item.priorityId)
