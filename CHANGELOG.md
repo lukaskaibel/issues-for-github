@@ -96,6 +96,9 @@ All notable changes to this project are recorded here. The format follows
 - **A quieter toolbar on the Mac.** New Issue moved from the sidebar to the toolbar, right after back and forward, so
   it stays there when the sidebar is closed. The toolbar no longer repeats the page's name, its project and "Synced
   just now": the sidebar already shows them.
+- **Links to other issues open in the app.** Click or tap a GitHub link to an issue in a description or a comment, on
+  the Mac, iPhone or iPad, and that issue opens right here, with Back leading to the one you came from. Links to issues
+  the app doesn't have, and all other links, still open in your browser.
 - **Sub-issues in a Mac list are indented as a whole.** A sub-issue's priority and number now move in with its status
   and title, right of the line from its parent, so a row shows that it belongs there from its first icon, in lists and
   among an issue's sub-issues. An epic's icon stands at the start of its row, where the line down to its issues begins,

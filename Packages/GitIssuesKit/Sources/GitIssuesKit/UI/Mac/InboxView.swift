@@ -529,6 +529,7 @@ private struct InboxIssue: View {
                 }
             }
         }
+        .opensIssueLinks(of: item, in: model) { model.open($0) }
         .onAppear { model.detailAppeared(item) }
         .onDisappear { model.detailDisappeared(item) }
     }

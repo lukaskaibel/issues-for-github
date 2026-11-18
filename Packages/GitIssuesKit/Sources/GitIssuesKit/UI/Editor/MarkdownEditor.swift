@@ -139,6 +139,34 @@ struct MarkdownText: View {
     }
 }
 
+/// On an issue's page: takes a link in its texts that leads to another issue, and says whether it did. The links it
+/// leaves, and all links elsewhere, open in the browser. One page's action stays the same, so the texts under it aren't
+/// drawn anew for it.
+struct OpenIssueLinkAction: Equatable {
+    var pageId: String
+    var action: @MainActor (URL) -> Bool
+
+    @MainActor
+    func callAsFunction(_ url: URL) -> Bool { action(url) }
+
+    static func == (first: Self, second: Self) -> Bool { first.pageId == second.pageId }
+}
+
+extension EnvironmentValues {
+    @Entry var openIssueLink: OpenIssueLinkAction?
+}
+
+extension View {
+    /// Links in the texts of `page` to another issue the app has open that issue here, with `open`.
+    func opensIssueLinks(of page: Item, in model: AppModel, with open: @escaping @MainActor (Item) -> Void) -> some View {
+        environment(\.openIssueLink, OpenIssueLinkAction(pageId: page.id) { url in
+            guard let issue = model.issue(linkedBy: url, from: page) else { return false }
+            open(issue)
+            return true
+        })
+    }
+}
+
 /// Keeps the editor and the model in step: saves after a pause, takes in text that changed elsewhere, and reports
 /// whether the text is being typed in, or puts the caret in it when `editing` is set from outside.
 @MainActor
@@ -146,6 +174,7 @@ final class MarkdownEditorCoordinator {
     var configuration: MarkdownEditor
     let editor: EditorController
     let checkboxes: MarkdownCheckboxes
+    var openIssueLink: OpenIssueLinkAction?
     private var refreshingCheckboxes = false
     private(set) var hasUnsavedChanges = false
     private var pendingSave: DispatchWorkItem?
@@ -164,6 +193,9 @@ final class MarkdownEditorCoordinator {
         editor.onEscape = configuration.onEscape
         editor.submitTitle = configuration.submitTitle
         known = Diff3.normalize(configuration.currentText)
+        editor.openLink = { [weak self] url in
+            if self?.openIssueLink?(url) != true { Platform.open(url) }
+        }
         link(configuration.titleLink)
         editor.load(text: known)
         editor.textView.placeholder = configuration.placeholder.map { String(localized: $0) } ?? ""
@@ -318,6 +350,7 @@ private struct MarkdownEditorView: NSViewRepresentable {
     }
 
     func updateNSView(_ view: MarkdownTextView, context: Context) {
+        context.coordinator.openIssueLink = context.environment.openIssueLink
         context.coordinator.update(configuration)
     }
 
@@ -377,6 +410,7 @@ private struct MarkdownEditorView: UIViewRepresentable {
     }
 
     func updateUIView(_ view: MarkdownTextView, context: Context) {
+        context.coordinator.openIssueLink = context.environment.openIssueLink
         context.coordinator.update(configuration)
         view.reportHeight()
     }

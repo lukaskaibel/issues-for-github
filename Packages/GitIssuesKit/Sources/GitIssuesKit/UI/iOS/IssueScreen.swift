@@ -9,6 +9,7 @@ struct IssueScreen: View {
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.wideLayout) private var wide
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openRoute) private var openRoute
     var itemId: String
     /// Opened from the Inbox: what's new on it shows under the title, and the new comments are marked.
     var inboxEntryId: String? = nil
@@ -22,6 +23,7 @@ struct IssueScreen: View {
     var body: some View {
         if let item = model.item(id: itemId) {
             content(item)
+                .opensIssueLinks(of: item, in: model) { openRoute(.issue($0.id)) }
                 .onAppear {
                     model.detailAppeared(item)
                     RecentIssues.record(item.id)
