@@ -190,7 +190,7 @@ struct DescriptionView: View {
             accessibilityLabel: .description,
             accessibilityIdentifier: "issue-description"
         )
-        .id(item.id)
+        .id(IssueReference(item).viewID(remaps: model.status.idRemaps))
     }
 
     private func save(_ text: String) {
@@ -723,6 +723,7 @@ struct CommentComposer: View {
 /// right there, as on a card.
 struct IssueProperties: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var item: Item
     /// As wide as the longest label in this language needs, and never narrower than in English.
     @State private var labelWidth: CGFloat = 84
@@ -732,6 +733,7 @@ struct IssueProperties: View {
             properties
         }
         .scrollIndicators(.never)
+        .transaction { if reduceMotion { $0.animation = nil; $0.disablesAnimations = true } }
     }
 
     private var properties: some View {
@@ -804,7 +806,7 @@ struct IssueProperties: View {
 
             Divider().padding(.vertical, 10)
 
-            if let project = model.project(of: item) {
+            if let project = model.project(of: item), project.closed {
                 row(.project) {
                     HStack(spacing: 8) {
                         ProjectIcon(projectId: project.id)
@@ -818,6 +820,10 @@ struct IssueProperties: View {
                         Text(.addToProjectPlaceholder).foregroundStyle(Theme.textTertiary)
                     }
                 }
+            }
+            IssueProjectsProperties(item: item, labelWidth: $labelWidth)
+            if item.isOnBoard {
+                Divider().padding(.vertical, 10)
             }
             if model.canHaveMilestone(item) {
                 row(.milestone) {

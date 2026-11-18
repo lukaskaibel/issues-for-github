@@ -6,21 +6,23 @@ import GRDB
 /// What an item has in one of its project's own fields: an option, an iteration, a text, a number or a day.
 public struct FieldValue: Codable, Hashable, Sendable {
     public var optionId: String?
+    public var optionIds: [String]?
     public var iterationId: String?
     public var text: String?
     public var number: Double?
     /// "2026-10-09".
     public var date: String?
 
-    public init(optionId: String? = nil, iterationId: String? = nil, text: String? = nil, number: Double? = nil, date: String? = nil) {
+    public init(optionId: String? = nil, optionIds: [String]? = nil, iterationId: String? = nil, text: String? = nil, number: Double? = nil, date: String? = nil) {
         self.optionId = optionId
+        self.optionIds = optionIds
         self.iterationId = iterationId
         self.text = text
         self.number = number
         self.date = date
     }
 
-    public var isEmpty: Bool { optionId == nil && iterationId == nil && text == nil && number == nil && date == nil }
+    public var isEmpty: Bool { optionId == nil && (optionIds?.isEmpty ?? true) && iterationId == nil && text == nil && number == nil && date == nil }
 }
 
 /// One choice of a single-select field, such as "Quick Wins: Konto & Chat" of a field "Workstream".
@@ -147,6 +149,7 @@ public enum ProjectFieldKind: Equatable, Sendable {
     case linkedPullRequests
     case reviewers
     case singleSelect
+    case multiSelect
     case iteration
     case date
     case text
@@ -169,6 +172,7 @@ public enum ProjectFieldKind: Equatable, Sendable {
         case "LINKED_PULL_REQUESTS": self = .linkedPullRequests
         case "REVIEWERS": self = .reviewers
         case "SINGLE_SELECT": self = .singleSelect
+        case "MULTI_SELECT": self = .multiSelect
         case "ITERATION": self = .iteration
         case "DATE": self = .date
         case "TEXT": self = .text
@@ -183,7 +187,7 @@ public enum ProjectFieldKind: Equatable, Sendable {
     /// The project's own fields, whose values live on the project item rather than on the issue.
     public var isProjectValue: Bool {
         switch self {
-        case .singleSelect, .iteration, .date, .text, .number: true
+        case .singleSelect, .multiSelect, .iteration, .date, .text, .number: true
         default: false
         }
     }

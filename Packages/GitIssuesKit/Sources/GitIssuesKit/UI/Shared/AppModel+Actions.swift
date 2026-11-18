@@ -72,7 +72,9 @@ struct NewIssuePlan: Equatable {
 extension AppModel {
     // MARK: Status, priority, order
 
-    func statusMutations(_ item: Item, _ option: FieldOption?) -> [Mutation] {
+    /// `changesIssueState` is false for the status an issue has in another of its projects than the one it was opened
+    /// from: that card moves, and the issue stays open or closed as it is.
+    func statusMutations(_ item: Item, _ option: FieldOption?, changesIssueState: Bool = true) -> [Mutation] {
         guard let projectId = item.projectId, let fieldId = project(of: item)?.statusFieldId else { return [] }
         var result: [Mutation] = []
         if item.statusId != option?.id {
@@ -81,7 +83,7 @@ extension AppModel {
                 optionId: option?.id, base: item.statusId
             )))
         }
-        result += stateMutations(item, for: option)
+        if changesIssueState { result += stateMutations(item, for: option) }
         return result
     }
 

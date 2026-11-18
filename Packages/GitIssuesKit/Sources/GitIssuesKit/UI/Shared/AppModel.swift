@@ -370,6 +370,14 @@ public final class AppModel {
     var unfoldedSubIssues = Set(UserDefaults.standard.stringArray(forKey: "unfoldedSubIssues") ?? []) {
         didSet { UserDefaults.standard.set(Array(unfoldedSubIssues), forKey: "unfoldedSubIssues") }
     }
+    /// The other projects an issue is on whose fields are unfolded in its details, for every issue. Kept on this device.
+    var unfoldedIssueProjects = Set(UserDefaults.standard.stringArray(forKey: "unfoldedIssueProjects") ?? []) {
+        didSet { UserDefaults.standard.set(Array(unfoldedIssueProjects), forKey: "unfoldedIssueProjects") }
+    }
+    /// The projects whose empty fields an issue's details list too, for every issue. Kept on this device.
+    var issueProjectsShowingEmptyFields = Set(UserDefaults.standard.stringArray(forKey: "issueProjectsShowingEmptyFields") ?? []) {
+        didSet { UserDefaults.standard.set(Array(issueProjectsShowingEmptyFields), forKey: "issueProjectsShowingEmptyFields") }
+    }
     /// Sub-issues (node ids) whose own sub-issues are being read from GitHub.
     var loadingSubIssues: Set<String> = []
     /// What was chosen lately in pickers, by kind, newest first (see `RecentPick`). Kept on this device.
@@ -589,6 +597,25 @@ public final class AppModel {
     /// An issue to bring up from outside the app, such as a tapped notification; the iPhone and iPad navigation
     /// picks it up.
     var revealItemId: String?
+
+    /// An isolated model for exercising app state without account, cloud, UI or background services.
+    init(database: AppDatabase, api: GitHubAPI) {
+        db = database
+        auth = AuthStore()
+        let status = SyncStatus()
+        self.status = status
+        engine = SyncEngine(db: database, api: api, status: status)
+        isDemo = false
+        signedIn = false
+        personal = PersonalStore(persistent: false)
+        projectLooks = ProjectLooks(persistent: false)
+        statusKinds = StatusKinds(persistent: false)
+        overviewArrangement = OverviewArrangementStore(persistent: false)
+        viewMode = .board
+        inboxBucket = .forYou
+        appearance = .system
+        appIcon = .standard
+    }
 
     private init() {
         let demo = UserDefaults.standard.bool(forKey: Self.demoKey)
@@ -811,6 +838,7 @@ public final class AppModel {
         var milestones: [Milestone]
         var views: [ProjectView]
         var fields: [ProjectField]
+        var createdIssueIDs: [String: String] = [:]
 
         /// Without the self-test's project (`Project.sandboxTitle`) and what only its repositories hold: issues on
         /// no board and notifications. The app you use leaves it out; debug builds keep it for the test tools.
@@ -852,7 +880,8 @@ public final class AppModel {
             inboxMeta: try InboxMeta.read(db),
             milestones: try Milestone.order(Column("repoId"), Column("number")).fetchAll(db),
             views: try ProjectView.order(Column("projectId"), Column("position")).fetchAll(db),
-            fields: try ProjectField.order(Column("projectId"), Column("position")).fetchAll(db)
+            fields: try ProjectField.order(Column("projectId"), Column("position")).fetchAll(db),
+            createdIssueIDs: try CreatedIssueIDs.all(db)
         )
     }
 
@@ -877,6 +906,8 @@ public final class AppModel {
     }
 
     private func apply(_ snapshot: Snapshot) {
+        // Publish content identity with the items, so an open editor cannot observe the new card without its ID map.
+        for (old, new) in snapshot.createdIssueIDs where status.idRemaps[old] != new { status.idRemaps[old] = new }
         #if !DEBUG
         let snapshot = snapshot.withoutSandbox()
         #endif
@@ -892,7 +923,16 @@ public final class AppModel {
         let options = withChosenKinds(snapshot.options)
         if self.options != options { self.options = options }
         if repos != snapshot.repos { repos = snapshot.repos }
-        if allItems != snapshot.items { allItems = snapshot.items }
+        if allItems != snapshot.items {
+            let replacements = IssueReference.replacements(from: allItems, to: snapshot.items, projects: listed, remaps: status.idRemaps)
+            let previous = openItem
+            allItems = snapshot.items
+            // Back/Forward and other saved navigation must follow the same retained issue as the open detail.
+            if !replacements.isEmpty { follow(remaps: replacements) }
+            if let previous, openItem == nil {
+                openItemId = item(referencedBy: IssueReference(previous))?.id
+            }
+        }
         outbox = snapshot.outbox
         noteOwnAssignments(in: snapshot.outbox)
         if links != snapshot.links {
@@ -916,6 +956,7 @@ public final class AppModel {
 
     /// The comments and sub-issues of one issue, kept in step with the database while a view shows it.
     func detail(for contentId: String) -> IssueDetailModel {
+        let contentId = detailContentID(contentId)
         if let existing = details[contentId] { return existing.model }
         let model = IssueDetailModel(contentId: contentId, db: db)
         details[contentId] = (model, 0)
@@ -923,33 +964,52 @@ public final class AppModel {
     }
 
     /// An issue came on screen: fetch its comments and sub-issues now and keep them fresh while it shows.
-    func detailAppeared(_ item: Item) {
-        guard let contentId = item.contentId else { return }
+    @discardableResult
+    func detailAppeared(_ item: Item) -> Task<Void, Never>? {
+        guard let capturedId = item.contentId else { return nil }
+        let contentId = detailContentID(capturedId)
         _ = detail(for: contentId)
         details[contentId]?.users += 1
         let projectId = item.projectId
         let repoId = item.repoId
-        let fetchable = item.kind != .draft && !item.isLocalOnly
+        let fetchable = item.kind != .draft && !contentId.hasPrefix(LocalID.prefix)
         // Its status can be changed from here, also when its board isn't the one on screen.
         refreshStatuses(projectId: projectId)
         let engine = self.engine
-        Task {
-            await engine.setWatchedIssue(fetchable ? contentId : nil)
+        return Task {
+            // Polls skip local IDs; keeping the watch lets creation transfer it to the server issue.
+            await engine.setWatchedIssue(item.kind != .draft ? contentId : nil)
             // Fetch comments and sub-issues right away rather than at the next sync cycle.
             if fetchable { try? await engine.loadIssueDetail(contentId: contentId) }
             if let repoId { try? await engine.loadRepoMeta(projectId: projectId, repoId: repoId) }
         }
     }
 
-    func detailDisappeared(_ item: Item) {
-        guard let contentId = item.contentId, let entry = details[contentId] else { return }
+    @discardableResult
+    func detailDisappeared(_ item: Item) -> Task<Void, Never>? {
+        guard let capturedId = item.contentId else { return nil }
+        let contentId = detailContentID(capturedId)
+        guard let entry = details[contentId] else { return nil }
         if entry.users <= 1 {
             details[contentId] = nil
             let engine = self.engine
-            Task { await engine.unwatchIssue(contentId) }
+            return Task { await engine.unwatchIssue(contentId) }
         } else {
             details[contentId]?.users -= 1
         }
+        return nil
+    }
+
+    private func detailContentID(_ contentId: String) -> String {
+        let current = status.idRemaps[contentId] ?? contentId
+        remapDetail(from: contentId, to: current)
+        return current
+    }
+
+    private func remapDetail(from old: String, to new: String) {
+        guard old != new, let previous = details.removeValue(forKey: old) else { return }
+        let current = details[new]
+        details[new] = (current?.model ?? IssueDetailModel(contentId: new, db: db), previous.users + (current?.users ?? 0))
     }
 
     // MARK: Derived data
@@ -1567,27 +1627,27 @@ public final class AppModel {
 
     /// Follows an issue whose temporary id was replaced after GitHub created it.
     func follow(remaps: [String: String]) {
-        if let id = openItemId, let new = remaps[id] {
+        let itemRemaps = IssueReference.observedRemaps(remaps, in: allItems)
+        if let id = openItemId, let new = itemRemaps[id] {
             openItemId = new
         }
-        if let id = focusedItemId, let new = remaps[id] { focusedItemId = new }
-        if let id = hoveredItemId, let new = remaps[id] { hoveredItemId = new }
-        if let id = peekItemId, let new = remaps[id] { peekItemId = new }
+        if let id = focusedItemId, let new = itemRemaps[id] { focusedItemId = new }
+        if let id = hoveredItemId, let new = itemRemaps[id] { hoveredItemId = new }
+        if let id = peekItemId, let new = itemRemaps[id] { peekItemId = new }
         // A picker opened on an issue just made, such as S right after creating it, would otherwise go blank.
-        if case .palette(let mode)? = overlay, mode.remapping(remaps) != mode { overlay = .palette(mode.remapping(remaps)) }
+        if case .palette(let mode)? = overlay, mode.remapping(itemRemaps) != mode { overlay = .palette(mode.remapping(itemRemaps)) }
         for (old, new) in remaps {
             if let draft = commentDrafts.removeValue(forKey: old) { commentDrafts[new] = draft }
         }
-        for (old, new) in remaps where selectedIds.contains(old) {
+        for (old, new) in itemRemaps where selectedIds.contains(old) {
             selectedIds.remove(old)
             selectedIds.insert(new)
         }
         for index in history.indices {
-            if let id = history[index].itemId, let new = remaps[id] { history[index].itemId = new }
+            if let id = history[index].itemId, let new = itemRemaps[id] { history[index].itemId = new }
         }
         for (old, new) in remaps {
-            guard let entry = details.removeValue(forKey: old) else { continue }
-            details[new] = (IssueDetailModel(contentId: new, db: db), entry.users)
+            remapDetail(from: old, to: new)
         }
         // A label made in a repository none of your boards use.
         for (repoId, meta) in otherRepoMeta where meta.labels.contains(where: { remaps[$0.id] != nil }) {
@@ -1678,14 +1738,16 @@ public final class AppModel {
     // MARK: Writing
 
     /// Applies mutations locally and queues them for GitHub. `inserting` are items to keep first, in the same
-    /// write, such as an issue only the Inbox knew that is being put on a board. What they do goes into the undo history
-    /// unless `undoable` is false, for changes that follow from something else.
-    func perform(_ mutations: [Mutation], inserting: [Item] = [], undoable: Bool = true) {
+    /// write, such as an issue only the Inbox knew that is being put on a board. `followingUp` is false for a change
+    /// that doesn't finish or start the issue itself, so its parent and epic stay as they are. What they do goes into
+    /// the undo history unless `undoable` is false, for changes that follow from something else.
+    func perform(_ mutations: [Mutation], inserting: [Item] = [], followingUp: Bool = true, undoable: Bool = true) {
         guard !mutations.isEmpty else { return }
         // Undo and Redo put back what was, and nothing follows from that.
         let replaying = undoHistory.mode != .recording
-        let completions = replaying ? (mutations: [], parents: []) : parentCompletions(after: mutations)
-        let starts = replaying ? (mutations: [], epics: []) : epicStarts(after: mutations)
+        let follows = followingUp && !replaying
+        let completions = follows ? parentCompletions(after: mutations) : (mutations: [], parents: [])
+        let starts = follows ? epicStarts(after: mutations) : (mutations: [], epics: [])
         // Made from a screen drawn before an issue made here got its id from GitHub, such as its page while you type,
         // a change still names the one it had: it goes to the issue's id now, or GitHub would never hear of it.
         let remaps = status.idRemaps

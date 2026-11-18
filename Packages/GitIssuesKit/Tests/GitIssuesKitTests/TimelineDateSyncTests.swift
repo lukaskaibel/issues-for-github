@@ -354,7 +354,7 @@ struct TimelineDateSyncTests {
         #expect(!pulled.dirty)
     }
 
-    @Test("Unsupported text and number values cannot become a clear request", arguments: [FieldValue(text: "a value"), FieldValue(text: ""), FieldValue(number: 0)])
+    @Test("Text and number values cannot overwrite or clear a date field", arguments: [FieldValue(text: "a value"), FieldValue(text: ""), FieldValue(number: 0)])
     func unsupportedValueDoesNotClear(value: FieldValue) async throws {
         let fixture = try await fixture()
         try await enqueue([.setProjectField(.init(

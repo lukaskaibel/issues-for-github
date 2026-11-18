@@ -57,10 +57,10 @@ extension AppModel {
 extension AppModel {
     /// Saves a description written on an issue's page, on every platform: into the latest copy of the issue, since the
     /// page may have been drawn before the last sync, also under the id GitHub gave an issue made here while it was
-    /// being written; and only when it changed, so untouched text stays exactly as GitHub stores it, line endings
-    /// included.
+    /// being written, or for a project the issue has left since; and only when it changed, so untouched text stays
+    /// exactly as GitHub stores it, line endings included.
     func saveDescription(of item: Item, _ text: String) {
-        guard let current = self.item(id: status.idRemaps[item.id] ?? item.id) else { return }
+        guard let current = self.item(referencedBy: IssueReference(item)) else { return }
         guard text != Diff3.normalize(current.body) else { return }
         setBody(current, to: text)
     }

@@ -428,6 +428,7 @@ final class MobileNavigation {
 
     /// Follows issues whose temporary id was replaced once GitHub created them.
     func follow(remaps: [String: String]) {
+        guard !remaps.isEmpty else { return }
         func remap(_ path: [Route]) -> [Route] {
             path.map { route in
                 if case .issue(let id) = route, let new = remaps[id] { return .issue(new) }
@@ -443,6 +444,8 @@ final class MobileNavigation {
         for (key, path) in projectPaths { projectPaths[key] = remap(path) }
         for (key, path) in allIssuesPaths { allIssuesPaths[key] = remap(path) }
         for (key, path) in planningPaths { planningPaths[key] = remap(path) }
+        if case .picker(let id, let kind) = sheet, let new = remaps[id] { sheet = .picker(itemId: new, kind: kind) }
+        if case .dueDate(let id) = sheet, let new = remaps[id] { sheet = .dueDate(new) }
         RecentIssues.follow(remaps: remaps)
     }
 }
