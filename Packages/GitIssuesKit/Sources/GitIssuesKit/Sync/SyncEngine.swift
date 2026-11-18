@@ -25,6 +25,8 @@ public actor SyncEngine {
     private var lastAssignedPull: Date?
     /// When each repository's milestones were last read.
     var lastMilestonePull: [String: Date] = [:]
+    /// When the labels on show were last compared with GitHub's.
+    var lastLabelPull: Date?
     /// Items GitHub lists but will not show us (no access); remembered so they are not re-requested forever.
     private var unhydratable: [String: String] = [:]
     /// Repositories whose issue events GitHub won't list, so they aren't asked again.
@@ -163,6 +165,7 @@ public actor SyncEngine {
         lastFullRepoPull = [:]
         lastAssignedPull = nil
         lastMilestonePull = [:]
+        lastLabelPull = nil
         kick()
     }
 
@@ -222,6 +225,7 @@ public actor SyncEngine {
             try await pullOneBackgroundProject()
             try await pullRepositories()
             try await pullMilestones()
+            try await refreshLabels()
 
             wasOffline = false
             await finish(.idle, syncedAt: Date())
