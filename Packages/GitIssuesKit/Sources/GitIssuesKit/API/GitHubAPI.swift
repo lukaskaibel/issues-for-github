@@ -520,6 +520,37 @@ public final class GitHubAPI: Sendable {
         return result
     }
 
+    /// The repositories you can open issues in, the ones worked on last first. Organisations that restrict apps answer
+    /// with errors for their part only, so the rest is kept.
+    public func viewerRepositories() async throws -> [RepoRef] {
+        struct Response: Decodable {
+            struct Repo: Decodable {
+                var id: String
+                var nameWithOwner: String
+                var hasIssuesEnabled: Bool
+            }
+            struct Viewer: Decodable {
+                var repositories: Nodes<Repo>
+            }
+            var viewer: Viewer
+        }
+        let query = """
+        query {
+          viewer {
+            repositories(
+              first: 100, isArchived: false, orderBy: {field: PUSHED_AT, direction: DESC},
+              affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER],
+              ownerAffiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]
+            ) { nodes { id nameWithOwner hasIssuesEnabled } }
+          }
+        }
+        """
+        let response: Response = try await client.run(query, allowPartial: true)
+        return response.viewer.repositories.items
+            .filter(\.hasIssuesEnabled)
+            .map { RepoRef(id: $0.id, nameWithOwner: $0.nameWithOwner, projectId: "") }
+    }
+
     // MARK: Writing
 
     private struct Ack: Decodable {}

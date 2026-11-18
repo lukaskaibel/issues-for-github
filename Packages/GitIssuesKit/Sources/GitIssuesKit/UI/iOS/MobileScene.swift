@@ -696,6 +696,7 @@ struct MobileCommands: Commands {
             .keyboardShortcut("n", modifiers: .command)
             .disabled(navigation == nil || !model.signedIn || model.openProjects.isEmpty)
         }
+        UndoCommands(model: model)
         CommandMenu(Text(.goMenu)) {
             let unavailable = navigation == nil || !model.signedIn
             // The board is on wide windows only, and switches the project on screen.

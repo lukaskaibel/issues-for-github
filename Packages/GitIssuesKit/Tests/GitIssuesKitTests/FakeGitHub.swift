@@ -59,6 +59,8 @@ final class FakeGitHub: @unchecked Sendable {
     var failsFieldWrites = false
     var refusesFieldWrites = false
     private var addedMemberships = 0
+    /// The repositories of whoever is signed in, as GitHub lists them; nil entries are ones it can't show.
+    var viewerRepositories: [Any] = []
     /// The Status field's options, as GitHub lists them; `updateProjectV2Field` replaces them, giving new ones an id.
     var statusOptions: [[String: Any]] = [["id": "todo", "name": "Todo", "color": "GRAY", "description": ""]]
     private var nextOptionId = 1
@@ -389,6 +391,9 @@ final class FakeGitHub: @unchecked Sendable {
                 log.append("issues")
                 let ids = variables["ids"] as? [String] ?? []
                 data = ["nodes": ids.map { id -> Any in issues.first { $0.contentId == id }.map(issueNode) ?? NSNull() }]
+            } else if query.contains("ownerAffiliations") {
+                log.append("your repositories")
+                data = ["viewer": ["repositories": ["nodes": viewerRepositories]]]
             } else if query.contains("subIssues(first: 100)") {
                 let id = variables["id"] as? String ?? ""
                 log.append("detail")

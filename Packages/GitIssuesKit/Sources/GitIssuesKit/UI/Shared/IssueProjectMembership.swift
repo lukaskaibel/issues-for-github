@@ -67,22 +67,43 @@ extension AppModel {
         Task { await engine.kick() }
         guard case .setProjectMembership(var removal) = change, !removal.isMember else { return }
         // Folded into the removal while it waits, this leaves GitHub's card alone and brings its values back here.
+        let card = removal.item
         removal.isMember = true
         removal.base = false
+        let putBack = Mutation.setProjectMembership(removal)
+        let name = LocalizedStringResource.removeIssueFromProject(project: project.title)
         let notice = Notice(
             title: String(localized: .queuedRemovedFromProject(project: project.title)),
-            message: "\(removal.item.displayNumber) \(removal.item.title)",
-            action: .undo([.setProjectMembership(removal)])
+            message: "\(card.displayNumber) \(card.title)",
+            action: .undo
         )
+        recordUndo(.restore { model in
+            guard model.queueMembership(putBack) else { return }
+            model.recordUndo(.restore { $0.setMembership(of: card, in: project, isMember: false) }, name: name)
+        }, name: name, tag: notice.id)
         status.post(notice)
-        let status = status
         Task {
             // Once it has been sent the card's values are gone, so the offer ends with the wait.
             try? await Task.sleep(for: .seconds(SyncEngine.undoWindow))
             status.dismiss(notice.id)
+            undoHistory.remove(tag: notice.id)
             try? await Task.sleep(for: .seconds(0.2))
             await engine.kick()
         }
+    }
+
+    private func queueMembership(_ change: Mutation) -> Bool {
+        do {
+            let change = change.remapping(status.idRemaps)
+            try db.writer.write { try Outbox.enqueue($0, change) }
+        } catch {
+            status.post(Notice(title: String(localized: .changeCouldNotBeSaved), message: error.localizedDescription, isWarning: true))
+            return false
+        }
+        reloadNow()
+        let engine = engine
+        Task { await engine.kick() }
+        return true
     }
 
     func isIssueProjectUnfolded(_ section: IssueProjectSection) -> Bool {

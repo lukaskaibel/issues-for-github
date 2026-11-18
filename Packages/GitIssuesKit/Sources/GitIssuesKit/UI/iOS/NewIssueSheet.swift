@@ -12,6 +12,7 @@ struct NewIssueSheet: View {
     @State private var draft = NewIssueDraft(projectId: nil)
     @State private var prepared = false
     @State private var picker: PickerKind?
+    @State private var choosingRepository = false
     @State private var confirmDiscard = false
     @State private var created = 0
     @FocusState private var focus: Field?
@@ -57,10 +58,14 @@ struct NewIssueSheet: View {
                     .frame(minHeight: EditorStyle.lineHeight * 4, alignment: .top)
                     // A tap below the text puts the caret at its end.
                     .background { Color.clear.contentShape(.rect).onTapGesture { editingBody = true } }
-                    if repos.isEmpty, draft.projectId != nil {
+                    if draft.parent == nil, case .unavailable = repositories {
                         Label(.projectHasNoRepository, systemImage: "exclamationmark.triangle")
                             .font(.footnote)
                             .foregroundStyle(Theme.warning)
+                    } else if case .yours = repositories, draft.repoId == nil {
+                        Text(.projectHasNoRepositoryYet)
+                            .font(.footnote)
+                            .foregroundStyle(Theme.textSecondary)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -95,6 +100,23 @@ struct NewIssueSheet: View {
             .sheet(item: $picker) { kind in
                 DraftPickerSheet(kind: kind, draft: $draft)
             }
+            // Any of up to a hundred, so a list that can be searched.
+            .sheet(isPresented: $choosingRepository) {
+                PickerSheet(
+                    title: .repository,
+                    prompt: .chooseARepositoryPlaceholder,
+                    multiple: false,
+                    items: {
+                        repos.map { repo in
+                            PickerItem(
+                                id: repo.id, title: repo.nameWithOwner, selected: draft.repoId == repo.id,
+                                icon: AnyView(RepositoryIcon(size: 16))
+                            )
+                        }
+                    },
+                    onPick: selectRepo
+                )
+            }
         }
         .interactiveDismissDisabled(hasContent)
         .sensoryFeedback(.success, trigger: created)
@@ -102,6 +124,11 @@ struct NewIssueSheet: View {
         .onChange(of: model.optionIdRemaps) { _, saved in
             // A status made in this form, now saved on GitHub.
             if let id = draft.statusId, let savedId = saved[id] { draft.statusId = savedId }
+        }
+        // The board's first read can end while the sheet is open.
+        .onChange(of: repositories) {
+            settleRepository()
+            if context.statusId == nil, draft.statusId == nil { draft.statusId = defaultStatus(projectId: draft.projectId) }
         }
     }
 
@@ -166,6 +193,31 @@ struct NewIssueSheet: View {
                     Text(repo.shortName)
                 }
                 .accessibilityLabel(.repositoryIs(repository: repo.nameWithOwner))
+            } else if draft.parent == nil, case .loading = repositories {
+                contextChip {
+                    ProgressView().controlSize(.small)
+                    Text(.loadingRepositories)
+                }
+            } else if draft.parent == nil, case .yours = repositories {
+                if repos.count > 1 {
+                    Button {
+                        choosingRepository = true
+                    } label: {
+                        contextChip {
+                            Text(repos.first { $0.id == draft.repoId }?.shortName ?? String(localized: .repository))
+                            Image(systemName: "chevron.down").font(.caption2.weight(.bold))
+                        }
+                    }
+                    .buttonStyle(PlainPressStyle())
+                    .accessibilityLabel(repos.first { $0.id == draft.repoId }.map { .repositoryIs(repository: $0.nameWithOwner) } ?? .repositoryNone)
+                    .accessibilityIdentifier("new-repository")
+                } else if let repo = repos.first {
+                    contextChip {
+                        RepositoryIcon(size: 10)
+                        Text(repo.shortName)
+                    }
+                    .accessibilityLabel(.repositoryIs(repository: repo.nameWithOwner))
+                }
             } else if repos.count > 1, draft.parent == nil {
                 Menu {
                     ForEach(repos) { repo in
@@ -374,10 +426,15 @@ struct NewIssueSheet: View {
     private var project: Project? { model.projects.first { $0.id == draft.projectId } }
     private var statuses: [FieldOption] { model.statusOptions(projectId: draft.projectId) }
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
-    /// The board's repositories, also for an issue started on none in All Issues.
-    private var repos: [RepoRef] {
-        if context.inAllIssues, draft.parent == nil, let id = context.projectId { return model.repos(projectId: id) }
-        return model.repos(forNewIssueIn: draft.projectId, repoId: draft.repoId)
+    /// The board's repositories, also for an issue started on none in All Issues, or yours for a board with none.
+    private var repositories: NewIssueRepositories {
+        model.newIssueRepositories(projectId: draft.projectId, repoId: draft.repoId, allIssuesOf: allIssuesBoard)
+    }
+    private var repos: [RepoRef] { repositories.choices }
+    private var allIssuesBoard: String? { context.inAllIssues && draft.parent == nil ? context.projectId : nil }
+
+    private func settleRepository() {
+        model.settleRepository(of: &draft, allIssuesOf: allIssuesBoard)
     }
     /// The open milestones the issue can start in: its board's, or its repository's on no board.
     private var milestones: [MilestoneGroup] {
@@ -427,6 +484,7 @@ struct NewIssueSheet: View {
             if let chosen { new.statusId = chosen }
         }
         draft = new
+        settleRepository()
         model.loadRepoMeta(projectId: projectId)
         model.refreshStatuses(projectId: projectId)
         if projectId == nil, let parent { model.loadRepoMeta(for: parent) }
@@ -451,18 +509,20 @@ struct NewIssueSheet: View {
         draft.fieldValues = [:]
         model.loadRepoMeta(projectId: id)
         // In All Issues, the board and none keep the repository chosen, and with it the people and labels picked.
-        guard !context.inAllIssues, let id else { return }
+        guard !context.inAllIssues, let id else { return settleRepository() }
         draft.repoId = model.defaultRepoId(projectId: id)
         // People and labels belong to a repository, so choices made for another one no longer apply; begun in My
         // Issues, it stays yours, so that it shows up there.
         draft.assignees = context.assignToMe ? model.viewer.map { [$0.person] } ?? [] : []
         draft.labels = []
+        settleRepository()
     }
 
     private func selectRepo(_ id: String) {
         guard id != draft.repoId else { return }
         draft.repoId = id
         draft.labels = []
+        settleRepository()
     }
 
     private func create() {

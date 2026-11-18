@@ -97,13 +97,30 @@ struct ProjectMembershipTests {
         #expect(model.allItems.first { $0.id == "PVTI_1" } == nil)
         let notice = try #require(model.status.notices.last)
         #expect(notice.action?.isUndo == true)
-        model.apply(try #require(notice.action))
+        model.undo(notice)
         let restored = try #require(model.allItems.first { $0.id == "PVTI_1" })
         #expect(restored.fieldValues["version"]?.optionId == "one")
         #expect(restored.dueDate == f.source.dueDate)
         try await f.engine.pushPending()
         #expect(f.github.issue("I_1")?.itemId == "PVTI_1")
         #expect(try await f.db.reader.read { try Item.fetchOne($0, key: "PVTI_1") } != nil)
+    }
+
+    @Test("⌘Z takes a removal back while it waits, and ⇧⌘Z repeats it")
+    @MainActor
+    func undoRemovalWithTheKeys() async throws {
+        let f = try await fixture(member: true)
+        let model = AppModel(database: f.db, api: f.github.api)
+        model.reloadNow()
+        let project = try #require(model.projects.first { $0.id == "P1" })
+        model.setMembership(of: f.source, in: project, isMember: false)
+        model.undoHistory.endGroup()
+        model.undo()
+        #expect(model.allItems.first { $0.id == "PVTI_1" }?.fieldValues["version"]?.optionId == "one")
+        model.undoHistory.endGroup()
+        model.redo()
+        #expect(model.allItems.first { $0.id == "PVTI_1" } == nil)
+        #expect(model.status.notices.last?.action?.isUndo == true)
     }
 
     @Test("Removal resolves a membership ID changed by sync since the view was drawn")

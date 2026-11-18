@@ -478,7 +478,9 @@ public final class AppModel {
     @ObservationIgnored var heldKeys: [NSEvent] = []
     @ObservationIgnored var heldKeysTimer: Timer?
     /// The app's main window, to tell it apart from popovers and the settings window.
-    @ObservationIgnored weak var mainWindow: NSWindow?
+    @ObservationIgnored weak var mainWindow: NSWindow? {
+        didSet { textKeyboardWatcher?.refresh() }
+    }
     @ObservationIgnored var keyMonitorToken: Any?
     /// The press on the trackpad going on now, which may turn into a peek.
     @ObservationIgnored var deepPress = DeepPress()
@@ -526,11 +528,21 @@ public final class AppModel {
     @ObservationIgnored var inboxPickRange: Set<String> = []
     /// The last archive or unsubscribe, which can be undone for a few seconds.
     var inboxUndo: InboxUndo?
+    /// What ⌘Z and ⇧⌘Z go through.
+    var undoHistory = UndoHistory<UndoAction>()
+    /// The message saying what ⌘Z or ⇧⌘Z did last.
+    @ObservationIgnored var undoNoticeId: Notice.ID?
+    /// Whether text being typed in has the keyboard, which then keeps ⌘Z and ⇧⌘Z for itself.
+    var textHasKeyboard = false
+    @ObservationIgnored var textKeyboardWatcher: TextKeyboardWatcher?
     /// Bumped when a snoozed entry is due back, so the Inbox shows it.
     var inboxClock = Date()
     @ObservationIgnored var inboxWake: Task<Void, Never>?
     /// Labels and assignable people of repositories none of your boards use, for issues of them.
     var otherRepoMeta: [String: (labels: [LabelRef], people: [Person])] = [:]
+    /// The repositories you can open issues in, read when a new issue's board has none; nil until then.
+    var yourRepositories: [RepoRef]?
+    @ObservationIgnored var yourRepositoriesReadAt: Date?
     /// Bumped to open the snooze menu of what is selected in the Inbox (H, or "Pick a Date…" in the right-click menu).
     var inboxSnoozeRequest = InboxSnoozeRequest()
     #if os(macOS)
@@ -649,6 +661,7 @@ public final class AppModel {
         startObserving()
         restoreScope()
         scheduleInboxWake()
+        textKeyboardWatcher = TextKeyboardWatcher(model: self)
         #if os(macOS)
         installKeyMonitor()
         installNavigationMonitors()
@@ -725,7 +738,10 @@ public final class AppModel {
         inboxSelectedId = nil
         inboxPicked = []
         inboxUndo = nil
+        undoHistory = UndoHistory()
         otherRepoMeta = [:]
+        yourRepositories = nil
+        yourRepositoriesReadAt = nil
         history = []
         historyIndex = -1
         overlay = nil
@@ -1721,23 +1737,29 @@ public final class AppModel {
 
     /// Applies mutations locally and queues them for GitHub. `inserting` are items to keep first, in the same
     /// write, such as an issue only the Inbox knew that is being put on a board. `followingUp` is false for a change
-    /// that doesn't finish or start the issue itself, so its parent and epic stay as they are.
-    func perform(_ mutations: [Mutation], inserting: [Item] = [], followingUp: Bool = true) {
+    /// that doesn't finish or start the issue itself, so its parent and epic stay as they are. What they do goes into
+    /// the undo history unless `undoable` is false, for changes that follow from something else.
+    func perform(_ mutations: [Mutation], inserting: [Item] = [], followingUp: Bool = true, undoable: Bool = true) {
         guard !mutations.isEmpty else { return }
-        let completions = followingUp ? parentCompletions(after: mutations) : (mutations: [], parents: [])
-        let starts = followingUp ? epicStarts(after: mutations) : (mutations: [], epics: [])
+        // Undo and Redo put back what was, and nothing follows from that.
+        let replaying = undoHistory.mode != .recording
+        let follows = followingUp && !replaying
+        let completions = follows ? parentCompletions(after: mutations) : (mutations: [], parents: [])
+        let starts = follows ? epicStarts(after: mutations) : (mutations: [], epics: [])
         // Made from a screen drawn before an issue made here got its id from GitHub, such as its page while you type,
         // a change still names the one it had: it goes to the issue's id now, or GitHub would never hear of it.
         let remaps = status.idRemaps
         let mutations = (mutations + completions.mutations + starts.mutations).map { $0.remapping(remaps) }
         do {
-            try db.writer.write { db in
+            let reversal = try db.writer.write { db -> [Mutation]? in
                 for item in inserting { try item.insert(db, onConflict: .ignore) }
-                for mutation in mutations { try Outbox.enqueue(db, mutation) }
+                let applying = replaying ? try mutations.filter { try $0.canStillApply(db) } : mutations
+                return try Outbox.enqueueReversibly(db, applying)
             }
             reloadNow()
+            if undoable { recordUndo(of: mutations, reversal: reversal) }
             // An issue finished is a moment to ask for a rating.
-            if finishesWork(mutations) { AppReview.shared.finishedSomething() }
+            if !replaying, finishesWork(mutations) { AppReview.shared.finishedSomething() }
             for parent in completions.parents {
                 status.post(Notice(
                     title: String(localized: .parentDoneWithSubIssues(number: parent.displayNumber)), message: parent.title,

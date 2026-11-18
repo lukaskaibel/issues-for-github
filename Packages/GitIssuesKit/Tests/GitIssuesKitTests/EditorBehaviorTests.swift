@@ -455,6 +455,20 @@ final class EditorBehaviorTests: XCTestCase {
         XCTAssertEqual(h.text, "- One")
     }
 
+    func testRedoBringsBackWhatUndoTookAway() {
+        let h = EditorHarness("One")
+        h.caret(3)
+        h.type(" two")
+        h.settle(0.01)
+        XCTAssertEqual(h.text, "One two")
+        h.textView.undoManager?.undo()
+        XCTAssertEqual(h.text, "One")
+        h.settle(0.01)
+        XCTAssertEqual(h.textView.undoManager?.canRedo, true)
+        h.textView.undoManager?.redo()
+        XCTAssertEqual(h.text, "One two")
+    }
+
     // MARK: - Text that is only read
 
     func testReadOnlyTextOpensNothingAndShowsNoMarkdown() {

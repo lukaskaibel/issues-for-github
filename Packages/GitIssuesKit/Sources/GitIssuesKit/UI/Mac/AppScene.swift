@@ -27,6 +27,7 @@ public struct GitIssuesScene: Scene {
                 .keyboardShortcut("n", modifiers: .command)
                 .disabled(!model.signedIn || model.projects.isEmpty)
             }
+            UndoCommands(model: model)
             CommandMenu(.goMenu) {
                 Button(.back) { model.goBack() }
                     .keyboardShortcut("[", modifiers: .command)

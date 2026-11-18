@@ -228,7 +228,6 @@ struct InboxScreen: View {
             Button(.archiveAllRead) { model.archiveAllRead() }.keyboardShortcut(.delete, modifiers: .shift)
             Button(.snooze) { if let entry = model.inboxSelected { snoozing = SnoozeTarget(entries: [entry]) } }.keyboardShortcut("h", modifiers: [])
             Button(.unsubscribe) { if let entry = model.inboxSelected { model.unsubscribe([entry]) } }.keyboardShortcut("s", modifiers: .shift)
-            Button(.undo) { model.undoInbox() }.keyboardShortcut("z", modifiers: .command).disabled(model.inboxUndo == nil)
         }
         .opacity(0)
         .allowsHitTesting(false)

@@ -8,6 +8,16 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Undo and redo for what you do in the app.** `⌘Z` takes back the last change and `⌘⇧Z` brings it back, step by step,
+  on the Mac and on an iPad with a keyboard, and **Edit › Undo** and **Redo** name what they are about, such as **Undo
+  Change Status**. It works for an issue's status, priority, due date and project fields, its place on the board, title
+  and description, open or closed, assignees, labels, parent, blockers, milestone and epic; what you changed on several
+  picked issues at once is one step. It also takes back changes to a milestone, a board's columns (order, name, colour,
+  one added, an empty one deleted), a view's name, a project hidden from the sidebar, and in the Inbox marking read or
+  unread, snoozing, and for its few seconds archiving or unsubscribing. A short message says what happened. Undoing is a
+  change like any other: it reaches GitHub the same way, also after being offline. While you type, the keys go on
+  undoing your typing. A description you keep writing is one step. New issues, comments, deleted issues and issues put
+  on a board can't be taken back this way.
 - **An issue's fields, in every project it is on.** An issue's details now list its project's own fields: versions,
   dates, iterations, text, numbers, single and multiple choice. Those with a value show, the rest wait behind **n more
   fields**. The issue's other projects stand folded below with their status, and unfolded their fields can be changed
@@ -93,6 +103,9 @@ All notable changes to this project are recorded here. The format follows
 - **A quieter toolbar on the Mac.** New Issue moved from the sidebar to the toolbar, right after back and forward, so
   it stays there when the sidebar is closed. The toolbar no longer repeats the page's name, its project and "Synced
   just now": the sidebar already shows them.
+- **Links to other issues open in the app.** Click or tap a GitHub link to an issue in a description or a comment, on
+  the Mac, iPhone or iPad, and that issue opens right here, with Back leading to the one you came from. Links to issues
+  the app doesn't have, and all other links, still open in your browser.
 - **Sub-issues in a Mac list are indented as a whole.** A sub-issue's priority and number now move in with its status
   and title, right of the line from its parent, so a row shows that it belongs there from its first icon, in lists and
   among an issue's sub-issues. An epic's icon stands at the start of its row, where the line down to its issues begins,
@@ -107,6 +120,8 @@ All notable changes to this project are recorded here. The format follows
   glass panel as a new issue, over the dimmed board or list, and only as tall as the issue needs. A click beside it puts
   it away, as do Space and Esc; `J` `K` and the keys that change the issue work as before.
 
+- While you write a comment, `⌘↵` shows beside the send button, to say that it posts the comment: on the Mac, and on
+  iPhone and iPad with a keyboard attached.
 - **An issue looks the same wherever it is listed.** On an issue's page, its sub-issues, an epic's issues and the
   issues it is blocked by or blocks are now the rows the lists show, on the Mac and on iPhone and iPad: priority,
   number, status, title, sub-issues, the blocker's flag, labels, milestone, due date and people, in the list's order,
@@ -160,6 +175,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **A new issue always finds a repository.** On a project with no repository yet, the new issue form left the
+  repository and **Create issue** switched off, and on the Mac it didn't say why. Now you choose one of your
+  repositories right there, on Mac, iPhone and iPad: the issue is created in it and added to the project, which knows
+  that repository from then on. While the project is still loading, the form says so and fills in the repository by
+  itself, also in a draft you come back to. On the Mac, moving a new issue to a project with no repository no longer
+  leaves a **Create issue** that does nothing.
+- **`⌘⇧Z` no longer undoes an archived notification** in the Mac's Inbox: it is Redo now.
 - **A label recoloured or renamed on GitHub changes in the app too**, on every card and row, within a minute. GitHub
   doesn't count that as a change of the issues, so they kept the old colour until something else about them changed.
 - **Switching boards on the Mac no longer crashes** while a column is adding cards.

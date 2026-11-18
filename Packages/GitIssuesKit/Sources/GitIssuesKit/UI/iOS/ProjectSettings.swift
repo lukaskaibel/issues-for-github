@@ -468,23 +468,22 @@ private struct NoticeBanner: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: notice.isWarning ? "exclamationmark.triangle.fill" : notice.action?.isUndo == true ? "checkmark.circle" : "arrow.triangle.2.circlepath")
+            Image(systemName: notice.symbol ?? (notice.isWarning ? "exclamationmark.triangle.fill" : notice.action?.isUndo == true ? "checkmark.circle" : "arrow.triangle.2.circlepath"))
                 .font(.body.weight(.semibold))
                 .foregroundStyle(notice.isWarning ? Theme.warning : Theme.accent)
                 .padding(.top, 1)
             VStack(alignment: .leading, spacing: 8) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(notice.title).font(.subheadline.weight(.semibold))
-                    Text(notice.message)
-                        .font(.footnote)
-                        .foregroundStyle(Theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if !notice.message.isEmpty {
+                        Text(notice.message)
+                            .font(.footnote)
+                            .foregroundStyle(Theme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 if notice.action?.isUndo == true {
-                    Button(.undo) {
-                        if let action = notice.action { model.apply(action) }
-                        model.status.dismiss(notice.id)
-                    }
+                    Button(.undo) { model.undo(notice) }
                     .buttonStyle(.bordered)
                     .font(.footnote.weight(.medium))
                     .accessibilityIdentifier("notice-undo")
