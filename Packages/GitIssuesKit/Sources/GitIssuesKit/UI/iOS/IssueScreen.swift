@@ -1700,6 +1700,9 @@ private struct CommentComposer: View {
     @State private var draft: String
     @State private var sent = 0
     @State private var height = EditorStyle.lineHeight
+    @State private var focused = false
+    /// Typing on a keyboard with keys, the only one with a ⌘↵.
+    @State private var typesWithKeys = HardwareKeyboard.shared.isInUse
     /// The round send button, 6 points inside the field's corner, as on the Mac.
     @ScaledMetric(relativeTo: .body) private var buttonSize: CGFloat = 32
 
@@ -1717,6 +1720,7 @@ private struct CommentComposer: View {
                 MarkdownEditor(
                     draft: $draft,
                     placeholder: .leaveCommentPlaceholder,
+                    editing: $focused,
                     onSubmit: send,
                     submitTitle: .sendComment,
                     accessibilityLabel: .leaveCommentPlaceholder,
@@ -1730,6 +1734,11 @@ private struct CommentComposer: View {
             .padding(.leading, 16)
             // One line is as tall as the send button's corner, as with a plain text field.
             .padding(.vertical, max(6, (buttonSize + 12 - EditorStyle.lineHeight) / 2))
+            if typesWithKeys {
+                SendShortcutHint(isShown: focused && !empty)
+                    .frame(height: buttonSize + 12)
+                    .padding(.leading, 8)
+            }
             Button(action: send) {
                 Image(systemName: "arrow.up")
                     .font(.subheadline.weight(.bold))
@@ -1752,6 +1761,9 @@ private struct CommentComposer: View {
         .padding(.bottom, 8)
         .sensoryFeedback(.success, trigger: sent)
         .onChange(of: draft) { _, text in model.commentDrafts[item.id] = text.isEmpty ? nil : text }
+        .onReceive(NotificationCenter.default.publisher(for: HardwareKeyboard.didChange)) { _ in
+            typesWithKeys = HardwareKeyboard.shared.isInUse
+        }
     }
 
     private func send() {
