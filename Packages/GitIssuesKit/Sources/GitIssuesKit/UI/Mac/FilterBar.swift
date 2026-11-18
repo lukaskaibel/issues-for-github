@@ -213,6 +213,7 @@ struct FilterIconView: View {
             case .iteration(let current): IterationIcon(size: size + 1).foregroundStyle(current ? Theme.started : Theme.textSecondary)
             case .priority(let level): PriorityIcon(level: level, size: size)
             case .project(let look): ProjectGlyphImage(look: look, size: size + 1)
+            case .issueType(let color): IssueTypeSquare(color: color, size: size * 0.7).frame(width: size + 2, height: size + 2)
             case .none: EmptyView()
             }
         }

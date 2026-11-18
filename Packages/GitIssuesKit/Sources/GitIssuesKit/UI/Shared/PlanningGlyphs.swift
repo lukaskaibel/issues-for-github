@@ -190,6 +190,8 @@ enum SectionIcon: Equatable {
     case project(ProjectLook)
     /// A calendar in the colour of a due date: red once passed, orange for today.
     case due(DueTone)
+    /// An issue type's square in its colour.
+    case issueType(String?)
 }
 
 extension AppModel {
@@ -281,6 +283,9 @@ struct GroupIcon: View {
             Circle()
                 .fill(Theme.optionColor(color) ?? Theme.textTertiary)
                 .frame(width: size * 0.62, height: size * 0.62)
+                .frame(width: size, height: size)
+        case .issueType(let color):
+            IssueTypeSquare(color: color, size: size * 0.62)
                 .frame(width: size, height: size)
         case .iteration(let current):
             IterationIcon(size: size)

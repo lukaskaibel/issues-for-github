@@ -181,7 +181,7 @@ extension AppModel {
         let engine = self.engine
         Task {
             if let meta = try? await engine.repoMeta(repoId: repoId) {
-                otherRepoMeta[repoId] = (meta.labels, meta.users)
+                otherRepoMeta[repoId] = (meta.labels, meta.users, meta.types)
             }
         }
     }

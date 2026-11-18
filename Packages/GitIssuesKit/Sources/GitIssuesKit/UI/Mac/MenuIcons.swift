@@ -84,6 +84,16 @@ enum MenuIcons {
         }
     }
 
+    /// An issue type's square in its colour, or its outline for no type.
+    static func issueType(_ color: String?, empty: Bool = false) -> NSImage {
+        image { context, rect in
+            let side: CGFloat = 9
+            let square = CGRect(x: rect.midX - side / 2, y: rect.midY - side / 2, width: side, height: side)
+            let ink = empty ? Theme.textTertiary : Theme.issueTypeColor(color)
+            context.draw(Marks.issueType(in: square, empty: empty), mark: NSColor(ink).cgColor, onColor: NSColor.white.cgColor)
+        }
+    }
+
     static var epic: NSImage {
         image { context, rect in
             PlanningGlyph.drawEpic(in: rect.insetBy(dx: 1, dy: 1), cg: context)

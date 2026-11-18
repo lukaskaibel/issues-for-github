@@ -72,7 +72,8 @@ struct IssueListView: View {
                                     showsParent: section.nesting.namesParent(of: item) && section.kind != .epic(contentId: item.parentId)
                                         && section.kind != .group(.parent(contentId: item.parentId)),
                                     milestone: showsMilestone ? model.milestoneTitle(of: item) : spanOnRoadmap(item),
-                                    chips: model.fieldChips(of: item, in: model.scope)
+                                    chips: model.fieldChips(of: item, in: model.scope),
+                                    showsType: !model.typeIsImplied(for: item, in: model.scope)
                                 ))
                             }
                         },

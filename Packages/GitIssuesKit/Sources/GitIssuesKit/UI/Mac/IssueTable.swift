@@ -1469,6 +1469,12 @@ final class IssueHeaderCell: PaintedCell {
         case .epic: PlanningGlyph.drawEpic(in: iconRect, cg: context)
         case .plain: break
         case .dot(let color): PlanningGlyph.drawDot(color, in: iconRect, cg: context)
+        case .issueType(let color):
+            let side = iconRect.width * 0.62
+            context.draw(
+                Marks.issueType(in: CGRect(x: iconRect.midX - side / 2, y: iconRect.midY - side / 2, width: side, height: side)),
+                mark: NSColor(Theme.issueTypeColor(color)).cgColor, onColor: NSColor.white.cgColor
+            )
         case .progress(let done, let total): PlanningGlyph.drawProgress(done: done, total: total, in: iconRect, cg: context)
         case .iteration(let current):
             MenuIcons.symbol("arrow.triangle.2.circlepath", color: current ? Theme.started : Theme.textSecondary)?
@@ -1837,6 +1843,10 @@ struct ItemMenuBuilder {
                 entries.append(assignMe)
             }
         }
+        if targets.contains(where: model.canHaveIssueType), !model.issueTypes(for: item).isEmpty {
+            let icon = MenuIcons.issueType(item.issueTypeColor, empty: item.issueType == nil)
+            entries.append(submenu(String(localized: .issueTypeTitle), icon, issueTypeMenu(targets), picker: .issueType))
+        }
         if targets.contains(where: model.canHaveDueDate) {
             entries.append(submenu(String(localized: .dueDateTitle), MenuIcons.symbol("calendar"), dueDateMenu(targets), picker: .dueDate))
         }
@@ -1870,6 +1880,28 @@ struct ItemMenuBuilder {
             entry.image = MenuIcons.symbol("arrow.triangle.2.circlepath", color: model.isRunning(iteration, field: field) ? Theme.started : Theme.textSecondary)
             entry.toolTip = model.iterationRange(iteration)
             if numbered { number(entry, index + 1) }
+            menu.addItem(entry)
+        }
+        return menu
+    }
+
+    /// No type, and the repository's types with the one they share checked.
+    private func issueTypeMenu(_ targets: [Item]) -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let names = Set(targets.map(\.issueType))
+        let none = ClosureMenuItem(String(localized: .noIssueType), checked: names == [nil]) { [model] in
+            model.setIssueType(of: targets, named: nil)
+        }
+        none.image = MenuIcons.issueType(nil, empty: true)
+        number(none, 0)
+        menu.addItem(none)
+        for (index, type) in model.issueTypes(for: item).enumerated() {
+            let entry = ClosureMenuItem(type.name, checked: names == [type.name]) { [model] in
+                model.setIssueType(of: targets, named: type.name)
+            }
+            entry.image = MenuIcons.issueType(type.color)
+            number(entry, index + 1)
             menu.addItem(entry)
         }
         return menu

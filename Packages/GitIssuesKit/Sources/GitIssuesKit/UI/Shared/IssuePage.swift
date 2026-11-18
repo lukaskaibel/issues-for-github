@@ -21,7 +21,8 @@ extension Item {
             number: sub.number > 0 ? sub.number : nil, title: sub.title, body: "", state: sub.state,
             stateReason: sub.stateReason, url: sub.url, repo: sub.repo, createdAt: sub.createdAt,
             subTotal: sub.subTotal ?? 0, subCompleted: sub.subCompleted ?? 0, assignees: sub.assignees,
-            blockedByCount: blockedBy, milestoneId: sub.milestoneId, milestoneTitle: sub.milestoneTitle
+            blockedByCount: blockedBy, milestoneId: sub.milestoneId, milestoneTitle: sub.milestoneTitle,
+            issueType: sub.issueType, issueTypeColor: sub.issueTypeColor
         )
     }
 

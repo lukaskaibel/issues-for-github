@@ -14,6 +14,8 @@ final class FakeGitHub: @unchecked Sendable {
         var body = ""
         /// The milestone's id, as the app last set it. Reads don't list it.
         var milestone: String?
+        /// The type's id, as the app last set it. Reads don't list it.
+        var issueType: String?
         var updatedAt = "2026-10-01T10:00:00Z"
         var closed = false
         /// The issues that block it, and how many more GitHub counts but won't show (in repositories you can't see).
@@ -373,6 +375,11 @@ final class FakeGitHub: @unchecked Sendable {
                 log.append("update \(issues[i].contentId)")
             }
             return "updateIssue"
+        }
+        if query.contains("updateIssueIssueType("), let i = index(variables["id"]) {
+            issues[i].issueType = variables["t"] as? String
+            log.append("type \(issues[i].contentId): \(issues[i].issueType ?? "none")")
+            return "updateIssueIssueType"
         }
         if query.contains("addSubIssue("), let i = index(variables["c"]), let parent = variables["p"] as? String {
             issues[i].parent = parent

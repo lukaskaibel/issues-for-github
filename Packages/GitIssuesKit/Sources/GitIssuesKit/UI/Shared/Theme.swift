@@ -136,6 +136,11 @@ enum Theme {
         }
     }
 
+    /// An issue type's square. GitHub's grey, and a type whose colour isn't known yet, are the grey of quiet text.
+    static func issueTypeColor(_ name: String?) -> Color {
+        name.flatMap(optionColor) ?? textTertiary
+    }
+
     /// The colours of the issue in the peek. On a picked row, which is filled with the accent, the ring turns white.
     static func peekRing(onAccent: Bool = false) -> Color {
         onAccent ? .white : accent

@@ -188,6 +188,7 @@ struct FilterGlyph: View {
             case .iteration(let current): IterationIcon(size: 13).foregroundStyle(current ? Theme.started : Theme.textSecondary)
             case .priority(let level): PriorityIcon(level: level)
             case .project(let look): ProjectGlyphImage(look: look, size: 14)
+            case .issueType(let color): IssueTypeSquare(color: color, size: 9)
             case .none: EmptyView()
             }
         }

@@ -26,6 +26,7 @@ public enum Mutation: Codable, Sendable, Equatable {
     case createMilestone(CreateMilestone)
     case updateMilestone(UpdateMilestone)
     case setEpic(SetEpic)
+    case setIssueType(SetIssueType)
     case setProjectField(SetProjectField)
     case createLabel(CreateLabel)
 
@@ -195,6 +196,7 @@ extension Mutation {
         case .setMilestone(let m): "milestone:\(m.contentId)"
         case .updateMilestone(let m): "milestone-edit:\(m.milestoneId)"
         case .setEpic(let m): "epic:\(m.contentId)"
+        case .setIssueType(let m): "issue-type:\(m.contentId)"
         case .setProjectField(let m): "project-field:\(m.itemId):\(m.fieldId)"
         case .markThreadRead(let m): "read:\(m.threadId)"
         case .archiveThread(let m): "archive:\(m.threadId)"
@@ -225,6 +227,7 @@ extension Mutation {
         case .createMilestone: []
         case .updateMilestone(let m): [m.milestoneId]
         case .setEpic(let m): [m.contentId]
+        case .setIssueType(let m): [m.contentId]
         case .setProjectField(let m): [m.itemId]
         case .createLabel: []
         }
@@ -259,6 +262,7 @@ extension Mutation {
         case .setBlocking(let m): m.blocked.contentId
         case .setMilestone(let m): m.contentId
         case .setEpic(let m): m.contentId
+        case .setIssueType(let m): m.contentId
         default: nil
         }
     }
@@ -369,6 +373,9 @@ extension Mutation {
         case .setEpic(var m):
             m.contentId = r(m.contentId)
             return .setEpic(m)
+        case .setIssueType(var m):
+            m.contentId = r(m.contentId)
+            return .setIssueType(m)
         case .setProjectField(var m):
             m.itemId = r(m.itemId)
             return .setProjectField(m)
@@ -593,6 +600,9 @@ extension Mutation {
         case .setEpic(let m):
             try m.apply(db)
 
+        case .setIssueType(let m):
+            try m.apply(db)
+
         case .setProjectField(let m):
             try m.apply(db)
 
@@ -682,6 +692,8 @@ extension Mutation {
             return line("", text)
         case .setEpic(let m):
             return line(try number(contentId: m.contentId), m.isEpic ? .queuedMadeEpic : .queuedNoLongerEpic)
+        case .setIssueType(let m):
+            return line(try number(contentId: m.contentId), m.name.map { .queuedIssueTypeSet(type: $0) } ?? .queuedIssueTypeRemoved)
         case .setProjectField(let m):
             let valueName = m.valueName ?? m.value.flatMap { value -> String? in
                 if let date = value.date { return CalendarDay(date)?.longLabel ?? date }
@@ -868,6 +880,11 @@ extension Mutation {
         case (.setMilestone(var new), .setMilestone(let old)):
             new.base = old.base
             return .setMilestone(new)
+        case (.setIssueType(var new), .setIssueType(let old)):
+            new.baseName = old.baseName
+            new.baseColor = old.baseColor
+            new.baseTypeId = old.baseTypeId
+            return .setIssueType(new)
         case (.setProjectField(var new), .setProjectField(let old)):
             new.base = old.base
             return .setProjectField(new)

@@ -39,6 +39,8 @@ enum FilterIcon: Equatable {
     case priority(PriorityLevel)
     /// A project's glyph in its colour.
     case project(ProjectLook)
+    /// An issue type's square in its colour; grey for types in general.
+    case issueType(String?)
     case none
 }
 
@@ -95,7 +97,7 @@ extension AppModel {
         }
         let items = allItems.filter { $0.projectId == projectId }
         if items.contains(where: { $0.issueType != nil }) {
-            result.append(FilterProperty(id: "type", title: String(localized: .filterIssueType), icon: .symbol("circle.grid.2x2")))
+            result.append(FilterProperty(id: "type", title: String(localized: .filterIssueType), icon: .issueType(nil)))
         }
         if items.contains(where: { $0.parentId != nil }) {
             result.append(FilterProperty(id: "parent-issue", title: String(localized: .filterParentIssue), icon: .symbol("arrow.turn.down.right")))
@@ -163,7 +165,8 @@ extension AppModel {
             }
             add("no", "milestone", String(localized: .noMilestone), icon: .milestone(.none))
         case "type":
-            for type in Set(items.compactMap(\.issueType)).sorted() { add("type", type, type, icon: .symbol("circle.grid.2x2")) }
+            let colors = issueTypeColors(of: items)
+            for type in colors.keys.sorted() { add("type", type, type, icon: .issueType(colors[type] ?? nil)) }
         case "parent-issue":
             var parents: [String: Item] = [:]
             for item in items { if let id = item.parentId, let parent = issue(contentId: id) { parents[id] = parent } }

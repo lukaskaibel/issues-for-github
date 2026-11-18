@@ -787,6 +787,11 @@ struct IssueProperties: View {
                         }
                     }
                 }
+                if model.showsIssueTypeProperty(item) {
+                    row(.issueTypeTitle) {
+                        PropertyButton(kind: .issueType, item: item) { IssueTypeValue(item: item) }
+                    }
+                }
                 row(.labels) {
                     PropertyButton(kind: .labels, item: item) {
                         if item.labels.isEmpty {

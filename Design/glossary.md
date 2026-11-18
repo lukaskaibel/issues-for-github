@@ -48,6 +48,7 @@ Only English uses Title Case; every other language writes menus and buttons as i
 | status | Status | statut | estado | status | статус | ステータス | 状态 | 상태 |
 | priority | Priorität | priorité | prioridad | prioridade | приоритет | 優先度 | 优先级 | 우선순위 |
 | label | Label (das) | étiquette | etiqueta | etiqueta | метка | ラベル | 标签 | 레이블 |
+| issue type (Bug, Feature…; “type” on its own) | Typ | type | tipo | tipo | тип | タイプ | 类型 | 유형 |
 | assignee | zuständig (Zuständig, as a field) | responsable | responsable | responsável | исполнитель | 担当者 | 负责人 | 담당자 |
 | assign to | zuweisen an | assigner à | asignar a | atribuir a | назначить | 割り当てる | 分配给 | 할당 |
 | due date | Fälligkeitsdatum (fällig am …) | échéance | fecha de vencimiento | prazo | срок | 期日 | 截止日期 | 마감일 |
