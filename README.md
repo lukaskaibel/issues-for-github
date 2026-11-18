@@ -606,7 +606,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
 | `⌥↑` `⌥↓` or `⌥K` `⌥J` | Move the issue up or down its column or list section |
 | `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
-| `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
+| `Space` | Peek at the issue in a panel over the board or list; `J` `K` move the peek along. On a Force Touch trackpad, a deep press on the issue does the same |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
 | `⌘+` `⌘−` / `⌘0` | Zoom a timeline in or out / reset to Months or Quarters; pinch, zoom buttons and ⌘-scroll work too |

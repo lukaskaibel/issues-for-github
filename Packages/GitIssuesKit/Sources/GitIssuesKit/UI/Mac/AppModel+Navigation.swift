@@ -90,6 +90,13 @@ extension AppModel {
             }
             return handled ? nil : event
         }
+        // A deep press on a Force Touch trackpad peeks at the issue under the pointer. The list follows its own presses
+        // (`HoverTableView`): while a table tracks the mouse, these events wait until the button is up.
+        NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp, .pressure]) { [weak self] event in
+            guard let self else { return event }
+            MainActor.assumeIsolated { self.followPress(event) }
+            return event
+        }
         // Two-finger swipe, as in Safari.
         NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
             guard let self else { return event }

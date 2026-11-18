@@ -15,6 +15,8 @@ All notable changes to this project are recorded here. The format follows
   issue on another project, and the × takes it off one, with **Undo** for five seconds before GitHub hears of it, since
   the card's values go with it. On the Mac and a wide iPad this is in the inspector; on iPhone and narrow iPad windows,
   under **Projects**.
+- **Press deeper to peek (Mac).** On a Force Touch trackpad, press an issue on a board or in a list until the second
+  click, and its peek opens instead of the issue. It stays open when you let go.
 - **Make a status where you pick one.** Type a name the board has no status of into any status picker, on the
   Mac (the dropdown, `S`, the right-click menu, `⌘K` and the new issue) or on iPhone and iPad (the Status sheet, and
   **New Status…** when you touch and hold an issue), and **Create status “…”** makes it in the project's Status field
@@ -101,6 +103,10 @@ All notable changes to this project are recorded here. The format follows
 - **The issue you are peeking at stays marked (Mac).** While the peek is open, its issue has a tint of the accent and a
   ring in the accent, the same on board cards, list rows, My Issues and both timelines, also once the pointer has moved
   away. `J` and `K` take the mark along. A picked issue keeps its own colour under the ring.
+- **The peek opens where a new issue does (Mac).** Space now shows the issue in the middle of the window, in the same
+  glass panel as a new issue, over the dimmed board or list, and only as tall as the issue needs. A click beside it puts
+  it away, as do Space and Esc; `J` `K` and the keys that change the issue work as before.
+
 - **An issue looks the same wherever it is listed.** On an issue's page, its sub-issues, an epic's issues and the
   issues it is blocked by or blocks are now the rows the lists show, on the Mac and on iPhone and iPad: priority,
   number, status, title, sub-issues, the blocker's flag, labels, milestone, due date and people, in the list's order,

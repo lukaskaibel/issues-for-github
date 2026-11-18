@@ -184,22 +184,12 @@ struct ContentPanel: View {
                 }
             }
             .animation(Theme.overlay, value: model.isLoadingProject)
-            // Picked issues get a bar of changes at the bottom; Space peeks at an issue on the right.
+            // Picked issues get a bar of changes at the bottom.
             .overlay(alignment: .bottom) {
-                // Centred in what the peek leaves free.
                 SelectionBar()
                     .padding(.bottom, 18)
-                    .padding(.trailing, model.peekItemId == nil ? 0 : 470)
-            }
-            .overlay(alignment: .trailing) {
-                if let item = model.peekItem {
-                    PeekPanel(item: item)
-                        .padding(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 10))
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                }
             }
             .animation(Theme.overlay, value: model.selectedIds.isEmpty)
-            .animation(Theme.overlay, value: model.peekItemId == nil)
             .opacity(openItem == nil ? 1 : 0)
             .allowsHitTesting(openItem == nil)
 
@@ -399,18 +389,37 @@ struct MyIssuesLoadingState: View {
     }
 }
 
-/// Dimmed backdrop plus whichever modal is open: command palette or new issue.
+/// Dimmed backdrop plus the peek and whichever modal is open: command palette or new issue. The peek is no modal: its
+/// keys stay with the app, and a picker opened from them comes over it, on the same backdrop.
 struct OverlayHost: View {
     @Environment(AppModel.self) private var model
 
+    private static let appearing = AnyTransition.opacity.combined(with: .scale(scale: 0.97, anchor: .top)).combined(with: .offset(y: -6))
+
     var body: some View {
+        let peekItem = model.openItem == nil ? model.peekItem : nil
         ZStack(alignment: .top) {
-            if let overlay = model.overlay {
+            if model.overlay != nil || peekItem != nil {
                 Theme.scrim
                     .ignoresSafeArea()
-                    .onTapGesture { model.overlay = nil }
+                    .onTapGesture {
+                        if model.overlay != nil { model.overlay = nil } else { model.togglePeek() }
+                    }
+                    // A right-click beside the peek is not about the card under the dimming.
+                    .floatingContextMenu(isShown: peekItem != nil)
                     .transition(.opacity)
+                    .zIndex(0)
+            }
 
+            if let peekItem {
+                PeekPanel(item: peekItem)
+                    .padding(.top, 110)
+                    .padding(.bottom, 40)
+                    .transition(Self.appearing)
+                    .zIndex(1)
+            }
+
+            if let overlay = model.overlay {
                 Group {
                     switch overlay {
                     case .palette(let mode):
@@ -425,11 +434,13 @@ struct OverlayHost: View {
                             .padding(.top, 110)
                     }
                 }
-                .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .top)).combined(with: .offset(y: -6)))
+                .transition(Self.appearing)
+                .zIndex(2)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(Theme.overlay, value: model.overlay)
+        .animation(Theme.overlay, value: model.peekItemId == nil)
     }
 }
 #endif
