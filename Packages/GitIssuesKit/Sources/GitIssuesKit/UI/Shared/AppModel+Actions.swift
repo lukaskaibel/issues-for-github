@@ -21,6 +21,45 @@ struct NewIssueDraft: Equatable {
     var fieldValues: [String: FieldValue] = [:]
 }
 
+/// The repositories a new issue can go in, as the form's repository row shows them.
+enum NewIssueRepositories: Equatable {
+    /// Not known yet: the board's first read or the list of your repositories is on its way.
+    case loading
+    /// The board's repositories, or the one of an issue on no board.
+    case board([RepoRef])
+    /// The board has none yet, so its first issue can go in any of yours.
+    case yours([RepoRef])
+    /// None to offer: you can't change the board, or have no repository that could be read.
+    case unavailable
+
+    var choices: [RepoRef] {
+        switch self {
+        case .board(let repos), .yours(let repos): repos
+        case .loading, .unavailable: []
+        }
+    }
+
+    /// For a board with no repository known. Those of the board's owner come first, since that is where its issues
+    /// are likely to belong.
+    static func ofEmptyBoard(synced: Bool, canEdit: Bool, ownerLogin: String, yours: [RepoRef]?) -> Self {
+        guard synced else { return .loading }
+        guard canEdit else { return .unavailable }
+        guard let yours else { return .loading }
+        guard !yours.isEmpty else { return .unavailable }
+        let prefix = ownerLogin.lowercased() + "/"
+        let owners = yours.filter { $0.nameWithOwner.lowercased().hasPrefix(prefix) }
+        return .yours(owners + yours.filter { !$0.nameWithOwner.lowercased().hasPrefix(prefix) })
+    }
+
+    /// The repository a form should hold: the one it has while that is on offer, else the usual one, else the only one.
+    func settled(current: String?, preferred: String?) -> String? {
+        let ids = choices.map(\.id)
+        if let current, ids.contains(current) { return current }
+        if let preferred, ids.contains(preferred) { return preferred }
+        return ids.count == 1 ? ids[0] : nil
+    }
+}
+
 /// What a new issue starts with when it is begun from a milestone, an epic's group or the roadmap.
 struct NewIssuePlan: Equatable {
     var milestoneTitle: String?
@@ -339,8 +378,10 @@ extension AppModel {
     func createIssue(_ draft: NewIssueDraft) -> String? {
         let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
         let project = draft.projectId.flatMap { id in projects.first { $0.id == id } }
+        let offered = newIssueRepositories(projectId: draft.projectId, repoId: draft.repoId).choices.first { $0.id == draft.repoId }
+        // A sub-issue lives in its parent's repository, which its board may not list yet.
         guard !title.isEmpty, draft.projectId == nil || project != nil,
-              let repo = repos(forNewIssueIn: draft.projectId, repoId: draft.repoId).first(where: { $0.id == draft.repoId }) else { return nil }
+              let repo = offered ?? draft.parent.flatMap({ _ in draft.repoId.flatMap(anyRepository(id:)) }) else { return nil }
         let itemId = LocalID.make()
         let contentId = LocalID.make()
         if let project { UserDefaults.standard.set(repo.id, forKey: "lastRepo.\(project.id)") }
@@ -389,9 +430,60 @@ extension AppModel {
         return repoId.flatMap(anyRepository(id:)).map { [$0] } ?? []
     }
 
-    /// A repository by id, also one none of your boards use, known only from an issue of it.
+    /// Where a new issue can go. `allIssuesOf` is the board of the All Issues it was started in, whose repositories it
+    /// keeps to, also while it is going on no board.
+    func newIssueRepositories(projectId: String?, repoId: String?, allIssuesOf: String? = nil) -> NewIssueRepositories {
+        guard let boardId = allIssuesOf ?? projectId else { return .board(repos(forNewIssueIn: nil, repoId: repoId)) }
+        let known = repos(projectId: boardId)
+        guard known.isEmpty else { return .board(known) }
+        // An issue on no board, in a repository the board doesn't know, wouldn't show in this All Issues.
+        guard projectId != nil, let project = projects.first(where: { $0.id == boardId }) else { return .unavailable }
+        return .ofEmptyBoard(
+            synced: project.lastSyncedAt != nil, canEdit: project.viewerCanUpdate, ownerLogin: project.ownerLogin, yours: yourRepositories
+        )
+    }
+
+    /// Brings a new issue's repository in line with what is known. The form can open before the board's first read is
+    /// done, and a draft can come back after it; a sub-issue stays in its parent's repository.
+    func settleRepository(of draft: inout NewIssueDraft, allIssuesOf: String? = nil) {
+        guard draft.parent == nil else { return }
+        let boardId = allIssuesOf ?? draft.projectId
+        if draft.projectId != nil, let boardId, repos(projectId: boardId).isEmpty,
+           let project = projects.first(where: { $0.id == boardId }), project.lastSyncedAt != nil, project.viewerCanUpdate {
+            loadYourRepositories()
+        }
+        let repositories = newIssueRepositories(projectId: draft.projectId, repoId: draft.repoId, allIssuesOf: allIssuesOf)
+        let settled = repositories.settled(current: draft.repoId, preferred: boardId.flatMap(defaultRepoId(projectId:)))
+        if settled != draft.repoId {
+            draft.repoId = settled
+            // Labels belong to a repository: GitHub would refuse another one's, and the new issue with them.
+            draft.labels = []
+            loadRepoMeta(projectId: draft.projectId)
+        }
+        if case .yours = repositories, let settled { loadOtherRepoMeta(settled) }
+    }
+
+    /// Reads your repositories for a board that has none: again after a while, and soon after finding none, which may
+    /// have been a lost connection.
+    private func loadYourRepositories() {
+        let keptFor: TimeInterval = yourRepositories?.isEmpty == false ? 300 : 30
+        if let read = yourRepositoriesReadAt, Date().timeIntervalSince(read) < keptFor { return }
+        yourRepositoriesReadAt = Date()
+        let engine = self.engine
+        Task {
+            let read = try? await engine.yourRepositories()
+            if let read {
+                yourRepositories = read
+            } else if yourRepositories == nil {
+                yourRepositories = []
+            }
+        }
+    }
+
+    /// A repository by id, also one none of your boards use, known only from an issue of it or as one of yours.
     func anyRepository(id: String) -> RepoRef? {
         if let known = repository(id: id) { return known }
+        if let yours = yourRepositories?.first(where: { $0.id == id }) { return yours }
         guard let name = allItems.first(where: { $0.repoId == id })?.repo else { return nil }
         return RepoRef(id: id, nameWithOwner: name, projectId: "")
     }

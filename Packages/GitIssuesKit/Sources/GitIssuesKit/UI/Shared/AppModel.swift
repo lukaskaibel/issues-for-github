@@ -534,6 +534,9 @@ public final class AppModel {
     @ObservationIgnored var inboxWake: Task<Void, Never>?
     /// Labels and assignable people of repositories none of your boards use, for issues of them.
     var otherRepoMeta: [String: (labels: [LabelRef], people: [Person], types: [IssueTypeRef])] = [:]
+    /// The repositories you can open issues in, read when a new issue's board has none; nil until then.
+    var yourRepositories: [RepoRef]?
+    @ObservationIgnored var yourRepositoriesReadAt: Date?
     /// Bumped to open the snooze menu of what is selected in the Inbox (H, or "Pick a Date…" in the right-click menu).
     var inboxSnoozeRequest = InboxSnoozeRequest()
     #if os(macOS)
@@ -712,6 +715,8 @@ public final class AppModel {
         inboxUndo = nil
         undoHistory = UndoHistory()
         otherRepoMeta = [:]
+        yourRepositories = nil
+        yourRepositoriesReadAt = nil
         history = []
         historyIndex = -1
         overlay = nil

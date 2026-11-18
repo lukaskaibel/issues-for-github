@@ -9769,6 +9769,66 @@
         }
       }
     },
+    "chooseARepositoryPlaceholder" : {
+      "comment" : "New issue on Mac, iPhone and iPad: search field of the list of your GitHub repositories, offered when the chosen project has no repository yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repository wählen …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a repository…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige un repositorio…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisir un dépôt…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リポジトリを選択…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장소 선택…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha um repositório…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выберите репозиторий…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择仓库…"
+          }
+        }
+      }
+    },
     "chooseProject" : {
       "comment" : "Mac: title of the empty main area when no GitHub project is open.",
       "extractionState" : "manual",
@@ -9830,7 +9890,7 @@
       }
     },
     "chooseRepositoryPlaceholder" : {
-      "comment" : "Mac, New Issue window, after 'Repository': shown in the menu for the issue's GitHub repository while none is chosen.",
+      "comment" : "Mac, New Issue window, after 'Repository': shown for the issue's GitHub repository while none is chosen.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -36261,6 +36321,66 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "loadingRepositories" : {
+      "comment" : "New issue on Mac, iPhone and iPad: shown with a spinner where the repository goes, while the project's repositories, or your own for a project that has none, are being read from GitHub.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repositories werden geladen …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading repositories…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cargando repositorios…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chargement des dépôts…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リポジトリを読み込み中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장소를 불러오는 중…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carregando repositórios…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загрузка репозиториев…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在载入仓库…"
           }
         }
       }
@@ -69500,7 +69620,7 @@
       }
     },
     "projectHasNoRepository" : {
-      "comment" : "iPhone and iPad, new issue sheet: warning when the chosen GitHub project has no repository linked to it, so no issue can be created in it yet.",
+      "comment" : "New issue on Mac, iPhone and iPad: warning when the chosen GitHub project has no repository and none of your own can be offered (you can't change the project, or none could be read), so no issue can be created in it yet.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -69555,6 +69675,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此项目还没有仓库。议题会创建在与项目关联的仓库中；请先在 GitHub 上关联一个仓库。"
+          }
+        }
+      }
+    },
+    "projectHasNoRepositoryYet" : {
+      "comment" : "New issue on Mac, iPhone and iPad: quiet note beside the repository choice when the chosen GitHub project has no repository, so one of your own has to be picked for its first issue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Projekt hat noch kein Repository."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This project has no repository yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este proyecto aún no tiene ningún repositorio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce projet n’a pas encore de dépôt."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このプロジェクトにはまだリポジトリがありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 프로젝트에는 아직 저장소가 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este projeto ainda não tem um repositório."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "У этого проекта еще нет репозитория."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此项目还没有仓库。"
           }
         }
       }
