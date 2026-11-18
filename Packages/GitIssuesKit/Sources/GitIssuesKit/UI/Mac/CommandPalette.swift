@@ -32,6 +32,8 @@ struct CommandPalette: View {
                 step(.blocking, id)
             case .milestone(let id):
                 step(.milestone, id)
+            case .issueType(let id):
+                step(.issueType, id)
             case .epic(let id):
                 step(.epic, id)
             case .iteration(let id, let fieldId):
@@ -401,6 +403,17 @@ private struct RootPalette: View {
                 list.append(PaletteCommand(id: "due", title: .setDueDateCommand, section: section, icon: symbol("calendar"), keys: ["D"]) {
                     model.overlay = .palette(.dueDate(itemId: item.id))
                 })
+            }
+            if targets.contains(where: model.canHaveIssueType), !model.issueTypes(for: item).isEmpty {
+                let square = AnyView(IssueTypeSquare(color: item.issueTypeColor, empty: item.issueType == nil).frame(width: 14, height: 14))
+                list.append(PaletteCommand(id: "type", title: .setIssueTypeCommand, section: section, icon: square, keys: ["T"]) {
+                    model.overlay = .palette(.issueType(itemId: item.id))
+                })
+                if targets.contains(where: { model.canHaveIssueType($0) && $0.issueType != nil }) {
+                    list.append(PaletteCommand(id: "type-remove", title: .removeIssueTypeCommand, section: section, icon: square) {
+                        model.setIssueType(of: targets, named: nil)
+                    })
+                }
             }
             if targets.contains(where: { $0.dueDate != nil }) {
                 list.append(PaletteCommand(id: "due-remove", title: .removeDueDateCommand, section: section, icon: symbol("calendar.badge.minus")) {

@@ -626,6 +626,7 @@ private struct TimelineGroupIcon: View {
             switch icon {
             case .status(let glyph): StatusIcon(glyph: glyph, size: 13)
             case .milestone(let mark): MilestoneIcon(mark: mark, size: 12)
+            case .issueType(let color): IssueTypeSquare(color: color, size: 9).frame(width: 13, height: 13)
             case .dot(let color): Circle().fill(Theme.optionColor(color) ?? Theme.textTertiary).frame(width: 8, height: 8)
             case .iteration(let current): IterationIcon(size: 13).foregroundStyle(current ? Theme.started : Theme.textSecondary)
             case .person(let person): Avatar(login: person.login, url: person.avatarUrl, size: 16)

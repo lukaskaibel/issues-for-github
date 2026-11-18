@@ -40,6 +40,8 @@ struct UndoChangesTests {
                     item.dueDate = "2026-11-20"
                     item.milestoneId = "M1"
                     item.milestoneTitle = "1.0"
+                    item.issueType = "Task"
+                    item.issueTypeColor = "YELLOW"
                     item.fieldValues[Self.iterationField] = FieldValue(iterationId: "I1")
                 }
                 try item.insert(db)
@@ -152,6 +154,35 @@ struct UndoChangesTests {
         try expectGoesBackAndForth(.setEpic(.init(
             contentId: "issue-1", repoId: "R1", repo: "octo/app", isEpic: true, label: LabelRef(id: "L3", name: "epic", color: "000000")
         ))) { try Self.read()($0)?.isEpic }
+    }
+
+    private static let toBug = Mutation.setIssueType(.init(
+        contentId: "issue-1", typeId: "T2", name: "Bug", color: "RED", baseName: "Task", baseColor: "YELLOW", baseTypeId: "T1"
+    ))
+
+    @Test func issueType() throws {
+        try expectGoesBackAndForth(Self.toBug) {
+            let item = try Self.read()($0)
+            return [item?.issueType, item?.issueTypeColor]
+        }
+        try expectGoesBackAndForth(.setIssueType(.init(contentId: "issue-2", typeId: "T2", name: "Bug", color: "RED"))) {
+            try Self.read(2)($0)?.issueType
+        }
+    }
+
+    @Test func undoingATypeSetsTheOneItHadByItsId() throws {
+        let db = try makeDatabase()
+        let undo = try #require(try apply([Self.toBug], to: db))
+        guard case .setIssueType(let back)? = undo.first else {
+            Issue.record("expected a change of the type")
+            return
+        }
+        #expect(back.typeId == "T1" && back.name == "Task" && back.color == "YELLOW")
+        #expect(back.baseName == "Bug" && back.baseTypeId == "T2")
+
+        // Without the id of the type it replaces, GitHub couldn't be told to bring that type back.
+        let unknown = Mutation.setIssueType(.init(contentId: "issue-1", typeId: "T3", name: "Feature", color: "BLUE", baseName: "Bug", baseColor: "RED"))
+        #expect(try apply([unknown], to: db) == nil)
     }
 
     @Test func milestoneEditsTakeBackOnlyWhatChanged() throws {

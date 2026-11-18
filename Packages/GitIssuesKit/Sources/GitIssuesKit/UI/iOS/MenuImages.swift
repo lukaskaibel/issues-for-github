@@ -33,6 +33,13 @@ enum MenuImages {
         }
     }
 
+    /// An issue type's square in its colour, or its outline for no type.
+    static func issueType(_ color: String?, empty: Bool = false, _ scheme: ColorScheme) -> Image {
+        image("issue-type-\(color ?? "none")-\(empty)", scheme) {
+            IssueTypeSquare(color: color, empty: empty, size: 10).frame(width: 16, height: 16)
+        }
+    }
+
     static func avatar(_ person: Person, _ scheme: ColorScheme) -> Image {
         let picture = person.avatarUrl.flatMap { AvatarCache.shared.cached($0) }
         return image("avatar-\(person.login)-\(picture == nil ? "initials" : "picture")", scheme) {

@@ -124,6 +124,9 @@ struct ItemMenuContent: View {
         }
         if item.kind != .draft {
             AssigneeMenu(item: item)
+            if targets.contains(where: model.canHaveIssueType), !model.issueTypes(for: item).isEmpty {
+                IssueTypeMenu(item: item)
+            }
             LabelsMenu(item: item)
             if let viewer = model.viewer {
                 let mine = targets.allSatisfy { target in target.assignees.contains { $0.id == viewer.id } }
@@ -220,6 +223,50 @@ struct RelationMenuItems: View {
     /// The latest copies of what the menu acts on, when an entry is chosen.
     private var current: [Item] {
         model.targets(for: model.item(id: item.id) ?? item)
+    }
+}
+
+/// The type as a submenu: none and the repository's types, with the one the picked issues share checked.
+struct IssueTypeMenu: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var scheme
+    var item: Item
+
+    var body: some View {
+        let names = Set(model.targets(for: item).map(\.issueType))
+        Menu {
+            Picker(.issueTypeTitle, selection: Binding(
+                get: { names.count == 1 ? names.first ?? nil : String?.some(MilestoneMenu.mixed) },
+                set: { new in
+                    let current = model.item(id: item.id) ?? item
+                    model.setIssueType(of: model.targets(for: current), named: new)
+                }
+            )) {
+                Label {
+                    Text(.noIssueType)
+                } icon: {
+                    MenuImages.issueType(nil, empty: true, scheme)
+                }
+                .tag(String?.none)
+                ForEach(model.issueTypes(for: item)) { type in
+                    Label {
+                        Text(type.name)
+                    } icon: {
+                        MenuImages.issueType(type.color, scheme)
+                    }
+                    .tag(Optional(type.name))
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Label {
+                Text(.issueTypeTitle)
+                if let type = item.issueType { Text(type) }
+            } icon: {
+                MenuImages.issueType(item.issueTypeColor, empty: item.issueType == nil, scheme)
+            }
+        }
+        .onAppear { model.loadRepoMeta(for: item) }
     }
 }
 

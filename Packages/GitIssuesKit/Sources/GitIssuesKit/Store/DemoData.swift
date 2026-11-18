@@ -111,6 +111,26 @@ public enum DemoData {
         var milestone: String?
     }
 
+    /// The types GitHub gives every owner.
+    private static let issueTypes = [
+        IssueTypeRef(id: "demo-type-task", name: "Task", color: "YELLOW"),
+        IssueTypeRef(id: "demo-type-bug", name: "Bug", color: "RED"),
+        IssueTypeRef(id: "demo-type-feature", name: "Feature", color: "BLUE"),
+    ]
+
+    /// The kind of work the issues without a "bug" or "feature" label are. The others, such as #14, have no type.
+    private static let issueTypeNames: [Int: String] = [
+        4: "Feature", 5: "Feature", 6: "Feature", 7: "Feature", 8: "Task", 9: "Feature", 10: "Task", 11: "Task", 12: "Task",
+        13: "Task", 15: "Bug", 16: "Feature", 17: "Feature", 18: "Task", 23: "Task", 24: "Task", 26: "Feature", 28: "Task",
+        29: "Task", 30: "Bug", 31: "Feature", 32: "Task", 33: "Task", 34: "Task", 35: "Feature",
+    ]
+
+    private static func issueType(of issue: IssueSpec) -> IssueTypeRef? {
+        guard !issue.labels.contains("epic") else { return nil }
+        let name = issue.labels.contains("bug") ? "Bug" : issue.labels.contains("feature") ? "Feature" : issueTypeNames[issue.number]
+        return issueTypes.first { $0.name == name }
+    }
+
     /// The app's weekly cycles, as GitHub's Iteration field has them: two done, this week's and the next two.
     private static let cycles: [(id: String, title: String, weeks: Int)] = [
         ("demo-cycle-2", "Cycle 2", -2), ("demo-cycle-3", "Cycle 3", -1), ("demo-cycle-4", "Cycle 4", 0),
@@ -310,7 +330,8 @@ public enum DemoData {
             }
             try RepoRef(
                 id: spec.repoId, nameWithOwner: spec.repo, projectId: spec.id,
-                labels: spec.labels, assignableUsers: spec.ownerIsOrg ? team : [viewer.person], metaLoadedAt: now
+                labels: spec.labels, assignableUsers: spec.ownerIsOrg ? team : [viewer.person], issueTypes: issueTypes,
+                metaLoadedAt: now
             ).insert(db)
             try seedFieldsAndViews(db, spec: spec, today: today)
 
@@ -339,6 +360,7 @@ public enum DemoData {
                     blockedByCount: blockers.filter { $0.status != "Done" }.count,
                     blockingCount: blocked.filter { $0.status != "Done" }.count,
                     milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone,
+                    issueType: issueType(of: issue)?.name, issueTypeColor: issueType(of: issue)?.color,
                     fieldValues: fieldValues(of: issue, in: spec, today: today)
                 ).insert(db)
                 for (relation, others) in [(LinkedIssue.Relation.blockedBy, blockers), (.blocking, blocked)] {
@@ -398,7 +420,8 @@ public enum DemoData {
                 assignees: issue.assignees,
                 labels: app.labels.filter { issue.labels.contains($0.name) },
                 viewerCanDelete: true,
-                milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone
+                milestoneId: issue.milestone.map(milestoneId), milestoneTitle: issue.milestone,
+                issueType: issueType(of: issue)?.name, issueTypeColor: issueType(of: issue)?.color
             ).insert(db)
             // On no board, but the sub-issue of an issue on one: the issue lists it.
             if let parent {
@@ -464,6 +487,7 @@ public enum DemoData {
             add("priority", "Priority", "SINGLE_SELECT", options: Defaults.priorityOptions.map { FieldChoice(id: optionId(spec, $0.name), name: $0.name, color: $0.color) })
         }
         if spec.hasDueField { add("due", "Due date", "DATE") }
+        add("type", "Type", "ISSUE_TYPE")
         let isApp = spec.id == app.id
         if isApp {
             add("start", "Start date", "DATE")
@@ -521,12 +545,12 @@ public enum DemoData {
     ]
 
     /// Labels and people of the sample repositories, for issues seen only in the Inbox.
-    static func repoMeta(repoId: String) -> (labels: [LabelRef], users: [Person]) {
+    static func repoMeta(repoId: String) -> (labels: [LabelRef], users: [Person], types: [IssueTypeRef]) {
         switch repoId {
-        case app.repoId: (appLabels, team)
-        case site.repoId: (siteLabels, team)
-        case blog.repoId: ([], [viewer.person])
-        default: (brandLabels, team)
+        case app.repoId: (appLabels, team, issueTypes)
+        case site.repoId: (siteLabels, team, issueTypes)
+        case blog.repoId: ([], [viewer.person], issueTypes)
+        default: (brandLabels, team, issueTypes)
         }
     }
 

@@ -49,6 +49,12 @@ struct SelectionBar: View {
                         Image(systemName: "tag").font(.system(size: 12))
                     }
                 }
+                if let typed = items.first(where: model.canHaveIssueType) {
+                    let shared = Set(items.map(\.issueType)).count == 1 ? typed.issueType : nil
+                    BarAction(kind: .issueType, item: typed, title: .issueTypeTitle, key: "T") {
+                        IssueTypeSquare(color: typed.issueTypeColor, empty: shared == nil, size: 10)
+                    }
+                }
                 if items.contains(where: model.canHaveDueDate) {
                     BarAction(kind: .dueDate, item: first, title: .dueDate, key: "D") {
                         Image(systemName: "calendar").font(.system(size: 12))
@@ -298,13 +304,23 @@ struct PropertyChipRow: View {
             }
             if item.kind != .draft || item.subTotal > 0 {
                 HStack(spacing: 6) {
+                    if let type = item.shownType {
+                        Group {
+                            if model.canHaveIssueType(item) {
+                                PropertyButton(kind: .issueType, item: item) { IssueTypeChip(name: type.name, color: type.color) }
+                            } else {
+                                IssueTypeChip(name: type.name, color: type.color).padding(.horizontal, 8)
+                            }
+                        }
+                        .padding(.leading, -8)
+                    }
                     if !item.labels.isEmpty {
                         PropertyButton(kind: .labels, item: item) {
                             HStack(spacing: 6) {
                                 ForEach(item.labels) { LabelChip(label: $0) }
                             }
                         }
-                        .padding(.leading, -8)
+                        .padding(.leading, item.shownType == nil ? -8 : 0)
                     }
                     if item.subTotal > 0 {
                         PropertyButton(kind: .subIssues, item: item) {

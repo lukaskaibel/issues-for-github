@@ -172,6 +172,7 @@ extension PickerKind {
         case .milestone: .milestone
         case .epic: .epic
         case .iteration: .iteration
+        case .issueType: .issueTypeTitle
         }
     }
 
@@ -186,6 +187,7 @@ extension PickerKind {
         case .parent, .addSubIssue, .blockedBy, .blocking, .epic: .searchByTitleOrNumber
         case .milestone: .searchMilestones
         case .iteration: .searchIterations
+        case .issueType: .searchIssueTypes
         }
     }
 }

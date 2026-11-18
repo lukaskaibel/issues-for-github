@@ -46,6 +46,31 @@ extension AppModel {
         return mutations
     }
 
+    // MARK: Issue types
+
+    /// Gives issues the type of this name, or takes theirs away with nil. Types belong to a repository's owner, so an
+    /// issue gets its own repository's type of that name, and keeps what it has where there is none.
+    func setIssueType(of items: [Item], named name: String?) {
+        let mutations = Self.issueTypeMutations(items, named: name, types: issueTypes(for:))
+        guard !mutations.isEmpty else { return }
+        perform(mutations, animated: true)
+    }
+
+    /// The changes that give `items` the type of this name, each from the types `types` says its repository has.
+    static func issueTypeMutations(_ items: [Item], named name: String?, types: (Item) -> [IssueTypeRef]) -> [Mutation] {
+        var seen = Set<String>()
+        return items.compactMap { item in
+            guard item.canHaveIssueType, let contentId = item.contentId, seen.insert(contentId).inserted else { return nil }
+            let type = name.flatMap { name in types(item).first { $0.name == name } }
+            guard name == nil || type != nil, item.issueType != type?.name else { return nil }
+            return .setIssueType(.init(
+                contentId: contentId, typeId: type?.id, name: type?.name, color: type?.color,
+                baseName: item.issueType, baseColor: item.issueTypeColor,
+                baseTypeId: types(item).first { $0.name == item.issueType }?.id
+            ))
+        }
+    }
+
     private func perform(_ mutations: [Mutation], animated: Bool) {
         if animated {
             withAnimation(Theme.spring) { perform(mutations) }

@@ -253,11 +253,30 @@ enum LabelMark {
 }
 
 extension Item {
-    /// The labels its cards and rows show: an epic's own label says what its icon says already. Asked on every paint
-    /// of a card, so whether it is an epic is worked out once, and most issues keep their labels as they are.
+    /// The labels its cards and rows show: an epic's own label says what its icon says already, and a label named like
+    /// the issue's type what the type says. Asked on every paint of a card, so whether it is an epic is worked out once,
+    /// and most issues keep their labels as they are.
     var shownLabels: [LabelRef] {
-        guard isEpic else { return labels }
-        return labels.filter { !Item.isEpicLabel($0.name) }
+        let epic = isEpic
+        let type = shownType?.name
+        guard epic || type != nil else { return labels }
+        return labels.filter { label in
+            if epic, Item.isEpicLabel(label.name) { return false }
+            return type.map { label.name.caseInsensitiveCompare($0) != .orderedSame } ?? true
+        }
+    }
+
+    /// Whether its type can be changed here: an issue GitHub has, of a repository. The type Epic is changed with Make
+    /// Epic, as the label is.
+    var canHaveIssueType: Bool {
+        kind == .issue && contentId != nil && !isDetached && !isStandIn && repoId != nil
+            && issueType.map(Item.isEpicType) != true
+    }
+
+    /// The type its cards and rows show: none for the type Epic, which its icon says already.
+    var shownType: (name: String, color: String?)? {
+        guard let issueType, !Item.isEpicType(issueType) else { return nil }
+        return (issueType, issueTypeColor)
     }
 }
 
@@ -275,6 +294,76 @@ struct LabelChip: View {
         .lineLimit(1)
         .padding(.horizontal, LabelMark.inset)
         .frame(height: LabelMark.height)
+    }
+}
+
+/// An issue's type, as every issue shows it: a small square in the type's colour and its name, first of the issue's
+/// tags, with the labels after it. The square tells it from their dots. Cards and list rows paint it by these measures
+/// and `Marks.issueType`; `IssueTypeChip` is the same as a view, `IssueTypeSquare` the square alone for pickers and
+/// menus, and `IssueTypeValue` what an issue's page writes.
+enum IssueTypeMark {
+    /// The square, and the room between it and the name.
+    static let square: CGFloat = 8
+    static let gap = LabelMark.gap
+    /// The room inside the capsule that lights up under the pointer, and its height, as a label's.
+    static let inset = LabelMark.inset
+    static let height = LabelMark.height
+    /// How wide a name gets before it is cut short.
+    static let longestName: CGFloat = 96
+
+    /// How wide a type is whose name is `name` wide.
+    static func width(name: CGFloat) -> CGFloat {
+        inset + square + gap + min(name, longestName) + inset
+    }
+}
+
+/// The square of an issue type, or its outline for no type.
+struct IssueTypeSquare: View {
+    var color: String?
+    var empty = false
+    var size = IssueTypeMark.square
+
+    var body: some View {
+        Canvas { context, canvas in
+            let rect = CGRect(x: (canvas.width - size) / 2, y: (canvas.height - size) / 2, width: size, height: size)
+            context.draw(Marks.issueType(in: rect, empty: empty), mark: empty ? Theme.textTertiary : Theme.issueTypeColor(color))
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+/// An issue's type as a view, as cards and rows paint it (`IssueTypeMark`).
+struct IssueTypeChip: View {
+    var name: String
+    var color: String?
+
+    var body: some View {
+        HStack(spacing: IssueTypeMark.gap) {
+            IssueTypeSquare(color: color)
+            Text(name)
+        }
+        .font(.tiny)
+        .foregroundStyle(Theme.textSecondary)
+        .lineLimit(1)
+        .padding(.horizontal, IssueTypeMark.inset)
+        .frame(height: IssueTypeMark.height)
+    }
+}
+
+/// An issue's type among the properties on its page: the square in the column of the other properties' icons, and the
+/// name, or "No type".
+struct IssueTypeValue: View {
+    var item: Item
+
+    var body: some View {
+        HStack(spacing: 8) {
+            IssueTypeSquare(color: item.issueTypeColor, empty: item.issueType == nil)
+                .frame(width: 14, height: 14)
+            (item.issueType.map { Text($0) } ?? Text(.noIssueType))
+                .foregroundStyle(item.issueType == nil ? Theme.textTertiary : Theme.text)
+                .lineLimit(1)
+        }
     }
 }
 

@@ -135,6 +135,20 @@ extension Mutation {
             m.isEpic = item.isEpic
             return [.setEpic(m)]
 
+        case .setIssueType(let m):
+            guard let row = try Row.fetchOne(db, sql: "SELECT issueType, issueTypeColor FROM item WHERE contentId = ? LIMIT 1", arguments: [m.contentId])
+                ?? Row.fetchOne(db, sql: "SELECT issueType, issueTypeColor FROM subIssue WHERE id = ? LIMIT 1", arguments: [m.contentId])
+            else { return [] }
+            let name: String? = row["issueType"]
+            let color: String? = row["issueTypeColor"]
+            guard name != m.name else { return [] }
+            // GitHub sets a type by its id, and the one this change replaces is the only one known here.
+            guard name == nil || (name == m.baseName && m.baseTypeId != nil) else { return nil }
+            return [.setIssueType(.init(
+                contentId: m.contentId, typeId: name == nil ? nil : m.baseTypeId, name: name, color: color,
+                baseName: m.name, baseColor: m.color, baseTypeId: m.typeId
+            ))]
+
         // What was made stays: a label or a milestone nobody uses does no harm, and the changes that used it are taken back.
         case .createLabel, .createMilestone:
             return []
@@ -198,6 +212,7 @@ extension Mutation {
         case .setMilestone: .actionChangeMilestone
         case .updateMilestone: .editMilestone
         case .setEpic: .actionChangeEpic
+        case .setIssueType: .actionChangeIssueType
         default: nil
         }
     }

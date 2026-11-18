@@ -9,7 +9,7 @@ struct SendingTests {
     /// Something set to another value and back, the second time while GitHub has the first change but the app hasn't
     /// heard back yet.
     enum Change: String, CaseIterable, CustomTestStringConvertible, Sendable {
-        case milestone, parent, blocker, title, body
+        case milestone, issueType, parent, blocker, title, body
 
         var testDescription: String { rawValue }
 
@@ -17,6 +17,7 @@ struct SendingTests {
         var away: Mutation {
             switch self {
             case .milestone: .setMilestone(.init(contentId: "I_1", isPullRequest: false, milestoneId: "M_2", milestoneTitle: "1.1", base: "M_1"))
+            case .issueType: .setIssueType(.init(contentId: "I_1", typeId: "T_2", name: "Bug", color: "RED", baseName: "Task", baseColor: "YELLOW"))
             case .parent: .setParent(.init(child: summary(3), parentId: "I_2", parentNumber: 2, parentTitle: "Issue 2", base: "I_1"))
             case .blocker: .setBlocking(.init(blocked: summary(1), blocker: summary(2), isBlocked: true, base: false))
             case .title: .setTitle(.init(itemId: "PVTI_1", contentId: "I_1", value: "Sign in with a passkey", base: "Sign in"))
@@ -28,6 +29,7 @@ struct SendingTests {
         var back: Mutation {
             switch self {
             case .milestone: .setMilestone(.init(contentId: "I_1", isPullRequest: false, milestoneId: "M_1", milestoneTitle: "1.0", base: "M_2"))
+            case .issueType: .setIssueType(.init(contentId: "I_1", typeId: "T_1", name: "Task", color: "YELLOW", baseName: "Bug", baseColor: "RED"))
             case .parent: .setParent(.init(child: summary(3), parentId: "I_1", parentNumber: 1, parentTitle: "Sign in", base: "I_2"))
             case .blocker: .setBlocking(.init(blocked: summary(1), blocker: summary(2), isBlocked: false, base: true))
             case .title: .setTitle(.init(itemId: "PVTI_1", contentId: "I_1", value: "Sign in", base: "Sign in with a passkey"))
@@ -39,6 +41,7 @@ struct SendingTests {
         var original: String {
             switch self {
             case .milestone: "M_1"
+            case .issueType: "T_1"
             case .parent: "I_1"
             case .blocker: ""
             case .title: "Sign in"
@@ -50,6 +53,7 @@ struct SendingTests {
             let issue = github.issue(self == .parent ? "I_3" : "I_1")
             return switch self {
             case .milestone: issue?.milestone
+            case .issueType: issue?.issueType
             case .parent: issue?.parent
             case .blocker: issue?.blockedBy.joined(separator: ", ")
             case .title: issue?.title
@@ -61,6 +65,7 @@ struct SendingTests {
         var requests: [String] {
             switch self {
             case .milestone: ["milestone I_1: M_2", "milestone I_1: M_1"]
+            case .issueType: ["type I_1: T_2", "type I_1: T_1"]
             case .parent: ["parent I_3: I_2", "parent I_3: I_1"]
             case .blocker: ["blocked I_1 by I_2", "unblocked I_1 by I_2"]
             case .title, .body: ["text I_1", "update I_1", "text I_1", "update I_1"]
@@ -81,7 +86,7 @@ struct SendingTests {
     /// #1 in milestone 1.0 and blocked by nothing, #3 a sub-issue of #1, all read from GitHub.
     private func fixture() async throws -> (FakeGitHub, AppDatabase, SyncEngine) {
         let github = FakeGitHub([
-            .init(contentId: "I_1", number: 1, itemId: "PVTI_1", title: "Sign in", body: "Crashes on launch.", milestone: "M_1"),
+            .init(contentId: "I_1", number: 1, itemId: "PVTI_1", title: "Sign in", body: "Crashes on launch.", milestone: "M_1", issueType: "T_1"),
             .init(contentId: "I_2", number: 2, itemId: "PVTI_2"),
             .init(contentId: "I_3", number: 3, itemId: "PVTI_3", parent: "I_1"),
         ])

@@ -37,6 +37,10 @@ struct IssueRowModel: Equatable {
     var milestoneMark: MilestoneMark = .upcoming
     /// The project's own fields the view shows, such as an iteration or a "Workstream".
     var chips: [FieldChip] = []
+    /// Whether it shows its type: not in a list grouped by type, whose group says it.
+    var showsType = true
+    /// Whether its type opens the picker that changes it.
+    var changesType = false
     /// Whether its parts open their pickers. Not for an issue known only from GitHub, such as a sub-issue on none of
     /// your boards, whose status icon only opens or closes it.
     var editable = true
@@ -64,7 +68,7 @@ extension AppModel {
     func issueRow(
         _ item: Item, projectTitle: String? = nil, selected: Bool = false, selecting: Bool = false, peeked: Bool = false,
         nest: Nesting.Place = Nesting.Place(), nested: Int? = nil, folded: Bool = false, showsParent: Bool = false,
-        milestone: String?, chips: [FieldChip]
+        milestone: String?, chips: [FieldChip], showsType: Bool = true
     ) -> IssueRowModel {
         IssueRowModel(
             item: item, glyph: glyph(of: item), priority: priorityLevel(of: item),
@@ -78,7 +82,9 @@ extension AppModel {
             parentIsEpic: item.parentId.flatMap { issue(contentId: $0) }?.isEpic ?? false,
             milestone: milestone,
             milestoneMark: milestoneMark(of: item),
-            chips: chips
+            chips: chips,
+            showsType: showsType,
+            changesType: canHaveIssueType(item)
         )
     }
 
@@ -116,6 +122,9 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     private var milestoneSize = NSSize.zero
     private var dueText: NSAttributedString?
     private var dueIcon: NSImage?
+    private var typeText: NSAttributedString?
+    private var typeSize = NSSize.zero
+    private var typeColor = NSColor.clear
     private var labels: [(text: NSAttributedString, size: NSSize, color: NSColor)] = []
     /// The texts of the project's fields the view shows.
     private var chipTexts: [(text: NSAttributedString, size: NSSize)] = []
@@ -285,6 +294,17 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
                 let text = NSAttributedString(string: chip.text, attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: secondary])
                 return (text, text.size())
             }
+            // The type, as cards show it (`IssueTypeMark`).
+            let shownType = row.showsType ? item.shownType : nil
+            typeText = shownType.map {
+                NSAttributedString(string: $0.name, attributes: [
+                    .font: NSFont.systemFont(ofSize: 11),
+                    .foregroundColor: secondary,
+                    .paragraphStyle: truncating,
+                ])
+            }
+            typeSize = typeText?.size() ?? .zero
+            typeColor = NSColor(Theme.issueTypeColor(shownType?.color))
             // Labels as cards show them (`LabelMark`), and "+2" for those that don't fit, made for each number of them
             // that can be left over.
             let shownLabels = item.shownLabels
@@ -562,8 +582,11 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
             if let more = moreLabels[labelCount - count] { width += LabelMark.spacing + LabelMark.inset + more.size.width + LabelMark.inset }
             return width
         }
+        // The type stands first of them, and stays when labels have to give way.
+        let typeWidth: CGFloat? = typeText == nil ? nil : IssueTypeMark.width(name: typeSize.width)
+        let typeRoom = typeWidth.map { $0 + LabelMark.spacing } ?? 0
         var fitting = labels.count
-        while fitting > 0, right - labelsWidth(fitting) <= x + 120 { fitting -= 1 }
+        while fitting > 0, right - typeRoom - labelsWidth(fitting) <= x + 120 { fitting -= 1 }
         if fitting > 0 {
             let width = labelsWidth(fitting)
             let labelsRect = NSRect(x: right - width, y: midY - LabelMark.height / 2, width: width, height: LabelMark.height)
@@ -588,6 +611,29 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
                 more.text.draw(at: NSPoint(x: labelX + LabelMark.inset, y: midY - more.size.height / 2))
             }
             right = labelsRect.minX - 6
+        }
+        if let typeText, let typeWidth, right - typeWidth > x + 120 {
+            let rect = NSRect(x: right - typeWidth, y: midY - IssueTypeMark.height / 2, width: typeWidth, height: IssueTypeMark.height)
+            if row.changesType { parts.append((.issueType, rect)) }
+            drawChip(rect, hovered: row.changesType && hoveredPart == .issueType)
+            let square = CGRect(
+                x: rect.minX + IssueTypeMark.inset, y: midY - IssueTypeMark.square / 2,
+                width: IssueTypeMark.square, height: IssueTypeMark.square
+            )
+            context.draw(Marks.issueType(in: square), mark: typeColor.cgColor, onColor: NSColor.white.cgColor)
+            if onAccent {
+                // On the accent of a picked row, an edge keeps a square of a like colour apart from it, as a label's dot.
+                context.draw(
+                    Marks.issueType(in: square.insetBy(dx: -0.5, dy: -0.5), empty: true),
+                    mark: NSColor.white.withAlphaComponent(0.9).cgColor, onColor: NSColor.white.cgColor
+                )
+            }
+            let textX = square.maxX + IssueTypeMark.gap
+            typeText.draw(
+                with: NSRect(x: textX, y: midY - typeSize.height / 2, width: min(typeSize.width, IssueTypeMark.longestName), height: typeSize.height),
+                options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
+            )
+            right = rect.minX - 6
         }
 
         // The title takes what is left, with the sub-issue count and, when blocked, a flag with what blocks it

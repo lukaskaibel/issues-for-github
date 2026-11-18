@@ -106,6 +106,7 @@ enum PaletteMode: Hashable {
     case blockedBy(itemId: String)
     case blocking(itemId: String)
     case milestone(itemId: String)
+    case issueType(itemId: String)
     case epic(itemId: String)
     /// The iteration of one of the board's iteration fields.
     case iteration(itemId: String, fieldId: String)
@@ -129,6 +130,7 @@ extension PaletteMode {
         case .blockedBy(let itemId): .blockedBy(itemId: id(itemId))
         case .blocking(let itemId): .blocking(itemId: id(itemId))
         case .milestone(let itemId): .milestone(itemId: id(itemId))
+        case .issueType(let itemId): .issueType(itemId: id(itemId))
         case .epic(let itemId): .epic(itemId: id(itemId))
         case .iteration(let itemId, let fieldId): .iteration(itemId: id(itemId), fieldId: fieldId)
         case .root, .projects, .views: self
@@ -539,7 +541,7 @@ public final class AppModel {
     var inboxClock = Date()
     @ObservationIgnored var inboxWake: Task<Void, Never>?
     /// Labels and assignable people of repositories none of your boards use, for issues of them.
-    var otherRepoMeta: [String: (labels: [LabelRef], people: [Person])] = [:]
+    var otherRepoMeta: [String: (labels: [LabelRef], people: [Person], types: [IssueTypeRef])] = [:]
     /// The repositories you can open issues in, read when a new issue's board has none; nil until then.
     var yourRepositories: [RepoRef]?
     @ObservationIgnored var yourRepositoriesReadAt: Date?

@@ -8,16 +8,23 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **An issue's type, wherever the issue is.** GitHub's issue types, such as Bug, Feature and Task, show as a small square
+  in the type's colour and its name: first among the labels on cards and in the Mac's lists, right after the number in
+  the lists on iPhone and iPad, and among the properties on the issue's page. Click it, press `T`, use `⌘K` or the
+  right-click menu, or on iPhone and iPad the issue's page or touch and hold, to change the type or take it away, also
+  for several picked issues. A card still shows two tags at most, so the type can put a label behind "+1", and on a full
+  line the milestone gives way first. A label named like the type is left out of cards and rows. The filter menu and
+  lists grouped by type use the same squares.
 - **Undo and redo for what you do in the app.** `⌘Z` takes back the last change and `⌘⇧Z` brings it back, step by step,
   on the Mac and on an iPad with a keyboard, and **Edit › Undo** and **Redo** name what they are about, such as **Undo
   Change Status**. It works for an issue's status, priority, due date and project fields, its place on the board, title
-  and description, open or closed, assignees, labels, parent, blockers, milestone and epic; what you changed on several
-  picked issues at once is one step. It also takes back changes to a milestone, a board's columns (order, name, colour,
-  one added, an empty one deleted), a view's name, a project hidden from the sidebar, and in the Inbox marking read or
-  unread, snoozing, and for its few seconds archiving or unsubscribing. A short message says what happened. Undoing is a
-  change like any other: it reaches GitHub the same way, also after being offline. While you type, the keys go on
-  undoing your typing. A description you keep writing is one step. New issues, comments, deleted issues and issues put
-  on a board can't be taken back this way.
+  and description, open or closed, assignees, labels, type, parent, blockers, milestone and epic; what you changed on
+  several picked issues at once is one step. It also takes back changes to a milestone, a board's columns (order, name,
+  colour, one added, an empty one deleted), a view's name, a project hidden from the sidebar, and in the Inbox marking
+  read or unread, snoozing, and for its few seconds archiving or unsubscribing. A short message says what happened.
+  Undoing is a change like any other: it reaches GitHub the same way, also after being offline. While you type, the keys
+  go on undoing your typing. A description you keep writing is one step. New issues, comments, deleted issues and issues
+  put on a board can't be taken back this way.
 - **An issue's fields, in every project it is on.** An issue's details now list its project's own fields: versions,
   dates, iterations, text, numbers, single and multiple choice. Those with a value show, the rest wait behind **n more
   fields**. The issue's other projects stand folded below with their status, and unfolded their fields can be changed

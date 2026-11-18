@@ -725,8 +725,9 @@ extension AppModel {
             }
             empty = items.filter { $0.repoId == nil }
         case .issueType:
-            for type in Set(items.compactMap(\.issueType)).sorted() {
-                groups.append((.issueType(type), type, .plain, nil, items.filter { $0.issueType == type }))
+            let colors = issueTypeColors(of: items)
+            for type in colors.keys.sorted() {
+                groups.append((.issueType(type), type, .issueType(colors[type] ?? nil), nil, items.filter { $0.issueType == type }))
             }
             empty = items.filter { $0.issueType == nil }
         default:
@@ -810,6 +811,23 @@ extension AppModel {
 
     /// The chips a card or row shows for the project's own fields, in the view's order: only in the project's view,
     /// not in lists that mix projects or show a milestone.
+    /// The types among these issues, each with its colour as far as one of them knows it.
+    func issueTypeColors(of items: [Item]) -> [String: String?] {
+        var colors: [String: String?] = [:]
+        for item in items {
+            guard let type = item.issueType else { continue }
+            if colors[type] == nil || colors[type] == .some(nil) { colors[type] = .some(item.issueTypeColor) }
+        }
+        return colors
+    }
+
+    /// Whether the list `item` is shown in says its type already, by being grouped by type.
+    func typeIsImplied(for item: Item, in scope: Scope?) -> Bool {
+        guard let projectId = item.projectId, scope == .project(projectId), let view = currentView(projectId: projectId),
+              layout(of: view) != .board else { return false }
+        return groupField(of: view)?.kind == .issueType
+    }
+
     func fieldChips(of item: Item, in scope: Scope?) -> [FieldChip] {
         guard let projectId = item.projectId, scope == .project(projectId), let view = currentView(projectId: projectId),
               let context = filterContext(projectId: projectId) else { return [] }

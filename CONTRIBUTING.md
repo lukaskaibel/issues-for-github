@@ -57,8 +57,8 @@ open an issue that describes the change instead.
   epic's header is `EpicHeader` in every list and on every board (the Mac's list paints it from `EpicHeaderLook`), an
   issue lit up to take the issues dropped onto it is `NestTargetMark`, and a card being dragged has `liftedShadow` (the
   Mac's list draws its drag image from the board's views, in `LiftedImage`). The marks they carry (status, priority,
-  labels, the sub-issue and epic glyphs, fold arrows, tree lines, milestones, checkboxes, the drop ring) are defined
-  once in `UI/Shared/Marks.swift` and `LabelMark`, for views and painters alike. Use them, or change them there, rather
+  issue types, labels, the sub-issue and epic glyphs, fold arrows, tree lines, milestones, checkboxes, the drop ring)
+  are defined once in `UI/Shared/Marks.swift`, `IssueTypeMark` and `LabelMark`, for views and painters alike. Use them, or change them there, rather
   than drawing another copy.
 - **Smoothness is a feature.** Lists and cards are drawn in one pass on purpose, and a card keeps its texts and colours
   from one paint to the next: what a new part of a card shows goes into its `CardText` or `CardInk`, so that it is kept
