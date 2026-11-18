@@ -130,3 +130,20 @@ extension PlatformFont {
         #endif
     }
 }
+
+#if os(iOS)
+extension UIResponder {
+    private static weak var foundKeyboardOwner: UIResponder?
+
+    /// What has the keyboard: an action sent to nobody goes to it first.
+    static var keyboardOwner: UIResponder? {
+        foundKeyboardOwner = nil
+        UIApplication.shared.sendAction(#selector(noteKeyboardOwner), to: nil, from: nil, for: nil)
+        return foundKeyboardOwner
+    }
+
+    @objc private func noteKeyboardOwner() {
+        UIResponder.foundKeyboardOwner = self
+    }
+}
+#endif

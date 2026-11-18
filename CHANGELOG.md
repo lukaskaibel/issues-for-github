@@ -8,6 +8,16 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Undo and redo for what you do in the app.** `⌘Z` takes back the last change and `⌘⇧Z` brings it back, step by step,
+  on the Mac and on an iPad with a keyboard, and **Edit › Undo** and **Redo** name what they are about, such as **Undo
+  Change Status**. It works for an issue's status, priority, due date and project fields, its place on the board, title
+  and description, open or closed, assignees, labels, parent, blockers, milestone and epic; what you changed on several
+  picked issues at once is one step. It also takes back changes to a milestone, a board's columns (order, name, colour,
+  one added, an empty one deleted), a view's name, a project hidden from the sidebar, and in the Inbox marking read or
+  unread, snoozing, and for its few seconds archiving or unsubscribing. A short message says what happened. Undoing is a
+  change like any other: it reaches GitHub the same way, also after being offline. While you type, the keys go on
+  undoing your typing. A description you keep writing is one step. New issues, comments, deleted issues and issues put
+  on a board can't be taken back this way.
 - **Press deeper to peek (Mac).** On a Force Touch trackpad, press an issue on a board or in a list until the second
   click, and its peek opens instead of the issue. It stays open when you let go.
 - **Make a status where you pick one.** Type a name the board has no status of into any status picker, on the
@@ -153,6 +163,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **`⌘⇧Z` no longer undoes an archived notification** in the Mac's Inbox: it is Redo now.
 - **A label recoloured or renamed on GitHub changes in the app too**, on every card and row, within a minute. GitHub
   doesn't count that as a change of the issues, so they kept the old colour until something else about them changed.
 - **Switching boards on the Mac no longer crashes** while a column is adding cards.
