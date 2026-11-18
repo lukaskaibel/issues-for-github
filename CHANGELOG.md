@@ -81,6 +81,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **Sub-issues in a Mac list are indented as a whole.** A sub-issue's priority and number now move in with its status
+  and title, right of the line from its parent, so a row shows that it belongs there from its first icon, in lists and
+  among an issue's sub-issues. An epic's icon stands at the start of its row, where the line down to its issues begins,
+  with no empty space before it, and its name lines up with their priorities. Under the pointer the epic's name stands
+  in the middle of the grey highlight.
+- **Search moved to the top of the sidebar (Mac).** The magnifying glass in the toolbar is now a **Search** row above
+  the Inbox, with `⌘K` at its end. It opens the command palette, as before.
 - **The issue you are peeking at stays marked (Mac).** While the peek is open, its issue has a tint of the accent and a
   ring in the accent, the same on board cards, list rows, My Issues and both timelines, also once the pointer has moved
   away. `J` and `K` take the mark along. A picked issue keeps its own colour under the ring.

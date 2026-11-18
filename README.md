@@ -179,7 +179,7 @@ them itself, and leaves out the ones you assigned yourself to in the app.
 
 ### Keyboard first
 
-⌘K, or the magnifying glass in the toolbar, opens the command palette: every action, and a search across your issues.
+⌘K, or Search at the top of the sidebar, opens the command palette: every action, and a search across your issues.
 Single keys act on the issue you hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `L`
 labels, `D` due date, `I` assign to me.
 
@@ -201,7 +201,8 @@ The list groups issues by status. Each header stays pinned while you scroll thro
 a click. Drag an issue up or down to give it a new place, or into another section to change its status, as on the
 board; drop it on the middle of another issue, which lights up, to make it that issue's sub-issue. A row shows an
 issue as its card does, labels as a dot and a name and the milestone in grey, and it is the same row wherever issues
-are listed: in an issue's sub-issues and the issues it blocks or is blocked by too. The app follows the system
+are listed: in an issue's sub-issues and the issues it blocks or is blocked by too. A sub-issue is indented as a whole,
+right of the line from its parent, and an epic's issues hang the same way under its name. The app follows the system
 appearance, or stays light or dark if you prefer.
 
 Its icon is a card with a done mark, lifted off a board of faint tiles. Settings (on iPhone and iPad, your account)

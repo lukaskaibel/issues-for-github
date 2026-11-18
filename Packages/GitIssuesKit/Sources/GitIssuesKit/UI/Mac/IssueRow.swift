@@ -171,6 +171,10 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
         return true
     }
 
+    /// Where a row's first icon, its priority, stands, in line with the status icon of the section's header.
+    static let firstColumn = IssueTable.inset + 28
+    /// From the priority to the number.
+    private static let priorityStep: CGFloat = 14 + 10
     /// Sub-issues hang this much further in per level, down to a few levels.
     static let indent: CGFloat = 20
     static let deepestIndent = 5
@@ -325,15 +329,16 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
 
     /// The row's own picture as it lifts off the list, which `LiftedImage` puts on a card: without the hover fill and
-    /// checkbox, which belong to the pointer, not to the issue, nor the accent fill of a picked row or the mark of the
-    /// peek; lifted, it is a card like any other, as on the board.
+    /// checkbox, which belong to the pointer, not to the issue, nor the accent fill of a picked row, the mark of the peek
+    /// or the indent of a sub-issue; lifted, it is a card like any other, as on the board.
     func liftedContent() -> NSImage? {
         guard let content = bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
         let wasHighlighted = highlighted, wasHovered = hoveredPart, wasRow = row
-        if var lifted = row, lifted.selected || lifted.selecting || lifted.peeked {
+        if var lifted = row, lifted.selected || lifted.selecting || lifted.peeked || lifted.nest.depth > 0 {
             lifted.selected = false
             lifted.selecting = false
             lifted.peeked = false
+            lifted.nest = Nesting.Place()
             configure(lifted, highlighted: false)
         }
         highlighted = false
@@ -405,8 +410,10 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
         var parts: [(kind: PickerKind, rect: NSRect)] = []
         let canEditFields = row.item.kind != .draft
 
-        // Left to right: priority, number, status. The priority lines up with the headers' status icon.
-        var x: CGFloat = IssueTable.inset + 28
+        // Left to right: priority, number, status. A sub-issue hangs under its parent: the whole row moves in, right of
+        // the line coming down from the parent's priority.
+        if drawsTree { drawTree(row, midY: midY) }
+        var x = Self.firstColumn + CGFloat(min(row.nest.depth, Self.deepestIndent)) * Self.indent
         if row.showsPriority {
             let rect = NSRect(x: x, y: midY - 7, width: 14, height: 14)
             parts.append((.priority, rect))
@@ -415,13 +422,10 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
         // Without a Priority field in the project there is nothing to show, as on a card; the place stays, so numbers and
         // titles line up with the rows around.
         if row.showsPriority { drawPriority(row.priority, x: x, midY: midY, onAccent: onAccent) }
-        x += 14 + 10
+        x += Self.priorityStep
         number.draw(at: NSPoint(x: x, y: midY - numberSize.height / 2))
         let numberRect = NSRect(x: x, y: midY - 9, width: numberSize.width, height: 18)
         x += 40 + 10
-        // A sub-issue hangs under its parent: status and title move in, with a line from the parent's status.
-        if drawsTree { drawTree(row, from: x, midY: midY) }
-        x += CGFloat(min(row.nest.depth, Self.deepestIndent)) * Self.indent
         if row.showsStatus {
             let rect = NSRect(x: x, y: midY - 7, width: 14, height: 14)
             parts.append((.status, rect))
@@ -682,18 +686,20 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     private var titleRect = NSRect.zero
     private var tooltipFoldRect: NSRect?
 
-    /// Lines from the parents above down to this row: a straight one through the row for each level whose
-    /// sub-issues go on below it, a branch into this row's status icon, and a line from this row's status icon
-    /// down to its own sub-issues when they show.
-    private func drawTree(_ row: IssueRowModel, from base: CGFloat, midY: CGFloat) {
+    /// Lines from the parents above down to this row, left of everything in it: a straight one through the row for
+    /// each level whose sub-issues go on below it, a branch to this row's priority icon, or to its number where it has
+    /// none, and a line from under that icon down to its own sub-issues when they show.
+    private func drawTree(_ row: IssueRowModel, midY: CGFloat) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
+        let base = Self.firstColumn
         let depth = min(row.nest.depth, Self.deepestIndent)
+        let start = base + CGFloat(depth) * Self.indent
         var path = Marks.treeLines(
             row.nest, deepest: Self.deepestIndent, lineX: { base + CGFloat($0) * Self.indent + 7 },
-            branchY: midY, branchEnd: base + CGFloat(depth) * Self.indent - 3, height: bounds.height
+            branchY: midY, branchEnd: start + (row.showsPriority ? 0 : Self.priorityStep) - 3, height: bounds.height
         )
         if row.nested != nil, !row.folded {
-            let lineX = base + CGFloat(depth) * Self.indent + 7
+            let lineX = start + 7
             path.move(to: CGPoint(x: lineX, y: midY + 10))
             path.addLine(to: CGPoint(x: lineX, y: bounds.height))
         }

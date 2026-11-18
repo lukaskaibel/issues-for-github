@@ -1105,11 +1105,12 @@ final class HoverTableView: NSTableView {
     }
 }
 
-/// The header over the issues of an epic standing together in a section, painted as `EpicHeader` draws it on the
-/// board and on iPhone and iPad: the epic's icon in line with the issues' status icons, where the line down to them
-/// starts, its name, how many of its issues are there, and at the end of the row, under the section header's +, the
-/// arrow that folds them away. A click opens the epic, one on the arrow folds its issues or shows them again, and
-/// dragging it moves them all.
+/// The header over the issues of an epic standing together in a section, with the marks `EpicHeader` draws on the board
+/// and on iPhone and iPad: the epic's icon at the start of the row, in the column of the priorities, where the line down
+/// to its issues starts, its name, in line with the issues' priorities, how many of its issues are there, and at the end
+/// of the row, under the section header's +, the arrow that folds them away. All of it stands in the middle of the row,
+/// and so of the highlight under the pointer. A click opens the epic, one on the arrow folds its issues or shows them
+/// again, and dragging it moves them all.
 final class EpicHeaderRowCell: PaintedCell {
     private var group: Nesting.EpicGroup?
     /// What the header shows now.
@@ -1175,9 +1176,8 @@ final class EpicHeaderRowCell: PaintedCell {
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
 
-    /// The icon stands in the issues' status column, after their priority and number, where the line down to them
-    /// starts.
-    static let iconColumn = (x: IssueTable.inset + 28 + 14 + 10 + 40 + 10, width: CGFloat(14))
+    /// The icon stands where a row's priority does, and the line down to the epic's issues starts under it.
+    static let iconColumn = (x: IssueRowCell.firstColumn, width: CGFloat(14))
     /// The arrow stands under the section headers' + button.
     static let trailing = IssueTable.inset + 12
 
@@ -1189,8 +1189,7 @@ final class EpicHeaderRowCell: PaintedCell {
             NSColor(Theme.selected).setFill()
             NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: look.highlightRadius, yRadius: look.highlightRadius).fill()
         }
-        // The first line stands at the foot of the row, closer to the issues under it than to the row above.
-        let midY = bounds.height - look.bottom - look.line / 2
+        let midY = bounds.midY
         let column = Self.iconColumn
         let icon = CGRect(x: column.x + (column.width - look.iconSize) / 2, y: midY - look.iconSize / 2, width: look.iconSize, height: look.iconSize)
         if !group.folded {
@@ -1211,7 +1210,8 @@ final class EpicHeaderRowCell: PaintedCell {
             folded: group.folded, center: NSPoint(x: arrow.midX, y: arrow.midY),
             color: NSColor(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
         )
-        var x = column.x + column.width + look.spacing
+        // The name starts where the priorities of the issues under it do.
+        var x = column.x + IssueRowCell.indent
         let titleSize = title.size()
         let countSize = count.size()
         let gap = (look.countGap as NSString).size(withAttributes: [.font: look.countFont]).width

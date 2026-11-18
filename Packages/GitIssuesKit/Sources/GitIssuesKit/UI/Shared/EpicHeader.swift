@@ -9,8 +9,8 @@ import AppKit
 /// little closer to its issues than to what is above it. Under the pointer it lights up in the rounded shape a row of
 /// the list does.
 ///
-/// `EpicHeader` draws it in SwiftUI, for the Mac's board and for iPhone and iPad; the Mac's list paints the same
-/// header itself (`EpicHeaderRowCell`) from these measures and the same marks.
+/// `EpicHeader` draws it in SwiftUI, for the Mac's board and for iPhone and iPad; the Mac's list paints its header
+/// itself (`EpicHeaderRowCell`) with the same marks and fonts, as a row of the list, centred in the row's height.
 enum EpicHeaderLook {
     #if os(macOS)
     static let iconSize: CGFloat = 14
