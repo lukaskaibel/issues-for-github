@@ -151,6 +151,23 @@ struct SharedPiecesTests {
         #expect(abs(ring.minX - outer.minX) < 0.01 && abs(ring.maxY - outer.maxY) < 0.01)
     }
 
+    @Test("The issue in the peek is filled to its own edge, with a ring just inside it")
+    func peekMark() {
+        let row = CGRect(x: 8, y: 1, width: 600, height: 34)
+        let shapes = Marks.peek(in: row, cornerRadius: 8)
+        #expect(shapes.count == 2)
+        #expect(shapes[0].ink == .off && shapes[0].stroke == nil && shapes[0].path.boundingRect == row)
+        #expect(shapes[1].ink == .mark && shapes[1].stroke?.lineWidth == Marks.peekLine)
+        // The ring's outer edge is the issue's: it takes no room around it, where the row or card beside it would be.
+        let ring = shapes[1].path.boundingRect.insetBy(dx: -Marks.peekLine / 2, dy: -Marks.peekLine / 2)
+        #expect(abs(ring.minX - row.minX) < 0.01 && abs(ring.maxY - row.maxY) < 0.01)
+        // On a picked row's accent fill it stands a line in, with the accent around it.
+        let picked = Marks.peek(in: row, cornerRadius: 8, onAccent: true)
+        let inner = picked[1].path.boundingRect.insetBy(dx: -Marks.peekLine / 2, dy: -Marks.peekLine / 2)
+        #expect(picked[0].path.boundingRect == row)
+        #expect(abs(inner.minX - (row.minX + Marks.peekLine)) < 0.01 && abs(inner.maxY - (row.maxY - Marks.peekLine)) < 0.01)
+    }
+
     @Test("An epic's icon is the stack of layers in its square, stroked thinner when smaller")
     func epicMark() {
         let big = Marks.epic(in: CGRect(x: 0, y: 0, width: 14, height: 14))

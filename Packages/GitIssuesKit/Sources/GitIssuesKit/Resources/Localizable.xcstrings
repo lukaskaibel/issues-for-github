@@ -76382,7 +76382,7 @@
       }
     },
     "search" : {
-      "comment" : "iPad: title of the search entry in the sidebar, and the Go menu item (⌘K) that opens search with the cursor in the search field; iPhone: title of the search screen ⌘K opens. The name of a place.",
+      "comment" : "iPad: title of the search entry in the sidebar, and the Go menu item (⌘K) that opens search with the cursor in the search field; iPhone: title of the search screen ⌘K opens; Mac: first row of the sidebar, which opens the command palette to search issues and commands. Short: on the Mac ⌘K stands beside it.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -76982,7 +76982,7 @@
       }
     },
     "searchShortcutTooltip" : {
-      "comment" : "Mac sidebar, top: tooltip of the magnifying-glass button that opens the command palette, to search issues and commands. ⌘K is its keyboard shortcut; keep it.",
+      "comment" : "Mac sidebar, first row: tooltip of Search, which opens the command palette to search issues and commands. ⌘K is its keyboard shortcut; keep it.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

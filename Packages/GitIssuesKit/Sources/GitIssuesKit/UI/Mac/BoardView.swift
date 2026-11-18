@@ -388,6 +388,8 @@ struct ColumnView: View {
                     }
                 }
                 .gesture(SpatialTapGesture(coordinateSpace: .named(BoardDrag.space)).onEnded { value in
+                    // The release of a deep press, which has opened the peek instead of being a click.
+                    if model.deepPress.openedPeek { return }
                     // A click on an epic's header opens the epic, one on its arrow folds its issues away or shows them.
                     if let header = drag.header(at: value.location, in: column.id),
                        let group = column.nesting.groups.first(where: { $0.contentId == header.epic }) {
@@ -754,7 +756,7 @@ private struct BoardCell: View {
         let highlighted = !dragging && (pointer != nil || model.focusedItemId == id)
         let at = Geometry(item: card.item, place: place, folded: card.folded, drag: drag)
         CardView(
-            card: card, width: width - at.indent, highlighted: highlighted, selected: selected,
+            card: card, width: width - at.indent, highlighted: highlighted, selected: selected, peeked: model.isPeeked(id),
             avatarVersion: avatarVersion, hoveredPart: pointer?.part, hoveringFold: pointer?.onFold ?? false,
             slotHeight: at.slotHeight, stackEdge: at.edge > 0,
             tree: !at.isSlot && place.depth > 0 ? place : nil

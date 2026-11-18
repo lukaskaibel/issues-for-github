@@ -37,6 +37,11 @@ struct TimelineRow: Identifiable, Equatable {
     var kind: Kind
     /// For a group, the stretch its issues cover.
     var span: TimelineSpan?
+
+    /// The issue on this line; nil on a group's.
+    var itemId: String? {
+        if case .item(let item) = kind { item.id } else { nil }
+    }
 }
 
 /// How a view shows: GitHub's roadmap layout adds the timeline to board and list.
@@ -359,6 +364,14 @@ private struct ViewTimelineContent: View {
                     .frame(width: layout.width, height: ViewTimelineLayout.rowHeight)
                     .offset(y: layout.rowTop(index))
             }
+            // The issue in the peek, along its line from its marked name.
+            if let peeked = model.peekItemId {
+                ForEach(layout.rows.indices.filter { layout.rows[$0].itemId == peeked }, id: \.self) { index in
+                    Theme.peekFill
+                        .frame(width: layout.width, height: ViewTimelineLayout.rowHeight - 2)
+                        .offset(y: layout.rowTop(index) + 1)
+                }
+            }
         }
         .contentShape(Rectangle())
         .overlay(alignment: .topLeading) {
@@ -537,6 +550,8 @@ private struct ViewTimelineContent: View {
             .background {
                 if case .group = row.kind {
                     Rectangle().fill(Theme.groupHeader)
+                } else if let id = row.itemId, model.isPeeked(id) {
+                    PeekMark(cornerRadius: 6).padding(.horizontal, 4).padding(.vertical, 1)
                 } else if hovered == row.id {
                     Rectangle().fill(Theme.hover.opacity(0.7))
                 }
