@@ -184,6 +184,26 @@ extension Marks {
     }
 }
 
+// MARK: - The issue in the peek
+
+extension Marks {
+    static let peekLine: CGFloat = 2
+
+    /// The issue the peek shows, the same on every board, list and timeline, and still there when the pointer has moved
+    /// on: its rounded shape `rect` filled with the second colour (`Theme.peekGround`) and a ring in the first
+    /// (`Theme.peekRing`) along the inside of its edge, so that the mark takes no room around the issue. On a picked
+    /// row's accent fill the white ring stands a line further in: at the edge it would melt into a white page, and the
+    /// row would only look narrower.
+    static func peek(in rect: CGRect, cornerRadius: CGFloat, onAccent: Bool = false) -> [Shape] {
+        let inset = (onAccent ? peekLine : 0) + peekLine / 2
+        let ring = rect.insetBy(dx: inset, dy: inset)
+        return [
+            Shape(path: Path(roundedRect: rect, cornerRadius: cornerRadius, style: .continuous), ink: .off),
+            Shape(path: Path(roundedRect: ring, cornerRadius: cornerRadius - inset, style: .continuous), stroke: StrokeStyle(lineWidth: peekLine)),
+        ]
+    }
+}
+
 // MARK: - Sub-issues hanging under their parent
 
 extension Marks {

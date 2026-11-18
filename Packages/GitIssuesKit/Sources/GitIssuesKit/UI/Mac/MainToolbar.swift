@@ -1,10 +1,10 @@
 #if os(macOS)
 import SwiftUI
 
-/// The window's toolbar: back and forward, New Issue, the page's own buttons in glass, and search. It names no page:
-/// the sidebar says where you are. What it holds follows the page: a board or a list, an open issue, the Inbox.
-/// It has the same items on every page and only their contents change, so moving around adds or removes no item,
-/// which the toolbar would animate each time.
+/// The window's toolbar: back and forward, New Issue, and the page's own buttons in glass. It names no page: the
+/// sidebar says where you are. What it holds follows the page: a board or a list, an open issue, the Inbox. It has the
+/// same items on every page and only their contents change, so moving around adds or removes no item, which the
+/// toolbar would animate each time.
 struct MainToolbar: ToolbarContent {
     let model: AppModel
     let openItem: Item?
@@ -29,10 +29,6 @@ struct MainToolbar: ToolbarContent {
             PageControls(openItem: openItem, showsInspector: $showsInspector)
         }
         .sharedBackgroundVisibility(model.hasPageControls(openItem: openItem) ? .automatic : .hidden)
-        ToolbarSpacer(.fixed)
-        ToolbarItem {
-            SearchButton()
-        }
     }
 }
 
@@ -132,18 +128,6 @@ private struct PageControls: View {
             }
         }
         .fixedSize()
-    }
-}
-
-/// Search, where Mail has it: a magnifying glass that opens the command palette, which finds issues and everything
-/// there is to do. Typing happens there, so the toolbar has no field of its own.
-private struct SearchButton: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        ToolbarIconButton(systemImage: "magnifyingglass", label: .search, help: .searchShortcutTooltip) {
-            model.overlay = model.overlay == .palette(.root) ? nil : .palette(.root)
-        }
     }
 }
 
