@@ -569,6 +569,28 @@ final class PhoneTests: AppTestCase {
         XCTAssertEqual(box.value as? String, "Checked")
     }
 
+    func testLinkToAnotherIssueOpensItInTheApp() {
+        launch()
+        wait(element("row-#9"))
+        scrollTo(element("row-#14"))
+        element("row-#14").tap()
+        let title = element("issue-title")
+        wait(title)
+        waitForValue(title, containing: "Sign in with GitHub")
+
+        // The description starts with a link to its epic.
+        let description = element("issue-description")
+        wait(description)
+        description.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 40, dy: 10)).tap()
+        waitForValue(element("issue-title"), containing: "Sign-in and accounts")
+        XCTAssertEqual(app.state, .runningForeground, "the link stays in the app")
+        XCTAssertFalse(element("writing-bar-done").exists, "a tap on a link doesn't start typing")
+
+        // Back leads to the issue the link was in.
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        waitForValue(element("issue-title"), containing: "Sign in with GitHub")
+    }
+
     func testCommentsAndSubIssues() {
         launch()
         element("row-#9").tap()

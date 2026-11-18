@@ -159,7 +159,7 @@ extension AppModel {
     }
 
     /// An issue can be on several boards; the one on screen or opened last wins, and any board over none.
-    private func localItem(contentId: String) -> Item? {
+    func localItem(contentId: String) -> Item? {
         let copies = allItems.filter { $0.contentId == contentId }
         guard copies.count > 1 else { return copies.first }
         let preferred = currentProjectId ?? UserDefaults.standard.string(forKey: "selectedProject")

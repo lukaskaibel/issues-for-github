@@ -207,6 +207,7 @@ struct PeekPanel: View {
         .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Theme.popoverBorder, lineWidth: 0.5))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: Theme.shadow, radius: 30, y: 12)
+        .opensIssueLinks(of: item, in: model) { model.open($0) }
         // A right-click on the peek is about its issue: the issue's menu, as on its card, never the menu of the card or
         // line under the peek. Its description keeps the menu of text, to copy from.
         .floatingContextMenu { [model, id = item.id] in
