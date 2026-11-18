@@ -502,6 +502,24 @@ public final class GitHubAPI: Sendable {
         )
     }
 
+    /// These labels as GitHub has them now, without those it no longer has or won't show.
+    public func labels(ids: [String]) async throws -> [LabelRef] {
+        struct Response: Decodable {
+            var nodes: [LabelDTO?]
+        }
+        let query = """
+        query($ids: [ID!]!) {
+          nodes(ids: $ids) { ... on Label { id name color } }
+        }
+        """
+        var result: [LabelRef] = []
+        for chunk in ids.chunked(into: 100) {
+            let response: Response = try await client.run(query, variables: ["ids": chunk], allowPartial: true)
+            result += response.nodes.compactMap { $0?.label }
+        }
+        return result
+    }
+
     // MARK: Writing
 
     private struct Ack: Decodable {}

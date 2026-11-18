@@ -164,6 +164,9 @@ All notable changes to this project are recorded here. The format follows
 ### Fixed
 
 - **`⌘⇧Z` no longer undoes an archived notification** in the Mac's Inbox: it is Redo now.
+- **A label recoloured or renamed on GitHub changes in the app too**, on every card and row, within a minute. GitHub
+  doesn't count that as a change of the issues, so they kept the old colour until something else about them changed.
+- **Switching boards on the Mac no longer crashes** while a column is adding cards.
 - **A third assignee no longer runs under the date** in a row of the Mac's list.
 - **An issue closed as a duplicate shows as canceled everywhere**, also when it is on none of your boards.
 - **A picked notification in the Mac's Inbox keeps the check of a done issue visible.**
