@@ -1166,6 +1166,10 @@ public actor SyncEngine {
         case .setEpic(let m):
             try await sendEpic(m)
 
+        case .setIssueType(let m):
+            guard m.name != m.baseName else { break }
+            try await api.setIssueType(contentId: m.contentId, typeId: m.typeId)
+
         case .setProjectField(let m):
             guard m.value != m.base else { break }
             try await sendFieldValue(m.value, projectId: m.projectId, itemId: m.itemId, fieldId: m.fieldId)
@@ -1338,6 +1342,11 @@ public actor SyncEngine {
             m.milestoneTitle = try m.base.flatMap { try String.fetchOne(db, sql: "SELECT title FROM milestone WHERE id = ?", arguments: [$0]) }
             try m.apply(db)
         }
+        if case .setIssueType(var m) = entry.mutation {
+            m.name = m.baseName
+            m.color = m.baseColor
+            try m.apply(db)
+        }
         if case .createMilestone(let m) = entry.mutation, m.createdId == nil {
             // Nothing may wait for a milestone that won't be made.
             try db.execute(sql: "DELETE FROM milestone WHERE id = ?", arguments: [m.milestoneId])
@@ -1470,7 +1479,7 @@ public actor SyncEngine {
     }
 
     /// Labels and assignable people of a repository that is on no board, for an issue seen only in the Inbox.
-    public func repoMeta(repoId: String) async throws -> (labels: [LabelRef], users: [Person]) {
+    public func repoMeta(repoId: String) async throws -> (labels: [LabelRef], users: [Person], types: [IssueTypeRef]) {
         if isDemo { return DemoData.repoMeta(repoId: repoId) }
         return try await api.repoMeta(repoId: repoId)
     }
@@ -1487,10 +1496,11 @@ public actor SyncEngine {
         let meta = try await api.repoMeta(repoId: repoId)
         try await db.writer.write { db in
             try db.execute(
-                sql: "UPDATE repo SET labels = ?, assignableUsers = ?, metaLoadedAt = ? WHERE id = ?",
+                sql: "UPDATE repo SET labels = ?, assignableUsers = ?, issueTypes = ?, metaLoadedAt = ? WHERE id = ?",
                 arguments: [
                     String(decoding: try JSONEncoder().encode(meta.labels), as: UTF8.self),
                     String(decoding: try JSONEncoder().encode(meta.users), as: UTF8.self),
+                    String(decoding: try JSONEncoder().encode(meta.types), as: UTF8.self),
                     Date(), repoId,
                 ]
             )

@@ -1,7 +1,7 @@
 import Foundation
 
 // Milestones, epics and the roadmap they make. GitHub has milestones, but no epics: teams mark an issue as one with a
-// label named "epic" or, in organisations, the issue type "Epic", and hang the work under it as sub-issues. The
+// label named "epic" or the issue type "Epic", and hang the work under it as sub-issues. The
 // roadmap needs no dates of its own: an epic is due when the milestones of its sub-issues are.
 
 extension Item {

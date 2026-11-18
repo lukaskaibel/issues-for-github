@@ -479,11 +479,12 @@ public final class GitHubAPI: Sendable {
         return (title, node.body ?? "")
     }
 
-    public func repoMeta(repoId: String) async throws -> (labels: [LabelRef], users: [Person]) {
+    public func repoMeta(repoId: String) async throws -> (labels: [LabelRef], users: [Person], types: [IssueTypeRef]) {
         struct Response: Decodable {
             struct Node: Decodable {
                 var labels: Nodes<LabelDTO>?
                 var assignableUsers: Nodes<PersonDTO>?
+                var issueTypes: Nodes<IssueTypeDTO>?
             }
             var node: Node?
         }
@@ -492,13 +493,15 @@ public final class GitHubAPI: Sendable {
           node(id: $id) { ... on Repository {
             labels(first: 100, orderBy: {field: NAME, direction: ASC}) { nodes { id name color } }
             assignableUsers(first: 100) { nodes { id login name avatarUrl } }
+            issueTypes(first: 50) { nodes { id name color isEnabled } }
           } }
         }
         """
         let response: Response = try await client.run(query, variables: ["id": repoId], allowPartial: true)
         return (
             (response.node?.labels?.items ?? []).map(\.label),
-            (response.node?.assignableUsers?.items ?? []).map(\.person)
+            (response.node?.assignableUsers?.items ?? []).map(\.person),
+            (response.node?.issueTypes?.items ?? []).filter { $0.isEnabled != false }.compactMap(\.ref)
         )
     }
 
@@ -875,6 +878,7 @@ enum GQL {
       repository { id nameWithOwner }
       assignees(first: 3) { nodes { id login name avatarUrl } }
       milestone { id title }
+      issueType { name color }
       subIssuesSummary { total completed }
       blockedBy(first: 10) { nodes { id number title state stateReason url repository { id nameWithOwner } } }
     }
@@ -893,7 +897,7 @@ enum GQL {
       issueDependenciesSummary { blockedBy blocking }
       comments { totalCount }
       milestone { id title }
-      issueType { name }
+      issueType { name color }
       projectItems(first: 20) { nodes { project { id } } }
     }
     """
@@ -924,7 +928,7 @@ enum GQL {
           issueDependenciesSummary { blockedBy blocking }
           comments { totalCount }
           milestone { id title }
-          issueType { name } }
+          issueType { name color } }
         ... on PullRequest { id number title body state url createdAt updatedAt closedAt
           author { login } repository { id nameWithOwner }
           assignees(first: 10) { nodes { id login name avatarUrl } }
@@ -1004,6 +1008,14 @@ struct MilestoneRefDTO: Decodable {
 struct IssueTypeDTO: Decodable {
     var id: String?
     var name: String
+    var color: String?
+    var isEnabled: Bool?
+
+    /// The type as something to pick, when it was read with its id and colour.
+    var ref: IssueTypeRef? {
+        guard let id else { return nil }
+        return IssueTypeRef(id: id, name: name, color: color ?? "GRAY")
+    }
 }
 
 /// A sub-issue as `GQL.subIssueFields` reads it.
@@ -1021,6 +1033,7 @@ struct SubIssueDTO: Decodable {
     var repository: RepoDTO?
     var assignees: Nodes<PersonDTO>?
     var milestone: MilestoneRefDTO?
+    var issueType: IssueTypeDTO?
     var createdAt: Date?
     var subIssuesSummary: Summary?
     var blockedBy: Nodes<LinkDTO>?
@@ -1036,7 +1049,8 @@ struct SubIssueDTO: Decodable {
             stateReason: stateReason, repo: repository?.nameWithOwner, url: url, position: position,
             assignees: (assignees?.items ?? []).map(\.person),
             milestoneId: milestone?.id, milestoneTitle: milestone?.title, createdAt: createdAt,
-            subTotal: subIssuesSummary?.total, subCompleted: subIssuesSummary?.completed
+            subTotal: subIssuesSummary?.total, subCompleted: subIssuesSummary?.completed,
+            issueType: issueType?.name, issueTypeColor: issueType?.color
         )
     }
 }
@@ -1260,7 +1274,8 @@ extension ItemDTO.Content {
             blockingCount: content.issueDependenciesSummary?.blocking ?? 0,
             milestoneId: content.milestone?.id,
             milestoneTitle: content.milestone?.title,
-            issueType: content.issueType?.name
+            issueType: content.issueType?.name,
+            issueTypeColor: content.issueType?.color
         )
     }
 }

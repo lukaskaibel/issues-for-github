@@ -162,6 +162,18 @@ extension Marks {
     }
 }
 
+// MARK: - Issue types
+
+extension Marks {
+    /// An issue's type: a small rounded square, which tells it from the round dots of labels. An outline for no type.
+    static func issueType(in rect: CGRect, empty: Bool = false) -> [Shape] {
+        let line: CGFloat = 1.1
+        let box = empty ? rect.insetBy(dx: line / 2, dy: line / 2) : rect
+        let path = Path(roundedRect: box, cornerRadius: box.width * 0.29, style: .continuous)
+        return [Shape(path: path, stroke: empty ? StrokeStyle(lineWidth: line) : nil)]
+    }
+}
+
 // MARK: - Dropping onto an issue
 
 extension Marks {

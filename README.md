@@ -69,8 +69,8 @@ an assignee or a label opens its picker right where you clicked, ready to type i
 
 ### A board you can pick up
 
-The board is quiet: white cards on grey, without borders or lanes, labels as a dot and a name, and colour only where
-something needs you, such as a date that's due, an urgent issue or a blocker. Drag a card and it lifts off the board,
+The board is quiet: white cards on grey, without borders or lanes, an issue's type as a small square and its name,
+labels as a dot and a name, and colour only where something needs you, such as a date that's due, an urgent issue or a blocker. Drag a card and it lifts off the board,
 tilts with the motion and settles with a spring, while its neighbours make room. Press Esc mid-drag and it goes back
 to where it came from. Pick several cards with ⌘-click and drag one of them, and they all go, together. The move
 shows in the same frame and reaches GitHub in the background.
@@ -96,8 +96,8 @@ sub-issue whose parent has another status stays in its own column and says which
 one is done, the parent moves to Done by itself. The issues of an epic in the same column stand together the same
 way, under the epic's name; drag the name to another column and they all go.
 
-Every property is one click away: click a card's priority, status, labels, assignees, due date or sub-issue count and a
-dropdown opens right there. Type to filter, press a number to pick; the pick closes it, and so does another click on
+Every property is one click away: click a card's priority, status, type, labels, assignees, due date or sub-issue count
+and a dropdown opens right there. Type to filter, press a number to pick; the pick closes it, and so does another click on
 what opened it. For several assignees or labels, tick their checkboxes or Shift-click them, and it stays open. Type a
 label the repository doesn't have and **Create label “…”** makes it there, in one of GitHub's colours, and adds it.
 Type a status the board doesn't have and **Create status “…”** makes it in the project's Status field on GitHub, next
@@ -107,7 +107,7 @@ Pickers put what you chose lately at the very top, above a line, with the likeli
 parent, epic, label or assignee with one key. A choice made twice in a row stays on top even after a single pick of
 another, so a run of issues under one parent isn't broken by the one that went elsewhere. Right-click a card for
 everything at once: the menu has rows as big as the pickers' and a search field, so
-typing "rev" finds Status › In Review, and Status, Priority, Assignee, Labels, Due Date and Milestone open the same
+typing "rev" finds Status › In Review, and Status, Priority, Assignee, Type, Labels, Due Date and Milestone open the same
 pickers as a click on the card.
 
 ### Due dates that remind you
@@ -180,8 +180,8 @@ them itself, and leaves out the ones you assigned yourself to in the app.
 ### Keyboard first
 
 ⌘K, or the magnifying glass in the toolbar, opens the command palette: every action, and a search across your issues.
-Single keys act on the issue you hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `L`
-labels, `D` due date, `I` assign to me.
+Single keys act on the issue you hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `T` type,
+`L` labels, `D` due date, `I` assign to me.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/palette-dark.webp">
@@ -200,7 +200,7 @@ labels, `D` due date, `I` assign to me.
 The list groups issues by status. Each header stays pinned while you scroll through its section and folds it with
 a click. Drag an issue up or down to give it a new place, or into another section to change its status, as on the
 board; drop it on the middle of another issue, which lights up, to make it that issue's sub-issue. A row shows an
-issue as its card does, labels as a dot and a name and the milestone in grey, and it is the same row wherever issues
+issue as its card does, its type and labels first among the tags and the milestone in grey, and it is the same row wherever issues
 are listed: in an issue's sub-issues and the issues it blocks or is blocked by too. The app follows the system
 appearance, or stays light or dark if you prefer.
 
@@ -408,6 +408,9 @@ The interface uses the system's own parts.
   names what blocks it, on its card and in its parent's sub-issues. Sub-issues with their parent's status hang under it
   on the board and in the list, and a parent is done when its last sub-issue is. An issue lists its sub-issues by
   priority, or by status, newest first or in GitHub's order, and unfolds sub-issues of sub-issues as a tree.
+- **Issue types.** Bug, Feature, Task and the types your organisation adds, in their GitHub colours on cards, rows and
+  the issue's page. Change them from the same pickers and menus as every other property, and filter or group a view by
+  them.
 - **Milestones, epics and a roadmap.** A board's milestones with their own board and progress, epics whose
   sub-issues are the work, and a roadmap of the epics over the milestones, on a timeline or as a list. Completing a
   milestone closes it on GitHub and moves what is left to the next one. Issues go into the board's iterations too: the
@@ -472,9 +475,10 @@ Nothing is invented on top of GitHub. Each concept is the GitHub feature it look
 | The order of an issue's sub-issues | Only how the app lists them, kept on each device; GitHub's order stays as it is |
 | A parent done with its last sub-issue | The parent's status moves to the done column and it is closed, as if you had moved it there |
 | Blocked by and blocking | GitHub's issue dependencies |
+| Issue type | GitHub's issue types, with their colours; the choices are those of the issue's repository |
 | Milestone | GitHub's milestones of the board's repositories; those of the same name are one, and a repository gets a copy when an issue of it goes in |
 | Completing a milestone | Closing it on GitHub; its unfinished issues get the next milestone if you choose |
-| Epic | An issue with the label *epic* (made in the repository the first time) or, in organisations, the issue type *Epic* |
+| Epic | An issue with the label *epic* (made in the repository the first time) or the issue type *Epic* |
 | An epic's issues | Its sub-issues |
 | Roadmap | Only how the app lays out the epics over the milestones; the stretches end on the milestones' due dates |
 | A project's views in the sidebar | The project's views, in GitHub's order; board views as a board, table views as a list, roadmap views as a timeline |
@@ -593,6 +597,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘K` or `/` | Command palette: run a command or jump to an issue |
 | `C` or `⌘N` | New issue |
 | `S` `P` `A` `L` | Change status, priority, assignee, labels; `S` puts an issue on no board onto one |
+| `T` | Set the issue's type, such as Bug or Feature, or take it away (`0`) |
 | `I` | Assign to me, or unassign |
 | `D` | Set the due date: type "fri", "next week", "in 3 days" or "12.10.", or pick a day |
 | `M` then `P` / `B` / `X` | Set the parent issue, mark as blocked by another issue, mark as blocking one |
@@ -637,7 +642,7 @@ In the Inbox:
 `X` or `⌘`-click picks a notification, `⇧J` `⇧K` or Shift-click a run of them, to read, snooze or archive together;
 `S` `P` `A` `L` `I` then change all of their issues, and `Esc` lets them go. Right-click one for everything at once.
 
-Click an issue's priority, status, labels, assignees, due date or sub-issue count to change it in place, or right-click
+Click an issue's priority, status, type, labels, assignees, due date or sub-issue count to change it in place, or right-click
 it for everything at once. The right-click menu takes the keys at once: type to find an entry, also one inside a
 submenu, `↑` `↓` to move, `→` to open a submenu or picker, `Return` to pick and `Esc` to close. A pick closes the
 dropdown, and so does a second click on what opened it; for several assignees or labels, tick the checkbox at the start
@@ -735,7 +740,7 @@ they are renamed, coloured and deleted on the board. Its **No project** column t
 onto a status to put it on the board. All Issues' list takes drags the same way.
 
 To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
-Shift-click. A bar at the bottom then sets status, priority, assignee, labels or the due date for all of them, and so
+Shift-click. A bar at the bottom then sets status, priority, assignee, type, labels or the due date for all of them, and so
 do the usual keys, dropdowns and right-click menu. Drag one of them and they all go: on the board and in the list they
 lift off together and land one after the other where you drop them. `Esc` or a click beside the issues clears the
 pick, and a plain click on an issue opens it and lets the picked ones go. Sub-issues hanging under
@@ -767,7 +772,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold an epic's name, then drag | Move all of its issues there to another column (iPad) or another place in their section |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
-| Touch and hold an issue | Status, priority, assignee, labels, due date, milestone and iteration as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
+| Touch and hold an issue | Status, priority, assignee, type, labels, due date, milestone and iteration as submenus (Add to Project for an issue on no board); parent issue, sub-issues, blockers and epic; make it an epic; copy link, share, open on GitHub, delete |
 | Touch and hold an issue in a project's list, then drag | Move it to another place in its section |
 | Tap a person or label in their sheet | Pick it and close the sheet; the circle at the start of the row picks several. Your recent choices are listed first, as in every sheet that picks a parent, epic or blocker and in the Assignee and Labels submenus of a touch and hold |
 | Type a label the repository doesn't have in the Labels sheet | Create label “…” makes it in the repository and adds it |

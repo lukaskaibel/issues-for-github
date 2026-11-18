@@ -133,6 +133,11 @@ enum Theme {
         }
     }
 
+    /// An issue type's square. GitHub's grey, and a type whose colour isn't known yet, are the grey of quiet text.
+    static func issueTypeColor(_ name: String?) -> Color {
+        name.flatMap(optionColor) ?? textTertiary
+    }
+
     /// A project's glyph in one of GitHub's option colours; grey is the grey of secondary text, like other icons.
     static func projectColor(_ name: String) -> Color {
         optionColor(name) ?? textSecondary

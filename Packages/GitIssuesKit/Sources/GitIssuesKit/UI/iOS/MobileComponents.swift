@@ -35,6 +35,8 @@ struct IssueRow: View {
     var showsEpic = true
     /// The project's own fields the view shows, such as an iteration.
     var chips: [FieldChip] = []
+    /// Its type: not in a list grouped by type, whose group says it.
+    var showsType = true
     /// While issues are picked, as an issue's sub-issues can be: whether this one is, shown by a circle in place of
     /// its status; nil while nothing is picked.
     var picked: Bool? = nil
@@ -168,6 +170,13 @@ struct IssueRow: View {
             if item.kind == .pullRequest {
                 Image(systemName: "arrow.triangle.pull")
             }
+            // Near the start, unlike the Mac's rows and cards, where it opens the tags: labels end a line that fades out.
+            if showsType, let type = item.shownType {
+                MobileChip {
+                    IssueTypeSquare(color: type.color)
+                    Text(type.name)
+                }
+            }
             let epicParent = item.parentId.flatMap { model.issue(contentId: $0) }.flatMap { $0.isEpic ? $0 : nil }
             if showsParent, let parent = item.parentNumber, epicParent == nil {
                 // The parent as cards and the Mac's rows name it, number and title; a long title gives way to what follows.
@@ -261,6 +270,7 @@ struct IssueRow: View {
             ? model.statusOption(of: item)?.name ?? String(localized: .noStatus)
             : String(localized: item.isClosed ? LocalizedStringResource.stateClosed : item.isStandIn ? .stateOpen : .noProject)
         var parts = [item.displayNumber, item.title, status]
+        if let type = item.shownType { parts.append(String(localized: .issueTypeTooltip(type: type.name))) }
         let epic = model.epic(of: item)
         // Right under an epic, the epic says it (or its group does). Under its parent it says so all the same, for
         // VoiceOver, which doesn't see where the row hangs.

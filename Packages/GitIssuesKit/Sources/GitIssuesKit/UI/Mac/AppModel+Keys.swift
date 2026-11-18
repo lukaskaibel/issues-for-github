@@ -339,6 +339,10 @@ extension AppModel {
         case "d":
             guard targets(for: item).contains(where: canHaveDueDate) else { return false }
             overlay = .palette(.dueDate(itemId: item.id))
+        case "t":
+            // Of picks that can't all have a type, the first that can opens the picker.
+            guard let typed = targets(for: item).first(where: canHaveIssueType) else { return false }
+            overlay = .palette(.issueType(itemId: typed.id))
         case "m":
             guard targets(for: item).allSatisfy(canRelate) else { return false }
             pendingMark = Date()

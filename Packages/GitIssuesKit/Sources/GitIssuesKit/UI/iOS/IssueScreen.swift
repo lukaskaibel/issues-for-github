@@ -517,6 +517,18 @@ private struct PropertyChips: View {
                 .buttonStyle(PlainPressStyle())
                 .accessibilityLabel(item.assignees.isEmpty ? .assigneeNone : .assigneesAre(names: item.assignees.map(\.login).joined(separator: ", ")))
                 .accessibilityIdentifier("chip-assignee")
+                if model.showsIssueTypeProperty(item) {
+                    Button {
+                        picker = .issueType
+                    } label: {
+                        PropertyChip(text: item.issueType ?? String(localized: .issueTypeTitle), placeholder: item.issueType == nil) {
+                            IssueTypeSquare(color: item.issueTypeColor, empty: item.issueType == nil, size: 10)
+                        }
+                    }
+                    .buttonStyle(PlainPressStyle())
+                    .accessibilityLabel(item.issueType.map { .issueTypeTooltip(type: $0) } ?? .noIssueType)
+                    .accessibilityIdentifier("chip-type")
+                }
                 Button {
                     picker = .labels
                 } label: {
@@ -675,6 +687,16 @@ private struct PropertiesColumn: View {
                         .buttonStyle(PlainPressStyle())
                         .accessibilityLabel(item.assignees.isEmpty ? .assigneeNone : .assigneesAre(names: item.assignees.map(\.login).joined(separator: ", ")))
                         .accessibilityIdentifier("property-assignee")
+                    }
+                    if model.showsIssueTypeProperty(item) {
+                        row(.issueTypeTitle) {
+                            Button { picker = .issueType } label: {
+                                value { IssueTypeValue(item: item) }
+                            }
+                            .buttonStyle(PlainPressStyle())
+                            .accessibilityLabel(item.issueType.map { .issueTypeTooltip(type: $0) } ?? .noIssueType)
+                            .accessibilityIdentifier("property-type")
+                        }
                     }
                     row(.labels) {
                         Button { picker = .labels } label: {

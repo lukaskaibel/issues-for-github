@@ -497,7 +497,7 @@ struct NewIssueView: View {
         case .iteration(let fieldId):
             guard let field = model.field(id: fieldId) else { return [] }
             return model.iterationItems(field: field, current: [draft.fieldValues[fieldId]?.iterationId])
-        case .dueDate, .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic:
+        case .dueDate, .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic, .issueType:
             return []
         }
     }
@@ -538,7 +538,7 @@ struct NewIssueView: View {
             draft.milestoneTitle = id.isEmpty ? nil : id
         case .iteration(let fieldId):
             draft.fieldValues[fieldId] = id.isEmpty ? nil : FieldValue(iterationId: id)
-        case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic:
+        case .subIssues, .parent, .addSubIssue, .blockedBy, .blocking, .epic, .issueType:
             break
         }
     }

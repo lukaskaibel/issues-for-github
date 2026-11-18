@@ -223,6 +223,7 @@ enum DebugRemote {
             case ("blocking", let id?): model.overlay = .palette(.blocking(itemId: id))
             case ("due", let id?): model.overlay = .palette(.dueDate(itemId: id))
             case ("milestone", let id?): model.overlay = .palette(.milestone(itemId: id))
+            case ("type", let id?): model.overlay = .palette(.issueType(itemId: id))
             case ("epic", let id?): model.overlay = .palette(.epic(itemId: id))
             case ("iteration", let id?):
                 if let item = model.item(id: id), let field = model.iterationFields(for: item).first {

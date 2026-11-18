@@ -8,6 +8,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **An issue's type, wherever the issue is.** GitHub's issue types, such as Bug, Feature and Task, show as a small square
+  in the type's colour and its name: first among the labels on cards and in the Mac's lists, right after the number in
+  the lists on iPhone and iPad, and among the properties on the issue's page. Click it, press `T`, use `⌘K` or the
+  right-click menu, or on iPhone and iPad the issue's page or touch and hold, to change the type or take it away, also
+  for several picked issues. A card still shows two tags at most, so the type can put a label behind "+1", and on a full
+  line the milestone gives way first. A label named like the type is left out of cards and rows. The filter menu and
+  lists grouped by type use the same squares.
 - **Make a status where you pick one.** Type a name the board has no status of into any status picker, on the
   Mac (the dropdown, `S`, the right-click menu, `⌘K` and the new issue) or on iPhone and iPad (the Status sheet, and
   **New Status…** when you touch and hold an issue), and **Create status “…”** makes it in the project's Status field
