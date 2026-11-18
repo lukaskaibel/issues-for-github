@@ -100,11 +100,15 @@ final class RowWindow {
     /// Called as the column scrolls: hands the views of rows that went out to rows that came in.
     func scrolled(to visible: ClosedRange<CGFloat>) {
         self.visible = visible
+        let previousCount = slots.count
         let changed = assign(reusing: true)
         guard !changed.isEmpty else { return }
         let paths = changed.map { \RowWindow.[slot: $0] }
         for path in paths { _$observationRegistrar.willSet(self, keyPath: path) }
         for path in paths { _$observationRegistrar.didSet(self, keyPath: path) }
+        // A notification can rebuild the container and replace the rows synchronously. Finish assigning every
+        // slot before telling it to grow, so no loop keeps indices into the rows it just replaced.
+        if slots.count > previousCount { growth &+= 1 }
     }
 
     /// Called by the rows' container when the rows or their places change. A row coming in this way gets a view of
@@ -166,7 +170,6 @@ final class RowWindow {
             if slot == nil {
                 slots.append(nil)
                 slot = slots.count - 1
-                if reusing { growth &+= 1 }
             }
             slots[slot!] = id
             slotOf[id] = slot!
