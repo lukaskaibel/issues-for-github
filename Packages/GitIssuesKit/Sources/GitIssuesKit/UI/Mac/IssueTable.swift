@@ -1050,6 +1050,34 @@ final class HoverTableView: NSTableView {
     // The app's own key handling moves through issues; the table should not take the keyboard.
     override var acceptsFirstResponder: Bool { false }
 
+    /// A press on an issue is followed here until it is clearly a click, a drag or a deep press: the table's own tracking
+    /// leaves pressure events in the queue until the button is up, too late to peek. A click or drag then goes to the
+    /// table as it came, and a deep press never does, so it can't open the issue as well.
+    override func mouseDown(with event: NSEvent) {
+        let row = self.row(at: convert(event.locationInWindow, from: nil))
+        guard let coordinator, let window, let item = coordinator.item(at: row),
+              event.modifierFlags.intersection(.deviceIndependentFlagsMask).isDisjoint(with: [.command, .shift, .option, .control]) else {
+            super.mouseDown(with: event)
+            return
+        }
+        let model = coordinator.model
+        while let next = window.nextEvent(matching: [.leftMouseUp, .leftMouseDragged, .pressure]) {
+            switch next.type {
+            case .pressure:
+                if model.pressureChanged(to: next.stage, over: item) { return }
+            case .leftMouseDragged:
+                // A finger pressing hard moves a little without meaning to.
+                let distance = hypot(next.locationInWindow.x - event.locationInWindow.x, next.locationInWindow.y - event.locationInWindow.y)
+                guard distance > DeepPress.allowedMovement else { continue }
+                fallthrough
+            default:
+                window.postEvent(next, atStart: true)
+                super.mouseDown(with: event)
+                return
+            }
+        }
+    }
+
     /// Only rows that can go somewhere lift. On macOS 27 the table hides a row it starts to drag before it asks for
     /// what the drag carries; a row with nothing to carry then stayed hidden, blank, until the list was built again.
     override func canDragRows(with rowIndexes: IndexSet, at mouseDownPoint: NSPoint) -> Bool {
