@@ -281,8 +281,9 @@ final class BoardDrag {
     }
 
     private func begin(at point: CGPoint, model: AppModel) -> Bool {
-        // A board you can only read has nothing to move, as its list hasn't.
-        guard model.boardProject?.viewerCanUpdate == true else { return false }
+        // A board you can only read has nothing to move, as its list hasn't; and a finger still down after a deep press
+        // is holding the peek, not the card under it.
+        guard model.boardProject?.viewerCanUpdate == true, !model.deepPress.openedPeek else { return false }
         if let header = header(at: point) { return begin(header, at: point, model: model) }
         guard let (id, frame) = cardFrames.first(where: { $0.value.contains(point) }),
               let column = model.columns.first(where: { column in column.items.contains { $0.id == id } }),

@@ -47,17 +47,6 @@ struct Sidebar: View {
         .safeAreaBar(edge: .bottom, spacing: 0) {
             SidebarFoot()
         }
-        .toolbar {
-            ToolbarItem {
-                Button {
-                    model.overlay = .newIssue(statusId: nil, parentItemId: nil)
-                } label: {
-                    Label(String(localized: .newIssueAction), systemImage: "square.and.pencil")
-                }
-                .help(Text(.newIssueShortcutTooltip))
-                .disabled(model.projects.isEmpty)
-            }
-        }
     }
 
     /// The row for what is on screen.
@@ -600,25 +589,23 @@ struct ToastView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: notice.isWarning ? "exclamationmark.triangle" : notice.action?.isUndo == true ? "checkmark.circle" : "arrow.triangle.2.circlepath")
+            Image(systemName: notice.symbol ?? (notice.isWarning ? "exclamationmark.triangle" : notice.action?.isUndo == true ? "checkmark.circle" : "arrow.triangle.2.circlepath"))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(notice.isWarning ? Theme.warning : Theme.accent)
                 .frame(width: 18, height: 18)
             VStack(alignment: .leading, spacing: 8) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(notice.title).font(.uiSemibold)
-                    Text(notice.message)
-                        .font(.small)
-                        .foregroundStyle(Theme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if !notice.message.isEmpty {
+                        Text(notice.message)
+                            .font(.small)
+                            .foregroundStyle(Theme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 if notice.action?.isUndo == true {
-                    Button(.undo) {
-                        if let action = notice.action { model.apply(action) }
-                        model.status.dismiss(notice.id)
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .keyboardShortcut("z", modifiers: .command)
+                    Button(.undo) { model.undo(notice) }
+                        .buttonStyle(SecondaryButtonStyle())
                 } else if case .openItem = notice.action {
                     Button(.noticeOpenIssue) {
                         if let action = notice.action { model.apply(action) }

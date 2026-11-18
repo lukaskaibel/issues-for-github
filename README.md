@@ -63,7 +63,7 @@ GitHub Projects, issues, sub-issues, labels, assignees and comments, and stores 
 
 ## A quick tour
 
-The window is built the way Mail and Notes are: a sidebar, a toolbar with the page's title and its buttons, the
+The window is built the way Mail and Notes are: a sidebar, a toolbar with New Issue and the page's buttons, the
 details of an issue in an inspector beside it, and Liquid Glass. What you click works the way Linear does: a status,
 an assignee or a label opens its picker right where you clicked, ready to type in, and closes when you pick.
 
@@ -136,7 +136,8 @@ level by level, as a tree. What blocks the issue and what it blocks are listed b
 one off where the checkbox stands. A blocked
 issue carries a red flag with the number of the issue to finish first, as in `#5`, on its card, its list row and its
 line among its parent's sub-issues. Comments sit below, with the field
-for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
+for a new one at the bottom of the window (while you write, `⌘↵` beside its button says how to post without the
+mouse), and status, priority, assignees, labels, parent and blockers are in the
 inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arrows in the toolbar.
 
 <picture>
@@ -372,7 +373,7 @@ The interface uses the system's own parts.
   you see. A link to another issue the app has opens that issue. The properties are glass chips under the title, the
   sub-issues rows as in the lists (by priority, or another order from the "…" beside its plus; the arrow beside one with
   sub-issues of its own unfolds them under it), the comments a conversation, and the comment field stays at the bottom
-  as in Messages. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
+  as in Messages, showing `⌘↵` beside its button while you write with a keyboard attached. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
   unfolded ones too, then move them all under another parent with the bar at the bottom, or change their status,
   priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its cards on
   grey without borders or lanes, as on the Mac; a column's "…" hides it on that iPad, and the hidden ones wait at the end of the
@@ -384,7 +385,7 @@ The interface uses the system's own parts.
   drop (touch and hold, then drag), and one dropped onto the middle of another card becomes its sub-issue. A milestone opens as the board's columns or a list, the roadmap as the timeline,
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
-  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[ and ⌘↵, and in the Inbox U, E, H and ⇧S. S, P, A and L open
+  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[, ⌘↵, ⌘Z and ⇧⌘Z, and in the Inbox U, E, H and ⇧S. S, P, A and L open
   their picker ready to type in; Return picks the first match. While writing, the Mac's Format shortcuts work too
   (⌘B, ⌘I, ⇧⌘H, ⇧⌘L and the others), listed while you hold ⌘, the Markdown shows next to the caret as on the Mac, and
   Tab and the arrow keys go between an issue's title and its description. With a pointer, ⌘-click and Shift-click pick several
@@ -439,6 +440,13 @@ The interface uses the system's own parts.
   last choices first, so a run of similar changes takes one key each. Back and forward work like a browser: ⌘[ and ⌘],
   the side buttons of a mouse, or a two-finger swipe. On a wide board or a timeline a swipe scrolls instead, until it
   is scrolled all the way to that side.
+- **Undo and redo.** ⌘Z takes back the last change and ⇧⌘Z brings it back, step by step, and the Edit menu
+  says which: an issue's status, priority, dates and fields, its place on the board, title and description, assignees,
+  labels, parent, blockers, milestone and epic, also for several picked issues at once; a milestone's details, a
+  board's columns, a view's name, a hidden project, and reading, snoozing or archiving in the Inbox. What undoing does
+  goes to GitHub like any other change, offline too. New issues, comments and deleted issues stay as they are, since
+  taking them back would mean deleting something on GitHub for good or can't be done there at all, and so does an issue
+  put on a board.
 - **Due dates and reminders.** The day an issue is due, typed in a few words or picked in a month, and a notification
   on that day for issues assigned to you, from each of your devices.
 - **In nine languages.** English, German, French, Spanish, Portuguese (Brazil), Russian, Japanese, Korean and Chinese
@@ -603,7 +611,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `↑` `↓` or `J` `K` | Move through issues; `←` `→` change column on the board |
 | `⌥↑` `⌥↓` or `⌥K` `⌥J` | Move the issue up or down its column or list section |
 | `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
-| `Space` | Peek at the issue without leaving the board or list; `J` `K` move the peek along |
+| `Space` | Peek at the issue in a panel over the board or list; `J` `K` move the peek along. On a Force Touch trackpad, a deep press on the issue does the same |
 | `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
 | `⌘+` `⌘−` / `⌘0` | Zoom a timeline in or out / reset to Months or Quarters; pinch, zoom buttons and ⌘-scroll work too |
@@ -618,6 +626,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘↵` | Save a description, send a comment, create the issue |
 | `⌘⇧C` / `⌘⇧O` | Copy the issue's GitHub link / open it on GitHub |
 | `⌘⇧.` | Copy a branch name for the issue, as GitHub suggests it |
+| `⌘Z` / `⌘⇧Z` | Undo / redo the last change, as named in the Edit menu; while you type, the typing |
 | `⌘⌫` | Delete the issue (asks first; needs admin rights in the repository) |
 | `⌘R` | Sync with GitHub now |
 | `⌘,` | Settings: light, dark or system appearance, the app icon, and reminders of due issues |
@@ -629,7 +638,7 @@ In the Inbox:
 | `J` `K` or `↑` `↓` | Next or previous notification; its issue opens beside the list and counts as read |
 | `Return` | Open the issue full size; `Esc` goes back to the Inbox |
 | `U` / `⌥U` | Mark read or unread / mark everything read |
-| `E` or `⌫` | Archive (GitHub's *Done*); `⌘Z` or the message at the bottom undoes it for a few seconds |
+| `E` or `⌫` | Archive (GitHub's *Done*); `⌘Z` or the message at the bottom undoes it for a few seconds, until it has gone to GitHub |
 | `⇧⌫` | Archive everything read |
 | `H` | Snooze until later today, tomorrow, next week or a date |
 | `⇧S` | Unsubscribe: GitHub tells you about it again only if you're mentioned or comment |

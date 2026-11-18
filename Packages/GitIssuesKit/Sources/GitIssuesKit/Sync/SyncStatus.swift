@@ -9,8 +9,9 @@ public struct Notice: Identifiable, Sendable, Equatable {
         /// Offer to adopt the due date GitHub had.
         case applyDate(Mutation.SetDate, label: String)
         case openItem(String)
-        /// Takes back what was just done, such as moving an epic to another milestone, by queuing these changes.
-        case undo([Mutation])
+        /// Takes back what was just done, such as moving an epic to another milestone: the step of the undo history
+        /// that goes by this notice's id.
+        case undo
 
         /// The button that takes GitHub's value, for the actions that offer one.
         public var adoptLabel: String? {
@@ -31,12 +32,15 @@ public struct Notice: Identifiable, Sendable, Equatable {
     public var message: String
     public var isWarning = false
     public var action: Action?
+    /// The symbol to show in place of the usual one.
+    public var symbol: String?
 
-    public init(title: String, message: String, isWarning: Bool = false, action: Action? = nil) {
+    public init(title: String, message: String, isWarning: Bool = false, action: Action? = nil, symbol: String? = nil) {
         self.title = title
         self.message = message
         self.isWarning = isWarning
         self.action = action
+        self.symbol = symbol
     }
 }
 

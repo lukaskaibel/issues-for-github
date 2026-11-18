@@ -8,6 +8,18 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Undo and redo for what you do in the app.** `⌘Z` takes back the last change and `⌘⇧Z` brings it back, step by step,
+  on the Mac and on an iPad with a keyboard, and **Edit › Undo** and **Redo** name what they are about, such as **Undo
+  Change Status**. It works for an issue's status, priority, due date and project fields, its place on the board, title
+  and description, open or closed, assignees, labels, parent, blockers, milestone and epic; what you changed on several
+  picked issues at once is one step. It also takes back changes to a milestone, a board's columns (order, name, colour,
+  one added, an empty one deleted), a view's name, a project hidden from the sidebar, and in the Inbox marking read or
+  unread, snoozing, and for its few seconds archiving or unsubscribing. A short message says what happened. Undoing is a
+  change like any other: it reaches GitHub the same way, also after being offline. While you type, the keys go on
+  undoing your typing. A description you keep writing is one step. New issues, comments, deleted issues and issues put
+  on a board can't be taken back this way.
+- **Press deeper to peek (Mac).** On a Force Touch trackpad, press an issue on a board or in a list until the second
+  click, and its peek opens instead of the issue. It stays open when you let go.
 - **Make a status where you pick one.** Type a name the board has no status of into any status picker, on the
   Mac (the dropdown, `S`, the right-click menu, `⌘K` and the new issue) or on iPhone and iPad (the Status sheet, and
   **New Status…** when you touch and hold an issue), and **Create status “…”** makes it in the project's Status field
@@ -81,6 +93,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **A quieter toolbar on the Mac.** New Issue moved from the sidebar to the toolbar, right after back and forward, so
+  it stays there when the sidebar is closed. The toolbar no longer repeats the page's name, its project and "Synced
+  just now": the sidebar already shows them.
 - **Links to other issues open in the app.** Click or tap a GitHub link to an issue in a description or a comment, on
   the Mac, iPhone or iPad, and that issue opens right here, with Back leading to the one you came from. Links to issues
   the app doesn't have, and all other links, still open in your browser.
@@ -94,6 +109,12 @@ All notable changes to this project are recorded here. The format follows
 - **The issue you are peeking at stays marked (Mac).** While the peek is open, its issue has a tint of the accent and a
   ring in the accent, the same on board cards, list rows, My Issues and both timelines, also once the pointer has moved
   away. `J` and `K` take the mark along. A picked issue keeps its own colour under the ring.
+- **The peek opens where a new issue does (Mac).** Space now shows the issue in the middle of the window, in the same
+  glass panel as a new issue, over the dimmed board or list, and only as tall as the issue needs. A click beside it puts
+  it away, as do Space and Esc; `J` `K` and the keys that change the issue work as before.
+
+- While you write a comment, `⌘↵` shows beside the send button, to say that it posts the comment: on the Mac, and on
+  iPhone and iPad with a keyboard attached.
 - **An issue looks the same wherever it is listed.** On an issue's page, its sub-issues, an epic's issues and the
   issues it is blocked by or blocks are now the rows the lists show, on the Mac and on iPhone and iPad: priority,
   number, status, title, sub-issues, the blocker's flag, labels, milestone, due date and people, in the list's order,
@@ -147,6 +168,10 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **`⌘⇧Z` no longer undoes an archived notification** in the Mac's Inbox: it is Redo now.
+- **A label recoloured or renamed on GitHub changes in the app too**, on every card and row, within a minute. GitHub
+  doesn't count that as a change of the issues, so they kept the old colour until something else about them changed.
+- **Switching boards on the Mac no longer crashes** while a column is adding cards.
 - **A third assignee no longer runs under the date** in a row of the Mac's list.
 - **An issue closed as a duplicate shows as canceled everywhere**, also when it is on none of your boards.
 - **A picked notification in the Mac's Inbox keeps the check of a done issue visible.**
