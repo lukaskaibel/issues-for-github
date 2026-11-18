@@ -1387,9 +1387,10 @@ enum DebugRemote {
     private static func renderCards(model: AppModel, folder: String) {
         let dark = NSApp.effectiveAppearance.isDark
         let cards = model.columns.flatMap { column in column.items.map { (column, $0) } }.prefix(60)
-        struct Look { var name: String; var highlighted = false; var selected = false; var lifted = false; var part: PickerKind?; var fold = false }
+        struct Look { var name: String; var highlighted = false; var selected = false; var peeked = false; var lifted = false; var part: PickerKind?; var fold = false }
         var looks = [Look(name: "plain"), Look(name: "hover", highlighted: true), Look(name: "selected", selected: true),
-                     Look(name: "selected-hover", highlighted: true, selected: true), Look(name: "lifted", lifted: true),
+                     Look(name: "selected-hover", highlighted: true, selected: true), Look(name: "peeked", peeked: true),
+                     Look(name: "selected-peeked", selected: true, peeked: true), Look(name: "lifted", lifted: true),
                      Look(name: "fold", highlighted: true, fold: true)]
         for kind in [PickerKind.priority, .labels, .subIssues, .assignees, .dueDate, .milestone, .blockedBy, .parent, .epic] {
             looks.append(Look(name: "part-\(kind)", highlighted: true, part: kind))
@@ -1399,7 +1400,7 @@ enum DebugRemote {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Array(cards), id: \.1.id) { column, item in
                         CardView(card: model.cardModel(for: item, in: column.nesting), width: 232, highlighted: look.highlighted,
-                                 selected: look.selected, lifted: look.lifted, avatarVersion: model.avatarVersion,
+                                 selected: look.selected, peeked: look.peeked, lifted: look.lifted, avatarVersion: model.avatarVersion,
                                  hoveredPart: look.part, hoveringFold: look.fold)
                     }
                 }

@@ -81,6 +81,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **The issue you are peeking at stays marked (Mac).** While the peek is open, its issue has a tint of the accent and a
+  ring in the accent, the same on board cards, list rows, My Issues and both timelines, also once the pointer has moved
+  away. `J` and `K` take the mark along. A picked issue keeps its own colour under the ring.
 - **An issue looks the same wherever it is listed.** On an issue's page, its sub-issues, an epic's issues and the
   issues it is blocked by or blocks are now the rows the lists show, on the Mac and on iPhone and iPad: priority,
   number, status, title, sub-issues, the blocker's flag, labels, milestone, due date and people, in the list's order,
