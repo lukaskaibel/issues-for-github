@@ -15,15 +15,17 @@ struct DueDateSheet: View {
     /// Whether the first date adds a "Due date" field to the project, which the sheet says once.
     var addsField: Bool
     var onPick: (CalendarDay?) -> Void
+    var fieldName: String?
 
     @State private var query = ""
     @State private var day: Date
     @State private var picked = 0
 
-    init(current: Set<String?>, addsField: Bool, onPick: @escaping (CalendarDay?) -> Void) {
+    init(current: Set<String?>, addsField: Bool, fieldName: String? = nil, onPick: @escaping (CalendarDay?) -> Void) {
         self.current = current
         self.addsField = addsField
         self.onPick = onPick
+        self.fieldName = fieldName
         // The calendar opens on the date the issue has; changing it is a pick, so this is set before it shows.
         let existing = current.count == 1 ? current.first.flatMap { $0 }.flatMap(CalendarDay.init) : nil
         _day = State(initialValue: (existing ?? .today()).date())
@@ -37,7 +39,9 @@ struct DueDateSheet: View {
                         rows(model.dueDateItems(current: current).filter { !$0.id.isEmpty })
                     }
                     Section {
-                        DatePicker(.dueDate, selection: $day, displayedComponents: .date)
+                        DatePicker(selection: $day, displayedComponents: .date) {
+                            fieldName.map { Text(verbatim: $0) } ?? Text(.dueDate)
+                        }
                             .datePickerStyle(.graphical)
                             .onChange(of: day) { _, new in pick(CalendarDay(new)) }
                     } footer: {
@@ -47,8 +51,11 @@ struct DueDateSheet: View {
                     }
                     if current.contains(where: { $0 != nil }) {
                         Section {
-                            Button(.removeDueDate, role: .destructive) { pick(nil) }
+                            Button(role: .destructive) { pick(nil) } label: {
+                                Text(fieldName == nil ? .removeDueDate : .projectFieldClear)
+                            }
                                 .frame(maxWidth: .infinity)
+                                .accessibilityIdentifier("date-picker-clear")
                         }
                     }
                 } else {
@@ -64,9 +71,10 @@ struct DueDateSheet: View {
                     }
                 }
             }
+            .accessibilityIdentifier("date-picker-list")
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: Text(.dueDateSearchPrompt))
             .searchPresentationToolbarBehavior(.avoidHidingContent)
-            .navigationTitle(.dueDateTitle)
+            .navigationTitle(fieldName.map { Text(verbatim: $0) } ?? Text(.dueDateTitle))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

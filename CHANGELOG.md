@@ -25,6 +25,13 @@ All notable changes to this project are recorded here. The format follows
   Undoing is a change like any other: it reaches GitHub the same way, also after being offline. While you type, the keys
   go on undoing your typing. A description you keep writing is one step. New issues, comments, deleted issues and issues
   put on a board can't be taken back this way.
+- **An issue's fields, in every project it is on.** An issue's details now list its project's own fields: versions,
+  dates, iterations, text, numbers, single and multiple choice. Those with a value show, the rest wait behind **n more
+  fields**. The issue's other projects stand folded below with their status, and unfolded their fields can be changed
+  too; a status changed there moves that project's card and leaves the issue open or closed. **Add to project** puts the
+  issue on another project, and the × takes it off one, with **Undo** for five seconds before GitHub hears of it, since
+  the card's values go with it. On the Mac and a wide iPad this is in the inspector; on iPhone and narrow iPad windows,
+  under **Projects**.
 - **Press deeper to peek (Mac).** On a Force Touch trackpad, press an issue on a board or in a list until the second
   click, and its peek opens instead of the issue. It stays open when you let go.
 - **Make a status where you pick one.** Type a name the board has no status of into any status picker, on the

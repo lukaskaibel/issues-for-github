@@ -903,6 +903,7 @@ enum GQL {
       __typename
       ... on ProjectV2FieldCommon { id databaseId name dataType }
       ... on ProjectV2SingleSelectField { options { id name color description } }
+      ... on ProjectV2MultiSelectField { multiOptions: multiSelectOptions { id name color description } }
       ... on ProjectV2IterationField { configuration {
         iterations { id title startDate duration }
         completedIterations { id title startDate duration } } }
@@ -960,8 +961,9 @@ enum GQL {
     static let itemFields = """
     fragment ItemFields on ProjectV2Item {
       id updatedAt type
-      fieldValues(first: 30) { nodes { __typename
+      fieldValues(first: 100) { nodes { __typename
         ... on ProjectV2ItemFieldSingleSelectValue { optionId field { ... on ProjectV2FieldCommon { id } } }
+        ... on ProjectV2ItemFieldMultiSelectValue { options { id } field { ... on ProjectV2FieldCommon { id } } }
         ... on ProjectV2ItemFieldDateValue { date field { ... on ProjectV2FieldCommon { id } } }
         ... on ProjectV2ItemFieldIterationValue { iterationId field { ... on ProjectV2FieldCommon { id } } }
         ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2FieldCommon { id } } }
@@ -1125,6 +1127,7 @@ struct FieldDTO: Decodable {
     var databaseId: Int?
     var name: String?
     var options: [OptionDTO]?
+    var multiOptions: [OptionDTO]?
     /// SINGLE_SELECT, DATE, TEXT, NUMBER, ITERATION, ASSIGNEES and so on.
     var dataType: String?
     var configuration: Configuration?
@@ -1139,7 +1142,7 @@ struct FieldDTO: Decodable {
         }
         return ProjectField(
             id: id, projectId: projectId, databaseId: databaseId, name: name, dataType: dataType, position: position,
-            options: (options ?? []).map { FieldChoice(id: $0.id, name: $0.name, color: $0.color, descr: $0.description ?? "") },
+            options: (options ?? multiOptions ?? []).map { FieldChoice(id: $0.id, name: $0.name, color: $0.color, descr: $0.description ?? "") },
             iterations: (done + current).sorted { $0.startDate < $1.startDate }
         )
     }
@@ -1199,6 +1202,7 @@ struct ItemDTO: Decodable {
     struct FieldValueDTO: Decodable {
         struct FieldRef: Decodable { var id: String? }
         var optionId: String?
+        var options: [FieldRef]?
         /// "2026-10-09", for a Date field.
         var date: String?
         var iterationId: String?
@@ -1272,7 +1276,7 @@ struct ItemDTO: Decodable {
         for entry in fieldValues?.items ?? [] {
             guard let fieldId = entry.field?.id, valueFieldIds.contains(fieldId), !own.contains(fieldId) else { continue }
             let value = FieldValue(
-                optionId: entry.optionId, iterationId: entry.iterationId, text: entry.text, number: entry.number,
+                optionId: entry.optionId, optionIds: entry.options?.compactMap(\.id), iterationId: entry.iterationId, text: entry.text, number: entry.number,
                 date: entry.date.flatMap(CalendarDay.init)?.string
             )
             if !value.isEmpty { item.fieldValues[fieldId] = value }

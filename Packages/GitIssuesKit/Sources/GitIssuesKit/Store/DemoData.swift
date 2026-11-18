@@ -392,6 +392,18 @@ public enum DemoData {
                 }
             }
         }
+        // Issue #9 is on the website's board too, so its page shows an issue on two projects. Far down, so that the app's
+        // card stays the one lists find first.
+        if var shared = try Item.fetchOne(db, key: "demo-item-9") {
+            shared.id = "demo-item-9-site"
+            shared.projectId = site.id
+            shared.position = 1_000_000
+            shared.statusId = optionId(site, "In Progress")
+            shared.priorityId = nil
+            shared.dueDate = nil
+            shared.fieldValues = [:]
+            try shared.insert(db)
+        }
         var listedUnder: [Int: Int] = [:]
         for issue in appIssuesWithoutProject {
             let date = now.addingTimeInterval(-issue.hoursAgo * 3600)
@@ -445,6 +457,10 @@ public enum DemoData {
         if let area = area(of: issue) {
             values["\(spec.id)-area"] = FieldValue(optionId: "\(spec.id)-area-\(area.lowercased())")
         }
+        if issue.number == 9 {
+            values["\(spec.id)-version"] = FieldValue(optionId: "\(spec.id)-version-03")
+            values["\(spec.id)-requests"] = FieldValue(number: 4)
+        }
         return values
     }
 
@@ -483,7 +499,21 @@ public enum DemoData {
                     completed: cycle.weeks < 0
                 )
             })
-            add("area", "Area", "SINGLE_SELECT", options: areas.map { FieldChoice(id: "\(spec.id)-area-\($0.name.lowercased())", name: $0.name, color: $0.color) })
+            add("area", "Area", "SINGLE_SELECT", options: areas.map {
+                FieldChoice(id: "\(spec.id)-area-\($0.name.lowercased())", name: $0.name, color: $0.color,
+                            descr: $0.name == "Interface" ? "App screens, property selectors and other details that make daily work easier." : "")
+            })
+            add("version", "Version", "SINGLE_SELECT", options: [
+                FieldChoice(id: "\(spec.id)-version-03", name: "0.3", color: "BLUE"),
+                FieldChoice(id: "\(spec.id)-version-04", name: "0.4", color: "GREEN"),
+            ])
+            add("finish", "Finish date", "DATE")
+            add("requests", "User requests", "NUMBER")
+            add("notes", "Notes", "TEXT")
+            add("platforms", "Platforms", "MULTI_SELECT", options: [
+                FieldChoice(id: "\(spec.id)-platform-ios", name: "iOS", color: "BLUE"),
+                FieldChoice(id: "\(spec.id)-platform-android", name: "Android", color: "GREEN"),
+            ])
         }
         for field in fields { try field.insert(db) }
 
