@@ -455,6 +455,50 @@ final class PadTests: AppTestCase {
         button("Cancel").tap()
     }
 
+    /// All Issues as a board: the issues on no board in a column of their own, which one dropped on a status leaves
+    /// for the board; its columns move and hide on this iPad, the project's board keeps its own.
+    func testAllIssuesAsABoard() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openProject("Git Issues")
+        let all = app.cells.matching(NSPredicate(format: "label BEGINSWITH %@", "All Issues")).firstMatch
+        wait(all)
+        all.tap()
+        wait(app.navigationBars["All Issues"])
+        wait(element("row-#27"))
+        app.navigationBars.buttons["Board"].firstMatch.tap()
+        let noBoard = element("column-No project")
+        wait(noBoard)
+        wait(element("card-#27"))
+        // The issues on no board come first.
+        XCTAssertLessThan(noBoard.frame.minX, element("column-Backlog").frame.minX)
+        snapshot("iPad All Issues as a board")
+
+        // Dropped on a status, an issue on no board goes on the board with it.
+        let card = element("card-#27")
+        let todo = element("column-Todo")
+        card.press(forDuration: 1.0, thenDragTo: todo, withVelocity: .slow, thenHoldForDuration: 0.5)
+        let inTodo = NSPredicate { _, _ in todo.frame.minX < card.frame.midX && card.frame.midX < todo.frame.maxX }
+        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: inTodo, object: nil)], timeout: 6), .completed,
+                       "#27 should have gone into Todo")
+        XCTAssertTrue(noBoard.exists, "four issues are still on no board")
+
+        // Its columns move and hide here only.
+        app.buttons["Options for No project"].tap()
+        button("Move Right").tap()
+        wait(noBoard)
+        XCTAssertGreaterThan(element("column-No project").frame.minX, element("column-Backlog").frame.minX)
+        app.buttons["Options for Backlog"].tap()
+        button("Hide Column").tap()
+        waitGone(element("column-Backlog"))
+        snapshot("iPad All Issues board, moved and hidden")
+
+        // The project's board shows every status, in GitHub's order.
+        tapSidebarEntry("Board")
+        wait(element("column-Backlog"))
+        XCTAssertFalse(element("column-No project").exists)
+    }
+
     func testProjectIconFromTheSidebar() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()

@@ -109,9 +109,10 @@ extension AppModel {
         return open.indices.contains(index + 1) ? open[index + 1] : nil
     }
 
-    /// The issues of a milestone on a board that aren't done, its epics included.
+    /// The issues of a milestone on a board that aren't done, its epics included. One closed on GitHub is finished
+    /// whatever its column says, as when the board's workflow doesn't move closed issues to Done.
     func unfinished(projectId: String, milestone title: String) -> [Item] {
-        allItems.filter { $0.projectId == projectId && milestoneTitle(of: $0) == title && !isDone($0) }
+        allItems.filter { $0.projectId == projectId && milestoneTitle(of: $0) == title && !isDone($0) && !$0.isClosed }
     }
 
     /// Closes a milestone, as Linear completes a release. What isn't done moves on to `next`, or stays.

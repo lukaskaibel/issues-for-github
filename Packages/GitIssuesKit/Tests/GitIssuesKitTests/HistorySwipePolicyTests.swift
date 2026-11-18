@@ -35,6 +35,15 @@ struct HistorySwipePolicyTests {
         #expect(policy.canTrack == (offset != 200))
     }
 
+    @Test("A card of My Issues' overview turns its pages: a swipe over it never goes back or forward, at its first and last page too")
+    func overviewCardOwnsItsSwipes() {
+        let policy = HistorySwipePolicy(canGoBack: true, canGoForward: true, surface: .pager)
+
+        #expect(!policy.allowsBack)
+        #expect(!policy.allowsForward)
+        #expect(!policy.canTrack)
+    }
+
     @Test("A board or timeline that fits in the viewport retains both available history directions", arguments: [false, true])
     func scrollableWithoutOverflowIsAtBothEdges(timeline: Bool) {
         let surface: HistorySwipePolicy.Surface = timeline ? .timeline(offset: 0, maximum: 0) : .board(offset: 0, maximum: 0)

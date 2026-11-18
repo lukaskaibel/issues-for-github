@@ -10,10 +10,13 @@ struct HistorySwipePolicy {
         case page
         case board(offset: CGFloat, maximum: CGFloat)
         case timeline(offset: CGFloat, maximum: CGFloat)
+        /// A card of My Issues' overview, whose pages a sideways swipe turns, at its first and last page too.
+        case pager
 
         fileprivate func allows(back: Bool) -> Bool {
             switch self {
             case .page: return true
+            case .pager: return false
             case .board(_, let maximum) where maximum <= 0.5: return true
             case .board(let offset, let maximum), .timeline(let offset, let maximum):
                 return back ? offset <= 0.5 : offset >= maximum - 0.5
@@ -74,10 +77,16 @@ extension AppModel {
                 guard self.signedIn, self.overlay == nil, let window = event.window, window === self.mainWindow,
                       let content = window.contentView else { return false }
                 let point = CGPoint(x: event.locationInWindow.x, y: content.bounds.height - event.locationInWindow.y)
-                guard let menu = ContextMenus.shared.menu(at: point) else { return false }
-                // In glass, at the pickers' size, as every right-click menu of the app.
-                GlassMenu.show(menu, at: event, in: content, model: self)
-                return true
+                switch ContextMenus.shared.click(at: point, onText: ContextMenus.isOnText(at: event.locationInWindow, in: window)) {
+                case .menu(let menu):
+                    // In glass, at the pickers' size, as every right-click menu of the app.
+                    GlassMenu.show(menu, at: event, in: content, model: self)
+                    return true
+                case .nothing:
+                    return true
+                case .view:
+                    return false
+                }
             }
             return handled ? nil : event
         }
@@ -130,7 +139,9 @@ extension AppModel {
             let surface: HistorySwipePolicy.Surface
             if showsTimelineCanvas {
                 surface = .timeline(offset: timelineScrollX, maximum: timelineMaxScrollX)
-            } else if openItem == nil, viewMode == .board, currentProjectId != nil {
+            } else if isOverOverviewCard(event) {
+                surface = .pager
+            } else if openItem == nil, showsBoard {
                 surface = .board(offset: boardDrag.scrollX, maximum: boardDrag.maxScrollX)
             } else {
                 surface = .page
@@ -197,6 +208,22 @@ extension AppModel {
     /// How far a two-finger swipe has to go, in the system's swipe amount, for letting go to go back or forward. The
     /// arrow is full from there.
     static let swipeThreshold = HistorySwipePolicy.threshold
+
+    #if DEBUG
+    /// The debug remote's swipe, through the same handling as a hand's: true when it went back or forward.
+    func debugSwipeHandled(_ event: NSEvent) -> Bool {
+        trackSwipe(event)
+    }
+    #endif
+
+    /// Whether a scroll starts over a card of My Issues' overview.
+    private func isOverOverviewCard(_ event: NSEvent) -> Bool {
+        guard openItem == nil, scope == .myIssues, mineDisplay.layout == .overview,
+              let content = event.window?.contentView else { return false }
+        // SwiftUI's frames are measured from the top of the window, AppKit's from the bottom.
+        let point = CGPoint(x: event.locationInWindow.x, y: content.bounds.height - event.locationInWindow.y)
+        return overviewCardFrames.values.contains { $0.contains(point) }
+    }
 
     /// A held-back swipe turned out to be a scroll: its events go to the view under the pointer after all, in order,
     /// before the one that decided it.

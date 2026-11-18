@@ -393,7 +393,14 @@ struct MilestoneEditorSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        // What was typed isn't lost to a swipe down; Cancel still lets it go.
+        .interactiveDismissDisabled(changed)
         .onAppear(perform: prepare)
+    }
+
+    private var changed: Bool {
+        guard let existing else { return !trimmed.isEmpty || !descr.isEmpty }
+        return name != existing.title || due != existing.due || descr != existing.descr
     }
 
     private var boardId: String? {

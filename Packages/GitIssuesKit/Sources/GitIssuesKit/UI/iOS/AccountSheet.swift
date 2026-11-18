@@ -74,6 +74,14 @@ struct AccountSheet: View {
                 }
 
                 Section {
+                    Link(destination: AppReview.writeReviewURL) {
+                        Label(.rateIssues, systemImage: "star")
+                    }
+                } footer: {
+                    Text(.rateIssuesFooter)
+                }
+
+                Section {
                     if model.isDemo {
                         Button(.leaveSampleData) {
                             dismiss()

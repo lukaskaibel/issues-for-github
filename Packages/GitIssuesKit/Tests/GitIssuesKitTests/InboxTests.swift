@@ -242,6 +242,21 @@ struct InboxTests {
         #expect(try entry(db, "t1").assignees.map(\.login) == ["jordan"])
     }
 
+    @Test func closingOrRenamingAnIssueOnNoBoardShowsInTheInbox() throws {
+        var outside = Self.entry("t1")
+        outside.contentId = "I_9"
+        outside.state = "OPEN"
+        let db = try makeDatabase([outside])
+        try db.writer.write { db in
+            try Outbox.enqueue(db, .setState(.init(contentId: "I_9", closed: true, reason: "COMPLETED")))
+            try Outbox.enqueue(db, .setTitle(.init(itemId: "I_9", contentId: "I_9", value: "Crash on start", base: "Crash on launch")))
+        }
+        let changed = try entry(db, "t1")
+        #expect(changed.state == "CLOSED")
+        #expect(changed.stateReason == "COMPLETED")
+        #expect(changed.title == "Crash on start")
+    }
+
     @Test func anIssueOnlyTheInboxKnowsGoesOntoABoard() throws {
         var outside = Self.entry("t1")
         outside.contentId = "I_9"

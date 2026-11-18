@@ -340,18 +340,45 @@ enum SelfTest {
 
         print("10. Status columns")
         let before = statuses.map { RemoteOption(id: $0.id, name: $0.name, color: $0.color, descr: $0.descr) }
-        try await engineA.updateOptions(projectId: project.id, fieldId: statusField, kind: .status, options: before + [RemoteOption(id: nil, name: "Self-test column", color: "PINK")])
+        func remote(_ options: [FieldOption]) -> [RemoteOption] {
+            options.map { RemoteOption(id: $0.id, name: $0.name, color: $0.color, descr: $0.descr) }
+        }
+        try await engineA.updateOptions(
+            projectId: project.id, fieldId: statusField, kind: .status, base: before,
+            options: before + [RemoteOption(id: nil, name: "Self-test column", color: "PINK")]
+        )
         var now = try options(.status)
         check("column added", now.last?.name == "Self-test column")
         check("existing columns kept their ids", Array(now.dropLast().map(\.id)) == statuses.map(\.id))
-        var renamed = now.map { RemoteOption(id: $0.id, name: $0.name, color: $0.color, descr: $0.descr) }
+        let added = remote(now)
+        var renamed = added
         renamed[renamed.count - 1].name = "Renamed column"
-        try await engineA.updateOptions(projectId: project.id, fieldId: statusField, kind: .status, options: renamed)
+        try await engineA.updateOptions(projectId: project.id, fieldId: statusField, kind: .status, base: added, options: renamed)
         now = try options(.status)
         check("column renamed in place", now.last?.name == "Renamed column")
-        try await engineA.updateOptions(projectId: project.id, fieldId: statusField, kind: .status, options: before)
+        // A status added on GitHub that this copy hasn't read yet survives a change made here, which only takes away
+        // what it took away, and the status isn't made twice when this copy adds one of the same name.
+        try await engineB.forcePull(projectId: project.id)
+        let freshB = remote(try await dbB.reader.read {
+            try FieldOption.filter(Column("fieldId") == statusField).order(Column("position")).fetchAll($0)
+        })
+        try await engineB.updateOptions(
+            projectId: project.id, fieldId: statusField, kind: .status, base: freshB,
+            options: freshB + [RemoteOption(id: nil, name: "Self-test from GitHub", color: "BLUE")]
+        )
+        try await engineA.updateOptions(projectId: project.id, fieldId: statusField, kind: .status, base: renamed, options: before)
         now = try options(.status)
-        check("column removed", now.map(\.name) == statuses.map(\.name))
+        check("column removed, the one added elsewhere kept", now.map(\.name) == statuses.map(\.name) + ["Self-test from GitHub"])
+        let elsewhere = now.last?.id
+        try await engineA.updateOptions(
+            projectId: project.id, fieldId: statusField, kind: .status, base: remote(Array(now.dropLast())),
+            options: remote(Array(now.dropLast())) + [RemoteOption(id: nil, name: "self-test FROM github", color: "RED")]
+        )
+        now = try options(.status)
+        check("the same name isn't made twice", now.filter { OptionMerge.sameName($0.name, "Self-test from GitHub") }.map(\.id) == [elsewhere])
+        try await engineA.updateOptions(projectId: project.id, fieldId: statusField, kind: .status, base: remote(now), options: before)
+        now = try options(.status)
+        check("back to the columns it had", now.map(\.name) == statuses.map(\.name))
         try await engineB.forcePull(projectId: project.id)
         check("cards kept their status through all of that", try item(dbB, 9).statusId == (try item(dbA, 9)).statusId && (try item(dbB, 9)).statusId != nil)
 

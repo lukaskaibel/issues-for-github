@@ -60,6 +60,12 @@ struct SelectionBar: View {
                         MilestoneIcon(mark: sameMilestone ? model.milestoneMark(of: first) : .none, size: 13)
                     }
                 }
+                // The board's iteration, named as the board names it; picks from another board keep theirs.
+                if let field = model.iterationFields(for: first).first {
+                    BarAction(kind: .iteration(fieldId: field.id), item: first, name: field.name, key: "⇧C") {
+                        IterationIcon(size: 13)
+                    }
+                }
                 Button {
                     model.copyLinks(items)
                 } label: {
@@ -77,6 +83,11 @@ struct SelectionBar: View {
             .padding(.horizontal, 2)
             // A Liquid Glass bar, as Photos shows what can be done to a selection.
             .glassPanel(in: Capsule())
+            // It stands for the picked issues: a right-click on it opens their menu, as on one of their cards, never the
+            // menu of a card under it. An issue's page hides it.
+            .floatingContextMenu(isShown: model.openItem == nil) { [model] in
+                model.selectedItems.first.map { ItemMenuBuilder(model: model, item: $0).menu() }
+            }
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
@@ -86,11 +97,24 @@ struct SelectionBar: View {
 private struct BarAction<Icon: View>: View {
     var kind: PickerKind
     var item: Item
-    var title: LocalizedStringResource
+    var name: String
     var key: String
     @ViewBuilder var icon: Icon
 
     @State private var open = false
+
+    init(kind: PickerKind, item: Item, title: LocalizedStringResource, key: String, @ViewBuilder icon: () -> Icon) {
+        self.init(kind: kind, item: item, name: String(localized: title), key: key, icon: icon)
+    }
+
+    /// A field named by the board, such as its iteration field.
+    init(kind: PickerKind, item: Item, name: String, key: String, @ViewBuilder icon: () -> Icon) {
+        self.kind = kind
+        self.item = item
+        self.name = name
+        self.key = key
+        self.icon = icon()
+    }
 
     var body: some View {
         Button {
@@ -98,7 +122,7 @@ private struct BarAction<Icon: View>: View {
         } label: {
             HStack(spacing: 6) {
                 icon.frame(width: 14, height: 14)
-                Text(title)
+                Text(name)
             }
             .font(.ui)
             .padding(.horizontal, 10)
@@ -106,7 +130,7 @@ private struct BarAction<Icon: View>: View {
             .hoverFill(active: open, radius: 17)
         }
         .buttonStyle(PlainPressStyle())
-        .help(Text(.titleWithShortcutKey(title: String(localized: title), key: key)))
+        .help(Text(.titleWithShortcutKey(title: name, key: key)))
         .dropdown(isPresented: $open) { close in
             ItemPicker(kind: kind, itemId: item.id, close: close)
         }
@@ -140,7 +164,7 @@ struct PeekPanel: View {
             .padding(.leading, 16)
             .padding(.trailing, 10)
             .frame(height: 44)
-            .overlay(alignment: .bottom) { Rectangle().fill(Theme.popoverBorder).frame(height: 1) }
+            .overlay(alignment: .bottom) { PopoverDivider() }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -174,7 +198,7 @@ struct PeekPanel: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 36)
-            .overlay(alignment: .top) { Rectangle().fill(Theme.popoverBorder).frame(height: 1) }
+            .overlay(alignment: .top) { PopoverDivider() }
         }
         .frame(width: 460)
         .frame(maxHeight: .infinity)
@@ -183,6 +207,11 @@ struct PeekPanel: View {
         .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Theme.popoverBorder, lineWidth: 0.5))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: Theme.shadow, radius: 30, y: 12)
+        // A right-click on the peek is about its issue: the issue's menu, as on its card, never the menu of the card or
+        // line under the peek. Its description keeps the menu of text, to copy from.
+        .floatingContextMenu { [model, id = item.id] in
+            model.item(id: id).map { ItemMenuBuilder(model: model, item: $0).menu() }
+        }
     }
 
     /// A ticked checkbox, saved like any edit of the description.
@@ -251,13 +280,8 @@ struct PropertyChipRow: View {
                 // Only when there is one, to keep the row short; D adds one.
                 if let due = model.dueBadge(for: item) {
                     PropertyButton(kind: .dueDate, item: item) {
-                        HStack(spacing: 6) {
-                            DueDateIcon(tone: due.tone, size: 11)
-                            Text(due.day.mediumLabel())
-                                .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.textBody)
-                        }
-                        .font(.small)
-                        .help(due.tooltip)
+                        DueDateValue(due: due, iconSize: 11)
+                            .font(.small)
                     }
                 }
             }
@@ -272,7 +296,10 @@ struct PropertyChipRow: View {
                         .padding(.leading, -8)
                     }
                     if item.subTotal > 0 {
-                        SubIssueChip(completed: item.subCompleted, total: item.subTotal)
+                        PropertyButton(kind: .subIssues, item: item) {
+                            SubIssueChip(completed: item.subCompleted, total: item.subTotal)
+                        }
+                        .padding(.leading, -8)
                     }
                     if let parentNumber = item.parentNumber, model.canRelate(item) {
                         PropertyButton(kind: .parent, item: item) {

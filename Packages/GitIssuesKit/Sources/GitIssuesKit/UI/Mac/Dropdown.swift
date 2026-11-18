@@ -452,11 +452,27 @@ final class PassthroughView: NSView {
 final class ContextMenus {
     static let shared = ContextMenus()
 
-    private var regions: [UUID: (frame: CGRect, menu: (CGPoint) -> NSMenu?)] = [:]
+    private struct Region {
+        var frame: CGRect
+        /// A view over the page, as the peek, the selection bar or a notice: under it, the areas it covers don't count.
+        var floats: Bool
+        var menu: (CGPoint) -> NSMenu?
+    }
+
+    /// What a right-click does.
+    enum Click {
+        case menu(NSMenu)
+        /// It goes on to the view under the pointer, as text with its own menu, or SwiftUI where no area has one.
+        case view
+        /// Nothing at all.
+        case nothing
+    }
+
+    private var regions: [UUID: Region] = [:]
 
     /// `frame` is in window coordinates with the origin at the top left, as SwiftUI's `.global` space.
-    func register(_ id: UUID, frame: CGRect, menu: @escaping (CGPoint) -> NSMenu?) {
-        regions[id] = (frame, menu)
+    func register(_ id: UUID, frame: CGRect, floats: Bool = false, menu: @escaping (CGPoint) -> NSMenu?) {
+        regions[id] = Region(frame: frame, floats: floats, menu: menu)
     }
 
     func remove(_ id: UUID) {
@@ -466,15 +482,32 @@ final class ContextMenus {
     /// Where the areas are, for the debug remote.
     var frames: [CGRect] { regions.values.map(\.frame) }
 
-    /// The menu of the smallest registered area containing the point, if it offers one there.
-    func menu(at point: CGPoint) -> NSMenu? {
-        let candidates = regions.values
-            .filter { $0.frame.contains(point) }
-            .sorted { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height }
-        for candidate in candidates {
-            if let menu = candidate.menu(point) { return menu }
+    /// The menu of the smallest registered area containing the point that offers one there. On a view floating over
+    /// the page only it counts, never the card or line it covers, nor a bigger floating view, as a notice over the
+    /// peek: text in it keeps its own menu (`onText`), to copy from or paste into, and elsewhere a right-click without
+    /// its menu does nothing, as on an AppKit button, which SwiftUI would press.
+    func click(at point: CGPoint, onText: Bool = false) -> Click {
+        let containing = regions.values.filter { $0.frame.contains(point) }
+        let size = { (region: Region) in region.frame.width * region.frame.height }
+        if let floating = containing.filter(\.floats).min(by: { size($0) < size($1) }) {
+            if onText { return .view }
+            return floating.menu(point).map(Click.menu) ?? .nothing
         }
-        return nil
+        for candidate in containing.sorted(by: { size($0) < size($1) }) {
+            if let menu = candidate.menu(point) { return .menu(menu) }
+        }
+        return .view
+    }
+
+    /// Whether a click at the point lands in text, such as a description or the comment being written: AppKit's own
+    /// hit testing, which delivers the click.
+    static func isOnText(at location: NSPoint, in window: NSWindow?) -> Bool {
+        var view = window?.contentView?.superview?.hitTest(location)
+        while let current = view {
+            if current is NSTextView { return true }
+            view = current.superview
+        }
+        return false
     }
 
     static func isContextClick(_ event: NSEvent) -> Bool {

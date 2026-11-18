@@ -108,13 +108,54 @@ final class PhonePlanningTests: AppTestCase {
         waitGone(element("row-#17"))
     }
 
+    /// #13 is in this week's cycle of the sample data, Cycle 4; Cycle 5 is next.
+    func testTheIterationChipPutsAnIssueIntoTheNextIteration() {
+        launch()
+        scrollTo(element("row-#13"))
+        element("row-#13").tap()
+        let chip = element("chip-iteration")
+        wait(chip)
+        waitForLabel(chip, containing: "Cycle 4")
+        chip.tap()
+        // Past cycles aren't offered; the current and the next say so.
+        let next = pickerRow("Cycle 5")
+        wait(next)
+        waitForLabel(next, containing: "Next")
+        waitForLabel(pickerRow("Cycle 4"), containing: "Current")
+        XCTAssertFalse(pickerRow("Cycle 3").exists)
+        snapshot("Iteration menu")
+        next.tap()
+        waitForLabel(chip, containing: "Cycle 5")
+
+        chip.tap()
+        pickerRow("No iteration").tap()
+        waitForLabel(chip, containing: "No iteration")
+    }
+
+    func testTheLongPressMenuSetsAnIteration() {
+        launch()
+        let row = element("row-#13")
+        scrollTo(row)
+        wait(row)
+        row.press(forDuration: 1.2)
+        let iteration = labelled("Iteration: Cycle 4", type: .button)
+        wait(iteration)
+        iteration.tap()
+        let later = pickerRow("Cycle 6")
+        wait(later)
+        later.tap()
+        row.tap()
+        waitForLabel(element("chip-iteration"), containing: "Cycle 6")
+    }
+
     func testTheLongPressMenuSetsAMilestoneAndMakesAnEpic() {
         launch()
         let row = element("row-#17")
         scrollTo(row)
         wait(row)
         row.press(forDuration: 1.2)
-        let milestone = labelled("Milestone", type: .button)
+        // The menu's item, by all of its label: the rows behind the menu say their milestone too.
+        let milestone = button("Milestone: 0.3")
         wait(milestone)
         milestone.tap()
         wait(button("1.0"))
@@ -123,7 +164,10 @@ final class PhonePlanningTests: AppTestCase {
         waitForLabel(element("row-#17"), containing: "Milestone: 1.0")
 
         element("row-#17").press(forDuration: 1.2)
-        button("Add to Epic…").tap()
+        wait(button("Status"))
+        let addToEpic = button("Add to Epic…")
+        scrollMenu(to: addToEpic)
+        addToEpic.tap()
         let epic = pickerRow("#43")
         wait(epic)
         epic.tap()
@@ -131,8 +175,10 @@ final class PhonePlanningTests: AppTestCase {
 
         // An epic leaves My Issues for the roadmap.
         element("row-#17").press(forDuration: 1.2)
-        wait(button("Make Epic"))
-        button("Make Epic").tap()
+        wait(button("Status"))
+        let makeEpic = button("Make Epic")
+        scrollMenu(to: makeEpic)
+        makeEpic.tap()
         waitGone(element("row-#17"))
     }
 
@@ -355,6 +401,22 @@ final class PadPlanningTests: AppTestCase {
         snapshot("iPad roadmap list")
         app.segmentedControls.buttons["Timeline"].tap()
         wait(app.buttons["Sign-in and accounts"])
+    }
+
+    /// Touching and holding an epic's name on the roadmap opens its menu, whose Open opens it as a tap does.
+    func testAnEpicsMenuOnTheRoadmapOpensIt() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openSidebarEntry("Roadmap")
+        let epic = app.buttons["Sign-in and accounts"]
+        wait(epic)
+        openCardMenu(epic)
+        snapshot("iPad roadmap epic menu")
+        button("Open").tap()
+        closedCardMenu()
+        let title = element("issue-title")
+        wait(title)
+        XCTAssertEqual(title.value as? String, "Sign-in and accounts")
     }
 
     /// Dragging an epic's bar onto another milestone moves the epic and its unfinished issues there.

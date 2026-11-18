@@ -98,6 +98,27 @@ public struct FieldOption: Codable, FetchableRecord, PersistableRecord, Identifi
     public var color: String
     public var descr: String
     public var position: Int
+    /// The kind of status chosen in the app (`StatusKinds`), which wins over what the name suggests. Not stored here.
+    public var chosenKind: StatusCategory? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case id, fieldId, projectId, kind, name, color, descr, position
+    }
+
+    public init(
+        id: String, fieldId: String, projectId: String, kind: OptionKind, name: String, color: String, descr: String,
+        position: Int, chosenKind: StatusCategory? = nil
+    ) {
+        self.id = id
+        self.fieldId = fieldId
+        self.projectId = projectId
+        self.kind = kind
+        self.name = name
+        self.color = color
+        self.descr = descr
+        self.position = position
+        self.chosenKind = chosenKind
+    }
 }
 
 /// A card: one item of a project together with the issue, pull request or draft behind it. An issue that is on
@@ -180,9 +201,10 @@ public struct Item: Codable, FetchableRecord, PersistableRecord, Identifiable, H
         return number.map { "\(repo)#\($0)" } ?? repo
     }
 
-    /// The branch name GitHub suggests for the issue: its number and title, such as "14-sign-in-with-device-flow".
+    /// The branch name GitHub suggests for the issue: its number and title, such as "14-sign-in-with-device-flow". A
+    /// pull request has a branch of its own already, so none.
     public var branchName: String? {
-        guard let number else { return nil }
+        guard let number, kind == .issue else { return nil }
         let folded = title.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
         var slug = ""
         for character in folded {

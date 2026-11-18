@@ -48,7 +48,10 @@ extension AppModel {
             rebuild()
         }
         if viewMode != location.viewMode {
+            // A view's timeline is a list as far as `viewMode` goes: taken as your choice, it would become a plain list.
+            isFollowingView = currentView.map(showsTimeline) ?? false
             withAnimation(Theme.spring) { viewMode = location.viewMode }
+            isFollowingView = false
         }
         if let id = location.itemId, let item = allItems.first(where: { $0.id == id }) {
             if openItemId != id { open(item) }

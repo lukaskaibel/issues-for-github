@@ -4,7 +4,8 @@
 # Builds a debug copy with its own bundle identifier, so it shares no settings with an Issues you have running,
 # drives it through the debug remote, takes each window as it is on screen with Tools/readme-images/capture.swift (the
 # sidebar and the glass of the toolbar don't show in the app's own snapshots) and frames it with
-# Tools/store-frame.swift. Needs an unlocked screen: the app comes to the front for each picture, about a minute in all.
+# Tools/store-frame.swift. Needs an unlocked screen: the app comes to the front for each picture, about a minute in all,
+# and the pointer goes to the right edge of the screen; leave mouse and keyboard alone until it's done.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -63,6 +64,8 @@ front() {
 shot() {
   local name=$1 appearance=$2 width=$3 height=$4
   shift 4
+  # The pointer out of the way first: what appears under it lights up, even though the window lets it through.
+  "$work/capture" park
   send "overlay none" "appearance $appearance" "window $width $height onscreen" "select Git Issues" "mode board"
   sleep 1
   for command in "$@"; do send "$command"; sleep 0.6; done

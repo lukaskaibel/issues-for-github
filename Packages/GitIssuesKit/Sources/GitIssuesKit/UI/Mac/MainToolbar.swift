@@ -1,10 +1,10 @@
 #if os(macOS)
 import SwiftUI
 
-/// The window's toolbar, as in Mail and Notes: back and forward, the title of what is on screen (set by the page),
-/// its own buttons in glass, and search. What it holds follows the page: a board or a list, an open issue, the Inbox.
-/// It has the same items on every page and only their contents change, so moving around adds or removes no item,
-/// which the toolbar would animate each time.
+/// The window's toolbar, as in Mail and Notes: back and forward, the title of what is on screen (set by the page), and
+/// its own buttons in glass. What it holds follows the page: a board or a list, an open issue, the Inbox. It has the
+/// same items on every page and only their contents change, so moving around adds or removes no item, which the
+/// toolbar would animate each time.
 struct MainToolbar: ToolbarContent {
     let model: AppModel
     let openItem: Item?
@@ -20,10 +20,6 @@ struct MainToolbar: ToolbarContent {
             PageControls(openItem: openItem, showsInspector: $showsInspector)
         }
         .sharedBackgroundVisibility(model.hasPageControls(openItem: openItem) ? .automatic : .hidden)
-        ToolbarSpacer(.fixed)
-        ToolbarItem {
-            SearchButton()
-        }
     }
 }
 
@@ -126,28 +122,16 @@ private struct PageControls: View {
     }
 }
 
-/// Search, where Mail has it: a magnifying glass that opens the command palette, which finds issues and everything
-/// there is to do. Typing happens there, so the toolbar has no field of its own.
-private struct SearchButton: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        ToolbarIconButton(systemImage: "magnifyingglass", label: .search, help: .searchShortcutTooltip) {
-            model.overlay = model.overlay == .palette(.root) ? nil : .palette(.root)
-        }
-    }
-}
-
 /// What the toolbar shows for the page on screen.
 extension AppModel {
-    /// Board and List, where both can show: a project's view (not a timeline) and a milestone.
+    /// Board and List, where both can show: a project's view (not a timeline), a milestone and All Issues.
     fileprivate var showsLayoutSwitch: Bool {
         switch scope {
         case .project:
             guard currentProjectId != nil else { return false }
             if let view = currentView { return view.layout != .roadmap && !showsTimeline(view) }
             return true
-        case .milestone:
+        case .milestone, .allIssues:
             return true
         default:
             return false
@@ -212,7 +196,7 @@ private struct IssueLinkButtons: View {
     var body: some View {
         HStack(spacing: 0) {
             ToolbarIconButton(systemImage: "link", label: .copyLinkWithShortcut) { model.copyLink(item) }
-            if item.number != nil {
+            if item.branchName != nil {
                 ToolbarIconButton(systemImage: "arrow.triangle.branch", label: .copyBranchNameWithShortcut) { model.copyBranchName(item) }
             }
         }
@@ -392,20 +376,9 @@ private struct MyIssuesToolbarButtons: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            if model.editingOverview, model.mineDisplay.layout == .overview {
-                // Editing the widgets ends here, as the Mac's desktop widgets do.
-                Button {
-                    withAnimation(Theme.spring) { model.editingOverview = false }
-                } label: {
-                    Text(.done).fontWeight(.semibold).padding(.horizontal, 12).frame(height: 30).contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .keyboardShortcut(.defaultAction)
-            } else {
-                HeaderFilterButton(filter: Binding(get: { model.mineFilter }, set: { model.setMineFilter($0) }), scope: .myIssues)
-                DisplayButton(changed: !model.mineDisplay.optionsAreDefault) { close in
-                    MyIssuesDisplayOptions(close: close)
-                }
+            HeaderFilterButton(filter: Binding(get: { model.mineFilter }, set: { model.setMineFilter($0) }), scope: .myIssues)
+            DisplayButton(changed: !model.mineDisplay.optionsAreDefault) { close in
+                MyIssuesDisplayOptions(close: close)
             }
         }
     }

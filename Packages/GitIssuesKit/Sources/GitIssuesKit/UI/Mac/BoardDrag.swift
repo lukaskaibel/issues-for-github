@@ -42,6 +42,18 @@ final class BoardDrag {
         var depth = 0
         /// Where it shows among the column's rows, epic headers included, not counting the dragged card.
         var row = 0
+        /// The issue the lifted ones would go under instead, when held over the middle of its card or of its header as
+        /// an epic for a moment (`NestDwell`), and where that is on the board. The slot stays where it was meanwhile, so
+        /// nothing moves under the pointer.
+        var nest: Nest?
+    }
+
+    struct Nest: Equatable {
+        var item: Item
+        var columnId: String
+        var frame: CGRect
+        /// An epic's header rather than a card.
+        var isHeader = false
     }
 
     private(set) var active: Active?
@@ -53,7 +65,6 @@ final class BoardDrag {
     @ObservationIgnored var columnFrames: [String: CGRect] = [:]
     /// Where the board sits in the window (top-left origin), to anchor dropdowns and menus.
     @ObservationIgnored var boardFrameInWindow: CGRect = .zero
-    @ObservationIgnored let menuRegion = UUID()
     /// The board's horizontal scroll position, for deciding whether a sideways swipe scrolls or navigates.
     @ObservationIgnored var scrollX: CGFloat = 0
     @ObservationIgnored var maxScrollX: CGFloat = 0
@@ -153,6 +164,13 @@ final class BoardDrag {
         !header.fold.isNull && header.fold.insetBy(dx: -4, dy: -4).contains(point)
     }
     @ObservationIgnored private var origin: Target?
+    /// Whether the lifted issues can go under an issue, by its id, as worked out once per drag.
+    @ObservationIgnored private var nestable: [String: Bool] = [:]
+    /// How long the pointer has rested over the middle of an issue, which lights up only after a moment.
+    @ObservationIgnored private var dwell = NestDwell()
+    /// The model of the drag going on, to look again once the pointer has rested over an issue long enough.
+    @ObservationIgnored private weak var model: AppModel?
+    @ObservationIgnored private var retargeting = false
     @ObservationIgnored private var ignoringGesture = false
     @ObservationIgnored private var timer: Timer?
 
@@ -220,6 +238,18 @@ final class BoardDrag {
     func ended(model: AppModel) {
         defer { ignoringGesture = false }
         guard let current = active, !current.settling else { return }
+        // Dropped onto an issue, they go under it and keep their status: the card goes back to where it was lifted.
+        if let nest = target?.nest {
+            let dragged = current.picked?.items ?? [current.item]
+            withAnimation(Theme.spring) { target = origin }
+            model.nest(dragged, under: nest.item)
+            // The slot's frame is only known after the layout pass that moves it back.
+            DispatchQueue.main.async { [self] in
+                guard active?.item.id == current.item.id else { return }
+                settle(model: model)
+            }
+            return
+        }
         // Back where it was lifted, nothing moves, unless picked cards from elsewhere come along into that column.
         if let target, let column = model.columns.first(where: { $0.id == target.columnId }),
            target != origin || current.picked?.items.contains(where: { item in !column.nesting.members.contains { $0.id == item.id } }) == true {
@@ -228,6 +258,9 @@ final class BoardDrag {
                 model.drop(group.group, members: members, in: column, at: target.index)
             } else if let picked = current.picked {
                 model.drop(picked, in: column, at: target.index)
+            } else if !current.item.isOnBoard, let projectId = model.allIssuesProjectId {
+                // In All Issues: an issue on no board goes on the board, in the column it was dropped in.
+                model.addToBoard([current.item], in: column, projectId: projectId)
             } else {
                 model.drop(current.item, in: column, at: target.index)
             }
@@ -249,7 +282,7 @@ final class BoardDrag {
 
     private func begin(at point: CGPoint, model: AppModel) -> Bool {
         // A board you can only read has nothing to move, as its list hasn't.
-        guard model.currentProject?.viewerCanUpdate == true else { return false }
+        guard model.boardProject?.viewerCanUpdate == true else { return false }
         if let header = header(at: point) { return begin(header, at: point, model: model) }
         guard let (id, frame) = cardFrames.first(where: { $0.value.contains(point) }),
               let column = model.columns.first(where: { column in column.items.contains { $0.id == id } }),
@@ -267,6 +300,9 @@ final class BoardDrag {
             origin = Target(columnId: column.id, index: index, depth: column.nesting.depth(of: id), row: row)
         }
         target = origin
+        nestable = [:]
+        dwell = NestDwell()
+        self.model = model
         active = Active(
             item: item, picked: picked, size: frame.size,
             grab: CGSize(width: point.x - frame.minX, height: point.y - frame.minY),
@@ -334,15 +370,47 @@ final class BoardDrag {
 
     // MARK: Where would it land?
 
-    /// Recomputes the landing spot from the card's centre. Called on pointer movement and after auto-scroll.
+    /// Recomputes the landing spot from the card's centre. Called on pointer movement, after auto-scroll, and once the
+    /// pointer has rested over the middle of an issue long enough for it to light up.
     func retarget(model: AppModel) {
-        guard let current = active, !current.settling else { return }
+        // Setting the target lets SwiftUI run the board's pending changes at once, auto-scroll among them, which would
+        // work it out again in the middle of working it out.
+        guard !retargeting, let current = active, !current.settling else { return }
+        retargeting = true
+        defer { retargeting = false }
+        #if DEBUG
+        let wasLit = target?.nest?.item
+        defer {
+            if target?.nest?.item.id != wasLit?.id {
+                DebugRemote.log(String(format: "nest %@ at %.3f", target?.nest?.item.displayNumber ?? "off", ProcessInfo.processInfo.systemUptime))
+            }
+        }
+        #endif
         let centre = CGPoint(
             x: current.location.x - current.grab.width + current.size.width / 2,
             y: current.location.y - current.grab.height + current.size.height / 2
         )
         let candidates = model.columns.compactMap { column in columnFrames[column.id].map { (column, $0) } }
         guard let (column, _) = candidates.min(by: { distance(centre.x, to: $0.1) < distance(centre.x, to: $1.1) }) else { return }
+        // The pointer resting in the middle of a card that can take the lifted issues as its sub-issues: they would go
+        // under it. Passing over it, or near its top or bottom edge, they go in front of it or after it, as anywhere
+        // else, so that a card on its way somewhere else lights up nothing it passes.
+        let over = nestTarget(at: current.location, model: model)
+        let lit = dwell.update(over: over?.item.id, at: current.location, time: ProcessInfo.processInfo.systemUptime)
+        if let nest = over, lit == nest.item.id, var next = target ?? origin {
+            next.nest = nest
+            // In the issue's column the slot stays where it is, so nothing moves under the pointer; elsewhere it goes,
+            // as nothing will land there.
+            if next.columnId != nest.columnId { next.columnId = "" }
+            if next != target { withAnimation(Theme.quick) { target = next } }
+            return
+        }
+        // Nothing goes into All Issues' issues on no board: taking an issue off its board would lose what it has there.
+        // Held over them, the card's slot goes back to where it was lifted.
+        guard model.accepts(column, current.item) else {
+            if let origin, target != origin { withAnimation(Theme.spring) { target = origin } }
+            return
+        }
 
         let moving = current.group?.ids ?? current.picked?.moving
         let others = moving.map { moving in column.items.filter { !moving.contains($0.id) } } ?? column.shown(without: current.item)
@@ -358,6 +426,11 @@ final class BoardDrag {
             }
         }
         if !anyAbove { index = firstVisible ?? others.count }
+        // Over the middle of an issue that would light up after a moment, the slot goes beside it on the side where it
+        // is already, or after it: in front of it, the issue would move away from under the pointer before it lit up.
+        if let over, !over.isHeader, let held = others.firstIndex(where: { $0.id == over.item.id }) {
+            index = target?.columnId == column.id && (target?.index ?? 0) <= held ? held : held + 1
+        }
         // A sub-issue goes among its parent's sub-issues, any other card never between a parent and its sub-issues.
         // An epic's issues go together, among the epic's other issues where the column has some.
         let landing = if let group = current.group {
@@ -369,11 +442,44 @@ final class BoardDrag {
         }
 
         var next = Target(columnId: column.id, index: landing.slot, depth: landing.depth, row: landing.row)
-        // In a view with an order of its own, a card can't change places within its column: the slot stays put there.
-        if let origin, column.id == origin.columnId, model.isOrdered(projectId: model.currentProjectId) { next = origin }
+        // In a view with an order of its own, a card can't change places within its column: the slot stays put there,
+        // as among the issues on no board, which have no order on a board.
+        if let origin, column.id == origin.columnId, column.isOnNoBoard || model.isOrdered(projectId: model.currentProjectId) { next = origin }
+        // An issue on no board put on the board goes at the end of the column, where the board adds it.
+        if !current.item.isOnBoard, current.picked == nil, !column.isOnNoBoard {
+            let end = column.landing(of: current.item, at: others.count, epic: nil)
+            next = Target(columnId: column.id, index: end.slot, depth: end.depth, row: end.row)
+        }
         if next != target {
             withAnimation(Theme.spring) { target = next }
         }
+    }
+
+    /// The issue whose card, or whose header as an epic, the pointer is in the middle of, if the lifted issues can go
+    /// under it: the middle half of a card, between edges of at least 10 points where they go in front or after; all
+    /// of an epic's header but its outer 5 points, as it is only one line high.
+    private func nestTarget(at point: CGPoint, model: AppModel) -> Nest? {
+        guard let current = active, current.group == nil else { return nil }
+        let moving = current.picked?.moving ?? [current.item.id]
+        func middle(_ frame: CGRect, edge: CGFloat? = nil) -> Bool {
+            let edge = edge ?? max(10, frame.height / 4)
+            return frame.minX <= point.x && point.x <= frame.maxX && frame.minY + edge <= point.y && point.y <= frame.maxY - edge
+        }
+        let found: Nest? = if let header = header(at: point), middle(header.frame, edge: 5),
+           let epic = model.columns.first(where: { $0.id == header.columnId })?.nesting.groups.first(where: { $0.contentId == header.epic })?.epic {
+            Nest(item: epic, columnId: header.columnId, frame: header.frame, isHeader: true)
+        } else if let (id, frame) = cardFrames.first(where: { !moving.contains($0.key) && middle($0.value) }),
+                  let column = model.columns.first(where: { $0.items.contains { $0.id == id } }),
+                  let item = column.items.first(where: { $0.id == id }) {
+            Nest(item: item, columnId: column.id, frame: frame)
+        } else {
+            nil
+        }
+        guard let found else { return nil }
+        if nestable[found.item.id] == nil {
+            nestable[found.item.id] = model.canNest(current.picked?.items ?? [current.item], under: found.item)
+        }
+        return nestable[found.item.id] == true ? found : nil
     }
 
     private func distance(_ x: CGFloat, to frame: CGRect) -> CGFloat {
@@ -409,10 +515,12 @@ final class BoardDrag {
 
     func dragColumn(_ dragged: BoardColumn, translation: CGFloat, step: CGFloat, model: AppModel) {
         let columns = model.columns
-        guard dragged.option != nil, model.currentProject?.viewerCanUpdate == true, column?.settling != true,
+        // All Issues keeps its order of columns on this device, so every one of them moves, and anyone may move them.
+        let local = model.allIssuesProjectId != nil
+        guard local || dragged.option != nil && model.currentProject?.viewerCanUpdate == true, column?.settling != true,
               let index = columns.firstIndex(where: { $0.id == dragged.id }) else { return }
         // "No status" is not a real column on GitHub, so it stays first and nothing can go before it.
-        let lowest = columns.first?.option == nil ? 1 : 0
+        let lowest = !local && columns.first?.option == nil ? 1 : 0
         let target = min(max(index + Int((translation / step).rounded()), lowest), columns.count - 1)
         if column == nil {
             column = ColumnDrag(id: dragged.id, from: index, to: target, translation: translation)
@@ -432,7 +540,10 @@ final class BoardDrag {
             transaction.disablesAnimations = true
             withTransaction(transaction) {
                 let columns = model.columns
-                if current.to != current.from, let projectId = model.currentProjectId {
+                if current.to != current.from, let projectId = model.allIssuesProjectId, columns.indices.contains(current.from) {
+                    let shown = columns.map(\.id)
+                    model.moveColumn(shown[current.from], among: shown, to: current.to, allIssuesOf: projectId, animated: false)
+                } else if current.to != current.from, let projectId = model.currentProjectId {
                     // Among the columns on screen; those the board leaves out keep their places.
                     let shown = columns.compactMap { $0.option?.id }
                     let offset = columns.first?.option == nil ? 1 : 0
@@ -450,7 +561,14 @@ final class BoardDrag {
     private func startTimer() {
         timer?.invalidate()
         let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.tick &+= 1 }
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.tick &+= 1
+                // A pointer at rest sends no moves: the issue it rests over lights up from here.
+                if let due = self.dwell.due, ProcessInfo.processInfo.systemUptime >= due, let model = self.model {
+                    self.retarget(model: model)
+                }
+            }
         }
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer

@@ -256,6 +256,11 @@ extension AppModel {
         peekItemId.flatMap { id in scopedItems.first { $0.id == id } }
     }
 
+    /// Whether the peek shows this issue, which every place drawing it then marks (`Marks.peek`).
+    func isPeeked(_ id: String) -> Bool {
+        peekItemId == id
+    }
+
     /// Space: a quick look at the issue under the pointer or focus, or away again.
     func togglePeek() {
         if peekItemId != nil {
@@ -287,14 +292,20 @@ struct PickedIssues: Equatable {
     /// What a drag that starts on `item` carries: the picked issues among `columns`, when it is one of two or more.
     @MainActor
     init?(from item: Item, in columns: [BoardColumn], model: AppModel) {
+        self.init(from: item, among: columns.map(\.nesting), model: model)
+    }
+
+    /// The same among a list's groups, such as My Issues' sections, which are no board's columns.
+    @MainActor
+    init?(from item: Item, among groups: [Nesting], model: AppModel) {
         let picked = model.selectedIds
         guard picked.count > 1, picked.contains(item.id) else { return nil }
         var items: [Item] = []
         var moving = Set<String>()
-        for column in columns {
-            for member in column.nesting.members where picked.contains(member.id) {
+        for group in groups {
+            for member in group.members where picked.contains(member.id) {
                 items.append(member)
-                moving.formUnion(column.nesting.descendants(of: member.id).union([member.id]))
+                moving.formUnion(group.descendants(of: member.id).union([member.id]))
             }
         }
         guard items.count > 1 else { return nil }

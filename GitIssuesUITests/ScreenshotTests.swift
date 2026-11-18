@@ -23,8 +23,11 @@ final class ScreenshotTests: AppTestCase {
 
     func testPhone() throws {
         try XCTSkipIf(isPad, "iPhone screenshots")
-        // Home with a view and a milestone pinned beside the Inbox and My Issues.
-        launchForScreenshots(["-mobile.tab", "home", "-mobile.pins", #"("view:demo-project-app-view-week", "milestone:demo-project-app\U001F0.3")"#])
+        // Home with a view and a milestone pinned beside the Inbox and My Issues, which opens as the overview.
+        launchForScreenshots([
+            "-mobile.tab", "home", "-mobile.pins", #"("view:demo-project-app-view-week", "milestone:demo-project-app\U001F0.3")"#,
+            "-mine.display", defaultsString(#"{"layout":"overview"}"#),
+        ])
         wait(element("home-inbox"))
         wait(element("pin-This Week"))
         shot("2-home")

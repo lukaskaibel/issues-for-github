@@ -29,22 +29,7 @@ struct ViewBar: View {
 }
 
 /// A view's layout as a small icon: a board, a list or a roadmap.
-struct ViewLayoutGlyph: View {
-    @Environment(AppModel.self) private var model
-    var view: ProjectView
 
-    var body: some View {
-        Group {
-            if view.layout == .roadmap, model.display(of: view).layout == nil {
-                RoadmapIcon(size: 12)
-            } else {
-                Image(systemName: model.layout(of: view) == .board ? "rectangle.split.3x1" : "list.bullet")
-                    .font(.system(size: 11, weight: .semibold))
-            }
-        }
-        .accessibilityHidden(true)
-    }
-}
 
 /// What a view's menu offers: its filter, renaming, a copy, GitHub, deleting.
 struct ViewMenuItems: View {
@@ -367,7 +352,9 @@ private struct FilterValuesScreen: View {
         let values = model.filterValues(property, in: scope)
         let index = termIndex ?? model.termIndex(for: property, in: filter)
         let term = index.flatMap { filter.terms.indices.contains($0) ? filter.terms[$0] : nil }
-        let picked = term.map(model.pickedValues) ?? []
+        // "No assignee" and the like are ticked by a `no:` or `has:` term of their own.
+        let presence = values.filter { model.presenceTerm(of: $0, in: filter) != nil }.map { "\($0.key):\($0.value.lowercased())" }
+        let picked = (term.map(model.pickedValues) ?? []).union(presence)
         let shown = query.isEmpty ? values : values.filter { fuzzyScore(query, $0.title) != nil || ($0.subtitle.flatMap { fuzzyScore(query, $0) } != nil) }
         List {
             if let term, let index, term.key != "has", term.key != "no" {
@@ -384,7 +371,7 @@ private struct FilterValuesScreen: View {
                 ForEach(shown) { value in
                     Button {
                         let wasNew = term == nil
-                        filter = model.toggling(value, in: filter, termIndex: model.termIndex(for: property, in: filter) ?? index)
+                        filter = model.toggling(value, in: filter, termIndex: model.termIndex(for: property, in: filter) ?? index, takesSeveral: property.takesSeveral)
                         // A property that takes one value is done with its pick.
                         if wasNew, !property.takesSeveral { dismiss() }
                     } label: {
@@ -483,6 +470,8 @@ struct NewViewSheet: View {
                 }
             }
         }
+        // A name typed isn't lost to a swipe down; Cancel still lets it go.
+        .interactiveDismissDisabled(!duplicate && !(template?.name.trimmingCharacters(in: .whitespaces).isEmpty ?? true))
         .onAppear {
             guard template == nil else { return }
             let source = model.view(id: sourceViewId)

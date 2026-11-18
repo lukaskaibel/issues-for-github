@@ -339,7 +339,10 @@ extension AppModel {
 
     /// ⇧⌫: every read entry in the half on screen.
     func archiveAllRead() {
-        archive(visibleInbox.filter { !isUnread($0) })
+        let read = visibleInbox.filter { !isUnread($0) }
+        // What is left is unread, and the neighbour moving into the selection would be read by that alone, unseen.
+        if read.contains(where: { $0.id == inboxSelectedId }) { inboxSelectedId = nil }
+        archive(read)
     }
 
     /// ⇧S: no more notifications about it until someone mentions you or you comment, and out of the Inbox.

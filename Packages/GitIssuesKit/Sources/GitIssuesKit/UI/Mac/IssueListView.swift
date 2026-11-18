@@ -6,7 +6,7 @@ struct IssueListView: View {
 
     var body: some View {
         if model.sections.isEmpty {
-            if model.scope == .myIssues, !model.mineFilter.isEmpty, !model.assignedItems.isEmpty {
+            if model.scope == .myIssues, !model.mineFilter.isEmpty, !model.myItems.isEmpty {
                 // The filter hides everything; one click shows it all again.
                 EmptyState(title: String(localized: .nothingMatchesFilterTitle), message: String(localized: .nothingMatchesFilterMessage)) {
                     Button(.clearFilter) { model.setMineFilter(ProjectFilter("")) }
@@ -59,24 +59,19 @@ struct IssueListView: View {
                             case .epic(let group):
                                 return .epic(group)
                             case .item(let item):
-                                return .row(IssueRowModel(
-                                    item: item, glyph: model.glyph(of: item), priority: model.priorityLevel(of: item),
-                                    showsPriority: model.project(of: item)?.priorityFieldId != nil,
-                                    showsStatus: !item.isOnBoard || model.project(of: item)?.statusFieldId != nil,
+                                return .row(model.issueRow(
+                                    item,
                                     projectTitle: showsProject ? place(of: item, groupsByProject: groupsByProject) : nil,
-                                    due: model.dueBadge(for: item),
-                                    blocker: model.blockerMark(for: item),
                                     selected: model.isSelected(item.id),
                                     selecting: !model.selectedIds.isEmpty,
+                                    peeked: model.isPeeked(item.id),
                                     nest: section.nesting.place(of: item.id),
                                     nested: section.nesting.nestedCounts[item.id],
                                     folded: section.nesting.folded.contains(item.id),
                                     // Under its parent or its epic's header, the parent goes without saying.
                                     showsParent: section.nesting.namesParent(of: item) && section.kind != .epic(contentId: item.parentId)
                                         && section.kind != .group(.parent(contentId: item.parentId)),
-                                    parentIsEpic: item.parentId.flatMap { model.issue(contentId: $0) }?.isEpic ?? false,
                                     milestone: showsMilestone ? model.milestoneTitle(of: item) : spanOnRoadmap(item),
-                                    milestoneMark: model.milestoneMark(of: item),
                                     chips: model.fieldChips(of: item, in: model.scope)
                                 ))
                             }
@@ -85,9 +80,9 @@ struct IssueListView: View {
                         load: mostOpen > 0 ? CGFloat(section.progress.map { $0.total - $0.done } ?? 0) / CGFloat(mostOpen) : 0
                     )
                 },
-                // My Issues mixes projects, so there is no one order to put an issue into; All Issues mixes the board
-                // with issues on none.
-                canMoveRows: canEdit && model.allIssuesProjectId == nil,
+                // My Issues mixes projects, so there is no one order to put an issue into; there an issue only goes
+                // under another one. All Issues takes issues to a status, as its board does.
+                canMoveRows: canEdit,
                 focusedId: model.focusedItemId,
                 focusScrollToken: model.focusScrollToken,
                 avatarVersion: model.avatarVersion,

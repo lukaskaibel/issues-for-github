@@ -237,7 +237,8 @@ private struct InboxRow: View {
         let summary = model.inboxSummary(entry)
         let unread = model.isUnread(entry)
         let picked = model.inboxPicked.contains(entry.id)
-        let selected = model.inboxSelectedId == entry.id && model.inboxPicked.isEmpty
+        // With one picked, the keys act on the one on screen, so it keeps its colour unless it is that one.
+        let selected = model.inboxSelectedId == entry.id && model.inboxPicked.count <= 1 && !picked
         // As in Mail: the one on screen in the accent colour, picked ones tinted, the one under the pointer lit.
         let ground = selected ? Theme.accentFill : picked ? Theme.selectionFill : hovering ? Theme.hover : Theme.panel
         let onAccent = selected
@@ -386,19 +387,8 @@ private struct OtherNotifications: View {
 
 private struct InboxCaughtUp: View {
     var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "tray")
-                .font(.system(size: 28, weight: .light))
-                .foregroundStyle(Theme.textTertiary)
-                .padding(.bottom, 6)
-            Text(.allCaughtUp).font(.uiSemibold)
-            Text(.allCaughtUpMessage)
-                .font(.small)
-                .foregroundStyle(Theme.textSecondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 260)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        EmptyState(title: String(localized: .allCaughtUp), message: String(localized: .allCaughtUpMessage), systemImage: "tray")
+            .padding(.horizontal, 24)
     }
 }
 
@@ -427,6 +417,8 @@ private struct InboxUndoToast: View {
         .padding(.trailing, 8)
         .padding(.vertical, 8)
         .glassPanel(in: Capsule())
+        // A right-click on it does nothing: it neither presses Undo nor opens the menu of the notification under it.
+        .floatingContextMenu()
     }
 }
 
@@ -663,7 +655,7 @@ private struct SnoozeMenu: View {
         Group {
             if picking {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(.snoozeUntil).font(.tinySemibold).foregroundStyle(Theme.textSecondary)
+                    MenuHeading(Text(.snoozeUntil), inset: 0, top: 0, bottom: 0)
                     DatePicker(.snoozeUntil, selection: $date, in: Date()..., displayedComponents: [.date, .hourAndMinute])
                         .datePickerStyle(.graphical)
                         .labelsHidden()

@@ -160,7 +160,7 @@ extension AppModel {
 
     /// The column or group an issue is shown in right now, for what hangs under it there.
     func nesting(around item: Item) -> Nesting? {
-        if openItem == nil, viewMode == .board, currentProjectId != nil {
+        if openItem == nil, showsBoard {
             return columns.first { $0.nesting.members.contains { $0.id == item.id } }?.nesting
         }
         return sections.first { $0.nesting.members.contains { $0.id == item.id } }?.nesting

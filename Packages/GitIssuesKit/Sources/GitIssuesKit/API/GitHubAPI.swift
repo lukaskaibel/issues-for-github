@@ -748,6 +748,24 @@ public final class GitHubAPI: Sendable {
         return id
     }
 
+    /// A single-select field's options as GitHub has them now, in their order: read right before they are replaced,
+    /// so none added or changed on GitHub meanwhile gets lost.
+    public func fieldOptions(fieldId: String) async throws -> [RemoteOption] {
+        struct Response: Decodable {
+            var node: FieldDTO?
+        }
+        let query = """
+        query($f: ID!) {
+          node(id: $f) { ... on ProjectV2SingleSelectField { id name options { id name color description } } }
+        }
+        """
+        let response: Response = try await client.run(query, variables: ["f": fieldId])
+        guard let options = response.node?.options else {
+            throw APIError.graphql([GraphQLErrorItem(message: String(localized: .errorProjectNotFound), type: "NOT_FOUND")])
+        }
+        return options.map { RemoteOption(id: $0.id, name: $0.name, color: $0.color, descr: $0.description ?? "") }
+    }
+
     /// Replaces the options of a single-select field. Options that carry an `id` keep it, so cards keep their value.
     public func updateFieldOptions(fieldId: String, options: [RemoteOption]) async throws -> [RemoteOption] {
         struct Response: Decodable {

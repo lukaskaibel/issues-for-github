@@ -246,7 +246,13 @@ struct RoadmapTimeline: View {
             .padding(.leading, 16 + CGFloat(row.depth) * 18)
             .padding(.trailing, 10)
             .frame(height: TimelineLayout.rowHeight)
-            .background(hovered == hit ? Theme.hover.opacity(0.7) : .clear)
+            .background {
+                if model.isPeeked(row.epic.id) {
+                    PeekMark(cornerRadius: 6).padding(.horizontal, 4).padding(.vertical, 1)
+                } else if hovered == hit {
+                    Theme.hover.opacity(0.7)
+                }
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainPressStyle())
@@ -256,7 +262,7 @@ struct RoadmapTimeline: View {
         .help(Text(tooltip(row)))
         .accessibilityLabel(Text(row.epic.title))
         .accessibilityValue(Text(accessibilityValue(row)))
-        .modifier(EpicRowMenu(epic: row.epic))
+        .modifier(EpicRowMenu(epic: row.epic, open: open))
     }
 
     // MARK: Timeline
@@ -266,10 +272,11 @@ struct RoadmapTimeline: View {
         let marks = layout.roadmap.windows.map { model.mark(of: $0.group, projectId: projectId, today: today) }
         let done = Set((layout.roadmap.rows + layout.roadmap.later).filter { model.isDone($0.epic) }.map(\.epic.id))
         let (shownHover, shownDrag, shownDueDrag) = (hovered, drag, dueDrag)
+        let peeked = model.peekItemId
         return Canvas { context, size in
             TimelinePainter(
                 context: context, size: size, layout: layout, marks: marks, doneEpics: done, today: today,
-                hovered: shownHover, drag: shownDrag, dueDrag: shownDueDrag
+                hovered: shownHover, peeked: peeked, drag: shownDrag, dueDrag: shownDueDrag
             ).draw()
         }
         .frame(width: layout.width, height: layout.height)
@@ -322,9 +329,13 @@ struct RoadmapTimeline: View {
         }
         if drag != nil || dueDrag != nil { model.isDragging = true }
         if var current = dueDrag {
+            // A sync while dragging may have taken milestones away.
+            guard layout.roadmap.windows.indices.contains(current.window) else { return }
             let window = layout.roadmap.windows[current.window]
-            // Not before the day after the milestone before it, nor after the one after it.
-            var day = layout.day(at: value.location.x)
+            // As far as the pointer moved, so that grabbing the diamond, which sits at the end of its day, and letting
+            // go where it was changes nothing. Not before the day after the milestone before it, nor after the one
+            // after it.
+            var day = window.end.adding(days: Int(((value.location.x - value.startLocation.x) / layout.scale).rounded()))
             if current.window > 0 { day = max(day, layout.roadmap.windows[current.window - 1].end.adding(days: 1)) }
             if layout.roadmap.windows.indices.contains(current.window + 1), !layout.roadmap.windows[current.window + 1].undated {
                 day = min(day, layout.roadmap.windows[current.window + 1].end.adding(days: -1))
@@ -348,6 +359,7 @@ struct RoadmapTimeline: View {
         }
         guard !cancelledDrag else { return }
         if let dueDrag {
+            guard layout.roadmap.windows.indices.contains(dueDrag.window) else { return }
             let window = layout.roadmap.windows[dueDrag.window]
             if dueDrag.day != window.end { model.setDue(window.group, to: dueDrag.day) }
             return
@@ -359,9 +371,9 @@ struct RoadmapTimeline: View {
             if case .row = drag.from { model.moveEpic(epic, to: nil, projectId: projectId) }
             return
         }
-        guard let target = drag.target else { return }
+        guard let target = drag.target, layout.roadmap.windows.indices.contains(target) else { return }
         let group = layout.roadmap.windows[target].group
-        if case .row(let index) = drag.from, layout.roadmap.rows[index].runs == [target...target] { return }
+        if case .row(let index) = drag.from, layout.roadmap.rows.indices.contains(index), layout.roadmap.rows[index].runs == [target...target] { return }
         model.moveEpic(epic, to: group, projectId: projectId)
     }
 
@@ -401,6 +413,8 @@ struct RoadmapTimeline: View {
 private struct EpicRowMenu: ViewModifier {
     @Environment(AppModel.self) private var model
     var epic: Item
+    /// Opens the epic, as a tap on its line does.
+    var open: (Item) -> Void
     #if os(macOS)
     @State private var region = UUID()
     #endif
@@ -417,7 +431,7 @@ private struct EpicRowMenu: ViewModifier {
             .onDisappear { ContextMenus.shared.remove(region) }
         #else
         content.contextMenu {
-            ItemMenuContent(item: epic, foldable: false) {}
+            ItemMenuContent(item: epic, foldable: false) { open(epic) }
         }
         #endif
     }
@@ -432,6 +446,8 @@ private struct TimelinePainter {
     var doneEpics: Set<String>
     var today: CalendarDay
     var hovered: TimelineLayout.Hit?
+    /// The epic in the peek.
+    var peeked: String?
     var drag: RoadmapTimeline.BarDrag?
     var dueDrag: RoadmapTimeline.DueDrag?
 
@@ -452,6 +468,12 @@ private struct TimelinePainter {
         }
         if case .later(let index) = hovered, drag == nil {
             context.fill(Path(CGRect(x: 0, y: layout.laterRowTop(index), width: size.width, height: TimelineLayout.rowHeight)), with: .color(Theme.hover.opacity(0.7)))
+        }
+        // The epic in the peek, along its line from its marked name.
+        let peekedTops = roadmap.rows.indices.filter { roadmap.rows[$0].epic.id == peeked }.map(layout.rowTop)
+            + roadmap.later.indices.filter { roadmap.later[$0].epic.id == peeked }.map(layout.laterRowTop)
+        for top in peekedTops {
+            context.fill(Path(CGRect(x: 0, y: top + 1, width: size.width, height: TimelineLayout.rowHeight - 2)), with: .color(Theme.peekFill))
         }
 
         drawMonths(today: today)
@@ -528,17 +550,7 @@ private struct TimelinePainter {
             if hovered == .milestone(index) || dueDrag?.window == index {
                 context.fill(Path(roundedRect: diamondRect.insetBy(dx: -4, dy: -4), cornerRadius: 5), with: .color(Theme.partHover))
             }
-            let outline = PlanningGlyph.diamond(in: diamondRect)
-            let style = StrokeStyle(lineWidth: 1.5, lineJoin: .round, dash: window.undated ? [2, 2] : [])
-            switch mark {
-            case .completed:
-                context.fill(outline, with: .color(mark.color))
-            case .current, .late:
-                context.stroke(outline, with: .color(mark.color), style: style)
-                context.fill(PlanningGlyph.diamond(in: diamondRect, inset: 4.8), with: .color(mark.color))
-            case .upcoming, .none:
-                context.stroke(outline, with: .color(mark.color), style: style)
-            }
+            context.draw(Marks.milestone(mark, in: diamondRect, dashed: window.undated), mark: mark.color)
             // Title and date, right-aligned before the diamond, as long as they fit the stretch.
             let dateText = window.undated ? String(localized: .noDate) : day.shortLabel(today: today)
             let title = context.resolve(
@@ -602,7 +614,7 @@ private struct TimelinePainter {
         let top = drag.location.y - TimelineLayout.barHeight / 2
         var width: CGFloat = 0
         var x: CGFloat
-        if let target = drag.target {
+        if let target = drag.target, roadmap.windows.indices.contains(target) {
             let span = layout.span(of: roadmap.windows[target])
             x = span.lowerBound + 2
             width = span.upperBound - span.lowerBound - 4

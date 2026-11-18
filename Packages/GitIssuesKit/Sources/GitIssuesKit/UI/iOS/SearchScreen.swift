@@ -159,6 +159,12 @@ struct SearchResults: View {
             IssueRow(item: item, showsProject: true, highlight: highlight)
         }
         .buttonStyle(RowButtonStyle())
+        .issueRowControls(
+            item, place: Nesting.Place(), nested: nil, folded: false, changesStatus: model.canToggleDone(item),
+            spokenStatus: model.spokenStatus(of: item), fold: {}
+        ) {
+            StatusMenuItems(item: item)
+        }
         .listRowInsets(EdgeInsets())
         .listRowSeparator(.hidden)
         .listRowBackground(Theme.panel)

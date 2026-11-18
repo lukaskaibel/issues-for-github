@@ -38,6 +38,8 @@ def crop_card(img, box, theme):
 # due date picker opens in the palette and fits the same box.
 PALETTE_BOX = (560, 224, 2000, 1350)
 NEW_ISSUE_BOX = (480, 204, 2080, 944)
+# Todo, In Progress and In Review of the board, with the card held over #9.
+NEST_BOX = (1000, 120, 2550, 1600)
 
 
 def drag_animation(theme, board, band):
@@ -94,6 +96,7 @@ for theme in ["dark", "light"]:
     board, band = trim_empty_rows(window(f"board-{theme}"))
     webp(place(board, theme, (160, 130), 2000), f"hero-{theme}")
     drag_animation(theme, window(f"board-{theme}"), band)
+    webp(place(crop_card(window(f"nest-{theme}"), NEST_BOX, theme), theme, (110, 90), 1600, rim=False), f"nest-{theme}")
     webp(place(window(f"issue-{theme}"), theme, (130, 110), 1800), f"issue-{theme}")
     webp(place(window(f"markdown-{theme}"), theme, (130, 110), 1800), f"markdown-{theme}")
     webp(place(window(f"inbox-{theme}"), theme, (130, 110), 1800), f"inbox-{theme}")

@@ -23,7 +23,7 @@ class AppTestCase: XCTestCase {
     func launch(_ arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         let tab = arguments.contains("-mobile.tab") ? [] : ["-mobile.tab", "myIssues"]
-        let display = arguments.contains("-mine.display") ? [] : ["-mine.display", #"{"layout":"list"}"#]
+        let display = arguments.contains("-mine.display") ? [] : ["-mine.display", defaultsString(#"{"layout":"list"}"#)]
         // In English whatever the simulator's language, since the tests find buttons by their labels. GI_LANGUAGE
         // (TEST_RUNNER_GI_LANGUAGE for xcodebuild) runs them in another, to look at a translation.
         app.launchArguments = ["-demo.active", "YES", "-uiTestReset", "YES", "-AppleLanguages", "(\(language))", "-AppleLocale", appLocale.identifier]
@@ -31,6 +31,12 @@ class AppTestCase: XCTestCase {
         app.launch()
         self.app = app
         return app
+    }
+
+    /// A text for a setting given at launch, such as JSON: the system reads launch arguments as property lists, and
+    /// drops one that isn't, so the text goes in quotes.
+    func defaultsString(_ text: String) -> String {
+        "\"" + text.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"") + "\""
     }
 
     var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
@@ -117,17 +123,34 @@ class AppTestCase: XCTestCase {
         }
     }
 
-    /// Under the iPad's tab bar, or the iPhone's search and New Issue at the foot of the screen.
+    /// Under the iPad's tab bar, or the iPhone's search and New Issue at the foot of the screen, or too close above
+    /// them: the floating bar takes touches up to some 18 points above its glass, so a long press there misses the row.
     private func behindTabBar(_ element: XCUIElement) -> Bool {
         let foot = app.windows.firstMatch.frame.maxY - 140
         return [app.tabBars.firstMatch, app.toolbars.firstMatch].contains { bar in
-            bar.exists && bar.frame.height > 0 && bar.frame.minY > foot && element.frame.maxY > bar.frame.minY - 8
+            guard bar.exists, let top = top(of: bar, below: foot) else { return false }
+            return element.frame.maxY > top - 20
         }
+    }
+
+    /// Where a bar at the foot of the screen starts: the top of what it shows below `foot`. The iPhone's toolbar spans
+    /// the whole screen for XCTest; only its search field and New Issue float at the foot, each in its glass.
+    private func top(of bar: XCUIElement, below foot: CGFloat) -> CGFloat? {
+        guard let snapshot = try? bar.snapshot() else { return nil }
+        var top: CGFloat?
+        func visit(_ part: XCUIElementSnapshot) {
+            let frame = part.frame
+            if frame.width > 0, frame.height > 0, frame.minY > foot { top = min(top ?? frame.minY, frame.minY) }
+            part.children.forEach(visit)
+        }
+        visit(snapshot)
+        return top
     }
 
     /// Under the comment field at the bottom of an issue, where a touch may reach the field instead.
     private func behindCommentField(_ element: XCUIElement) -> Bool {
-        let field = app.textFields["comment-field"].firstMatch
+        // A text view since comments are written in Markdown.
+        let field = app.descendants(matching: .any).matching(identifier: "comment-field").firstMatch
         let send = app.buttons["comment-send"].firstMatch
         guard field.exists, send.exists, !["comment-field", "comment-send"].contains(element.identifier) else { return false }
         let bar = field.frame.union(send.frame)
@@ -150,6 +173,28 @@ class AppTestCase: XCTestCase {
 
     func closedCardMenu() {
         waitsForAnimations(true)
+    }
+
+    /// Scrolls the open long-press menu until the item shows, as a finger would. An issue's menu is longer than an
+    /// iPhone's screen and scrolls, and XCTest sees only the items in sight and a few beyond.
+    func scrollMenu(to item: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        let window = app.windows.firstMatch.frame
+        var drags = 0
+        while !(item.exists && item.isHittable) && drags < 5 {
+            // The menu's items are a list of their own, narrower than the screen's list under it. The lowest one in
+            // sight is dragged up to the highest, held there so the menu doesn't fling on, and let go: a drag scrolls,
+            // it picks nothing.
+            guard let menu = app.collectionViews.allElementsBoundByIndex.first(where: { $0.frame.width < window.width }) else { break }
+            let items = menu.buttons.allElementsBoundByIndex.filter { window.contains(CGPoint(x: $0.frame.midX, y: $0.frame.midY)) }
+            guard let low = items.last(where: \.isHittable), let high = items.first(where: \.isHittable),
+                  low.frame.minY > high.frame.maxY else { break }
+            low.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(
+                forDuration: 0.1, thenDragTo: high.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
+                withVelocity: .default, thenHoldForDuration: 0.3
+            )
+            drags += 1
+        }
+        XCTAssertTrue(item.exists && item.isHittable, "Out of reach in the menu: \(item)", file: file, line: line)
     }
 
     /// XCTest has no public switch for its wait on animations before each step; `XCUIApplication` keeps one under
@@ -245,20 +290,28 @@ class AppTestCase: XCTestCase {
         wait(app.navigationBars[title])
     }
 
-    /// Taps an entry of the iPad sidebar, scrolling the sidebar to it first: under every project's row, the open
-    /// project's milestones and roadmap can be below the bottom of the screen.
+    /// Taps an entry of the iPad sidebar, scrolling the sidebar to it first.
     func tapSidebarEntry(_ title: String) {
+        revealSidebarEntry(title).tap()
+    }
+
+    /// Scrolls the iPad sidebar until an entry shows: under every project's row, the open project's milestones and
+    /// roadmap can be below the bottom of the screen, where the sidebar hasn't made their rows yet.
+    @discardableResult
+    func revealSidebarEntry(_ title: String) -> XCUIElement {
         let entry = sidebarEntry(title)
-        wait(entry)
+        wait(app.cells["projectSection"])
         let screen = app.windows.firstMatch.frame.insetBy(dx: 0, dy: 40)
         var swipes = 0
-        while !screen.contains(entry.frame) && swipes < 4 {
-            // On the Projects heading, which never opens anything.
-            let heading = app.cells["projectSection"]
-            heading.exists ? heading.swipeUp() : entry.swipeUp()
+        while !(entry.exists && screen.contains(entry.frame)) && swipes < 4 {
+            // In the sidebar, lower down to higher up: on whatever row is there, it only scrolls.
+            let window = app.windows.firstMatch
+            window.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.75))
+                .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.35)))
             swipes += 1
         }
-        entry.tap()
+        wait(entry)
+        return entry
     }
 
     /// An entry of the iPad sidebar, by its name: a view, a milestone, the roadmap or a repository.

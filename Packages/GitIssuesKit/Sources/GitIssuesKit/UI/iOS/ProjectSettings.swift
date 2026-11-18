@@ -19,7 +19,16 @@ struct StatusEditor: View {
             Section {
                 ForEach(statuses) { option in
                     HStack(spacing: 12) {
-                        StatusIcon(glyph: model.glyph(projectId: projectId, optionId: option.id), size: 17)
+                        // What the status means, drawn as its circle.
+                        Menu {
+                            StatusKindPicker(option: option)
+                        } label: {
+                            StatusIcon(glyph: model.glyph(projectId: projectId, optionId: option.id), size: 17)
+                                .frame(width: 32, height: 32)
+                                .contentShape(Rectangle())
+                        }
+                        .padding(.horizontal, -8)
+                        .accessibilityLabel(.statusIconIs(kind: AppModel.statusTitle(option.statusCategory)))
                         Button {
                             name = option.name
                             renaming = option
@@ -66,7 +75,10 @@ struct StatusEditor: View {
                     if let index = offsets.first { deleting = statuses[index] }
                 }
             } footer: {
-                Text(.statusEditorFooter)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(.statusEditorFooter)
+                    Text(.statusIconFooter)
+                }
             }
             Section {
                 Button {
@@ -156,6 +168,81 @@ struct StatusEditor: View {
         case "PINK": "C45FA6"
         case "PURPLE": "5B63D3"
         default: "8B949E"
+        }
+    }
+}
+
+/// The kinds a status can be, each with its circle in the status's colour, its own checked. The kind says what the
+/// status means: an issue in a Done or Canceled one is closed.
+struct StatusKindPicker: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var scheme
+    var option: FieldOption
+
+    @ViewBuilder var body: some View {
+        Picker(.statusIcon, selection: Binding(
+            get: { option.statusCategory },
+            set: { model.setKind($0, of: option) }
+        )) {
+            ForEach(AppModel.statusKindsInOrder, id: \.self) { kind in
+                Label {
+                    Text(AppModel.statusTitle(kind))
+                } icon: {
+                    MenuImages.status(AppModel.kindGlyph(kind, color: option.color), scheme)
+                }
+                .tag(kind)
+            }
+        }
+        .pickerStyle(.inline)
+        // What a kind does besides its circle, so picking Done doesn't surprise.
+        Text(.statusIconNote)
+    }
+}
+
+/// GitHub's colours for a status, its own checked; a pick is saved on GitHub.
+struct StatusColourPicker: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var scheme
+    var option: FieldOption
+
+    var body: some View {
+        Picker(.colour, selection: Binding(
+            get: { option.color },
+            set: { model.setColor($0, of: option) }
+        )) {
+            ForEach(Defaults.optionColors, id: \.self) { color in
+                Label {
+                    Text(Defaults.colourName(color))
+                } icon: {
+                    MenuImages.label(StatusEditor.hex(color), scheme)
+                }
+                .tag(color)
+            }
+        }
+        .pickerStyle(.inline)
+    }
+}
+
+/// A long press on a status in a picker sheet: its icon and colour, right where it is picked.
+struct StatusRowMenu: ViewModifier {
+    var option: FieldOption?
+
+    func body(content: Content) -> some View {
+        if let option, !option.id.hasPrefix(LocalID.prefix) {
+            content.contextMenu {
+                Menu {
+                    StatusKindPicker(option: option)
+                } label: {
+                    Label(.statusIcon, systemImage: "circle.dashed")
+                }
+                Menu {
+                    StatusColourPicker(option: option)
+                } label: {
+                    Label(.colour, systemImage: "paintpalette")
+                }
+            }
+        } else {
+            content
         }
     }
 }
@@ -375,6 +462,7 @@ struct NoticeBanners: View {
 
 private struct NoticeBanner: View {
     @Environment(AppModel.self) private var model
+    @Environment(MobileNavigation.self) private var navigation
     var notice: Notice
     @State private var offset: CGFloat = 0
 
@@ -400,6 +488,10 @@ private struct NoticeBanner: View {
                     .buttonStyle(.bordered)
                     .font(.footnote.weight(.medium))
                     .accessibilityIdentifier("notice-undo")
+                } else if case .openItem(let id) = notice.action {
+                    Button(.noticeOpenIssue) { open(id) }
+                        .buttonStyle(.bordered)
+                        .font(.footnote.weight(.medium))
                 } else if let label = notice.action?.adoptLabel {
                     HStack(spacing: 8) {
                         Button(.keepMine) { model.status.dismiss(notice.id) }
@@ -430,8 +522,13 @@ private struct NoticeBanner: View {
         .glassPanel(in: .rect(cornerRadius: 22))
         .contentShape(.rect(cornerRadius: 22))
         .onTapGesture {
-            // A notice that only tells something goes away when tapped; one that asks waits for an answer.
-            if notice.action == nil || notice.action?.isUndo == true { model.status.dismiss(notice.id) }
+            // A notice that only tells something goes away when tapped, one about an issue opens it; one that asks
+            // waits for an answer.
+            if case .openItem(let id) = notice.action {
+                open(id)
+            } else if notice.action == nil || notice.action?.isUndo == true {
+                model.status.dismiss(notice.id)
+            }
         }
         .offset(y: min(offset, 0))
         .gesture(
@@ -447,11 +544,18 @@ private struct NoticeBanner: View {
         )
         .accessibilityElement(children: .contain)
         .task {
-            // Notices that ask for a decision stay until answered; one that can be undone stays a little longer.
-            guard notice.action == nil || notice.action?.isUndo == true else { return }
-            try? await Task.sleep(for: .seconds(notice.isWarning || notice.action?.isUndo == true ? 10 : 3))
+            // Notices that ask for a decision stay until answered; one with a button stays a little longer.
+            guard notice.action?.adoptLabel == nil else { return }
+            try? await Task.sleep(for: .seconds(notice.isWarning || notice.action != nil ? 10 : 3))
             model.status.dismiss(notice.id)
         }
+    }
+
+    /// The issue's screen, on top of the one in front: `open` only shows an issue on the Mac.
+    private func open(_ itemId: String) {
+        model.status.dismiss(notice.id)
+        guard model.item(id: itemId) != nil else { return }
+        navigation.push(.issue(itemId), on: navigation.tab)
     }
 }
 #endif

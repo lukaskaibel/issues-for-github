@@ -9,7 +9,7 @@ enum MenuImages {
     private static var cache: [String: UIImage] = [:]
 
     static func status(_ glyph: StatusGlyph, _ scheme: ColorScheme) -> Image {
-        image("status-\(glyph.category.rawValue)-\(glyph.progress)-\(key(glyph.color, scheme))", scheme) {
+        image("status-\(glyph.category.rawValue)-\(glyph.progress)-\(glyph.addsToProject)-\(key(glyph.color, scheme))", scheme) {
             StatusIcon(glyph: glyph, size: 16)
         }
     }
@@ -17,6 +17,13 @@ enum MenuImages {
     static func priority(_ level: PriorityLevel, _ scheme: ColorScheme) -> Image {
         image("priority-\(level.rawValue)", scheme) {
             PriorityIcon(level: level)
+        }
+    }
+
+    /// A milestone's diamond in its mark's colour, as the Mac's menus and every other view show it.
+    static func milestone(_ mark: MilestoneMark, _ scheme: ColorScheme) -> Image {
+        image("milestone-\(mark)", scheme) {
+            MilestoneIcon(mark: mark, size: 15)
         }
     }
 

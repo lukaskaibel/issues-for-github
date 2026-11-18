@@ -56,9 +56,12 @@ struct MineDisplay: Codable, Equatable {
     var grouping: MineGrouping = .status
     var order: MineOrder = .priority
     var descending = false
+    /// Which pages the overview's cards show, by the column's key (`MineColumn.key`), where you chose otherwise than
+    /// they start out.
+    var pages: [String: Bool] = [:]
 
     var isDefault: Bool { self == MineDisplay() }
-    /// Whether the groups and order are as they start out, whichever layout shows.
+    /// Whether the groups, order and pages are as they start out, whichever layout shows.
     var optionsAreDefault: Bool { self == MineDisplay(layout: layout) }
 
     /// As the settings keep it: JSON in a string, which reads and writes back like the app's other settings (the
@@ -67,11 +70,15 @@ struct MineDisplay: Codable, Equatable {
         (try? JSONEncoder().encode(self)).map { String(decoding: $0, as: UTF8.self) } ?? ""
     }
 
-    init(layout: MineLayout = .overview, grouping: MineGrouping = .status, order: MineOrder = .priority, descending: Bool = false) {
+    init(
+        layout: MineLayout = .overview, grouping: MineGrouping = .status, order: MineOrder = .priority, descending: Bool = false,
+        pages: [String: Bool] = [:]
+    ) {
         self.layout = layout
         self.grouping = grouping
         self.order = order
         self.descending = descending
+        self.pages = pages
     }
 
     init?(stored: String?) {
@@ -80,7 +87,7 @@ struct MineDisplay: Codable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case layout, grouping, order, descending
+        case layout, grouping, order, descending, pages
     }
 
     /// What older versions kept has no layout, and starts with the overview.
@@ -90,6 +97,7 @@ struct MineDisplay: Codable, Equatable {
         grouping = try container.decodeIfPresent(MineGrouping.self, forKey: .grouping) ?? .status
         order = try container.decodeIfPresent(MineOrder.self, forKey: .order) ?? .priority
         descending = try container.decodeIfPresent(Bool.self, forKey: .descending) ?? false
+        pages = try container.decodeIfPresent([String: Bool].self, forKey: .pages) ?? [:]
     }
 }
 
@@ -111,6 +119,8 @@ struct MineRules {
     var context: FilterContext
     var kinds: [String: StatusCategory] = [:]
     var priorities: [String: PriorityLevel] = [:]
+    /// The column of the board each issue is in, for the overview's pages.
+    var columns: [String: MineColumnRef] = [:]
 
     /// What the issue's status means; nil for open issues on no board and cards without a status.
     func kind(of item: Item) -> StatusCategory? { kinds[item.id] }
@@ -263,18 +273,11 @@ struct MineRules {
 extension AppModel {
     // MARK: Issues
 
-    /// Everything assigned to you, on a board or not, open or closed, before My Issues' filter. Epics are planned on
-    /// the roadmap.
-    var assignedItems: [Item] {
-        guard let login = viewer?.login else { return [] }
-        return allItems.filter { item in !item.isEpic && item.assignees.contains { $0.login == login } }
-    }
-
     /// What My Issues lists: assigned to you, through its filter, in its order.
     func mineItems() -> [Item] {
         let filter = mineFilter
         let rules = mineRules
-        let shown = filter.isEmpty ? assignedItems : assignedItems.filter { rules.matches($0, filter) }
+        let shown = filter.isEmpty ? myItems : myItems.filter { rules.matches($0, filter) }
         return rules.sorted(shown, by: mineDisplay)
     }
 
@@ -286,9 +289,12 @@ extension AppModel {
             viewerLogin: viewer?.login, today: .today(), fields: [], statusFieldId: nil, priorityFieldId: nil,
             dueFieldId: nil, optionName: { _, _ in nil }, parentReference: { _ in nil }
         ))
-        for item in assignedItems {
+        for item in myItems {
             rules.kinds[item.id] = kindOfStatus(of: item)
             rules.priorities[item.id] = priorityLevel(of: item)
+            if item.isOnBoard, let option = statusOption(of: item) {
+                rules.columns[item.id] = MineColumnRef(optionId: option.id, name: option.name, position: option.position)
+            }
         }
         mineRulesCache = rules
         return rules
@@ -451,7 +457,7 @@ extension AppModel {
 
     /// What My Issues can be filtered by: what means the same in every project.
     func mineFilterProperties() -> [FilterProperty] {
-        let items = assignedItems
+        let items = myItems
         var result = [
             FilterProperty(id: "project", title: String(localized: .project), icon: .project(.standard)),
             FilterProperty(id: "status", title: String(localized: .status), icon: .status(Self.statusGlyph(.unstarted))),
@@ -469,7 +475,7 @@ extension AppModel {
 
     /// The values the filter menu offers for a property of My Issues, with how many of your issues each finds.
     func mineFilterValues(_ property: FilterProperty) -> [FilterValue] {
-        let items = assignedItems
+        let items = myItems
         let rules = mineRules
         var result: [FilterValue] = []
         func add(_ key: String, _ value: String, _ title: String, subtitle: String? = nil, icon: FilterIcon) {

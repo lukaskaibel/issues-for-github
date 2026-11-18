@@ -211,7 +211,7 @@ struct FilterIconView: View {
             case .milestone(let mark): MilestoneIcon(mark: mark, size: size)
             case .dot(let color): GroupIcon(icon: .dot(color), size: size + 1)
             case .iteration(let current): IterationIcon(size: size + 1).foregroundStyle(current ? Theme.started : Theme.textSecondary)
-            case .priority(let level): PriorityIcon(level: level).scaleEffect(size / 14)
+            case .priority(let level): PriorityIcon(level: level, size: size)
             case .project(let look): ProjectGlyphImage(look: look, size: size + 1)
             case .none: EmptyView()
             }
@@ -271,7 +271,7 @@ struct FilterMenu: View {
                     } else if id.hasPrefix("property:") {
                         property = properties.first { "property:\($0.id)" == id }
                     } else if id.hasPrefix("value:"), let entry = model.allFilterValues(in: scope).first(where: { "value:\($0.value.id)" == id }) {
-                        filter = model.toggling(entry.value, in: filter, termIndex: model.termIndex(for: entry.property, in: filter))
+                        filter = model.toggling(entry.value, in: filter, termIndex: model.termIndex(for: entry.property, in: filter), takesSeveral: entry.property.takesSeveral)
                         close()
                     }
                 },
@@ -303,7 +303,10 @@ struct FilterValueList: View {
     var body: some View {
         if let property {
             let values = model.filterValues(property, in: scope)
-            let picked = termIndex.flatMap { filter.terms.indices.contains($0) ? model.pickedValues(filter.terms[$0]) : nil } ?? []
+            // "No assignee" and the like are ticked by a `no:` or `has:` term of their own.
+            let presence = values.filter { model.presenceTerm(of: $0, in: filter) != nil }.map { "\($0.key):\($0.value.lowercased())" }
+            let picked = (termIndex.flatMap { filter.terms.indices.contains($0) ? model.pickedValues(filter.terms[$0]) : nil } ?? [])
+                .union(presence)
             PickerList(
                 placeholder: property.title,
                 items: values.map { value in
@@ -322,7 +325,7 @@ struct FilterValueList: View {
                     // The term this property writes into, as it is now: picking may have made or taken one away.
                     let index = model.termIndex(for: property, in: filter)
                         ?? (value.key == "no" || value.key == "has" ? filter.terms.firstIndex { $0.key == value.key && $0.values.contains(value.value) } : nil)
-                    filter = model.toggling(value, in: filter, termIndex: index)
+                    filter = model.toggling(value, in: filter, termIndex: index, takesSeveral: property.takesSeveral)
                 },
                 onClose: close
             )
@@ -354,48 +357,6 @@ struct FilterTextEditor: View {
         .padding(12)
         .frame(width: 380)
         .onAppear { text = filter.text }
-    }
-}
-
-/// Lays its children out in rows, starting a new row when one is full.
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 6
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.width ?? .infinity
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var line: CGFloat = 0
-        var widest: CGFloat = 0
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x > 0, x + size.width > width {
-                y += line + spacing
-                x = 0
-                line = 0
-            }
-            x += size.width + spacing
-            widest = max(widest, x - spacing)
-            line = max(line, size.height)
-        }
-        return CGSize(width: min(widest, width), height: y + line)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var line: CGFloat = 0
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x > bounds.minX, x + size.width > bounds.maxX {
-                y += line + spacing
-                x = bounds.minX
-                line = 0
-            }
-            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing
-            line = max(line, size.height)
-        }
     }
 }
 
@@ -517,7 +478,7 @@ struct DisplayOptions: View {
             .font(.small)
             let candidates = model.chipCandidates(projectId: view.projectId)
             if !candidates.isEmpty {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                PopoverDivider(outset: 14)
                 VStack(alignment: .leading, spacing: 8) {
                     Text(.properties).font(.small).foregroundStyle(Theme.textSecondary)
                     FlowLayout(spacing: 5) {
@@ -543,7 +504,7 @@ struct DisplayOptions: View {
             }
             let hidden = mode == .board ? model.hiddenColumns(projectId: view.projectId) : []
             if !hidden.isEmpty {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                PopoverDivider(outset: 14)
                 VStack(alignment: .leading, spacing: 8) {
                     Text(.hiddenColumns).font(.small).foregroundStyle(Theme.textSecondary)
                     // A click shows the column on the board again.
@@ -570,7 +531,7 @@ struct DisplayOptions: View {
                 }
             }
             if model.displayDiffers(view) {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                PopoverDivider(outset: 14)
                 HStack(spacing: 8) {
                     Text(.changedForYou).font(.small).foregroundStyle(Theme.textTertiary)
                     Spacer(minLength: 8)
