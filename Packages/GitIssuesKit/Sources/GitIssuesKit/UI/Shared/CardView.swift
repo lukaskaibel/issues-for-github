@@ -58,6 +58,8 @@ struct CardView: View, Equatable {
     var highlighted = false
     /// Picked for a change to several issues at once.
     var selected = false
+    /// The issue open in the peek.
+    var peeked = false
     var lifted = false
     /// Changes when avatar images finish loading, so cards repaint with them.
     var avatarVersion = 0
@@ -312,8 +314,8 @@ final class CardPaintCache: @unchecked Sendable {
 
 /// A colour a card is painted with, named so that it can be kept once worked out.
 enum CardInk: Hashable {
-    case card, cardHover, cardLifted, selectionFill, cardBehind
-    case cardShadow, cardRaisedShadow, cardOutline, selectionBorder
+    case card, cardHover, cardLifted, selectionFill, peekFill, cardBehind
+    case cardShadow, cardRaisedShadow, cardOutline, selectionBorder, peekRing
     case partHover, textSecondary, textTertiary, textBody, barOff, urgent, treeLine
     case milestone(MilestoneMark)
     case label(hex: String)
@@ -325,11 +327,13 @@ enum CardInk: Hashable {
         case .cardHover: Theme.cardHover
         case .cardLifted: Theme.cardLifted
         case .selectionFill: Theme.selectionFill
+        case .peekFill: Theme.peekGround()
         case .cardBehind: Theme.cardBehind
         case .cardShadow: Theme.cardShadow
         case .cardRaisedShadow: Theme.cardRaisedShadow
         case .cardOutline: Theme.cardLiftedBorder
         case .selectionBorder: Theme.selectionBorder
+        case .peekRing: Theme.peekRing()
         case .partHover: Theme.partHover
         case .textSecondary: Theme.textSecondary
         case .textTertiary: Theme.textTertiary
@@ -460,18 +464,22 @@ private struct CardPainter {
         if view.stackEdge { drawStackEdge() }
         defer { if !view.lifted { CardRegionStore.shared.set(item.id, parts, fold: fold, number: numberRect) } }
         let shape = Path(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: CardView.cornerRadius, style: .continuous)
-        let fill = ink(view.lifted ? .cardLifted : view.selected ? .selectionFill : (view.highlighted ? .cardHover : .card))
+        let fill = ink(view.lifted ? .cardLifted : view.selected ? .selectionFill : view.peeked ? .peekFill : (view.highlighted ? .cardHover : .card))
         if view.lifted {
             context.fill(shape, with: .color(fill))
         } else {
-            // No border: the card stands on a soft shadow, and seems to rise under the pointer.
-            let shadow = view.highlighted ? CardView.raisedShadow : CardView.shadow
+            // No border: the card stands on a soft shadow, and seems to rise under the pointer and in the peek.
+            let raised = view.highlighted || view.peeked
+            let shadow = raised ? CardView.raisedShadow : CardView.shadow
             context.drawLayer { layer in
-                layer.addFilter(.shadow(color: ink(view.highlighted ? .cardRaisedShadow : .cardShadow), radius: shadow.radius, y: shadow.y))
+                layer.addFilter(.shadow(color: ink(raised ? .cardRaisedShadow : .cardShadow), radius: shadow.radius, y: shadow.y))
                 layer.fill(shape, with: .color(fill))
             }
         }
-        if view.selected && !view.lifted {
+        if view.peeked && !view.lifted {
+            // The ground is the card's own, already under its shadow, and a picked card keeps its tint.
+            context.draw(Marks.peek(in: CGRect(origin: .zero, size: size), cornerRadius: CardView.cornerRadius), mark: ink(.peekRing))
+        } else if view.selected && !view.lifted {
             let ring = Path(roundedRect: CGRect(origin: .zero, size: size).insetBy(dx: 0.75, dy: 0.75), cornerRadius: CardView.cornerRadius - 0.75, style: .continuous)
             context.stroke(ring, with: .color(ink(.selectionBorder)), lineWidth: 1.5)
         } else if look.contrast == .increased {
@@ -833,6 +841,26 @@ extension View {
     /// The shadow of a card being dragged (`CardView.liftedShadow`), while it is lifted.
     func liftedShadow(_ lifted: Bool = true) -> some View {
         shadow(color: lifted ? Theme.shadow : .clear, radius: lifted ? CardView.liftedShadow.radius : 0, y: lifted ? CardView.liftedShadow.y : 0)
+    }
+}
+
+/// The issue open in the peek (`Marks.peek`), behind the issue and as big as its shape, for what is drawn with views: an
+/// issue in My Issues' overview, a line of a timeline. Cards and the list's rows paint the same mark themselves.
+struct PeekMark: View {
+    /// The corner radius of the issue's own shape.
+    var cornerRadius: CGFloat
+    /// On a picked row, which is filled with the accent.
+    var onAccent = false
+
+    var body: some View {
+        Canvas { context, size in
+            context.draw(
+                Marks.peek(in: CGRect(origin: .zero, size: size), cornerRadius: cornerRadius, onAccent: onAccent),
+                mark: Theme.peekRing(onAccent: onAccent), off: Theme.peekGround(onAccent: onAccent)
+            )
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 

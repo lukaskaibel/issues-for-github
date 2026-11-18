@@ -21,6 +21,8 @@ struct IssueRowModel: Equatable {
     /// row's checkbox.
     var selected = false
     var selecting = false
+    /// The issue open in the peek.
+    var peeked = false
     /// How the row hangs under a parent in its group.
     var nest = Nesting.Place()
     /// How many sub-issues hang under this one in its group, folded or not; nil when none do.
@@ -60,7 +62,7 @@ extension AppModel {
     /// The row of `item`. What every row shows the same way is worked out here; what depends on the list, such as where
     /// the row hangs in it and what its groups say already, is passed in.
     func issueRow(
-        _ item: Item, projectTitle: String? = nil, selected: Bool = false, selecting: Bool = false,
+        _ item: Item, projectTitle: String? = nil, selected: Bool = false, selecting: Bool = false, peeked: Bool = false,
         nest: Nesting.Place = Nesting.Place(), nested: Int? = nil, folded: Bool = false, showsParent: Bool = false,
         milestone: String?, chips: [FieldChip]
     ) -> IssueRowModel {
@@ -71,7 +73,7 @@ extension AppModel {
             projectTitle: projectTitle,
             due: dueBadge(for: item),
             blocker: blockerMark(for: item),
-            selected: selected, selecting: selecting,
+            selected: selected, selecting: selecting, peeked: peeked,
             nest: nest, nested: nested, folded: folded, showsParent: showsParent,
             parentIsEpic: item.parentId.flatMap { issue(contentId: $0) }?.isEpic ?? false,
             milestone: milestone,
@@ -327,14 +329,15 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
 
     /// The row's own picture as it lifts off the list, which `LiftedImage` puts on a card: without the hover fill and
-    /// checkbox, which belong to the pointer, not to the issue, nor the accent fill of a picked row or the indent of a
-    /// sub-issue; lifted, it is a card like any other, as on the board.
+    /// checkbox, which belong to the pointer, not to the issue, nor the accent fill of a picked row, the mark of the peek
+    /// or the indent of a sub-issue; lifted, it is a card like any other, as on the board.
     func liftedContent() -> NSImage? {
         guard let content = bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
         let wasHighlighted = highlighted, wasHovered = hoveredPart, wasRow = row
-        if var lifted = row, lifted.selected || lifted.selecting || lifted.nest.depth > 0 {
+        if var lifted = row, lifted.selected || lifted.selecting || lifted.peeked || lifted.nest.depth > 0 {
             lifted.selected = false
             lifted.selecting = false
+            lifted.peeked = false
             lifted.nest = Nesting.Place()
             configure(lifted, highlighted: false)
         }
@@ -358,12 +361,19 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
         let midY = size.height / 2
 
         let onAccent = row.selected
-        if row.selected {
+        let shape = bounds.insetBy(dx: IssueTable.inset, dy: 1)
+        if row.peeked {
+            context.draw(
+                Marks.peek(in: shape, cornerRadius: 8, onAccent: onAccent),
+                mark: NSColor(Theme.peekRing(onAccent: onAccent)).cgColor, off: NSColor(Theme.peekGround(onAccent: onAccent)).cgColor,
+                onColor: NSColor(Theme.onColor).cgColor
+            )
+        } else if row.selected {
             NSColor(Theme.accentFill).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
+            NSBezierPath(roundedRect: shape, xRadius: 8, yRadius: 8).fill()
         } else if highlighted {
             NSColor(Theme.selected).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
+            NSBezierPath(roundedRect: shape, xRadius: 8, yRadius: 8).fill()
         }
         // The checkbox sits under the section headers' fold arrow; it shows on hover and while picking. A row that can't
         // be picked but can be taken off its list has the button for that there instead, so the row's columns stay in
@@ -451,7 +461,7 @@ final class IssueRowCell: PaintedCell, NSViewToolTipOwner {
 
         // Right to left: assignees, date, project, labels.
         var right = size.width - IssueTable.inset - 14
-        var avatarRing = NSColor(row.selected ? Theme.accentFill : highlighted ? Theme.selected : Theme.panel)
+        var avatarRing = NSColor(row.selected ? Theme.accentFill : row.peeked ? Theme.peekFill : highlighted ? Theme.selected : Theme.panel)
         if canEditFields {
             let count = CGFloat(max(min(row.item.assignees.count, 3), 1))
             let width = 18 + (count - 1) * 13

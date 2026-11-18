@@ -256,6 +256,11 @@ extension AppModel {
         peekItemId.flatMap { id in scopedItems.first { $0.id == id } }
     }
 
+    /// Whether the peek shows this issue, which every place drawing it then marks (`Marks.peek`).
+    func isPeeked(_ id: String) -> Bool {
+        peekItemId == id
+    }
+
     /// Space: a quick look at the issue under the pointer or focus, or away again.
     func togglePeek() {
         if peekItemId != nil {

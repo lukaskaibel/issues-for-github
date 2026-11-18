@@ -754,7 +754,7 @@ private struct BoardCell: View {
         let highlighted = !dragging && (pointer != nil || model.focusedItemId == id)
         let at = Geometry(item: card.item, place: place, folded: card.folded, drag: drag)
         CardView(
-            card: card, width: width - at.indent, highlighted: highlighted, selected: selected,
+            card: card, width: width - at.indent, highlighted: highlighted, selected: selected, peeked: model.isPeeked(id),
             avatarVersion: avatarVersion, hoveredPart: pointer?.part, hoveringFold: pointer?.onFold ?? false,
             slotHeight: at.slotHeight, stackEdge: at.edge > 0,
             tree: !at.isSlot && place.depth > 0 ? place : nil
