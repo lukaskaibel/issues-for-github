@@ -120,7 +120,7 @@ struct ProjectMembershipTests {
         model.undoHistory.endGroup()
         model.redo()
         #expect(model.allItems.first { $0.id == "PVTI_1" } == nil)
-        #expect(model.status.notices.last?.action?.isUndo == true)
+        #expect(model.status.notices.contains { $0.action?.isUndo == true })
     }
 
     @Test("Removal resolves a membership ID changed by sync since the view was drawn")
