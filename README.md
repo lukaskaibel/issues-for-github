@@ -136,7 +136,8 @@ level by level, as a tree. What blocks the issue and what it blocks are listed b
 one off where the checkbox stands. A blocked
 issue carries a red flag with the number of the issue to finish first, as in `#5`, on its card, its list row and its
 line among its parent's sub-issues. Comments sit below, with the field
-for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
+for a new one at the bottom of the window (while you write, `⌘↵` beside its button says how to post without the
+mouse), and status, priority, assignees, labels, parent and blockers are in the
 inspector on the right (`⌃⌘I` hides it). Step to the next issue with the arrows in the toolbar.
 
 <picture>
@@ -371,7 +372,7 @@ The interface uses the system's own parts.
   you see. The properties are glass chips under the title, the
   sub-issues rows as in the lists (by priority, or another order from the "…" beside its plus; the arrow beside one with
   sub-issues of its own unfolds them under it), the comments a conversation, and the comment field stays at the bottom
-  as in Messages. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
+  as in Messages, showing `⌘↵` beside its button while you write with a keyboard attached. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
   unfolded ones too, then move them all under another parent with the bar at the bottom, or change their status,
   priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its cards on
   grey without borders or lanes, as on the Mac; a column's "…" hides it on that iPad, and the hidden ones wait at the end of the
