@@ -157,7 +157,8 @@ extension Mutation {
         case .markThreadRead, .archiveThread, .unsubscribeThread:
             return []
 
-        case .createIssue, .addComment, .deleteItem, .addToProject:
+        // Taking an issue off a project keeps its own undo, for the moment before the card's values are gone.
+        case .createIssue, .addComment, .deleteItem, .addToProject, .setProjectMembership:
             return nil
         }
     }

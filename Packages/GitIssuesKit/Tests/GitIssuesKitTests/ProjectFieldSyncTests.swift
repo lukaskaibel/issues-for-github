@@ -78,7 +78,7 @@ struct ProjectFieldSyncTests {
     @Test("Cards read before multiple-choice fields were known are read again, those of other projects are not")
     func multiSelectMigration() throws {
         let queue = try DatabaseQueue()
-        try AppDatabase.migrator.migrate(queue, upTo: "subIssueTree")
+        try AppDatabase.migrator.migrate(queue, upTo: "issueTypeColors")
         try queue.write { db in
             for (id, type) in [("P1", "MULTI_SELECT"), ("P2", "TEXT")] {
                 try Project(id: id, ownerLogin: "octo", ownerIsOrg: false, number: 1, title: id, url: "", closed: false,
