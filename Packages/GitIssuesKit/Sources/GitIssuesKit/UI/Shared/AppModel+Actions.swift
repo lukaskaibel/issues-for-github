@@ -234,35 +234,13 @@ extension AppModel {
         let changing = members.map { statusMutations($0, option) }
         let changes = changing.flatMap { $0 }
         guard !changes.isEmpty || !placing.isEmpty else { return }
-        // Undoing gives each issue its status, state and place back.
-        var undo: [Mutation] = []
-        for change in changes {
-            switch change {
-            case .setField(var field):
-                swap(&field.optionId, &field.base)
-                undo.append(.setField(field))
-            case .setState(let state):
-                guard let before = members.first(where: { $0.contentId == state.contentId }) else { break }
-                undo.append(.setState(.init(contentId: state.contentId, closed: before.isClosed, reason: before.isClosed ? before.stateReason : nil)))
-            default:
-                break
-            }
-        }
-        if !placing.isEmpty, let projectId = members.first?.projectId {
-            let board = allItems.filter { $0.projectId == projectId }
-            for member in members.sorted(by: { $0.position < $1.position }) {
-                let index = board.firstIndex { $0.id == member.id } ?? 0
-                undo.append(.move(.init(itemId: member.id, projectId: projectId, afterItemId: index > 0 ? board[index - 1].id : nil)))
-            }
-        }
         perform(changes + placing)
         guard !changes.isEmpty else { return }
-        status.post(Notice(
+        postWithUndo(
             // Picked issues that were there already didn't move.
             title: String(localized: .issuesMovedToStatus(count: changing.filter { !$0.isEmpty }.count, status: title)),
-            message: message,
-            action: .undo(undo)
-        ))
+            message: message
+        )
     }
 
     // MARK: Several picked issues together
@@ -528,6 +506,7 @@ extension AppModel {
         } catch {
             return
         }
+        recordColumnsUndo(projectId: projectId, before: current, after: newOptions)
         reloadNow()
         let engine = self.engine
         let placeholdersMade = placeholders
@@ -621,6 +600,7 @@ extension AppModel {
             // My Issues' overview leaves hidden projects out.
             rebuild()
         }
+        recordUndo(.restore { $0.setHidden(project, !hidden) }, name: hidden ? .hideFromSidebar : .showInSidebar)
         #if os(macOS)
         guard hidden, scope?.projectId == project.id else { return }
         if let next = projects.first(where: { !$0.closed && !hiddenProjectIds.contains($0.id) }) {
@@ -735,14 +715,8 @@ extension AppModel {
             perform([.setDate(mutation)])
         case .openItem(let id):
             if let item = allItems.first(where: { $0.id == id }) { open(item) }
-        case .undo(let mutations):
-            // Each change starts from what GitHub has now, which is what was done.
-            let current = mutations.map { mutation -> Mutation in
-                guard case .setMilestone(var change) = mutation else { return mutation }
-                change.base = issue(contentId: change.contentId)?.milestoneId
-                return .setMilestone(change)
-            }
-            withAnimation(Theme.spring) { perform(current) }
+        case .undo:
+            undo()
         }
     }
 }

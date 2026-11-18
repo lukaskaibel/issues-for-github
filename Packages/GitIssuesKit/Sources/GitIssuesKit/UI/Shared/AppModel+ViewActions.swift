@@ -44,6 +44,10 @@ extension AppModel {
     func rename(_ view: ProjectView, to name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed != view.name else { return }
+        let before = view.name
+        recordUndo(.restore { model in
+            if let current = model.view(id: view.id) { model.rename(current, to: before) }
+        }, name: .actionRenameView)
         changeView(view, failure: .viewSaveFailed(view: view.name)) { engine in
             try await engine.updateView(view.id, change: .init(name: trimmed))
         } done: { _ in }

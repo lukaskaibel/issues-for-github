@@ -246,7 +246,13 @@ struct RoadmapTimeline: View {
             .padding(.leading, 16 + CGFloat(row.depth) * 18)
             .padding(.trailing, 10)
             .frame(height: TimelineLayout.rowHeight)
-            .background(hovered == hit ? Theme.hover.opacity(0.7) : .clear)
+            .background {
+                if model.isPeeked(row.epic.id) {
+                    PeekMark(cornerRadius: 6).padding(.horizontal, 4).padding(.vertical, 1)
+                } else if hovered == hit {
+                    Theme.hover.opacity(0.7)
+                }
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainPressStyle())
@@ -266,10 +272,11 @@ struct RoadmapTimeline: View {
         let marks = layout.roadmap.windows.map { model.mark(of: $0.group, projectId: projectId, today: today) }
         let done = Set((layout.roadmap.rows + layout.roadmap.later).filter { model.isDone($0.epic) }.map(\.epic.id))
         let (shownHover, shownDrag, shownDueDrag) = (hovered, drag, dueDrag)
+        let peeked = model.peekItemId
         return Canvas { context, size in
             TimelinePainter(
                 context: context, size: size, layout: layout, marks: marks, doneEpics: done, today: today,
-                hovered: shownHover, drag: shownDrag, dueDrag: shownDueDrag
+                hovered: shownHover, peeked: peeked, drag: shownDrag, dueDrag: shownDueDrag
             ).draw()
         }
         .frame(width: layout.width, height: layout.height)
@@ -439,6 +446,8 @@ private struct TimelinePainter {
     var doneEpics: Set<String>
     var today: CalendarDay
     var hovered: TimelineLayout.Hit?
+    /// The epic in the peek.
+    var peeked: String?
     var drag: RoadmapTimeline.BarDrag?
     var dueDrag: RoadmapTimeline.DueDrag?
 
@@ -459,6 +468,12 @@ private struct TimelinePainter {
         }
         if case .later(let index) = hovered, drag == nil {
             context.fill(Path(CGRect(x: 0, y: layout.laterRowTop(index), width: size.width, height: TimelineLayout.rowHeight)), with: .color(Theme.hover.opacity(0.7)))
+        }
+        // The epic in the peek, along its line from its marked name.
+        let peekedTops = roadmap.rows.indices.filter { roadmap.rows[$0].epic.id == peeked }.map(layout.rowTop)
+            + roadmap.later.indices.filter { roadmap.later[$0].epic.id == peeked }.map(layout.laterRowTop)
+        for top in peekedTops {
+            context.fill(Path(CGRect(x: 0, y: top + 1, width: size.width, height: TimelineLayout.rowHeight - 2)), with: .color(Theme.peekFill))
         }
 
         drawMonths(today: today)

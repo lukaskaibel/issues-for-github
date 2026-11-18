@@ -69,22 +69,12 @@ extension AppModel {
     /// elsewhere than its parent, and a drop that also moved it would do two things where it shows one.
     func nest(_ dragged: [Item], under target: Item) {
         let children = nestable(dragged, under: target)
-        guard !children.isEmpty, let parentId = target.contentId else { return }
-        // Back under the parent each had, or under none; GitHub has the new parent once these are sent.
-        let undo: [Mutation] = children.compactMap { child in
-            child.summary.map { summary in
-                .setParent(.init(
-                    child: summary, parentId: child.parentId, parentNumber: child.parentNumber, parentTitle: child.parentTitle,
-                    base: parentId
-                ))
-            }
-        }
+        guard !children.isEmpty, target.contentId != nil else { return }
         setParent(of: children, to: target)
-        status.post(Notice(
+        postWithUndo(
             title: String(localized: .issuesNestedUnder(count: children.count, number: target.displayNumber)),
-            message: target.title,
-            action: .undo(undo)
-        ))
+            message: target.title
+        )
     }
 
     /// Whether you may change an issue's parent or sub-issues here: on a board you can only read you can't, as you

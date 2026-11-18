@@ -294,9 +294,44 @@ enum DebugRemote {
                 model.setDue(group, to: Int(argument).map { CalendarDay.today().adding(days: $0) })
             }
         case "undo":
-            if let notice = model.status.notices.last(where: { $0.action?.isUndo == true }), let action = notice.action {
-                model.apply(action)
-                model.status.dismiss(notice.id)
+            // The Undo button of the last notice that has one.
+            if let notice = model.status.notices.last(where: { $0.action?.isUndo == true }) { model.undo(notice) }
+        case "undohistory":
+            let names = { (steps: [UndoHistory<UndoAction>.Step]) in steps.map { String(localized: $0.name) }.joined(separator: " | ") }
+            log("undo [\(names(model.undoHistory.undoSteps))] redo [\(names(model.undoHistory.redoSteps))] textHasKeyboard=\(model.textHasKeyboard) notices=\(model.status.notices.map(\.title)) hidden=\(model.hiddenProjects.map(\.title)) inboxUndo=\(model.inboxUndo?.message ?? "-")")
+        case "undocommand", "redocommand":
+            // What Edit › Undo and Redo do, and what the text's own undo has left after it.
+            if parts.first == "undocommand" { model.undoCommand() } else { model.redoCommand() }
+            let manager = model.mainWindow?.firstResponder?.undoManager
+            log("\(parts[0]) canUndo=\(manager?.canUndo ?? false) canRedo=\(manager?.canRedo ?? false) responder=\(model.mainWindow?.firstResponder.map { String(describing: type(of: $0)) } ?? "-")")
+        case "snoozeentry":
+            // snoozeentry <number>: snoozes that Inbox entry until tomorrow.
+            if let entry = model.visibleInbox.first(where: { "\($0.number ?? -1)" == argument }) {
+                model.snooze([entry], until: Date().addingTimeInterval(86400))
+            }
+        case "readentry":
+            // readentry <number>: U on that Inbox entry.
+            if let entry = model.inboxEntries.first(where: { "\($0.number ?? -1)" == argument }) { model.toggleRead([entry]) }
+        case "archiveentry":
+            if let entry = model.visibleInbox.first(where: { "\($0.number ?? -1)" == argument }) { model.archive([entry]) }
+        case "issuestate":
+            // issuestate <number>: what undo and redo change on an issue, in one line.
+            if let item = item(argument, model) {
+                let column = model.statusOptions(projectId: item.projectId).first { $0.id == item.statusId }?.name ?? "-"
+                let place = model.allItems.filter { $0.projectId == item.projectId }.firstIndex { $0.id == item.id } ?? -1
+                log("issue \(item.displayNumber) title=\"\(item.title)\" status=\(column) state=\(item.state) priority=\(item.priorityId ?? "-") due=\(item.dueDate ?? "-") place=\(place) assignees=\(item.assignees.map(\.login)) labels=\(item.labels.map(\.name)) parent=\(item.parentNumber.map(String.init) ?? "-") milestone=\(item.milestoneTitle ?? "-") body=\(item.body.count)")
+            }
+        case "menukey":
+            // menukey <key code> [shift]: a ⌘ shortcut as the keyboard makes it and the menu bar takes it, which works with
+            // the app in the background. Made from a real key event, so its characters are the keyboard layout's.
+            let bits = argument.split(separator: " ").map(String.init)
+            if let code = bits.first.flatMap({ CGKeyCode($0) }), let key = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: true) {
+                key.flags = bits.contains("shift") ? [.maskCommand, .maskShift] : .maskCommand
+                let event = NSEvent(cgEvent: key)
+                let edit = NSApp.mainMenu?.items.first { $0.title == "Edit" }?.submenu
+                if let edit { edit.delegate?.menuNeedsUpdate?(edit) }
+                NSApp.mainMenu?.update()
+                log("menukey \(argument) chars=\(event?.characters ?? "-") plain=\(event?.charactersIgnoringModifiers ?? "-"): \(event.map { NSApp.mainMenu?.performKeyEquivalent(with: $0) == true } ?? false)")
             }
         case "menudump":
             // menudump <number>: the issue's right-click menu, one entry per line, submenus indented.
@@ -471,6 +506,12 @@ enum DebugRemote {
             // app's own handling of scrolls (and its swipe to go back or forward).
             let numbers = argument.split(separator: " ").compactMap { Double($0) }
             if numbers.count == 3 { horizontalScroll(at: CGPoint(x: numbers[0], y: numbers[1]), by: numbers[2], model: model) }
+        case "deeppress":
+            // deeppress <x> <y> [number]: a press at the point that goes on to a deep press, then lets go, through the
+            // event queue. With a number, that issue counts as the one under the pointer, as a hand would have it.
+            let bits = argument.split(separator: " ").map(String.init)
+            guard bits.count >= 2, let x = Double(bits[0]), let y = Double(bits[1]) else { return }
+            deepPress(at: CGPoint(x: x, y: y), over: bits.count > 2 ? item(bits[2], model) : nil, model: model)
         case "click", "rightclick", "clickmove":
             // click|rightclick <x> <y> in points from the window's top-left corner. clickmove: a click after which the
             // pointer moves on a point, as it does on a trackpad.
@@ -502,7 +543,7 @@ enum DebugRemote {
                 if bits.contains("opt") { modifiers.insert(.option) }
                 let arrows: [UInt16: String] = [125: "\u{F701}", 126: "\u{F700}", 123: "\u{F702}", 124: "\u{F703}"]
                 if arrows[code] != nil { modifiers.formUnion([.numericPad, .function]) }
-                let characters = arrows[code] ?? [36: "\r", 48: "\t", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a", 8: "c"][code] ?? ""
+                let characters = arrows[code] ?? [36: "\r", 48: "\t", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a", 8: "c", 6: "z"][code] ?? ""
                 sendKey(characters: modifiers.contains(.shift) ? characters.uppercased() : characters, code: code, modifiers: modifiers, toWindow: parts.first == "winkeycode")
             }
         case "status":
@@ -1387,9 +1428,10 @@ enum DebugRemote {
     private static func renderCards(model: AppModel, folder: String) {
         let dark = NSApp.effectiveAppearance.isDark
         let cards = model.columns.flatMap { column in column.items.map { (column, $0) } }.prefix(60)
-        struct Look { var name: String; var highlighted = false; var selected = false; var lifted = false; var part: PickerKind?; var fold = false }
+        struct Look { var name: String; var highlighted = false; var selected = false; var peeked = false; var lifted = false; var part: PickerKind?; var fold = false }
         var looks = [Look(name: "plain"), Look(name: "hover", highlighted: true), Look(name: "selected", selected: true),
-                     Look(name: "selected-hover", highlighted: true, selected: true), Look(name: "lifted", lifted: true),
+                     Look(name: "selected-hover", highlighted: true, selected: true), Look(name: "peeked", peeked: true),
+                     Look(name: "selected-peeked", selected: true, peeked: true), Look(name: "lifted", lifted: true),
                      Look(name: "fold", highlighted: true, fold: true)]
         for kind in [PickerKind.priority, .labels, .subIssues, .assignees, .dueDate, .milestone, .blockedBy, .parent, .epic] {
             looks.append(Look(name: "part-\(kind)", highlighted: true, part: kind))
@@ -1399,7 +1441,7 @@ enum DebugRemote {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Array(cards), id: \.1.id) { column, item in
                         CardView(card: model.cardModel(for: item, in: column.nesting), width: 232, highlighted: look.highlighted,
-                                 selected: look.selected, lifted: look.lifted, avatarVersion: model.avatarVersion,
+                                 selected: look.selected, peeked: look.peeked, lifted: look.lifted, avatarVersion: model.avatarVersion,
                                  hoveredPart: look.part, hoveringFold: look.fold)
                     }
                 }
@@ -1546,6 +1588,39 @@ enum DebugRemote {
             if let ended = scroll(0, phase: 4) { scrollView.scrollWheel(with: ended) }
             try? await Task.sleep(for: .milliseconds(600))
             log("vscroll done: y=\(Int(scrollView.contentView.bounds.minY))")
+        }
+    }
+
+    /// A press event as a Force Touch trackpad sends it. AppKit has no way to make one, so it comes from a gesture
+    /// event of the kind pressure arrives as; the numbers are the fields AppKit reads it from.
+    private static func pressureEvent(stage: Int64) -> NSEvent? {
+        guard let event = CGEvent(source: nil), let type = CGEventType(rawValue: 29),
+              let kind = CGEventField(rawValue: 110), let stageField = CGEventField(rawValue: 143) else { return nil }
+        event.type = type
+        event.setIntegerValueField(kind, value: 32)
+        event.setIntegerValueField(stageField, value: stage)
+        return NSEvent(cgEvent: event)
+    }
+
+    private static func deepPress(at point: CGPoint, over item: Item?, model: AppModel) {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }),
+              let content = window.contentView else { return }
+        let location = NSPoint(x: point.x, y: content.bounds.height - point.y)
+        func mouse(_ type: NSEvent.EventType) -> NSEvent? {
+            NSEvent.mouseEvent(with: type, location: location, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                               windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1)
+        }
+        Task { @MainActor in
+            if let down = mouse(.leftMouseDown) { NSApp.postEvent(down, atStart: false) }
+            try? await Task.sleep(for: .milliseconds(80))
+            if let item { model.hoveredItemId = item.id }
+            for stage: Int64 in [1, 2] {
+                if let press = pressureEvent(stage: stage) { NSApp.postEvent(press, atStart: false) }
+                try? await Task.sleep(for: .milliseconds(80))
+            }
+            if let up = mouse(.leftMouseUp) { NSApp.postEvent(up, atStart: false) }
+            try? await Task.sleep(for: .milliseconds(400))
+            log("deeppress: peek=\(model.peekItem?.displayNumber ?? "none") open=\(model.openItem?.displayNumber ?? "none")")
         }
     }
 
