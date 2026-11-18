@@ -883,6 +883,7 @@ extension Mutation {
         case (.setIssueType(var new), .setIssueType(let old)):
             new.baseName = old.baseName
             new.baseColor = old.baseColor
+            new.baseTypeId = old.baseTypeId
             return .setIssueType(new)
         case (.setProjectField(var new), .setProjectField(let old)):
             new.base = old.base

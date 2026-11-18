@@ -15,6 +15,16 @@ All notable changes to this project are recorded here. The format follows
   for several picked issues. A card still shows two tags at most, so the type can put a label behind "+1", and on a full
   line the milestone gives way first. A label named like the type is left out of cards and rows. The filter menu and
   lists grouped by type use the same squares.
+- **Undo and redo for what you do in the app.** `⌘Z` takes back the last change and `⌘⇧Z` brings it back, step by step,
+  on the Mac and on an iPad with a keyboard, and **Edit › Undo** and **Redo** name what they are about, such as **Undo
+  Change Status**. It works for an issue's status, priority, due date and project fields, its place on the board, title
+  and description, open or closed, assignees, labels, type, parent, blockers, milestone and epic; what you changed on
+  several picked issues at once is one step. It also takes back changes to a milestone, a board's columns (order, name,
+  colour, one added, an empty one deleted), a view's name, a project hidden from the sidebar, and in the Inbox marking
+  read or unread, snoozing, and for its few seconds archiving or unsubscribing. A short message says what happened.
+  Undoing is a change like any other: it reaches GitHub the same way, also after being offline. While you type, the keys
+  go on undoing your typing. A description you keep writing is one step. New issues, comments, deleted issues and issues
+  put on a board can't be taken back this way.
 - **Press deeper to peek (Mac).** On a Force Touch trackpad, press an issue on a board or in a list until the second
   click, and its peek opens instead of the issue. It stays open when you let go.
 - **Make a status where you pick one.** Type a name the board has no status of into any status picker, on the
@@ -107,6 +117,8 @@ All notable changes to this project are recorded here. The format follows
   glass panel as a new issue, over the dimmed board or list, and only as tall as the issue needs. A click beside it puts
   it away, as do Space and Esc; `J` `K` and the keys that change the issue work as before.
 
+- While you write a comment, `⌘↵` shows beside the send button, to say that it posts the comment: on the Mac, and on
+  iPhone and iPad with a keyboard attached.
 - **An issue looks the same wherever it is listed.** On an issue's page, its sub-issues, an epic's issues and the
   issues it is blocked by or blocks are now the rows the lists show, on the Mac and on iPhone and iPad: priority,
   number, status, title, sub-issues, the blocker's flag, labels, milestone, due date and people, in the list's order,
@@ -160,6 +172,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **`⌘⇧Z` no longer undoes an archived notification** in the Mac's Inbox: it is Redo now.
 - **A label recoloured or renamed on GitHub changes in the app too**, on every card and row, within a minute. GitHub
   doesn't count that as a change of the issues, so they kept the old colour until something else about them changed.
 - **Switching boards on the Mac no longer crashes** while a column is adding cards.

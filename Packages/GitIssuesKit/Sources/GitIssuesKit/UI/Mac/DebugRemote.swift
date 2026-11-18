@@ -295,9 +295,44 @@ enum DebugRemote {
                 model.setDue(group, to: Int(argument).map { CalendarDay.today().adding(days: $0) })
             }
         case "undo":
-            if let notice = model.status.notices.last(where: { $0.action?.isUndo == true }), let action = notice.action {
-                model.apply(action)
-                model.status.dismiss(notice.id)
+            // The Undo button of the last notice that has one.
+            if let notice = model.status.notices.last(where: { $0.action?.isUndo == true }) { model.undo(notice) }
+        case "undohistory":
+            let names = { (steps: [UndoHistory<UndoAction>.Step]) in steps.map { String(localized: $0.name) }.joined(separator: " | ") }
+            log("undo [\(names(model.undoHistory.undoSteps))] redo [\(names(model.undoHistory.redoSteps))] textHasKeyboard=\(model.textHasKeyboard) notices=\(model.status.notices.map(\.title)) hidden=\(model.hiddenProjects.map(\.title)) inboxUndo=\(model.inboxUndo?.message ?? "-")")
+        case "undocommand", "redocommand":
+            // What Edit › Undo and Redo do, and what the text's own undo has left after it.
+            if parts.first == "undocommand" { model.undoCommand() } else { model.redoCommand() }
+            let manager = model.mainWindow?.firstResponder?.undoManager
+            log("\(parts[0]) canUndo=\(manager?.canUndo ?? false) canRedo=\(manager?.canRedo ?? false) responder=\(model.mainWindow?.firstResponder.map { String(describing: type(of: $0)) } ?? "-")")
+        case "snoozeentry":
+            // snoozeentry <number>: snoozes that Inbox entry until tomorrow.
+            if let entry = model.visibleInbox.first(where: { "\($0.number ?? -1)" == argument }) {
+                model.snooze([entry], until: Date().addingTimeInterval(86400))
+            }
+        case "readentry":
+            // readentry <number>: U on that Inbox entry.
+            if let entry = model.inboxEntries.first(where: { "\($0.number ?? -1)" == argument }) { model.toggleRead([entry]) }
+        case "archiveentry":
+            if let entry = model.visibleInbox.first(where: { "\($0.number ?? -1)" == argument }) { model.archive([entry]) }
+        case "issuestate":
+            // issuestate <number>: what undo and redo change on an issue, in one line.
+            if let item = item(argument, model) {
+                let column = model.statusOptions(projectId: item.projectId).first { $0.id == item.statusId }?.name ?? "-"
+                let place = model.allItems.filter { $0.projectId == item.projectId }.firstIndex { $0.id == item.id } ?? -1
+                log("issue \(item.displayNumber) title=\"\(item.title)\" status=\(column) state=\(item.state) priority=\(item.priorityId ?? "-") due=\(item.dueDate ?? "-") place=\(place) assignees=\(item.assignees.map(\.login)) labels=\(item.labels.map(\.name)) parent=\(item.parentNumber.map(String.init) ?? "-") milestone=\(item.milestoneTitle ?? "-") body=\(item.body.count)")
+            }
+        case "menukey":
+            // menukey <key code> [shift]: a ⌘ shortcut as the keyboard makes it and the menu bar takes it, which works with
+            // the app in the background. Made from a real key event, so its characters are the keyboard layout's.
+            let bits = argument.split(separator: " ").map(String.init)
+            if let code = bits.first.flatMap({ CGKeyCode($0) }), let key = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: true) {
+                key.flags = bits.contains("shift") ? [.maskCommand, .maskShift] : .maskCommand
+                let event = NSEvent(cgEvent: key)
+                let edit = NSApp.mainMenu?.items.first { $0.title == "Edit" }?.submenu
+                if let edit { edit.delegate?.menuNeedsUpdate?(edit) }
+                NSApp.mainMenu?.update()
+                log("menukey \(argument) chars=\(event?.characters ?? "-") plain=\(event?.charactersIgnoringModifiers ?? "-"): \(event.map { NSApp.mainMenu?.performKeyEquivalent(with: $0) == true } ?? false)")
             }
         case "menudump":
             // menudump <number>: the issue's right-click menu, one entry per line, submenus indented.
@@ -509,7 +544,7 @@ enum DebugRemote {
                 if bits.contains("opt") { modifiers.insert(.option) }
                 let arrows: [UInt16: String] = [125: "\u{F701}", 126: "\u{F700}", 123: "\u{F702}", 124: "\u{F703}"]
                 if arrows[code] != nil { modifiers.formUnion([.numericPad, .function]) }
-                let characters = arrows[code] ?? [36: "\r", 48: "\t", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a", 8: "c"][code] ?? ""
+                let characters = arrows[code] ?? [36: "\r", 48: "\t", 51: "\u{7F}", 53: "\u{1B}", 49: " ", 7: "x", 38: "j", 40: "k", 0: "a", 8: "c", 6: "z"][code] ?? ""
                 sendKey(characters: modifiers.contains(.shift) ? characters.uppercased() : characters, code: code, modifiers: modifiers, toWindow: parts.first == "winkeycode")
             }
         case "status":

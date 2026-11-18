@@ -59,6 +59,8 @@ extension Mutation {
         /// The type before the first of the still-unsent changes to it, which is the one GitHub knows.
         public var baseName: String?
         public var baseColor: String?
+        /// The type this change replaces, by the id GitHub sets it with, so that the change can be taken back.
+        public var baseTypeId: String?
     }
 }
 
