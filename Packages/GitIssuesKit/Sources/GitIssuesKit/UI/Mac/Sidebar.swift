@@ -46,17 +46,6 @@ struct Sidebar: View {
         .safeAreaBar(edge: .bottom, spacing: 0) {
             SidebarFoot()
         }
-        .toolbar {
-            ToolbarItem {
-                Button {
-                    model.overlay = .newIssue(statusId: nil, parentItemId: nil)
-                } label: {
-                    Label(String(localized: .newIssueAction), systemImage: "square.and.pencil")
-                }
-                .help(Text(.newIssueShortcutTooltip))
-                .disabled(model.projects.isEmpty)
-            }
-        }
     }
 
     /// The row for what is on screen.

@@ -81,6 +81,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **A quieter toolbar on the Mac.** New Issue moved from the sidebar to the toolbar, right after back and forward, so
+  it stays there when the sidebar is closed. The toolbar no longer repeats the page's name, its project and "Synced
+  just now": the sidebar already shows them.
 - **An issue looks the same wherever it is listed.** On an issue's page, its sub-issues, an epic's issues and the
   issues it is blocked by or blocks are now the rows the lists show, on the Mac and on iPhone and iPad: priority,
   number, status, title, sub-issues, the blocker's flag, labels, milestone, due date and people, in the list's order,
