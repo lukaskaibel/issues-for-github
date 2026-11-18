@@ -179,7 +179,7 @@ them itself, and leaves out the ones you assigned yourself to in the app.
 
 ### Keyboard first
 
-⌘K, or the magnifying glass in the toolbar, opens the command palette: every action, and a search across your issues.
+⌘K, or Search at the top of the sidebar, opens the command palette: every action, and a search across your issues.
 Single keys act on the issue you hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `L`
 labels, `D` due date, `I` assign to me.
 
