@@ -241,10 +241,35 @@ struct DraggedGroup: Equatable {
     }
 }
 
-/// Card frames inside a column, read while dropping. Kept outside view state so scrolling never redraws.
+/// Card frames inside a column, read while dropping, and how long a dragged card has rested over the middle of one.
+/// Kept outside view state so scrolling never redraws.
 @MainActor
 final class CardFrames {
     var frames: [String: CGRect] = [:]
+    /// The card a dragged one rests over lights up to take it only after a moment.
+    var dwell = NestDwell()
+    /// The look again once the finger may have rested long enough.
+    private var recheck: Task<Void, Never>?
+
+    /// Calls `look` once the card the finger waits over is due to light up, in place of the call the last update asked
+    /// for. The system goes on telling the drop where the finger is while it rests, but nothing promises it, and the
+    /// card must not stay dark under a still finger.
+    func lookAgainWhenDue(_ look: @escaping @MainActor () -> Void) {
+        recheck?.cancel()
+        recheck = dwell.due.map { due in
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(max(0, due - ProcessInfo.processInfo.systemUptime)))
+                guard !Task.isCancelled else { return }
+                look()
+            }
+        }
+    }
+
+    func stopWaiting() {
+        dwell = NestDwell()
+        recheck?.cancel()
+        recheck = nil
+    }
 }
 
 /// One column of the board: its header, and its cards in a scroll of their own, taking cards dropped on it. The
@@ -393,7 +418,7 @@ struct MobileColumn: View {
             .padding(.bottom, folded ? CardStackEdge.height : 0)
             .padding(.leading, indent)
             .background(alignment: .topLeading) {
-                if place.depth > 0 { CardTreeLines(place: place, gap: 8, branchY: 21) }
+                if place.depth > 0 { CardTreeLines(place: place, gap: 8) }
             }
     }
 
@@ -402,24 +427,17 @@ struct MobileColumn: View {
         return Button {
             openRoute(.issue(item.id))
         } label: {
-            CardView(card: model.cardModel(for: item, in: column.nesting, showsMilestone: milestone == nil), width: width, selected: lit, avatarVersion: model.avatarVersion)
+            CardView(card: model.cardModel(for: item, in: column.nesting, showsMilestone: milestone == nil), width: width, avatarVersion: model.avatarVersion)
                 .equatable()
         }
         .buttonStyle(CardPressStyle())
         .accessibilityIdentifier("card-\(item.displayNumber)")
         .hoverEffect(.lift)
-        // Lit to take the dragged card as a sub-issue: a ring a little outside the card and a card a little larger, so
-        // both show around the dragged card, which covers most of it.
+        // Lit to take the dragged card as a sub-issue, as on every board: its ring stands a little outside the card, so
+        // that it shows around the dragged card, which covers most of it.
         .overlay {
-            if lit {
-                RoundedRectangle(cornerRadius: CardView.cornerRadius + Self.nestRingOutset, style: .continuous)
-                    .strokeBorder(Theme.accent, lineWidth: 2.5)
-                    .padding(-Self.nestRingOutset)
-                    .transition(.opacity)
-                    .accessibilityHidden(true)
-            }
+            if lit { NestTargetMark(cornerRadius: CardView.cornerRadius).transition(.opacity) }
         }
-        .scaleEffect(lit ? 1.03 : 1)
         .animation(Theme.quick, value: lit)
         .opacity((dragging == item.id || liftedIds.contains(item.id)) && target != nil ? 0.35 : 1)
         .onGeometryChange(for: CGRect.self) { proxy in
@@ -444,9 +462,6 @@ struct MobileColumn: View {
         .accessibilityAction(named: Text(.moveToNextStatus)) { step(item, by: 1) }
         .accessibilityAction(named: Text(.moveToPreviousStatus)) { step(item, by: -1) }
     }
-
-    /// How far outside a card the ring is that lights it up to take a dragged card.
-    static let nestRingOutset: CGFloat = 4
 
     /// What a card is outside the app: its link on GitHub, or its number and title.
     private func dragText(_ item: Item) -> String {
@@ -505,10 +520,12 @@ private struct ColumnDrop: DropDelegate {
     }
 
     func dropExited(info: DropInfo) {
+        MainActor.assumeIsolated { frames.stopWaiting() }
         if target?.columnId == column.id { target = nil }
     }
 
     func performDrop(info: DropInfo) -> Bool {
+        MainActor.assumeIsolated { frames.stopWaiting() }
         guard CardDragMark.isCard(info) else { return false }
         if target?.columnId == column.id, let parent = target?.nest {
             CardDragMark.loadId(info) { id in onNest(id, parent) }
@@ -545,9 +562,21 @@ private struct ColumnDrop: DropDelegate {
         }
     }
 
-    /// The position among the column's cards, from where the finger is; or the card it would go under.
     private func update(_ info: DropInfo) {
-        if let parent = nestTarget(at: info.location) {
+        update(at: info.location)
+    }
+
+    /// The position among the column's cards, from where the finger is; or the card it would go under, once the finger
+    /// has rested over its middle for a moment. Passing over it on the way somewhere else, the card goes in front of it
+    /// or after it, as anywhere else, and nothing lights up.
+    private func update(at location: CGPoint) {
+        let over = nestTarget(at: location)
+        let lit = MainActor.assumeIsolated {
+            let lit = frames.dwell.update(over: over, at: location, time: ProcessInfo.processInfo.systemUptime)
+            frames.lookAgainWhenDue { update(at: location) }
+            return lit
+        }
+        if let parent = over, lit == parent {
             // The gap keeps its place, and its room, while the card is lit: closing it would move the card under the
             // finger away from it.
             var next = target?.columnId == column.id ? target ?? BoardDropTarget(columnId: column.id, slot: 0) : BoardDropTarget(columnId: column.id, slot: 0, gapless: true)
@@ -562,7 +591,12 @@ private struct ColumnDrop: DropDelegate {
         var slot = 0
         for (position, item) in column.items.enumerated() {
             guard let frame = MainActor.assumeIsolated({ frames.frames[item.id] }) else { continue }
-            if frame.midY < info.location.y { slot = position + 1 }
+            if frame.midY < location.y { slot = position + 1 }
+        }
+        // Over the middle of a card that would light up after a moment, the gap opens beside it on the side where it is
+        // already, or after it: in front of it, the card would move away from under the finger before it lit up.
+        if let over, let held = column.items.firstIndex(where: { $0.id == over }) {
+            slot = target?.columnId == column.id && target?.gapless == false && (target?.slot ?? 0) <= held ? held : held + 1
         }
         var depth = 0
         var row: Int?

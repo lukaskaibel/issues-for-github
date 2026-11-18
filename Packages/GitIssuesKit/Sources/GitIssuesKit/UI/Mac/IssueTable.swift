@@ -2,39 +2,6 @@
 import AppKit
 import SwiftUI
 
-/// What one list row shows, gathered up front so drawing needs no lookups.
-struct IssueRowModel: Equatable {
-    var item: Item
-    var glyph: StatusGlyph
-    var priority: PriorityLevel
-    /// Whether the project has the field, so the icon can be clicked to change it.
-    var showsPriority = true
-    var showsStatus = true
-    /// Shown in "My Issues", where rows come from several projects.
-    var projectTitle: String?
-    var due: DueBadge?
-    /// What blocks it, when an open issue does.
-    var blocker: BlockerMark?
-    /// Picked for a change to several issues at once, and whether anything is picked, which shows every
-    /// row's checkbox.
-    var selected = false
-    var selecting = false
-    /// How the row hangs under a parent in its group.
-    var nest = Nesting.Place()
-    /// How many sub-issues hang under this one in its group, folded or not; nil when none do.
-    var nested: Int?
-    var folded = false
-    /// A sub-issue whose parent is in another group names the parent.
-    var showsParent = false
-    /// Whether that parent is an epic, which it then names with the epic's icon.
-    var parentIsEpic = false
-    /// The milestone it is planned for, where the list isn't a milestone's.
-    var milestone: String?
-    var milestoneMark: MilestoneMark = .upcoming
-    /// The project's own fields the view shows, such as an iteration or a "Workstream".
-    var chips: [FieldChip] = []
-}
-
 struct IssueSectionModel: Equatable {
     typealias Icon = SectionIcon
 
@@ -207,11 +174,11 @@ struct IssueTable: NSViewRepresentable {
         /// Whether the dragged issues can go under an issue, by its id, as worked out once per drag.
         private var nestable: [String: Bool] = [:]
         /// What the dragged row lifted off as: the card under the pointer, where it sits from the pointer, and the row's
-        /// own card with how many issues the drag carries, for the smaller card it turns into over an issue.
+        /// own picture with how many issues the drag carries, for the smaller card it turns into over an issue.
         private struct Lifted {
             var image: NSImage
             var offset: NSPoint
-            var card: NSImage?
+            var content: NSImage?
             var count: Int?
         }
         private var lifted: Lifted?
@@ -421,17 +388,16 @@ struct IssueTable: NSViewRepresentable {
             // are, and their rows stay behind faded.
             let picked: PickedIssues? = if case .row(let issue) = entries[row] { self.picked(from: issue.item.id) } else { nil }
             lifted = nil
-            if let (image, above) = liftedImage(row, in: tableView, picked: picked) {
+            if let (image, corner, content) = liftedImage(row, in: tableView, picked: picked) {
                 let start = tableView.convert(tableView.window?.convertPoint(fromScreen: screenPoint) ?? .zero, from: nil)
-                let card = (tableView.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell)?.dragImage()
                 session.enumerateDraggingItems(options: [], for: tableView, classes: [NSPasteboardItem.self], searchOptions: [:]) { dragged, _, _ in
                     // From where the table lifted the row: by now the row has closed up and `rect(ofRow:)` has no
                     // height, and a frame without one throws, which ends the drag before it starts and leaves the
                     // row hidden.
-                    let origin = NSPoint(x: dragged.draggingFrame.origin.x, y: dragged.draggingFrame.origin.y - above)
+                    let origin = NSPoint(x: dragged.draggingFrame.origin.x + corner.x, y: dragged.draggingFrame.origin.y + corner.y)
                     dragged.setDraggingFrame(NSRect(origin: origin, size: image.size), contents: image)
                     self.lifted = Lifted(
-                        image: image, offset: NSPoint(x: origin.x - start.x, y: origin.y - start.y), card: card, count: picked?.items.count
+                        image: image, offset: NSPoint(x: origin.x - start.x, y: origin.y - start.y), content: content, count: picked?.items.count
                     )
                 }
             }
@@ -479,47 +445,19 @@ struct IssueTable: NSViewRepresentable {
             entries.indices.filter { if case .header = entries[$0] { return true } else { return false } } + [entries.count]
         }
 
-        /// The card a row lifts off as, with how far it reaches above the row: for a picked issue, with the others
-        /// picked with it.
-        func liftedImage(_ row: Int, in tableView: NSTableView, picked: PickedIssues?) -> (image: NSImage, above: CGFloat)? {
+        /// The card a row lifts off as, the board's lifted card (`LiftedImage`), with where the image's top left corner
+        /// is from the row's, and the row's own picture for the smaller card it turns into over an issue: for a picked
+        /// issue, with the others picked with it; for an epic's header, the card its issues lift off as together.
+        func liftedImage(_ row: Int, in tableView: NSTableView, picked: PickedIssues?) -> (image: NSImage, origin: NSPoint, content: NSImage?)? {
             let cell = tableView.view(atColumn: 0, row: row, makeIfNecessary: false)
-            guard let image = (cell as? IssueRowCell)?.dragImage() ?? (cell as? EpicHeaderRowCell)?.dragImage(),
-                  image.size.width > 0, image.size.height > 0 else { return nil }
-            return picked.map { Self.stacked(image, count: $0.items.count, appearance: tableView.effectiveAppearance) } ?? (image, 0)
-        }
-
-        /// A row's card with the edge of a second one under it and, on its corner, how many issues the drag carries,
-        /// as the board shows picked cards lifted together; with how far it reaches above the row.
-        private static func stacked(_ card: NSImage, count: Int, appearance: NSAppearance) -> (image: NSImage, above: CGFloat) {
-            let badge = NSAttributedString(string: "\(count)", attributes: [
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold), .foregroundColor: NSColor.white,
-            ])
-            let above: CGFloat = 6, below = CardStackEdge.height - 1
-            let size = NSSize(width: card.size.width, height: card.size.height + above + below)
-            let image = NSImage(size: size, flipped: true) { _ in
-                let row = NSRect(x: 0, y: above, width: card.size.width, height: card.size.height)
-                let outline = row.insetBy(dx: IssueTable.inset, dy: 1)
-                let edge = NSBezierPath(
-                    roundedRect: outline.insetBy(dx: 6, dy: 0).offsetBy(dx: 0, dy: CardStackEdge.height).insetBy(dx: 0.5, dy: 0.5),
-                    xRadius: 7, yRadius: 7
-                )
-                let width = max(20, badge.size().width + 12)
-                let pill = NSRect(x: outline.maxX + 7 - width, y: outline.minY - 7, width: width, height: 20)
-                appearance.performAsCurrentDrawingAppearance {
-                    NSColor(Theme.card).setFill()
-                    edge.fill()
-                    NSColor(Theme.cardBorder).setStroke()
-                    edge.stroke()
-                }
-                card.draw(in: row, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-                appearance.performAsCurrentDrawingAppearance {
-                    NSColor(Theme.accentFill).setFill()
-                    NSBezierPath(roundedRect: pill, xRadius: 10, yRadius: 10).fill()
-                }
-                badge.draw(at: NSPoint(x: pill.midX - badge.size().width / 2, y: pill.midY - badge.size().height / 2))
-                return true
+            let appearance = tableView.effectiveAppearance
+            if let cell = cell as? IssueRowCell, let content = cell.liftedContent() {
+                return LiftedImage.row(content, inset: IssueTable.inset, count: picked?.items.count, appearance: appearance).map { ($0.image, $0.origin, content) }
             }
-            return (image, above)
+            if let cell = cell as? EpicHeaderRowCell, let group = cell.shownGroup {
+                return LiftedImage.group(group, rowWidth: cell.bounds.width, inset: IssueTable.inset, appearance: appearance).map { ($0.image, $0.origin, nil) }
+            }
+            return nil
         }
 
         /// The picked issues a drag that starts on issue `id` carries: all of them, when it is one of two or more.
@@ -822,72 +760,13 @@ struct IssueTable: NSViewRepresentable {
             let pointer = tableView.convert(info.draggingLocation, from: nil)
             var image = lifted.image
             var origin = NSPoint(x: pointer.x + lifted.offset.x, y: pointer.y + lifted.offset.y)
-            if let parent, let card = lifted.card {
-                image = Self.nestingImage(card, under: parent, count: lifted.count, appearance: tableView.effectiveAppearance)
-                origin = NSPoint(x: pointer.x - 24, y: pointer.y + 20)
+            if let parent, let content = lifted.content,
+               let nesting = LiftedImage.nesting(content, inset: IssueTable.inset, under: parent, count: lifted.count, appearance: tableView.effectiveAppearance) {
+                image = nesting.image
+                origin = NSPoint(x: pointer.x - 24 + nesting.origin.x, y: pointer.y + 20 + nesting.origin.y)
             }
             info.enumerateDraggingItems(options: [], for: tableView, classes: [NSPasteboardItem.self], searchOptions: [:]) { item, _, _ in
                 item.setDraggingFrame(NSRect(origin: origin, size: image.size), contents: image)
-            }
-        }
-
-        /// The start of a row's card, as wide as a title reads, with a label under it naming the issue it goes under,
-        /// and how many issues the drag carries on its corner when it carries several.
-        static func nestingImage(_ card: NSImage, under parent: Item, count: Int?, appearance: NSAppearance) -> NSImage {
-            let inset = IssueTable.inset
-            let width = min(card.size.width - 2 * inset, 380)
-            let height = card.size.height - 2
-            let top: CGFloat = count != nil ? 7 : 0
-            let label = NSAttributedString(string: String(localized: .subIssueOf(number: parent.displayNumber)), attributes: [
-                .font: NSFont.systemFont(ofSize: 11, weight: .semibold), .foregroundColor: NSColor.white,
-            ])
-            let arrow = NSImage(systemSymbolName: "arrow.turn.down.right", accessibilityDescription: nil)?
-                .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 10, weight: .semibold).applying(.init(paletteColors: [.white])))
-            let pill = NSRect(x: 10, y: top + height + 5, width: label.size().width + 16 + (arrow == nil ? 0 : 15), height: 22)
-            let badge = count.map { NSAttributedString(string: "\($0)", attributes: [
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold), .foregroundColor: NSColor.white,
-            ]) }
-            let size = NSSize(width: max(width + 8, pill.maxX + 2), height: pill.maxY + 2)
-            return NSImage(size: size, flipped: true) { _ in
-                let rect = NSRect(x: 0, y: top, width: width, height: height)
-                let shape = NSBezierPath(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7)
-                appearance.performAsCurrentDrawingAppearance {
-                    NSColor(Theme.cardLifted).setFill()
-                    shape.fill()
-                }
-                NSGraphicsContext.saveGraphicsState()
-                shape.addClip()
-                card.draw(
-                    in: NSRect(x: -inset, y: top - 1, width: card.size.width, height: card.size.height), from: .zero,
-                    operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
-                )
-                // The title fades out where the card ends instead of being cut off.
-                appearance.performAsCurrentDrawingAppearance {
-                    let surface = NSColor(Theme.cardLifted)
-                    NSGradient(starting: surface.withAlphaComponent(0), ending: surface)?
-                        .draw(in: NSRect(x: rect.maxX - 56, y: rect.minY, width: 56, height: rect.height), angle: 0)
-                }
-                NSGraphicsContext.restoreGraphicsState()
-                appearance.performAsCurrentDrawingAppearance {
-                    NSColor(Theme.cardLiftedBorder).setStroke()
-                    shape.lineWidth = 1
-                    shape.stroke()
-                    NSColor(Theme.accentFill).setFill()
-                    NSBezierPath(roundedRect: pill, xRadius: pill.height / 2, yRadius: pill.height / 2).fill()
-                    if let badge {
-                        let badgeWidth = max(20, badge.size().width + 12)
-                        let spot = NSRect(x: rect.maxX + 7 - badgeWidth, y: 0, width: badgeWidth, height: 20)
-                        NSBezierPath(roundedRect: spot, xRadius: 10, yRadius: 10).fill()
-                        badge.draw(at: NSPoint(x: spot.midX - badge.size().width / 2, y: spot.midY - badge.size().height / 2))
-                    }
-                }
-                var x = pill.minX + 8
-                if let arrow {
-                    arrow.draw(in: NSRect(x: x, y: pill.midY - 5.5, width: 11, height: 11), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-                    x += 15
-                }
-                label.draw(at: NSPoint(x: x, y: pill.midY - label.size().height / 2))
-                return true
             }
         }
 
@@ -1226,11 +1105,13 @@ final class HoverTableView: NSTableView {
     }
 }
 
-/// The header over the issues of an epic standing together in a section: the epic's icon in line with the
-/// issues' status icons, where the line down to them starts, its name, how many of its issues are there, and the
-/// arrow that folds them away. A click opens the epic, one on the arrow folds its issues or shows them again, and
-/// dragging it moves them all.
-final class EpicHeaderRowCell: NSView {
+/// The header over the issues of an epic standing together in a section, with the marks `EpicHeader` draws on the board
+/// and on iPhone and iPad: the epic's icon at the start of the row, in the column of the priorities, where the line down
+/// to its issues starts, its name, in line with the issues' priorities, how many of its issues are there, and at the end
+/// of the row, under the section header's +, the arrow that folds them away. All of it stands in the middle of the row,
+/// and so of the highlight under the pointer. A click opens the epic, one on the arrow folds its issues or shows them
+/// again, and dragging it moves them all.
+final class EpicHeaderRowCell: PaintedCell {
     private var group: Nesting.EpicGroup?
     /// What the header shows now.
     var shownGroup: Nesting.EpicGroup? { group }
@@ -1253,8 +1134,6 @@ final class EpicHeaderRowCell: NSView {
 
     override init(frame: NSRect) {
         super.init(frame: frame)
-        wantsLayer = true
-        layerContentsRedrawPolicy = .onSetNeedsDisplay
     }
 
     @available(*, unavailable)
@@ -1275,12 +1154,12 @@ final class EpicHeaderRowCell: NSView {
         let truncating = NSMutableParagraphStyle()
         truncating.lineBreakMode = .byTruncatingTail
         title = NSAttributedString(string: group?.epic.title ?? "", attributes: [
-            .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
+            .font: EpicHeaderLook.nameFont,
             .foregroundColor: NSColor(Theme.text),
             .paragraphStyle: truncating,
         ])
         count = NSAttributedString(string: group.map { "\($0.count)" } ?? "", attributes: [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular),
+            .font: EpicHeaderLook.countFont,
             .foregroundColor: NSColor(Theme.textTertiary),
         ])
         if let group {
@@ -1297,75 +1176,50 @@ final class EpicHeaderRowCell: NSView {
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
 
-    /// The header as a card lifting off the list, for dragging the epic's issues.
-    func dragImage() -> NSImage? {
-        guard let content = bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
-        let wasHighlighted = highlighted, wasHovering = hoveringFold
-        highlighted = false
-        hoveringFold = false
-        drawsLine = false
-        cacheDisplay(in: bounds, to: content)
-        drawsLine = true
-        highlighted = wasHighlighted
-        hoveringFold = wasHovering
-        needsDisplay = true
-        let appearance = effectiveAppearance
-        return NSImage(size: bounds.size, flipped: false) { rect in
-            appearance.performAsCurrentDrawingAppearance {
-                let card = NSBezierPath(
-                    roundedRect: rect.insetBy(dx: IssueTable.inset, dy: 1).insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7
-                )
-                NSColor(Theme.cardLifted).setFill()
-                card.fill()
-                NSColor(Theme.cardLiftedBorder).setStroke()
-                card.lineWidth = 1
-                card.stroke()
-            }
-            content.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-            return true
-        }
-    }
-
-    /// Off while the header is drawn as a card being dragged.
-    private var drawsLine = true
+    /// The icon stands where a row's priority does, and the line down to the epic's issues starts under it.
+    static let iconColumn = (x: IssueRowCell.firstColumn, width: CGFloat(14))
+    /// The arrow stands under the section headers' + button.
+    static let trailing = IssueTable.inset + 12
 
     override func draw(_ dirtyRect: NSRect) {
         guard let group, let context = NSGraphicsContext.current?.cgContext else { return }
-        let midY = bounds.height / 2
+        let look = EpicHeaderLook.self
         if highlighted {
+            // As the rows around it light up.
             NSColor(Theme.selected).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 7, yRadius: 7).fill()
+            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: look.highlightRadius, yRadius: look.highlightRadius).fill()
         }
-        // In line with the issues' status icons: after the priority and number columns.
-        var x: CGFloat = IssueTable.inset + 28 + 14 + 10 + 40 + 10
-        PlanningGlyph.drawEpic(in: CGRect(x: x, y: midY - 7, width: 14, height: 14), cg: context)
-        if !group.folded, drawsLine {
-            let line = NSBezierPath()
-            line.move(to: NSPoint(x: x + 7, y: midY + 9))
-            line.line(to: NSPoint(x: x + 7, y: bounds.height))
-            line.lineWidth = 1
-            NSColor(Theme.treeLine).setStroke()
-            line.stroke()
+        let midY = bounds.midY
+        let column = Self.iconColumn
+        let icon = CGRect(x: column.x + (column.width - look.iconSize) / 2, y: midY - look.iconSize / 2, width: look.iconSize, height: look.iconSize)
+        if !group.folded {
+            // On a whole device pixel, as the lines through the rows under it are.
+            let scale = window?.backingScaleFactor ?? 2
+            let x = ((column.x + column.width / 2 - 0.5) * scale).rounded() / scale
+            NSColor(Theme.treeLine).setFill()
+            NSRect(x: x, y: icon.maxY + 3, width: 1, height: max(0, bounds.height - icon.maxY - 3)).fill()
         }
-        x += 14 + 10
-        let titleSize = title.size()
-        let countSize = count.size()
-        let room = bounds.width - x - IssueTable.inset - 14 - countSize.width - 30
-        let titleWidth = min(titleSize.width, max(room, 40))
-        title.draw(in: NSRect(x: x, y: midY - titleSize.height / 2, width: titleWidth, height: titleSize.height))
-        x += titleWidth + 8
-        count.draw(at: NSPoint(x: x, y: midY - countSize.height / 2))
-        x += countSize.width + 6
-        let rect = NSRect(x: x, y: midY - 7, width: 14, height: 14)
-        foldRect = rect
+        PlanningGlyph.drawEpic(in: icon, cg: context)
+        let arrow = NSRect(x: bounds.width - Self.trailing - look.arrowBox, y: midY - look.arrowBox / 2, width: look.arrowBox, height: look.arrowBox)
+        foldRect = arrow
         if hoveringFold {
             NSColor(Theme.partHover).setFill()
-            NSBezierPath(roundedRect: rect.insetBy(dx: -2, dy: -2), xRadius: 5, yRadius: 5).fill()
+            NSBezierPath(roundedRect: arrow, xRadius: 5, yRadius: 5).fill()
         }
         IssueRowCell.drawFoldArrow(
-            folded: group.folded, center: NSPoint(x: rect.midX, y: rect.midY),
+            folded: group.folded, center: NSPoint(x: arrow.midX, y: arrow.midY),
             color: NSColor(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
         )
+        // The name starts where the priorities of the issues under it do.
+        var x = column.x + IssueRowCell.indent
+        let titleSize = title.size()
+        let countSize = count.size()
+        let gap = (look.countGap as NSString).size(withAttributes: [.font: look.countFont]).width
+        let room = arrow.minX - look.arrowGap - countSize.width - gap - x
+        let titleWidth = min(titleSize.width, max(room, 40))
+        title.draw(in: NSRect(x: x, y: midY - titleSize.height / 2, width: titleWidth, height: titleSize.height))
+        x += titleWidth + gap
+        count.draw(at: NSPoint(x: x, y: midY - countSize.height / 2))
     }
 }
 
@@ -1376,125 +1230,44 @@ final class PlainRowView: NSTableRowView {
         set {}
     }
 
-    /// An issue that dragged issues would go under if dropped now: tinted, with a ring over the row, as a My Issues
-    /// card's page lights up for an issue dragged onto it.
+    /// An issue that dragged issues would go under if dropped now: lit up as a card is on the board, tinted and with a
+    /// ring around it (`Marks.nestTarget`).
     var isNestTarget = false {
         didSet {
             guard isNestTarget != oldValue else { return }
-            needsDisplay = true
-            ring.isHidden = !isNestTarget
-            if isNestTarget { placeRing() }
+            mark.isHidden = !isNestTarget
+            if isNestTarget { placeMark() }
         }
     }
 
-    /// Over the row's cell, which may fill itself, so the ring always shows.
-    private lazy var ring: NSView = {
-        let view = NSView()
-        view.wantsLayer = true
-        view.layer?.cornerRadius = 8
-        view.layer?.cornerCurve = .continuous
-        view.layer?.borderWidth = 1.5
+    /// Over the row's cell, which may fill itself, so that the mark always shows.
+    private lazy var mark: NestMarkView = {
+        let view = NestMarkView()
         view.isHidden = true
         return view
     }()
 
-    private func placeRing() {
-        ring.frame = bounds.insetBy(dx: IssueTable.inset, dy: 1)
-        effectiveAppearance.performAsCurrentDrawingAppearance {
-            ring.layer?.borderColor = NSColor(Theme.selectionBorder).cgColor
-        }
-        if subviews.last !== ring { addSubview(ring, positioned: .above, relativeTo: nil) }
+    /// The row's own shape is a little shorter than the row, so that the ring around it stays inside the row.
+    private func placeMark() {
+        mark.frame = bounds.insetBy(dx: IssueTable.inset - Marks.nestOutset, dy: 0)
+        if subviews.last !== mark { addSubview(mark, positioned: .above, relativeTo: nil) }
     }
 
     override func layout() {
         super.layout()
-        if isNestTarget { placeRing() }
+        if isNestTarget { placeMark() }
     }
 
-    override func viewDidChangeEffectiveAppearance() {
-        super.viewDidChangeEffectiveAppearance()
-        if isNestTarget { placeRing() }
-    }
-
-    override func drawBackground(in dirtyRect: NSRect) {
-        guard isNestTarget else { return }
-        NSColor(Theme.selectionFill).setFill()
-        NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
-    }
-
+    /// The cells paint the row; the table's own background isn't drawn.
+    override func drawBackground(in dirtyRect: NSRect) {}
     override func drawSelection(in dirtyRect: NSRect) {}
     override func drawSeparator(in dirtyRect: NSRect) {}
     /// The list lights up the issue to drop onto itself; the table's own blue marks are not drawn.
     override func drawDraggingDestinationFeedback(in dirtyRect: NSRect) {}
 }
 
-// MARK: - Cells
-
-/// One issue, drawn directly. Configuring and drawing a recycled cell takes a fraction of a millisecond.
-final class IssueRowCell: NSView, NSViewToolTipOwner {
-    weak var model: AppModel?
-    /// What the row shows now.
-    private(set) var row: IssueRowModel?
-    /// The date's place, for its tooltip.
-    private var dateRect = NSRect.zero
-    /// The number's place, whose tooltip names the repository.
-    private var numberRect = NSRect.zero
-    private var highlighted = false
-    private var number = NSAttributedString()
-    private var title = NSAttributedString()
-    private var date = NSAttributedString()
-    private var project: NSAttributedString?
-    private var subCount: NSAttributedString?
-    private var blockerText: NSAttributedString?
-    private var parentHint: NSAttributedString?
-    private var milestoneText: NSAttributedString?
-    private var milestoneSize = NSSize.zero
-    private var dueText: NSAttributedString?
-    private var dueIcon: NSImage?
-    private var labels: [(text: NSAttributedString, size: NSSize, color: NSColor)] = []
-    // Measured once when the row is configured; measuring text on every draw is what makes drawing slow.
-    private var numberSize = NSSize.zero
-    private var titleSize = NSSize.zero
-    private var dateSize = NSSize.zero
-    private var projectSize = NSSize.zero
-    private var subCountSize = NSSize.zero
-    private var blockerSize = NSSize.zero
-    private var parentHintSize = NSSize.zero
-    private var dueSize = NSSize.zero
-    /// Where the clickable parts were drawn last, in this cell's coordinates.
-    private(set) var parts: [(kind: PickerKind, rect: NSRect)] = []
-    /// The part under the pointer, which gets a soft highlight like a button.
-    var hoveredPart: PickerKind? {
-        didSet { if hoveredPart != oldValue { needsDisplay = true } }
-    }
-
-    func part(at point: NSPoint) -> (kind: PickerKind, rect: NSRect)? {
-        parts.first { $0.rect.insetBy(dx: -3, dy: -4).contains(point) }
-    }
-
-    /// The arrow that folds the sub-issues hanging under this issue in or out, where it was drawn last.
-    private(set) var foldRect: NSRect?
-    var hoveringFold = false {
-        didSet { if hoveringFold != oldValue { needsDisplay = true } }
-    }
-
-    func isOnFold(_ point: NSPoint) -> Bool {
-        foldRect?.insetBy(dx: -3, dy: -4).contains(point) ?? false
-    }
-
-    /// Sub-issues hang this much further in per level, down to a few levels.
-    static let indent: CGFloat = 20
-    static let deepestIndent = 5
-    /// Off while the row is drawn as a card being dragged.
-    private var drawsTree = true
-
-    /// The start of the row, where the checkbox shows: a click there picks the issue.
-    var checkboxRect: NSRect {
-        NSRect(x: IssueTable.inset, y: 0, width: 22, height: bounds.height)
-    }
-
-    override var isFlipped: Bool { true }
-
+/// A row of the list lit up to take the issues dragged onto it (`Marks.nestTarget`), around the row's rounded shape.
+final class NestMarkView: NSView {
     override init(frame: NSRect) {
         super.init(frame: frame)
         wantsLayer = true
@@ -1504,620 +1277,53 @@ final class IssueRowCell: NSView, NSViewToolTipOwner {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("Not used") }
 
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
     override func viewDidChangeEffectiveAppearance() {
         needsDisplay = true
     }
 
-    func configure(_ row: IssueRowModel, highlighted: Bool) {
-        if row != self.row {
-            // A view taken over from another issue starts without that issue's pointer on its parts, nor the places
-            // they had.
-            if row.item.id != self.row?.item.id {
-                hoveredPart = nil
-                hoveringFold = false
-                parts = []
-                foldRect = nil
-            }
-            self.row = row
-            let item = row.item
-            // Picked rows are filled with the accent colour, as a Mac list shows its selection, and read in white.
-            let onAccent = row.selected
-            let primary = onAccent ? NSColor.white : NSColor(Theme.text)
-            let secondary = onAccent ? NSColor.white.withAlphaComponent(0.88) : NSColor(Theme.textSecondary)
-            let tertiary = onAccent ? NSColor.white.withAlphaComponent(0.8) : NSColor(Theme.textTertiary)
-            let truncating = NSMutableParagraphStyle()
-            truncating.lineBreakMode = .byTruncatingTail
-            number = NSAttributedString(string: item.displayNumber, attributes: [
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular),
-                .foregroundColor: tertiary,
-            ])
-            title = NSAttributedString(string: item.title, attributes: [
-                .font: NSFont.systemFont(ofSize: 13, weight: .medium),
-                .foregroundColor: primary,
-                .paragraphStyle: truncating,
-            ])
-            date = NSAttributedString(string: relativeDate(item.updatedAt), attributes: [
-                .font: NSFont.systemFont(ofSize: 12),
-                .foregroundColor: tertiary,
-            ])
-            project = row.projectTitle.map {
-                NSAttributedString(string: $0, attributes: [
-                    .font: NSFont.systemFont(ofSize: 12),
-                    .foregroundColor: tertiary,
-                    .paragraphStyle: truncating,
-                ])
-            }
-            parentHint = row.showsParent ? item.parentNumber.map { number in
-                NSAttributedString(string: row.parentIsEpic ? item.parentTitle ?? "#\(number)" : "#\(number) \(item.parentTitle ?? "")", attributes: [
-                    .font: NSFont.systemFont(ofSize: 12),
-                    .foregroundColor: tertiary,
-                    .paragraphStyle: truncating,
-                ])
-            } : nil
-            subCount = item.subTotal > 0
-                ? NSAttributedString(string: "\(item.subCompleted)/\(item.subTotal)", attributes: [
-                    .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
-                    .foregroundColor: secondary,
-                ])
-                : nil
-            blockerText = row.blocker?.text.map {
-                NSAttributedString(string: $0, attributes: [
-                    .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular),
-                    .foregroundColor: onAccent ? NSColor.white : NSColor(Theme.blocked),
-                ])
-            }
-            if let due = row.due {
-                let color = onAccent ? NSColor.white : NSColor(due.tone.color)
-                dueText = NSAttributedString(string: due.label, attributes: [
-                    .font: NSFont.systemFont(ofSize: 11),
-                    .foregroundColor: color,
-                ])
-                dueIcon = NSImage(systemSymbolName: "calendar", accessibilityDescription: nil)?
-                    .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 10, weight: .medium)
-                        .applying(NSImage.SymbolConfiguration(paletteColors: [color])))
-            } else {
-                dueText = nil
-                dueIcon = nil
-            }
-            milestoneText = row.milestone.map {
-                NSAttributedString(string: $0, attributes: [
-                    .font: NSFont.systemFont(ofSize: 11),
-                    .foregroundColor: secondary,
-                    .paragraphStyle: truncating,
-                ])
-            }
-            milestoneSize = milestoneText?.size() ?? .zero
-            // An epic's own label says what the row shows already.
-            labels = item.labels.filter { !(item.isEpic && Item.isEpicLabel($0.name)) }.prefix(3).map { label in
-                let text = NSAttributedString(string: label.name, attributes: [
-                    .font: NSFont.systemFont(ofSize: 11, weight: .medium),
-                    .foregroundColor: onAccent ? NSColor.white : NSColor(Theme.textBody),
-                ])
-                return (text, text.size(), NSColor(Theme.labelColor(label.color)))
-            }
-            numberSize = number.size()
-            titleSize = title.size()
-            dateSize = date.size()
-            projectSize = project?.size() ?? .zero
-            subCountSize = subCount?.size() ?? .zero
-            blockerSize = blockerText?.size() ?? .zero
-            parentHintSize = parentHint?.size() ?? .zero
-            dueSize = dueText?.size() ?? .zero
-            var spoken = row.due.map {
-                String(localized: .issueRowSpokenWithDue(number: item.displayNumber, title: item.title, due: $0.tooltip))
-            } ?? "\(item.displayNumber) \(item.title)"
-            if row.blocker != nil, let blocked = model?.tooltip(.blockedBy, for: item) { spoken += ", \(blocked)" }
-            setAccessibilityLabel(item.parentNumber.map { number in
-                let parent = String(localized: row.parentIsEpic
-                    ? .epicTooltip(epic: item.parentTitle ?? "#\(number)") : .subIssueOf(number: "#\(number)"))
-                return "\(spoken), \(parent)"
-            } ?? spoken)
-            needsDisplay = true
-        }
-        if highlighted != self.highlighted {
-            self.highlighted = highlighted
-            needsDisplay = true
-        }
-    }
-
-    override func isAccessibilityElement() -> Bool { true }
-    override func accessibilityRole() -> NSAccessibility.Role? { .button }
-
-    /// The row as a card lifted off the list, to drag around.
-    func dragImage() -> NSImage? {
-        guard let content = bitmapImageRepForCachingDisplay(in: bounds) else { return nil }
-        // Without the hover fill and checkbox, which belong to the pointer, not to the issue, nor the accent fill of a
-        // picked row: lifted, it is a card like any other, as on the board.
-        let wasHighlighted = highlighted, wasHovered = hoveredPart, wasRow = row
-        if var lifted = row, lifted.selected || lifted.selecting {
-            lifted.selected = false
-            lifted.selecting = false
-            configure(lifted, highlighted: false)
-        }
-        highlighted = false
-        hoveredPart = nil
-        drawsTree = false
-        cacheDisplay(in: bounds, to: content)
-        drawsTree = true
-        if let wasRow { configure(wasRow, highlighted: wasHighlighted) }
-        highlighted = wasHighlighted
-        hoveredPart = wasHovered
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
         needsDisplay = true
-        let appearance = effectiveAppearance
-        return NSImage(size: bounds.size, flipped: false) { rect in
-            appearance.performAsCurrentDrawingAppearance {
-                let card = NSBezierPath(
-                    roundedRect: rect.insetBy(dx: IssueTable.inset, dy: 1).insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7
-                )
-                NSColor(Theme.cardLifted).setFill()
-                card.fill()
-                NSColor(Theme.cardLiftedBorder).setStroke()
-                card.lineWidth = 1
-                card.stroke()
-            }
-            // On top of the card; a plain `draw(in:)` would copy the transparent pixels over it.
-            content.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
-            return true
-        }
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        guard let row, let context = NSGraphicsContext.current?.cgContext else { return }
-        let size = bounds.size
-        let midY = size.height / 2
-
-        let onAccent = row.selected
-        if row.selected {
-            NSColor(Theme.accentFill).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
-        } else if highlighted {
-            NSColor(Theme.selected).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: 8, yRadius: 8).fill()
-        }
-        // The checkbox sits under the section headers' fold arrow; it shows on hover and while picking.
-        if row.selected || row.selecting || highlighted {
-            drawCheckbox(checked: row.selected, center: NSPoint(x: IssueTable.inset + 15, y: midY))
-        }
-        // Each part lights up in a shape that suits it, as in Linear: a small square behind an icon, a halo
-        // around avatars, and chips in their own shape.
-        let partHover = onAccent ? NSColor.white.withAlphaComponent(0.22) : NSColor(Theme.partHover)
-        func iconHover(_ kind: PickerKind, _ rect: NSRect) {
-            guard hoveredPart == kind else { return }
-            partHover.setFill()
-            NSBezierPath(roundedRect: rect.insetBy(dx: -4, dy: -4), xRadius: 5, yRadius: 5).fill()
-        }
-        var parts: [(kind: PickerKind, rect: NSRect)] = []
-        let canEditFields = row.item.kind != .draft
-
-        // Left to right: priority, number, status. The priority lines up with the headers' status icon.
-        var x: CGFloat = IssueTable.inset + 28
-        if row.showsPriority {
-            let rect = NSRect(x: x, y: midY - 7, width: 14, height: 14)
-            parts.append((.priority, rect))
-            iconHover(.priority, rect)
-        }
-        drawPriority(row.priority, x: x, midY: midY, onAccent: onAccent)
-        x += 14 + 10
-        number.draw(at: NSPoint(x: x, y: midY - numberSize.height / 2))
-        let numberRect = NSRect(x: x, y: midY - 9, width: numberSize.width, height: 18)
-        x += 40 + 10
-        // A sub-issue hangs under its parent: status and title move in, with a line from the parent's status.
-        if drawsTree { drawTree(row, from: x, midY: midY) }
-        x += CGFloat(min(row.nest.depth, Self.deepestIndent)) * Self.indent
-        if row.showsStatus {
-            let rect = NSRect(x: x, y: midY - 7, width: 14, height: 14)
-            parts.append((.status, rect))
-            iconHover(.status, rect)
-        }
-        var glyph = row.glyph
-        if onAccent, glyph.category != .completed, glyph.category != .canceled { glyph.color = .white }
-        StatusPainter.draw(glyph, in: CGRect(x: x, y: midY - 7, width: 14, height: 14), cg: context)
-        x += 14 + 10
-        // The arrow that folds the sub-issues under this issue in or out.
-        if row.nested != nil {
-            let rect = NSRect(x: x - 4, y: midY - 7, width: 14, height: 14)
-            foldRect = rect
-            if hoveringFold {
-                partHover.setFill()
-                NSBezierPath(roundedRect: rect.insetBy(dx: -2, dy: -2), xRadius: 5, yRadius: 5).fill()
-            }
-            Self.drawFoldArrow(folded: row.folded, center: NSPoint(x: rect.midX, y: rect.midY), color: onAccent ? .white : NSColor(Theme.textSecondary))
-            x = rect.maxX + 8
-        } else {
-            foldRect = nil
-        }
-
-        // Right to left: assignees, date, project, labels.
-        var right = size.width - IssueTable.inset - 14
-        var avatarRing = NSColor(row.selected ? Theme.accentFill : highlighted ? Theme.selected : Theme.panel)
-        if canEditFields {
-            let count = CGFloat(max(min(row.item.assignees.count, 3), 1))
-            let width = 18 + (count - 1) * 13
-            let rect = NSRect(x: right - width, y: midY - 9, width: width, height: 18)
-            parts.append((.assignees, rect))
-            if hoveredPart == .assignees {
-                let halo = rect.insetBy(dx: -3, dy: -3)
-                avatarRing = partHover
-                avatarRing.setFill()
-                NSBezierPath(roundedRect: halo, xRadius: halo.height / 2, yRadius: halo.height / 2).fill()
-                if row.item.assignees.isEmpty {
-                    // Where an avatar would be, as Linear shows for an unassigned issue.
-                    let circle = NSRect(x: rect.maxX - 18, y: midY - 9, width: 18, height: 18).insetBy(dx: 1.5, dy: 1.5)
-                    let dashed = NSBezierPath(ovalIn: circle)
-                    dashed.lineWidth = 1.2
-                    dashed.setLineDash([2.2, 2], count: 2, phase: 0)
-                    NSColor(Theme.textTertiary).setStroke()
-                    dashed.stroke()
-                }
-            }
-        }
-        drawAvatars(row.item.assignees, rightEdge: right, midY: midY, ring: avatarRing, context: context)
-        right -= 30 + 10
-        date.draw(at: NSPoint(x: right - dateSize.width, y: midY - dateSize.height / 2))
-        dateRect = NSRect(x: right - dateSize.width, y: midY - 9, width: dateSize.width, height: 18)
-        right -= 52 + 10
-        if let dueText {
-            let icon = dueIcon?.size ?? .zero
-            let width = 7 + icon.width + 4 + dueSize.width + 7
-            let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
-            parts.append((.dueDate, rect))
-            drawChip(rect, hovered: hoveredPart == .dueDate)
-            dueIcon?.draw(
-                in: NSRect(x: rect.minX + 7, y: midY - icon.height / 2, width: icon.width, height: icon.height),
-                from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
-            )
-            dueText.draw(at: NSPoint(x: rect.minX + 7 + icon.width + 4, y: midY - dueSize.height / 2))
-            right = rect.minX - 10
-        }
-        if let project {
-            let width = min(projectSize.width, 160)
-            project.draw(with: NSRect(x: right - width, y: midY - projectSize.height / 2, width: width, height: projectSize.height), options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine])
-            right -= width + 10
-        }
-        if let milestoneText {
-            let textWidth = min(milestoneSize.width, 120)
-            let width = 7 + 10 + 5 + textWidth + 7
-            let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
-            if rect.minX > x + 160 {
-                parts.append((.milestone, rect))
-                drawChip(rect, hovered: hoveredPart == .milestone)
-                PlanningGlyph.drawMilestone(row.milestoneMark, in: CGRect(x: rect.minX + 7, y: midY - 5, width: 10, height: 10), cg: context)
-                milestoneText.draw(
-                    with: NSRect(x: rect.minX + 7 + 10 + 5, y: midY - milestoneSize.height / 2, width: textWidth, height: milestoneSize.height),
-                    options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
-                )
-                right = rect.minX - 6
-            }
-        }
-        // The project's own fields the view shows, as far as there is room.
-        for field in row.chips.reversed() {
-            let text = NSAttributedString(string: field.text, attributes: [
-                .font: NSFont.systemFont(ofSize: 11.5), .foregroundColor: NSColor(Theme.textSecondary),
-            ])
-            let textSize = text.size()
-            let textWidth = min(textSize.width, 120)
-            let width = 7 + 10 + 5 + textWidth + 7
-            let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
-            guard rect.minX > x + 160 else { break }
-            // An iteration opens its picker, as the milestone does.
-            let kind: PickerKind? = field.icon == .iteration ? .iteration(fieldId: field.fieldId) : nil
-            if let kind { parts.append((kind, rect)) }
-            drawChip(rect, hovered: kind != nil && hoveredPart == kind)
-            let icon = CGRect(x: rect.minX + 7, y: midY - 5, width: 10, height: 10)
-            switch field.icon {
-            case .option(let color): PlanningGlyph.drawDot(color, in: icon.insetBy(dx: -1, dy: -1), cg: context)
-            case .iteration: MenuIcons.symbol("arrow.triangle.2.circlepath", color: Theme.textTertiary)?.draw(in: icon)
-            case .date: MenuIcons.symbol("calendar", color: Theme.textTertiary)?.draw(in: icon)
-            case .text: MenuIcons.symbol("text.alignleft", color: Theme.textTertiary)?.draw(in: icon)
-            }
-            text.draw(
-                with: NSRect(x: rect.minX + 7 + 10 + 5, y: midY - textSize.height / 2, width: textWidth, height: textSize.height),
-                options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
-            )
-            right = rect.minX - 6
-        }
-        var labelsRect: NSRect?
-        for label in labels.reversed() {
-            let textSize = label.size
-            let width = textSize.width + 7 + 7 + 5 + 7
-            let rect = NSRect(x: right - width, y: midY - 10, width: width, height: 20)
-            guard rect.minX > x + 120 else { break }
-            labelsRect = labelsRect.map { $0.union(rect) } ?? rect
-            let tint = onAccent ? NSColor.white.withAlphaComponent(canEditFields && hoveredPart == .labels ? 0.3 : 0.2)
-                : label.color.withAlphaComponent(canEditFields && hoveredPart == .labels ? 0.24 : 0.14)
-            tint.setFill()
-            NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2).fill()
-            label.color.setFill()
-            NSBezierPath(ovalIn: NSRect(x: rect.minX + 7, y: midY - 3.5, width: 7, height: 7)).fill()
-            label.text.draw(at: NSPoint(x: rect.minX + 19, y: midY - textSize.height / 2))
-            right = rect.minX - 6
-        }
-
-        if canEditFields, let labelsRect { parts.append((.labels, labelsRect)) }
-
-        // The title takes what is left, with the sub-issue count and, when blocked, a flag with what blocks it
-        // directly after it, and the parent of a sub-issue whose parent is elsewhere.
-        let subWidth: CGFloat? = subCount == nil ? nil : subCountSize.width + 7 + 11 + 4 + 7
-        let blockedWidth: CGFloat? = row.blocker == nil ? nil : blockerText == nil ? 26 : 7 + 11 + 4 + blockerSize.width + 7
-        let beside = (subWidth.map { $0 + 10 } ?? 0) + (blockedWidth.map { $0 + 6 } ?? 0)
-        let hintWidth: CGFloat? = parentHint == nil ? nil : 7 + 11 + 4 + parentHintSize.width + 7
-        // The parent keeps some room as long as the title keeps more.
-        let hintRoom = hintWidth.map { min($0, 200) + 10 } ?? 0
-        let reserve = right - 12 - x - beside - hintRoom >= 200 ? hintRoom : 0
-        let available = max(40, right - 12 - x - beside - reserve)
-        let titleWidth = min(titleSize.width, available)
-        title.draw(
-            with: NSRect(x: x, y: midY - titleSize.height / 2, width: available, height: titleSize.height),
-            options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
-        )
-        if let subCount, let subWidth {
-            let rect = NSRect(x: x + titleWidth + 10, y: midY - 10, width: subWidth, height: 20)
-            parts.append((.subIssues, rect))
-            drawChip(rect, hovered: hoveredPart == .subIssues)
-            let origin = NSPoint(x: rect.minX + 7, y: midY - 5.5)
-            let glyph = NSBezierPath()
-            glyph.move(to: NSPoint(x: origin.x + 2.3, y: origin.y + 1.8))
-            glyph.line(to: NSPoint(x: origin.x + 2.3, y: origin.y + 5.5))
-            glyph.curve(
-                to: NSPoint(x: origin.x + 4.1, y: origin.y + 7.3),
-                controlPoint1: NSPoint(x: origin.x + 2.3, y: origin.y + 6.7),
-                controlPoint2: NSPoint(x: origin.x + 2.9, y: origin.y + 7.3)
-            )
-            glyph.line(to: NSPoint(x: origin.x + 6, y: origin.y + 7.3))
-            glyph.lineWidth = 1.2
-            glyph.lineCapStyle = .round
-            (onAccent ? NSColor.white : NSColor(Theme.textSecondary)).setStroke()
-            glyph.stroke()
-            let dot = NSBezierPath(ovalIn: NSRect(x: origin.x + 6.2, y: origin.y + 5.8, width: 3.1, height: 3.1))
-            dot.lineWidth = 1.2
-            dot.stroke()
-            subCount.draw(at: NSPoint(x: rect.minX + 7 + 11 + 4, y: midY - subCountSize.height / 2))
-        }
-        var afterTitle = x + titleWidth + 10 + (subWidth.map { $0 + 6 } ?? 0)
-        if let blockedWidth {
-            let after = afterTitle
-            afterTitle += blockedWidth + 6
-            let rect = NSRect(x: after, y: midY - 10, width: blockedWidth, height: 20)
-            parts.append((.blockedBy, rect))
-            drawChip(rect, hovered: hoveredPart == .blockedBy)
-            if let flag = onAccent ? Self.blockedFlagOnAccent : Self.blockedFlag {
-                let size = flag.size
-                let flagX = blockerText == nil ? rect.midX - size.width / 2 : rect.minX + 7 + (11 - size.width) / 2
-                flag.draw(
-                    in: NSRect(x: flagX, y: midY - size.height / 2, width: size.width, height: size.height),
-                    from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
-                )
-            }
-            blockerText?.draw(at: NSPoint(x: rect.minX + 7 + 11 + 4, y: midY - blockerSize.height / 2))
-        }
-        if let parentHint, let hintWidth {
-            let width = min(hintWidth, right - 12 - afterTitle)
-            if width >= 70 {
-                let rect = NSRect(x: afterTitle, y: midY - 10, width: width, height: 20)
-                let kind: PickerKind = row.parentIsEpic ? .epic : .parent
-                parts.append((kind, rect))
-                if hoveredPart == kind { drawChip(rect, hovered: true) }
-                if row.parentIsEpic {
-                    PlanningGlyph.drawEpic(in: CGRect(x: rect.minX + 6, y: midY - 6, width: 12, height: 12), cg: context)
-                } else if let arrow = Self.parentArrow {
-                    let size = arrow.size
-                    arrow.draw(
-                        in: NSRect(x: rect.minX + 7, y: midY - size.height / 2, width: size.width, height: size.height),
-                        from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil
-                    )
-                }
-                let textX = rect.minX + 7 + 11 + 4
-                parentHint.draw(
-                    with: NSRect(x: textX, y: midY - parentHintSize.height / 2, width: rect.maxX - 7 - textX, height: parentHintSize.height),
-                    options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine]
-                )
-            }
-        }
-        // Tooltips follow the parts; rebuilt only when they moved.
-        if parts.map(\.rect) != self.parts.map(\.rect) || foldRect != tooltipFoldRect || numberRect != self.numberRect || toolTipsNeedUpdate {
-            toolTipsNeedUpdate = false
-            tooltipFoldRect = foldRect
-            self.numberRect = numberRect
-            removeAllToolTips()
-            for part in parts { addToolTip(part.rect.insetBy(dx: -3, dy: -4), owner: self, userData: nil) }
-            if let foldRect { addToolTip(foldRect.insetBy(dx: -3, dy: -4), owner: self, userData: nil) }
-            addToolTip(numberRect.insetBy(dx: -3, dy: -4), owner: self, userData: nil)
-            if dateRect.width > 0 { addToolTip(dateRect, owner: self, userData: nil) }
-        }
-        self.parts = parts
-    }
-
-    private var toolTipsNeedUpdate = true
-    private var tooltipFoldRect: NSRect?
-
-    /// Lines from the parents above down to this row: a straight one through the row for each level whose
-    /// sub-issues go on below it, a branch into this row's status icon, and a line from this row's status icon
-    /// down to its own sub-issues when they show.
-    private func drawTree(_ row: IssueRowModel, from base: CGFloat, midY: CGFloat) {
-        let depth = min(row.nest.depth, Self.deepestIndent)
-        let height = bounds.height
-        let path = NSBezierPath()
-        for level in 0..<depth {
-            let lineX = base + CGFloat(level) * Self.indent + 7
-            let continues = row.nest.continues.indices.contains(level) && row.nest.continues[level]
-            if level < depth - 1 {
-                if continues {
-                    path.move(to: NSPoint(x: lineX, y: 0))
-                    path.line(to: NSPoint(x: lineX, y: height))
-                }
-                continue
-            }
-            let end = base + CGFloat(depth) * Self.indent - 3
-            if continues {
-                path.move(to: NSPoint(x: lineX, y: 0))
-                path.line(to: NSPoint(x: lineX, y: height))
-                path.move(to: NSPoint(x: lineX, y: midY))
-                path.line(to: NSPoint(x: end, y: midY))
-            } else {
-                let radius: CGFloat = 5
-                path.move(to: NSPoint(x: lineX, y: 0))
-                path.line(to: NSPoint(x: lineX, y: midY - radius))
-                path.curve(
-                    to: NSPoint(x: lineX + radius, y: midY),
-                    controlPoint1: NSPoint(x: lineX, y: midY - radius * 0.45),
-                    controlPoint2: NSPoint(x: lineX + radius * 0.45, y: midY)
-                )
-                path.line(to: NSPoint(x: end, y: midY))
-            }
-        }
-        if row.nested != nil, !row.folded {
-            let lineX = base + CGFloat(depth) * Self.indent + 7
-            path.move(to: NSPoint(x: lineX, y: midY + 10))
-            path.line(to: NSPoint(x: lineX, y: height))
-        }
-        guard !path.isEmpty else { return }
-        path.lineWidth = 1
-        NSColor(Theme.treeLine).setStroke()
-        path.stroke()
-    }
-
-    /// A chevron that points down while the sub-issues show and to the right while they are folded in.
-    static func drawFoldArrow(folded: Bool, center: NSPoint, color: NSColor) {
-        let path = NSBezierPath()
-        if folded {
-            path.move(to: NSPoint(x: center.x - 1.5, y: center.y - 3.5))
-            path.line(to: NSPoint(x: center.x + 2, y: center.y))
-            path.line(to: NSPoint(x: center.x - 1.5, y: center.y + 3.5))
-        } else {
-            path.move(to: NSPoint(x: center.x - 3.5, y: center.y - 1.5))
-            path.line(to: NSPoint(x: center.x, y: center.y + 2))
-            path.line(to: NSPoint(x: center.x + 3.5, y: center.y - 1.5))
-        }
-        path.lineWidth = 1.5
-        path.lineCapStyle = .round
-        path.lineJoinStyle = .round
-        color.setStroke()
-        path.stroke()
-    }
-
-    private static var parentArrow: NSImage? {
-        NSImage(systemSymbolName: "arrow.turn.left.up", accessibilityDescription: nil)?.withSymbolConfiguration(
-            NSImage.SymbolConfiguration(pointSize: 9, weight: .medium).applying(.init(paletteColors: [NSColor(Theme.textTertiary)]))
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        let shape = bounds.insetBy(dx: Marks.nestOutset, dy: Marks.nestOutset)
+        context.draw(
+            Marks.nestTarget(around: shape, cornerRadius: EpicHeaderLook.highlightRadius),
+            mark: NSColor(Theme.accent).cgColor, off: NSColor(Theme.nestTint).cgColor, onColor: NSColor(Theme.onColor).cgColor
         )
     }
+}
 
-    private static var blockedFlag: NSImage? {
-        NSImage(systemSymbolName: "flag.fill", accessibilityDescription: nil)?.withSymbolConfiguration(
-            NSImage.SymbolConfiguration(pointSize: 9, weight: .medium).applying(.init(paletteColors: [NSColor(Theme.blocked)]))
-        )
+// MARK: - Cells
+
+/// A row of the list that paints itself in `draw(_:)`, into a layer of its own that is painted again only when it asks.
+/// When it gets wider, as the list does while the issue's inspector slides away on going back, AppKit would paint just
+/// the new strip on the right and keep the old picture beside it: what sits at the right edge stayed where it was, and
+/// each step of the slide left a sliver of the avatars behind, until the pointer went over the row. So a row painted at
+/// another size is painted all over again.
+class PaintedCell: NSView {
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        layerContentsRedrawPolicy = .onSetNeedsDisplay
     }
 
-    /// In a picked row, which is filled with the accent colour, the flag is white like the rest of the row.
-    private static var blockedFlagOnAccent: NSImage? {
-        NSImage(systemSymbolName: "flag.fill", accessibilityDescription: nil)?.withSymbolConfiguration(
-            NSImage.SymbolConfiguration(pointSize: 9, weight: .medium).applying(.init(paletteColors: [.white]))
-        )
-    }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Not used") }
 
-    func view(_ view: NSView, stringForToolTip tag: NSView.ToolTipTag, point: NSPoint, userData data: UnsafeMutableRawPointer?) -> String {
-        guard let row else { return "" }
-        if isOnFold(point) {
-            return String(localized: row.folded ? .unfoldSubIssuesTooltip(count: row.nested ?? 0) : .foldSubIssuesTooltip)
-        }
-        if let part = part(at: point) { return model?.tooltip(part.kind, for: row.item) ?? "" }
-        // A project's rows leave out the repository; as a project can span several, the number names it.
-        if numberRect.insetBy(dx: -3, dy: -4).contains(point) { return row.item.reference ?? "" }
-        if dateRect.insetBy(dx: -3, dy: -4).contains(point), let updated = row.item.updatedAt {
-            var lines = [String(localized: .updatedOnDateTooltip(date: updated.formatted(date: .long, time: .shortened)))]
-            if let created = row.item.createdAt {
-                lines.append(String(localized: .createdOnDateTooltip(date: created.formatted(date: .long, time: .shortened))))
-            }
-            return lines.joined(separator: "\n")
-        }
-        return ""
-    }
-
-    private func drawCheckbox(checked: Bool, center: NSPoint) {
-        let box = NSRect(x: center.x - 7, y: center.y - 7, width: 14, height: 14)
-        let shape = NSBezierPath(roundedRect: box.insetBy(dx: checked ? 0 : 0.6, dy: checked ? 0 : 0.6), xRadius: 4, yRadius: 4)
-        if checked {
-            // On the accent-filled row the box is white with the mark in the accent colour.
-            NSColor.white.setFill()
-            shape.fill()
-            let mark = NSBezierPath()
-            mark.move(to: NSPoint(x: box.minX + 3.6, y: box.midY + 0.2))
-            mark.line(to: NSPoint(x: box.minX + 6, y: box.midY + 2.6))
-            mark.line(to: NSPoint(x: box.maxX - 3.4, y: box.midY - 2.6))
-            mark.lineWidth = 1.7
-            mark.lineCapStyle = .round
-            mark.lineJoinStyle = .round
-            NSColor(Theme.accentFill).setStroke()
-            mark.stroke()
-        } else {
-            shape.lineWidth = 1.2
-            NSColor(Theme.textTertiary).setStroke()
-            shape.stroke()
-        }
-    }
-
-    /// The quiet parts of a row (due date, sub-issues, milestone, fields) are text with a symbol, as Mail and
-    /// Reminders write them; under the pointer they light up as the button they are.
-    private func drawChip(_ rect: NSRect, hovered: Bool) {
-        guard hovered else { return }
-        (row?.selected == true ? NSColor.white.withAlphaComponent(0.22) : NSColor(Theme.partHover)).setFill()
-        NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2).fill()
-    }
-
-    private func drawPriority(_ level: PriorityLevel, x: CGFloat, midY: CGFloat, onAccent: Bool = false) {
-        if level == .urgent {
-            let rect = NSRect(x: x + 1, y: midY - 6, width: 12, height: 12)
-            NSColor(Theme.urgent).setFill()
-            NSBezierPath(roundedRect: rect, xRadius: 3, yRadius: 3).fill()
-            let mark = NSAttributedString(string: "!", attributes: [
-                .font: NSFont.systemFont(ofSize: 10, weight: .heavy),
-                .foregroundColor: NSColor(Theme.onColor),
-            ])
-            let markSize = mark.size()
-            mark.draw(at: NSPoint(x: rect.midX - markSize.width / 2, y: rect.midY - markSize.height / 2))
-            return
-        }
-        let bars: [(CGFloat, Bool)] = [(4, level >= .low), (7, level >= .medium), (10, level >= .high)]
-        for (index, bar) in bars.enumerated() {
-            (onAccent ? NSColor.white.withAlphaComponent(bar.1 ? 1 : 0.35) : NSColor(bar.1 ? Theme.textBody : Theme.barOff)).setFill()
-            NSBezierPath(
-                roundedRect: NSRect(x: x + CGFloat(index) * 5, y: midY + 6 - bar.0, width: 3, height: bar.0),
-                xRadius: 1, yRadius: 1
-            ).fill()
-        }
-    }
-
-    private func drawAvatars(_ people: [Person], rightEdge: CGFloat, midY: CGFloat, ring: NSColor, context: CGContext) {
-        let shown = Array(people.prefix(3))
-        let diameter: CGFloat = 18
-        for (index, person) in shown.enumerated().reversed() {
-            let offset = CGFloat(shown.count - 1 - index) * 13
-            let rect = NSRect(x: rightEdge - diameter - offset, y: midY - diameter / 2, width: diameter, height: diameter)
-            // A ring in the row colour separates overlapping avatars.
-            if shown.count > 1 {
-                ring.setFill()
-                NSBezierPath(ovalIn: rect.insetBy(dx: -1.5, dy: -1.5)).fill()
-            }
-            if let url = person.avatarUrl, let image = AvatarCache.shared.cached(url) {
-                context.saveGState()
-                NSBezierPath(ovalIn: rect).addClip()
-                image.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: [.interpolation: NSImageInterpolation.high.rawValue])
-                context.restoreGState()
-            } else {
-                NSColor(Avatar.color(for: person.login)).setFill()
-                NSBezierPath(ovalIn: rect).fill()
-                let initials = NSAttributedString(string: String(person.login.prefix(2)).uppercased(), attributes: [
-                    .font: NSFont.systemFont(ofSize: 8, weight: .bold),
-                    .foregroundColor: NSColor(srgbRed: 0.07, green: 0.07, blue: 0.08, alpha: 1),
-                ])
-                let initialsSize = initials.size()
-                initials.draw(at: NSPoint(x: rect.midX - initialsSize.width / 2, y: rect.midY - initialsSize.height / 2))
-            }
-        }
+    override func setFrameSize(_ newSize: NSSize) {
+        let resized = newSize != frame.size
+        super.setFrameSize(newSize)
+        if resized { needsDisplay = true }
     }
 }
 
 /// A status group's header: icon, name, count, and a button to add an issue with that status.
-final class IssueHeaderCell: NSView {
+final class IssueHeaderCell: PaintedCell {
     private var section: IssueSectionModel?
     /// What the header shows now.
     var shownSection: IssueSectionModel? { section }
@@ -2128,8 +1334,6 @@ final class IssueHeaderCell: NSView {
 
     override init(frame: NSRect) {
         super.init(frame: frame)
-        wantsLayer = true
-        layerContentsRedrawPolicy = .onSetNeedsDisplay
         addButton.isBordered = false
         addButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: String(localized: .newIssueAction))?
             .withSymbolConfiguration(.init(pointSize: 11, weight: .medium))
@@ -2326,67 +1530,9 @@ enum GroupBars {
 // MARK: - Shared drawing
 
 extension StatusPainter {
-    /// The same glyph as the SwiftUI version, for views that draw with Core Graphics.
+    /// The same glyph for views that draw with Core Graphics.
     static func draw(_ glyph: StatusGlyph, in frame: CGRect, cg context: CGContext) {
-        let rect = frame.insetBy(dx: 1.25, dy: 1.25)
-        let color = NSColor(glyph.color).cgColor
-        let inner = NSColor(Theme.onColor).cgColor
-        let s = frame.width / 14
-        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: frame.minX + x * s, y: frame.minY + y * s) }
-        context.saveGState()
-        defer { context.restoreGState() }
-        context.setStrokeColor(color)
-        context.setFillColor(color)
-        context.setLineWidth(1.5)
-        if glyph.addsToProject {
-            context.strokeEllipse(in: rect)
-            context.setLineWidth(1.4 * s)
-            context.setLineCap(.round)
-            context.move(to: point(7, 4.6))
-            context.addLine(to: point(7, 9.4))
-            context.move(to: point(4.6, 7))
-            context.addLine(to: point(9.4, 7))
-            context.strokePath()
-            return
-        }
-        switch glyph.category {
-        case .backlog:
-            context.setLineDash(phase: 0, lengths: [2, 2.3])
-            context.strokeEllipse(in: rect)
-        case .unstarted:
-            context.strokeEllipse(in: rect)
-        case .started:
-            context.strokeEllipse(in: rect)
-            let center = CGPoint(x: frame.midX, y: frame.midY)
-            context.move(to: center)
-            // Clockwise from twelve o'clock in a flipped (top-left origin) coordinate system.
-            context.addArc(
-                center: center, radius: rect.width / 2 - 2.5,
-                startAngle: -.pi / 2, endAngle: -.pi / 2 + 2 * .pi * glyph.progress, clockwise: false
-            )
-            context.closePath()
-            context.fillPath()
-        case .completed:
-            context.fillEllipse(in: rect.insetBy(dx: -0.75, dy: -0.75))
-            context.setStrokeColor(inner)
-            context.setLineWidth(1.6 * s)
-            context.setLineCap(.round)
-            context.setLineJoin(.round)
-            context.move(to: point(4.4, 7.2))
-            context.addLine(to: point(6.2, 9))
-            context.addLine(to: point(9.6, 5.2))
-            context.strokePath()
-        case .canceled:
-            context.fillEllipse(in: rect.insetBy(dx: -0.75, dy: -0.75))
-            context.setStrokeColor(inner)
-            context.setLineWidth(1.5 * s)
-            context.setLineCap(.round)
-            context.move(to: point(4.8, 4.8))
-            context.addLine(to: point(9.2, 9.2))
-            context.move(to: point(9.2, 4.8))
-            context.addLine(to: point(4.8, 9.2))
-            context.strokePath()
-        }
+        context.draw(Marks.status(glyph, in: frame), mark: NSColor(glyph.color).cgColor, onColor: NSColor(Theme.onColor).cgColor)
     }
 }
 

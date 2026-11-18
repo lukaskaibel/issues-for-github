@@ -620,7 +620,8 @@ enum DebugRemote {
             }
         case "repaintcheck":
             // repaintcheck: draws the list's rows anew and names those that then look different, which showed an
-            // earlier paint.
+            // earlier paint. Blind to a row's layer that still holds an old picture: `render(in:)` has the views draw
+            // themselves for the picture, as `snapshot` does, instead of showing what their layers hold.
             for window in NSApp.windows where window.isVisible {
                 func collect(_ view: NSView) -> [HoverTableView] {
                     (view as? HoverTableView).map { [$0] } ?? view.subviews.flatMap(collect)
@@ -710,7 +711,8 @@ enum DebugRemote {
         case "listdrop", "dragimage":
             // listdrop <number> <row>: drops the issue in the list above that row, as a drag would, with the other
             // picked ones when it is picked.
-            // dragimage <number> <path>: the card an issue's row lifts off as, as a PNG.
+            // dragimage <number> <path>: the card an issue's row lifts off as, as a PNG; for an epic's number, the card
+            // its header lifts off as.
             // dragimage <number> <path> <parent number>: the smaller card it turns into over that issue.
             var bits = argument.split(separator: " ", maxSplits: 2).map(String.init)
             let parent = bits.count == 3 ? item(bits.removeLast(), model) : nil
@@ -728,10 +730,17 @@ enum DebugRemote {
                 } else {
                     log("listdrop: \(coordinator.dropItem(item.id, above: row))")
                 }
-            } else if let row = (0..<table.numberOfRows).first(where: { coordinator.item(at: $0)?.id == item.id }),
+            } else if let row = (0..<table.numberOfRows).first(where: {
+                coordinator.item(at: $0)?.id == item.id
+                    // An epic's number: the card its issues lift off as by its header.
+                    || (table.view(atColumn: 0, row: $0, makeIfNecessary: false) as? EpicHeaderRowCell)?.shownGroup?.epic.id == item.id
+            }),
                       let image = parent.flatMap({ parent in
-                          (table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell)?.dragImage().map {
-                              IssueTable.Coordinator.nestingImage($0, under: parent, count: coordinator.picked(from: item.id)?.items.count, appearance: table.effectiveAppearance)
+                          (table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell)?.liftedContent().flatMap {
+                              LiftedImage.nesting(
+                                  $0, inset: IssueTable.inset, under: parent, count: coordinator.picked(from: item.id)?.items.count,
+                                  appearance: table.effectiveAppearance
+                              )?.image
                           }
                       }) ?? coordinator.liftedImage(row, in: table, picked: coordinator.picked(from: item.id))?.image,
                       let tiff = image.tiffRepresentation,
@@ -1378,9 +1387,10 @@ enum DebugRemote {
     private static func renderCards(model: AppModel, folder: String) {
         let dark = NSApp.effectiveAppearance.isDark
         let cards = model.columns.flatMap { column in column.items.map { (column, $0) } }.prefix(60)
-        struct Look { var name: String; var highlighted = false; var selected = false; var lifted = false; var part: PickerKind?; var fold = false }
+        struct Look { var name: String; var highlighted = false; var selected = false; var peeked = false; var lifted = false; var part: PickerKind?; var fold = false }
         var looks = [Look(name: "plain"), Look(name: "hover", highlighted: true), Look(name: "selected", selected: true),
-                     Look(name: "selected-hover", highlighted: true, selected: true), Look(name: "lifted", lifted: true),
+                     Look(name: "selected-hover", highlighted: true, selected: true), Look(name: "peeked", peeked: true),
+                     Look(name: "selected-peeked", selected: true, peeked: true), Look(name: "lifted", lifted: true),
                      Look(name: "fold", highlighted: true, fold: true)]
         for kind in [PickerKind.priority, .labels, .subIssues, .assignees, .dueDate, .milestone, .blockedBy, .parent, .epic] {
             looks.append(Look(name: "part-\(kind)", highlighted: true, part: kind))
@@ -1390,7 +1400,7 @@ enum DebugRemote {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Array(cards), id: \.1.id) { column, item in
                         CardView(card: model.cardModel(for: item, in: column.nesting), width: 232, highlighted: look.highlighted,
-                                 selected: look.selected, lifted: look.lifted, avatarVersion: model.avatarVersion,
+                                 selected: look.selected, peeked: look.peeked, lifted: look.lifted, avatarVersion: model.avatarVersion,
                                  hoveredPart: look.part, hoveringFold: look.fold)
                     }
                 }
@@ -1682,7 +1692,9 @@ extension IssueTable.Coordinator {
             }
         }
         let ranges = loaded.isEmpty ? "none" : "\(loaded.first!)…\(loaded.last!) (\(loaded.count))"
-        return "visible=\(visible.location)..<\(visible.location + visible.length) loaded=\(ranges) stale=\(stale.count) misplaced=\(misplaced.count)"
+        // How wide the list is laid out, which changes while the issue's inspector stands beside it.
+        let width = "width=\(Int(table.bounds.width)) on screen=\(Int(table.visibleRect.width))"
+        return "visible=\(visible.location)..<\(visible.location + visible.length) loaded=\(ranges) \(width) stale=\(stale.count) misplaced=\(misplaced.count)"
             + (stale.isEmpty ? "" : "\n  " + stale.joined(separator: "\n  "))
             + (misplaced.isEmpty ? "" : "\n  " + misplaced.joined(separator: "\n  "))
     }

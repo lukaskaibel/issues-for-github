@@ -384,11 +384,21 @@ extension AppModel {
 
     /// The status as a chip or property shows it. An issue on none of your boards has none, only open or closed.
     func statusText(of item: Item) -> String {
+        // One known only from another issue's page is open or closed.
+        if item.isStandIn { return String(localized: item.isClosed ? .stateClosed : .stateOpen) }
         guard item.isOnBoard else {
             if item.state == "MERGED" { return String(localized: .stateMerged) }
             return item.isClosed ? String(localized: .stateClosed) : String(localized: .noProject)
         }
         return statusOption(of: item)?.name ?? String(localized: .noStatus)
+    }
+
+    /// What VoiceOver reads for the status of a row of issues, which shows the statuses to pick from: "Status of #12:
+    /// In Progress".
+    func spokenStatus(of item: Item) -> String {
+        let status = statusText(of: item)
+        guard let number = item.number else { return String(localized: .statusIs(status: status)) }
+        return String(localized: .subIssueStatusLabel(number: number, status: status))
     }
 
     func statusIsPlaceholder(_ item: Item) -> Bool {

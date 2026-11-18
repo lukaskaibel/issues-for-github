@@ -33,7 +33,9 @@ struct NewIssuePlan: Equatable {
 extension AppModel {
     // MARK: Status, priority, order
 
-    func statusMutations(_ item: Item, _ option: FieldOption?) -> [Mutation] {
+    /// `changesIssueState` is false for the status an issue has in another of its projects than the one it was opened
+    /// from: that card moves, and the issue stays open or closed as it is.
+    func statusMutations(_ item: Item, _ option: FieldOption?, changesIssueState: Bool = true) -> [Mutation] {
         guard let projectId = item.projectId, let fieldId = project(of: item)?.statusFieldId else { return [] }
         var result: [Mutation] = []
         if item.statusId != option?.id {
@@ -42,7 +44,7 @@ extension AppModel {
                 optionId: option?.id, base: item.statusId
             )))
         }
-        result += stateMutations(item, for: option)
+        if changesIssueState { result += stateMutations(item, for: option) }
         return result
     }
 
@@ -77,9 +79,7 @@ extension AppModel {
             ))
             return [add] + stateMutations(item, for: option)
         }
-        performProjectEdits(mutations, inserting: inserted, expected: items.map {
-            .init(target: ProjectFieldTarget(item: $0, fieldId: "@membership"), value: nil, addingToProject: project.id)
-        })
+        withAnimation(Theme.spring) { perform(mutations, inserting: inserted) }
     }
 
     /// Whether an issue counts as finished: in a done or cancelled column, or closed on GitHub.

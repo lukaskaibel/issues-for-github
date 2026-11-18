@@ -1,6 +1,8 @@
 #if os(macOS)
 import SwiftUI
 
+/// A line of an issue's details for a project's field. Field names are the project's, so a long one wraps rather than
+/// widening every label.
 struct IssuePropertyRow<Content: View>: View {
     var title: Text
     @Binding var labelWidth: CGFloat
@@ -12,7 +14,7 @@ struct IssuePropertyRow<Content: View>: View {
                 .font(.small)
                 .foregroundStyle(Theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(width: min(labelWidth, 110), alignment: .leading)
+                .frame(width: labelWidth, alignment: .leading)
             content
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -20,69 +22,162 @@ struct IssuePropertyRow<Content: View>: View {
     }
 }
 
-/// Project fields are independent of the board view's visible columns and of the current selection.
-struct IssueProjectProperties: View {
+/// The open projects an issue is on, in its details: the one it was opened from with the fields that have a value,
+/// the others folded under their name and status, and a way to add more.
+struct IssueProjectsProperties: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var item: Item
+    @Binding var labelWidth: CGFloat
+
+    var body: some View {
+        ForEach(IssueProjectSection.sections(for: item, items: model.allItems, projects: model.projects, fields: model.fields)) { section in
+            Group {
+                if section.isPrimary {
+                    PrimaryIssueProject(section: section, labelWidth: $labelWidth)
+                } else {
+                    OtherIssueProject(section: section, labelWidth: $labelWidth)
+                }
+            }
+            .transition(reduceMotion ? .identity : .opacity.combined(with: .offset(y: 6)))
+        }
+        if item.isOnBoard, item.kind != .draft, item.contentId != nil {
+            IssueProjectsButton(item: item)
+        }
+    }
+}
+
+private struct PrimaryIssueProject: View {
+    @Environment(AppModel.self) private var model
+    var section: IssueProjectSection
+    @Binding var labelWidth: CGFloat
+    @State private var hovering = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            IssuePropertyRow(title: Text(.project), labelWidth: $labelWidth) {
+                HStack(spacing: 8) {
+                    ProjectIcon(projectId: section.project.id)
+                    Text(section.project.title).lineLimit(1)
+                    Spacer(minLength: 4)
+                    RemoveProjectButton(section: section, visible: hovering)
+                }
+                .padding(.leading, 8)
+            }
+            .contentShape(Rectangle())
+            .onHover { hovering = $0 }
+            ProjectFieldRows(section: section, labelWidth: $labelWidth)
+        }
+    }
+}
+
+private struct OtherIssueProject: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var section: IssueProjectSection
     @Binding var labelWidth: CGFloat
     @State private var hovering = false
-    @State private var expanded = true
+
+    private var unfolded: Bool { model.isIssueProjectUnfolded(section) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: 8) {
+            HStack(spacing: 4) {
                 Button {
-                    withAnimation(reduceMotion ? nil : Theme.spring) { expanded.toggle() }
+                    withAnimation(reduceMotion ? nil : Theme.spring) { model.toggleIssueProject(section) }
                 } label: {
                     HStack(spacing: 8) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(Theme.textTertiary)
+                            .rotationEffect(.degrees(unfolded ? 90 : 0))
+                            .frame(width: 10)
                         ProjectIcon(projectId: section.project.id)
-                        Text(section.project.title)
-                            .font(.smallMedium)
-                            .fixedSize(horizontal: false, vertical: true)
+                        Text(section.project.title).lineLimit(1)
                         Spacer(minLength: 4)
+                        if !unfolded, section.project.statusFieldId != nil {
+                            StatusIcon(glyph: model.glyph(of: section.item))
+                            Text(model.statusText(of: section.item))
+                                .font(.small)
+                                .foregroundStyle(Theme.textSecondary)
+                                .lineLimit(1)
+                        }
                     }
+                    .frame(minHeight: 30)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(section.project.title)
-                .accessibilityValue(Text(expanded ? .sectionOpen : .sectionFolded))
+                .accessibilityValue(Text(unfolded ? .sectionOpen : .sectionFolded))
                 .accessibilityIdentifier("toggle-project-\(section.project.id)")
-                if section.item.kind != .draft, section.project.viewerCanUpdate {
-                    IconButton(systemName: "xmark", label: String(localized: .removeIssueFromProject(project: section.project.title)), size: 20) {
-                        model.setMembership(of: section.item, in: section.project, isMember: false)
-                    }
-                    .opacity(hovering ? 1 : 0)
-                    .disabled(model.projectMembershipChanges.isSaving(section.item, projectId: section.project.id, in: model.db, remaps: model.status.idRemaps))
-                    .accessibilityIdentifier("remove-project-\(section.project.id)")
-                }
+                RemoveProjectButton(section: section, visible: hovering)
             }
-            .padding(.vertical, 8)
             .contentShape(Rectangle())
             .onHover { hovering = $0 }
-            VStack(alignment: .leading, spacing: 0) {
-                if expanded {
-                    VStack(alignment: .leading, spacing: 1) {
-                        ForEach(section.fields) { field in
-                            IssuePropertyRow(title: Text(verbatim: field.name), labelWidth: $labelWidth) {
-                                ProjectFieldProperty(section: section, field: field)
-                            }
-                        }
-                        // Preserve the existing shortcut for adding a due-date field to a project that has none.
-                        if !section.fields.contains(where: { $0.id == section.project.dueFieldId }) {
-                            IssuePropertyRow(title: Text(.dueDate), labelWidth: $labelWidth) {
-                                ProjectDueDateProperty(item: section.item, canEdit: section.project.viewerCanUpdate)
-                            }
-                        }
-                    }
+            if unfolded {
+                ProjectFieldRows(section: section, labelWidth: $labelWidth)
                     .transition(.opacity)
-                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .clipped()
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(section.project.title)
+    }
+}
+
+private struct RemoveProjectButton: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var section: IssueProjectSection
+    var visible: Bool
+
+    var body: some View {
+        if section.item.kind != .draft, section.project.viewerCanUpdate {
+            IconButton(systemName: "xmark", label: String(localized: .removeIssueFromProject(project: section.project.title)), size: 20) {
+                withAnimation(reduceMotion ? nil : Theme.spring) {
+                    model.setMembership(of: section.item, in: section.project, isMember: false)
+                }
+            }
+            .opacity(visible ? 1 : 0)
+            .accessibilityIdentifier("remove-project-\(section.project.id)")
+        }
+    }
+}
+
+/// A project's fields with a value, and behind "n more fields" those without.
+private struct ProjectFieldRows: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var section: IssueProjectSection
+    @Binding var labelWidth: CGFloat
+
+    var body: some View {
+        let showsEmpty = model.showsEmptyFields(of: section)
+        // All of them in the project's order once they show, so a field doesn't jump when it gets a value.
+        ForEach(showsEmpty ? section.listedFields : section.filledFields) { field in
+            IssuePropertyRow(title: Text(verbatim: field.name), labelWidth: $labelWidth) {
+                ProjectFieldProperty(section: section, field: field)
+            }
+        }
+        if showsEmpty, section.offersDueField {
+            IssuePropertyRow(title: Text(.dueDate), labelWidth: $labelWidth) {
+                ProjectDueDateProperty(item: section.item, canEdit: section.project.viewerCanUpdate)
+            }
+        }
+        if section.hiddenCount > 0 {
+            IssuePropertyRow(title: Text(verbatim: ""), labelWidth: $labelWidth) {
+                Button {
+                    withAnimation(reduceMotion ? nil : Theme.spring) { model.toggleEmptyFields(of: section) }
+                } label: {
+                    (showsEmpty ? Text(.projectFieldsFewer) : Text(.projectFieldsMore(count: section.hiddenCount)))
+                        .foregroundStyle(Theme.textTertiary)
+                        .padding(.horizontal, 8)
+                        .frame(minHeight: 28)
+                        .hoverFill(radius: 8, fill: Theme.partHover)
+                }
+                .buttonStyle(PlainPressStyle())
+                .accessibilityIdentifier("project-more-fields-\(section.project.id)")
+            }
+        }
     }
 }
 
@@ -97,7 +192,7 @@ struct IssueProjectsButton: View {
                 .foregroundStyle(Theme.textSecondary)
                 .padding(.horizontal, 8)
                 .frame(minHeight: 28)
-                .hoverFill(active: open, radius: 8)
+                .hoverFill(active: open, radius: 8, fill: Theme.partHover)
         }
         .buttonStyle(PlainPressStyle())
         .accessibilityIdentifier("issue-projects")
@@ -109,6 +204,7 @@ struct IssueProjectsButton: View {
 
 private struct IssueProjectsPicker: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var item: Item
     var close: () -> Void
 
@@ -118,12 +214,12 @@ private struct IssueProjectsPicker: View {
             let projects = model.openProjects.filter(\.viewerCanUpdate)
             PickerList(placeholder: String(localized: .searchIssueProjects), items: projects.map { project in
                 PickerItem(id: project.id, title: project.title, subtitle: project.ownerLogin,
-                           selected: memberships.contains(project.id), icon: AnyView(ProjectIcon(projectId: project.id)),
-                           trailing: model.projectMembershipChanges.isSaving(current, projectId: project.id, in: model.db, remaps: model.status.idRemaps)
-                               ? AnyView(ProgressView().controlSize(.mini)) : nil)
+                           selected: memberships.contains(project.id), icon: AnyView(ProjectIcon(projectId: project.id)))
             }, multiple: true, width: 320, onPick: { id in
                 guard let project = model.projects.first(where: { $0.id == id }) else { return }
-                model.setMembership(of: current, in: project, isMember: !memberships.contains(id))
+                withAnimation(reduceMotion ? nil : Theme.spring) {
+                    model.setMembership(of: current, in: project, isMember: !memberships.contains(id))
+                }
             }, onClose: close)
         } else {
             Color.clear.task { close() }
@@ -164,16 +260,16 @@ private struct ProjectFieldProperty: View {
                     Text(field.options.filter { ids.contains($0.id) }.map(\.name).formatted(.list(type: .and)))
                 } else if let iteration = field.iterations.first(where: { $0.id == value?.iterationId }) {
                     IterationIcon(size: 13)
-                    Text(iteration.title)
-                } else if let day = value?.date.flatMap(CalendarDay.init) {
-                    if field.id == section.project.dueFieldId, let due = model.dueBadge(for: section.item) {
-                        DueDateIcon(tone: due.tone, size: 12)
-                        Text(day.mediumLabel())
-                            .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.text)
-                    } else {
-                        Image(systemName: "calendar").font(.system(size: 12))
-                        Text(day.mediumLabel())
+                        .foregroundStyle(model.isRunning(iteration, field: field) ? Theme.started : Theme.textSecondary)
+                    Text(iteration.title).lineLimit(1)
+                    if let when = model.iterationPlace(iteration, field: field) ?? model.iterationRange(iteration) {
+                        Text(when).foregroundStyle(Theme.textTertiary).lineLimit(1)
                     }
+                } else if field.id == section.project.dueFieldId, let due = model.dueBadge(for: section.item) {
+                    DueDateValue(due: due)
+                } else if let day = value?.date.flatMap(CalendarDay.init) {
+                    DueDateIcon(size: 12)
+                    Text(day.mediumLabel())
                 } else if let text = value?.text {
                     Text(verbatim: text)
                 } else if let number = value?.number {
@@ -185,14 +281,14 @@ private struct ProjectFieldProperty: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
             .padding(.horizontal, 8)
-            .hoverFill(active: open, radius: 8)
+            .hoverFill(active: open, radius: 8, fill: Theme.partHover)
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainPressStyle())
-        .disabled(!section.project.viewerCanUpdate || model.projectEdits.isSaving(ProjectFieldTarget(item: section.item, fieldId: field.id), in: model.db, remaps: model.status.idRemaps))
+        .disabled(!section.project.viewerCanUpdate || !model.canEditValue(of: field, on: section.item))
         .accessibilityLabel(field.name)
         .accessibilityValue(spokenValue)
-        .accessibilityIdentifier("project-field-\(section.item.id)-\(field.id)")
+        .accessibilityIdentifier("project-field-\(section.project.id)-\(field.id)")
         .dropdown(isPresented: $open) { close in
             switch field.kind {
             case .singleSelect, .multiSelect, .iteration:
@@ -235,7 +331,7 @@ private struct ProjectFieldChoicePicker: View {
                        onPick: { id in
                 model.pickProjectField(id, target: target)
             }, onClose: close)
-            .disabled(!project.viewerCanUpdate || model.projectEdits.isSaving(target, in: model.db, remaps: model.status.idRemaps))
+            .disabled(!project.viewerCanUpdate)
             .onAppear {
                 if field.id == project.statusFieldId { model.refreshStatuses(projectId: project.id) }
             }
@@ -255,7 +351,7 @@ private struct ProjectDueDateProperty: View {
                 .foregroundStyle(item.dueDate == nil ? Theme.textTertiary : Theme.text)
                 .padding(.horizontal, 8)
                 .frame(minHeight: 28)
-                .hoverFill(active: open, radius: 8)
+                .hoverFill(active: open, radius: 8, fill: Theme.partHover)
         }
         .buttonStyle(PlainPressStyle())
         .disabled(!canEdit)

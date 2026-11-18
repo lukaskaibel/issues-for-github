@@ -14,16 +14,17 @@ enum SidebarSelection: Hashable {
     case allIssues(String)
 }
 
-/// The system's sidebar, as in Notes and Mail: the Inbox and My Issues first, which cover every project; then the
-/// project the sidebar is about under its own name and menu, with All Issues and its views, and its next milestones
-/// with the roadmap; and you at the foot, with how syncing is going. One project at a time, as Linear shows one
-/// workspace.
+/// The system's sidebar, as in Notes and Mail: Search, then the Inbox and My Issues, which cover every project; then
+/// the project the sidebar is about under its own name and menu, with All Issues and its views, and its next
+/// milestones with the roadmap; and you at the foot, with how syncing is going. One project at a time, as Linear shows
+/// one workspace.
 struct Sidebar: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
         List(selection: selection) {
             Section {
+                SidebarSearchRow()
                 Label { Text(.inbox) } icon: { Image(systemName: "tray") }
                     .badge(model.inboxUnreadCount)
                     .tag(SidebarSelection.inbox)
@@ -88,6 +89,38 @@ struct Sidebar: View {
             case .allIssues(let id): model.select(.allIssues(id))
             }
         }
+    }
+}
+
+/// Search, the first row of the sidebar: it opens the command palette, which finds issues and everything there is to
+/// do, and its shortcut stands at the end of the row. A button and not a place, so it never stays selected.
+private struct SidebarSearchRow: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        // While the palette is open its backdrop covers the sidebar, and a click there closes it.
+        Button {
+            model.overlay = .palette(.root)
+        } label: {
+            Label {
+                HStack(spacing: 8) {
+                    Text(.search)
+                    Spacer(minLength: 0)
+                    Text(verbatim: "⌘K")
+                        .font(.small)
+                        .foregroundStyle(Theme.textTertiary)
+                        // Ends where the counts of the rows below do.
+                        .padding(.trailing, 5)
+                }
+            } icon: {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(Theme.accent)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(Text(.searchShortcutTooltip))
+        .accessibilityLabel(Text(.search))
     }
 }
 
@@ -488,12 +521,7 @@ struct QueueList: View {
     var body: some View {
         let waiting = model.outbox.filter { $0.state != .sent }
         VStack(alignment: .leading, spacing: 0) {
-            Text(waiting.isEmpty ? .everythingSavedToGitHub : .queuedChanges)
-                .font(.tinySemibold)
-                .foregroundStyle(Theme.textSecondary)
-                .padding(.horizontal, 14)
-                .padding(.top, 12)
-                .padding(.bottom, 6)
+            MenuHeading(Text(waiting.isEmpty ? .everythingSavedToGitHub : .queuedChanges), inset: 14, top: 12, bottom: 6)
 
             ForEach(waiting.prefix(12)) { entry in
                 let summary = model.summary(of: entry)

@@ -45,12 +45,12 @@ enum Theme {
     static let control = Color(light: 0xE9E9ED, dark: 0x2C2C2F)
     static let controlActive = Color(light: 0xE1E1E6, dark: 0x3A3A3E)
     static let chipBorder = Color(light: 0xDCDCE1, dark: 0x3A3A3E)
-    /// A chip under the pointer lights up in its own shape rather than getting a box behind it.
-    static let chipHover = Color(light: 0xEFEFF3, dark: 0x343438)
-    static let chipHoverBorder = Color(light: 0xC7C7CC, dark: 0x4A4A4F)
     /// A picked issue: a tint of the accent behind it and the accent around it.
     static let selectionFill = Color(light: 0xEDEEFC, dark: 0x2A2C47)
     static let selectionBorder = Color(light: 0x8D93E6, dark: 0x6E75D8)
+    /// The issue open in the peek (`Marks.peek`): a stronger tint of the accent than a picked issue's, solid, as avatars
+    /// ring themselves in the colour under them.
+    static let peekFill = Color(light: 0xE3E5FB, dark: 0x30335C)
     /// Behind a small icon or avatar under the pointer.
     static let partHover = Color(light: 0xE5E5EA, dark: 0x3A3A3E)
 
@@ -61,6 +61,11 @@ enum Theme {
     /// indigo Done circle visible where a full accent fill would swallow it.
     static let menuHighlight = Color(platformColor: .dynamic { isDark in
         PlatformColor(hex: isDark ? 0x8F96F2 : 0x5B63D3).withAlphaComponent(isDark ? 0.24 : 0.14)
+    })
+    /// Over an issue lit up to take the issues dragged onto it as its sub-issues, inside a ring in the accent
+    /// (`Marks.nestTarget`): a soft tint of the accent, light enough to read the issue through.
+    static let nestTint = Color(platformColor: .dynamic { isDark in
+        PlatformColor(hex: isDark ? 0x8F96F2 : 0x5B63D3).withAlphaComponent(isDark ? 0.16 : 0.10)
     })
     /// The search field at the top of a dropdown and other fields drawn on glass.
     static let field = Color(platformColor: .dynamic { isDark in
@@ -115,7 +120,6 @@ enum Theme {
     static let sidebarWidth: CGFloat = 220
     /// The Inbox's list beside the issue, as wide as Linear's.
     static let inboxListWidth: CGFloat = 372
-    static let headerHeight: CGFloat = 44
     static let rowHeight: CGFloat = 36
 
     /// GitHub's eight option colours, tuned for each ground.
@@ -130,6 +134,15 @@ enum Theme {
         case "PURPLE": Color(light: 0x5B63D3, dark: 0x8F96F2)
         default: nil
         }
+    }
+
+    /// The colours of the issue in the peek. On a picked row, which is filled with the accent, the ring turns white.
+    static func peekRing(onAccent: Bool = false) -> Color {
+        onAccent ? .white : accent
+    }
+
+    static func peekGround(onAccent: Bool = false) -> Color {
+        onAccent ? accentFill : peekFill
     }
 
     /// A project's glyph in one of GitHub's option colours; grey is the grey of secondary text, like other icons.
@@ -215,12 +228,14 @@ extension Font {
 extension View {
     /// Liquid Glass, as the system draws what floats over the content: bars, panels, the comment field. Debug runs
     /// can ask for a solid ground instead (`-debugSolidGlass YES`), since the app's own snapshots can't draw glass.
+    /// `interactive` for glass that is touched, such as the comment field, which then answers the finger as the
+    /// system's controls do.
     @ViewBuilder
-    func glassPanel<S: Shape>(in shape: S) -> some View {
+    func glassPanel<S: Shape>(in shape: S, interactive: Bool = false) -> some View {
         if Theme.solidGlass {
             background(shape.fill(Theme.popover)).overlay(shape.stroke(Theme.popoverBorder, lineWidth: 0.5))
         } else {
-            glassEffect(.regular, in: shape)
+            glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
         }
     }
 

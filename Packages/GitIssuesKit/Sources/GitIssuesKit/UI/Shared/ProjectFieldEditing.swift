@@ -49,12 +49,18 @@ extension AppModel {
         return newStatusRow(query, projectId: project.id)
     }
 
+    /// A pick sends a multiple-choice field's whole selection, so it waits until the card was read with its values.
+    /// Cards read before the app knew such fields are read once more (the migration "multiSelectValues").
+    func canEditValue(of field: ProjectField, on item: Item) -> Bool {
+        field.kind != .multiSelect || isDemo || item.remoteUpdatedAt != nil || item.isLocalOnly
+    }
+
     func pickProjectField(_ id: String, target: ProjectFieldTarget) {
         guard let item = item(targetedBy: target), let field = field(id: target.fieldId),
               field.projectId == item.projectId, let project = project(of: item), !project.closed,
-              project.viewerCanUpdate, !projectEdits.isSaving(target, in: db, remaps: status.idRemaps) else { return }
+              project.viewerCanUpdate else { return }
         if field.id == project.statusFieldId, let name = Self.newStatusName(id) {
-            createStatus(named: name, projectId: project.id, for: [item])
+            createStatus(named: name, projectId: project.id, for: [item], changesIssueState: false)
         } else {
             let value = IssueProjectSection(project: project, item: item, fields: []).value(of: field)
             saveProjectField(target, value: ProjectFieldEditing.picked(id, field: field, current: value))
@@ -63,8 +69,16 @@ extension AppModel {
 
     func saveProjectField(_ target: ProjectFieldTarget, value: FieldValue?) {
         guard let item = item(targetedBy: target), let field = field(id: target.fieldId),
-              field.projectId == item.projectId, project(of: item)?.viewerCanUpdate == true else { return }
-        setValue(value, of: field, for: [item])
+              field.projectId == item.projectId, let project = project(of: item), project.viewerCanUpdate,
+              canEditValue(of: field, on: item) else { return }
+        if field.id == project.statusFieldId {
+            // Only other projects' statuses are edited here. They move that card and leave the issue, its parent and
+            // its epic as they are: the status of the project it was opened from decides those.
+            let option = statusOptions(projectId: project.id).first { $0.id == value?.optionId }
+            perform(statusMutations(item, option, changesIssueState: false), followingUp: false)
+        } else {
+            setValue(value, of: field, for: [item])
+        }
     }
 
     /// The due-date shortcut can create the project's first date field. Resolve its own card again when picked,

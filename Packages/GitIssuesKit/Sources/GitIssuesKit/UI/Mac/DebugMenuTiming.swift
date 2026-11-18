@@ -364,10 +364,20 @@ enum MenuTiming {
 
     /// A pointer move to `point`, given from the window's top left, delivered as the tracking area of the hosting view
     /// under it would.
+    /// The row of issues outside a list that the pointer is over, which follows it itself.
+    nonisolated(unsafe) private static var row: IssueRowHost?
+
     private static func move(to point: NSPoint, in window: NSWindow) {
         let location = NSPoint(x: point.x, y: window.frame.height - point.y)
-        guard let hosting = hostingView(at: location, in: window), let area = trackingArea(of: hosting) else { return }
         let time = ProcessInfo.processInfo.systemUptime
+        let host = window.contentView?.superview?.hitTest(location) as? IssueRowHost
+        if let event = NSEvent.mouseEvent(with: .mouseMoved, location: location, modifierFlags: [], timestamp: time,
+                                          windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 0, pressure: 0) {
+            if row !== host { row?.mouseExited(with: event) }
+            row = host
+            host?.mouseMoved(with: event)
+        }
+        guard let hosting = hostingView(at: location, in: window), let area = trackingArea(of: hosting) else { return }
         if inside !== hosting {
             if let previous = inside, let previousWindow = previous.window, let oldArea = trackingArea(of: previous),
                let exit = enterExit(.mouseExited, at: location, in: previousWindow, area: oldArea, time: time) {

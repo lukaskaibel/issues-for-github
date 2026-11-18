@@ -118,12 +118,7 @@ struct StatusStyleMenu: View {
     }
 
     private func heading(_ title: LocalizedStringResource) -> some View {
-        Text(title)
-            .font(.tinySemibold)
-            .foregroundStyle(Theme.textTertiary)
-            .padding(.horizontal, 15)
-            .padding(.top, 4)
-            .padding(.bottom, 2)
+        MenuHeading(Text(title))
     }
 }
 #endif

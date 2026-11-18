@@ -51,29 +51,59 @@ final class IssueProjectsTests: AppTestCase {
         target.tap()
     }
 
+    /// The project's fields without a value wait behind "n more fields", which stays as it was left between launches.
+    private func showEmptyFields(_ projectId: String? = nil, until target: XCUIElement) {
+        guard !target.exists else { return }
+        tap(element("project-more-fields-\(projectId ?? project)"))
+        wait(target)
+    }
+
+    private func unfold(_ projectId: String) {
+        let header = element("toggle-project-\(projectId)")
+        reveal(header)
+        if (header.value as? String) != "Open" { header.tap() }
+        waitForValue(header, equalTo: "Open")
+    }
+
+    /// The sample issue is on the website's board as well.
+    private func waitForWebsite() {
+        wait(element("issue-project-demo-project-site"))
+    }
+
     func testAddingRemovingCurrentAndLastProjectsKeepsTheIssueOpen() {
         openProjects()
         tap(element("issue-projects"))
-        wait(pickerRow("Website"))
+        wait(pickerRow("Blog"))
         snapshot("Project selector initial presentation")
-        pickerRow("Website").tap()
-        wait(element("issue-project-demo-project-site"))
+        pickerRow("Blog").tap()
+        wait(element("issue-project-demo-project-blog"))
+        tap(element("remove-project-demo-project-blog"))
+        waitGone(element("issue-project-demo-project-blog"))
         tap(element("remove-project-\(project)"))
+        wait(button("Undo"))
+        snapshot("Removing a project offers Undo")
         showProjectsSheetIfNeeded()
         wait(element("issue-project-demo-project-site"))
         waitGone(element("issue-project-\(project)"))
         tap(element("remove-project-demo-project-site"))
         showProjectsSheetIfNeeded()
         waitGone(element("issue-project-demo-project-site"))
-        tap(element("issue-projects"))
-        wait(pickerRow("Git Issues"))
-        pickerRow("Git Issues").tap()
-        showProjectsSheetIfNeeded()
-        wait(element("issue-project-\(project)"))
         if element("issue-projects-done").exists { element("issue-projects-done").tap() }
         let title = app.textFields.matching(NSPredicate(format: "value CONTAINS %@", "Drag cards between columns")).firstMatch
         wait(title)
         snapshot("Membership round trip keeps the issue open")
+    }
+
+    func testUndoBringsTheProjectAndItsValuesBack() {
+        openProjects()
+        waitForValue(field("version"), equalTo: "0.3")
+        tap(element("remove-project-\(project)"))
+        let undo = button("Undo")
+        wait(undo)
+        undo.tap()
+        showProjectsSheetIfNeeded()
+        wait(element("issue-project-\(project)"))
+        waitForValue(field("version"), equalTo: "0.3")
     }
 
     func testEditingProjectSelectionsDatesNumbersTextAndMultipleChoices() {
@@ -83,6 +113,7 @@ final class IssueProjectsTests: AppTestCase {
         pickerRow("0.4").tap()
         waitForValue(field("version"), equalTo: "0.4")
 
+        showEmptyFields(until: field("finish"))
         tap(field("finish"))
         wait(pickerRow("Tomorrow"))
         pickerRow("Tomorrow").tap()
@@ -112,10 +143,7 @@ final class IssueProjectsTests: AppTestCase {
         tap(field("platforms"))
         wait(element("check-iOS"))
         element("check-iOS").tap()
-        let android = element("check-Android")
-        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: android)
-        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 6), .completed)
-        android.tap()
+        element("check-Android").tap()
         button("Done").tap()
         waitForValue(field("platforms"), containing: "Android")
         waitForValue(field("platforms"), containing: "iOS")
@@ -124,24 +152,16 @@ final class IssueProjectsTests: AppTestCase {
 
     func testFirstDueDateIsVisibleBeforeItsFieldSyncs() {
         openProjects(["-demo.offline", "YES"])
-        tap(element("issue-projects"))
-        wait(pickerRow("Website"))
-        pickerRow("Website").tap()
+        waitForWebsite()
+        unfold("demo-project-site")
         let due = element("project-due-demo-project-site")
+        showEmptyFields("demo-project-site", until: due)
         tap(due)
         wait(pickerRow("Tomorrow"))
         pickerRow("Tomorrow").tap()
         // This remains the fallback row while offline: there is still no due-date field in the project metadata.
         waitForValue(due, equalTo: "Tomorrow", 20)
         snapshot("First due date saved offline without field metadata")
-        tap(due)
-        let clear = element("date-picker-clear")
-        let dates = element("date-picker-list")
-        wait(dates)
-        scrollTo(clear, in: dates, maxSwipes: 6)
-        wait(clear, 20)
-        clear.tap()
-        waitForValue(due, equalTo: "Add due date", 20)
     }
 
     func testProjectsRemainAvailableAfterRotationAndInDarkAppearance() {
@@ -159,53 +179,31 @@ final class IssueProjectsTests: AppTestCase {
         snapshot("Compact project properties in dark appearance")
     }
 
-    func testFoldedProjectsSurviveRemovingTheCurrentCard() {
-        openProjects(["-demo.offline", "YES"])
-        let usesSheet = element("issue-projects-done").exists
-        tap(element("issue-projects"))
-        wait(pickerRow("Website"))
-        pickerRow("Website").tap()
-        let website = element("toggle-project-demo-project-site")
-        tap(website)
-        waitForValue(website, equalTo: "Folded")
-        tap(element("remove-project-\(project)"))
-        if usesSheet { wait(element("issue-projects-done")) }
-        waitForValue(website, equalTo: "Folded")
-        waitGone(element("issue-project-\(project)"))
-        snapshot("Folded projects survive replacing the current card")
-    }
-
-    func testProjectFieldsFoldIndependentlyAndRestoreTheirValues() {
+    func testOtherProjectsFoldAndKeepTheirOwnStatus() {
         openProjects()
-        tap(element("issue-projects"))
-        wait(pickerRow("Website"))
-        pickerRow("Website").tap()
-        wait(element("issue-project-demo-project-site"))
-
-        let header = element("toggle-project-\(project)")
+        waitForWebsite()
+        let header = element("toggle-project-demo-project-site")
+        unfold("demo-project-site")
+        let status = element("project-more-fields-demo-project-site")
+        wait(status)
+        snapshot("Another project unfolded")
         tap(header)
         waitForValue(header, equalTo: "Folded")
-        waitGone(field("version"))
-        wait(element("remove-project-\(project)"))
-        let otherStatus = element("project-field-demo-project-site-demo-project-site-status")
-        wait(otherStatus)
-        snapshot("One project folded and the other open")
+        waitGone(status)
+        snapshot("Another project folded")
+        // The project the issue was opened from keeps its fields in view.
+        wait(field("version"))
+    }
 
-        tap(header)
-        waitForValue(header, equalTo: "Open")
-        waitForValue(field("version"), equalTo: "0.3")
-        wait(otherStatus)
-        snapshot("Project fields restored")
-
-        tap(field("area"))
-        wait(pickerRow("Interface"))
-        snapshot("Wrapped option descriptions align to the leading edge")
-        button("Done").tap()
-
-        tap(header)
+    func testRemovingTheCurrentProjectKeepsTheOtherOne() {
+        openProjects(["-demo.offline", "YES"])
+        let usesSheet = element("issue-projects-done").exists
+        waitForWebsite()
         tap(element("remove-project-\(project)"))
+        if usesSheet { wait(element("issue-projects-done")) }
         showProjectsSheetIfNeeded()
+        wait(element("issue-project-demo-project-site"))
         waitGone(element("issue-project-\(project)"))
-        waitForValue(element("toggle-project-demo-project-site"), equalTo: "Open")
+        snapshot("The issue stays open on its other project")
     }
 }

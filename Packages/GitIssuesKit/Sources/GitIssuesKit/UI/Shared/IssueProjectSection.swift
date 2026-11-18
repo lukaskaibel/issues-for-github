@@ -5,9 +5,31 @@ struct IssueProjectSection: Identifiable {
     var project: Project
     var item: Item
     var fields: [ProjectField]
+    /// The project the issue was opened from. Its status, priority, due date and iterations have their places among the
+    /// issue's properties, and only its status closes or reopens the issue.
+    var isPrimary = false
 
     // Sync replaces a newly added card's local ID; keep the section's identity through that remap.
     var id: String { "\(project.id):\(item.contentId ?? item.id)" }
+
+    /// The fields this section is for: for the primary project those without a place of their own.
+    var listedFields: [ProjectField] {
+        guard isPrimary else { return fields }
+        let own = [project.statusFieldId, project.priorityFieldId, project.dueFieldId]
+        return fields.filter { !own.contains($0.id) && $0.kind != .iteration }
+    }
+
+    /// What the section shows at once.
+    var filledFields: [ProjectField] { listedFields.filter { value(of: $0) != nil } }
+
+    /// What waits behind "n more fields".
+    var emptyFields: [ProjectField] { listedFields.filter { value(of: $0) == nil } }
+
+    /// Whether a first date can add a "Due date" field to this other project, as with the issue's own.
+    var offersDueField: Bool { !isPrimary && project.dueFieldId == nil }
+
+    /// How many rows "n more fields" stands for.
+    var hiddenCount: Int { emptyFields.count + (offersDueField ? 1 : 0) }
 
     static func sections(for item: Item, items: [Item], projects: [Project], fields: [ProjectField]) -> [Self] {
         var members = items.filter { candidate in
@@ -20,7 +42,7 @@ struct IssueProjectSection: Identifiable {
             guard let member = members.first(where: { $0.projectId == project.id }) else { return nil }
             return Self(project: project, item: member, fields: fields.filter {
                 $0.projectId == project.id && $0.kind.isProjectValue
-            }.sorted { $0.position < $1.position })
+            }.sorted { $0.position < $1.position }, isPrimary: project.id == item.projectId)
         }
         // The board the issue was opened from stays first, so its version and dates are immediately within reach.
         if let index = result.firstIndex(where: { $0.project.id == item.projectId }), index > 0 {

@@ -5,10 +5,6 @@
 build/
 .build/
 DerivedData/
-__pycache__/
-
-# Local interface review captures
-.impeccable/
 
 # Xcode per-user state
 xcuserdata/

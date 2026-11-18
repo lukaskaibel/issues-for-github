@@ -493,6 +493,9 @@ struct OverviewCard: View {
                     .scrollTargetLayout()
                 }
                 .scrollTargetBehavior(.paging)
+                // The ring of an issue lit up to take dropped issues (`Marks.nestTarget`) reaches a little past its
+                // row, above the first one of a page too; the card's own shape still bounds the pages beside it.
+                .scrollClipDisabled()
                 .scrollPosition(id: $pageKey)
                 .scrollIndicators(.never)
                 .onAppear { pageKey = current }
@@ -707,10 +710,11 @@ struct OverviewRowLabel: View {
     var body: some View {
         HStack(spacing: 8) {
             switch page.lead {
+            // On a picked row as a picked row of the list shows them.
             case .status:
-                StatusIcon(glyph: model.glyph(of: item))
+                StatusIcon(glyph: selected ? model.glyph(of: item).onAccent : model.glyph(of: item))
             case .priority:
-                PriorityIcon(level: model.priorityLevel(of: item))
+                PriorityIcon(level: model.priorityLevel(of: item), onAccent: selected)
             case .project:
                 if let projectId = item.projectId {
                     ProjectIcon(projectId: projectId, size: 13)
@@ -760,7 +764,7 @@ struct OverviewRowSignals: View {
     var body: some View {
         HStack(spacing: 10) {
             if let blocker = model.blockerMark(for: item) {
-                BlockerFlag(mark: blocker, size: 12)
+                BlockerFlag(mark: blocker, size: 12, tint: selected ? .white : nil)
             }
             if showsIdle, let days = model.idleDays(of: item) {
                 HStack(spacing: 4) {

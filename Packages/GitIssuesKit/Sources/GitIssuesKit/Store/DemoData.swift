@@ -370,6 +370,18 @@ public enum DemoData {
                 }
             }
         }
+        // Issue #9 is on the website's board too, so its page shows an issue on two projects. Far down, so that the app's
+        // card stays the one lists find first.
+        if var shared = try Item.fetchOne(db, key: "demo-item-9") {
+            shared.id = "demo-item-9-site"
+            shared.projectId = site.id
+            shared.position = 1_000_000
+            shared.statusId = optionId(site, "In Progress")
+            shared.priorityId = nil
+            shared.dueDate = nil
+            shared.fieldValues = [:]
+            try shared.insert(db)
+        }
         var listedUnder: [Int: Int] = [:]
         for issue in appIssuesWithoutProject {
             let date = now.addingTimeInterval(-issue.hoursAgo * 3600)

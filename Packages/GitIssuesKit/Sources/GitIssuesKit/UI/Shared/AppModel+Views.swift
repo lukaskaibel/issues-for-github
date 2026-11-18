@@ -824,6 +824,10 @@ extension AppModel {
             case .singleSelect:
                 guard let option = field.options.first(where: { $0.id == value.optionId }) else { return nil }
                 return FieldChip(fieldId: field.id, text: option.name, icon: .option(color: option.color))
+            case .multiSelect:
+                let chosen = field.options.filter { value.optionIds?.contains($0.id) == true }
+                guard let first = chosen.first else { return nil }
+                return FieldChip(fieldId: field.id, text: chosen.map(\.name).formatted(.list(type: .and)), icon: .option(color: first.color))
             case .text:
                 return value.text.map { FieldChip(fieldId: field.id, text: $0, icon: .text) }
             case .number:
@@ -848,15 +852,7 @@ extension AppModel {
 
     /// Gives issues an option of a single-select field or an iteration, or clears it.
     func setValue(_ value: FieldValue?, of field: ProjectField, for items: [Item]) {
-        let next = (value?.isEmpty ?? true) ? nil : value
-        let targets = items.filter { item in
-            item.projectId == field.projectId && project(of: item)?.viewerCanUpdate == true
-                && !projectEdits.isSaving(ProjectFieldTarget(item: item, fieldId: field.id), in: db, remaps: status.idRemaps)
-                && !valueMutations(item, field: field, value: next).isEmpty
-        }
-        performProjectEdits(targets.flatMap { valueMutations($0, field: field, value: next) }, expected: targets.map {
-            .init(target: ProjectFieldTarget(item: $0, fieldId: field.id), value: next)
-        })
+        perform(items.flatMap { valueMutations($0, field: field, value: value) })
     }
 
     func valueMutations(_ item: Item, field: ProjectField, value: FieldValue?) -> [Mutation] {

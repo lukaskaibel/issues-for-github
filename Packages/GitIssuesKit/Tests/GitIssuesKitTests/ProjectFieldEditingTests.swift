@@ -73,4 +73,48 @@ struct ProjectFieldEditingTests {
         #expect(keepingOld.map(\.id) == ["", "old", "current", "next"])
         #expect(keepingOld.first(where: { $0.id == "old" })?.selected == true)
     }
+
+    @Test("Multi-selection toggles preserve other choices and clear an empty selection")
+    func selections() {
+        let field = ProjectField(id: "F", projectId: "P", databaseId: 1, name: "Platforms", dataType: "MULTI_SELECT", position: 0)
+        #expect(ProjectFieldEditing.picked("android", field: field, current: FieldValue(optionIds: ["ios"]))?.optionIds == ["android", "ios"])
+        #expect(ProjectFieldEditing.picked("ios", field: field, current: FieldValue(optionIds: ["ios"])) == nil)
+        #expect(ProjectFieldEditing.picked("", field: field, current: FieldValue(optionIds: ["ios"])) == nil)
+    }
+
+    @Test("A status picked for another project moves that card and leaves the issue open or closed", arguments: [false, true])
+    func otherProjectStatus(closed: Bool) throws {
+        let f = try fixture()
+        try f.model.db.writer.write { db in
+            try FieldOption(id: "done", fieldId: f.field.id, projectId: "P", kind: .status, name: "Done", color: "PURPLE", descr: "", position: 1).insert(db)
+            try FieldOption(id: "todo", fieldId: f.field.id, projectId: "P", kind: .status, name: "Todo", color: "GRAY", descr: "", position: 2).insert(db)
+            if closed { try db.execute(sql: "UPDATE item SET state = 'CLOSED'") }
+        }
+        f.model.statusKinds.set(.completed, projectId: "P", optionId: "done")
+        f.model.statusKinds.set(.unstarted, projectId: "P", optionId: "todo")
+        f.model.reloadNow()
+        f.model.pickProjectField(closed ? "todo" : "done", target: f.target)
+        let mutations = f.model.outbox.map(\.mutation)
+        #expect(mutations.count == 1)
+        guard case .setField(let change)? = mutations.first else { Issue.record("Expected a status change"); return }
+        #expect(change.optionId == (closed ? "todo" : "done"))
+        #expect(f.model.allItems.first?.isClosed == closed)
+    }
+
+    @Test("A multiple-choice field waits for its card to be read, so a pick can't replace what GitHub has")
+    func unreadMultiSelect() throws {
+        let f = try fixture()
+        let field = ProjectField(id: "F-multi", projectId: "P", databaseId: 2, name: "Platforms", dataType: "MULTI_SELECT", position: 1,
+                                 options: [FieldChoice(id: "ios", name: "iOS", color: "BLUE")])
+        try f.model.db.writer.write { try field.insert($0) }
+        f.model.reloadNow()
+        let target = ProjectFieldTarget(item: try #require(f.model.allItems.first), fieldId: field.id)
+        f.model.pickProjectField("ios", target: target)
+        #expect(f.model.outbox.isEmpty)
+        try f.model.db.writer.write { try $0.execute(sql: "UPDATE item SET remoteUpdatedAt = '2026-11-18T10:00:00Z'") }
+        f.model.reloadNow()
+        f.model.pickProjectField("ios", target: target)
+        #expect(f.model.allItems.first?.fieldValues[field.id]?.optionIds == ["ios"])
+        #expect(f.model.outbox.count == 1)
+    }
 }

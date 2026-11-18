@@ -80,10 +80,10 @@ shows in the same frame and reaches GitHub in the background.
   <img alt="A card is dragged from In Progress to the end of In Review, taking the two sub-issues under it along, and Esc sends it back" src="Design/screenshots/drag-light.webp">
 </picture>
 
-Hold a card over the middle of another one and that issue lights up while the card says "Sub-issue of #9": let go,
-and it becomes that issue's sub-issue, keeping its own status. Near a card's top or bottom edge it goes in between,
-as before. Rows of a list and issues in My Issues go under another issue the same way, and so do cards on the
-iPhone and iPad boards.
+Hold a card over the middle of another one for a moment and that issue lights up while the card says "Sub-issue of
+#9": let go, and it becomes that issue's sub-issue, keeping its own status. Cards it only passes over on its way stay
+as they are, and near a card's top or bottom edge it goes in between, as before. Rows of a list and issues in My
+Issues go under another issue the same way, and so do cards on the iPhone and iPad boards.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/nest-dark.webp">
@@ -129,24 +129,18 @@ Descriptions are Markdown, edited in place: click and type. It types like a note
 `**` brings its closing pair and `##` makes a heading, Return continues a list and leaves bold text, `-` starts a
 bullet and `- []` a checkbox, and a style's marks are kept and deleted as a pair; a change of style eases in. Tab and
 ↓ go from the title into the description, and ↑ at its top goes back. Sub-issues come
-with a progress bar, the most urgent first and the done ones last, and the plus beside them adds a new one or an issue
-that exists already. A sub-issue with sub-issues of its own says how many of them are done, and the arrow beside it
-unfolds them under it, level by level, as a tree. What blocks the issue and what it blocks are listed below. A blocked
+with a progress bar, the most urgent first and the done ones last, as rows of the list, whose parts open their
+pickers and whose checkbox picks several, and the plus beside them adds a new one or an issue that exists already. A
+sub-issue with sub-issues of its own says how many of them are done, and the arrow beside it unfolds them under it,
+level by level, as a tree. What blocks the issue and what it blocks are listed below, as rows too, with the × to take
+one off where the checkbox stands. A blocked
 issue carries a red flag with the number of the issue to finish first, as in `#5`, on its card, its list row and its
 line among its parent's sub-issues. Comments sit below, with the field
 for a new one at the bottom of the window, and status, priority, assignees, labels, parent and blockers are in the
-inspector on the right (`⌃⌘I` hides it). Each synced open project the issue belongs to has its own section there, with
-its editable fields, including versions, start and finish dates, iterations, text, numbers and multiple-choice
-selections. Click a value to change
-or clear it; empty fields appear too, even when the current board view hides them. Click or tap a project's name
-to collapse or expand its fields. **+ Add to project**, below the
-current projects, opens a searchable picker to add or remove projects, and the × beside a project removes that
-membership. The issue stays intact, including when its last project is removed; membership changes join the offline
-queue. A wide iPad window has the same project groups in its inspector; on iPhone and narrow iPad windows, tap
-**Projects** below the title to open them in a sheet. Each field opens its native editor, and membership and field
-saves run asynchronously while the interface stays responsive. Project transitions and the accordion respect
-Reduce Motion. The project selector opens at full height on iPad. Issues opened only from an Inbox notification can
-be added to a project too. Step to the next issue with the arrows in the toolbar.
+inspector on the right (`⌃⌘I` hides it). It lists the fields of the issue's project too, those without
+a value behind **n more fields**, and the other projects the issue is on, folded under their name and status. **Add to
+project** puts the issue on another one, and the × takes it off, with a few seconds to undo. On iPhone and narrow iPad
+windows the same is under **Projects**. Step to the next issue with the arrows in the toolbar.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/issue-dark.webp">
@@ -188,7 +182,7 @@ them itself, and leaves out the ones you assigned yourself to in the app.
 
 ### Keyboard first
 
-⌘K, or the magnifying glass in the toolbar, opens the command palette: every action, and a search across your issues.
+⌘K, or Search at the top of the sidebar, opens the command palette: every action, and a search across your issues.
 Single keys act on the issue you hover or reach with the arrow keys: `S` status, `P` priority, `A` assignee, `L`
 labels, `D` due date, `I` assign to me.
 
@@ -208,7 +202,11 @@ labels, `D` due date, `I` assign to me.
 
 The list groups issues by status. Each header stays pinned while you scroll through its section and folds it with
 a click. Drag an issue up or down to give it a new place, or into another section to change its status, as on the
-board; drop it on the middle of another issue, which lights up, to make it that issue's sub-issue. The app follows the system appearance, or stays light or dark if you prefer.
+board; drop it on the middle of another issue, which lights up, to make it that issue's sub-issue. A row shows an
+issue as its card does, labels as a dot and a name and the milestone in grey, and it is the same row wherever issues
+are listed: in an issue's sub-issues and the issues it blocks or is blocked by too. A sub-issue is indented as a whole,
+right of the line from its parent, and an epic's issues hang the same way under its name. The app follows the system
+appearance, or stays light or dark if you prefer.
 
 Its icon is a card with a done mark, lifted off a board of faint tiles. Settings (on iPhone and iPad, your account)
 offers it on its light page, on graphite or as a white card on indigo. Each follows light and dark mode.
@@ -356,7 +354,7 @@ The interface uses the system's own parts.
   in Notes. A project's board shows one column at a
   time, with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and hold a card and drop it on a column in the strip to move it
   there, first in that column; held over a column a moment, the board turns to it, to place the card among its cards.
-  Held over the middle of another card, that card lights up, and the card you let go there becomes its sub-issue.
+  Held a moment over the middle of another card, that card lights up, and the card you let go there becomes its sub-issue.
   Lists for the views that are lists, and each project's All Issues, grouped by status, with sections that fold and
   headers that stay pinned (All Issues turns into a board with **Board** in its "…" menu, its issues on no board a
   column of their own); My Issues shows its cards, one under another on iPhone and two or three to a row on iPad,
@@ -375,7 +373,7 @@ The interface uses the system's own parts.
   checkbox, moving a list item in or out, and opening a link. On the touch keyboard the stars of bold and the other
   styles' marks stay hidden, as in Notes: a tap at the end of bold text types on in bold, and Delete takes the letter
   you see. The properties are glass chips under the title, the
-  sub-issues a checklist (by priority, or another order from the "…" beside its plus; the arrow beside one with
+  sub-issues rows as in the lists (by priority, or another order from the "…" beside its plus; the arrow beside one with
   sub-issues of its own unfolds them under it), the comments a conversation, and the comment field stays at the bottom
   as in Messages. **Select** in that "…" puts circles in place of the sub-issues' status, as in Mail: tap several,
   unfolded ones too, then move them all under another parent with the bar at the bottom, or change their status,
@@ -767,6 +765,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 |---|---|
 | Tap a section header | Fold it in or out |
 | Tap the arrow beside an issue | Fold the sub-issues hanging under it in or out |
+| Tap an issue's status circle | Pick its status, in every list, in search and among an issue's sub-issues |
 | Tap an epic's name over its issues | Open the epic; the arrow beside its icon folds them in or out |
 | Touch and hold an epic's name over its issues | Open the epic, move all of them to another status, fold them |
 | Touch and hold an epic's name, then drag | Move all of its issues there to another column (iPad) or another place in their section |
@@ -793,7 +792,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap at the end of bold text | Type on in bold: on the touch keyboard its stars stay hidden, and Delete takes the letter you see and keeps the bold |
 | Tap a checkbox, a link, a table or a diagram in a description | Tick it, open it, or edit its source |
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
-| Touch and hold a card, then drag it over the middle of another card | That card lights up: let go to make the dragged issue its sub-issue. It keeps its status, and the notice that says so undoes it. Over a card's top or bottom edge it goes above or below that card instead |
+| Touch and hold a card, then hold it a moment over the middle of another card | That card lights up: let go to make the dragged issue its sub-issue. It keeps its status, and the notice that says so undoes it. Over a card's top or bottom edge it goes above or below that card instead |
 | "…" in All Issues | Show it as a board or a list (on a wide iPad, the switch beside its name); on the board, the hidden columns, a tap away from coming back |
 | "…" over a column of All Issues' board | Move it left or right, or hide it, on that device |
 | Swipe sideways on a board, or tap a column in the strip over it (iPhone) | Turn to that column |

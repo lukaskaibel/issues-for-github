@@ -290,10 +290,12 @@ extension Mutation {
     }
 
     /// Archiving and unsubscribing wait a few seconds before they are sent, so they can be undone: GitHub can't
-    /// bring a notification back once it is done.
+    /// bring a notification back once it is done. So does taking an issue off a project: its card goes on GitHub with
+    /// the values of that project's fields.
     var isUndoable: Bool {
         switch self {
         case .archiveThread, .unsubscribeThread: true
+        case .setProjectMembership(let m): !m.isMember && m.base
         default: false
         }
     }
@@ -752,12 +754,6 @@ public struct OutboxEntry: Codable, FetchableRecord, MutablePersistableRecord, I
 }
 
 public enum Outbox {
-    /// A snapshot at this revision includes every local save up to this queue id, even if its rows were
-    /// coalesced or purged. The outbox uses AUTOINCREMENT, so SQLite retains the last issued id.
-    static func revision(_ db: Database) throws -> Int64 {
-        try Int64.fetchOne(db, sql: "SELECT seq FROM sqlite_sequence WHERE name = ?", arguments: [OutboxEntry.databaseTableName]) ?? 0
-    }
-
     /// How long a sent mutation keeps being re-applied over data read from GitHub.
     static let graceInterval: TimeInterval = 20
 

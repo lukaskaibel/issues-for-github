@@ -58,17 +58,9 @@ struct MyIssuesDisplayOptions: View {
                             model.setMineOrder(MineOrder(rawValue: id) ?? .priority)
                         }
                         if display.order != .manual {
-                            Button {
+                            SortDirectionButton(descending: display.descending) {
                                 model.setMineDisplay { $0.descending.toggle() }
-                            } label: {
-                                Image(systemName: display.descending ? "arrow.down" : "arrow.up")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(Theme.textSecondary)
-                                    .frame(width: 24, height: 24)
-                                    .hoverFill()
                             }
-                            .buttonStyle(PlainPressStyle())
-                            .help(Text(display.descending ? .descending : .ascending))
                         }
                     }
                 }
@@ -77,7 +69,7 @@ struct MyIssuesDisplayOptions: View {
             if display.layout == .overview {
                 let choices = model.overviewPageChoices
                 if !choices.isEmpty {
-                    Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                    PopoverDivider(outset: 14)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(.pagesInEachCard)
                             .font(.smallMedium)
@@ -94,7 +86,7 @@ struct MyIssuesDisplayOptions: View {
                     }
                     .font(.small)
                 }
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                PopoverDivider(outset: 14)
                 Toggle(isOn: Binding(
                     get: { model.mineArrangement.automatic },
                     set: { automatic in withAnimation(Theme.spring) { model.setArrangesAutomatically(automatic) } }
@@ -106,7 +98,7 @@ struct MyIssuesDisplayOptions: View {
                 .font(.small)
             }
             if !display.optionsAreDefault {
-                Rectangle().fill(Theme.popoverBorder).frame(height: 1).padding(.horizontal, -14)
+                PopoverDivider(outset: 14)
                 HStack {
                     Spacer(minLength: 8)
                     Button(.reset) { model.resetMineDisplay() }

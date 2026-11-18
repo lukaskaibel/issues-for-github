@@ -164,7 +164,7 @@ struct PeekPanel: View {
             .padding(.leading, 16)
             .padding(.trailing, 10)
             .frame(height: 44)
-            .overlay(alignment: .bottom) { Rectangle().fill(Theme.popoverBorder).frame(height: 1) }
+            .overlay(alignment: .bottom) { PopoverDivider() }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -198,7 +198,7 @@ struct PeekPanel: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 36)
-            .overlay(alignment: .top) { Rectangle().fill(Theme.popoverBorder).frame(height: 1) }
+            .overlay(alignment: .top) { PopoverDivider() }
         }
         .frame(width: 460)
         .frame(maxHeight: .infinity)
@@ -280,13 +280,8 @@ struct PropertyChipRow: View {
                 // Only when there is one, to keep the row short; D adds one.
                 if let due = model.dueBadge(for: item) {
                     PropertyButton(kind: .dueDate, item: item) {
-                        HStack(spacing: 6) {
-                            DueDateIcon(tone: due.tone, size: 11)
-                            Text(due.day.mediumLabel())
-                                .foregroundStyle(due.tone == .overdue || due.tone == .today ? due.tone.color : Theme.textBody)
-                        }
-                        .font(.small)
-                        .help(due.tooltip)
+                        DueDateValue(due: due, iconSize: 11)
+                            .font(.small)
                     }
                 }
             }
@@ -301,7 +296,10 @@ struct PropertyChipRow: View {
                         .padding(.leading, -8)
                     }
                     if item.subTotal > 0 {
-                        SubIssueChip(completed: item.subCompleted, total: item.subTotal)
+                        PropertyButton(kind: .subIssues, item: item) {
+                            SubIssueChip(completed: item.subCompleted, total: item.subTotal)
+                        }
+                        .padding(.leading, -8)
                     }
                     if let parentNumber = item.parentNumber, model.canRelate(item) {
                         PropertyButton(kind: .parent, item: item) {

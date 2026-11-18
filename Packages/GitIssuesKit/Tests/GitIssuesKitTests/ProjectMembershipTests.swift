@@ -48,133 +48,69 @@ struct ProjectMembershipTests {
         }
     }
 
-    @Test("A busy database suspends membership saves while the main actor remains responsive", arguments: [true, false])
-    @MainActor
-    func responsiveWhileSaving(initialMember: Bool) async throws {
-        let f = try await fixture(member: initialMember)
-        let changes = ProjectMembershipChanges()
-        let target = project("P1")
-        let entered = AsyncStream<Void>.makeStream()
-        let releasedByUI = AsyncStream<Bool>.makeStream()
-        let release = DispatchSemaphore(value: 0)
-        f.db.writer.asyncWriteWithoutTransaction { _ in
-            entered.continuation.yield(())
-            entered.continuation.finish()
-            // A bounded hold makes a regression fail instead of deadlocking the test process.
-            let released = release.wait(timeout: .now() + 15) == .success
-            releasedByUI.continuation.yield(released)
-            releasedByUI.continuation.finish()
-        }
-        defer { release.signal() }
-        for await _ in entered.stream { break }
-
-        var saved = false
-        var failed = false
-        let task = try #require(changes.save(f.source, project: target, isMember: !initialMember, in: f.db,
-                                            onSaved: { saved = true }, onFailure: { _ in failed = true }))
-        // Give the save task a chance to enter the async database API, then run another UI task.
-        await Task { @MainActor in
-            #expect(!saved)
-            #expect(changes.isSaving(f.source, projectId: target.id, in: f.db))
-            #expect(changes.save(f.source, project: target, isMember: !initialMember, in: f.db,
-                                 onSaved: {}, onFailure: { _ in }) == nil)
-            release.signal()
-        }.value
-
-        await task.value
-        var releases = releasedByUI.stream.makeAsyncIterator()
-        let uiWasResponsive = await releases.next()
-        #expect(uiWasResponsive == true)
-        #expect(saved)
-        #expect(!failed)
-        // Keep duplicate clicks out until the UI has actually observed the committed membership.
-        #expect(changes.isSaving(f.source, projectId: target.id, in: f.db))
-        changes.observe(revision: 0, in: f.db)
-        #expect(changes.isSaving(f.source, projectId: target.id, in: f.db))
-        let items = try await f.db.reader.read { try Item.fetchAll($0) }
-        #expect(changes.shouldAnimate(from: [f.source], to: items, in: f.db))
-        changes.observe(revision: try await f.db.reader.read { try Outbox.revision($0) }, in: f.db)
-        #expect(!changes.isSaving(f.source, projectId: target.id, in: f.db))
-        #expect(items.contains { $0.projectId == target.id } == !initialMember)
-        #expect(try await f.db.reader.read { try OutboxEntry.fetchCount($0) } == 1)
-    }
-
-    @Test("Observation may arrive before the async save resumes without losing animation or allowing duplicate clicks")
-    @MainActor
-    func observationBeforeSaveCompletion() async throws {
-        let f = try await fixture(member: false)
-        let changes = ProjectMembershipChanges()
-        let task = try #require(changes.save(f.source, project: project("P1"), isMember: true, in: f.db,
-                                            onSaved: {}, onFailure: { _ in Issue.record("Save failed") }))
-        let added = item("new-card", project: "P1")
-        #expect(changes.shouldAnimate(from: [f.source], to: [f.source, added], in: f.db))
-        changes.observe(revision: 1, in: f.db)
-        #expect(changes.isSaving(f.source, projectId: "P1", in: f.db))
-        await task.value
-        #expect(!changes.isSaving(f.source, projectId: "P1", in: f.db))
-    }
-
-    @Test("A membership save waiting for the writer does not recreate a deleted issue from an old notification")
-    @MainActor
-    func deletedSourceWhileSaving() async throws {
+    @Test("A membership change does not recreate a deleted issue from an old notification")
+    func deletedSource() async throws {
         let f = try await fixture(member: false)
         var notification = InboxEntry(id: "old-notification", reason: "mention", unread: true, updatedAt: Date(),
                                       subjectType: "Issue", title: f.source.title, repo: "octo/one", number: 1)
         notification.contentId = f.source.contentId
         let entry = notification
-        try await f.db.writer.write { try entry.insert($0) }
-        let entered = AsyncStream<Void>.makeStream()
-        let release = DispatchSemaphore(value: 0)
-        f.db.writer.asyncWriteWithoutTransaction { db in
-            entered.continuation.yield(())
-            entered.continuation.finish()
-            _ = release.wait(timeout: .now() + 15)
-            do { _ = try Item.deleteAll(db) }
-            catch { Issue.record(error) }
+        try await f.db.writer.write { db in
+            try entry.insert(db)
+            _ = try Item.deleteAll(db)
         }
-        defer { release.signal() }
-        for await _ in entered.stream { break }
-
-        let changes = ProjectMembershipChanges()
-        var saved = false
-        let task = try #require(changes.save(f.source, project: project("P1"), isMember: true, in: f.db,
-                                            onSaved: { saved = true }, onFailure: { Issue.record($0) }))
-        _ = await Task { @MainActor in release.signal() }.value
-        await task.value
-        #expect(!saved)
-        #expect(!changes.isSaving(f.source, projectId: "P1", in: f.db))
+        #expect(try IssueProjectMembership.save(f.source, projectId: "P1", isMember: true, in: f.db) == nil)
         #expect(try await f.db.reader.read { try Item.fetchCount($0) } == 0)
         #expect(try await f.db.reader.read { try OutboxEntry.fetchCount($0) } == 0)
     }
 
-    @Test("A failed async local save rolls back its transaction, reports the error and permits retry")
-    @MainActor
+    @Test("A failed local save rolls back and can be repeated")
     func localSaveFailure() async throws {
         let f = try await fixture(member: false)
         try await f.db.writer.write { db in
             try db.execute(sql: "CREATE TRIGGER reject_membership BEFORE INSERT ON \(OutboxEntry.databaseTableName) BEGIN SELECT RAISE(ABORT, 'Test failure'); END")
         }
-        let changes = ProjectMembershipChanges()
-        var errors = 0
-        let task = try #require(changes.save(f.source, project: project("P1"), isMember: true, in: f.db,
-                                            onSaved: { Issue.record("Failed save reported success") }, onFailure: { _ in errors += 1 }))
-        await task.value
-        #expect(errors == 1)
-        #expect(!changes.isSaving(f.source, projectId: "P1", in: f.db))
+        #expect(throws: (any Error).self) { try IssueProjectMembership.save(f.source, projectId: "P1", isMember: true, in: f.db) }
         #expect(try await f.db.reader.read { try Item.filter(Column("projectId") == "P1").fetchCount($0) } == 0)
         #expect(try await f.db.reader.read { try OutboxEntry.fetchCount($0) } == 0)
         try await f.db.writer.write { try $0.execute(sql: "DROP TRIGGER reject_membership") }
-        let retry = try #require(changes.save(f.source, project: project("P1"), isMember: true, in: f.db,
-                                             onSaved: {}, onFailure: { _ in Issue.record("Retry failed") }))
-        await retry.value
+        #expect(try IssueProjectMembership.save(f.source, projectId: "P1", isMember: true, in: f.db) != nil)
         #expect(try await f.db.reader.read { try Item.filter(Column("projectId") == "P1").fetchCount($0) } == 1)
     }
 
-    @Test("Async removal resolves a membership ID changed by sync before the transaction starts")
-    func asyncSaveUsesCurrentCard() async throws {
+    @Test("Taking an issue off a project it is on waits to be sent; everything else about memberships does not")
+    func removalIsHeld() {
+        let card = item("card", project: "P1")
+        #expect(Mutation.setProjectMembership(.init(item: card, isMember: false, base: true)).isUndoable)
+        #expect(!Mutation.setProjectMembership(.init(item: card, isMember: true, base: false)).isUndoable)
+        #expect(!Mutation.setProjectMembership(.init(item: card, isMember: false, base: false)).isUndoable)
+    }
+
+    @Test("Undo while the removal waits brings the card back with its values and leaves GitHub alone")
+    @MainActor
+    func undoRemoval() async throws {
+        let f = try await fixture(member: true)
+        let model = AppModel(database: f.db, api: f.github.api)
+        model.reloadNow()
+        let project = try #require(model.projects.first { $0.id == "P1" })
+        model.setMembership(of: f.source, in: project, isMember: false)
+        #expect(model.allItems.first { $0.id == "PVTI_1" } == nil)
+        let notice = try #require(model.status.notices.last)
+        #expect(notice.action?.isUndo == true)
+        model.apply(try #require(notice.action))
+        let restored = try #require(model.allItems.first { $0.id == "PVTI_1" })
+        #expect(restored.fieldValues["version"]?.optionId == "one")
+        #expect(restored.dueDate == f.source.dueDate)
+        try await f.engine.pushPending()
+        #expect(f.github.issue("I_1")?.itemId == "PVTI_1")
+        #expect(try await f.db.reader.read { try Item.fetchOne($0, key: "PVTI_1") } != nil)
+    }
+
+    @Test("Removal resolves a membership ID changed by sync since the view was drawn")
+    func saveUsesCurrentCard() async throws {
         let f = try await fixture(member: true)
         try await f.db.writer.write { try $0.execute(sql: "UPDATE item SET id = 'PVTI_new' WHERE id = 'PVTI_1'") }
-        let saved = try await IssueProjectMembership.save(f.source, projectId: "P1", isMember: false, in: f.db)
+        let saved = try IssueProjectMembership.save(f.source, projectId: "P1", isMember: false, in: f.db)
         #expect(saved != nil)
         #expect(try await f.db.reader.read { try Item.filter(Column("projectId") == "P1").fetchCount($0) } == 0)
         let entries = try await f.db.reader.read { try OutboxEntry.fetchAll($0) }
@@ -188,7 +124,7 @@ struct ProjectMembershipTests {
         captured.id = "local-card"
         captured.contentId = "local-content"
         try await f.db.writer.write { try CreatedIssueIDs.record($0, localId: "local-content", serverId: "I_1") }
-        #expect(try await IssueProjectMembership.save(captured, projectId: "P1", isMember: !initialMember, in: f.db) != nil)
+        #expect(try IssueProjectMembership.save(captured, projectId: "P1", isMember: !initialMember, in: f.db) != nil)
         let snapshot = try await f.db.reader.read { try AppModel.fetchSnapshot($0) }
         #expect(snapshot.items.contains { $0.contentId == "I_1" && $0.projectId == "P1" } == !initialMember)
         #expect(!snapshot.items.contains { $0.contentId == "local-content" })
@@ -211,40 +147,6 @@ struct ProjectMembershipTests {
         let remaining = try await f.db.reader.read { try Item.fetchAll($0) }
         #expect(!remaining.contains { $0.contentId == "I_1" && $0.projectId == "P1" })
         #expect(remaining.contains { $0.contentId == "I_1" && $0.projectId == "P2" })
-    }
-
-    @Test("An already satisfied membership does not wait for an observation that no write will trigger")
-    @MainActor
-    func unchangedAsyncSave() async throws {
-        let f = try await fixture(member: true)
-        let changes = ProjectMembershipChanges()
-        let task = try #require(changes.save(f.source, project: project("P1"), isMember: true, in: f.db,
-                                            onSaved: { Issue.record("No mutation should need syncing") }, onFailure: { _ in Issue.record("No-op failed") }))
-        await task.value
-        #expect(!changes.isSaving(f.source, projectId: "P1", in: f.db))
-        #expect(try await f.db.reader.read { try OutboxEntry.fetchCount($0) } == 0)
-    }
-
-    @Test("A superseded membership save settles even if the UI never saw the requested membership", arguments: [true, false])
-    @MainActor
-    func supersededSave(initialMember: Bool) async throws {
-        let f = try await fixture(member: initialMember)
-        let changes = ProjectMembershipChanges()
-        let task = try #require(changes.save(f.source, project: project("P1"), isMember: !initialMember, in: f.db,
-                                            onSaved: {}, onFailure: { _ in Issue.record("Save failed") }))
-        await task.value
-        changes.observe(revision: 0, in: f.db)
-        #expect(changes.isSaving(f.source, projectId: "P1", in: f.db))
-        _ = try await IssueProjectMembership.save(f.source, projectId: "P1", isMember: initialMember, in: f.db)
-        _ = try await f.db.writer.write { try OutboxEntry.deleteAll($0) }
-        let snapshot = try await f.db.reader.read { try AppModel.fetchSnapshot($0) }
-        #expect(snapshot.items.contains { $0.projectId == "P1" } == initialMember)
-        #expect(snapshot.outbox.isEmpty)
-        changes.observe(revision: snapshot.outboxRevision, in: f.db)
-        #expect(!changes.isSaving(f.source, projectId: "P1", in: f.db))
-        let retry = try #require(changes.save(f.source, project: project("P1"), isMember: !initialMember, in: f.db,
-                                             onSaved: {}, onFailure: { _ in Issue.record("Retry failed") }))
-        await retry.value
     }
 
     @Test("Adding to another project preserves the existing card and maps queued field edits to the new card")
@@ -613,9 +515,8 @@ struct ProjectMembershipTests {
         #expect(resolved.id != local.id)
         #expect(ProjectFieldTarget(item: resolved, fieldId: "@due").id == identity)
         let day = "2026-11-12"
-        let expected = AsyncProjectEdits.Expected(target: target, value: FieldValue(date: day), dueDate: true)
-        try await AsyncProjectEdits.persist([.setDate(.init(itemId: local.id, projectId: "P1", date: day, base: nil))],
-                                            inserting: [], expected: [expected], in: f.db)
+        let edit = Mutation.setDate(.init(itemId: local.id, projectId: "P1", date: day, base: nil)).remapping([local.id: resolved.id])
+        try await f.db.writer.write { try Outbox.enqueue($0, edit) }
         try await f.engine.pushPending()
         #expect(f.github.dateValue(itemId: remoteId, fieldId: "F-due") == day)
         #expect(f.github.fieldWrites().last?.variables["i"] as? String == remoteId)
@@ -762,7 +663,7 @@ struct ProjectMembershipTests {
         let reference = IssueReference(detached)
         #expect(try await f.db.reader.read { try Item.fetchCount($0) } == 0)
         #expect(reference.resolve(in: [], projects: [project("P1")], inbox: [entry]) == detached)
-        let revision = try await IssueProjectMembership.save(detached, projectId: "P1", isMember: true, in: f.db)
+        let revision = try IssueProjectMembership.save(detached, projectId: "P1", isMember: true, in: f.db)
         #expect(revision != nil)
         let saved = try await f.db.reader.read { try Item.fetchAll($0) }
         let local = try #require(reference.resolve(in: saved, projects: [project("P1")], inbox: [entry]))
@@ -789,7 +690,7 @@ struct ProjectMembershipTests {
             try Item.deleteAll(db)
             if missing { try entry.insert(db) }
         }
-        #expect(try await IssueProjectMembership.save(captured, projectId: "P1", isMember: true, in: f.db) == nil)
+        #expect(try IssueProjectMembership.save(captured, projectId: "P1", isMember: true, in: f.db) == nil)
         #expect(try await f.db.reader.read { try Item.fetchCount($0) } == 0)
         #expect(try await f.db.reader.read { try OutboxEntry.fetchCount($0) } == 0)
     }

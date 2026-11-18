@@ -4,8 +4,6 @@ import Observation
 import SwiftUI
 #if os(macOS)
 import AppKit
-#elseif os(iOS)
-import UIKit
 #endif
 
 struct BoardColumn: Identifiable, Equatable {
@@ -239,8 +237,6 @@ public final class AppModel {
     /// The fields of every project, their own and GitHub's.
     private(set) var fields: [ProjectField] = []
     private(set) var outbox: [OutboxEntry] = []
-    let projectMembershipChanges = ProjectMembershipChanges()
-    let projectEdits = AsyncProjectEdits()
     /// What blocks the issues whose detail was read, and what they block; for every blocked issue, what blocks it.
     private(set) var links: [LinkedIssue] = []
     /// The open issues that block each issue, by its node id, in GitHub's order: what its flag names.
@@ -371,6 +367,14 @@ public final class AppModel {
     /// this device.
     var unfoldedSubIssues = Set(UserDefaults.standard.stringArray(forKey: "unfoldedSubIssues") ?? []) {
         didSet { UserDefaults.standard.set(Array(unfoldedSubIssues), forKey: "unfoldedSubIssues") }
+    }
+    /// The other projects an issue is on whose fields are unfolded in its details, for every issue. Kept on this device.
+    var unfoldedIssueProjects = Set(UserDefaults.standard.stringArray(forKey: "unfoldedIssueProjects") ?? []) {
+        didSet { UserDefaults.standard.set(Array(unfoldedIssueProjects), forKey: "unfoldedIssueProjects") }
+    }
+    /// The projects whose empty fields an issue's details list too, for every issue. Kept on this device.
+    var issueProjectsShowingEmptyFields = Set(UserDefaults.standard.stringArray(forKey: "issueProjectsShowingEmptyFields") ?? []) {
+        didSet { UserDefaults.standard.set(Array(issueProjectsShowingEmptyFields), forKey: "issueProjectsShowingEmptyFields") }
     }
     /// Sub-issues (node ids) whose own sub-issues are being read from GitHub.
     var loadingSubIssues: Set<String> = []
@@ -767,8 +771,6 @@ public final class AppModel {
 
     private func switchDatabase(to database: AppDatabase, demo: Bool) {
         dataObservation = nil
-        projectMembershipChanges.forget(db)
-        projectEdits.forget(db)
         db = database
         engine = SyncEngine(db: database, api: Self.api(auth), status: status, demo: demo)
         isDemo = demo
@@ -810,7 +812,6 @@ public final class AppModel {
         var options: [FieldOption]
         var repos: [RepoRef]
         var outbox: [OutboxEntry]
-        var outboxRevision: Int64
         var links: [LinkedIssue]
         var inbox: [InboxEntry]
         var inboxMeta: InboxMeta
@@ -854,7 +855,6 @@ public final class AppModel {
             options: try FieldOption.order(Column("position")).fetchAll(db),
             repos: try RepoRef.order(Column("nameWithOwner")).fetchAll(db),
             outbox: try OutboxEntry.order(Column("id")).fetchAll(db),
-            outboxRevision: try Outbox.revision(db),
             links: try LinkedIssue.order(Column("position")).fetchAll(db),
             inbox: try InboxEntry.order(Column("updatedAt").desc).fetchAll(db),
             inboxMeta: try InboxMeta.read(db),
@@ -888,22 +888,6 @@ public final class AppModel {
     private func apply(_ snapshot: Snapshot) {
         // Publish content identity with the items, so an open editor cannot observe the new card without its ID map.
         for (old, new) in snapshot.createdIssueIDs where status.idRemaps[old] != new { status.idRemaps[old] = new }
-        #if os(macOS)
-        let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        #else
-        let reduceMotion = UIAccessibility.isReduceMotionEnabled
-        #endif
-        if !reduceMotion && (projectMembershipChanges.shouldAnimate(from: allItems, to: snapshot.items, in: db, remaps: status.idRemaps)
-            || projectEdits.shouldAnimate(from: allItems, to: snapshot.items, projects: snapshot.projects, fields: snapshot.fields, in: db, remaps: status.idRemaps)) {
-            withAnimation(Theme.spring) { applySnapshot(snapshot) }
-        } else {
-            applySnapshot(snapshot)
-        }
-        projectMembershipChanges.observe(revision: snapshot.outboxRevision, in: db)
-        projectEdits.observe(revision: snapshot.outboxRevision, in: db)
-    }
-
-    private func applySnapshot(_ snapshot: Snapshot) {
         #if !DEBUG
         let snapshot = snapshot.withoutSandbox()
         #endif
@@ -1189,6 +1173,8 @@ public final class AppModel {
     }
 
     func glyph(of item: Item) -> StatusGlyph {
+        // One known only from another issue's page can't be put on a board from its row: only open or closed.
+        if item.isStandIn { return .openOrClosed(item.state, reason: item.stateReason) }
         guard item.isOnBoard else { return .withoutProject(item) }
         return glyph(projectId: item.projectId, optionId: item.statusId)
     }
@@ -1732,11 +1718,12 @@ public final class AppModel {
     // MARK: Writing
 
     /// Applies mutations locally and queues them for GitHub. `inserting` are items to keep first, in the same
-    /// write, such as an issue only the Inbox knew that is being put on a board.
-    func perform(_ mutations: [Mutation], inserting: [Item] = []) {
+    /// write, such as an issue only the Inbox knew that is being put on a board. `followingUp` is false for a change
+    /// that doesn't finish or start the issue itself, so its parent and epic stay as they are.
+    func perform(_ mutations: [Mutation], inserting: [Item] = [], followingUp: Bool = true) {
         guard !mutations.isEmpty else { return }
-        let completions = parentCompletions(after: mutations)
-        let starts = epicStarts(after: mutations)
+        let completions = followingUp ? parentCompletions(after: mutations) : (mutations: [], parents: [])
+        let starts = followingUp ? epicStarts(after: mutations) : (mutations: [], epics: [])
         // Made from a screen drawn before an issue made here got its id from GitHub, such as its page while you type,
         // a change still names the one it had: it goes to the issue's id now, or GitHub would never hear of it.
         let remaps = status.idRemaps

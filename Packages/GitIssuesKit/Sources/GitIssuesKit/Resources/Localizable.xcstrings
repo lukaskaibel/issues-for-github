@@ -36686,7 +36686,7 @@
       }
     },
     "markSubIssueAsDone" : {
-      "comment" : "Mac, issue view, list of sub-issues: VoiceOver label of the status icon of an open sub-issue; activating it closes the sub-issue as completed (GitHub term: an issue that belongs to another one).",
+      "comment" : "Mac, issue view, list of sub-issues: VoiceOver action on an open sub-issue that isn't on the user's boards; it closes the sub-issue as completed (GitHub term: an issue that belongs to another one).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -43982,7 +43982,7 @@
       }
     },
     "notOnYourBoardsOpensOnGitHub" : {
-      "comment" : "Mac, issue view, list of blocking or blocked issues: tooltip of the arrow beside an issue that is on none of the user's boards; clicking opens it on github.com.",
+      "comment" : "Mac, issue view, list of blocking or blocked issues: tooltip of the title of an issue that is on none of the user's boards; clicking the row opens it on github.com.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -52099,62 +52099,224 @@
         }
       }
     },
-    "projectFieldUnavailable" : {
-      "comment" : "Shown when a project field disappears or becomes read-only before an asynchronous save commits.",
+    "projectFieldsFewer" : {
+      "comment" : "Issue details on Mac, iPhone and iPad: under a project's fields, hides again the fields that have no value.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dieses Feld kann nicht mehr bearbeitet werden."
+            "value" : "Weniger Felder"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This field is no longer available to edit."
+            "value" : "Fewer fields"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Este campo ya no se puede editar."
+            "value" : "Menos campos"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ce champ ne peut plus être modifié."
+            "value" : "Moins de champs"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "このフィールドは編集できなくなりました。"
+            "value" : "フィールドを減らす"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 필드는 더 이상 편집할 수 없습니다."
+            "value" : "필드 줄이기"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Este campo não está mais disponível para edição."
+            "value" : "Menos campos"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Это поле больше нельзя редактировать."
+            "value" : "Меньше полей"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此字段已无法编辑。"
+            "value" : "收起字段"
+          }
+        }
+      }
+    },
+    "projectFieldsMore" : {
+      "comment" : "Issue details on Mac, iPhone and iPad: under a project's fields, shows the fields of that project that have no value yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld weiteres Feld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld weitere Felder"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld more field"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld more fields"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld campo más"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld campos más"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld autre champ"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld autres champs"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "ほか%lld件のフィールド"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "필드 %lld개 더 보기"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Mais %lld campo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Mais %lld campos"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ещё %lld поля"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ещё %lld полей"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ещё %lld поле"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Ещё %lld поля"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "另外 %lld 个字段"
+                }
+              }
+            }
           }
         }
       }
@@ -73820,7 +73982,7 @@
       }
     },
     "reopenSubIssue" : {
-      "comment" : "Mac, issue view, list of sub-issues: VoiceOver label of the status icon of a closed sub-issue; activating it reopens the sub-issue (GitHub term: an issue that belongs to another one).",
+      "comment" : "Mac, issue view, list of sub-issues: VoiceOver action on a closed sub-issue that isn't on the user's boards; it reopens the sub-issue (GitHub term: an issue that belongs to another one).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -75542,7 +75704,7 @@
       }
     },
     "search" : {
-      "comment" : "iPad: title of the search entry in the sidebar, and the Go menu item (⌘K) that opens search with the cursor in the search field; iPhone: title of the search screen ⌘K opens. The name of a place.",
+      "comment" : "iPad: title of the search entry in the sidebar, and the Go menu item (⌘K) that opens search with the cursor in the search field; iPhone: title of the search screen ⌘K opens; Mac: first row of the sidebar, which opens the command palette to search issues and commands. Short: on the Mac ⌘K stands beside it.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -76202,7 +76364,7 @@
       }
     },
     "searchShortcutTooltip" : {
-      "comment" : "Mac sidebar, top: tooltip of the magnifying-glass button that opens the command palette, to search issues and commands. ⌘K is its keyboard shortcut; keep it.",
+      "comment" : "Mac sidebar, first row: tooltip of Search, which opens the command palette to search issues and commands. ⌘K is its keyboard shortcut; keep it.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -83576,7 +83738,7 @@
       }
     },
     "subIssueOpensOnGitHub" : {
-      "comment" : "Mac, issue view, list of sub-issues: tooltip of the small arrow on a sub-issue that isn't on this project board; a click on the row opens it on github.com in the web browser.",
+      "comment" : "Mac, issue view, list of sub-issues: tooltip of the title of a sub-issue that isn't on this project board; a click on the row opens it on github.com in the web browser.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

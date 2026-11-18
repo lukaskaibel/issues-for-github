@@ -40,6 +40,24 @@ struct IssueProjectSectionTests {
         #expect(sections[1].fields.contains { $0.name == "finish" })
     }
 
+    @Test("The project an issue was opened from leaves out what has its own place; the others list everything")
+    func listedFields() throws {
+        var ios = item("iOS")
+        ios.fieldValues["iOS-version"] = FieldValue(optionId: "2.5.X")
+        let brain = item("Brain")
+        let sections = IssueProjectSection.sections(for: ios, items: [ios, brain], projects: [project("Brain"), project("iOS")],
+                                                    fields: fields("iOS") + fields("Brain"))
+        let primary = try #require(sections.first)
+        let other = try #require(sections.last)
+        #expect(primary.isPrimary && primary.project.id == "iOS")
+        #expect(!other.isPrimary)
+        #expect(primary.listedFields.map(\.name) == ["version", "ready", "requests", "start", "finish", "notes", "platforms"])
+        #expect(primary.filledFields.map(\.name) == ["version"])
+        #expect(primary.hiddenCount == 6)
+        #expect(other.filledFields.map(\.name) == ["status", "priority", "due"])
+        #expect(other.listedFields.count == other.fields.count)
+    }
+
     @Test("Status, priority and due date read from their dedicated storage without duplicate rows")
     func dedicatedValues() throws {
         let sections = IssueProjectSection.sections(for: item("P"), items: [], projects: [project("P")], fields: fields("P"))

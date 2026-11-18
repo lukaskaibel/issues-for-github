@@ -29,7 +29,7 @@ public final class AppDatabase: Sendable {
 
     public var reader: any DatabaseReader { writer }
 
-    private static var migrator: DatabaseMigrator {
+    static var migrator: DatabaseMigrator {
         var migrator = DatabaseMigrator()
         #if DEBUG
         migrator.eraseDatabaseOnSchemaChange = true
@@ -312,6 +312,13 @@ public final class AppDatabase: Sendable {
                 t.add(column: "subTotal", .integer)
                 t.add(column: "subCompleted", .integer)
             }
+        }
+        migrator.registerMigration("multiSelectValues") { db in
+            // Cards were read without the values of multiple-choice fields, and only changed cards are read again. A
+            // first pick would replace what GitHub has, so the cards of projects with such a field are read once more.
+            let projects = "SELECT projectId FROM projectField WHERE dataType = 'MULTI_SELECT'"
+            try db.execute(sql: "UPDATE item SET remoteUpdatedAt = NULL WHERE projectId IN (\(projects))")
+            try db.execute(sql: "UPDATE project SET remoteUpdatedAt = NULL WHERE id IN (\(projects))")
         }
         return migrator
     }

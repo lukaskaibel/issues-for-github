@@ -228,6 +228,7 @@ struct RelationMenuItems: View {
 struct MilestoneMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
+    @Environment(\.colorScheme) private var scheme
     var item: Item
 
     var body: some View {
@@ -242,13 +243,18 @@ struct MilestoneMenu: View {
                     model.setMilestone(of: model.targets(for: current), to: new.flatMap { name in groups.first { $0.title == name } })
                 }
             )) {
-                Label(.noMilestone, systemImage: "diamond").tag(String?.none)
+                Label {
+                    Text(.noMilestone)
+                } icon: {
+                    MenuImages.milestone(.none, scheme)
+                }
+                .tag(String?.none)
                 ForEach(groups.filter { $0.isOpen || $0.title == title }) { group in
                     Label {
                         Text(group.title)
                         if let due = group.due { Text(due.mediumLabel()) }
                     } icon: {
-                        Image(systemName: group.isOpen ? model.isCurrentMilestone(group, projectId: item.projectId) ? "diamond.inset.filled" : "diamond" : "diamond.fill")
+                        MenuImages.milestone(model.mark(of: group, projectId: item.projectId), scheme)
                     }
                     .tag(Optional(group.title))
                 }
@@ -606,8 +612,9 @@ struct IssuePreview: View {
                     }
                 }
                 if let due = model.dueBadge(for: item) {
-                    PropertyChip(text: due.label, tint: due.tone == .overdue || due.tone == .today ? due.tone.color : nil) {
-                        DueDateIcon(tone: due.tone, size: 12)
+                    // As the issue's own chip shows it.
+                    PropertyChip(text: due.day.mediumLabel(), tint: due.emphasis) {
+                        DueDateIcon(tone: due.tone, size: 13)
                     }
                 }
             }

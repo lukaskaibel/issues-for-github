@@ -2,12 +2,8 @@
 import SwiftUI
 import UIKit.UIDevice
 
-// Operate: extend the existing issue properties with one group per open project. Wide iPad windows keep
-// the groups in the inspector; compact windows open this same content in a Projects sheet. Native sheets,
-// system type, the existing theme and SF Symbols carry the interface. Every field, including empty values,
-// is reachable by touch. Project sections animate together; saves stay asynchronous. The footer is a divider
-// followed by + Add to project. Reuse data and choices across platforms; keep touch editors native.
-
+/// The open projects of an issue on iPhone and narrow iPad windows, in a sheet of their own. A notice about taking the
+/// issue off one, with its Undo, has to show over the sheet.
 struct IssueProjectsSheet: View {
     var reference: IssueReference
     @Environment(\.dismiss) private var dismiss
@@ -15,7 +11,7 @@ struct IssueProjectsSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                MobileIssueProjects(reference: reference)
+                MobileIssueProjects(reference: reference, addsWithoutProject: true)
                     .padding(20)
             }
             .accessibilityIdentifier("issue-projects-scroll")
@@ -29,18 +25,22 @@ struct IssueProjectsSheet: View {
                 }
             }
         }
+        .overlay(alignment: .top) { NoticeBanners() }
         .presentationDetents([.large])
     }
 }
 
+/// The project the issue was opened from with the fields that have a value, the others folded under their name and
+/// status, and a way to add more.
 struct MobileIssueProjects: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var reference: IssueReference
+    /// Whether an issue on no project can be added here too. The iPad's column has its own Project row for that.
+    var addsWithoutProject = false
     @State private var editor: ProjectFieldTarget?
     @State private var adding = false
     @State private var dueTarget: ProjectFieldTarget?
-    @State private var collapsedProjects = Set<String>()
 
     var body: some View {
         if let item = model.item(referencedBy: reference) {
@@ -49,41 +49,16 @@ struct MobileIssueProjects: View {
                 ForEach(sections) { section in
                     VStack(alignment: .leading, spacing: 0) {
                         header(section)
-                        VStack(alignment: .leading, spacing: 0) {
-                            if !collapsedProjects.contains(section.id) {
-                                VStack(alignment: .leading, spacing: 0) {
-                                    ForEach(section.fields) { field in
-                                        fieldRow(section, field: field, primary: item.projectId == section.project.id)
-                                    }
-                                    if !section.fields.contains(where: { $0.id == section.project.dueFieldId }) {
-                                        Button { dueTarget = ProjectFieldTarget(item: section.item, fieldId: "@due") } label: {
-                                            LabeledContent {
-                                                (section.item.due.map { Text($0.mediumLabel()) } ?? Text(.addDueDate))
-                                                    .foregroundStyle(section.item.dueDate == nil ? Theme.textTertiary : Theme.text)
-                                            } label: { Text(.dueDate).foregroundStyle(Theme.textSecondary) }
-                                            .frame(minHeight: 44)
-                                            .contentShape(Rectangle())
-                                        }
-                                        .buttonStyle(.plain)
-                                        .disabled(!section.project.viewerCanUpdate)
-                                        .accessibilityLabel(Text(.dueDate))
-                                        .accessibilityValue(section.item.due?.mediumLabel() ?? String(localized: .addDueDate))
-                                        .accessibilityIdentifier(item.projectId == section.project.id ? "property-due" : "project-due-\(section.project.id)")
-                                    }
-                                }
+                        if model.isIssueProjectUnfolded(section) {
+                            fields(section)
                                 .transition(.opacity)
-                            }
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .clipped()
                     }
-                    .padding(.bottom, 12)
                     .accessibilityElement(children: .contain)
                     .accessibilityIdentifier("issue-project-\(section.project.id)")
                     .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 6)))
-                    Divider().padding(.bottom, 12)
                 }
-                if item.kind != .draft, item.contentId != nil {
+                if item.isOnBoard || addsWithoutProject, item.kind != .draft, item.contentId != nil {
                     Button { adding = true } label: {
                         Label(.addToProjectPlaceholder, systemImage: "plus")
                             .foregroundStyle(Theme.textSecondary)
@@ -95,7 +70,6 @@ struct MobileIssueProjects: View {
                 }
             }
             .font(.subheadline)
-            .transaction { if reduceMotion { $0.animation = nil; $0.disablesAnimations = true } }
             .sheet(item: $editor) { target in MobileProjectFieldEditor(target: target) }
             .sheet(isPresented: $adding) { IssueMembershipSheet(reference: reference) }
             .sheet(item: $dueTarget) { target in ProjectDueDateSheet(target: target) }
@@ -103,38 +77,49 @@ struct MobileIssueProjects: View {
     }
 
     private func header(_ section: IssueProjectSection) -> some View {
-        HStack(spacing: 8) {
-            Button {
-                withAnimation(reduceMotion ? nil : Theme.spring) {
-                    if !collapsedProjects.insert(section.id).inserted { collapsedProjects.remove(section.id) }
+        let unfolded = model.isIssueProjectUnfolded(section)
+        return HStack(spacing: 8) {
+            if section.isPrimary {
+                title(section)
+            } else {
+                Button {
+                    withAnimation(reduceMotion ? nil : Theme.spring) { model.toggleIssueProject(section) }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Theme.textTertiary)
+                            .rotationEffect(.degrees(unfolded ? 90 : 0))
+                            .frame(width: 12)
+                        title(section)
+                        if !unfolded, section.project.statusFieldId != nil {
+                            StatusIcon(glyph: model.glyph(of: section.item), size: 15)
+                            Text(model.statusText(of: section.item))
+                                .foregroundStyle(Theme.textSecondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                 }
-            } label: {
-                HStack(spacing: 8) {
-                    ProjectIcon(projectId: section.project.id)
-                    Text(section.project.title)
-                        .font(.subheadline.weight(.semibold))
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 4)
-                }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .accessibilityLabel(section.project.title)
+                .accessibilityValue(Text(unfolded ? .sectionOpen : .sectionFolded))
+                .accessibilityIdentifier("toggle-project-\(section.project.id)")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(section.project.title)
-            .accessibilityValue(Text(collapsedProjects.contains(section.id) ? .sectionFolded : .sectionOpen))
-            .accessibilityIdentifier("toggle-project-\(section.project.id)")
             if section.item.kind != .draft, section.project.viewerCanUpdate {
                 Button {
-                    model.setMembership(of: section.item, in: section.project, isMember: false)
+                    withAnimation(reduceMotion ? nil : Theme.spring) {
+                        model.setMembership(of: section.item, in: section.project, isMember: false)
+                    }
                 } label: {
                     Image(systemName: "xmark")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(Theme.textSecondary)
+                        .foregroundStyle(Theme.textTertiary)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .disabled(model.projectMembershipChanges.isSaving(section.item, projectId: section.project.id, in: model.db, remaps: model.status.idRemaps))
                 .accessibilityLabel(.removeIssueFromProject(project: section.project.title))
                 .accessibilityIdentifier("remove-project-\(section.project.id)")
             }
@@ -142,14 +127,59 @@ struct MobileIssueProjects: View {
         .frame(minHeight: 44)
     }
 
-    private func fieldRow(_ section: IssueProjectSection, field: ProjectField, primary: Bool) -> some View {
+    private func title(_ section: IssueProjectSection) -> some View {
+        HStack(spacing: 8) {
+            ProjectIcon(projectId: section.project.id)
+            Text(section.project.title)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+            Spacer(minLength: 4)
+        }
+    }
+
+    @ViewBuilder
+    private func fields(_ section: IssueProjectSection) -> some View {
+        let showsEmpty = model.showsEmptyFields(of: section)
+        VStack(alignment: .leading, spacing: 0) {
+            // All of them in the project's order once they show, so a field doesn't jump when it gets a value.
+            ForEach(showsEmpty ? section.listedFields : section.filledFields) { field in
+                fieldRow(section, field: field)
+            }
+            if showsEmpty, section.offersDueField {
+                Button { dueTarget = ProjectFieldTarget(item: section.item, fieldId: "@due") } label: {
+                    LabeledContent {
+                        (section.item.due.map { Text($0.mediumLabel()) } ?? Text(.addDueDate))
+                            .foregroundStyle(section.item.dueDate == nil ? Theme.textTertiary : Theme.text)
+                    } label: { Text(.dueDate).foregroundStyle(Theme.textSecondary) }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!section.project.viewerCanUpdate)
+                .accessibilityIdentifier("project-due-\(section.project.id)")
+            }
+            if section.hiddenCount > 0 {
+                Button {
+                    withAnimation(reduceMotion ? nil : Theme.spring) { model.toggleEmptyFields(of: section) }
+                } label: {
+                    (showsEmpty ? Text(.projectFieldsFewer) : Text(.projectFieldsMore(count: section.hiddenCount)))
+                        .foregroundStyle(Theme.textTertiary)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("project-more-fields-\(section.project.id)")
+            }
+        }
+    }
+
+    private func fieldRow(_ section: IssueProjectSection, field: ProjectField) -> some View {
         let target = ProjectFieldTarget(item: section.item, fieldId: field.id)
         let isStatus = field.id == section.project.statusFieldId
-        let text = isStatus ? model.statusText(of: section.item) : ProjectFieldEditing.label(field: field, value: section.value(of: field))
+        let text = isStatus ? model.statusText(of: section.item) : valueText(section, field: field)
         return Button { editor = target } label: {
             LabeledContent {
                 HStack(spacing: 6) {
-                    if model.projectEdits.isSaving(target, in: model.db, remaps: model.status.idRemaps) { ProgressView().controlSize(.small) }
                     if isStatus { StatusIcon(glyph: model.glyph(of: section.item), size: 15) }
                     Text(verbatim: text)
                         .foregroundStyle(section.value(of: field) == nil ? Theme.textTertiary : Theme.text)
@@ -165,25 +195,25 @@ struct MobileIssueProjects: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!section.project.viewerCanUpdate || model.projectEdits.isSaving(target, in: model.db, remaps: model.status.idRemaps))
+        .disabled(!section.project.viewerCanUpdate || !model.canEditValue(of: field, on: section.item))
         .accessibilityLabel(field.name)
         .accessibilityValue(text)
-        .accessibilityIdentifier(identifier(field, project: section.project, primary: primary))
+        .accessibilityIdentifier("project-field-\(section.project.id)-\(field.id)")
     }
 
-    private func identifier(_ field: ProjectField, project: Project, primary: Bool) -> String {
-        if primary {
-            if field.id == project.statusFieldId { return "property-status" }
-            if field.id == project.priorityFieldId { return "property-priority" }
-            if field.id == project.dueFieldId { return "property-due" }
-            if field.kind == .iteration { return "property-iteration" }
+    private func valueText(_ section: IssueProjectSection, field: ProjectField) -> String {
+        let value = section.value(of: field)
+        if let iteration = field.iterations.first(where: { $0.id == value?.iterationId }),
+           let when = model.iterationPlace(iteration, field: field) ?? model.iterationRange(iteration) {
+            return "\(iteration.title) · \(when)"
         }
-        return "project-field-\(project.id)-\(field.id)"
+        return ProjectFieldEditing.label(field: field, value: value)
     }
 }
 
 private struct IssueMembershipSheet: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var reference: IssueReference
 
     var body: some View {
@@ -192,18 +222,15 @@ private struct IssueMembershipSheet: View {
             let memberships = Set(model.allItems.filter { $0.contentId == item.contentId }.compactMap(\.projectId))
             return model.openProjects.filter(\.viewerCanUpdate).map { project in
                 PickerItem(id: project.id, title: project.title, subtitle: project.ownerLogin,
-                           selected: memberships.contains(project.id), icon: AnyView(ProjectIcon(projectId: project.id)),
-                           trailing: model.projectMembershipChanges.isSaving(item, projectId: project.id, in: model.db, remaps: model.status.idRemaps)
-                               ? AnyView(ProgressView().controlSize(.small)) : nil)
+                           selected: memberships.contains(project.id), icon: AnyView(ProjectIcon(projectId: project.id)))
             }
         }, onPick: { id in
             guard let item = model.item(referencedBy: reference),
                   let project = model.openProjects.first(where: { $0.id == id }) else { return }
             let member = model.allItems.contains { $0.contentId == item.contentId && $0.projectId == id }
-            model.setMembership(of: item, in: project, isMember: !member)
-        }, isEnabled: { row in
-            guard let item = model.item(referencedBy: reference) else { return false }
-            return !model.projectMembershipChanges.isSaving(item, projectId: row.id, in: model.db, remaps: model.status.idRemaps)
+            withAnimation(reduceMotion ? nil : Theme.spring) {
+                model.setMembership(of: item, in: project, isMember: !member)
+            }
         }, detents: UIDevice.current.userInterfaceIdiom == .pad ? [.large] : [.medium, .large])
     }
 }
@@ -243,7 +270,7 @@ private struct MobileProjectFieldEditor: View {
                         model.newProjectStatusRow(query, target: target)
                     }, onPick: { id in
                         model.pickProjectField(id, target: target)
-                    }, isEnabled: { _ in !model.projectEdits.isSaving(target, in: model.db, remaps: model.status.idRemaps) })
+                    })
                     .task {
                         if field.id == project.statusFieldId { model.refreshStatuses(projectId: project.id) }
                     }

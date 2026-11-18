@@ -190,12 +190,7 @@ private struct PaletteRows: View {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(rows.enumerated()), id: \.element.id) { position, command in
                         if position == 0 || rows[position - 1].section != command.section {
-                            Text(command.section)
-                                .font(.tinySemibold)
-                                .foregroundStyle(Theme.textTertiary)
-                                .padding(.horizontal, 20)
-                                .padding(.top, 10)
-                                .padding(.bottom, 4)
+                            MenuHeading(Text(command.section), inset: 20, top: 10, bottom: 4)
                         }
                         PaletteRow(command: command, cursor: cursor, position: position)
                             .id(command.id)
@@ -286,7 +281,7 @@ private struct RootPalette: View {
                 .onSubmit {
                     if let index = cursor.key, rows.indices.contains(index) { run(rows[index]) }
                 }
-            Rectangle().fill(Theme.popoverBorder).frame(height: 1)
+            PopoverDivider()
 
             PaletteRows(rows: rows, query: query, cursor: cursor, run: run)
         }

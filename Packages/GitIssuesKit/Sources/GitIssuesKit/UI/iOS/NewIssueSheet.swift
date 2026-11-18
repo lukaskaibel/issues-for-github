@@ -313,14 +313,14 @@ struct NewIssueSheet: View {
                             Label {
                                 Text(.noMilestone)
                             } icon: {
-                                Image(systemName: "diamond")
+                                MenuImages.milestone(.none, scheme)
                             }
                             .tag(String?.none)
                             ForEach(milestones) { group in
                                 Label {
                                     Text(group.title)
                                 } icon: {
-                                    Image(systemName: model.isCurrentMilestone(group, projectId: draft.projectId) ? "diamond.inset.filled" : "diamond")
+                                    MenuImages.milestone(model.mark(of: group, projectId: draft.projectId), scheme)
                                 }
                                 .tag(Optional(group.title))
                             }

@@ -176,7 +176,7 @@ struct NewIssueView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 14)
 
-            Rectangle().fill(Theme.popoverBorder).frame(height: 1)
+            PopoverDivider()
 
             HStack(spacing: 10) {
                 Text(.repository).font(.small).foregroundStyle(Theme.textSecondary)

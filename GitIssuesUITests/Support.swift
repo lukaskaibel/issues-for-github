@@ -123,17 +123,34 @@ class AppTestCase: XCTestCase {
         }
     }
 
-    /// Under the iPad's tab bar, or the iPhone's search and New Issue at the foot of the screen.
+    /// Under the iPad's tab bar, or the iPhone's search and New Issue at the foot of the screen, or too close above
+    /// them: the floating bar takes touches up to some 18 points above its glass, so a long press there misses the row.
     private func behindTabBar(_ element: XCUIElement) -> Bool {
         let foot = app.windows.firstMatch.frame.maxY - 140
         return [app.tabBars.firstMatch, app.toolbars.firstMatch].contains { bar in
-            bar.exists && bar.frame.height > 0 && bar.frame.minY > foot && element.frame.maxY > bar.frame.minY - 8
+            guard bar.exists, let top = top(of: bar, below: foot) else { return false }
+            return element.frame.maxY > top - 20
         }
+    }
+
+    /// Where a bar at the foot of the screen starts: the top of what it shows below `foot`. The iPhone's toolbar spans
+    /// the whole screen for XCTest; only its search field and New Issue float at the foot, each in its glass.
+    private func top(of bar: XCUIElement, below foot: CGFloat) -> CGFloat? {
+        guard let snapshot = try? bar.snapshot() else { return nil }
+        var top: CGFloat?
+        func visit(_ part: XCUIElementSnapshot) {
+            let frame = part.frame
+            if frame.width > 0, frame.height > 0, frame.minY > foot { top = min(top ?? frame.minY, frame.minY) }
+            part.children.forEach(visit)
+        }
+        visit(snapshot)
+        return top
     }
 
     /// Under the comment field at the bottom of an issue, where a touch may reach the field instead.
     private func behindCommentField(_ element: XCUIElement) -> Bool {
-        let field = app.textFields["comment-field"].firstMatch
+        // A text view since comments are written in Markdown.
+        let field = app.descendants(matching: .any).matching(identifier: "comment-field").firstMatch
         let send = app.buttons["comment-send"].firstMatch
         guard field.exists, send.exists, !["comment-field", "comment-send"].contains(element.identifier) else { return false }
         let bar = field.frame.union(send.frame)
@@ -156,6 +173,28 @@ class AppTestCase: XCTestCase {
 
     func closedCardMenu() {
         waitsForAnimations(true)
+    }
+
+    /// Scrolls the open long-press menu until the item shows, as a finger would. An issue's menu is longer than an
+    /// iPhone's screen and scrolls, and XCTest sees only the items in sight and a few beyond.
+    func scrollMenu(to item: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        let window = app.windows.firstMatch.frame
+        var drags = 0
+        while !(item.exists && item.isHittable) && drags < 5 {
+            // The menu's items are a list of their own, narrower than the screen's list under it. The lowest one in
+            // sight is dragged up to the highest, held there so the menu doesn't fling on, and let go: a drag scrolls,
+            // it picks nothing.
+            guard let menu = app.collectionViews.allElementsBoundByIndex.first(where: { $0.frame.width < window.width }) else { break }
+            let items = menu.buttons.allElementsBoundByIndex.filter { window.contains(CGPoint(x: $0.frame.midX, y: $0.frame.midY)) }
+            guard let low = items.last(where: \.isHittable), let high = items.first(where: \.isHittable),
+                  low.frame.minY > high.frame.maxY else { break }
+            low.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(
+                forDuration: 0.1, thenDragTo: high.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
+                withVelocity: .default, thenHoldForDuration: 0.3
+            )
+            drags += 1
+        }
+        XCTAssertTrue(item.exists && item.isHittable, "Out of reach in the menu: \(item)", file: file, line: line)
     }
 
     /// XCTest has no public switch for its wait on animations before each step; `XCUIApplication` keeps one under

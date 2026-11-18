@@ -74,4 +74,26 @@ struct ProjectFieldSyncTests {
         #expect(FieldValue(optionIds: []).isEmpty)
         #expect(!FieldValue(optionIds: ["a"]).isEmpty)
     }
+
+    @Test("Cards read before multiple-choice fields were known are read again, those of other projects are not")
+    func multiSelectMigration() throws {
+        let queue = try DatabaseQueue()
+        try AppDatabase.migrator.migrate(queue, upTo: "subIssueTree")
+        try queue.write { db in
+            for (id, type) in [("P1", "MULTI_SELECT"), ("P2", "TEXT")] {
+                try Project(id: id, ownerLogin: "octo", ownerIsOrg: false, number: 1, title: id, url: "", closed: false,
+                            viewerCanUpdate: true, remoteUpdatedAt: "2026-11-01T00:00:00Z").insert(db)
+                try ProjectField(id: "\(id)-field", projectId: id, databaseId: 1, name: "Field", dataType: type, position: 0).insert(db)
+                try Item(id: "\(id)-card", projectId: id, kind: .issue, position: 0, remoteUpdatedAt: "2026-11-01T00:00:00Z",
+                         contentId: "\(id)-issue", number: 1, title: "Issue", body: "", state: "OPEN").insert(db)
+            }
+        }
+        try AppDatabase.migrator.migrate(queue)
+        try queue.read { db in
+            #expect(try Item.fetchOne(db, key: "P1-card")?.remoteUpdatedAt == nil)
+            #expect(try Project.fetchOne(db, key: "P1")?.remoteUpdatedAt == nil)
+            #expect(try Item.fetchOne(db, key: "P2-card")?.remoteUpdatedAt != nil)
+            #expect(try Project.fetchOne(db, key: "P2")?.remoteUpdatedAt != nil)
+        }
+    }
 }
