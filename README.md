@@ -189,7 +189,8 @@ labels, `D` due date, `I` assign to me.
   <img alt="The command palette with actions for the selected issue and their single-key shortcuts" src="Design/screenshots/palette-light.webp">
 </picture>
 
-`C` starts a new issue wherever you are. Type the title, set its properties, and ⌘↵ creates it.
+`C` starts a new issue wherever you are. Type the title, set its properties, and ⌘↵ creates it. On a project with no
+repository yet, here and on iPhone and iPad, you choose one of yours for its first issue.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/new-issue-dark.webp">

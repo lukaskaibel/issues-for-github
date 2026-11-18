@@ -500,6 +500,11 @@ public enum DemoData {
         }
     }
 
+    /// Jordan's repositories, for a new issue on a board that has none.
+    static var yourRepositories: [RepoRef] {
+        [app, site, blog].map { RepoRef(id: $0.repoId, nameWithOwner: $0.repo, projectId: "") }
+    }
+
     /// The Inbox of the sample data: what Mira, Theo and Kai did that Jordan should know about, as GitHub would
     /// report it, and an issue Jordan's own account opened for them outside the app. Most of the issues are on the
     /// boards; #27, #38 and a new issue on the website are on none but in their repositories, and a pull request and
