@@ -153,7 +153,7 @@ struct RoadmapTimeline: View {
     }
 
     var body: some View {
-        let roadmap = model.roadmap(projectId: projectId)
+        let roadmap = model.shownRoadmap(projectId: projectId)
         GeometryReader { proxy in
             let layout = TimelineLayout(roadmap: roadmap, zoom: model.roadmapZoom, available: max(proxy.size.width - nameWidth - 1, 200), scale: model.timelineScale)
             ScrollView(.vertical) {

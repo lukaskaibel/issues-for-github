@@ -8,6 +8,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Only My Issues, wherever you are.** The person button in the toolbar, or `⌘⇧M`, narrows every board, list,
+  milestone and the roadmap to the issues assigned to you, alone or with others, and keeps it that way as you go from
+  project to project and view to view, until you turn it off. The person is filled in the accent colour while it is on. An issue you
+  take yourself off stays on the page until you leave it, a new issue starts out assigned to you, and a page with
+  nothing of yours says so, with a button that shows everyone's issues again. It is in the View menu and the command
+  palette too, on iPad with `⌘⇧M` as well, and on iPhone in the "…" menu of a board or list. Views on GitHub stay as
+  they are, and the counts in the sidebar and a milestone's progress still count every issue.
 - **Drag sub-issues on an issue's page.** Drop a sub-issue onto another issue listed on the page and it goes under that
   issue, on the Mac, iPhone and iPad: the issue lights up, a message says what happened, and **Undo** takes it back.
   Picked sub-issues go together. On the Mac this also works from an epic's milestones and from the issues it is blocked

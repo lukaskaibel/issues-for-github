@@ -24,6 +24,8 @@ struct MilestoneScreen: View {
                 )
             } else if model.isLoading(projectId: projectId) {
                 ProjectLoading()
+            } else if model.onlyMineHidesEverything(in: .milestone(projectId: projectId, title: title)) {
+                OnlyMineEmptyState()
             } else if wide, model.viewMode == .board {
                 VStack(spacing: 0) {
                     if let group { MilestoneSummaryCard(projectId: projectId, group: group, onBoard: true).padding(.horizontal, 18).padding(.top, 8) }
@@ -63,6 +65,7 @@ struct MilestoneScreen: View {
                 .sharedBackgroundVisibility(.hidden)
             }
             ToolbarItemGroup(placement: .primaryAction) {
+                OnlyMineToolbarButton()
                 if let group {
                     MilestoneOptionsMenu(projectId: projectId, group: group, showsViewMode: wide && !roomy)
                 }
@@ -166,6 +169,7 @@ struct MilestoneOptionsMenu: View {
                 .pickerStyle(.inline)
                 Divider()
             }
+            OnlyMineMenuToggle()
             Button {
                 navigation.sheet = .milestoneEditor(projectId: projectId, title: group.title, assigning: [])
             } label: {
@@ -218,11 +222,13 @@ struct RoadmapScreen: View {
     var projectId: String
 
     var body: some View {
-        let roadmap = model.roadmap(projectId: projectId)
+        let roadmap = model.shownRoadmap(projectId: projectId)
         let canEdit = model.projects.first { $0.id == projectId }?.viewerCanUpdate == true
         Group {
             if model.isLoading(projectId: projectId) {
                 ProjectLoading()
+            } else if model.onlyMineHidesEverything(in: .roadmap(projectId)) {
+                OnlyMineEmptyState()
             } else if roadmap.rows.isEmpty, roadmap.later.isEmpty {
                 MobileEmptyState(
                     title: String(localized: .roadmapEmptyTitle), message: String(localized: .roadmapEmptyMessage),
@@ -266,6 +272,7 @@ struct RoadmapScreen: View {
                 .sharedBackgroundVisibility(.hidden)
             }
             ToolbarItemGroup(placement: .primaryAction) {
+                OnlyMineToolbarButton()
                 if wide, model.roadmapLayout == .timeline {
                     Menu {
                         TimelineZoomMenuItems()

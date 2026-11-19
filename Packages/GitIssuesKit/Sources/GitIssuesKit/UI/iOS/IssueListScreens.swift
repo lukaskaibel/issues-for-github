@@ -155,7 +155,9 @@ struct AllIssuesScreen: View {
         // A window narrower than this has the tab bar floating in the middle of the bar, next to the header.
         let roomy = windowWidth >= 950
         Group {
-            if board, wide {
+            if model.onlyMineHidesEverything(in: .allIssues(projectId)) {
+                OnlyMineEmptyState()
+            } else if board, wide {
                 MobileBoard(projectId: projectId, allIssues: true)
             } else if board {
                 PhoneBoard(projectId: projectId, allIssues: true, page: PhoneBoard.page(model: model, navigation: navigation, projectId: projectId, allIssues: true))
@@ -192,6 +194,7 @@ struct AllIssuesScreen: View {
                 .sharedBackgroundVisibility(.hidden)
             }
             ToolbarItemGroup(placement: .primaryAction) {
+                OnlyMineToolbarButton()
                 Menu {
                     if !(wide && roomy) {
                         Picker(.viewModePicker, selection: layout) {
@@ -201,6 +204,7 @@ struct AllIssuesScreen: View {
                         .pickerStyle(.inline)
                         Divider()
                     }
+                    OnlyMineMenuToggle()
                     if mode == .list {
                         Button {
                             navigation.sheet = .arrangeSections(.allIssues(projectId))
@@ -279,6 +283,8 @@ struct ProjectScreen: View {
                 MobileEmptyState(title: String(localized: .projectGoneTitle), message: String(localized: .projectGoneMessage), systemImage: "questionmark.square.dashed")
             } else if model.isLoading(projectId: projectId) {
                 ProjectLoading()
+            } else if model.onlyMineHidesEverything(in: .project(projectId)) {
+                OnlyMineEmptyState()
             } else if wide, let view = model.currentView(projectId: projectId), model.showsTimeline(view) {
                 // GitHub's roadmap layout: the view's issues on a timeline, where there is room for one.
                 ViewTimeline(view: view, scope: .project(projectId), nameWidth: 280) { openRoute(.issue($0.id)) }
@@ -345,6 +351,7 @@ struct ProjectScreen: View {
                 .sharedBackgroundVisibility(.hidden)
             }
             ToolbarItemGroup(placement: .primaryAction) {
+                OnlyMineToolbarButton()
                 if let project {
                     ProjectOptionsMenu(project: project, showsViewMode: !(wide && roomy))
                 }
@@ -460,6 +467,7 @@ struct ProjectOptionsMenu: View {
                 Divider()
             }
             if showsView {
+                OnlyMineMenuToggle()
                 Button {
                     navigation.sheet = .arrangeSections(.project(project.id))
                 } label: {
