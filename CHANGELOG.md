@@ -19,6 +19,15 @@ All notable changes to this project are recorded here. The format follows
   issue, on the Mac, iPhone and iPad: the issue lights up, a message says what happened, and **Undo** takes it back.
   Picked sub-issues go together. On the Mac this also works from an epic's milestones and from the issues it is blocked
   by or blocks. An issue the app knows only from GitHub stays where it is.
+- **A card with sub-issues stands on a small pile of cards.** While its sub-issues aren't hanging under it, because
+  they are folded in or have another status, a card stands on one card for one sub-issue, two for two and three for
+  more, each further back a little narrower and peeking out less, on the Mac, iPhone and iPad boards. A card you drag
+  keeps its pile, and several picked cards stand on one for each of the others.
+
+### Changed
+
+- **More room inside a card.** Cards have 2 points less padding at the sides and the top, and 5 less at the bottom,
+  where they had more than anywhere else, so a title has more width before it wraps and a column shows more cards.
 
 ### Changed
 
@@ -27,6 +36,9 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **A card's lines line up.** The names of a type and a milestone stood about a point above the labels and dates
+  beside them, the priority's bars a point below, and a parent's name above the number at the top. The priority was
+  also closer to the next part than the other parts were to each other; now the room between all of them is the same.
 - **Rows on an issue's page no longer stay grey on the Mac.** Scrolling the page under a resting pointer left every
   row that passed beneath it lit up until the pointer went over it again. These rows now are the list's own, so only
   the row under the pointer lights up, and none under the comment field or the toolbar.

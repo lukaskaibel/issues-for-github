@@ -92,7 +92,8 @@ Issues go under another issue the same way, and so do cards on the iPhone and iP
 
 A sub-issue with the same status as its parent hangs right under it, indented, so a parent and the sub-issues you
 work on with it read as one instead of as separate cards in the same column. The arrow on the parent folds them in. A
-sub-issue whose parent has another status stays in its own column and says which issue it belongs to. When the last
+sub-issue whose parent has another status stays in its own column and says which issue it belongs to. A card whose
+sub-issues aren't under it stands on a small pile: one card for one sub-issue, two for two, three for more. When the last
 one is done, the parent moves to Done by itself. The issues of an epic in the same column stand together the same
 way, under the epic's name; drag the name to another column and they all go.
 
@@ -369,7 +370,8 @@ The interface uses the system's own parts.
   column of their own); My Issues shows its cards, one under another on iPhone and two or three to a row on iPad,
   each paging sideways through its project's columns, and Needs you. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
   and drag after holding to give an issue a new place in its section.
-  Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
+  Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them; a
+  card whose sub-issues aren't under it stands on a small pile of cards.
   A milestone is a list grouped by epic,
   the roadmap a list of epics by milestone. The open view's filter is a line over its list or board; tap it to change
   the filter, and Display in the project's "…" turns a view into a list or back. Touch and hold a view on the
@@ -680,8 +682,9 @@ names the issue that blocks it, `#5`, with `+1` for each further one, and lists 
 sub-issue in its parent. In the list, click a section header to fold it; Option-click folds them all.
 
 Sub-issues with the same status as their parent hang under it, indented; click the arrow beside the parent, or
-right-click it, to fold them in or out. A sub-issue whose parent has another status names its parent instead, and a
-click there changes the parent. When you finish the last open sub-issue, the parent moves to Done too; Settings ›
+right-click it, to fold them in or out. Folded in, or with another status, they show as cards under the parent's card,
+one for each up to three. A sub-issue whose parent has another status names its parent instead, and a click there
+changes the parent. When you finish the last open sub-issue, the parent moves to Done too; Settings ›
 Sub-issues turns that off.
 
 In an issue, a sub-issue that has sub-issues of its own shows how many of them are done; click the arrow beside its

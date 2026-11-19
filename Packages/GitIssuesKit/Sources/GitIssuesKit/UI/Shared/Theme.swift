@@ -32,9 +32,15 @@ enum Theme {
     static let cardLiftedShadow = Color(platformColor: .dynamic { isDark in
         PlatformColor.black.withAlphaComponent(isDark ? 0.6 : 0.24)
     })
-    /// The edge of a second card peeking out under one whose sub-issues are folded into it: a shade darker, as the
-    /// notifications behind the first one in a stack are.
-    static let cardBehind = Color(light: 0xE4E4E9, dark: 0x242427)
+    /// The cards a card with sub-issues stands on, peeking out under it, 1 for the first: a shade darker than the board,
+    /// as the notifications behind the first one in a stack are, and each further back closer to the board, so that the
+    /// pile fades into it.
+    static func cardBehind(_ depth: Int) -> Color {
+        cardsBehind[min(max(depth, 1), cardsBehind.count) - 1]
+    }
+    private static let cardsBehind = [
+        Color(light: 0xE3E3E8, dark: 0x262629), Color(light: 0xE8E8EC, dark: 0x222225), Color(light: 0xEDEDF0, dark: 0x1E1E21),
+    ]
     /// A row of a card in My Issues' overview under the pointer or the keyboard focus, and the icon of the page a card
     /// shows: a step lighter than the card in the dark, where the list's grey would vanish on it.
     static let cardRowHover = Color(light: 0xF0F0F3, dark: 0x37373B)
