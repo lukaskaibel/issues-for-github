@@ -231,7 +231,7 @@ struct OverviewGrid: View {
                         if let lifted = drag.liftedId, let index = cards.firstIndex(of: lifted) {
                             // Where the lifted card will land.
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Theme.cardBehind)
+                                .fill(Theme.cardBehind(1))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .strokeBorder(Theme.cardBorder.opacity(0.6), lineWidth: 1)

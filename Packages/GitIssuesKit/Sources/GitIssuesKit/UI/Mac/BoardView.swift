@@ -214,11 +214,16 @@ private struct LiftedCard: View {
     /// The issue it would go under if dropped now: it shrinks a little, lets the issue show through, and says so.
     var nestingUnder: Item?
 
+    private var stack: Int {
+        CardStackEdge.layers(max(card.item.subTotal, card.nested ?? 0, (active.picked?.items.count ?? 1) - 1))
+    }
+
     var body: some View {
         let picked = active.picked?.items.count
         CardView(card: card, width: active.size.width, lifted: true, avatarVersion: avatarVersion)
-            // A parent carries the sub-issues hanging under it along, and a picked card the other picked ones.
-            .background(alignment: .top) { if card.nested != nil || picked != nil { CardStackEdge() } }
+            // It keeps the cards it stands on for its sub-issues, and a parent carries the ones hanging under it along; a
+            // picked card stands on one for each of the other picked ones.
+            .background(alignment: .top) { CardStackEdge(layers: stack) }
             .overlay(alignment: .topTrailing) { if let picked { PickedCount(count: picked) } }
             .opacity(nestingUnder != nil ? 0.88 : 1)
             .overlay(alignment: .bottomLeading) {
@@ -504,7 +509,7 @@ struct ColumnView: View {
         case .row(.item(let item)):
             BoardCell.Spoken(
                 item: item, nesting: column.nesting, showsMilestone: model.currentMilestoneTitle == nil, width: width,
-                at: BoardCell.Geometry(item: item, place: column.nesting.place(of: item.id), folded: column.nesting.folded.contains(item.id), drag: drag)
+                at: BoardCell.Geometry(item: item, place: column.nesting.place(of: item.id), stack: column.nesting.stack(of: item), drag: drag)
             )
         }
     }
@@ -519,7 +524,7 @@ struct ColumnView: View {
         for line in lines {
             switch line {
             case .row(.item(let item)):
-                let at = BoardCell.Geometry(item: item, place: column.nesting.place(of: item.id), folded: column.nesting.folded.contains(item.id), drag: drag)
+                let at = BoardCell.Geometry(item: item, place: column.nesting.place(of: item.id), stack: column.nesting.stack(of: item), drag: drag)
                 let height = at.cardHeight(of: item, width: width)
                 heights.append(height + at.edge)
                 rows.append(.init(part: .card(item.id), indent: at.indent, height: height))
@@ -530,7 +535,7 @@ struct ColumnView: View {
             case .groupSlot(let group, let depth):
                 let indent = CGFloat(min(depth, CardTreeLines.deepest)) * CardTreeLines.indent
                 let height = measured.height(EpicGroupSlot.measure(group.group, width: width - indent))
-                heights.append(height + CardStackEdge.height)
+                heights.append(height + CardStackEdge.height(CardStackEdge.layers(group.group.count)))
                 rows.append(.init(part: .card(group.group.epic.id), indent: indent, height: height))
             }
         }
@@ -706,13 +711,13 @@ private struct EpicGroupSlot: View {
             )
             .reportsHeight(Self.measure(group, width: width - indent).key, to: measured)
             .padding(.leading, indent)
-            .padding(.bottom, CardStackEdge.height)
+            .padding(.bottom, CardStackEdge.height(CardStackEdge.layers(group.count)))
     }
 }
 
 /// One position in a column: the card, or the dashed slot while that card is being dragged. A sub-issue card
-/// hangs in under its parent, with a line from the parent; a card with sub-issues folded into it shows the edge
-/// of a second card under it. The card paints all of that itself: a long column scrolls by showing another card in
+/// hangs in under its parent, with a line from the parent; a card with sub-issues that don't hang under it stands on a
+/// card for each, up to three. The card paints all of that itself: a long column scrolls by showing another card in
 /// a row that scrolled out, and every view in a row adds to that.
 private struct BoardCell: View {
     @Environment(AppModel.self) private var model
@@ -732,14 +737,16 @@ private struct BoardCell: View {
         var indent: CGFloat
         /// The slot is as tall as the lifted card.
         var slotHeight: CGFloat?
-        /// The edge of a second card under one whose sub-issues are folded into it.
+        /// The cards it stands on for its sub-issues, and how far they reach under it.
+        var stack: Int
         var edge: CGFloat
 
-        @MainActor init(item: Item, place: Nesting.Place, folded: Bool, drag: BoardDrag) {
+        @MainActor init(item: Item, place: Nesting.Place, stack: Int, drag: BoardDrag) {
             isSlot = drag.active?.item.id == item.id
             indent = CGFloat(min(isSlot ? drag.target?.depth ?? 0 : place.depth, CardTreeLines.deepest)) * CardTreeLines.indent
             slotHeight = isSlot ? drag.active?.size.height ?? 80 : nil
-            edge = folded && !isSlot ? CardStackEdge.height : 0
+            self.stack = isSlot ? 0 : stack
+            edge = CardStackEdge.height(self.stack)
         }
 
         /// How tall the card or its slot is in a column this wide.
@@ -754,11 +761,11 @@ private struct BoardCell: View {
         // whole column again, and only the cards they leave and enter are painted anew.
         let pointer = dragging ? nil : hover[card: id]
         let highlighted = !dragging && (pointer != nil || model.focusedItemId == id)
-        let at = Geometry(item: card.item, place: place, folded: card.folded, drag: drag)
+        let at = Geometry(item: card.item, place: place, stack: card.stack, drag: drag)
         CardView(
             card: card, width: width - at.indent, highlighted: highlighted, selected: selected, peeked: model.isPeeked(id),
             avatarVersion: avatarVersion, hoveredPart: pointer?.part, hoveringFold: pointer?.onFold ?? false,
-            slotHeight: at.slotHeight, stackEdge: at.edge > 0,
+            slotHeight: at.slotHeight, stack: at.stack,
             tree: !at.isSlot && place.depth > 0 ? place : nil
         )
         .equatable()
