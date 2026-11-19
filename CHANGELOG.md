@@ -6,6 +6,20 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Drag sub-issues on an issue's page.** Drop a sub-issue onto another issue listed on the page and it goes under that
+  issue, on the Mac, iPhone and iPad: the issue lights up, a message says what happened, and **Undo** takes it back.
+  Picked sub-issues go together. On the Mac this also works from an epic's milestones and from the issues it is blocked
+  by or blocks. An issue the app knows only from GitHub stays where it is.
+
+### Fixed
+
+- **Rows on an issue's page no longer stay grey on the Mac.** Scrolling the page under a resting pointer left every
+  row that passed beneath it lit up until the pointer went over it again. These rows now are the list's own, so only
+  the row under the pointer lights up, and none under the comment field or the toolbar.
+- **The list behind an issue's page no longer follows the pointer on the Mac**, so no row is lit up when you go back.
+
 ## [1.1.0] - 2026-11-19
 
 ### Added
@@ -61,10 +75,6 @@ All notable changes to this project are recorded here. The format follows
   works on every board: a view's, All Issues' and a milestone's. Only the parent changes: the issue keeps its status, so
   one dropped onto an issue in another column goes back to its own. Over the top or bottom edge of a card, or between
   cards, the card moves there as before. An issue never goes under itself or one of its own sub-issues.
-- **Drag sub-issues on an issue's page.** Drop a sub-issue onto another issue listed on the page and it goes under that
-  issue, on the Mac, iPhone and iPad: the issue lights up, a message says what happened, and **Undo** takes it back.
-  Picked sub-issues go together. On the Mac this also works from an epic's milestones and from the issues it is blocked
-  by or blocks. An issue the app knows only from GitHub stays where it is.
 - **Put an issue into an iteration.** An issue's iteration is now one click or key away: the Iteration row on the
   issue's page, the iteration chip on a card or row (when the view shows it), the right-click menu, **Move to
   Iteration…** in the command palette, or `⇧C`, as in Linear. The picker lists the iteration under way and those to
@@ -327,10 +337,6 @@ All notable changes to this project are recorded here. The format follows
 - **A label recoloured or renamed on GitHub changes in the app too**, on every card and row, within a minute. GitHub
   doesn't count that as a change of the issues, so they kept the old colour until something else about them changed.
 - **Switching boards on the Mac no longer crashes** while a column is adding cards.
-- **Rows on an issue's page no longer stay grey on the Mac.** Scrolling the page under a resting pointer left every
-  row that passed beneath it lit up until the pointer went over it again. These rows now are the list's own, so only
-  the row under the pointer lights up, and none under the comment field or the toolbar.
-- **The list behind an issue's page no longer follows the pointer on the Mac**, so no row is lit up when you go back.
 - **A third assignee no longer runs under the date** in a row of the Mac's list.
 - **An issue closed as a duplicate shows as canceled everywhere**, also when it is on none of your boards.
 - **A picked notification in the Mac's Inbox keeps the check of a done issue visible.**
