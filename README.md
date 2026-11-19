@@ -271,7 +271,7 @@ laptop's screen shows six of them at once. A card pages sideways through the col
 yours, what you have started first. Swipe with two fingers, or click one of the status icons beside the project's
 name, under which it says which column you see and how many issues are in it; hover an icon for its column's name.
 When a column holds more than a page shows, "39 more in Notebook" leads to the rest on the project. **Pages in Each
-Card** in Display picks the columns: what is in progress and to do to start with, and the backlog, cards without a
+Card** in the filter's display picks the columns: what is in progress and to do to start with, and the backlog, cards without a
 status and **Done this week** when you ask for them. **Needs you** pages through what wants you now, whatever the
 project: overdue, due today, urgent and not started, idle for a week, or on no board. A started issue nobody has
 touched for a week says how long it has been idle. In a project where nobody else has open issues, the issues assigned
@@ -294,11 +294,12 @@ compared by what they mean, so "In Review" in one project and "Doing" in another
 list's rows leave out the project's name. GitHub has no view behind My Issues, so its filter and Display options stay on your
 device.
 
-To see only your own work on the boards too, click the person in the toolbar or press ⇧⌘M: every board, list,
-milestone and the roadmap then shows only the issues assigned to you, alone or with others, by the same rule as My
-Issues, wherever you go, until you click it again. The person is filled in the accent colour while it is on. An issue you take yourself
-off stays where it is until you leave the page, a new issue starts out assigned to you, and a page with nothing of
-yours says so. The views on GitHub stay as they are.
+To see only your own work on the boards too, press ⇧⌘M or turn on **Only My Issues** at the top of the filter, the
+symbol at the right of the toolbar: every board, list, milestone and the roadmap then shows only the issues assigned
+to you, alone or with others, by the same rule as My Issues, wherever you go, until you turn it off. A **Mine** chip
+under the toolbar says so, and its cross shows everyone's issues again. An issue you take yourself off stays where it
+is until you leave the page, a new issue starts out assigned to you, and a page with nothing of yours says so. The
+views on GitHub stay as they are.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/my-issues-dark.webp">
@@ -331,7 +332,9 @@ a menu that switches to another, and under it are All Issues and the project's v
 shows what its filter finds, as a board or as a list grouped the way GitHub groups it. The filter is a row of chips
 over the issues, as in Linear: press `F` to add one for a status, a person, a label, a milestone, an iteration or any field
 of the project, click a chip to change it. A changed filter stays yours until you press `⌘S`, which saves it to the
-view for everyone; `⇧V` shows a view as board or list, by other columns or groups, or with the iteration on its cards.
+view for everyone. The filter symbol at the right of the toolbar has all of it in one panel: Only My Issues, the
+view's filter, and below it how the view shows (`⇧V`): by other columns or groups, in another order, or with the
+iteration on its cards, with one **Save for Everyone** for both. Board and List are in the middle of the toolbar.
 New views, renamed ones and deleted ones are GitHub's too, so a view looks the same on github.com.
 
 <picture>
@@ -386,7 +389,7 @@ The interface uses the system's own parts.
   card whose sub-issues aren't under it stands on a small pile of cards.
   A milestone is a list grouped by epic,
   the roadmap a list of epics by milestone. The open view's filter is a line over its list or board; tap it to change
-  the filter, and Display in the project's "…" turns a view into a list or back. Touch and hold a view on the
+  the filter, and Display in the filter menu (the filter symbol in the bar) turns a view into a list or back. Touch and hold a view on the
   project's page for its menu. A view's groups show their progress or each person's load, and a view of one iteration has the cycle on top, as on the Mac. My Issues'
   "…" menu shows it as the overview or a list, picks the overview's pages, filters it, groups the list by status,
   project, priority or due date and orders it; its filter shows as a line under the title.
@@ -403,7 +406,7 @@ The interface uses the system's own parts.
   unfolded ones too, then move them all under another parent with the bar at the bottom, or change their status,
   priority, assignee or labels from its "…" or a picked one's menu. A project's board on iPad stands its cards on
   grey without borders or lanes, as on the Mac; a column's "…" hides it on that iPad, and the hidden ones wait at the end of the
-  board and under Display in the project's "…", a tap away from coming back.
+  board and under Display in the filter menu, a tap away from coming back.
 - **iPad:** a sidebar with the Inbox, My Issues and Search, then every project, each a tap
   away (touch and hold one, or swipe it, to hide it; the hidden ones wait folded at the end of the projects),
   and under them the entries of the project open: All Issues and its views, and its next milestones and roadmap; your
@@ -428,8 +431,8 @@ The interface uses the system's own parts.
 - **Board and list** for every GitHub Project you can see, plus **My Issues**: everything assigned to you, as an
   overview of cards you arrange (a card per project that pages through its columns, and what needs you now), or as one
   list with its own filter, grouped by status, project, priority or due date.
-- **Only My Issues.** One button, or ⇧⌘M, narrows every board, list, milestone and the roadmap to the issues assigned
-  to you, wherever you go, and leaves the views on GitHub alone.
+- **Only My Issues.** One switch in the filter, or ⇧⌘M, narrows every board, list, milestone and the roadmap to the
+  issues assigned to you, wherever you go, and leaves the views on GitHub alone.
 - **All Issues** of a project: its board's issues and those of its repositories on no board, which one click puts on
   the board. As a list, or as a board with a column of its own for the issues on no board and its columns in your own
   order.
@@ -650,9 +653,9 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
 | `⌘+` `⌘−` / `⌘0` | Zoom a timeline in or out / reset to Months or Quarters; pinch, zoom buttons and ⌘-scroll work too |
 | `⌃⌘I` | Show or hide the details of the open issue, in the inspector beside it |
-| `⌘⇧M` | Only My Issues: every board, list, milestone and the roadmap shows only the issues assigned to you, until you press it again (also the person in the toolbar, and View › Only My Issues) |
+| `⌘⇧M` | Only My Issues: every board, list, milestone and the roadmap shows only the issues assigned to you, until you press it again (also the switch at the top of the filter, the **Mine** chip's cross, and View › Only My Issues) |
 | `F` | Filter the view on screen, or My Issues: pick what to filter by, then the values |
-| `⇧V` | Display options of the view: board or list, columns, groups, order and the fields shown; of My Issues: the order, the list's groups, and the overview's pages |
+| `⇧V` | The filter at how the page shows: the view's columns, groups, order, the fields shown and the hidden columns; My Issues' order, the list's groups and the overview's pages |
 | `⌘S` | Save the view's changed filter to GitHub, for everyone |
 | `⌃Tab` `⌃⇧Tab` | Next or previous view of the project |
 | `G` then `B` / `L` / `M` / `A` / `I` / `P` / `R` | Go to board, list, My Issues, All Issues, the Inbox, switch project, or the roadmap |
@@ -738,7 +741,7 @@ new issue made in a view gets what the view's filter asks for, such as this iter
 
 A view of one iteration has the cycle over its issues; the arrows beside it show the one before or after, a changed
 filter until you save it. On a roadmap view's timeline, click a group to fold it and an issue's name to open it;
-**Display** switches between timeline, board and list.
+**Display** in the filter switches between timeline, board and list.
 
 A description is drawn as on GitHub and edited right there. Click a checkbox to tick it, a link to open it (one to
 another issue the app has opens that issue here, in comments too), and anywhere else to type: the Markdown of what the
@@ -778,7 +781,7 @@ header to reorder it, double-click its name to rename it, right-click it for its
 and use **Add column** at the right end of the board. **Hide Column** takes a column and its cards off the board on
 this device only, for the view you're in; the project on GitHub doesn't change, and the list still shows every status.
 Hidden columns are listed at the right end of the board, with how many issues each holds, and under **Hidden
-Columns** in Display (`⇧V`); a click shows one again, and **Reset** there brings them all back. All Issues as a board
+Columns** in the filter's display (`⇧V`); a click shows one again, and **Reset** there brings them all back. All Issues as a board
 moves and hides its columns the same way, all of them on this device only: GitHub's statuses keep their order, and
 they are renamed, coloured and deleted on the board. Its **No project** column takes no cards; drag one of its issues
 onto a status to put it on the board. All Issues' list takes drags the same way.
@@ -842,7 +845,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
 | Touch and hold a sub-issue on an issue's page, then drop it onto another one | Put it, with any others picked, under that one |
 | Touch and hold a card, then hold it a moment over the middle of another card | That card lights up: let go to make the dragged issue its sub-issue. It keeps its status, and the notice that says so undoes it. Over a card's top or bottom edge it goes above or below that card instead |
-| The person in the bar of a board, list, milestone or the roadmap (iPad), or **Only My Issues** in the "…" of a board, list or milestone (iPhone) | Show only the issues assigned to you there and everywhere else, until you turn it off; the filled person in the bar turns it off on iPhone too |
+| The filter symbol in the bar of a board, list, milestone or the roadmap | **Only My Issues** shows only the issues assigned to you there and everywhere else, until you turn it off; **Filter…** and **Display** change the view. The symbol is filled while anything narrows the page |
 | "…" in All Issues | Show it as a board or a list (on a wide iPad, the switch beside its name); on the board, the hidden columns, a tap away from coming back |
 | "…" over a column of All Issues' board | Move it left or right, or hide it, on that device |
 | Swipe sideways on a board, or tap a column in the strip over it (iPhone) | Turn to that column |
@@ -854,7 +857,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold a view on the project's page (iPhone) | Pin, filter, rename, duplicate, open on GitHub, delete |
 | Swipe right on a view, milestone, All Issues or the roadmap on the project's page, or Pin in its "…" (iPhone) | Pin it to Home as a tile with its count; touch and hold the tile to unpin it |
 | Tap the filter line over a view | Change the filter; **Save for Everyone** puts it on GitHub, **Reset** takes it back |
-| "…" in My Issues | Show it as the overview or a list, pick the overview's pages, customize its cards, filter it, group the list by status, project, priority or due date, and order it; a tap on its filter line changes the filter, **Clear Filter** takes it away |
+| The filter symbol in My Issues | Filter it, show it as the overview or a list, pick the overview's pages, group the list by status, project, priority or due date, and order it; "…" customizes its cards. A tap on its filter line changes the filter, **Clear Filter** takes it away |
 | Swipe sideways on a card in My Issues, or tap a status icon beside its name | Turn to another column of its project; touch and hold the card to show the project or take the card out |
 | Tap ‹ or › beside a view's cycle | The cycle before or after, until you save it |
 | New View… on the project's page (iPhone), or in the project's "…" menu | A new view, starting from the one open |

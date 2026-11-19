@@ -14,9 +14,8 @@ struct MyIssuesScreen: View {
             .navigationSubtitle(SyncSubtitle.text(model))
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
+                    FilterToolbarMenu(scope: .myIssues)
                     Menu {
-                        MyIssuesDisplayMenu()
-                        Divider()
                         // The overview arranges its cards in a sheet of its own; the list, its sections.
                         if model.mineDisplay.layout == .overview {
                             Button {
@@ -47,9 +46,9 @@ struct MyIssuesScreen: View {
     }
 }
 
-/// My Issues' filter and how it shows, at the top of its "…" menu: Filter… opens the sheet; the overview or the list,
-/// a group (for the list) or an order is picked right in the menu, which then closes.
-private struct MyIssuesDisplayMenu: View {
+/// My Issues' filter and how it shows, in its filter menu: Filter… opens the sheet; the overview or the list, a group
+/// (for the list) or an order is picked right in the menu, which then closes.
+struct MyIssuesDisplayMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
 
@@ -194,7 +193,7 @@ struct AllIssuesScreen: View {
                 .sharedBackgroundVisibility(.hidden)
             }
             ToolbarItemGroup(placement: .primaryAction) {
-                OnlyMineToolbarButton()
+                FilterToolbarMenu(scope: .allIssues(projectId))
                 Menu {
                     if !(wide && roomy) {
                         Picker(.viewModePicker, selection: layout) {
@@ -204,7 +203,6 @@ struct AllIssuesScreen: View {
                         .pickerStyle(.inline)
                         Divider()
                     }
-                    OnlyMineMenuToggle()
                     if mode == .list {
                         Button {
                             navigation.sheet = .arrangeSections(.allIssues(projectId))
@@ -351,7 +349,7 @@ struct ProjectScreen: View {
                 .sharedBackgroundVisibility(.hidden)
             }
             ToolbarItemGroup(placement: .primaryAction) {
-                OnlyMineToolbarButton()
+                FilterToolbarMenu(scope: .project(projectId))
                 if let project {
                     ProjectOptionsMenu(project: project, showsViewMode: !(wide && roomy))
                 }
@@ -441,8 +439,7 @@ struct ProjectOptionsMenu: View {
     var body: some View {
         Menu {
             if showsView, let view = model.currentView(projectId: project.id) {
-                // The open view: how it shows, its filter, a new one, and its own menu.
-                ViewDisplayMenu(view: view)
+                // The open view: its own menu and a new one. Its filter and how it shows are in the filter menu.
                 Menu {
                     ViewMenuItems(view: view)
                 } label: {
@@ -467,7 +464,6 @@ struct ProjectOptionsMenu: View {
                 Divider()
             }
             if showsView {
-                OnlyMineMenuToggle()
                 Button {
                     navigation.sheet = .arrangeSections(.project(project.id))
                 } label: {

@@ -92,9 +92,11 @@ enum Dropdown {
         let screen = window.screen?.visibleFrame ?? .infinite
         var origin: NSPoint
         switch placement {
-        case .below, .above:
-            // Under the anchor, left edges aligned; above it when asked or when there's no room below.
-            origin = NSPoint(x: anchor.minX - 4, y: anchor.minY - 4 - size.height)
+        case .below, .above, .belowTrailing:
+            // Under the anchor, left edges aligned (right edges for the end of the toolbar); above it when asked or
+            // when there's no room below.
+            let x = placement == .belowTrailing ? anchor.maxX + 4 - size.width : anchor.minX - 4
+            origin = NSPoint(x: x, y: anchor.minY - 4 - size.height)
             if placement == .above || origin.y < screen.minY { origin.y = anchor.maxY + 4 }
         case .trailing:
             // Right of the row, its first row level with it (the panel has 4 pt above its rows); left of it
@@ -279,6 +281,8 @@ enum Dropdown {
 enum DropdownPlacement {
     /// Under it, or over it when there's no room below.
     case below
+    /// Under it with right edges aligned, for a button at the right end of the toolbar, so it stays over the window.
+    case belowTrailing
     /// Over it, for things at the bottom of the window.
     case above
     /// To its right, as a submenu of a menu row.

@@ -14,13 +14,13 @@ All notable changes to this project are recorded here. The format follows
   columns too), in My Issues' overview and in the Inbox. A list or a column scrolls while you hold the pointer at its
   edge, and Esc puts the picks back as they were. A ⌘-click still picks a single issue. The first few times you pick
   issues one at a time, a hint over the bar at the bottom tells you about it.
-- **Only My Issues, wherever you are.** The person button in the toolbar, or `⌘⇧M`, narrows every board, list,
+- **Only My Issues, wherever you are.** `⌘⇧M`, or the switch at the top of the filter, narrows every board, list,
   milestone and the roadmap to the issues assigned to you, alone or with others, and keeps it that way as you go from
-  project to project and view to view, until you turn it off. The person is filled in the accent colour while it is on. An issue you
-  take yourself off stays on the page until you leave it, a new issue starts out assigned to you, and a page with
-  nothing of yours says so, with a button that shows everyone's issues again. It is in the View menu and the command
-  palette too, on iPad with `⌘⇧M` as well, and on iPhone in the "…" menu of a board or list. Views on GitHub stay as
-  they are, and the counts in the sidebar and a milestone's progress still count every issue.
+  project to project and view to view, until you turn it off. A **Mine** chip under the toolbar says so, and its cross
+  shows everyone's issues again. An issue you take yourself off stays on the page until you leave it, a new issue
+  starts out assigned to you, and a page with nothing of yours says so, with a button that shows everyone's issues
+  again. It is in the View menu and the command palette too, and on iPhone and iPad in the filter menu in the bar.
+  Views on GitHub stay as they are, and the counts in the sidebar and a milestone's progress still count every issue.
 - **Drag sub-issues on an issue's page.** Drop a sub-issue onto another issue listed on the page and it goes under that
   issue, on the Mac, iPhone and iPad: the issue lights up, a message says what happened, and **Undo** takes it back.
   Picked sub-issues go together. On the Mac this also works from an epic's milestones and from the issues it is blocked
@@ -31,6 +31,13 @@ All notable changes to this project are recorded here. The format follows
   keeps its pile, and several picked cards stand on one for each of the others.
 
 ### Changed
+
+- **One filter button in place of Filter and Display.** At the right of the Mac's toolbar, Mail's filter symbol is
+  filled in the accent colour while anything narrows the page. It opens one panel: Only My Issues, the filter of the
+  view or of My Issues, and how they are displayed, with one **Reset** and one **Save for Everyone** for what you
+  changed in the view. `F` still opens it at what to filter by, and `⇧V` at the display. Board and List are only in the
+  middle of the toolbar now. On iPhone and iPad the same symbol in the bar opens a menu with Only My Issues,
+  **Filter…** and **Display**, which have left the "…" menu.
 
 - **More room inside a card.** Cards have 2 points less padding at the sides and the top, and 5 less at the bottom,
   where they had more than anywhere else, so a title has more width before it wraps and a column shows more cards.
