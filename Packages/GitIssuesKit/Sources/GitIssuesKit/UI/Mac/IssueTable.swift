@@ -1098,48 +1098,34 @@ extension IssueTable.Coordinator {
         return issue.item.id
     }
 
-    /// The issues it can sweep and where their rows are in the window now, also those scrolled out of sight.
+    /// The issues it can sweep and where their rows are in the window now, from its top left, also those scrolled out
+    /// of sight.
     func sweepRows(in table: NSTableView) -> [SweepRow] {
-        entries.indices.compactMap { row in
-            sweepableId(at: row).map { SweepRow(id: $0, frame: table.convert(table.rect(ofRow: row), to: nil)) }
+        let height = table.window?.contentView?.bounds.height ?? 0
+        return entries.indices.compactMap { row in
+            sweepableId(at: row).map { id in
+                let rect = table.convert(table.rect(ofRow: row), to: nil)
+                return SweepRow(id: id, frame: CGRect(x: rect.minX, y: height - rect.maxY, width: rect.width, height: rect.height))
+            }
         }
     }
 
-    /// Follows a ⌘-press on a row until the button is up. Returns whether it swept: after a click the mouse-up is back in
-    /// the queue for the table to take the click as it would have.
-    func followSweep(from down: NSEvent, in table: HoverTableView, window: NSWindow) -> Bool {
-        let point = table.convert(down.locationInWindow, from: nil)
-        let pressed = table.row(at: point)
-        guard let place = sweepPlace, let id = sweepableId(at: pressed) else { return false }
+    /// What a ⌘-press at `location`, in the window, sweeps, if it lands on an issue that can be picked: the rows of this
+    /// table, or on an issue's page those of all its lists of sub-issues.
+    func sweepArea(pressedAt location: NSPoint, in table: HoverTableView) -> (area: SweepAreas.Area, id: String)? {
+        guard let place = sweepPlace, let id = sweepableId(at: table.row(at: table.convert(location, from: nil))) else { return nil }
         let tables = Self.sweptTables(from: table)
-        // Where on its row the press started, which keeps the sweep's start there as the list scrolls.
-        let offset = point.y - table.rect(ofRow: pressed).minY
-        var anchor = down.locationInWindow
-        let tracker = SweepTracker(
-            swept: { [weak self, weak table] location in
-                if let self, let table {
-                    let row = self.sweepableId(at: pressed) == id ? pressed : self.entries.firstIndex { $0.id == id }
-                    if let row {
-                        anchor = table.convert(NSPoint(x: point.x, y: table.rect(ofRow: row).minY + offset), to: nil)
-                    }
-                }
-                let rows = tables.flatMap { $0.coordinator?.sweepRows(in: $0) ?? [] }
-                return SweepPick.swept(rows, from: anchor, to: location, sideways: false)
-            },
-            autoscroll: { [weak table] location in
-                guard let location, let scroll = table?.enclosingScrollView else { return }
-                SweepTracker.autoscroll(scroll, toward: location)
+        let area = SweepAreas.Area(
+            place: place,
+            rows: { tables.flatMap { $0.coordinator?.sweepRows(in: $0) ?? [] } },
+            sideways: false,
+            autoscroll: { [weak table] point in
+                guard let point, let table, let height = table.window?.contentView?.bounds.height,
+                      let scroll = table.enclosingScrollView else { return }
+                SweepAreas.autoscroll(scroll, toward: NSPoint(x: point.x, y: height - point.y))
             }
         )
-        switch tracker.follow(down, on: id, in: place, window: window, model: model) {
-        case .swept:
-            // The rows have moved under the pointer, which sent no moves meanwhile.
-            table.updateHoverFromCurrentMouseLocation()
-            return true
-        case .click(let up):
-            window.postEvent(up, atStart: true)
-            return false
-        }
+        return (area, id)
     }
 
     /// The tables a sweep that starts in `table` goes over: on an issue's page every list of its sub-issues, as under an
@@ -1351,10 +1337,6 @@ final class HoverTableView: NSTableView {
     /// table as it came, and a deep press never does, so it can't open the issue as well.
     /// An issue's page has no peek to open, so its rows skip this.
     override func mouseDown(with event: NSEvent) {
-        // ⌘-dragging over issues picks them; a ⌘-click goes on to the table as one.
-        if SweepTracker.starts(event), let coordinator, let window, coordinator.followSweep(from: event, in: self, window: window) {
-            return
-        }
         let row = self.row(at: convert(event.locationInWindow, from: nil))
         guard let coordinator, !coordinator.isOnPage, let window, let item = coordinator.item(at: row),
               event.modifierFlags.intersection(.deviceIndependentFlagsMask).isDisjoint(with: [.command, .shift, .option, .control]) else {
@@ -1377,6 +1359,11 @@ final class HoverTableView: NSTableView {
                 return
             }
         }
+    }
+
+    /// What a ⌘-press at `location`, in the window, sweeps, if it lands on an issue (`SweepAreas`).
+    func sweepArea(pressedAt location: NSPoint) -> (area: SweepAreas.Area, id: String)? {
+        coordinator?.sweepArea(pressedAt: location, in: self)
     }
 
     /// The row under `point`, in the table's coordinates; none where something else lies over the list, as the comment

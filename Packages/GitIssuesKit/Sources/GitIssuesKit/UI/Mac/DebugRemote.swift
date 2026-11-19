@@ -1543,7 +1543,8 @@ enum DebugRemote {
         }
         let end = points[points.count - 1]
         timeline.append((time + hold + 0.05, { mouse(.leftMouseUp, end) }))
-        // Posted over time by a timer that runs while the press is followed, as a hand's events come in.
+        timeline.insert((0, { mouse(.leftMouseDown, points[0]) }), at: 0)
+        // Posted over time, as a hand's come in, through the app's own handling of events: its monitors see them first.
         let started = ProcessInfo.processInfo.systemUptime
         var next = 0
         let timer = Timer(timeInterval: 1.0 / 120, repeats: true) { timer in
@@ -1553,47 +1554,34 @@ enum DebugRemote {
                     if let event = timeline[next].event() { NSApp.postEvent(event, atStart: false) }
                     next += 1
                 }
-                if next == timeline.count { timer.invalidate() }
+                if next == timeline.count {
+                    timer.invalidate()
+                    // A click goes on through the queue: look once it has.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { log("sweepdrag: " + pickState(model)) }
+                }
             }
         }
         RunLoop.main.add(timer, forMode: .common)
-        guard let down = mouse(.leftMouseDown, points[0]) else { return }
-        DispatchQueue.main.async {
-            var how = "area"
-            if !SweepAreas.shared.follow(down, model: model) {
-                // The table under the press takes it, as from a hand.
-                var view = window.contentView?.superview?.hitTest(down.locationInWindow)
-                while let current = view, !(current is HoverTableView) { view = current.superview }
-                if let table = view as? HoverTableView {
-                    how = "table"
-                    table.mouseDown(with: down)
-                } else {
-                    how = "nothing"
-                }
-            }
-            // A click goes on through the queue: look once it has.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { log("sweepdrag via \(how): " + pickState(model)) }
-        }
     }
 
     private static func pickState(_ model: AppModel) -> String {
         func numbers(_ ids: Set<String>) -> String {
-            ids.map { id in model.allItems.first { $0.id == id }.map { "#\($0.number)" } ?? id }.sorted().joined(separator: " ")
+            ids.map { id in model.allItems.first { $0.id == id }?.displayNumber ?? id }.sorted().joined(separator: " ")
         }
         return "picked=[\(numbers(model.selectedIds))] sub=[\(numbers(model.pickedSubIssueIds))] inbox=\(model.inboxPicked.count) "
-            + "open=\(model.openItem.map { "#\($0.number)" } ?? "-") sweeping=\(model.activeSweep != nil)"
+            + "open=\(model.openItem?.displayNumber ?? "-") sweeping=\(model.activeSweep != nil)"
     }
 
     private static func sweepSpots(model: AppModel) {
         guard let window = model.mainWindow, let content = window.contentView else { return }
         let height = content.bounds.height
         func name(_ id: String) -> String {
-            model.allItems.first { $0.id == id }.map { "#\($0.number)" } ?? model.inboxEntry(id: id).map { "n:\($0.title.prefix(12))" } ?? id
+            model.allItems.first { $0.id == id }?.displayNumber ?? model.inboxEntry(id: id).map { "n:\($0.title.prefix(12))" } ?? id
         }
         func walk(_ view: NSView) {
             if let table = view as? HoverTableView, let coordinator = table.coordinator {
                 let rows = coordinator.sweepRows(in: table).map { row in
-                    "\(name(row.id))@\(Int(row.frame.midX)),\(Int(height - row.frame.midY))"
+                    "\(name(row.id))@\(Int(row.frame.midX)),\(Int(row.frame.midY))"
                 }
                 log("sweep table page=\(coordinator.isOnPage) covered=\(coordinator.isCovered): " + rows.joined(separator: " "))
             }
