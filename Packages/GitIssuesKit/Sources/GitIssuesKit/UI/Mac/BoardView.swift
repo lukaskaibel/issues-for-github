@@ -178,14 +178,16 @@ struct BoardView: View {
         guard let column = model.columns.first(where: { $0.items.contains { $0.id == id } }),
               let frame = model.boardDrag.columnFrames[column.id] else { return }
         let margin: CGFloat = 16
-        var next = metrics.offset
+        // From the board's left edge in sight, as it scrolls (see `autoScroll(width:)`).
+        let current = model.boardDrag.scrollX
+        var next = current
         if frame.minX < margin {
             next += frame.minX - margin
         } else if frame.maxX > width - margin {
             next += frame.maxX - width + margin
         }
         next = min(max(next, 0), metrics.maxOffset)
-        guard next != metrics.offset else { return }
+        guard next != current else { return }
         withAnimation(Theme.quick) { scroll.scrollTo(x: next) }
     }
 
@@ -208,8 +210,10 @@ struct BoardView: View {
         } else if x > width - 56 {
             delta = BoardDrag.scrollSpeed(insideEdgeBy: width - x)
         }
-        let next = min(max(metrics.offset + delta, 0), metrics.maxOffset)
-        guard next != metrics.offset else { return }
+        // In the coordinates the board scrolls to, which start at its left edge in sight: the board reaches under the
+        // sidebar, and its content offset counts from there, so it is as far left as it goes at minus the sidebar's width.
+        let next = min(max(drag.scrollX + delta, 0), metrics.maxOffset)
+        guard next != drag.scrollX else { return }
         scroll.scrollTo(x: next)
         if drag.active != nil { drag.retarget(model: model) }
     }
