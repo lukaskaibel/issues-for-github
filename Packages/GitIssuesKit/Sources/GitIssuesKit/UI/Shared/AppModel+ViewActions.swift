@@ -41,6 +41,35 @@ extension AppModel {
         }
     }
 
+    /// Saves to the view on GitHub, in one go, what was changed here and GitHub takes: the filter, the layout and the
+    /// fields shown. The filter panel's Save for Everyone; columns, grouping and order stay yours.
+    func saveChanges(of view: ProjectView) {
+        guard !savingViewIds.contains(view.id) else { return }
+        let display = display(of: view)
+        let text = filterText(of: view)
+        let savesFilter = filterChanged(view)
+        var change = GitHubAPI.ViewChange()
+        if savesFilter { change.filter = text }
+        if let layout = display.layout {
+            if layout == .board { change.layout = .board } else if view.layout != .table { change.layout = .table }
+        }
+        if let fields = display.visibleFieldIds { change.visibleFieldIds = fields }
+        let savesDisplay = display.layout != nil || display.visibleFieldIds != nil
+        guard savesFilter || savesDisplay else { return }
+        let saved = change
+        changeView(view, failure: .viewSaveFailed(view: view.name)) { engine in
+            if !saved.isEmpty { try await engine.updateView(view.id, change: saved) }
+        } done: { model in
+            if savesFilter, model.draftFilters[view.id] == text { model.draftFilters[view.id] = nil }
+            if savesDisplay {
+                model.changeDisplay(of: model.view(id: view.id) ?? view) { saved in
+                    saved.layout = nil
+                    saved.visibleFieldIds = nil
+                }
+            }
+        }
+    }
+
     func rename(_ view: ProjectView, to name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed != view.name else { return }

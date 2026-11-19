@@ -16513,66 +16513,6 @@
         }
       }
     },
-    "displayTooltip" : {
-      "comment" : "Mac tooltip of the Display button. ⇧V is the key.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Darstellungsoptionen (⇧V)"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Display Options (⇧V)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opciones de visualización (⇧V)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Options d’affichage (⇧V)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "表示オプション（⇧V）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "표시 옵션(⇧V)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opções de exibição (⇧V)"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Параметры отображения (⇧V)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示选项（⇧V）"
-          }
-        }
-      }
-    },
     "done" : {
       "comment" : "Button that closes a sheet or ends editing, keeping the changes (iPhone, iPad), and the button that keeps a link's web address in the Mac's link popover. Not the 'done' status of an issue.",
       "extractionState" : "manual",
@@ -22839,6 +22779,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ 之后"
+          }
+        }
+      }
+    },
+    "filterAndDisplayTooltip" : {
+      "comment" : "Mac: tooltip of the filter button at the right of the toolbar (Mail's filter symbol). Its panel has Only My Issues, the view's filter and how the view is displayed. F and ⇧V are its keys.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter und Darstellung (F, ⇧V)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter and display (F, ⇧V)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtro y visualización (F, ⇧V)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtre et affichage (F, ⇧V)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フィルタと表示（F、⇧V）"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터 및 표시(F, ⇧V)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtro e exibição (F, ⇧V)"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фильтр и отображение (F, ⇧V)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "筛选和显示（F、⇧V）"
           }
         }
       }
@@ -40975,6 +40975,66 @@
         }
       }
     },
+    "mineChip" : {
+      "comment" : "Mac: the first chip in the line of filter chips under the toolbar while Only My Issues is on; clicking its cross shows everyone's issues again. One short word: 'my issues'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meine"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mine"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mías"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les miens"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自分のIssue"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 이슈"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minhas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мои"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我的"
+          }
+        }
+      }
+    },
     "months" : {
       "comment" : "Segmented control on the roadmap's timeline: zoom so months are wide.",
       "extractionState" : "manual",
@@ -49407,6 +49467,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "仅我的议题"
+          }
+        }
+      }
+    },
+    "onlyMyIssuesEverywhere" : {
+      "comment" : "Mac: second line under 'Only My Issues' in the filter panel, beside its switch: it holds on every board, list, milestone and the roadmap, not only in the view on screen. ⇧⌘M is its shortcut. Keep it short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf jedem Board · ⇧⌘M"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On every board · ⇧⌘M"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En todos los tableros · ⇧⌘M"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sur chaque tableau · ⇧⌘M"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのボードで · ⇧⌘M"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 보드에서 · ⇧⌘M"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Em todos os quadros · ⇧⌘M"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "На всех досках · ⇧⌘M"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所有看板 · ⇧⌘M"
           }
         }
       }
@@ -82929,66 +83049,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "仅显示我的议题"
-          }
-        }
-      }
-    },
-    "showOnlyMyIssuesTooltip" : {
-      "comment" : "Mac and iPad: tooltip of the person button in the toolbar while it is off. ⇧⌘M is its shortcut.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nur Issues zeigen, für die du zuständig bist (⇧⌘M)"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show only issues assigned to you (⇧⌘M)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar solo las incidencias asignadas a ti (⇧⌘M)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Afficher uniquement les tickets qui vous sont assignés (⇧⌘M)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "自分に割り当てられたIssueのみ表示（⇧⌘M）"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "나에게 할당된 이슈만 표시(⇧⌘M)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostrar somente as issues atribuídas a você (⇧⌘M)"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Показывать только задачи, назначенные вам (⇧⌘M)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "仅显示分配给你的议题（⇧⌘M）"
           }
         }
       }

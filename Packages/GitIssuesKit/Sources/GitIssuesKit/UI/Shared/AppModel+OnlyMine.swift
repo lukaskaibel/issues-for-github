@@ -83,6 +83,37 @@ extension AppModel {
         return hides
     }
 
+    /// Whether the page on screen shows fewer issues than it has: Only My Issues, or a filter of its view or of My
+    /// Issues. The filter button is filled in the accent colour while it does, as Mail's.
+    var pageIsNarrowed: Bool {
+        scope.map(isNarrowed) ?? false
+    }
+
+    /// Whether a page shows fewer issues than it has (`pageIsNarrowed`), for the iPhone's and iPad's screens, each of
+    /// which has its own page.
+    func isNarrowed(_ scope: Scope) -> Bool {
+        if onlyMine, Self.onlyMineApplies(to: scope) { return true }
+        switch scope {
+        case .myIssues: return !mineFilter.isEmpty
+        case .project(let id): return currentView(projectId: id).map { !filter(of: $0).isEmpty } ?? false
+        default: return false
+        }
+    }
+
+    /// Whether the page's filter or display was changed here and not saved to the view, or My Issues' display isn't
+    /// as it comes: the filter button carries a dot, as Display's did.
+    var pageChangedForYou: Bool {
+        if scope == .myIssues { return !mineDisplay.optionsAreDefault }
+        guard let view = currentView else { return false }
+        return filterChanged(view) || displayDiffers(view)
+    }
+
+    /// Whether the filter button has anything to offer on the page on screen: every page of issues, not the Inbox.
+    var hasFilterPanel: Bool {
+        guard let scope, scope != .inbox else { return false }
+        return scope == .myIssues || viewer != nil || currentView != nil
+    }
+
     /// Lets the issues kept on a page go, for iPhone and iPad, whose screens keep no page of their own in the model.
     func forgetKeptMine() {
         guard !keptMineIds.isEmpty else { return }

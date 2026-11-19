@@ -30,7 +30,6 @@ struct MyIssuesFilterBar: View {
 /// groups by status, most urgent first, and the pages a card starts with.
 struct MyIssuesDisplayOptions: View {
     @Environment(AppModel.self) private var model
-    var close: () -> Void
 
     var body: some View {
         let display = model.mineDisplay
@@ -107,11 +106,6 @@ struct MyIssuesDisplayOptions: View {
                 }
             }
         }
-        .padding(14)
-        .frame(width: 320)
-        .font(.ui)
-        .foregroundStyle(Theme.text)
-        .background(MenuKeys(onMove: { _ in }, onActivate: {}, onBack: close))
     }
 }
 #endif

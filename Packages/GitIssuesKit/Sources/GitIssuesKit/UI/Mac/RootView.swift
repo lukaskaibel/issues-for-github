@@ -135,6 +135,11 @@ struct ContentPanel: View {
                                 .frame(height: 40)
                         }
                     }
+                    // All Issues, a milestone and the roadmap have no filter of their own: Mine says why they show
+                    // only yours.
+                    if model.currentView == nil, model.scope != .myIssues {
+                        OnlyMineBar()
+                    }
                     if case .milestone(let projectId, let title) = model.scope,
                        let group = model.milestoneGroup(projectId: projectId, title: title) {
                         MilestoneSummary(projectId: projectId, group: group)

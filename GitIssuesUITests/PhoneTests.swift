@@ -31,8 +31,8 @@ final class PhoneTests: AppTestCase {
         // Most urgent first, also across projects: #9 (Urgent) before #8 (High) in In progress.
         XCTAssertLessThan(element("row-#9").frame.minY, element("row-#8").frame.minY)
 
-        // Grouped by project from the "…" menu; the issues on no board lead.
-        app.navigationBars.buttons["Options"].firstMatch.tap()
+        // Grouped by project from the filter menu; the issues on no board lead.
+        app.navigationBars.buttons["Filter"].firstMatch.tap()
         wait(button("Group by"))
         button("Group by").tap()
         wait(button("Project"))
@@ -42,7 +42,7 @@ final class PhoneTests: AppTestCase {
         snapshot("My Issues by project")
 
         // Only what is urgent, whatever each project calls it.
-        app.navigationBars.buttons["Options"].firstMatch.tap()
+        app.navigationBars.buttons["Filter"].firstMatch.tap()
         wait(button("Filter…"))
         button("Filter…").tap()
         wait(app.navigationBars["Filter"])
@@ -72,7 +72,7 @@ final class PhoneTests: AppTestCase {
         wait(element("row-#8"))
 
         // Reset goes back to groups by status.
-        app.navigationBars.buttons["Options"].firstMatch.tap()
+        app.navigationBars.buttons["Filter"].firstMatch.tap()
         wait(button("Reset"))
         button("Reset").tap()
         wait(element("section-In progress"))
@@ -194,8 +194,8 @@ final class PhoneTests: AppTestCase {
         button("Done").tap()
         waitGone(app.navigationBars["Customize My Issues"])
 
-        // The list, from the "…" menu.
-        app.navigationBars.buttons["Options"].firstMatch.tap()
+        // The list, from the filter menu.
+        app.navigationBars.buttons["Filter"].firstMatch.tap()
         wait(button("Layout"))
         button("Layout").tap()
         wait(button("List"))
@@ -1349,6 +1349,35 @@ final class PhoneTests: AppTestCase {
         app.navigationBars.buttons["Options"].firstMatch.tap()
         button("List").tap()
         wait(element("row-#27"))
+    }
+
+    func testOnlyMyIssuesFromTheFilterMenu() {
+        launch()
+        openProjectTab("Git Issues")
+        showLayout("List")
+        scrollTo(element("row-#7"))
+        wait(element("row-#7"))
+
+        // The filter symbol in the bar: Only My Issues first, then the view's filter and its display.
+        app.navigationBars.buttons["Filter"].firstMatch.tap()
+        let only = button("Only My Issues")
+        wait(only)
+        wait(button("Filter…"))
+        wait(button("Display"))
+        snapshot("Filter menu")
+        only.tap()
+        // Mira's #7 goes, Jordan's #8 stays.
+        waitGone(element("row-#7"))
+        scrollTo(element("row-#8"))
+        wait(element("row-#8"))
+        snapshot("Only my issues")
+
+        // And back.
+        app.navigationBars.buttons["Filter"].firstMatch.tap()
+        wait(button("Only My Issues"))
+        button("Only My Issues").tap()
+        scrollTo(element("row-#7"))
+        wait(element("row-#7"))
     }
 
     func testProjectIconFromTheProjectMenu() {

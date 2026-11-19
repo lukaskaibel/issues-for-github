@@ -326,9 +326,9 @@ class AppTestCase: XCTestCase {
     }
 
     /// Shows the open view of a project as a board or a list ("Board", "List"), from the Display part of the
-    /// project's menu.
+    /// filter menu in the bar.
     func showLayout(_ name: String) {
-        app.navigationBars.buttons["Options"].firstMatch.tap()
+        app.navigationBars.buttons["Filter"].firstMatch.tap()
         let display = button("Display")
         wait(display)
         display.tap()
