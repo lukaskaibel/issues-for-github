@@ -580,6 +580,41 @@ final class BoardDrag {
         timer = nil
     }
 
+    // MARK: Sweeping
+
+    /// Each column's rows as it lays them out, all of them: a ⌘-drag sweeps cards scrolled out of sight too.
+    @ObservationIgnored private var columnRows: [String: ColumnFrames] = [:]
+    /// Where the pointer is while it sweeps over cards, on the board, for the columns and the board to scroll at their
+    /// edges.
+    @ObservationIgnored private(set) var sweepPoint: CGPoint?
+
+    func setColumnRows(_ frames: ColumnFrames, column: String) {
+        columnRows[column] = frames
+    }
+
+    func removeColumnRows(_ frames: ColumnFrames, column: String) {
+        if columnRows[column] === frames { columnRows[column] = nil }
+    }
+
+    /// The card a ⌘-press at the point starts a sweep on: one in sight in its column, not under the column's header.
+    func sweepStart(at point: CGPoint, model: AppModel) -> Item? {
+        guard !isDragging, header(at: point) == nil,
+              columnRows.values.contains(where: { $0.clip?.contains(point) == true }) else { return nil }
+        return card(at: point, in: model.columns.flatMap(\.items))
+    }
+
+    /// Every column's cards and where they are on the board, also those scrolled out of sight.
+    var sweepRows: [SweepRow] {
+        columnRows.values.flatMap(\.cardRows)
+    }
+
+    /// The pointer sweeping at `point`, sixty times a second: the column under it and the board scroll when it is at
+    /// their edge. Nil when the sweep is over.
+    func sweepAutoscroll(at point: CGPoint?) {
+        sweepPoint = point
+        if point != nil { tick &+= 1 }
+    }
+
     /// Points to scroll this frame when the pointer is held `distance` inside a 56 pt edge zone.
     static func scrollSpeed(insideEdgeBy distance: CGFloat) -> CGFloat {
         let zone: CGFloat = 56
@@ -632,6 +667,7 @@ final class ColumnFrames {
 
     func update(_ drag: BoardDrag, column: String) {
         guard let origin, let visible else { return }
+        drag.setColumnRows(self, column: column)
         var cards = Set<String>()
         var headers = Set<String>()
         for index in layout.plan.rows(in: visible) where layout.rows.indices.contains(index) {
@@ -656,8 +692,23 @@ final class ColumnFrames {
         self.headers = headers
     }
 
+    /// Every card of the column and where it is on the board, from where the column lays it out: also those scrolled
+    /// out of sight, which have no view.
+    var cardRows: [SweepRow] {
+        guard let origin else { return [] }
+        return layout.rows.indices.compactMap { index in
+            let row = layout.rows[index]
+            guard case .card(let id) = row.part, layout.plan.tops.indices.contains(index) else { return nil }
+            let frame = CGRect(
+                x: origin.x + row.indent, y: origin.y + layout.plan.tops[index], width: layout.width - row.indent, height: row.height
+            )
+            return SweepRow(id: id, frame: frame)
+        }
+    }
+
     /// Takes the column's cards and headers off the board, when the column goes away.
     func clear(_ drag: BoardDrag, column: String) {
+        drag.removeColumnRows(self, column: column)
         for id in cards { drag.removeCardFrame(for: id, owner: owner) }
         for epic in headers { drag.removeHeaderFrame(column: column, epic: epic, owner: owner) }
         cards = []

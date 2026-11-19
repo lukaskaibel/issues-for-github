@@ -529,6 +529,8 @@ public final class AppModel {
     /// page.
     var pickedSubIssueIds: Set<String> = []
     @ObservationIgnored var subIssuePickAnchor: String?
+    /// The ⌘-drag going on now, which picks the issues the pointer sweeps over (`SweepPick`).
+    @ObservationIgnored var activeSweep: SweepPick?
     /// iPhone and iPad: the issue whose sub-issues are being picked, after Select on its page. The Mac picks them on
     /// the open issue's page without such a mode.
     var subIssuePickParentId: String?
@@ -686,6 +688,7 @@ public final class AppModel {
         #if os(macOS)
         installKeyMonitor()
         installNavigationMonitors()
+        installSweepMonitor()
         #if DEBUG
         DebugRemote.startIfRequested(model: self)
         #endif

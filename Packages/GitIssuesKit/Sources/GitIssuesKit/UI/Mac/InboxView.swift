@@ -89,6 +89,9 @@ private struct InboxMoreButton: View {
 
 private struct InboxList: View {
     @Environment(AppModel.self) private var model
+    /// Where the notifications in sight are, for ⌘-dragging over them.
+    @State private var sweepRows = SweepRowFrames()
+    @State private var sweepArea = UUID()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -130,7 +133,7 @@ private struct InboxList: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(entries) { entry in
-                            InboxRow(entry: entry)
+                            InboxRow(entry: entry, sweepRows: sweepRows)
                                 .id(entry.id)
                                 .transition(.opacity.combined(with: .move(edge: .leading)))
                         }
@@ -143,6 +146,16 @@ private struct InboxList: View {
                 }
                 .scrollIndicators(.never)
                 .pageUnderToolbar()
+                // ⌘-dragging over notifications picks them, as in the lists of issues.
+                .onAppear {
+                    SweepAreas.shared.register(sweepArea, SweepAreas.Area(
+                        place: .inbox,
+                        start: { [model, sweepRows] point in model.openItem == nil ? sweepRows.row(at: point) : nil },
+                        rows: { [sweepRows] in sweepRows.rows },
+                        sideways: false
+                    ))
+                }
+                .onDisappear { [sweepArea] in SweepAreas.shared.remove(sweepArea) }
                 .onChange(of: model.focusScrollToken) {
                     guard let id = model.inboxSelectedId else { return }
                     withAnimation(Theme.quick) { proxy.scrollTo(id) }
@@ -228,6 +241,7 @@ private struct InboxActionsMenu: View {
 private struct InboxRow: View {
     @Environment(AppModel.self) private var model
     var entry: InboxEntry
+    var sweepRows: SweepRowFrames
     @State private var hovering = false
     @State private var menuRegion = UUID()
     @Environment(\.colorScheme) private var colorScheme
@@ -329,8 +343,12 @@ private struct InboxRow: View {
             ContextMenus.shared.register(menuRegion, frame: frame) { [model] _ in
                 model.inboxEntry(id: id).map { InboxMenuBuilder(model: model, entry: $0).menu() }
             }
+            sweepRows.set(frame, for: id, row: menuRegion)
         }
-        .onDisappear { ContextMenus.shared.remove(menuRegion) }
+        .onDisappear {
+            ContextMenus.shared.remove(menuRegion)
+            sweepRows.remove(row: menuRegion)
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(entry.spoken(summary, unread: unread))
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)

@@ -8,6 +8,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Hold ⌘ and drag over issues to pick them.** On the Mac, press on an issue with ⌘ held and drag: every issue between
+  where you pressed and the pointer is picked, and dragging back lets go of the ones it leaves. Started on a picked
+  issue, the drag lets them go instead. It works in every list, on the sub-issues of an issue's page, on boards (across
+  columns too), in My Issues' overview and in the Inbox. A list or a column scrolls while you hold the pointer at its
+  edge, and Esc puts the picks back as they were. A ⌘-click still picks a single issue. The first few times you pick
+  issues one at a time, a hint over the bar at the bottom tells you about it.
 - **Only My Issues, wherever you are.** The person button in the toolbar, or `⌘⇧M`, narrows every board, list,
   milestone and the roadmap to the issues assigned to you, alone or with others, and keeps it that way as you go from
   project to project and view to view, until you turn it off. The person is filled in the accent colour while it is on. An issue you
@@ -36,6 +42,8 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **The board scrolls sideways again on the Mac** when you hold a card at its left or right edge, or move the keyboard
+  to a column out of sight. With the sidebar shown it stayed where it was, or stopped short of the column.
 - **A card's lines line up.** The names of a type and a milestone stood about a point above the labels and dates
   beside them, the priority's bars a point below, and a parent's name above the number at the top. The priority was
   also closer to the next part than the other parts were to each other; now the room between all of them is the same.

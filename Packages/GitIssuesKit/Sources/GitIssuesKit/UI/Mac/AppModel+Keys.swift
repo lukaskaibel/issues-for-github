@@ -79,6 +79,8 @@ extension AppModel {
         let modifiers = event.modifierFlags.intersection([.command, .option, .control])
         let isEscape = event.keyCode == 53
 
+        // Escape during a ⌘-drag over issues: the picks go back to what they were before it.
+        if isEscape, SweepAreas.shared.cancel() { return true }
         if isDragging {
             if isEscape {
                 dragCancelToken += 1

@@ -80,8 +80,28 @@ struct BoardView: View {
                     guard let item = drag.card(at: local, in: model.columns.flatMap(\.items)) else { return nil }
                     return ItemMenuBuilder(model: model, item: item).menu()
                 }
+                // ⌘-dragging over cards picks them, across columns as a rectangle from where the press started.
+                SweepAreas.shared.register(menuRegion, SweepAreas.Area(
+                    place: .issues,
+                    start: { [model, drag] point in
+                        guard model.openItem == nil else { return nil }
+                        let origin = drag.boardFrameInWindow.origin
+                        return drag.sweepStart(at: CGPoint(x: point.x - origin.x, y: point.y - origin.y), model: model)?.id
+                    },
+                    rows: { [drag] in
+                        let origin = drag.boardFrameInWindow.origin
+                        return drag.sweepRows.map { SweepRow(id: $0.id, frame: $0.frame.offsetBy(dx: origin.x, dy: origin.y)) }
+                    },
+                    autoscroll: { [drag] point in
+                        let origin = drag.boardFrameInWindow.origin
+                        drag.sweepAutoscroll(at: point.map { CGPoint(x: $0.x - origin.x, y: $0.y - origin.y) })
+                    }
+                ))
             }
-            .onDisappear { [menuRegion] in ContextMenus.shared.remove(menuRegion) }
+            .onDisappear { [menuRegion] in
+                ContextMenus.shared.remove(menuRegion)
+                SweepAreas.shared.remove(menuRegion)
+            }
             // A click on the board beside the columns' cards, on a column's header or between columns, lets the picked
             // issues go. Clicks on cards and buttons are theirs: the innermost gesture wins.
             .contentShape(Rectangle())
@@ -158,32 +178,44 @@ struct BoardView: View {
         guard let column = model.columns.first(where: { $0.items.contains { $0.id == id } }),
               let frame = model.boardDrag.columnFrames[column.id] else { return }
         let margin: CGFloat = 16
-        var next = metrics.offset
+        // From the board's left edge in sight, as it scrolls (see `autoScroll(width:)`).
+        let current = model.boardDrag.scrollX
+        var next = current
         if frame.minX < margin {
             next += frame.minX - margin
         } else if frame.maxX > width - margin {
             next += frame.maxX - width + margin
         }
         next = min(max(next, 0), metrics.maxOffset)
-        guard next != metrics.offset else { return }
+        guard next != current else { return }
         withAnimation(Theme.quick) { scroll.scrollTo(x: next) }
     }
 
-    /// Scrolls the board sideways while a card is held near its left or right edge.
+    /// Scrolls the board sideways while a card is held near its left or right edge, or the pointer sweeps there.
     private func autoScroll(width: CGFloat) {
         let drag = model.boardDrag
-        guard let active = drag.active, !active.settling, metrics.maxOffset > 0 else { return }
-        let x = active.location.x
+        guard metrics.maxOffset > 0 else { return }
+        let x: CGFloat
+        if let active = drag.active {
+            guard !active.settling else { return }
+            x = active.location.x
+        } else if let point = drag.sweepPoint {
+            x = point.x
+        } else {
+            return
+        }
         var delta: CGFloat = 0
         if x < 56 {
             delta = -BoardDrag.scrollSpeed(insideEdgeBy: x)
         } else if x > width - 56 {
             delta = BoardDrag.scrollSpeed(insideEdgeBy: width - x)
         }
-        let next = min(max(metrics.offset + delta, 0), metrics.maxOffset)
-        guard next != metrics.offset else { return }
+        // In the coordinates the board scrolls to, which start at its left edge in sight: the board reaches under the
+        // sidebar, and its content offset counts from there, so it is as far left as it goes at minus the sidebar's width.
+        let next = min(max(drag.scrollX + delta, 0), metrics.maxOffset)
+        guard next != drag.scrollX else { return }
         scroll.scrollTo(x: next)
-        drag.retarget(model: model)
+        if drag.active != nil { drag.retarget(model: model) }
     }
 }
 
@@ -560,12 +592,19 @@ struct ColumnView: View {
         if let item { model.pointer(.entered, item.id) }
     }
 
-    /// Scrolls this column while a card is held near its top or bottom edge.
+    /// Scrolls this column while a card is held near its top or bottom edge, or the pointer sweeps there.
     private func autoScroll() {
-        guard let active = drag.active, !active.settling, drag.target?.columnId == column.id,
-              metrics.maxOffset > 0, let frame = drag.columnFrames[column.id] else { return }
+        guard metrics.maxOffset > 0, let frame = drag.columnFrames[column.id] else { return }
+        let y: CGFloat
+        if let active = drag.active {
+            guard !active.settling, drag.target?.columnId == column.id else { return }
+            y = active.location.y
+        } else if let point = drag.sweepPoint, frame.minX <= point.x, point.x < frame.maxX {
+            y = point.y
+        } else {
+            return
+        }
         let top = frame.minY + 40
-        let y = active.location.y
         var delta: CGFloat = 0
         if y < top + 56 {
             delta = -BoardDrag.scrollSpeed(insideEdgeBy: y - top)
@@ -575,7 +614,7 @@ struct ColumnView: View {
         let next = min(max(metrics.offset + delta, 0), metrics.maxOffset)
         guard next != metrics.offset else { return }
         scroll.scrollTo(y: next)
-        drag.retarget(model: model)
+        if drag.active != nil { drag.retarget(model: model) }
     }
 }
 

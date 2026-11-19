@@ -86899,6 +86899,66 @@
         }
       }
     },
+    "sweepHint" : {
+      "comment" : "Mac: small hint floating just above the bar at the bottom of a board or list, shown when someone selects a second issue one at a time (⌘-click, X or a row's checkbox): holding the Command key (⌘) and dragging the pointer over issues selects every issue it passes, in one go. Keep the ⌘ symbol as it is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Halte ⌘ gedrückt und zieh über Issues, um mehrere auf einmal auszuwählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold ⌘ and drag over issues to select several at once"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantén ⌘ y arrastra sobre las incidencias para seleccionar varias a la vez"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maintenez ⌘ et faites glisser sur des tickets pour en sélectionner plusieurs à la fois"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⌘を押したままIssueの上をドラッグすると、まとめて選択できます"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⌘를 누른 채 이슈 위로 드래그하면 여러 개를 한 번에 선택할 수 있습니다"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segure ⌘ e arraste sobre as issues para selecionar várias de uma vez"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удерживайте ⌘ и проведите по задачам, чтобы выбрать сразу несколько"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住 ⌘ 并在议题上拖动，即可一次选择多个"
+          }
+        }
+      }
+    },
     "switchProjectCommand" : {
       "comment" : "Mac, command palette (⌘K): command that opens the list of GitHub projects and repositories to switch to.",
       "extractionState" : "manual",

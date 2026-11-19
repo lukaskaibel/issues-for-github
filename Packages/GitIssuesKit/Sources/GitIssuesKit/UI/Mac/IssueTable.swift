@@ -1080,6 +1080,73 @@ struct IssueTable: NSViewRepresentable {
     }
 }
 
+// MARK: Sweeping
+
+extension IssueTable.Coordinator {
+    /// Which picks a ⌘-drag in this table changes: the list's, or on an issue's page the sub-issues picked there. Beside
+    /// the Inbox no issue is open, and nothing would act on sub-issues picked there.
+    private var sweepPlace: SweepPick.Place? {
+        guard isOnPage else { return .issues }
+        return model.openItem != nil ? .subIssues : nil
+    }
+
+    /// The issue on the row, if a sweep can pick it: any of the list's issues; on a page, its sub-issues, not the issues
+    /// it is blocked by or blocks, nor those known only from GitHub.
+    private func sweepableId(at row: Int) -> String? {
+        guard entries.indices.contains(row), case .row(let issue) = entries[row], issue.pickable else { return nil }
+        if isOnPage, pageRows?[issue.item.id] == nil { return nil }
+        return issue.item.id
+    }
+
+    /// The issues it can sweep and where their rows are in the window now, from its top left, also those scrolled out
+    /// of sight.
+    func sweepRows(in table: NSTableView) -> [SweepRow] {
+        let height = table.window?.contentView?.bounds.height ?? 0
+        return entries.indices.compactMap { row in
+            sweepableId(at: row).map { id in
+                let rect = table.convert(table.rect(ofRow: row), to: nil)
+                return SweepRow(id: id, frame: CGRect(x: rect.minX, y: height - rect.maxY, width: rect.width, height: rect.height))
+            }
+        }
+    }
+
+    /// What a ⌘-press at `location`, in the window, sweeps, if it lands on an issue that can be picked: the rows of this
+    /// table, or on an issue's page those of all its lists of sub-issues.
+    func sweepArea(pressedAt location: NSPoint, in table: HoverTableView) -> (area: SweepAreas.Area, id: String)? {
+        guard let place = sweepPlace, let id = sweepableId(at: table.row(at: table.convert(location, from: nil))) else { return nil }
+        let tables = Self.sweptTables(from: table)
+        let area = SweepAreas.Area(
+            place: place,
+            rows: { tables.flatMap { $0.coordinator?.sweepRows(in: $0) ?? [] } },
+            sideways: false,
+            autoscroll: { [weak table] point in
+                guard let point, let table, let height = table.window?.contentView?.bounds.height,
+                      let scroll = table.enclosingScrollView else { return }
+                SweepAreas.autoscroll(scroll, toward: NSPoint(x: point.x, y: height - point.y))
+            }
+        )
+        return (area, id)
+    }
+
+    /// The tables a sweep that starts in `table` goes over: on an issue's page every list of its sub-issues, as under an
+    /// epic's milestones, which follow one another down the page.
+    private static func sweptTables(from table: HoverTableView) -> [HoverTableView] {
+        guard table.coordinator?.isOnPage == true, let page = table.enclosingScrollView?.documentView else { return [table] }
+        var found: [HoverTableView] = []
+        func look(in view: NSView) {
+            for child in view.subviews {
+                if let other = child as? HoverTableView {
+                    if other.coordinator?.isOnPage == true { found.append(other) }
+                } else {
+                    look(in: child)
+                }
+            }
+        }
+        look(in: page)
+        return found.contains(table) ? found : [table]
+    }
+}
+
 extension IssueTable {
     /// Takes the table from one list of rows to the next, by their ids, and brings every row it holds a view for up to
     /// date: issues that come or go slide in or out, one that changes place slides there. The data source answers
@@ -1292,6 +1359,11 @@ final class HoverTableView: NSTableView {
                 return
             }
         }
+    }
+
+    /// What a ⌘-press at `location`, in the window, sweeps, if it lands on an issue (`SweepAreas`).
+    func sweepArea(pressedAt location: NSPoint) -> (area: SweepAreas.Area, id: String)? {
+        coordinator?.sweepArea(pressedAt: location, in: self)
     }
 
     /// The row under `point`, in the table's coordinates; none where something else lies over the list, as the comment
