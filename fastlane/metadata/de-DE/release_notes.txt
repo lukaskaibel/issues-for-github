@@ -1,18 +1,22 @@
-Das Board kommt aufs iPhone, deine Projekte stehen auf iPhone und iPad an erster Stelle, und das Board wird überall ruhiger.
+Widerrufen für alles, was du tust, GitHubs Issue-Typen an jedem Issue, und das Board kommt aufs iPhone.
 
-• Das Board auf dem iPhone: eine Spalte nach der anderen, darüber eine Leiste mit jeder Spalte und ihrer Anzahl. Wisch oder tippe auf die Leiste, um zu einer anderen Spalte zu wechseln; halte eine Karte gedrückt und lass sie auf einer Spalte in der Leiste los
-• Projekte zuerst: Auf dem iPhone gibt es keine Tableiste mehr, und die App öffnet sich dort, wo du aufgehört hast. ‹ führt zur Seite des Projekts mit „Alle Issues“, seinen Ansichten, den nächsten Meilensteinen und der Roadmap, und weiter zu all deinen Projekten unter dem Eingang und „Meine Issues“
-• Anheften: Wisch auf einer Ansicht, einem Meilenstein oder der Roadmap nach rechts, und sie steht neben dem Eingang und „Meine Issues“, mit der Zahl ihrer offenen Issues
+• Widerrufen und Wiederholen: ⌘Z nimmt deine letzte Änderung zurück und ⇧⌘Z stellt sie wieder her, auf dem Mac und auf dem iPad mit Tastatur: Status, Felder, Labels, übergeordnetes Issue, der Platz einer Karte auf dem Board, auch für mehrere ausgewählte Issues auf einmal
+• Issue-Typen: Bug, Feature, Task und die eigenen deiner Organisation erscheinen in ihrer Farbe auf Karten, in Zeilen und auf der Seite des Issues; klick auf den Typ oder drück T, um ihn zu ändern
+• Die Felder eines Issues aus jedem Projekt, zu dem es gehört, direkt in seinen Details, dazu „Zu Projekt hinzufügen“
+• Zieh ein Issue auf ein anderes, und es wird zu dessen Sub-Issue: auf Boards und in Listen auf dem Mac und auf Boards auf iPhone und iPad
+• Einen Status direkt dort erstellen, wo du ihn auswählst, und ihm ein Symbol und eine Farbe geben
+• Ein Issue per Klick oder mit ⇧C in eine Iteration verschieben; die aktuelle und die nächste sind markiert
+• Links auf andere Issues in einer Beschreibung oder einem Kommentar öffnen sie in der App
+• „Meine Issues“ als Übersicht, mit einer Karte für jedes Projekt, in dem du arbeitest
+• „Alle Issues“ statt Repositories: die Issues eines Projekts zusammen mit denen auf keinem Board, auch als Board
+• In Zeitleisten kannst du zoomen und einen Balken ziehen, um die Termine eines Issues zu verschieben
+• Auf dem Mac: „Suchen“ oben in der Seitenleiste, „Neues Issue“ in der Symbolleiste, und „Kurz ansehen“ öffnet sich in der Mitte des Fensters, auf einem Force Touch-Trackpad auch mit festerem Druck
+• Das Board auf dem iPhone: eine Spalte nach der anderen, darüber eine Leiste mit jeder Spalte und ihrer Anzahl; halte eine Karte gedrückt und lass sie auf einer Spalte in der Leiste los
+• Projekte zuerst: Auf dem iPhone gibt es keine Tableiste mehr, und die App öffnet sich dort, wo du aufgehört hast; angeheftet steht eine Ansicht, ein Meilenstein oder die Roadmap neben dem Eingang und „Meine Issues“
 • Auf dem iPad listet die Seitenleiste jedes Projekt, mit den Ansichten und Meilensteinen des geöffneten darunter
-• Ein ruhigeres Board: Karten auf Grau ohne Rahmen, Labels als Punkt mit Namen und Farbe nur noch für das, was dich braucht: ein fälliges Datum, ein dringendes Issue, einen Blocker
-• „Alle Issues“ statt Repositories: die Issues eines Projekts zusammen mit denen auf keinem Board, und wie viele davon offen sind
-• Sub-Issues von Sub-Issues klappen als Baum auf, nach Priorität sortiert oder in der Reihenfolge deiner Wahl
-• Ein blockiertes Issue sagt, wodurch es blockiert ist, etwa #364 an seiner Flagge
-• Mehrere Sub-Issues auswählen und auf einmal ändern: per ⌘-Klick und Umschalt-Klick auf Mac und iPad, mit „Auswählen“ auf iPhone und iPad
-• Auf dem Mac ziehst du mehrere ausgewählte Issues auf einmal, indem du eines davon ziehst
-• Die Auswahl bietet die übergeordneten Issues, Epics, Labels und Personen zuerst an, die du zuletzt gewählt hast
+• Ein ruhigeres Board: Karten auf Grau ohne Rahmen, Labels als Punkt mit Namen, Farbe nur noch für das, was dich braucht
+• Sub-Issues von Sub-Issues klappen als Baum auf, und ein blockiertes Issue sagt, wodurch es blockiert ist, etwa #364 an seiner Flagge
+• Mehrere Sub-Issues auswählen und auf einmal ändern; die Auswahl bietet zuerst an, was du zuletzt gewählt hast
 • Board-Spalten oder Projekte ausblenden, die du nicht brauchst, nur auf deinem Gerät
-• Markdown wie auf GitHub, schon während du schreibst, jetzt auch mit Hinweisen, Formeln, Fußnoten und Bildern. Die Zeichen erscheinen nur neben der Einfügemarke, und auf iPhone und iPad ist die Leiste über der Tastatur aus Glas, wie in Notizen
-• Tippst du **, beginnt Fett samt schließenden Sternchen, mit ## eine Überschrift; Tab und die Pfeiltasten führen vom Titel in die Beschreibung und zurück
-• Auf dem Mac folgen lange Boards und der Eingang dem Zeiger und scrollen flüssig
-• Behoben: „Meine Issues“ zeigt an, solange deine Projekte noch laden, Ziehen in der Mac-Liste funktioniert wieder, dazu viele kleinere Fehler
+• Markdown wie auf GitHub, schon während du schreibst, mit Hinweisen, Formeln, Fußnoten und Bildern; tippst du **, beginnt Fett, mit ## eine Überschrift
+• Behoben: Ein neues Issue findet immer ein Repository, auf GitHub umgefärbte Labels ändern sich auch in der App, dazu viele kleinere Fehler
