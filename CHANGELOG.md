@@ -24,7 +24,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
-- **A card's lines line up.** The names of a type and a milestone stood a point and a half above the labels and dates
+- **A card's lines line up.** The names of a type and a milestone stood about a point above the labels and dates
   beside them, the priority's bars a point below, and a parent's name above the number at the top. The priority was
   also closer to the next part than the other parts were to each other; now the room between all of them is the same.
 - **Rows on an issue's page no longer stay grey on the Mac.** Scrolling the page under a resting pointer left every

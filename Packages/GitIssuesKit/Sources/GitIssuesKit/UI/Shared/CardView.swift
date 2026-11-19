@@ -767,7 +767,7 @@ private struct CardPainter {
     }
 
     /// A text cut short to `width`, centred on `midY` as a text drawn at a point is: one drawn into a box starts at the
-    /// box's top, which put names a point and a half above the labels' and dates' beside them.
+    /// box's top, which put names about a point above the labels' and dates' beside them.
     private func draw(_ kept: CardPaintCache.Kept, x: CGFloat, midY: CGFloat, width: CGFloat) {
         // A little taller than the line, so that rounding never leaves it no room; it starts at the top all the same.
         context.draw(kept.text, in: CGRect(x: x, y: midY - kept.height / 2, width: width, height: kept.height + 2))
