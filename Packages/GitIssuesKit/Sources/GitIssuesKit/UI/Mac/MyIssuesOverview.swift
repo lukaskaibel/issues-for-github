@@ -143,7 +143,7 @@ private struct OverviewIssueInteractions: ViewModifier {
     /// Whether issues dragged onto this one would go under it if dropped now.
     @State private var targeted = false
     /// This row, as it tells where it is for sweeping.
-    @State private var sweepOwner = UUID()
+    @State private var sweepRow = UUID()
 
     func body(content: Content) -> some View {
         let selected = model.isSelected(item.id)
@@ -171,14 +171,14 @@ private struct OverviewIssueInteractions: ViewModifier {
                 guard let shown = proxy.bounds(of: .scrollView(axis: .horizontal)),
                       shown.contains(CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)) else { return nil }
                 return proxy.frame(in: .global)
-            } action: { [drag, sweepOwner, id = item.id] frame in
+            } action: { [drag, sweepRow, id = item.id] frame in
                 if let frame {
-                    drag.sweepRows.set(frame, for: id, owner: sweepOwner)
+                    drag.sweepRows.set(frame, for: id, row: sweepRow)
                 } else {
-                    drag.sweepRows.remove(id, owner: sweepOwner)
+                    drag.sweepRows.remove(row: sweepRow)
                 }
             }
-            .onDisappear { [drag, sweepOwner, id = item.id] in drag.sweepRows.remove(id, owner: sweepOwner) }
+            .onDisappear { [drag, sweepRow] in drag.sweepRows.remove(row: sweepRow) }
             .onDrop(of: [.plainText], delegate: IssueDrop(target: item, model: model, drag: drag, targeted: $targeted))
             .id(item.id)
             .onHover { inside in

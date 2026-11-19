@@ -32,6 +32,8 @@ struct SweepTracker {
         model.deepPress.begin(at: NSEvent.mouseLocation, counts: false)
         var sweeping = false
         var cancelled = false
+        // Where the pointer is: a pointer at rest sends no moves, so it is where the last one left it.
+        var pointer = down.locationInWindow
         defer {
             if sweeping {
                 NSEvent.stopPeriodicEvents()
@@ -43,6 +45,7 @@ struct SweepTracker {
             switch event.type {
             case .leftMouseDragged:
                 let point = event.locationInWindow
+                pointer = point
                 if !sweeping {
                     guard hypot(point.x - down.locationInWindow.x, point.y - down.locationInWindow.y) > Self.threshold else { continue }
                     sweeping = true
@@ -53,9 +56,8 @@ struct SweepTracker {
                 if !cancelled { model.sweep(over: swept(point)) }
             case .periodic:
                 guard sweeping, !cancelled else { continue }
-                let point = window.mouseLocationOutsideOfEventStream
-                autoscroll(point)
-                model.sweep(over: swept(point))
+                autoscroll(pointer)
+                model.sweep(over: swept(pointer))
             case .keyDown:
                 // Escape: what was picked before is picked again. The button still has to come up.
                 if event.keyCode == 53, sweeping, !cancelled {
@@ -155,6 +157,13 @@ final class SweepAreas {
         areas[id] = nil
     }
 
+    #if DEBUG
+    /// The issues of every area and where they are, for the debug remote.
+    var debugRows: [SweepRow] {
+        areas.values.flatMap { $0.rows() }
+    }
+    #endif
+
     /// Follows a ⌘-press on an issue of an area until the button is up. Returns whether it took the press.
     func follow(_ event: NSEvent, model: AppModel) -> Bool {
         if let replaying, event.type == .leftMouseDown, event.timestamp == replaying {
@@ -171,13 +180,20 @@ final class SweepAreas {
               !ContextMenus.shared.isUnderFloatingView(point),
               let (area, id) = areas.values.lazy.compactMap({ area in area.start(point).map { (area, $0) } }).first
         else { return false }
-        // Where on its issue the press started, which keeps the sweep's start there as the issues scroll.
-        let offset = area.rows().first { $0.id == id }.map { CGSize(width: point.x - $0.frame.minX, height: point.y - $0.frame.minY) }
+        // Where on its issue the press started, which keeps the sweep's start there as the issues scroll. An issue can
+        // show twice, as in Needs you and on its project's card: the row pressed is the one nearest to where it was.
+        func pressed(in rows: [SweepRow], near point: CGPoint) -> CGRect? {
+            rows.filter { $0.id == id }.map(\.frame).min { a, b in
+                hypot(a.midX - point.x, a.midY - point.y) < hypot(b.midX - point.x, b.midY - point.y)
+            }
+        }
+        let start = pressed(in: area.rows(), near: point)
+        let offset = start.map { CGSize(width: point.x - $0.minX, height: point.y - $0.minY) }
         var anchor = point
         let tracker = SweepTracker(
             swept: { location in
                 let rows = area.rows()
-                if let offset, let frame = rows.first(where: { $0.id == id })?.frame {
+                if let offset, let frame = pressed(in: rows, near: anchor) {
                     anchor = CGPoint(x: frame.minX + offset.width, y: frame.minY + offset.height)
                 }
                 return SweepPick.swept(rows, from: anchor, to: topLeft(location), sideways: area.sideways)
@@ -198,27 +214,27 @@ final class SweepAreas {
 }
 
 /// Where the rows of a SwiftUI list are in the window, as each reports it, for sweeping over them. Only rows that are
-/// built report: those on screen and a few around them.
+/// built report: those on screen and a few around them. An issue can show on two rows, as in Needs you and on its
+/// project's card, so each row reports for itself.
 @MainActor
 final class SweepRowFrames {
-    private var frames: [String: (frame: CGRect, owner: UUID)] = [:]
+    private var frames: [UUID: SweepRow] = [:]
 
-    /// `owner` is the view reporting, so that one going away takes only its own report along when another view shows the
-    /// same issue already.
-    func set(_ frame: CGRect, for id: String, owner: UUID) {
-        frames[id] = (frame, owner)
+    /// `row` is the view reporting.
+    func set(_ frame: CGRect, for id: String, row: UUID) {
+        frames[row] = SweepRow(id: id, frame: frame)
     }
 
-    func remove(_ id: String, owner: UUID) {
-        if frames[id]?.owner == owner { frames[id] = nil }
+    func remove(row: UUID) {
+        frames[row] = nil
     }
 
     func row(at point: CGPoint) -> String? {
-        frames.first { $0.value.frame.contains(point) }?.key
+        frames.values.first { $0.frame.contains(point) }?.id
     }
 
     var rows: [SweepRow] {
-        frames.map { SweepRow(id: $0.key, frame: $0.value.frame) }
+        Array(frames.values)
     }
 }
 

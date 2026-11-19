@@ -343,11 +343,11 @@ private struct InboxRow: View {
             ContextMenus.shared.register(menuRegion, frame: frame) { [model] _ in
                 model.inboxEntry(id: id).map { InboxMenuBuilder(model: model, entry: $0).menu() }
             }
-            sweepRows.set(frame, for: id, owner: menuRegion)
+            sweepRows.set(frame, for: id, row: menuRegion)
         }
         .onDisappear {
             ContextMenus.shared.remove(menuRegion)
-            sweepRows.remove(entry.id, owner: menuRegion)
+            sweepRows.remove(row: menuRegion)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(entry.spoken(summary, unread: unread))

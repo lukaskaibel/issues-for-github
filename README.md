@@ -72,8 +72,8 @@ an assignee or a label opens its picker right where you clicked, ready to type i
 The board is quiet: white cards on grey, without borders or lanes, an issue's type as a small square and its name,
 labels as a dot and a name, and colour only where something needs you, such as a date that's due, an urgent issue or a blocker. Drag a card and it lifts off the board,
 tilts with the motion and settles with a spring, while its neighbours make room. Press Esc mid-drag and it goes back
-to where it came from. Pick several cards with ⌘-click and drag one of them, and they all go, together. The move
-shows in the same frame and reaches GitHub in the background.
+to where it came from. Pick several cards with ⌘-click, or hold ⌘ and drag across them, then drag one of them, and they
+all go, together. The move shows in the same frame and reaches GitHub in the background.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/drag-dark.webp">
@@ -623,7 +623,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌥↑` `⌥↓` or `⌥K` `⌥J` | Move the issue up or down its column or list section |
 | `Return` | Open the issue; `Esc` goes back, to the parent if you came from it |
 | `Space` | Peek at the issue in a panel over the board or list; `J` `K` move the peek along. On a Force Touch trackpad, a deep press on the issue does the same |
-| `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all |
+| `X` | Pick the issue for a change to several at once; `⇧↑` `⇧↓` or `⇧J` `⇧K` pick a run, `⌘A` picks all. With the pointer, ⌘-click picks one and ⌘-drag every issue it passes over |
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
 | `⌘+` `⌘−` / `⌘0` | Zoom a timeline in or out / reset to Months or Quarters; pinch, zoom buttons and ⌘-scroll work too |
 | `⌃⌘I` | Show or hide the details of the open issue, in the inspector beside it |
@@ -655,7 +655,8 @@ In the Inbox:
 | `⇧S` | Unsubscribe: GitHub tells you about it again only if you're mentioned or comment |
 | `S` `P` `A` `L` `I` | Change the issue, as anywhere else |
 
-`X` or `⌘`-click picks a notification, `⇧J` `⇧K` or Shift-click a run of them, to read, snooze or archive together;
+`X` or `⌘`-click picks a notification, `⇧J` `⇧K`, Shift-click or a ⌘-drag over them a run of them, to read, snooze or
+archive together;
 `S` `P` `A` `L` `I` then change all of their issues, and `Esc` lets them go. Right-click one for everything at once.
 
 Click an issue's priority, status, type, labels, assignees, due date or sub-issue count to change it in place, or right-click
@@ -685,8 +686,8 @@ by **Priority** (the most urgent first, those without one after them), **Status*
 and the list a card's sub-issue count opens follows the same order. Right-click an issue for **Set Parent Issue…**, **Add
 Sub-issue** and **Mark As** (blocked by, blocking). These pickers find issues the same way; picking a checked one takes
 it away again. The issue's inspector has Parent, Blocked by and Blocking rows that open the same pickers, and the ✕ that
-shows when you point at a blocker in the issue takes it away. ⌘-click or Shift-click sub-issues in an issue to pick
-several; right-click one of them to move them all under another parent, into an epic or out of their parent, or to
+shows when you point at a blocker in the issue takes it away. ⌘-click or Shift-click sub-issues in an issue, or hold ⌘
+and drag over them, to pick several; right-click one of them to move them all under another parent, into an epic or out of their parent, or to
 change their status, priority, assignee or labels together. `Esc` lets them go.
 
 A project's next two milestones and its roadmap are listed under Milestones in the sidebar. In a milestone, click its date to change it, the text under the header to edit its name and description,
@@ -757,7 +758,10 @@ they are renamed, coloured and deleted on the board. Its **No project** column t
 onto a status to put it on the board. All Issues' list takes drags the same way.
 
 To change several issues at once, pick them with `X`, the checkbox at the start of a list row, ⌘-click or
-Shift-click. A bar at the bottom then sets status, priority, assignee, type, labels or the due date for all of them, and so
+Shift-click, or hold ⌘ and drag over them: every issue between where you pressed and the pointer is picked, and
+dragging back lets go of the ones it leaves. On a board the drag reaches across columns, and a list or column scrolls
+while you hold the pointer at its edge. Started on a picked issue, the drag lets them go instead, and `Esc` before you
+let go of the button puts the picks back as they were. A bar at the bottom then sets status, priority, assignee, type, labels or the due date for all of them, and so
 do the usual keys, dropdowns and right-click menu. Drag one of them and they all go: on the board and in the list they
 lift off together and land one after the other where you drop them. `Esc` or a click beside the issues clears the
 pick, and a plain click on an issue opens it and lets the picked ones go. Sub-issues hanging under
