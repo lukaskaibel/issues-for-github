@@ -5,97 +5,133 @@ import SwiftUI
 /// to all of them, and a way out.
 struct SelectionBar: View {
     @Environment(AppModel.self) private var model
+    /// Whether the hint about ⌘-dragging shows over the bar, for these picks.
+    @State private var showsSweepHint = false
 
     var body: some View {
         let items = model.selectedItems
-        if let first = items.first {
-            HStack(spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(.selectedCount(count: items.count)).font(.uiMedium).monospacedDigit()
-                    Button {
-                        model.clearSelection()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(Theme.textSecondary)
-                            .frame(width: 18, height: 18)
-                            .hoverFill(radius: 9)
-                    }
-                    .buttonStyle(PlainPressStyle())
-                    .help(Text(.clearSelectionWithEscShortcut))
-                }
-                .padding(.leading, 12)
-                .padding(.trailing, 6)
+        VStack(spacing: 8) {
+            if showsSweepHint, !items.isEmpty {
+                SweepHint()
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
+            if let first = items.first {
+                bar(items, first: first)
+            }
+        }
+        .animation(Theme.quick, value: showsSweepHint)
+        .onChange(of: model.selectedIds.count) { old, new in
+            if new == 0 || model.activeSweep != nil {
+                showsSweepHint = false
+            } else if old == 1, new == 2, SweepPick.Hint.offer() {
+                // A second issue picked on its own, by ⌘-click, X or its checkbox: a ⌘-drag picks them in one go.
+                showsSweepHint = true
+            }
+        }
+    }
 
-                Rectangle().fill(Theme.popoverBorder).frame(width: 1, height: 20)
-
-                // The icons show the picked issues' value when they share one.
-                let sameStatus = Set(items.map { model.statusOption(of: $0)?.name ?? "" }).count == 1
-                let samePriority = Set(items.map { model.priorityLevel(of: $0) }).count == 1
-                BarAction(kind: .status, item: first, title: .status, key: "S") {
-                    StatusIcon(glyph: sameStatus ? model.glyph(of: first) : .none, size: 13)
-                }
-                // Picks from several projects: the priority of those that have one, by its name.
-                if let ranked = items.first(where: { model.project(of: $0)?.priorityFieldId != nil }) {
-                    BarAction(kind: .priority, item: ranked, title: .priority, key: "P") {
-                        PriorityIcon(level: samePriority ? model.priorityLevel(of: first) : .none)
-                    }
-                }
-                if items.contains(where: { $0.kind != .draft }) {
-                    BarAction(kind: .assignees, item: first, title: .assignee, key: "A") {
-                        Image(systemName: "person.crop.circle").font(.system(size: 13))
-                    }
-                    BarAction(kind: .labels, item: first, title: .labels, key: "L") {
-                        Image(systemName: "tag").font(.system(size: 12))
-                    }
-                }
-                if let typed = items.first(where: model.canHaveIssueType) {
-                    let shared = Set(items.map(\.issueType)).count == 1 ? typed.issueType : nil
-                    BarAction(kind: .issueType, item: typed, title: .issueTypeTitle, key: "T") {
-                        IssueTypeSquare(color: typed.issueTypeColor, empty: shared == nil, size: 10)
-                    }
-                }
-                if items.contains(where: model.canHaveDueDate) {
-                    BarAction(kind: .dueDate, item: first, title: .dueDate, key: "D") {
-                        Image(systemName: "calendar").font(.system(size: 12))
-                    }
-                }
-                if items.contains(where: model.canHaveMilestone) {
-                    let sameMilestone = Set(items.map { model.milestoneTitle(of: $0) }).count == 1
-                    BarAction(kind: .milestone, item: first, title: .milestone, key: "⇧M") {
-                        MilestoneIcon(mark: sameMilestone ? model.milestoneMark(of: first) : .none, size: 13)
-                    }
-                }
-                // The board's iteration, named as the board names it; picks from another board keep theirs.
-                if let field = model.iterationFields(for: first).first {
-                    BarAction(kind: .iteration(fieldId: field.id), item: first, name: field.name, key: "⇧C") {
-                        IterationIcon(size: 13)
-                    }
-                }
+    private func bar(_ items: [Item], first: Item) -> some View {
+        HStack(spacing: 4) {
+            HStack(spacing: 6) {
+                Text(.selectedCount(count: items.count)).font(.uiMedium).monospacedDigit()
                 Button {
-                    model.copyLinks(items)
+                    model.clearSelection()
                 } label: {
-                    Image(systemName: "link")
-                        .font(.system(size: 13, weight: .medium))
-                        .frame(width: 34, height: 34)
-                        .hoverFill(radius: 17)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Theme.textSecondary)
+                        .frame(width: 18, height: 18)
+                        .hoverFill(radius: 9)
                 }
                 .buttonStyle(PlainPressStyle())
-                .help(Text(.copyLinksWithShortcut))
-                .padding(.trailing, 4)
+                .help(Text(.clearSelectionWithEscShortcut))
             }
-            .foregroundStyle(Theme.textBody)
-            .frame(height: 44)
-            .padding(.horizontal, 2)
-            // A Liquid Glass bar, as Photos shows what can be done to a selection.
-            .glassPanel(in: Capsule())
-            // It stands for the picked issues: a right-click on it opens their menu, as on one of their cards, never the
-            // menu of a card under it. An issue's page hides it.
-            .floatingContextMenu(isShown: model.openItem == nil) { [model] in
-                model.selectedItems.first.map { ItemMenuBuilder(model: model, item: $0).menu() }
+            .padding(.leading, 12)
+            .padding(.trailing, 6)
+
+            Rectangle().fill(Theme.popoverBorder).frame(width: 1, height: 20)
+
+            // The icons show the picked issues' value when they share one.
+            let sameStatus = Set(items.map { model.statusOption(of: $0)?.name ?? "" }).count == 1
+            let samePriority = Set(items.map { model.priorityLevel(of: $0) }).count == 1
+            BarAction(kind: .status, item: first, title: .status, key: "S") {
+                StatusIcon(glyph: sameStatus ? model.glyph(of: first) : .none, size: 13)
             }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            // Picks from several projects: the priority of those that have one, by its name.
+            if let ranked = items.first(where: { model.project(of: $0)?.priorityFieldId != nil }) {
+                BarAction(kind: .priority, item: ranked, title: .priority, key: "P") {
+                    PriorityIcon(level: samePriority ? model.priorityLevel(of: first) : .none)
+                }
+            }
+            if items.contains(where: { $0.kind != .draft }) {
+                BarAction(kind: .assignees, item: first, title: .assignee, key: "A") {
+                    Image(systemName: "person.crop.circle").font(.system(size: 13))
+                }
+                BarAction(kind: .labels, item: first, title: .labels, key: "L") {
+                    Image(systemName: "tag").font(.system(size: 12))
+                }
+            }
+            if let typed = items.first(where: model.canHaveIssueType) {
+                let shared = Set(items.map(\.issueType)).count == 1 ? typed.issueType : nil
+                BarAction(kind: .issueType, item: typed, title: .issueTypeTitle, key: "T") {
+                    IssueTypeSquare(color: typed.issueTypeColor, empty: shared == nil, size: 10)
+                }
+            }
+            if items.contains(where: model.canHaveDueDate) {
+                BarAction(kind: .dueDate, item: first, title: .dueDate, key: "D") {
+                    Image(systemName: "calendar").font(.system(size: 12))
+                }
+            }
+            if items.contains(where: model.canHaveMilestone) {
+                let sameMilestone = Set(items.map { model.milestoneTitle(of: $0) }).count == 1
+                BarAction(kind: .milestone, item: first, title: .milestone, key: "⇧M") {
+                    MilestoneIcon(mark: sameMilestone ? model.milestoneMark(of: first) : .none, size: 13)
+                }
+            }
+            // The board's iteration, named as the board names it; picks from another board keep theirs.
+            if let field = model.iterationFields(for: first).first {
+                BarAction(kind: .iteration(fieldId: field.id), item: first, name: field.name, key: "⇧C") {
+                    IterationIcon(size: 13)
+                }
+            }
+            Button {
+                model.copyLinks(items)
+            } label: {
+                Image(systemName: "link")
+                    .font(.system(size: 13, weight: .medium))
+                    .frame(width: 34, height: 34)
+                    .hoverFill(radius: 17)
+            }
+            .buttonStyle(PlainPressStyle())
+            .help(Text(.copyLinksWithShortcut))
+            .padding(.trailing, 4)
         }
+        .foregroundStyle(Theme.textBody)
+        .frame(height: 44)
+        .padding(.horizontal, 2)
+        // A Liquid Glass bar, as Photos shows what can be done to a selection.
+        .glassPanel(in: Capsule())
+        // It stands for the picked issues: a right-click on it opens their menu, as on one of their cards, never the
+        // menu of a card under it. An issue's page hides it.
+        .floatingContextMenu(isShown: model.openItem == nil) { [model] in
+            model.selectedItems.first.map { ItemMenuBuilder(model: model, item: $0).menu() }
+        }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+}
+
+/// Over the selection bar, the first few times issues are picked one at a time: holding ⌘ and dragging over them picks
+/// them in one go. It goes with the picks, and for good once a ⌘-drag has been made (`SweepPick.Hint`). Clicks go
+/// through it.
+private struct SweepHint: View {
+    var body: some View {
+        Text(.sweepHint)
+            .font(.small)
+            .foregroundStyle(Theme.textSecondary)
+            .padding(.horizontal, 14)
+            .frame(height: 28)
+            .glassPanel(in: Capsule())
+            .allowsHitTesting(false)
     }
 }
 

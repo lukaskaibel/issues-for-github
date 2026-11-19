@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 import Testing
 @testable import GitIssuesKit
 
@@ -54,6 +55,20 @@ struct SweepPickTests {
         #expect(lettingGo.picked(sweeping: ["r1", "r2", "r3"]) == ["r0", "r4"])
         // Going back, the ones it leaves are picked again, as they were.
         #expect(lettingGo.picked(sweeping: ["r1"]) == ["r0", "r2", "r4"])
+    }
+
+    @Test("The hint shows a few times to someone picking one by one, and never again after a sweep")
+    func hint() throws {
+        let name = "SweepPickTests.hint"
+        let defaults = try #require(UserDefaults(suiteName: name))
+        defaults.removePersistentDomain(forName: name)
+        defer { defaults.removePersistentDomain(forName: name) }
+        #expect((0..<5).map { _ in SweepPick.Hint.offer(in: defaults) } == [true, true, true, false, false])
+
+        defaults.removePersistentDomain(forName: name)
+        #expect(SweepPick.Hint.offer(in: defaults))
+        SweepPick.Hint.noteUsed(in: defaults)
+        #expect(!SweepPick.Hint.offer(in: defaults))
     }
 
     @Test("The model sweeps the list's picks, an issue page's sub-issues and the Inbox's notifications; Escape undoes it")

@@ -12,7 +12,8 @@ All notable changes to this project are recorded here. The format follows
   where you pressed and the pointer is picked, and dragging back lets go of the ones it leaves. Started on a picked
   issue, the drag lets them go instead. It works in every list, on the sub-issues of an issue's page, on boards (across
   columns too), in My Issues' overview and in the Inbox. A list or a column scrolls while you hold the pointer at its
-  edge, and Esc puts the picks back as they were. A ⌘-click still picks a single issue.
+  edge, and Esc puts the picks back as they were. A ⌘-click still picks a single issue. The first few times you pick
+  issues one at a time, a hint over the bar at the bottom tells you about it.
 - **Drag sub-issues on an issue's page.** Drop a sub-issue onto another issue listed on the page and it goes under that
   issue, on the Mac, iPhone and iPad: the issue lights up, a message says what happened, and **Undo** takes it back.
   Picked sub-issues go together. On the Mac this also works from an epic's milestones and from the issues it is blocked

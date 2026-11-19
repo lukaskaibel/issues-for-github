@@ -57,6 +57,30 @@ struct SweepPick: Equatable {
     }
 }
 
+extension SweepPick {
+    /// The hint over the Mac's selection bar that ⌘-dragging picks several issues in one go: it is offered when a second
+    /// issue is picked on its own, a few times, and never again once a sweep has been made.
+    enum Hint {
+        static let usedKey = "sweepHint.used"
+        static let shownKey = "sweepHint.shown"
+        /// How many times it shows to someone who never sweeps.
+        static let times = 3
+
+        /// Whether to show it now; counts it as shown when it does.
+        static func offer(in defaults: UserDefaults = .standard) -> Bool {
+            let shown = defaults.integer(forKey: shownKey)
+            guard !defaults.bool(forKey: usedKey), shown < times else { return false }
+            defaults.set(shown + 1, forKey: shownKey)
+            return true
+        }
+
+        /// A sweep was made: the hint has done its job.
+        static func noteUsed(in defaults: UserDefaults = .standard) {
+            if !defaults.bool(forKey: usedKey) { defaults.set(true, forKey: usedKey) }
+        }
+    }
+}
+
 /// An issue a sweep can pick, and where it is now.
 struct SweepRow: Equatable {
     var id: String
@@ -79,6 +103,7 @@ extension AppModel {
             sweep = SweepPick(place: place, anchor: id, picked: inboxPicked, counted: counted)
         }
         activeSweep = sweep
+        SweepPick.Hint.noteUsed()
         self.sweep(over: [id])
     }
 
