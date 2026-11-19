@@ -13,6 +13,11 @@ All notable changes to this project are recorded here. The format follows
   Picked sub-issues go together. On the Mac this also works from an epic's milestones and from the issues it is blocked
   by or blocks. An issue the app knows only from GitHub stays where it is.
 
+### Changed
+
+- **New Issue is a button of its own in the Mac toolbar.** It no longer shares one piece of glass with back and
+  forward, so it doesn't read as a third arrow.
+
 ### Fixed
 
 - **Rows on an issue's page no longer stay grey on the Mac.** Scrolling the page under a resting pointer left every
