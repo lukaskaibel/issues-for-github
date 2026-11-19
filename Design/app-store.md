@@ -37,7 +37,8 @@ fastlane can't do these; set them when the app is created.
   Apple's frameworks.
 - **Content rights:** the app shows the user's own content from GitHub, under GitHub's terms.
 - **Age rating:** none of the content questions apply. "User-generated content" is yes: issues and comments are written
-  by people and shared with their collaborators.
+  by people and shared with their collaborators. "Social media" is no: the app has no profiles, followers or public
+  feed, only the issues of the projects you work on.
 - **Sign-in for App Review:** "Explore with Sample Data" on the first screen opens everything without a GitHub
   account, on every platform. Guideline 4.8 doesn't apply: the app is a client for GitHub and has no accounts of its own.
 
