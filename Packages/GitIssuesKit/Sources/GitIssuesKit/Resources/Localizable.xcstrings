@@ -14131,6 +14131,126 @@
         }
       }
     },
+    "createdNotYours" : {
+      "comment" : "Title of a message after creating an issue for someone else while Only My Issues is on, so it doesn't show on the board. number: '#123'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für %@ bist du nicht zuständig"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%(number)@ isn't assigned to you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ no está asignada a ti"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ne vous est pas assigné"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@は自分に割り当てられていません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@은(는) 나에게 할당되지 않음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ não está atribuída a você"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ не назначена вам"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 未分配给你"
+          }
+        }
+      }
+    },
+    "createdNotYoursMessage" : {
+      "comment" : "Message under '#123 isn't assigned to you'. 'Only My Issues' is the name of the setting (the person button in the toolbar).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„Nur meine Issues“ ist an, darum steht es hier nicht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only My Issues is on, so it doesn't show here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Solo mis incidencias» está activado, así que no aparece aquí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« Uniquement mes tickets » est activé, il n’apparaît donc pas ici."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「自分のIssueのみ」がオンのため、ここには表示されません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‘내 이슈만’이 켜져 있어 여기에 표시되지 않습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Somente minhas issues” está ativado, por isso ela não aparece aqui."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Включено «Только мои задачи», поэтому её здесь нет."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“仅我的议题”已打开，因此它不会显示在这里。"
+          }
+        }
+      }
+    },
     "createdOnDateTooltip" : {
       "comment" : "Mac, issue list: second line of the tooltip of the date on a row: when the issue was created. %(date)@ is a date and time such as 'October 3, 2026 at 14:05'.",
       "extractionState" : "manual",
@@ -45961,6 +46081,126 @@
         }
       }
     },
+    "nothingOfYoursMessage" : {
+      "comment" : "Mac, iPhone, iPad: message under 'Nothing here is yours'. 'Only My Issues' is the name of the setting (the person button in the toolbar).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„Nur meine Issues“ ist an, und für keins der Issues hier bist du zuständig."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only My Issues is on, and none of the issues here are assigned to you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Solo mis incidencias» está activado y ninguna de las incidencias de aquí está asignada a ti."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« Uniquement mes tickets » est activé et aucun des tickets ici ne vous est assigné."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「自分のIssueのみ」がオンで、ここには自分に割り当てられたIssueがありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‘내 이슈만’이 켜져 있으며 여기에는 나에게 할당된 이슈가 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Somente minhas issues” está ativado e nenhuma das issues aqui está atribuída a você."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Включено «Только мои задачи», а среди задач здесь нет назначенных вам."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“仅我的议题”已打开，这里没有分配给你的议题。"
+          }
+        }
+      }
+    },
+    "nothingOfYoursTitle" : {
+      "comment" : "Mac, iPhone, iPad: title of an empty board, list or roadmap when Only My Issues is on and none of its issues are assigned to you.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier ist nichts von dir"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing here is yours"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aquí no hay nada tuyo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun ticket ici ne vous est assigné"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ここに自分のIssueはありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "여기에 내 이슈 없음"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nada aqui é seu"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Здесь нет ваших задач"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这里没有你的议题"
+          }
+        }
+      }
+    },
     "nothingToChooseFrom" : {
       "comment" : "iPhone and iPad, sheet that picks a property of an issue: shown when there are no choices, such as no people or labels in the repository yet.",
       "extractionState" : "manual",
@@ -48165,6 +48405,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "GitHub 上的版本"
+          }
+        }
+      }
+    },
+    "onlyMyIssues" : {
+      "comment" : "Mac View menu and iPad menu bar (a checkmark shows while it is on), the iPhone's … menu of a board or list, and the VoiceOver label of the person button in the toolbar: boards, lists, milestones and the roadmap show only the issues assigned to you, on every page, until it is turned off. Keep it short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur meine Issues"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only My Issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo mis incidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uniquement mes tickets"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自分のIssueのみ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 이슈만"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Somente minhas issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Только мои задачи"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅我的议题"
           }
         }
       }
@@ -81271,6 +81571,186 @@
         }
       }
     },
+    "showEveryonesIssues" : {
+      "comment" : "Mac, iPhone, iPad: button under 'Nothing here is yours' that turns Only My Issues off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues von allen zeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Everyone's Issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar las incidencias de todos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher les tickets de tout le monde"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全員のIssueを表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 사람의 이슈 표시"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar as issues de todos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показать задачи всех"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示所有人的议题"
+          }
+        }
+      }
+    },
+    "showEveryonesIssuesCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that turns Only My Issues off again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues von allen zeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show everyone's issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar las incidencias de todos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher les tickets de tout le monde"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全員のIssueを表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 사람의 이슈 표시"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar as issues de todos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показать задачи всех"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示所有人的议题"
+          }
+        }
+      }
+    },
+    "showEveryonesIssuesTooltip" : {
+      "comment" : "Mac and iPad: tooltip of the person button in the toolbar while it is on, so boards and lists show only your issues. ⇧⌘M is its shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues von allen zeigen (⇧⌘M)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show everyone's issues (⇧⌘M)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar las incidencias de todos (⇧⌘M)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher les tickets de tout le monde (⇧⌘M)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全員のIssueを表示（⇧⌘M）"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 사람의 이슈 표시(⇧⌘M)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar as issues de todos (⇧⌘M)"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показывать задачи всех (⇧⌘M)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示所有人的议题（⇧⌘M）"
+          }
+        }
+      }
+    },
     "showInSidebar" : {
       "comment" : "Mac and iPad sidebar: menu item of a project or repository the user hid (right-click on the Mac, long press on the iPad); puts it back in the sidebar's list.",
       "extractionState" : "manual",
@@ -81447,6 +81927,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示议题的属性（⌃⌘I）"
+          }
+        }
+      }
+    },
+    "showOnlyMyIssuesCommand" : {
+      "comment" : "Mac, command palette (⌘K): command that turns on Only My Issues, so boards, lists, milestones and the roadmap show only the issues assigned to you.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur meine Issues zeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show only my issues"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar solo mis incidencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher uniquement mes tickets"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自分のIssueのみ表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 이슈만 표시"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar somente minhas issues"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показать только мои задачи"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅显示我的议题"
+          }
+        }
+      }
+    },
+    "showOnlyMyIssuesTooltip" : {
+      "comment" : "Mac and iPad: tooltip of the person button in the toolbar while it is off. ⇧⌘M is its shortcut.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur Issues zeigen, für die du zuständig bist (⇧⌘M)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show only issues assigned to you (⇧⌘M)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar solo las incidencias asignadas a ti (⇧⌘M)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher uniquement les tickets qui vous sont assignés (⇧⌘M)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自分に割り当てられたIssueのみ表示（⇧⌘M）"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "나에게 할당된 이슈만 표시(⇧⌘M)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar somente as issues atribuídas a você (⇧⌘M)"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показывать только задачи, назначенные вам (⇧⌘M)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅显示分配给你的议题（⇧⌘M）"
           }
         }
       }

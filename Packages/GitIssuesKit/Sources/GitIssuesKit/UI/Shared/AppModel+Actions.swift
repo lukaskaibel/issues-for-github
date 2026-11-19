@@ -345,6 +345,7 @@ extension AppModel {
         guard item.kind != .draft, let contentId = item.contentId else { return }
         let assigned = item.assignees.contains { $0.id == person.id }
         if !assigned { noteRecent(.assignee, person.id) }
+        if assigned { keepIfLeavingMine(item, unassigning: person) }
         perform([.editAssignees(.init(contentId: contentId, add: assigned ? [] : [person], remove: assigned ? [person] : []))])
     }
 

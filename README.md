@@ -92,7 +92,8 @@ Issues go under another issue the same way, and so do cards on the iPhone and iP
 
 A sub-issue with the same status as its parent hangs right under it, indented, so a parent and the sub-issues you
 work on with it read as one instead of as separate cards in the same column. The arrow on the parent folds them in. A
-sub-issue whose parent has another status stays in its own column and says which issue it belongs to. When the last
+sub-issue whose parent has another status stays in its own column and says which issue it belongs to. A card whose
+sub-issues aren't under it stands on a small pile: one card for one sub-issue, two for two, three for more. When the last
 one is done, the parent moves to Done by itself. The issues of an epic in the same column stand together the same
 way, under the epic's name; drag the name to another column and they all go.
 
@@ -281,6 +282,12 @@ compared by what they mean, so "In Review" in one project and "Doing" in another
 list's rows leave out the project's name. GitHub has no view behind My Issues, so its filter and Display options stay on your
 device.
 
+To see only your own work on the boards too, click the person in the toolbar or press ⇧⌘M: every board, list,
+milestone and the roadmap then shows only the issues assigned to you, alone or with others, by the same rule as My
+Issues, wherever you go, until you click it again. The person is filled in the accent colour while it is on. An issue you take yourself
+off stays where it is until you leave the page, a new issue starts out assigned to you, and a page with nothing of
+yours says so. The views on GitHub stay as they are.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/my-issues-dark.webp">
   <img alt="My Issues' overview: five cards of one size, Needs you with the overdue crash, Git Issues and Website on their In Progress page, Jordan's blog on its Writing page and the two issues on no board, each card with the open column under its name and a status icon for every page beside it" src="Design/screenshots/my-issues-light.webp">
@@ -363,7 +370,8 @@ The interface uses the system's own parts.
   column of their own); My Issues shows its cards, one under another on iPhone and two or three to a row on iPad,
   each paging sideways through its project's columns, and Needs you. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
   and drag after holding to give an issue a new place in its section.
-  Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them.
+  Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them; a
+  card whose sub-issues aren't under it stands on a small pile of cards.
   A milestone is a list grouped by epic,
   the roadmap a list of epics by milestone. The open view's filter is a line over its list or board; tap it to change
   the filter, and Display in the project's "…" turns a view into a list or back. Touch and hold a view on the
@@ -391,7 +399,7 @@ The interface uses the system's own parts.
   drop (touch and hold, then drag), and one dropped onto the middle of another card becomes its sub-issue. A milestone opens as the board's columns or a list, the roadmap as the timeline,
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
-  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[, ⌘↵, ⌘Z and ⇧⌘Z, and in the Inbox U, E, H and ⇧S. S, P, A and L open
+  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[, ⌘↵, ⌘Z and ⇧⌘Z, ⇧⌘M, and in the Inbox U, E, H and ⇧S. S, P, A and L open
   their picker ready to type in; Return picks the first match. While writing, the Mac's Format shortcuts work too
   (⌘B, ⌘I, ⇧⌘H, ⇧⌘L and the others), listed while you hold ⌘, the Markdown shows next to the caret as on the Mac, and
   Tab and the arrow keys go between an issue's title and its description. With a pointer, ⌘-click and Shift-click pick several
@@ -408,6 +416,8 @@ The interface uses the system's own parts.
 - **Board and list** for every GitHub Project you can see, plus **My Issues**: everything assigned to you, as an
   overview of cards you arrange (a card per project that pages through its columns, and what needs you now), or as one
   list with its own filter, grouped by status, project, priority or due date.
+- **Only My Issues.** One button, or ⇧⌘M, narrows every board, list, milestone and the roadmap to the issues assigned
+  to you, wherever you go, and leaves the views on GitHub alone.
 - **All Issues** of a project: its board's issues and those of its repositories on no board, which one click puts on
   the board. As a list, or as a board with a column of its own for the issues on no board and its columns in your own
   order.
@@ -627,6 +637,7 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘[` `⌘]` | Back and forward (also mouse side buttons and two-finger swipe) |
 | `⌘+` `⌘−` / `⌘0` | Zoom a timeline in or out / reset to Months or Quarters; pinch, zoom buttons and ⌘-scroll work too |
 | `⌃⌘I` | Show or hide the details of the open issue, in the inspector beside it |
+| `⌘⇧M` | Only My Issues: every board, list, milestone and the roadmap shows only the issues assigned to you, until you press it again (also the person in the toolbar, and View › Only My Issues) |
 | `F` | Filter the view on screen, or My Issues: pick what to filter by, then the values |
 | `⇧V` | Display options of the view: board or list, columns, groups, order and the fields shown; of My Issues: the order, the list's groups, and the overview's pages |
 | `⌘S` | Save the view's changed filter to GitHub, for everyone |
@@ -672,8 +683,9 @@ names the issue that blocks it, `#5`, with `+1` for each further one, and lists 
 sub-issue in its parent. In the list, click a section header to fold it; Option-click folds them all.
 
 Sub-issues with the same status as their parent hang under it, indented; click the arrow beside the parent, or
-right-click it, to fold them in or out. A sub-issue whose parent has another status names its parent instead, and a
-click there changes the parent. When you finish the last open sub-issue, the parent moves to Done too; Settings ›
+right-click it, to fold them in or out. Folded in, or with another status, they show as cards under the parent's card,
+one for each up to three. A sub-issue whose parent has another status names its parent instead, and a click there
+changes the parent. When you finish the last open sub-issue, the parent moves to Done too; Settings ›
 Sub-issues turns that off.
 
 In an issue, a sub-issue that has sub-issues of its own shows how many of them are done; click the arrow beside its
@@ -816,6 +828,7 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Touch and hold a card, then drag (iPad) | Move it to another place or column |
 | Touch and hold a sub-issue on an issue's page, then drop it onto another one | Put it, with any others picked, under that one |
 | Touch and hold a card, then hold it a moment over the middle of another card | That card lights up: let go to make the dragged issue its sub-issue. It keeps its status, and the notice that says so undoes it. Over a card's top or bottom edge it goes above or below that card instead |
+| The person in the bar of a board, list, milestone or the roadmap (iPad), or **Only My Issues** in the "…" of a board, list or milestone (iPhone) | Show only the issues assigned to you there and everywhere else, until you turn it off; the filled person in the bar turns it off on iPhone too |
 | "…" in All Issues | Show it as a board or a list (on a wide iPad, the switch beside its name); on the board, the hidden columns, a tap away from coming back |
 | "…" over a column of All Issues' board | Move it left or right, or hide it, on that device |
 | Swipe sideways on a board, or tap a column in the strip over it (iPhone) | Turn to that column |

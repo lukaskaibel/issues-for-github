@@ -424,6 +424,9 @@ struct NewIssueSheet: View {
     // MARK: Data
 
     private var project: Project? { model.projects.first { $0.id == draft.projectId } }
+    /// Begun in My Issues, or on a board with "Only My Issues" on, it is yours, so that it shows up there. A sub-issue
+    /// is often someone else's, as on the Mac.
+    private var becomesMine: Bool { context.assignToMe || (model.onlyMine && context.parentItemId == nil) }
     private var statuses: [FieldOption] { model.statusOptions(projectId: draft.projectId) }
     private var priorities: [FieldOption] { model.priorityOptions(projectId: draft.projectId) }
     /// The board's repositories, also for an issue started on none in All Issues, or yours for a board with none.
@@ -471,7 +474,7 @@ struct NewIssueSheet: View {
         // "No status" (from that column's plus) is none.
         let chosen = context.statusId.map { $0 == BoardColumn.noStatusId ? nil : $0 }
         new.statusId = chosen ?? defaultStatus(projectId: projectId)
-        if context.assignToMe, let viewer = model.viewer { new.assignees = [viewer.person] }
+        if becomesMine, let viewer = model.viewer { new.assignees = [viewer.person] }
         // Begun in a milestone, from the roadmap, or under an issue that has a milestone.
         new.milestoneTitle = context.milestoneTitle ?? parent.flatMap { $0.isEpic ? nil : model.milestoneTitle(of: $0) }
         new.isEpic = context.isEpic
@@ -513,7 +516,7 @@ struct NewIssueSheet: View {
         draft.repoId = model.defaultRepoId(projectId: id)
         // People and labels belong to a repository, so choices made for another one no longer apply; begun in My
         // Issues, it stays yours, so that it shows up there.
-        draft.assignees = context.assignToMe ? model.viewer.map { [$0.person] } ?? [] : []
+        draft.assignees = becomesMine ? model.viewer.map { [$0.person] } ?? [] : []
         draft.labels = []
         settleRepository()
     }

@@ -163,6 +163,8 @@ private struct PaletteCommand: Identifiable {
     var title: String
     /// The title in English as well, so typing a command's English name finds it in any language.
     var englishTitle: String?
+    /// Other names it is found by, such as the setting a command turns off.
+    var alsoKnownAs: [String] = []
     var section: String
     var icon: AnyView
     var keys: [String] = []
@@ -175,6 +177,11 @@ extension PaletteCommand {
         var english = title
         english.locale = Locale(identifier: "en")
         self.init(id: id, title: String(localized: title), englishTitle: String(localized: english), section: section, icon: icon, keys: keys, run: run)
+    }
+
+    /// Every name it is found by: its title, in English too, and the others.
+    var names: [String] {
+        [title] + [englishTitle].compactMap { $0 } + alsoKnownAs
     }
 }
 
@@ -319,8 +326,8 @@ private struct RootPalette: View {
         guard !query.isEmpty else { return commands }
         let scoredCommands = commands
             .compactMap { command -> (PaletteCommand, Int)? in
-                // The shown title or the English one, whichever matches better.
-                let scores = [command.title, command.englishTitle].compactMap { $0.flatMap { fuzzyScore(query, $0) } }
+                // The shown title, the English one or another name, whichever matches best.
+                let scores = command.names.compactMap { fuzzyScore(query, $0) }
                 return scores.max().map { (command, $0) }
             }
             .sorted { $0.1 > $1.1 }
@@ -351,7 +358,7 @@ private struct RootPalette: View {
         let begins = { (text: String?) in
             text?.range(of: typed, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil
         }
-        let commandsFirst = scoredCommands.contains { begins($0.0.title) || begins($0.0.englishTitle) }
+        let commandsFirst = scoredCommands.contains { $0.0.names.contains(where: begins) }
             && !scoredIssues.contains { begins($0.0.title) || ($0.1 >= 900) }
         let issues = scoredIssues
             .map { item, _ in
@@ -367,8 +374,8 @@ private struct RootPalette: View {
             return command
         }
         guard commandsFirst else { return issues + named }
-        let beginning = named.filter { begins($0.title) || begins($0.englishTitle) }
-        return beginning + named.filter { !(begins($0.title) || begins($0.englishTitle)) } + issues
+        let beginning = named.filter { $0.names.contains(where: begins) }
+        return beginning + named.filter { !$0.names.contains(where: begins) } + issues
     }
 
     private var commands: [PaletteCommand] {
@@ -573,6 +580,22 @@ private struct RootPalette: View {
                 model.overlay = nil
                 model.displayMenuRequest += 1
             })
+        }
+        // From anywhere, as the toolbar's person button and ⇧⌘M.
+        if model.viewer != nil {
+            let on = model.onlyMine
+            var command = PaletteCommand(
+                id: "only-mine", title: on ? .showEveryonesIssuesCommand : .showOnlyMyIssuesCommand, section: go,
+                icon: symbol(on ? "person.2" : "person.crop.circle"), keys: ["⌘", "⇧", "M"]
+            ) {
+                model.overlay = nil
+                model.onlyMine.toggle()
+            }
+            // Found by the setting's name too, which "Show everyone's issues" doesn't say.
+            var english = LocalizedStringResource.onlyMyIssues
+            english.locale = Locale(identifier: "en")
+            command.alsoKnownAs = [String(localized: .onlyMyIssues), String(localized: english)]
+            list.append(command)
         }
         if model.scope == .myIssues, !model.mineFilter.isEmpty {
             list.append(PaletteCommand(id: "clear-filter", title: .clearFilter, section: go, icon: symbol("line.3.horizontal.decrease.circle")) {

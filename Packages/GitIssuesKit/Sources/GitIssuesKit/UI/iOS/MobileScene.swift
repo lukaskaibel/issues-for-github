@@ -215,7 +215,10 @@ struct MainTabs: View {
                 break
             }
         }
+        // Issues kept on a page by "Only My Issues" go once you go to another page or view, as on the Mac.
+        .onChange(of: navigation.issuesPage) { _, _ in model.forgetKeptMine() }
         .onChange(of: model.selectedViewIds) { _, _ in
+            model.forgetKeptMine()
             if case .view(let projectId, let id) = navigation.tab, let view = model.currentView(projectId: projectId), view.id != id {
                 navigation.tab = .view(projectId: projectId, viewId: view.id)
             }
@@ -697,6 +700,14 @@ struct MobileCommands: Commands {
             .disabled(navigation == nil || !model.signedIn || model.openProjects.isEmpty)
         }
         UndoCommands(model: model)
+        CommandGroup(before: .toolbar) {
+            // Boards and lists with only your issues, from anywhere, as the person button in the bar.
+            Toggle(isOn: Binding(get: { model.onlyMine }, set: { model.onlyMine = $0 })) {
+                Text(.onlyMyIssues)
+            }
+            .keyboardShortcut("m", modifiers: [.command, .shift])
+            .disabled(navigation == nil || !model.signedIn || model.viewer == nil)
+        }
         CommandMenu(Text(.goMenu)) {
             let unavailable = navigation == nil || !model.signedIn
             // The board is on wide windows only, and switches the project on screen.

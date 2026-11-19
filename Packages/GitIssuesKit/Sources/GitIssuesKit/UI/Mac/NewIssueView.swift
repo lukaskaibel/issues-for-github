@@ -432,8 +432,8 @@ struct NewIssueView: View {
         new.repoId = repoId
         new.statusId = statusId.map(chosenStatus) ?? defaultStatus(projectId: projectId)
         new.title = typed ?? ""
-        // Begun in My Issues, it is yours, so it shows up there, as on iPhone and iPad.
-        if model.scope == .myIssues, parent == nil, let viewer = model.viewer { new.assignees = [viewer.person] }
+        // Begun in My Issues, or with "Only My Issues" on, it is yours, so it shows up there, as on iPhone and iPad.
+        if model.scope == .myIssues || model.narrowsToMine, parent == nil, let viewer = model.viewer { new.assignees = [viewer.person] }
         new.milestoneTitle = milestone
         new.isEpic = plan.isEpic
         // Begun in a view: what its filter asks for, and its column's or group's value, as on GitHub.

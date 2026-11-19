@@ -32,9 +32,14 @@ struct CardPaintTests {
         )
     }()
 
-    private static func card(folded: Bool) -> CardModel {
+    private static func card(folded: Bool, subIssues: Int? = nil) -> CardModel {
         var card = card
         card.folded = folded
+        if let subIssues {
+            // Sub-issues in other columns only, which it stands on a card for each of.
+            card.item.subTotal = subIssues
+            card.nested = nil
+        }
         return card
     }
 
@@ -121,12 +126,13 @@ struct CardPaintTests {
     }
 
     /// Board cells in every arrangement a column has: on their own, hanging under a parent at each level (the last of
-    /// its parent's or not), deeper than the board indents, and with sub-issues folded into them; drawn by the card, and
-    /// as the views the card's painting replaced drew them.
+    /// its parent's or not), deeper than the board indents, with sub-issues folded into them, and standing on one, two
+    /// and three cards for sub-issues elsewhere; drawn by the card, and as the views the card's painting replaced drew
+    /// them.
     private func cells(dark: Bool, painted: Bool) -> Data {
-        struct Cell { var place = Nesting.Place(); var folded = false }
+        struct Cell { var place = Nesting.Place(); var folded = false; var subIssues: Int? }
         let cells = [
-            Cell(), Cell(folded: true),
+            Cell(), Cell(folded: true), Cell(subIssues: 1), Cell(subIssues: 2), Cell(subIssues: 9),
             Cell(place: Nesting.Place(depth: 1, continues: [true])), Cell(place: Nesting.Place(depth: 1, continues: [false])),
             Cell(place: Nesting.Place(depth: 2, continues: [true, true])), Cell(place: Nesting.Place(depth: 2, continues: [false, false])),
             Cell(place: Nesting.Place(depth: 5, continues: [true, false, true, false, false])),
@@ -138,16 +144,16 @@ struct CardPaintTests {
                 ForEach(cells.indices, id: \.self) { index in
                     let cell = cells[index]
                     let indent = CGFloat(min(cell.place.depth, CardTreeLines.deepest)) * CardTreeLines.indent
-                    let card = Self.card(folded: cell.folded)
+                    let card = Self.card(folded: cell.folded, subIssues: cell.subIssues)
                     Group {
                         if painted {
-                            CardView(card: card, width: 300 - indent, stackEdge: cell.folded, tree: cell.place.depth > 0 ? cell.place : nil)
-                                .padding(.bottom, cell.folded ? CardStackEdge.height : 0)
+                            CardView(card: card, width: 300 - indent, stack: card.stack, tree: cell.place.depth > 0 ? cell.place : nil)
+                                .padding(.bottom, CardStackEdge.height(card.stack))
                                 .padding(.leading, indent)
                         } else {
                             CardView(card: card, width: 300 - indent)
-                                .background(alignment: .top) { if cell.folded { CardStackEdge() } }
-                                .padding(.bottom, cell.folded ? CardStackEdge.height : 0)
+                                .background(alignment: .top) { if card.stack > 0 { CardStackEdge(layers: card.stack) } }
+                                .padding(.bottom, CardStackEdge.height(card.stack))
                                 .padding(.leading, indent)
                                 .background(alignment: .topLeading) {
                                     if cell.place.depth > 0 { CardTreeLines(place: cell.place, gap: CardTreeLines.boardGap) }
@@ -177,7 +183,23 @@ struct CardPaintTests {
         return data as Data
     }
 
-    @Test("A board card paints its slot, the card folded under it and the lines from its parent as the views they replaced")
+    @Test("A card stands on a card for each sub-issue up to three while they don't hang under it, each further back peeking out less")
+    func stackFollowsSubIssues() {
+        for (total, layers) in [(0, 0), (1, 1), (2, 2), (3, 3), (12, 3)] {
+            #expect(Self.card(folded: false, subIssues: total).stack == layers)
+        }
+        // Hanging under it in its column, its sub-issues are in sight; folded into it, it stands on them again.
+        #expect(Self.card(folded: false).stack == 0)
+        #expect(Self.card(folded: true).stack == 3)
+        let pile = CardStackEdge.placed(3)
+        #expect(pile.map(\.depth) == [1, 2, 3])
+        let peeks = zip(pile.map(\.below), [0] + pile.map(\.below)).map { $0 - $1 }
+        #expect(peeks == peeks.sorted(by: >) && Set(peeks).count == 3)
+        #expect(zip(pile, pile.dropFirst()).allSatisfy { $1.inset > $0.inset })
+        #expect(CardStackEdge.height(0) == 0 && CardStackEdge.height(1) < CardStackEdge.height(2) && CardStackEdge.height(2) < CardStackEdge.height(3))
+    }
+
+    @Test("A board card paints its slot, the cards it stands on and the lines from its parent as the views they replaced")
     func boardCellLooksAsBefore() {
         warmUp()
         for dark in [false, true] {

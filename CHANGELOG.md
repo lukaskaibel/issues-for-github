@@ -14,10 +14,26 @@ All notable changes to this project are recorded here. The format follows
   columns too), in My Issues' overview and in the Inbox. A list or a column scrolls while you hold the pointer at its
   edge, and Esc puts the picks back as they were. A ⌘-click still picks a single issue. The first few times you pick
   issues one at a time, a hint over the bar at the bottom tells you about it.
+- **Only My Issues, wherever you are.** The person button in the toolbar, or `⌘⇧M`, narrows every board, list,
+  milestone and the roadmap to the issues assigned to you, alone or with others, and keeps it that way as you go from
+  project to project and view to view, until you turn it off. The person is filled in the accent colour while it is on. An issue you
+  take yourself off stays on the page until you leave it, a new issue starts out assigned to you, and a page with
+  nothing of yours says so, with a button that shows everyone's issues again. It is in the View menu and the command
+  palette too, on iPad with `⌘⇧M` as well, and on iPhone in the "…" menu of a board or list. Views on GitHub stay as
+  they are, and the counts in the sidebar and a milestone's progress still count every issue.
 - **Drag sub-issues on an issue's page.** Drop a sub-issue onto another issue listed on the page and it goes under that
   issue, on the Mac, iPhone and iPad: the issue lights up, a message says what happened, and **Undo** takes it back.
   Picked sub-issues go together. On the Mac this also works from an epic's milestones and from the issues it is blocked
   by or blocks. An issue the app knows only from GitHub stays where it is.
+- **A card with sub-issues stands on a small pile of cards.** While its sub-issues aren't hanging under it, because
+  they are folded in or have another status, a card stands on one card for one sub-issue, two for two and three for
+  more, each further back a little narrower and peeking out less, on the Mac, iPhone and iPad boards. A card you drag
+  keeps its pile, and several picked cards stand on one for each of the others.
+
+### Changed
+
+- **More room inside a card.** Cards have 2 points less padding at the sides and the top, and 5 less at the bottom,
+  where they had more than anywhere else, so a title has more width before it wraps and a column shows more cards.
 
 ### Changed
 
@@ -28,6 +44,9 @@ All notable changes to this project are recorded here. The format follows
 
 - **The board scrolls sideways again on the Mac** when you hold a card at its left or right edge, or move the keyboard
   to a column out of sight. With the sidebar shown it stayed where it was, or stopped short of the column.
+- **A card's lines line up.** The names of a type and a milestone stood about a point above the labels and dates
+  beside them, the priority's bars a point below, and a parent's name above the number at the top. The priority was
+  also closer to the next part than the other parts were to each other; now the room between all of them is the same.
 - **Rows on an issue's page no longer stay grey on the Mac.** Scrolling the page under a resting pointer left every
   row that passed beneath it lit up until the pointer went over it again. These rows now are the list's own, so only
   the row under the pointer lights up, and none under the comment field or the toolbar.

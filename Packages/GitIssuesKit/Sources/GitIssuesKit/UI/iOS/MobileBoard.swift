@@ -390,18 +390,19 @@ struct MobileColumn: View {
                 return CardDragMark.provider(id: lifted.token, text: group.epic.url ?? group.epic.title)
             } preview: {
                 EpicGroupCard(group: group, width: inner)
-                    .padding(.bottom, CardStackEdge.height)
+                    .padding(.bottom, CardStackEdge.height(CardStackEdge.layers(group.count)))
             }
     }
 
     /// A card in its place: a sub-issue hangs in under its parent, with a line from the parent, and a card with
-    /// sub-issues folded into it shows the edge of a second card under it. The arrow at its top left folds them.
+    /// sub-issues that don't hang under it stands on a card for each, up to three. The arrow at its top left folds them.
     private func nestedCard(_ item: Item, space: String) -> some View {
         let place = column.nesting.place(of: item.id)
         let indent = CGFloat(min(place.depth, CardTreeLines.deepest)) * CardTreeLines.indent
         let folded = column.nesting.folded.contains(item.id)
+        let stack = column.nesting.stack(of: item)
         return card(item, space: space, width: inner - indent)
-            .background(alignment: .top) { if folded { CardStackEdge() } }
+            .background(alignment: .top) { if stack > 0 { CardStackEdge(layers: stack) } }
             .overlay(alignment: .topLeading) {
                 if let count = column.nesting.nestedCounts[item.id] {
                     Button {
@@ -415,7 +416,7 @@ struct MobileColumn: View {
                     .accessibilityIdentifier("fold-\(item.displayNumber)")
                 }
             }
-            .padding(.bottom, folded ? CardStackEdge.height : 0)
+            .padding(.bottom, CardStackEdge.height(stack))
             .padding(.leading, indent)
             .background(alignment: .topLeading) {
                 if place.depth > 0 { CardTreeLines(place: place, gap: 8) }
