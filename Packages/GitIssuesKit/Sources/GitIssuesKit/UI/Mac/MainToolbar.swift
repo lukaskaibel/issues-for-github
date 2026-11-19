@@ -1,10 +1,10 @@
 #if os(macOS)
 import SwiftUI
 
-/// The window's toolbar: back and forward, New Issue, and the page's own buttons in glass. It names no page: the
-/// sidebar says where you are. What it holds follows the page: a board or a list, an open issue, the Inbox. It has the
-/// same items on every page and only their contents change, so moving around adds or removes no item, which the
-/// toolbar would animate each time.
+/// The window's toolbar: back and forward, New Issue beside them, and the page's own buttons in glass. It names no
+/// page: the sidebar says where you are. What it holds follows the page: a board or a list, an open issue, the Inbox.
+/// It has the same items on every page and only their contents change, so moving around adds or removes no item, which
+/// the toolbar would animate each time.
 struct MainToolbar: ToolbarContent {
     let model: AppModel
     let openItem: Item?
@@ -12,15 +12,24 @@ struct MainToolbar: ToolbarContent {
 
     var body: some ToolbarContent {
         BackForwardButtons(model: model)
+        // New Issue right after back and forward, but in glass of its own: it does something, they go somewhere.
+        // AppKit draws all navigation items as one piece of glass, and a spacer can't go between them (it isn't one),
+        // so this item leaves the shared glass and brings its own, as far from theirs as two groups stand apart (8 pt:
+        // the toolbar leaves 12 around an item without shared glass, hence -4).
         ToolbarItem(placement: .navigation) {
             Button {
                 model.overlay = .newIssue(statusId: nil, parentItemId: nil)
             } label: {
                 Label(String(localized: .newIssueAction), systemImage: "square.and.pencil")
+                    .frame(width: 36, height: 36)
+                    .contentShape(Circle())
             }
             .help(Text(.newIssueShortcutTooltip))
             .disabled(model.projects.isEmpty)
+            .glassEffect(.regular.interactive(), in: .circle)
+            .padding(.leading, -4)
         }
+        .sharedBackgroundVisibility(.hidden)
         ToolbarItem(placement: .principal) {
             PrincipalControl(openItem: openItem)
         }
