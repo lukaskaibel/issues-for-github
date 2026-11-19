@@ -1,18 +1,22 @@
-The board comes to iPhone, your projects come first on iPhone and iPad, and the board is quieter everywhere.
+Undo for what you do, GitHub's issue types on every issue, and the board comes to iPhone.
 
-• The board on iPhone: one column at a time, with every column and its count in a strip over it. Swipe or tap the strip to turn to another column; touch and hold a card and drop it on a column in the strip
-• Projects first: on iPhone the tab bar is gone, and the app opens where you left off. ‹ leads to the project's page, with All Issues, its views, its next milestones and the roadmap, and on to all your projects under the Inbox and My Issues
-• Pins: swipe right on a view, a milestone or the roadmap, and it stands next to the Inbox and My Issues with how many of its issues are open
+• Undo and redo: ⌘Z takes back your last change and ⇧⌘Z brings it back, on the Mac and on iPad with a keyboard: status, fields, labels, parent, a card's place on the board, also for several picked issues at once
+• Issue types: Bug, Feature, Task and your organisation's own show in their colour on cards, rows and the issue's page; click one or press T to change it
+• An issue's fields from every project it is on, right in its details, and Add to project
+• Drop an issue onto another one to make it a sub-issue: on boards and lists on the Mac, and on boards on iPhone and iPad
+• Make a status right where you pick one, and give it an icon and a colour
+• Put an issue into an iteration with a click or ⇧C, with the current and the next one marked
+• Links to other issues in a description or a comment open them in the app
+• My Issues as an overview, with a card for each project you work in
+• All Issues in place of Repositories: a project's issues together with those on no board, also as a board
+• Timelines zoom, and you drag a bar to move an issue's dates
+• On the Mac, Search at the top of the sidebar, New Issue in the toolbar, and the peek in the middle of the window; on a Force Touch trackpad, press deeper to open it
+• The board on iPhone: one column at a time, with every column and its count in a strip over it; touch and hold a card and drop it on a column in the strip
+• Projects first: on iPhone the tab bar is gone and the app opens where you left off; pins put a view, a milestone or the roadmap next to the Inbox and My Issues
 • On iPad, the sidebar lists every project, with the open one's views and milestones under it
-• A quieter board: cards on grey without borders, labels as a dot and a name, and colour left for what needs you: a due date, an urgent issue, a blocker
-• All Issues in place of Repositories: a project's issues together with those on no board, and how many of those are open
-• Sub-issues of sub-issues unfold as a tree, listed by priority or in the order you pick
-• A blocked issue names what blocks it, as #364 on its flag
-• Pick several sub-issues and change them at once: ⌘-click and Shift-click on the Mac and iPad, Select on iPhone and iPad
-• On the Mac, dragging one of several picked issues moves all of them
-• Pickers offer the parents, epics, labels and people you chose last
+• A quieter board: cards on grey without borders, labels as a dot and a name, and colour left for what needs you
+• Sub-issues of sub-issues unfold as a tree, and a blocked issue names what blocks it, as #364 on its flag
+• Pick several sub-issues and change them at once; pickers offer what you chose last
 • Hide board columns or projects you don't need, on your device only
-• Markdown drawn as on GitHub while you write it, now with alerts, formulas, footnotes and pictures. Its marks show only next to the caret, and on iPhone and iPad the bar above the keyboard is glass, as in Notes
-• Typing ** starts bold with its closing stars, and ## a heading; Tab and the arrow keys go from the title into the description and back
-• On the Mac, long boards and the Inbox follow the pointer and scroll smoothly
-• Fixed: My Issues says while your projects are still loading, dragging in the Mac's list works again, and many smaller things
+• Markdown drawn as on GitHub while you write it, with alerts, formulas, footnotes and pictures; typing ** starts bold and ## a heading
+• Fixed: a new issue always finds a repository, labels recoloured on GitHub change in the app, and many smaller things

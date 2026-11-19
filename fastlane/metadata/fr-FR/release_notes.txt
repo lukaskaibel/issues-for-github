@@ -1,18 +1,22 @@
-Le tableau arrive sur iPhone, vos projets passent au premier plan sur iPhone et iPad, et le tableau devient plus sobre partout.
+Vous pouvez annuler ce que vous faites, chaque ticket affiche son type GitHub, et le tableau arrive sur iPhone.
 
-• Le tableau sur iPhone : une colonne à la fois, avec chaque colonne et son nombre de cartes dans un bandeau au-dessus. Balayez ou touchez le bandeau pour passer à une autre colonne ; maintenez le doigt sur une carte et déposez-la sur une colonne du bandeau
-• Les projets d’abord : sur iPhone, la barre d’onglets disparaît et l’app s’ouvre là où vous l’aviez laissée. ‹ mène à la page du projet, avec Tous les tickets, ses vues, ses prochains jalons et la feuille de route, puis à tous vos projets, sous Réception et Mes tickets
-• Épinglage : balayez vers la droite une vue, un jalon ou la feuille de route pour l’épingler à côté de Réception et de Mes tickets, avec le nombre de ses tickets ouverts
+• Annuler et Rétablir : ⌘Z annule votre dernière modification et ⇧⌘Z la rétablit, sur Mac et sur iPad avec un clavier : statut, champs, étiquettes, parent, place d’une carte sur le tableau, aussi pour plusieurs tickets sélectionnés à la fois
+• Types de ticket : Bug, Feature, Task et ceux de votre organisation s’affichent dans leur couleur sur les cartes, les lignes et la page du ticket ; cliquez sur un type ou appuyez sur T pour le changer
+• Les champs d’un ticket dans chacun de ses projets, directement dans ses détails, et « Ajouter à un projet »
+• Déposez un ticket sur un autre pour en faire un sous-ticket : dans les tableaux et les listes sur Mac, et dans les tableaux sur iPhone et iPad
+• Créez un statut là où vous en choisissez un, et donnez-lui une icône et une couleur
+• Placez un ticket dans une itération d’un clic ou avec ⇧C ; l’itération actuelle et la suivante sont signalées
+• Les liens vers d’autres tickets dans une description ou un commentaire les ouvrent dans l’app
+• Mes tickets en vue d’ensemble, avec une carte pour chaque projet sur lequel vous travaillez
+• Tous les tickets à la place de Dépôts : les tickets d’un projet réunis avec ceux qui ne sont sur aucun tableau, et désormais aussi en tableau
+• Zoomez dans les chronologies et faites glisser une barre pour déplacer les dates d’un ticket
+• Sur Mac, « Rechercher » en haut de la barre latérale, « Nouveau ticket » dans la barre d’outils, et le coup d’œil au centre de la fenêtre ; sur un trackpad Force Touch, appuyez plus fort pour l’ouvrir
+• Le tableau sur iPhone : une colonne à la fois, avec chaque colonne et son nombre de cartes dans un bandeau au-dessus ; maintenez le doigt sur une carte et déposez-la sur une colonne du bandeau
+• Les projets d’abord : sur iPhone, la barre d’onglets disparaît et l’app s’ouvre là où vous l’aviez laissée ; épinglez une vue, un jalon ou la feuille de route à côté de Réception et de Mes tickets
 • Sur iPad, la barre latérale affiche tous les projets, et sous le projet ouvert, ses vues et ses jalons
-• Un tableau plus sobre : des cartes sans bordure sur fond gris, des étiquettes réduites à un point et à leur nom, et la couleur réservée à ce qui demande votre attention : une échéance, un ticket urgent, un blocage
-• Tous les tickets à la place de Dépôts : les tickets d’un projet réunis avec ceux qui ne sont sur aucun tableau, et le nombre de ces derniers qui sont ouverts
-• Les sous-tickets des sous-tickets se déplient en arborescence, triés par priorité ou dans l’ordre de votre choix
-• Un ticket bloqué indique ce qui le bloque, par exemple #364, sur son drapeau
-• Sélectionnez plusieurs sous-tickets et modifiez-les en bloc : ⌘-clic et Maj-clic sur Mac et iPad, « Sélectionner » sur iPhone et iPad
-• Sur Mac, faites glisser l’un des tickets sélectionnés pour les déplacer tous
-• Les sélecteurs proposent les tickets parents, epics, étiquettes et personnes que vous avez choisis en dernier
+• Un tableau plus sobre : des cartes sans bordure sur fond gris, des étiquettes réduites à un point et à leur nom, et la couleur réservée à ce qui demande votre attention
+• Les sous-tickets des sous-tickets se déplient en arborescence, et un ticket bloqué indique ce qui le bloque, par exemple #364, sur son drapeau
+• Sélectionnez plusieurs sous-tickets et modifiez-les en bloc ; les sélecteurs proposent ce que vous avez choisi en dernier
 • Masquez les colonnes du tableau ou les projets dont vous n’avez pas besoin, sur votre appareil uniquement
-• Le Markdown s’affiche comme sur GitHub pendant que vous l’écrivez, désormais avec les alertes, les formules, les notes de bas de page et les images. Ses symboles n’apparaissent qu’à côté du point d’insertion, et sur iPhone et iPad, la barre au-dessus du clavier est en verre, comme dans Notes
-• Taper ** passe en gras et ajoute les astérisques de fermeture, et ## crée un en-tête ; Tab et les touches fléchées mènent du titre à la description et inversement
-• Sur Mac, les longs tableaux et la Réception suivent le pointeur et défilent avec fluidité
-• Corrigé : Mes tickets indique quand vos projets sont encore en cours de chargement, le glisser-déposer dans la liste fonctionne de nouveau sur Mac, et bien d’autres petites corrections
+• Le Markdown s’affiche comme sur GitHub pendant que vous l’écrivez, avec les alertes, les formules, les notes de bas de page et les images ; taper ** passe en gras et ## crée un en-tête
+• Corrigé : un nouveau ticket trouve toujours un dépôt, les étiquettes recolorées sur GitHub le sont aussi dans l’app, et bien d’autres petites corrections

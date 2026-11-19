@@ -1,7 +1,7 @@
 Issues ist eine schnelle, native App für GitHub Issues und GitHub Projects auf Mac, iPhone und iPad. Gebaut wie Mail und Notizen, schnell per Tastatur bedient, und alles bleibt in GitHub: Wer im Team die App nicht nutzt, sieht dieselben Issues und Boards auf github.com.
 
 PLANEN
-• Meilensteine: die nächsten eines Boards in der Seitenleiste, jeweils mit ihren Issues, dem Fortschritt und dem Fälligkeitstag
+• Meilensteine: die nächsten eines Boards in der Seitenleiste, mit ihren Issues, dem Fortschritt und dem Fälligkeitstag
 • Epics: Issues, deren Arbeit in ihren Sub-Issues steckt. Auf dem Board stehen die Issues eines Epics unter seinem Namen beisammen; ziehst du den Namen, ziehen alle mit
 • Eine Roadmap: deine Epics als Balken über den Meilensteinen, nach Monaten oder Quartalen. Zieh einen Balken auf einen anderen Meilenstein, und das Epic kommt samt seinen Issues dorthin
 • Die Ansichten deines Projekts von GitHub, etwa „Diese Woche“ oder offene Bugs, als Board oder Liste, mit Filtern, die du mit einem Klick änderst
@@ -16,8 +16,8 @@ AUF DEM MAC
 • Jedes Projekt als Board oder Liste, „Meine Issues“ mit allem, was dir zugewiesen ist, und jedes Issue deiner Repositories, auch die auf keinem Board
 • Issues verschieben und Spalten gestalten: hinzufügen, umbenennen, umfärben, neu anordnen
 • Per Tastatur: J und K wechseln das Issue, S, P, A und L ändern Status, Priorität, Zuständige und Labels, D setzt das Fälligkeitsdatum, und ⌘K öffnet eine Befehlspalette für alles andere
-• Mehrere Issues gemeinsam ändern oder eines mit der Leertaste kurz ansehen
-• Sub-Issues und Blocker: Issues anderen unterordnen und festhalten, was was blockiert
+• Mehrere Issues gemeinsam ändern, eines mit der Leertaste ansehen, mit ⌘Z alles widerrufen
+• Issue-Typen, Sub-Issues und Blocker: Issues per Ziehen unterordnen, festhalten, was was blockiert
 • Beschreibungen wie auf GitHub, mit Tabellen, abhakbaren Checklisten und Mermaid-Diagrammen
 
 AUF IPHONE UND IPAD
@@ -35,13 +35,13 @@ FÄLLIGKEITSDATEN, DIE DICH ERINNERN
 SCHNELL UND ZUVERLÄSSIG
 • Jede Änderung ist sofort da und geht im Hintergrund an GitHub
 • Funktioniert offline: Änderungen warten und werden gesendet, sobald du wieder online bist
-• Sorgsam mit der Arbeit anderer: Hat jemand anderes denselben Text geändert, wird nichts überschrieben
+• Sorgsam mit der Arbeit anderer: Hat jemand denselben Text geändert, wird nichts überschrieben
 
 PRIVAT
 • Kein Account, kein Server, kein Tracking. Deine Anmeldedaten bleiben in deinem Schlüsselbund und werden nur an GitHub gesendet.
 • Auf einem deiner Geräte angemeldet? Die anderen melden sich über den iCloud-Schlüsselbund von selbst an.
 
-Auf Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Russisch, Japanisch, Koreanisch und Chinesisch, passend zur Sprache deines Geräts.
+Auf Englisch, Deutsch, Französisch, Spanisch, Portugiesisch, Russisch, Japanisch, Koreanisch und Chinesisch, je nach Sprache deines Geräts.
 
 Ohne Account ausprobieren: „Mit Beispieldaten ausprobieren“ öffnet zwei Beispielprojekte.
 

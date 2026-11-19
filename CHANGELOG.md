@@ -6,6 +6,8 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-19
+
 ### Added
 
 - **An issue's type, wherever the issue is.** GitHub's issue types, such as Bug, Feature and Task, show as a small square
@@ -108,6 +110,77 @@ All notable changes to this project are recorded here. The format follows
   bars drawn from iterations or milestone dates keep their existing meaning. VoiceOver offers actions to move or
   resize by one day. Changes join the offline sync queue when the drag ends. Once a bar has room to read its title,
   the title stays visible, with an ellipsis when it is too long.
+- **The board on iPhone.** A board view shows as a board on the iPhone now, one column at a time across the screen,
+  with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and
+  hold a card and the strip becomes a target for each column: let go on one and the card goes first in that column;
+  hold it there a moment and the board turns to that column, to place the card among the cards there. Display in the
+  project's "…" turns a view into a list or back, picks its columns and shows hidden columns again, as on the iPad.
+  Before, the iPhone showed every view as a list; a milestone still is one, grouped by epic.
+- **Pins on the iPhone's Home.** Swipe right on a view, a milestone, All Issues or the roadmap on a project's page,
+  or choose **Pin** when you touch and hold it or in its "…" menu, and it shows on Home as a tile next to the Inbox and
+  My Issues, as Reminders shows Today and Scheduled: the project's colour, how many of its issues are open, its name
+  and the project's. A tap opens it, with the project's page a step back; touch and hold the tile to unpin it. A
+  pinned milestone follows it when it is renamed, or completed with its open issues moved on. Pins stay on that
+  iPhone.
+- **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and those
+  without a priority after them, with the done ones at the bottom. The arrows beside the plus over them (on iPhone and
+  iPad, the "…" there) order them by status, newest first or in GitHub's order instead; the choice holds for every
+  issue on that device, and the list a card's sub-issue count opens follows it too. Before, they were always in
+  GitHub's order, which is mostly the order they were added in.
+- **A blocked issue says what blocks it.** The red flag on a blocked issue's card and list row now carries the number
+  of the issue to finish first, as in `#364`, with `+1` for each further one, and the sub-issues listed in an issue,
+  which had no flag at all, carry the same. On the Mac a click on the flag lists the blockers and changes them, as on
+  the card, and pointing at it names them all. The chip at the top of a blocked issue says "Blocked by #364". The app
+  reads which issues block a card along with the board, so the numbers are there without opening each issue.
+- **Sub-issues of sub-issues, as a tree.** In an issue, a sub-issue that has sub-issues of its own says how many of
+  them are done, as "1/2" next to its number, and the arrow beside its status unfolds them under it, indented and
+  joined by lines as in the board's lists; theirs unfold the same way, as many levels down as GitHub has. An epic's
+  issues do it too. What you unfold stays unfolded on that device. On the Mac, iPhone and iPad.
+- **Pick several sub-issues on an issue's page.** On the Mac, ⌘-click and Shift-click pick sub-issues in an issue's
+  list of sub-issues, also ones unfolded under another, as on the board and in the list. Right-click one of them and the menu changes all of them: move
+  them under another parent with Change Parent Issue…, into an epic or out of their parent, or set their status,
+  priority, assignee, labels, due date or milestone. Their status, priority and assignee buttons and the single keys
+  act on all of them too, and `Esc` lets them go before it leaves the issue.
+- **Pick several sub-issues on iPhone and iPad.** Choose **Select** in the "…" beside the plus over an issue's
+  sub-issues, or in one's long-press menu, and a circle stands where each status circle was, as in Mail; a tap then
+  picks a sub-issue instead of opening it, also one unfolded under another. **Change Parent Issue…** in the bar at the
+  bottom moves all picked ones under another parent, and the "…" beside it, like the long-press menu of a picked one,
+  sets their status, priority, assignee, labels, due date or milestone, or moves them into an epic or out of their
+  parent. Select All and ✓ are at the top. On iPad, ⌘-click and Shift-click with a pointer pick sub-issues straight
+  away, S, P, A, L, D and I then change all of them, and `Esc` lets them go.
+- **Pickers offer what you chose last.** The parent, epic, blocker, label and assignee you chose lately come at the
+  very top of their pickers, above **Remove from #…** and the current one, with the likeliest lit so `Return` takes it,
+  also in a new issue, on the Mac, iPhone and iPad. A choice made twice in a row comes first and stays there when one
+  issue in between goes elsewhere, so going through many issues that all get the same parent is one key each. A change
+  to several issues at once counts as one choice. **Add Existing Issue…** offers the issues you made in the last day
+  first, and on iPhone and iPad the Assignee and Labels submenus of a touch and hold list the recent ones first too.
+  Rows no longer move while you tick several labels or people in a picker that stays open.
+- **Bold typed with its stars, headings typed with their #s.** Typing `**` (or `~~`) where a style can start puts in
+  the closing pair too, with the caret between them, so you type straight into bold; typing the closing stars yourself
+  steps over them, a space right after `**` leaves plain stars (`2 ** 3`), and a star in the empty pair makes bold
+  italics. Text typed right after `##` gets the space a heading needs, so `##Plan` becomes the heading Plan, and so
+  does a line you type `##` in front of; one `#` is left alone, as it may be an issue's number. Return on a heading
+  without text turns it back into body text, and Return at the start of a heading puts an empty line above it.
+- **From the title into the description and back with the keys.** Tab, ↓ on the title's last line and → at its end go
+  to the start of the description; ↑ on the description's first line, and ← or Delete at its very start, go back to
+  the end of the title, as between lines. On an issue's page, in the Inbox, in a new issue and in a milestone, on the
+  Mac and on iPhone or iPad with a keyboard (Delete also on the touch keyboard). Holding Delete down stops at the start
+  of the description instead of going on to delete the title. In a new issue or milestone, Return in the title now
+  goes to the start of the description too, rather than its end.
+- **Hide board columns, on your device only.** A column's menu (right-click its header, or its "…"; on iPad its "…")
+  has **Hide Column**: the column and its cards leave the board, and nothing changes on GitHub. Hidden columns wait at
+  the right end of the board with their counts and under Display (`⇧V`), and a click brings one back. Each view keeps
+  its own; the list still shows every status, and a milestone's board every column. A new issue that goes into a
+  hidden column says so. On the Mac and iPad.
+- **Hide projects on iPhone and iPad too.** Touch and hold a project on the iPhone's Home, or swipe it to the left, for
+  **Hide Project**: it moves into a folded line at the end of the list, "1 hidden", which unfolds to show it again. On
+  the iPad the same in the sidebar is **Hide from Sidebar**, with the same line at the end of the projects; a hidden
+  project you open stays in the sidebar while it is open. A hidden project also opens from search; new issues no
+  longer offer it. As on the Mac, this is for your device alone.
+- **Close an issue that's on no board.** Its status picker offers **Mark as Done**, or **Reopen** once it's closed, as
+  well as the boards to put it on.
+- **More in the command palette.** New Issue wherever `C` makes one, Copy Branch Name, Show or Hide Inspector, Reset
+  Filter and Reset Display for a changed view, and the keys of Open on GitHub.
 
 ### Changed
 
@@ -165,12 +238,6 @@ All notable changes to this project are recorded here. The format follows
   off as the card its issues lift off as on the board, and held over an issue the smaller card says "Sub-issue of #9" as
   the board's card does.
 - **Escape in an issue's title takes the edit back on iPhone and iPad too**, as on the Mac.
-- **Pickers offer the likeliest choice first.** The parent, epic, blocker, label and assignee you chose lately now come
-  at the very top of their pickers, above **Remove from #…** and the current one, with the likeliest lit so `Return`
-  takes it. A choice made twice in a row comes first and stays there when one issue in
-  between goes elsewhere, so going through many issues that all get the same parent is one key each. A change to
-  several issues at once counts as one choice. **Add Existing Issue…** offers the issues you made in the last day first,
-  and on iPhone and iPad the Assignee and Labels submenus of a touch and hold list the recent ones first too.
 - **My Issues finds your issues in projects you work on alone.** Where nobody else has an open issue in a project,
   the issues assigned to nobody are yours too: they show in My Issues, its count and its overview, since in a project
   of your own you rarely assign issues to yourself.
@@ -183,6 +250,70 @@ All notable changes to this project are recorded here. The format follows
   opens your account, Sync Now, appearance, settings and signing out. When you're offline or something needs you, the
   card sits right above you. Before, the project headed the whole sidebar, Inbox and My Issues included, and its menu
   mixed switching projects with your account.
+- **Projects first on iPhone and iPad.** The iPhone has no tab bar any more: it opens where you left it, usually a
+  project's board, and ‹ leads to Home, which has the Inbox and My Issues as two tiles with their counts, as Reminders
+  has Today and Scheduled, and every project under them. Search and New Issue are at the foot of each screen, as in
+  Notes, and the search looks through every project. A project opens on the view you used last, which names the
+  screen with the project under it, and ‹ leads first to the project's own page, as Mail has its mailboxes under the
+  Inbox: All Issues with how many issues are on no board, the views with how many of their issues are open, the next
+  milestones with when they are due, and the roadmap; touch and hold a view there for its menu. That page takes the
+  place of the capsules of views over a list. On the iPad the sidebar lists every project, a tap each, with the
+  Inbox, My Issues and Search above them and the open project's views and milestones below; your account is at its
+  top in place of the project switcher.
+- **A quieter board.** The cards stand on a grey board without a border, each on a soft shadow, and the columns
+  without the grey lanes; the gap between them sets them apart. A label on a card is a dot in its colour and its name,
+  no longer a tinted pill, and the milestone and the epic a card belongs to are grey, so that colour is left for what
+  needs you: a date that's due, an urgent issue, a blocker. On the Mac and iPad. On the Mac, the card under the
+  pointer rises a little, and a column's + shows while the pointer is in that column.
+- **All Issues instead of Repositories.** The sidebar's Repositories section is gone. In its place **All Issues** heads
+  a project's views on the Mac and iPad, and sits under each project in the iPhone's Projects tab: the board's issues by
+  status, after every issue of its repositories that is on no board, under No project. The number beside it says how
+  many of those are open, so an issue someone opened straight in a repository doesn't wait unseen. A new issue started
+  there goes on the board or, if you choose, on none; where a project has several repositories, each row names its
+  own. On the Mac, `G` then `A` opens it, and the project switcher finds it by the project's or a repository's name.
+  Before, each repository had a row of its own whose list mostly repeated the board, with issues of other boards mixed
+  in.
+- On a board, `J` and `K` go up and down the column, as `↑` and `↓` do. With an issue open they step through the board
+  or list it was opened from, in the order you see, on iPad too.
+- `G` `B`, `G` `L`, `⌘1` and `⌘2` go to the board or list of the project you used last from anywhere, My Issues and
+  the Inbox included, as `G` `R` goes to its roadmap (now in one step back).
+- On the Mac, a new issue started where no board is on screen goes to the project at the top of the sidebar, and its
+  board can be changed in the dialog; started in My Issues, it is assigned to you, as on iPhone and iPad. A new epic
+  from a roadmap goes on that roadmap's board.
+- Signing out asks first while changes are still waiting to reach GitHub, since it deletes them.
+- In the Inbox, `S` `P` `A` `L` `I` change the issues of all picked notifications, `⇧J` and `⇧K` pick a run, and
+  moving with `J` and `K` keeps what is picked.
+- On the Mac, picked issues let go when you click elsewhere, as in the Finder: a click on the board or list beside
+  the issues clears the pick, and a plain click on another issue opens it and clears the pick too. A click on a picked
+  issue's priority, labels and the like still changes all of them; on an issue that isn't picked, it changes just
+  that one and the pick goes. Before, only `Esc` or the × in the bar at the bottom let them go.
+- **Markdown that reads as GitHub draws it, while you write it.** Descriptions, comments, the comment field, new
+  issues and milestones are drawn as on GitHub at all times: headings, lists, checklists that tick, quotes, code in
+  colour, tables and Mermaid diagrams, and now also GitHub's alerts (`> [!NOTE]`, Tip, Important, Warning, Caution),
+  `$maths$` set as formulas, footnotes, pictures from the web (`<img>` tags too) and HTML comments, which are faint
+  while you write and hidden in what you read. The Markdown shows only next to the caret, faintly, and folds away when
+  you move on; a click puts the caret right where you clicked, and a click into a table, a diagram or a formula brings
+  up its source, with the diagram or formula drawn under it as you type. Lists continue on Return, Tab nests them and
+  Backspace takes a bullet away. A link's address hides behind a small pencil that changes it, and a code block has a
+  button that copies it. Typing works as in 1.0.0: styles turn on and off, a style's marks come and go as a pair,
+  Return leaves bold, `-` starts a bullet, and text eases into its new look. On the Mac, the new Format menu has the
+  shortcuts of Notes (`⌘B`, `⌘I`, `⌘L`, `⇧⌘H`, `⇧⌘L`, `⇧⌘U` and more), and on iPad with a keyboard the same shortcuts
+  work, listed while you hold `⌘`; the list shortcuts are now those of Notes too: `⇧⌘7` bullets, `⇧⌘9` numbers and
+  `⇧⌘L` a checklist. On iPhone and iPad the bar above the keyboard is a capsule of glass as in Notes: Aa opens the
+  Format panel in place of the keyboard, next to a checklist, a link, undo, redo and more formatting, with Done beside
+  it, and the buttons for where the caret is stay on its left. VoiceOver reads each checkbox with its item and whether
+  it is ticked, and ticks it.
+- **Markdown marks depend on how you type, and fold in and out.** With a keyboard (the Mac, or an iPad or iPhone with
+  one attached), the marks of a style show next to the caret as before, so the arrow keys reach them and Delete takes
+  them, and a heading's `#`s show while the caret is on it. On the touch keyboard they stay hidden, and the buttons on
+  the left of the bar above the keyboard show the style you're in: a tap at the end of bold text puts the caret inside
+  its stars, so typing goes on in bold, as in Notes; Delete behind hidden stars takes the letter you can see and keeps
+  the style, and bold that loses its last letter goes entirely; the caret never rests between hidden marks; and a
+  heading's `#`s show only while you type them, until you leave the line. Marks no longer pop in and out: they unfold
+  as the caret arrives and fold away behind it, the text beside them sliding along (at once with Reduce Motion).
+- **The source code is under the GPL.** Issues' source code is now under the GNU General Public License, version 3, in
+  place of the MIT License, with a permission to link it with elk-swift, which lays out the diagrams. Copies from
+  before 27 October 2026 can still be used under the MIT License. The app in the App Store stays free.
 
 ### Fixed
 
@@ -323,149 +454,6 @@ All notable changes to this project are recorded here. The format follows
   on its page. Until now the Inbox kept saying it was open, offered to close it again, and kept the old title.
 - On the Mac, the plus of an epic's **No milestone** group makes a sub-issue in no milestone, also when the epic was
   opened from a milestone. Until now it went into that milestone.
-
-## [1.1.0] - 2026-10-28
-
-### Added
-
-- **The board on iPhone.** A board view shows as a board on the iPhone now, one column at a time across the screen,
-  with every column and its count in a strip over it: swipe, or tap the strip, to turn to another column. Touch and
-  hold a card and the strip becomes a target for each column: let go on one and the card goes first in that column;
-  hold it there a moment and the board turns to that column, to place the card among the cards there. Display in the
-  project's "…" turns a view into a list or back, picks its columns and shows hidden columns again, as on the iPad.
-  Before, the iPhone showed every view as a list; a milestone still is one, grouped by epic.
-- **Pins on the iPhone's Home.** Swipe right on a view, a milestone, All Issues or the roadmap on a project's page,
-  or choose **Pin** when you touch and hold it or in its "…" menu, and it shows on Home as a tile next to the Inbox and
-  My Issues, as Reminders shows Today and Scheduled: the project's colour, how many of its issues are open, its name
-  and the project's. A tap opens it, with the project's page a step back; touch and hold the tile to unpin it. A
-  pinned milestone follows it when it is renamed, or completed with its open issues moved on. Pins stay on that
-  iPhone.
-- **Sub-issues in the order you pick.** An issue lists its sub-issues by priority now, the most urgent first and those
-  without a priority after them, with the done ones at the bottom. The arrows beside the plus over them (on iPhone and
-  iPad, the "…" there) order them by status, newest first or in GitHub's order instead; the choice holds for every
-  issue on that device, and the list a card's sub-issue count opens follows it too. Before, they were always in
-  GitHub's order, which is mostly the order they were added in.
-- **A blocked issue says what blocks it.** The red flag on a blocked issue's card and list row now carries the number
-  of the issue to finish first, as in `#364`, with `+1` for each further one, and the sub-issues listed in an issue,
-  which had no flag at all, carry the same. On the Mac a click on the flag lists the blockers and changes them, as on
-  the card, and pointing at it names them all. The chip at the top of a blocked issue says "Blocked by #364". The app
-  reads which issues block a card along with the board, so the numbers are there without opening each issue.
-- **Sub-issues of sub-issues, as a tree.** In an issue, a sub-issue that has sub-issues of its own says how many of
-  them are done, as "1/2" next to its number, and the arrow beside its status unfolds them under it, indented and
-  joined by lines as in the board's lists; theirs unfold the same way, as many levels down as GitHub has. An epic's
-  issues do it too. What you unfold stays unfolded on that device. On the Mac, iPhone and iPad.
-- **Pick several sub-issues on an issue's page.** On the Mac, ⌘-click and Shift-click pick sub-issues in an issue's
-  list of sub-issues, also ones unfolded under another, as on the board and in the list. Right-click one of them and the menu changes all of them: move
-  them under another parent with Change Parent Issue…, into an epic or out of their parent, or set their status,
-  priority, assignee, labels, due date or milestone. Their status, priority and assignee buttons and the single keys
-  act on all of them too, and `Esc` lets them go before it leaves the issue.
-- **Pick several sub-issues on iPhone and iPad.** Choose **Select** in the "…" beside the plus over an issue's
-  sub-issues, or in one's long-press menu, and a circle stands where each status circle was, as in Mail; a tap then
-  picks a sub-issue instead of opening it, also one unfolded under another. **Change Parent Issue…** in the bar at the
-  bottom moves all picked ones under another parent, and the "…" beside it, like the long-press menu of a picked one,
-  sets their status, priority, assignee, labels, due date or milestone, or moves them into an epic or out of their
-  parent. Select All and ✓ are at the top. On iPad, ⌘-click and Shift-click with a pointer pick sub-issues straight
-  away, S, P, A, L, D and I then change all of them, and `Esc` lets them go.
-- **Pickers offer what you chose last.** The issue you just made a parent is at the top of the parent picker for the
-  next issue, above a line, and Return picks it again. The same goes for epics, blocked by and blocking, labels and
-  assignees, also in a new issue, on the Mac, iPhone and iPad: up to three of your latest choices come first. Rows no
-  longer move while you tick several labels or people in a picker that stays open.
-- **Bold typed with its stars, headings typed with their #s.** Typing `**` (or `~~`) where a style can start puts in
-  the closing pair too, with the caret between them, so you type straight into bold; typing the closing stars yourself
-  steps over them, a space right after `**` leaves plain stars (`2 ** 3`), and a star in the empty pair makes bold
-  italics. Text typed right after `##` gets the space a heading needs, so `##Plan` becomes the heading Plan, and so
-  does a line you type `##` in front of; one `#` is left alone, as it may be an issue's number. Return on a heading
-  without text turns it back into body text, and Return at the start of a heading puts an empty line above it.
-- **From the title into the description and back with the keys.** Tab, ↓ on the title's last line and → at its end go
-  to the start of the description; ↑ on the description's first line, and ← or Delete at its very start, go back to
-  the end of the title, as between lines. On an issue's page, in the Inbox, in a new issue and in a milestone, on the
-  Mac and on iPhone or iPad with a keyboard (Delete also on the touch keyboard). Holding Delete down stops at the start
-  of the description instead of going on to delete the title. In a new issue or milestone, Return in the title now
-  goes to the start of the description too, rather than its end.
-- **Hide board columns, on your device only.** A column's menu (right-click its header, or its "…"; on iPad its "…")
-  has **Hide Column**: the column and its cards leave the board, and nothing changes on GitHub. Hidden columns wait at
-  the right end of the board with their counts and under Display (`⇧V`), and a click brings one back. Each view keeps
-  its own; the list still shows every status, and a milestone's board every column. A new issue that goes into a
-  hidden column says so. On the Mac and iPad.
-- **Hide projects on iPhone and iPad too.** Touch and hold a project on the iPhone's Home, or swipe it to the left, for
-  **Hide Project**: it moves into a folded line at the end of the list, "1 hidden", which unfolds to show it again. On
-  the iPad the same in the sidebar is **Hide from Sidebar**, with the same line at the end of the projects; a hidden
-  project you open stays in the sidebar while it is open. A hidden project also opens from search; new issues no
-  longer offer it. As on the Mac, this is for your device alone.
-- **Close an issue that's on no board.** Its status picker offers **Mark as Done**, or **Reopen** once it's closed, as
-  well as the boards to put it on.
-- **More in the command palette.** New Issue wherever `C` makes one, Copy Branch Name, Show or Hide Inspector, Reset
-  Filter and Reset Display for a changed view, and the keys of Open on GitHub.
-
-### Changed
-
-- **Projects first on iPhone and iPad.** The iPhone has no tab bar any more: it opens where you left it, usually a
-  project's board, and ‹ leads to Home, which has the Inbox and My Issues as two tiles with their counts, as Reminders
-  has Today and Scheduled, and every project under them. Search and New Issue are at the foot of each screen, as in
-  Notes, and the search looks through every project. A project opens on the view you used last, which names the
-  screen with the project under it, and ‹ leads first to the project's own page, as Mail has its mailboxes under the
-  Inbox: All Issues with how many issues are on no board, the views with how many of their issues are open, the next
-  milestones with when they are due, and the roadmap; touch and hold a view there for its menu. That page takes the
-  place of the capsules of views over a list. On the iPad the sidebar lists every project, a tap each, with the
-  Inbox, My Issues and Search above them and the open project's views and milestones below; your account is at its
-  top in place of the project switcher.
-- **A quieter board.** The cards stand on a grey board without a border, each on a soft shadow, and the columns
-  without the grey lanes; the gap between them sets them apart. A label on a card is a dot in its colour and its name,
-  no longer a tinted pill, and the milestone and the epic a card belongs to are grey, so that colour is left for what
-  needs you: a date that's due, an urgent issue, a blocker. On the Mac and iPad. On the Mac, the card under the
-  pointer rises a little, and a column's + shows while the pointer is in that column.
-- **All Issues instead of Repositories.** The sidebar's Repositories section is gone. In its place **All Issues** heads
-  a project's views on the Mac and iPad, and sits under each project in the iPhone's Projects tab: the board's issues by
-  status, after every issue of its repositories that is on no board, under No project. The number beside it says how
-  many of those are open, so an issue someone opened straight in a repository doesn't wait unseen. A new issue started
-  there goes on the board or, if you choose, on none; where a project has several repositories, each row names its
-  own. On the Mac, `G` then `A` opens it, and the project switcher finds it by the project's or a repository's name.
-  Before, each repository had a row of its own whose list mostly repeated the board, with issues of other boards mixed
-  in.
-- On a board, `J` and `K` go up and down the column, as `↑` and `↓` do. With an issue open they step through the board
-  or list it was opened from, in the order you see, on iPad too.
-- `G` `B`, `G` `L`, `⌘1` and `⌘2` go to the board or list of the project you used last from anywhere, My Issues and
-  the Inbox included, as `G` `R` goes to its roadmap (now in one step back).
-- On the Mac, a new issue started where no board is on screen goes to the project at the top of the sidebar, and its
-  board can be changed in the dialog; started in My Issues, it is assigned to you, as on iPhone and iPad. A new epic
-  from a roadmap goes on that roadmap's board.
-- Signing out asks first while changes are still waiting to reach GitHub, since it deletes them.
-- In the Inbox, `S` `P` `A` `L` `I` change the issues of all picked notifications, `⇧J` and `⇧K` pick a run, and
-  moving with `J` and `K` keeps what is picked.
-- On the Mac, picked issues let go when you click elsewhere, as in the Finder: a click on the board or list beside
-  the issues clears the pick, and a plain click on another issue opens it and clears the pick too. A click on a picked
-  issue's priority, labels and the like still changes all of them; on an issue that isn't picked, it changes just
-  that one and the pick goes. Before, only `Esc` or the × in the bar at the bottom let them go.
-- **Markdown that reads as GitHub draws it, while you write it.** Descriptions, comments, the comment field, new
-  issues and milestones are drawn as on GitHub at all times: headings, lists, checklists that tick, quotes, code in
-  colour, tables and Mermaid diagrams, and now also GitHub's alerts (`> [!NOTE]`, Tip, Important, Warning, Caution),
-  `$maths$` set as formulas, footnotes, pictures from the web (`<img>` tags too) and HTML comments, which are faint
-  while you write and hidden in what you read. The Markdown shows only next to the caret, faintly, and folds away when
-  you move on; a click puts the caret right where you clicked, and a click into a table, a diagram or a formula brings
-  up its source, with the diagram or formula drawn under it as you type. Lists continue on Return, Tab nests them and
-  Backspace takes a bullet away. A link's address hides behind a small pencil that changes it, and a code block has a
-  button that copies it. Typing works as in 1.0.0: styles turn on and off, a style's marks come and go as a pair,
-  Return leaves bold, `-` starts a bullet, and text eases into its new look. On the Mac, the new Format menu has the
-  shortcuts of Notes (`⌘B`, `⌘I`, `⌘L`, `⇧⌘H`, `⇧⌘L`, `⇧⌘U` and more), and on iPad with a keyboard the same shortcuts
-  work, listed while you hold `⌘`; the list shortcuts are now those of Notes too: `⇧⌘7` bullets, `⇧⌘9` numbers and
-  `⇧⌘L` a checklist. On iPhone and iPad the bar above the keyboard is a capsule of glass as in Notes: Aa opens the
-  Format panel in place of the keyboard, next to a checklist, a link, undo, redo and more formatting, with Done beside
-  it, and the buttons for where the caret is stay on its left. VoiceOver reads each checkbox with its item and whether
-  it is ticked, and ticks it.
-- **Markdown marks depend on how you type, and fold in and out.** With a keyboard (the Mac, or an iPad or iPhone with
-  one attached), the marks of a style show next to the caret as before, so the arrow keys reach them and Delete takes
-  them, and a heading's `#`s show while the caret is on it. On the touch keyboard they stay hidden, and the buttons on
-  the left of the bar above the keyboard show the style you're in: a tap at the end of bold text puts the caret inside
-  its stars, so typing goes on in bold, as in Notes; Delete behind hidden stars takes the letter you can see and keeps
-  the style, and bold that loses its last letter goes entirely; the caret never rests between hidden marks; and a
-  heading's `#`s show only while you type them, until you leave the line. Marks no longer pop in and out: they unfold
-  as the caret arrives and fold away behind it, the text beside them sliding along (at once with Reduce Motion).
-- **The source code is under the GPL.** Issues' source code is now under the GNU General Public License, version 3, in
-  place of the MIT License, with a permission to link it with elk-swift, which lays out the diagrams. Copies from
-  before 27 October 2026 can still be used under the MIT License. The app in the App Store stays free.
-
-### Fixed
-
 - My Issues says when it is still loading, and fills sooner. Right after signing in, the app fetches your projects
   one by one, and until then My Issues said "Nothing assigned to you" and Home counted 0. Now the line under the title
   reads "Loading issues from 3 projects…" until the last one is in. While none of your issues have come in yet, My
