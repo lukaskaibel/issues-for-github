@@ -482,6 +482,11 @@ final class ContextMenus {
     /// Where the areas are, for the debug remote.
     var frames: [CGRect] { regions.values.map(\.frame) }
 
+    /// Whether a view floating over the page, as the peek, the selection bar or a notice, is at the point.
+    func isUnderFloatingView(_ point: CGPoint) -> Bool {
+        regions.values.contains { $0.floats && $0.frame.contains(point) }
+    }
+
     /// The menu of the smallest registered area containing the point that offers one there. On a view floating over
     /// the page only it counts, never the card or line it covers, nor a bigger floating view, as a notice over the
     /// peek: text in it keeps its own menu (`onText`), to copy from or paste into, and elsewhere a right-click without

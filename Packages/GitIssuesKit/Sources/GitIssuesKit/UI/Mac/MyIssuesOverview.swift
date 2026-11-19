@@ -8,6 +8,7 @@ import UniformTypeIdentifiers
 struct MyIssuesOverview: View {
     @Environment(AppModel.self) private var model
     @State private var drag = OverviewDrag()
+    @State private var sweepArea = UUID()
 
     var body: some View {
         if model.overviewCards.isEmpty {
@@ -15,6 +16,15 @@ struct MyIssuesOverview: View {
         } else {
             OverviewGrid(metrics: .standard)
                 .environment(drag)
+                // ⌘-dragging over issues picks them, across the cards as a rectangle from where the press started.
+                .onAppear {
+                    SweepAreas.shared.register(sweepArea, SweepAreas.Area(
+                        place: .issues,
+                        start: { [model, drag] point in model.openItem == nil ? drag.sweepRows.row(at: point) : nil },
+                        rows: { [drag] in drag.sweepRows.rows }
+                    ))
+                }
+                .onDisappear { [sweepArea] in SweepAreas.shared.remove(sweepArea) }
                 // A click beside the issues lets the picked ones go, as in the list; a right-click arranges the cards.
                 .contentShape(Rectangle())
                 .onTapGesture { model.clearSelection() }
@@ -49,9 +59,12 @@ struct MyIssuesOverview: View {
 
 /// An issue being dragged out of a card: a page's icon of the same project knows from it, before the drop, whether it
 /// can take the issue.
+@MainActor
 @Observable
 final class OverviewDrag {
     var itemId: String?
+    /// Where the issues in sight are, for ⌘-dragging over them.
+    @ObservationIgnored let sweepRows = SweepRowFrames()
 }
 
 // MARK: - Menus
@@ -129,6 +142,8 @@ private struct OverviewIssueInteractions: ViewModifier {
     @State private var hovering = false
     /// Whether issues dragged onto this one would go under it if dropped now.
     @State private var targeted = false
+    /// This row, as it tells where it is for sweeping.
+    @State private var sweepOwner = UUID()
 
     func body(content: Content) -> some View {
         let selected = model.isSelected(item.id)
@@ -151,6 +166,19 @@ private struct OverviewIssueInteractions: ViewModifier {
             }
             .padding(.horizontal, -6)
             .contentShape(Rectangle())
+            .onGeometryChange(for: CGRect?.self) { proxy in
+                // Only on its card's page in sight: the pages beside it are laid out too, out of sight beside the card.
+                guard let shown = proxy.bounds(of: .scrollView(axis: .horizontal)),
+                      shown.contains(CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)) else { return nil }
+                return proxy.frame(in: .global)
+            } action: { [drag, sweepOwner, id = item.id] frame in
+                if let frame {
+                    drag.sweepRows.set(frame, for: id, owner: sweepOwner)
+                } else {
+                    drag.sweepRows.remove(id, owner: sweepOwner)
+                }
+            }
+            .onDisappear { [drag, sweepOwner, id = item.id] in drag.sweepRows.remove(id, owner: sweepOwner) }
             .onDrop(of: [.plainText], delegate: IssueDrop(target: item, model: model, drag: drag, targeted: $targeted))
             .id(item.id)
             .onHover { inside in
