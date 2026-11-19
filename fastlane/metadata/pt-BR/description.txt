@@ -16,8 +16,8 @@ NO MAC
 • Cada projeto como quadro ou lista, Minhas issues, com tudo o que está atribuído a você, e todas as issues dos seus repositórios, inclusive as que não estão em nenhum quadro
 • Arraste issues para outro lugar e organize as colunas: adicione, renomeie, mude a cor e reordene
 • Teclado em primeiro lugar: J e K navegam entre issues, S, P, A e L alteram status, prioridade, responsável e etiquetas, D define o prazo, e ⌘K abre uma paleta de comandos para todo o resto
-• Selecione várias issues e altere todas de uma vez, ou espie uma com a barra de espaço
-• Sub-issues e bloqueios: coloque qualquer issue sob outra e marque o que bloqueia o quê
+• Selecione várias issues e altere todas de uma vez, espie uma com a barra de espaço e desfaça qualquer alteração com ⌘Z
+• Tipos de issue, sub-issues e bloqueios: solte uma issue sobre outra para colocá-la sob ela e marque o que bloqueia o quê
 • Descrições exibidas como no GitHub, com tabelas, checklists que você pode marcar e diagramas Mermaid
 
 NO IPHONE E NO IPAD

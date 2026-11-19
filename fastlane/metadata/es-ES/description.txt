@@ -5,7 +5,7 @@ PLANIFICA LO QUE VIENE
 • Épicas: incidencias cuyo trabajo se reparte en sus subincidencias. En el tablero, las incidencias de una épica aparecen juntas bajo su nombre; arrastra el nombre para moverlas todas
 • Una hoja de ruta: tus épicas como barras sobre los hitos, por meses o trimestres. Arrastra una barra para mover una épica y sus incidencias a otro hito
 • Las vistas que tu proyecto tiene en GitHub, por ejemplo “Esta semana” o la de bugs abiertos, como tablero o lista y con filtros que cambias con un clic
-• Agrupada por hito o por incidencia principal, una vista muestra el progreso de cada grupo; filtrada por la iteración actual, los días que quedan; y con diseño de hoja de ruta, se ve como cronograma
+• Agrupada por hito o incidencia principal, una vista muestra el progreso de cada grupo; la de la iteración actual, los días que quedan; y la de hoja de ruta es un cronograma
 
 ENTRADA
 • Lo que cambió para ti, según las notificaciones de GitHub: quién te asignó, te mencionó, comentó, solicitó tu revisión o cerró una incidencia que sigues
@@ -16,8 +16,8 @@ EN EL MAC
 • Cada proyecto como tablero o lista, Mis incidencias con todo lo que tienes asignado y todas las incidencias de tus repositorios, incluso las que no están en ningún tablero
 • Arrastra incidencias a otro lugar y adapta las columnas: añádelas, renómbralas, cambia su color y su orden
 • Pensada para el teclado: J y K pasan de una incidencia a otra; S, P, A y L cambian estado, prioridad, responsable y etiquetas; D fija la fecha de vencimiento, y ⌘K abre una paleta de comandos para todo lo demás
-• Selecciona varias incidencias y cámbialas a la vez, o echa un vistazo a una con Espacio
-• Subincidencias y bloqueos: pon cualquier incidencia bajo otra y marca qué bloquea a qué
+• Cambia varias incidencias a la vez, mira una con Espacio y deshaz cualquier cambio con ⌘Z
+• Tipos de incidencia, subincidencias y bloqueos: pon una incidencia bajo otra soltándola encima y marca qué bloquea a qué
 • Descripciones como en GitHub, con tablas, listas de tareas que se marcan y diagramas Mermaid
 
 EN EL IPHONE Y EL IPAD

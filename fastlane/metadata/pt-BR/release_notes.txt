@@ -1,18 +1,22 @@
-O quadro chega ao iPhone, seus projetos vêm em primeiro lugar no iPhone e no iPad, e o quadro fica mais limpo em todos os dispositivos.
+Desfazer para tudo o que você faz, os tipos de issue do GitHub em todas as issues, e o quadro chega ao iPhone.
 
-• O quadro no iPhone: uma coluna por vez, com todas as colunas e a contagem de cada uma numa faixa acima dela. Deslize ou toque na faixa para mudar de coluna; toque e segure um cartão e solte-o sobre uma coluna da faixa
-• Projetos em primeiro lugar: no iPhone não há mais barra de abas, e o app abre onde você parou. ‹ leva à página do projeto, com Todas as issues, as visualizações dele, os próximos marcos e o roteiro, e de lá a todos os seus projetos, abaixo da Entrada e de Minhas issues
-• Itens fixados: deslize para a direita em uma visualização, um marco ou o roteiro, e o item fica ao lado da Entrada e de Minhas issues, com o número de issues abertas
+• Desfazer e refazer: ⌘Z desfaz sua última alteração e ⇧⌘Z a refaz, no Mac e no iPad com teclado: status, campos, etiquetas, issue principal, o lugar de um cartão no quadro, também para várias issues selecionadas de uma vez
+• Tipos de issue: Bug, Feature, Task e os da sua organização aparecem cada um na sua cor nos cartões, nas linhas e na página da issue; clique em um ou pressione T para alterá-lo
+• Os campos de uma issue em todos os projetos em que ela está, direto nos detalhes dela, e Adicionar ao projeto
+• Solte uma issue sobre outra para transformá-la em sub-issue: em quadros e listas no Mac, e em quadros no iPhone e no iPad
+• Crie um status direto onde você escolhe um, e dê a ele um ícone e uma cor
+• Coloque uma issue numa iteração com um clique ou ⇧C, com a atual e a próxima marcadas
+• Links para outras issues numa descrição ou num comentário abrem a issue no app
+• Minhas issues como visão geral, com um cartão para cada projeto em que você trabalha
+• Todas as issues no lugar de Repositórios: as issues de um projeto junto com as que não estão em nenhum quadro, também como quadro
+• As linhas do tempo têm zoom, e você arrasta uma barra para mover as datas de uma issue
+• No Mac, Buscar no topo da barra lateral, Nova issue na barra de ferramentas e a espiada no meio da janela; num trackpad Force Touch, pressione com mais força para abri-la
+• O quadro no iPhone: uma coluna por vez, com todas as colunas e a contagem de cada uma numa faixa acima dela; toque e segure um cartão e solte-o sobre uma coluna da faixa
+• Projetos em primeiro lugar: no iPhone não há mais barra de abas, e o app abre onde você parou; fixe uma visualização, um marco ou o roteiro ao lado da Entrada e de Minhas issues
 • No iPad, a barra lateral lista todos os projetos, com as visualizações e os marcos do projeto aberto logo abaixo dele
-• Um quadro mais limpo: cartões sem bordas sobre fundo cinza, etiquetas como um ponto e um nome, e a cor reservada para o que precisa de você: um prazo, uma issue urgente, um bloqueio
-• Todas as issues no lugar de Repositórios: as issues de um projeto junto com as que não estão em nenhum quadro, e quantas destas estão abertas
-• Sub-issues de sub-issues se expandem como uma árvore, ordenadas por prioridade ou na ordem que você escolher
-• Uma issue bloqueada indica o que a bloqueia, como #364 na bandeira
-• Selecione várias sub-issues e altere todas de uma vez: com ⌘-clique e Shift-clique no Mac e no iPad, ou com Selecionar no iPhone e no iPad
-• No Mac, arrastar uma de várias issues selecionadas move todas elas
-• Os seletores oferecem as issues principais, os épicos, as etiquetas e as pessoas que você escolheu por último
+• Um quadro mais limpo: cartões sem bordas sobre fundo cinza, etiquetas como um ponto e um nome, e a cor reservada para o que precisa de você
+• Sub-issues de sub-issues se expandem como uma árvore, e uma issue bloqueada indica o que a bloqueia, como #364 na bandeira
+• Selecione várias sub-issues e altere todas de uma vez; os seletores oferecem o que você escolheu por último
 • Oculte as colunas do quadro ou os projetos de que você não precisa, apenas no seu dispositivo
-• Markdown exibido como no GitHub enquanto você escreve, agora com alertas, fórmulas, notas de rodapé e imagens. As marcações só aparecem junto ao ponto de inserção, e no iPhone e no iPad a barra acima do teclado é de vidro, como no Notas
-• Digitar ** inicia o negrito já com os asteriscos de fechamento, e ## inicia um cabeçalho; Tab e as teclas de seta levam do título à descrição e vice-versa
-• No Mac, quadros longos e a Entrada acompanham o ponteiro e rolam com suavidade
-• Corrigido: Minhas issues avisa enquanto seus projetos ainda estão carregando, arrastar na lista do Mac volta a funcionar, e muitos detalhes menores
+• Markdown exibido como no GitHub enquanto você escreve, com alertas, fórmulas, notas de rodapé e imagens; digitar ** inicia o negrito e ## um cabeçalho
+• Corrigido: uma nova issue sempre encontra um repositório, etiquetas que mudaram de cor no GitHub mudam também no app, e muitos detalhes menores

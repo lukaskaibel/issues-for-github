@@ -16,8 +16,8 @@ ON THE MAC
 • Every project as a board or a list, My Issues with everything assigned to you, and every issue of your repositories, also those on no board
 • Drag issues to a new place, and shape the columns: add, rename, recolour and reorder them
 • Keyboard first: J and K move between issues, S, P, A and L change status, priority, assignee and labels, D sets the due date, and ⌘K opens a command palette for everything else
-• Select several issues and change them at once, or peek at one with Space
-• Sub-issues and blockers: put any issue under another, and mark what blocks what
+• Select several issues and change them at once, peek at one with Space, and take back any change with ⌘Z
+• Issue types, sub-issues and blockers: drop an issue onto another to put it under it, and mark what blocks what
 • Descriptions drawn as on GitHub, with tables, checklists that tick and Mermaid diagrams
 
 ON IPHONE AND IPAD

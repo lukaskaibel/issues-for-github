@@ -1,18 +1,22 @@
-El tablero llega al iPhone, tus proyectos pasan a primer plano en el iPhone y el iPad, y el tablero es más sobrio en todas partes.
+Puedes deshacer lo que haces, cada incidencia muestra su tipo de GitHub y el tablero llega al iPhone.
 
-• El tablero en el iPhone: columna a columna y, encima, una franja con todas las columnas y cuántas incidencias tiene cada una. Desliza o toca la franja para pasar a otra columna; mantén el dedo sobre una tarjeta y suéltala en una columna de la franja
-• Los proyectos, primero: en el iPhone ya no hay barra de pestañas y la app se abre donde lo dejaste. ‹ lleva a la página del proyecto, con Todas las incidencias, sus vistas, sus próximos hitos y la hoja de ruta, y, un paso más atrás, a todos tus proyectos, debajo de la Entrada y Mis incidencias
-• Fijar: desliza a la derecha sobre una vista, un hito o la hoja de ruta, y queda junto a la Entrada y Mis incidencias, con el número de sus incidencias abiertas
+• Deshacer y rehacer: ⌘Z deshace tu último cambio y ⇧⌘Z lo rehace, en el Mac y en el iPad con teclado: estado, campos, etiquetas, incidencia principal, el lugar de una tarjeta en el tablero, también para varias incidencias seleccionadas a la vez
+• Tipos de incidencia: Bug, Feature, Task y los de tu organización aparecen con su color en tarjetas, filas y en la página de la incidencia; haz clic en uno o pulsa T para cambiarlo
+• Los campos de una incidencia de todos los proyectos en los que está, directamente en sus detalles, y Añadir a un proyecto
+• Suelta una incidencia sobre otra para convertirla en subincidencia: en tableros y listas en el Mac, y en tableros en el iPhone y el iPad
+• Crea un estado justo donde eliges uno y dale un icono y un color
+• Añade una incidencia a una iteración con un clic o con ⇧C, con la actual y la siguiente marcadas
+• Los enlaces a otras incidencias en una descripción o un comentario las abren en la app
+• Mis incidencias como resumen, con una tarjeta por cada proyecto en el que trabajas
+• Todas las incidencias en lugar de Repositorios: las incidencias de un proyecto junto con las que no están en ningún tablero, también como tablero
+• Haz zoom en los cronogramas y arrastra una barra para mover las fechas de una incidencia
+• En el Mac, Buscar arriba en la barra lateral, Nueva incidencia en la barra de herramientas y la vista rápida en el centro de la ventana; en un trackpad Force Touch, presiona con más fuerza para abrirla
+• El tablero en el iPhone: columna a columna y, encima, una franja con todas las columnas y cuántas incidencias tiene cada una; mantén el dedo sobre una tarjeta y suéltala en una columna de la franja
+• Los proyectos, primero: en el iPhone ya no hay barra de pestañas y la app se abre donde lo dejaste; con Fijar, una vista, un hito o la hoja de ruta quedan junto a la Entrada y Mis incidencias
 • En el iPad, la barra lateral muestra todos los proyectos y, bajo el que está abierto, sus vistas y sus hitos
-• Un tablero más sobrio: tarjetas sin bordes sobre fondo gris, etiquetas como un punto y un nombre, y el color reservado para lo que requiere tu atención: una fecha de vencimiento, una incidencia urgente, un bloqueo
-• Todas las incidencias en lugar de Repositorios: las incidencias de un proyecto junto con las que no están en ningún tablero, y cuántas de estas siguen abiertas
-• Las subincidencias de las subincidencias se despliegan en árbol, ordenadas por prioridad o en el orden que elijas
-• Una incidencia bloqueada indica qué la bloquea, como #364 en su bandera
-• Selecciona varias subincidencias y cámbialas a la vez: con ⌘ + clic y Mayúsculas + clic en el Mac y el iPad, y con Seleccionar en el iPhone y el iPad
-• En el Mac, al arrastrar una de varias incidencias seleccionadas, se mueven todas
-• Los selectores te ofrecen las últimas incidencias principales, épicas, etiquetas y personas que elegiste
+• Un tablero más sobrio: tarjetas sin bordes sobre fondo gris, etiquetas como un punto y un nombre, y el color reservado para lo que requiere tu atención
+• Las subincidencias de las subincidencias se despliegan en árbol, y una incidencia bloqueada indica qué la bloquea, como #364 en su bandera
+• Selecciona varias subincidencias y cámbialas a la vez; los selectores te ofrecen lo último que elegiste
 • Oculta las columnas del tablero o los proyectos que no necesites, solo en tu dispositivo
-• Markdown que se ve como en GitHub mientras escribes, ahora con alertas, fórmulas, notas al pie e imágenes. Sus marcas solo aparecen junto al punto de inserción, y en el iPhone y el iPad la barra sobre el teclado es de Liquid Glass, como en Notas
-• Al escribir ** empieza la negrita, ya con sus asteriscos de cierre, y con ## un encabezado; Tab y las teclas de flecha pasan del título a la descripción y al revés
-• En el Mac, los tableros largos y la Entrada siguen al puntero sin retraso y se desplazan con fluidez
-• Corregido: Mis incidencias avisa si tus proyectos aún se están cargando, arrastrar en la lista del Mac vuelve a funcionar, y muchos otros detalles
+• Markdown que se ve como en GitHub mientras escribes, con alertas, fórmulas, notas al pie e imágenes; al escribir ** empieza la negrita, y con ## un encabezado
+• Corregido: una incidencia nueva siempre encuentra un repositorio, el nuevo color de una etiqueta en GitHub llega a la app, y muchos otros detalles
