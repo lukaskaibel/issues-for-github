@@ -17,7 +17,7 @@ struct DueInboxTests {
         #expect(entry.id == "due:issue-1:\(today.string)")
         #expect(entry.isDue)
         #expect(entry.dueDay == today)
-        #expect(entry.bucket == .forYou)
+        #expect(entry.category(viewer: "jordan") == .needsYou)
         #expect(entry.contentId == "issue-1")
         #expect(entry.title == "Ship the release notes")
         let summary = entry.summary(viewer: "jordan")

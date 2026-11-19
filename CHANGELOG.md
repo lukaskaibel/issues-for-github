@@ -34,9 +34,16 @@ All notable changes to this project are recorded here. The format follows
 
 - **More room inside a card.** Cards have 2 points less padding at the sides and the top, and 5 less at the bottom,
   where they had more than anywhere else, so a title has more width before it wraps and a column shows more cards.
-
-### Changed
-
+- **The Inbox sorts itself into Needs You, From You, Updates and All**, as Mail sorts mail into categories, and opens
+  on **Needs You**: your review, a mention, an assignment by someone else, a person writing on an open issue or pull
+  request of yours, and issues that are due. **From You** has the issues your own account assigned you to with `gh`, a
+  script or a coding agent, until they're closed, and a batch opened in one go is a single row that unfolds into them.
+  **Updates** has what was merged or closed, what bots and project automation did, and repositories you watch; **All**
+  has everything. Only Needs You counts on the sidebar, the Dock and Home. On the Mac the four sit in the toolbar with
+  their symbols and how many are unread, on iPhone and iPad as pills above the list; `←` and `→` switch between them,
+  and the app keeps the one you chose. Settings has a switch for each, on your device only, for the ones the Inbox
+  offers, and under **Badge** a tick for the ones its number counts, so you can see several and count only one. They take
+  the place of For you and Watching.
 - **New Issue is a button of its own in the Mac toolbar.** It no longer shares one piece of glass with back and
   forward, so it doesn't read as a third arrow.
 

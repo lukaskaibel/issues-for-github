@@ -70,8 +70,8 @@ private struct BackForwardButtons: ToolbarContent {
     }
 }
 
-/// In the middle: Board and List, My Issues' Overview and List, the roadmap's Timeline and List, or the Inbox's For
-/// You and Watching.
+/// In the middle: Board and List, My Issues' Overview and List, the roadmap's Timeline and List, or the Inbox's Needs
+/// You, From You, Updates and All.
 private struct PrincipalControl: View {
     @Environment(AppModel.self) private var model
     let openItem: Item?
@@ -79,8 +79,8 @@ private struct PrincipalControl: View {
     var body: some View {
         // In one container: the toolbar names an item after a picker it holds directly, and a new name is a new item.
         HStack(spacing: 0) {
-            if openItem == nil, model.scope == .inbox, model.showsInboxBuckets {
-                InboxBuckets()
+            if openItem == nil, model.scope == .inbox, model.shownInboxCategories.count > 1 {
+                InboxCategories()
             } else if openItem == nil, model.showsLayoutSwitch {
                 LayoutPicker()
             } else if openItem == nil, model.roadmapScopeProjectId != nil {
@@ -195,7 +195,7 @@ extension AppModel {
 
     fileprivate func hasPrincipalControl(openItem: Item?) -> Bool {
         guard openItem == nil else { return false }
-        if scope == .inbox { return showsInboxBuckets }
+        if scope == .inbox { return shownInboxCategories.count > 1 }
         return showsLayoutSwitch || roadmapScopeProjectId != nil || scope == .myIssues
     }
 

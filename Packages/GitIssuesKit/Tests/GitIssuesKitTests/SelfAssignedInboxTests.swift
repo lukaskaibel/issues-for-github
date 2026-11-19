@@ -58,13 +58,13 @@ struct SelfAssignedInboxTests {
 
     // MARK: What a row says
 
-    @Test func anEntryIsTheAppsOwnAndForYou() {
+    @Test func anEntryIsTheAppsOwnAndFromYou() {
         let entry = InboxEntry(selfAssignment: Self.assignment("AE_1", at: Self.now))
         #expect(entry.id == "self_assign:AE_1")
         #expect(entry.isSelfAssigned)
         #expect(entry.isAppMade)
         #expect(!entry.isDue)
-        #expect(entry.bucket == .forYou)
+        #expect(entry.category(viewer: "jordan") == .fromYou)
         #expect(entry.contentId == "I_1")
         #expect(entry.updatedAt == Self.now)
         #expect(entry.enrichedFor == Self.now)

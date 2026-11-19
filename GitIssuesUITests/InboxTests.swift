@@ -1,7 +1,9 @@
 import XCTest
 
 /// The Inbox on iPhone and iPad, on the sample data: Kai assigned Jordan #25, Theo commented on #8, mentioned Jordan
-/// on #15 and assigned #27 (on no board), Mira asked for a review of a pull request, and a few older ones are read.
+/// on #15 and assigned #27 (on no board), Mira asked for a review of a pull request, and a few older ones are read;
+/// those need Jordan. Theo merged Jordan's pull request and a bot opened one in a watched repository: updates. Jordan's
+/// own account opened #38, and #45 to #47 together: from Jordan.
 final class InboxTests: AppTestCase {
     private func launchInbox() {
         launch(["-mobile.tab", "inbox"])
@@ -45,6 +47,8 @@ final class InboxTests: AppTestCase {
         // #25 was due two days ago and is assigned to Jordan.
         let row = element("inbox-due-25")
         wait(row)
+        // Low in the list: clear of the search and New Issue at the foot, which take touches above their glass.
+        scrollTo(row)
         XCTAssertTrue(isUnread(row))
         XCTAssertTrue(row.label.contains("Overdue since"))
         row.tap()
@@ -105,14 +109,66 @@ final class InboxTests: AppTestCase {
         waitGone(element("inbox-row-8"))
     }
 
-    func testWatchingShowsRepositoriesYouWatch() throws {
+    func testCategoriesSortTheInbox() throws {
         try XCTSkipIf(isPad, "iPhone layout")
         launchInbox()
+        // Needs You first: what someone asks of Jordan, not the pull request merged or the bot's.
+        XCTAssertTrue(element("inbox-category-needsYou").isSelected)
+        XCTAssertFalse(element("inbox-row-git-issues-39").exists)
         XCTAssertFalse(element("inbox-row-website-37").exists)
-        app.segmentedControls.buttons["Watching"].tap()
+
+        element("inbox-category-updates").tap()
         wait(element("inbox-row-website-37"))
         XCTAssertTrue(element("inbox-row-website-37").label.contains("opened it in acme/website"))
+        XCTAssertTrue(element("inbox-row-git-issues-39").exists)
         waitGone(element("inbox-row-25"))
+        snapshot("Inbox updates")
+
+        // From You: #38 on its own, and the three an agent opened together as one row that unfolds.
+        element("inbox-category-fromYou").tap()
+        let run = element("inbox-run-3")
+        wait(run)
+        XCTAssertTrue(run.label.contains("3 issues assigned to you"))
+        XCTAssertTrue(element("inbox-row-git-issues-38").exists)
+        XCTAssertFalse(element("inbox-row-git-issues-46").exists)
+        run.tap()
+        wait(element("inbox-row-git-issues-46"))
+        snapshot("Inbox from you")
+
+        element("inbox-category-all").tap()
+        wait(element("inbox-row-25"))
+        wait(element("inbox-row-website-37"))
+        element("inbox-category-needsYou").tap()
+        waitGone(element("inbox-row-website-37"))
+    }
+
+    func testSettingsChooseTheCategories() throws {
+        try XCTSkipIf(isPad, "iPhone layout")
+        launch()
+        goHome()
+        element("account-button").tap()
+        wait(app.navigationBars["Account"])
+        // Needs You off: the Inbox opens on From You, and Home counts From You once it's ticked for the badge.
+        let needsYou = app.switches["inbox-category-setting-needsYou"]
+        scrollTo(needsYou, in: app.collectionViews.firstMatch)
+        XCTAssertEqual(needsYou.value as? String, "1")
+        needsYou.switches.firstMatch.tap()
+        waitForValue(needsYou, equalTo: "0")
+        let countFromYou = element("inbox-badge-setting-fromYou")
+        scrollTo(countFromYou, in: app.collectionViews.firstMatch)
+        XCTAssertFalse(countFromYou.isSelected)
+        XCTAssertFalse(element("inbox-badge-setting-needsYou").isEnabled)
+        countFromYou.tap()
+        XCTAssertTrue(countFromYou.isSelected)
+        snapshot("Inbox categories in Settings")
+        button("Done").tap()
+        let inbox = element("home-inbox")
+        waitForValue(inbox, equalTo: "4")
+        inbox.tap()
+        wait(element("inbox-run-3"))
+        XCTAssertFalse(element("inbox-category-needsYou").exists)
+        XCTAssertTrue(element("inbox-category-fromYou").isSelected)
+        XCTAssertFalse(element("inbox-row-25").exists)
     }
 
     func testIssueOnNoBoardGoesOntoOneFromTheInbox() throws {

@@ -17,7 +17,7 @@ struct InboxScreen: View {
     @State private var archived = 0
 
     var body: some View {
-        let entries = model.visibleInbox
+        let rows = model.inboxRows
         Group {
             if model.inboxMeta.access == .denied {
                 MobileEmptyState(
@@ -35,7 +35,7 @@ struct InboxScreen: View {
                     MobileEmptyState(title: String(localized: .loadingNotifications), message: String(localized: .fetchingNotifications), showsProgress: true)
                 }
             } else {
-                list(entries)
+                list(rows)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -68,33 +68,34 @@ struct InboxScreen: View {
     }
 
     @ViewBuilder
-    private func list(_ entries: [InboxEntry]) -> some View {
+    private func list(_ rows: [InboxListRow]) -> some View {
         List {
-            if !model.inbox(.watching).isEmpty {
-                Picker(.inboxShowPicker, selection: bucket) {
-                    ForEach(InboxBucket.allCases, id: \.self) { Text($0.title).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 8, trailing: 16))
-                .accessibilityIdentifier("inbox-bucket")
+            // One category left on in Settings needs no pills.
+            if model.shownInboxCategories.count > 1 {
+                InboxCategoryPills()
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 8, trailing: 16))
             }
-            if entries.isEmpty {
+            if rows.isEmpty {
                 MobileEmptyState(
                     title: String(localized: .allCaughtUp),
-                    message: String(localized: .allCaughtUpMessage),
-                    systemImage: "tray"
+                    message: model.currentInboxCategory.emptyMessage,
+                    systemImage: model.currentInboxCategory.systemImage
                 )
                 .frame(maxWidth: .infinity)
                 .padding(.top, 60)
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
             }
-            ForEach(entries) { entry in
-                row(entry)
+            ForEach(rows) { row in
+                switch row {
+                case .entry(let entry, let inBatch): self.row(entry, inBatch: inBatch)
+                case .batch(let batch, let unfolded): batchRow(batch, unfolded: unfolded)
+                }
             }
-            if model.inboxMeta.otherCount > 0, !entries.isEmpty {
+            // Releases, CI runs and discussions are no issues of anyone's: they'd be updates.
+            if model.inboxMeta.otherCount > 0, !rows.isEmpty, [.updates, .all].contains(model.currentInboxCategory) {
                 Button {
                     if let url = URL(string: "https://github.com/notifications") { Platform.open(url) }
                 } label: {
@@ -112,11 +113,11 @@ struct InboxScreen: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .refreshable { await model.refreshInboxAndWait() }
-        .animation(Theme.spring, value: entries.map(\.id))
+        .animation(Theme.spring, value: rows.map(\.id))
     }
 
     @ViewBuilder
-    private func row(_ entry: InboxEntry) -> some View {
+    private func row(_ entry: InboxEntry, inBatch: Bool = false) -> some View {
         let unread = model.isUnread(entry)
         // Beside the issue, the selected row is marked quietly, as a list on iPad marks the row on screen.
         let selected = selecting && model.inboxSelectedId == entry.id
@@ -124,12 +125,14 @@ struct InboxScreen: View {
             if selecting { model.selectInboxEntry(entry) } else { open(entry) }
         } label: {
             MobileInboxRow(entry: entry, ground: selected ? Theme.selected : Theme.panel)
+                // One of a run of assignments, under the run's row: set in a little.
+                .padding(.leading, inBatch ? 20 : 0)
         }
         .buttonStyle(RowButtonStyle())
         .accessibilityAddTraits(selected ? .isSelected : [])
         .listRowInsets(EdgeInsets())
         .listRowBackground(selected ? Theme.selected : Theme.panel)
-        .alignmentGuide(.listRowSeparatorLeading) { _ in 58 }
+        .alignmentGuide(.listRowSeparatorLeading) { _ in inBatch ? 78 : 58 }
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             Button {
                 withAnimation(Theme.spring) { model.toggleRead([entry]) }
@@ -158,6 +161,73 @@ struct InboxScreen: View {
         }
     }
 
+    /// A run of issues your account was assigned to together: a tap shows them one by one, or folds them again;
+    /// swipes and the menu act on all of them.
+    @ViewBuilder
+    private func batchRow(_ batch: InboxBatch, unfolded: Bool) -> some View {
+        let unread = batch.entries.contains(where: model.isUnread)
+        let selected = selecting && model.inboxSelectedId == batch.id
+        Button {
+            withAnimation(Theme.spring) { model.toggleInboxBatch(batch) }
+        } label: {
+            MobileInboxBatchRow(batch: batch, unfolded: unfolded)
+        }
+        .buttonStyle(RowButtonStyle())
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .listRowInsets(EdgeInsets())
+        .listRowBackground(selected ? Theme.selected : Theme.panel)
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 58 }
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button {
+                withAnimation(Theme.spring) { model.toggleRead(batch.entries) }
+            } label: {
+                Label(unread ? LocalizedStringResource.markRead : .markUnread, systemImage: unread ? "circle" : "circle.inset.filled")
+            }
+            .tint(.blue)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button {
+                archived += 1
+                model.archive(batch.entries)
+            } label: {
+                Label(.archive, systemImage: "archivebox")
+            }
+            .tint(Theme.accentFill)
+            Button {
+                snoozing = SnoozeTarget(entries: batch.entries)
+            } label: {
+                Label(.snooze, systemImage: "clock")
+            }
+            .tint(Color(white: 0.45))
+        }
+        .contextMenu {
+            Button {
+                withAnimation(Theme.spring) { model.toggleInboxBatch(batch) }
+            } label: {
+                Label(unfolded ? LocalizedStringResource.inboxFoldRun : .inboxUnfoldRun, systemImage: unfolded ? "chevron.up" : "chevron.down")
+            }
+            Divider()
+            Button {
+                withAnimation(Theme.spring) { model.toggleRead(batch.entries) }
+            } label: {
+                Label(unread ? LocalizedStringResource.markAsRead : .markAsUnread, systemImage: unread ? "circle" : "circle.inset.filled")
+            }
+            Menu {
+                ForEach(SnoozeChoice.allCases) { choice in
+                    Button("\(choice.title), \(choice.hint())") { model.snooze(batch.entries, until: choice.date()) }
+                }
+                Button(.pickADate) { pickingDate = SnoozeTarget(entries: batch.entries) }
+            } label: {
+                Label(.snooze, systemImage: "clock")
+            }
+            Button {
+                model.archive(batch.entries)
+            } label: {
+                Label(.archive, systemImage: "archivebox")
+            }
+        }
+    }
+
     /// Opens the issue on its own screen; one that GitHub can't show any more opens on github.com.
     private func open(_ entry: InboxEntry) {
         if !entry.missing, let card = model.inboxItem(for: entry) {
@@ -179,13 +249,6 @@ struct InboxScreen: View {
             model.selectInboxEntry(entry)
             if let url = entry.webURL { Platform.open(url) }
         }
-    }
-
-    private var bucket: Binding<InboxBucket> {
-        Binding(
-            get: { model.currentInboxBucket },
-            set: { value in withAnimation(Theme.spring) { model.inboxBucket = value } }
-        )
     }
 
     @ToolbarContentBuilder
@@ -217,21 +280,163 @@ struct InboxScreen: View {
         }
     }
 
-    /// With a keyboard on the iPad, the Mac's keys: J and K move, U reads, E archives, H snoozes, ⇧S unsubscribes.
+    /// With a keyboard on the iPad, the Mac's keys: J and K move, ← and → switch the category, U reads, E archives,
+    /// H snoozes, ⇧S unsubscribes.
     private var keyboardShortcuts: some View {
         ZStack {
             Button(.nextNotification) { model.stepInbox(1) }.keyboardShortcut("j", modifiers: [])
             Button(.previousNotification) { model.stepInbox(-1) }.keyboardShortcut("k", modifiers: [])
-            Button(.readOrUnread) { if let entry = model.inboxSelected { model.toggleRead([entry]) } }.keyboardShortcut("u", modifiers: [])
+            Button(.inboxPreviousCategory) { withAnimation(Theme.spring) { model.stepInboxCategory(-1) } }.keyboardShortcut(.leftArrow, modifiers: [])
+            Button(.inboxNextCategory) { withAnimation(Theme.spring) { model.stepInboxCategory(1) } }.keyboardShortcut(.rightArrow, modifiers: [])
+            Button(.readOrUnread) { if let targets { model.toggleRead(targets) } }.keyboardShortcut("u", modifiers: [])
             Button(.markAllAsRead) { model.markAllRead() }.keyboardShortcut("u", modifiers: .option)
-            Button(.archive) { if let entry = model.inboxSelected { model.archive([entry]) } }.keyboardShortcut("e", modifiers: [])
+            Button(.archive) { if let targets { model.archive(targets) } }.keyboardShortcut("e", modifiers: [])
             Button(.archiveAllRead) { model.archiveAllRead() }.keyboardShortcut(.delete, modifiers: .shift)
-            Button(.snooze) { if let entry = model.inboxSelected { snoozing = SnoozeTarget(entries: [entry]) } }.keyboardShortcut("h", modifiers: [])
-            Button(.unsubscribe) { if let entry = model.inboxSelected { model.unsubscribe([entry]) } }.keyboardShortcut("s", modifiers: .shift)
+            Button(.snooze) { if let targets { snoozing = SnoozeTarget(entries: targets) } }.keyboardShortcut("h", modifiers: [])
+            Button(.unsubscribe) { if let targets { model.unsubscribe(targets) } }.keyboardShortcut("s", modifiers: .shift)
         }
         .opacity(0)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+
+    /// What the keys act on: the entry beside the list, or every entry of the run J or K stopped on.
+    private var targets: [InboxEntry]? {
+        if model.inboxBatchSelected {
+            let picked = model.visibleInbox.filter { model.inboxPicked.contains($0.id) }
+            return picked.isEmpty ? nil : picked
+        }
+        return model.inboxSelected.map { [$0] }
+    }
+}
+
+/// Needs You, From You, Updates and All above the list, as Mail's categories: each a pill with its symbol and how
+/// many are unread in it. On iPhone only the chosen one carries its name, as in Mail; on iPad each does while they fit.
+private struct InboxCategoryPills: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.wideLayout) private var wide
+
+    var body: some View {
+        Group {
+            // The first that fits: every name, smaller if need be, then only the chosen one's, then only its count.
+            if wide {
+                ViewThatFits(in: .horizontal) {
+                    pills(named: true, counted: true)
+                    pills(named: true, counted: true, small: true)
+                    pills(named: false, counted: true)
+                    pills(named: false, counted: false)
+                }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    pills(named: false, counted: true)
+                    pills(named: false, counted: false)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(.inboxShowPicker)
+    }
+
+    private func pills(named: Bool, counted: Bool, small: Bool = false) -> some View {
+        HStack(spacing: small ? 6 : 8) {
+            ForEach(model.shownInboxCategories) { category in
+                let current = category == model.currentInboxCategory
+                pill(category, named: named || current, counted: counted || current, small: small)
+            }
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private func pill(_ category: InboxCategory, named: Bool, counted: Bool, small: Bool) -> some View {
+        let selected = category == model.currentInboxCategory
+        let count = model.inboxPillCount(category)
+        return Button {
+            withAnimation(Theme.spring) { model.showInboxCategory(category) }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: category.systemImage)
+                    .symbolVariant(selected ? .fill : .none)
+                if named {
+                    Text(category.title).lineLimit(1)
+                }
+                if counted, count > 0 {
+                    Text("\(count)")
+                        .monospacedDigit()
+                        .foregroundStyle(selected ? Color.white.opacity(0.85) : Theme.textSecondary)
+                }
+            }
+            .font(small ? .footnote.weight(.semibold) : .subheadline.weight(.semibold))
+            .foregroundStyle(selected ? Color.white : Theme.text)
+            .padding(.horizontal, small ? 10 : 12)
+            .frame(minWidth: 40, minHeight: small ? 30 : 34)
+            .background(Capsule().fill(selected ? Theme.accentFill : Theme.field))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(category.title)
+        .accessibilityValue(count > 0 ? String(localized: .unreadCount(count: count)) : "")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityIdentifier("inbox-category-\(category.rawValue)")
+    }
+}
+
+/// A run of issues your account was assigned to together, as one row: how many, their numbers and titles, and an
+/// arrow that turns when it shows them one by one.
+struct MobileInboxBatchRow: View {
+    @Environment(AppModel.self) private var model
+    var batch: InboxBatch
+    var unfolded: Bool
+
+    var body: some View {
+        let unread = batch.entries.contains(where: model.isUnread)
+        HStack(alignment: .top, spacing: 10) {
+            Circle()
+                .fill(unread ? Theme.accent : .clear)
+                .frame(width: 8, height: 8)
+                .padding(.top, 13)
+            // Where a row has the person, the run has how many it holds.
+            Text("\(batch.entries.count)")
+                .font(.footnote.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(Theme.textSecondary)
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(Theme.field))
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(.inboxRunAssigned(count: batch.entries.count))
+                        .font(unread ? .body.weight(.semibold) : .body)
+                        .foregroundStyle(Theme.text)
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Text(inboxTime(batch.entries[0].updatedAt, now: model.inboxClock))
+                        .font(.footnote)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.textSecondary)
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Theme.textTertiary)
+                        .rotationEffect(.degrees(unfolded ? 90 : 0))
+                }
+                // Oldest first, as they were made.
+                Text("\(Text(batch.numbers).foregroundStyle(Theme.textTertiary)) · \(batch.entries.reversed().map(\.title).joined(separator: ", "))")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(.leading, 8)
+        .padding(.trailing, 16)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("\(String(localized: .inboxRunAssigned(count: batch.entries.count))), \(batch.entries.reversed().map(\.title).joined(separator: ", "))"))
+        .accessibilityValue(unread ? Text(.unreadEntry) : Text(""))
+        .accessibilityHint(Text(unfolded ? .inboxFoldRun : .inboxUnfoldRun))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("inbox-run-\(batch.entries.count)")
     }
 }
 

@@ -199,7 +199,7 @@ extension GitHubAPI {
             }
           }
         }
-        fragment Who on Actor { login avatarUrl ... on User { name } }
+        fragment Who on Actor { __typename login avatarUrl ... on User { name } }
         fragment Assignee on Assignee { ... on User { login } ... on Bot { login } ... on Mannequin { login } ... on Organization { login } }
         """
         let stamp = Self.iso8601.string(from: since)
@@ -259,7 +259,7 @@ extension GitHubAPI {
     }()
 
     static let inboxFragments = """
-    fragment Who on Actor { login avatarUrl ... on User { name } }
+    fragment Who on Actor { __typename login avatarUrl ... on User { name } }
     fragment I on Issue {
       __typename id url title body state stateReason createdAt
       author { ...Who }
@@ -338,9 +338,13 @@ private struct InboxRepoDTO: Decodable {
 }
 
 private struct WhoDTO: Decodable {
+    var __typename: String?
     var login: String?
     var avatarUrl: String?
     var name: String?
+
+    /// GitHub Actions, Dependabot, Copilot and other apps; nil when GitHub didn't say.
+    var isBot: Bool? { __typename.map { $0 == "Bot" } }
 
     var person: Person? {
         login.map { Person(id: "login:\($0)", login: $0, name: name, avatarUrl: avatarUrl) }
@@ -368,7 +372,7 @@ private struct SubjectDTO: Decodable {
         var activity = (timelineItems?.items ?? []).compactMap(\.activity)
         // The issue itself counts as news when it was opened after you last looked.
         if let createdAt, since.map({ createdAt > $0 }) ?? true {
-            activity.append(InboxActivity(kind: .opened, actor: author?.person, at: createdAt, text: Self.excerpt(body)))
+            activity.append(InboxActivity(kind: .opened, actor: author?.person, at: createdAt, text: Self.excerpt(body), byBot: author?.isBot))
         }
         activity = activity
             .filter { since == nil || $0.at > since! }
@@ -432,26 +436,26 @@ private struct EventDTO: Decodable {
         guard let at = createdAt else { return nil }
         switch __typename {
         case "IssueComment":
-            return InboxActivity(kind: .commented, actor: author?.person, at: at, text: SubjectDTO.excerpt(bodyText), commentId: id)
+            return InboxActivity(kind: .commented, actor: author?.person, at: at, text: SubjectDTO.excerpt(bodyText), commentId: id, byBot: author?.isBot)
         case "AssignedEvent":
-            return InboxActivity(kind: .assigned, actor: actor?.person, at: at, detail: assignee?.login)
+            return InboxActivity(kind: .assigned, actor: actor?.person, at: at, detail: assignee?.login, byBot: actor?.isBot)
         case "UnassignedEvent":
-            return InboxActivity(kind: .unassigned, actor: actor?.person, at: at, detail: assignee?.login)
+            return InboxActivity(kind: .unassigned, actor: actor?.person, at: at, detail: assignee?.login, byBot: actor?.isBot)
         case "ClosedEvent":
-            return InboxActivity(kind: .closed, actor: actor?.person, at: at, detail: stateReason)
+            return InboxActivity(kind: .closed, actor: actor?.person, at: at, detail: stateReason, byBot: actor?.isBot)
         case "ReopenedEvent":
-            return InboxActivity(kind: .reopened, actor: actor?.person, at: at)
+            return InboxActivity(kind: .reopened, actor: actor?.person, at: at, byBot: actor?.isBot)
         case "MergedEvent":
-            return InboxActivity(kind: .merged, actor: actor?.person, at: at)
+            return InboxActivity(kind: .merged, actor: actor?.person, at: at, byBot: actor?.isBot)
         case "ReviewRequestedEvent":
-            return InboxActivity(kind: .reviewRequested, actor: actor?.person, at: at, detail: requestedReviewer?.login ?? requestedReviewer?.name)
+            return InboxActivity(kind: .reviewRequested, actor: actor?.person, at: at, detail: requestedReviewer?.login ?? requestedReviewer?.name, byBot: actor?.isBot)
         case "PullRequestReview":
             // A review still being written isn't news yet.
             guard state != "PENDING" else { return nil }
-            return InboxActivity(kind: .reviewed, actor: author?.person, at: at, text: SubjectDTO.excerpt(bodyText), detail: state, commentId: id)
+            return InboxActivity(kind: .reviewed, actor: author?.person, at: at, text: SubjectDTO.excerpt(bodyText), detail: state, commentId: id, byBot: author?.isBot)
         case "ProjectV2ItemStatusChangedEvent":
             guard let status, !status.isEmpty else { return nil }
-            return InboxActivity(kind: .statusChanged, actor: actor?.person, at: at, detail: status, project: project?.title)
+            return InboxActivity(kind: .statusChanged, actor: actor?.person, at: at, detail: status, project: project?.title, byBot: actor?.isBot)
         default:
             return nil
         }

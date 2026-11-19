@@ -90,12 +90,15 @@ enum DebugRemote {
             let number = due ? String(argument.dropFirst(4)) : argument
             let entry = model.visibleInbox.first { $0.isDue == due && ("\($0.number ?? -1)" == number || $0.displayNumber(withRepo: true) == number) }
             model.selectInboxEntry(entry)
+        case "inboxcategory":
+            // inboxcategory needsYou|fromYou|updates|all: shows that category, as a click on it does.
+            if let category = InboxCategory(rawValue: argument) { model.showInboxCategory(category) }
         case "inboxdump":
             for entry in model.inboxEntries + model.dueInboxEntries + model.selfAssignedInboxEntries {
                 let summary = model.inboxSummary(entry)
-                log("inbox \(entry.displayNumber(withRepo: true)) \(entry.bucket.rawValue) unread=\(model.isUnread(entry)) archived=\(entry.isArchived) \(summary.sign.rawValue): \(summary.lead) \(summary.excerpt ?? "")")
+                log("inbox \(entry.displayNumber(withRepo: true)) \(entry.category(viewer: model.viewer?.login).rawValue) unread=\(model.isUnread(entry)) archived=\(entry.isArchived) \(summary.sign.rawValue): \(summary.lead) \(summary.excerpt ?? "")")
             }
-            log("inbox unread=\(model.inboxUnreadCount) selected=\(model.inboxSelected?.displayNumber(withRepo: true) ?? "-") picked=\(model.inboxPicked.count) undo=\(model.inboxUndo?.message ?? "-") pending=\(model.pendingCount)")
+            log("inbox category=\(model.currentInboxCategory.rawValue) rows=\(model.inboxRows.count) unread=\(model.inboxUnreadCount) selected=\(model.inboxSelected?.displayNumber(withRepo: true) ?? "-") picked=\(model.inboxPicked.count) undo=\(model.inboxUndo?.message ?? "-") pending=\(model.pendingCount)")
         case "view":
             // view <name>: opens a view of the project on screen.
             if let projectId = model.scopeProjectId,

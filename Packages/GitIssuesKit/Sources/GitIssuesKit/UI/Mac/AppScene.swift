@@ -161,8 +161,6 @@ struct SettingsView: View {
             }
             .pickerStyle(.segmented)
 
-            Toggle(.showDockBadgeSetting, isOn: $model.showsDockBadge)
-
             LabeledContent(.appIconMac) {
                 VStack(alignment: .trailing, spacing: 8) {
                     iconGrid
@@ -172,6 +170,10 @@ struct SettingsView: View {
                         .multilineTextAlignment(.trailing)
                 }
             }
+
+            InboxSettingsSection()
+
+            InboxBadgeSettingsSection()
 
             SubIssueSettingsSection()
 
