@@ -1204,7 +1204,12 @@ private struct IssueRowListTable: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> IssueRowListView {
-        IssueRowListView(table: IssueTable.makeTable(context.coordinator))
+        let table = IssueTable.makeTable(context.coordinator)
+        // On an issue's page issues only go under one another, so no gap opens: the dragged row stays where it is,
+        // faded. In a table with gaps the dragged row closes up, and when the drop took it off the list, the row
+        // that moved into its place stayed closed up, blank.
+        table.draggingDestinationFeedbackStyle = .none
+        return IssueRowListView(table: table)
     }
 
     func updateNSView(_ view: IssueRowListView, context: Context) {

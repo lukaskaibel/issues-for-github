@@ -55,15 +55,17 @@ final class DropOntoIssueTests: AppTestCase {
 
     func testASubIssueDroppedOntoAnotherOneGoesUnderItAndUndoTakesItBack() {
         openSubIssues()
-        let (child, parent) = (element("sub-#28"), element("sub-#13"))
+        // From the last row: the row's menu opens under the finger, and the drag takes over from it only after the
+        // finger has come some way, more than the one row from #28 on the iPad.
+        let (child, parent) = (element("sub-#23"), element("sub-#13"))
         scrollTo(child)
         wait(parent)
         drag(child, onto: parent)
         wait(notice("1 issue made a sub-issue of #13"), 15)
         snapshot("Sub-issue dropped onto another one")
-        // It hangs under #13 now, which is folded.
+        // It hangs under #13 now, which is folded; it is done, as one of #13's two was.
         waitGone(child)
-        waitForLabel(parent, containing: "1 of 3 sub-issues done")
+        waitForLabel(parent, containing: "2 of 3 sub-issues done")
         element("notice-undo").tap()
         wait(child)
         waitForLabel(parent, containing: "1 of 2 sub-issues done")
@@ -83,7 +85,7 @@ final class DropOntoIssueTests: AppTestCase {
         second.tap()
         wait(labelled("2 selected"))
         drag(second, onto: parent)
-        wait(notice("2 issues made a sub-issue of #28"), 15)
+        wait(notice("2 issues made sub-issues of #28"), 15)
         snapshot("Picked sub-issues dropped onto another one")
         waitGone(first)
         waitGone(second)

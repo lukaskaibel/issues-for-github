@@ -943,7 +943,7 @@ enum DebugRemote {
                             let top = (window.contentView?.bounds.height ?? 0) - rect.maxY
                             return texts(cell).joined(separator: "/") + " @\(Int(rect.midX)),\(Int(top + rect.height / 2))"
                         }
-                        log("table \(type(of: table)) frame=\(table.convert(table.bounds, to: nil)) rows=\(table.numberOfRows) selected=\(table.selectedRow): \(rows.joined(separator: " | "))")
+                        log("table \(type(of: table)) frame=\(table.convert(table.bounds, to: nil)) rows=\(table.numberOfRows) hidden=\(table.hiddenRowIndexes.map { $0 }) selected=\(table.selectedRow): \(rows.joined(separator: " | "))")
                     }
                     view.subviews.forEach(walk)
                 }
