@@ -361,7 +361,7 @@ extension AppModel {
     func openCount(of entry: ProjectEntry) -> Int? {
         switch entry {
         case .allIssues(let id):
-            return items(in: .allIssues(id)).filter { !isDone($0) }.count
+            return everyItem(in: .allIssues(id)).filter { !isDone($0) }.count
         case .view(let view):
             return matchingItems(of: view).filter { !isDone($0) }.count
         case .milestone(let projectId, let title):

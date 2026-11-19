@@ -234,7 +234,7 @@ extension AppModel {
     /// last, under "Later". Every open milestone shows, one without epics yet too: it is part of the plan, and a place
     /// to drop an epic.
     func epicsByMilestone(projectId: String) -> [ListSection] {
-        let roadmap = roadmap(projectId: projectId)
+        let roadmap = shownRoadmap(projectId: projectId)
         let byId = Dictionary((roadmap.rows + roadmap.later).map { ($0.epic.id, $0) }, uniquingKeysWith: { first, _ in first })
         let groups = roadmap.windows.map(\.group)
         var result: [ListSection] = []
@@ -260,9 +260,9 @@ extension AppModel {
 
     // MARK: Progress
 
-    /// A milestone's issues on a board, done and in all.
+    /// A milestone's issues on a board, done and in all, yours or not.
     func progress(projectId: String, milestone title: String) -> Roadmap.Count {
-        let items = items(in: .milestone(projectId: projectId, title: title))
+        let items = everyItem(in: .milestone(projectId: projectId, title: title))
         return Roadmap.Count(done: items.filter { isDone($0) }.count, total: items.count)
     }
 }

@@ -255,6 +255,18 @@ final class MobileNavigation {
         }
     }
 
+    /// The page of issues on screen, leaving out the issues opened from it: where "Only My Issues" lets go of the
+    /// issues it kept on a page once you go elsewhere (`AppModel.forgetKeptMine`).
+    var issuesPage: String {
+        let pages = path(for: tab).filter { route in
+            switch route {
+            case .issue, .inboxIssue: false
+            default: true
+            }
+        }
+        return "\(tab)\u{1F}\(pages.last.map { "\($0)" } ?? "")"
+    }
+
     /// The project a tab is about, if it is about one.
     static func projectId(of tab: MobileTab) -> String? {
         switch tab {

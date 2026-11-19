@@ -34,6 +34,10 @@ struct MainToolbar: ToolbarContent {
             PrincipalControl(openItem: openItem)
         }
         .sharedBackgroundVisibility(model.hasPrincipalControl(openItem: openItem) ? .automatic : .hidden)
+        // On every page, as it holds everywhere: on in the Inbox, the boards show only yours when you get there.
+        ToolbarItem {
+            OnlyMineButton()
+        }
         ToolbarItem {
             PageControls(openItem: openItem, showsInspector: $showsInspector)
         }
@@ -85,6 +89,24 @@ private struct PrincipalControl: View {
                 MyIssuesLayoutPicker()
             }
         }
+    }
+}
+
+/// "Only My Issues" (⇧⌘M): boards, lists, milestones and the roadmap with only your issues. The person is filled in
+/// the accent colour while it is on, as Mail's filter button shows that it filters.
+private struct OnlyMineButton: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let on = model.onlyMine
+        ToolbarIconButton(
+            systemImage: on ? "person.crop.circle.fill" : "person.crop.circle", label: .onlyMyIssues,
+            help: on ? .showEveryonesIssuesTooltip : .showOnlyMyIssuesTooltip, active: on
+        ) {
+            model.onlyMine.toggle()
+        }
+        .accessibilityAddTraits(on ? .isSelected : [])
+        .disabled(model.viewer == nil)
     }
 }
 

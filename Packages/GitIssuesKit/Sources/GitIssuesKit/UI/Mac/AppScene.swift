@@ -28,6 +28,15 @@ public struct GitIssuesScene: Scene {
                 .disabled(!model.signedIn || model.projects.isEmpty)
             }
             UndoCommands(model: model)
+            CommandGroup(before: .toolbar) {
+                // Boards and lists with only your issues, from anywhere, as the person button in the toolbar.
+                Toggle(isOn: Binding(get: { model.onlyMine }, set: { model.onlyMine = $0 })) {
+                    Text(.onlyMyIssues)
+                }
+                .keyboardShortcut("m", modifiers: [.command, .shift])
+                .disabled(!model.signedIn || model.viewer == nil)
+                Divider()
+            }
             CommandMenu(.goMenu) {
                 Button(.back) { model.goBack() }
                     .keyboardShortcut("[", modifiers: .command)

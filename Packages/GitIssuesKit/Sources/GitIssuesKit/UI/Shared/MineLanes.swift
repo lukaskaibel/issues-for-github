@@ -199,13 +199,16 @@ extension AppModel {
         if let cached = myItemsCache { return cached }
         guard let login = viewer?.login else { return [] }
         let solo = Self.soloProjectIds(allItems, login: login)
-        let items = allItems.filter { item in
-            guard !item.isEpic else { return false }
-            if item.assignees.isEmpty { return item.projectId.map(solo.contains) ?? false }
-            return item.assignees.contains { $0.login == login }
-        }
+        let items = allItems.filter { !$0.isEpic && Self.isMine($0, login: login, solo: solo) }
         myItemsCache = items
         return items
+    }
+
+    /// Whether an item is yours: assigned to you, alone or with others, or assigned to nobody in a project you work on
+    /// alone (`solo`, from `soloProjectIds`). My Issues and "Only My Issues" go by it.
+    nonisolated static func isMine(_ item: Item, login: String, solo: Set<String>) -> Bool {
+        if item.assignees.isEmpty { return item.projectId.map(solo.contains) ?? false }
+        return item.assignees.contains { $0.login == login }
     }
 
     /// The projects in which no open issue is assigned to anyone but `login`: those you work on alone, where people

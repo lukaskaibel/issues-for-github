@@ -7,7 +7,7 @@ struct RoadmapView: View {
     var projectId: String
 
     var body: some View {
-        let roadmap = model.roadmap(projectId: projectId)
+        let roadmap = model.shownRoadmap(projectId: projectId)
         if roadmap.rows.isEmpty, roadmap.later.isEmpty {
             EmptyState(title: String(localized: .roadmapEmptyTitle), message: String(localized: .roadmapEmptyMessage)) {
                 if model.projects.first(where: { $0.id == projectId })?.viewerCanUpdate == true {

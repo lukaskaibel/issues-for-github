@@ -156,6 +156,13 @@ struct ContentPanel: View {
                             Button(.showBoard) { model.select(.project(projectId)) }
                                 .buttonStyle(SecondaryButtonStyle())
                         }
+                    } else if let scope = model.scope, model.onlyMineHidesEverything(in: scope) {
+                        // "Only My Issues" leaves out every issue here, which isn't the page having none.
+                        EmptyState(title: String(localized: .nothingOfYoursTitle), message: String(localized: .nothingOfYoursMessage)) {
+                            Button(.showEveryonesIssues) { model.onlyMine = false }
+                                .buttonStyle(SecondaryButtonStyle())
+                        }
+                        .transition(.opacity)
                     } else if case .roadmap(let projectId) = model.scope {
                         RoadmapView(projectId: projectId)
                             .transition(.opacity)

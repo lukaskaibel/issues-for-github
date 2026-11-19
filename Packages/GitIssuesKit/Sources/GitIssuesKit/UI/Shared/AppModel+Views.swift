@@ -416,12 +416,13 @@ extension AppModel {
         }
     }
 
-    /// The items of a project a view shows, in its order. Epics stay on the roadmap, unless the filter asks for them.
+    /// The items of a project a view shows, in its order, as "Only My Issues" leaves them. Epics stay on the roadmap,
+    /// unless the filter asks for them.
     func items(of view: ProjectView) -> [Item] {
-        sorted(matchingItems(of: view), by: sort(of: view))
+        sorted(keepingMine(matchingItems(of: view), in: .project(view.projectId)), by: sort(of: view))
     }
 
-    /// The items a view shows, in no particular order: enough to count them.
+    /// The items a view's filter matches, yours or not, in no particular order: enough to count them.
     func matchingItems(of view: ProjectView) -> [Item] {
         let all = allItems.filter { $0.projectId == view.projectId }
         guard let context = filterContext(projectId: view.projectId) else { return all }
@@ -458,7 +459,7 @@ extension AppModel {
     /// The view open in a project when its filter leaves out every issue the project has: its empty list then says so,
     /// instead of that the project has none.
     func viewHidingEverything(projectId: String) -> ProjectView? {
-        guard let view = currentView(projectId: projectId), items(of: view).isEmpty,
+        guard let view = currentView(projectId: projectId), matchingItems(of: view).isEmpty,
               allItems.contains(where: { $0.projectId == projectId && !$0.isEpic }) else { return nil }
         return view
     }
@@ -1019,7 +1020,17 @@ extension AppModel {
     /// After an issue was made in a view: says so when the view doesn't show it, because its filter leaves it out.
     /// On a board, also when it went into a column you hid.
     func noteIfHidden(_ itemId: String) {
-        guard let item = item(id: itemId), let projectId = item.projectId, let view = currentView(projectId: projectId) else { return }
+        guard let item = item(id: itemId) else { return }
+        // Made for someone else with "Only My Issues" on.
+        if narrowsToMine, !mineIds.contains(item.id), let scope, !items(in: scope).contains(where: { $0.id == item.id }) {
+            status.post(Notice(
+                title: String(localized: .createdNotYours(number: item.displayNumber)),
+                message: String(localized: .createdNotYoursMessage),
+                action: .openItem(item.id)
+            ))
+            return
+        }
+        guard let projectId = item.projectId, let view = currentView(projectId: projectId) else { return }
         if !self.view(view, shows: item) {
             status.post(Notice(
                 title: String(localized: .createdNotInView(number: item.displayNumber, view: view.name)),
