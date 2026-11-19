@@ -6,6 +6,20 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Drag sub-issues on an issue's page.** Drop a sub-issue onto another issue listed on the page and it goes under that
+  issue, on the Mac, iPhone and iPad: the issue lights up, a message says what happened, and **Undo** takes it back.
+  Picked sub-issues go together. On the Mac this also works from an epic's milestones and from the issues it is blocked
+  by or blocks. An issue the app knows only from GitHub stays where it is.
+
+### Fixed
+
+- **Rows on an issue's page no longer stay grey on the Mac.** Scrolling the page under a resting pointer left every
+  row that passed beneath it lit up until the pointer went over it again. These rows now are the list's own, so only
+  the row under the pointer lights up, and none under the comment field or the toolbar.
+- **The list behind an issue's page no longer follows the pointer on the Mac**, so no row is lit up when you go back.
+
 ## [1.1.0] - 2026-11-19
 
 ### Added

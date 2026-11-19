@@ -51,6 +51,8 @@ struct IssueTable: NSViewRepresentable {
     /// Whether issues can be dragged to a new place: in a project you can edit, not in My Issues. Anywhere an issue
     /// can be dragged onto another one to go under it.
     var canMoveRows = false
+    /// An issue's page is over the list, which stays alive behind it: the list doesn't follow the pointer then.
+    var isCovered = false
     var focusedId: String?
     var focusScrollToken: Int
     var avatarVersion: Int
@@ -61,7 +63,8 @@ struct IssueTable: NSViewRepresentable {
         Coordinator(model: model)
     }
 
-    func makeNSView(context: Context) -> NSScrollView {
+    /// A table as every list of issues has it, whose rows `coordinator` provides.
+    static func makeTable(_ coordinator: Coordinator) -> HoverTableView {
         let table = HoverTableView()
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("issue"))
         column.resizingMask = .autoresizingMask
@@ -76,17 +79,21 @@ struct IssueTable: NSViewRepresentable {
         table.floatsGroupRows = false
         table.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
         table.allowsColumnResizing = false
-        table.dataSource = context.coordinator
-        table.delegate = context.coordinator
-        table.target = context.coordinator
+        table.dataSource = coordinator
+        table.delegate = coordinator
+        table.target = coordinator
         table.action = #selector(Coordinator.clicked(_:))
-        table.coordinator = context.coordinator
-        context.coordinator.table = table
+        table.coordinator = coordinator
+        coordinator.table = table
         // Issues, epics' headers and section headers can be dragged to a new place; rows open a gap where it would land.
-        table.registerForDraggedTypes([Coordinator.itemType, Coordinator.epicType, Coordinator.sectionType])
+        table.registerForDraggedTypes([Coordinator.itemType, Coordinator.pickedType, Coordinator.epicType, Coordinator.sectionType])
         table.setDraggingSourceOperationMask(.move, forLocal: true)
         table.draggingDestinationFeedbackStyle = .gap
+        return table
+    }
 
+    func makeNSView(context: Context) -> NSScrollView {
+        let table = Self.makeTable(context.coordinator)
         let scroll = NSScrollView()
         scroll.documentView = table
         scroll.drawsBackground = false
@@ -115,6 +122,7 @@ struct IssueTable: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         context.coordinator.canMoveRows = canMoveRows
+        context.coordinator.setCovered(isCovered)
         if context.coordinator.listKey != listKey {
             // Not where the last list was scrolled to; before the rows change, so the focused issue can still be
             // scrolled to.
@@ -182,9 +190,78 @@ struct IssueTable: NSViewRepresentable {
             var count: Int?
         }
         private var lifted: Lifted?
+        /// The drag `nestable` was worked out for. On an issue's page a drag can come from another of its lists.
+        private var nestableDrag: Int?
+        /// The page behind which the list stays alive is over it.
+        private(set) var isCovered = false
+        /// On an issue's page: its rows by issue, each with what it does. Nil in the main list.
+        private var pageRows: [String: IssueListRow]?
+        var isOnPage: Bool { pageRows != nil }
+        private var hoverCheckQueued = false
+        /// The issues being dragged on the page on screen, which fade in each of its lists.
+        private static var pageDragIds: Set<String> = []
+        private static let pageDragChanged = Notification.Name("IssueTable.pageDragChanged")
 
         init(model: AppModel) {
             self.model = model
+        }
+
+        /// Shows the rows of a list on an issue's page: no headers, and each row says what it does.
+        func apply(rows: [IssueListRow], avatarVersion: Int) {
+            guard let table else { return }
+            if pageRows == nil {
+                NotificationCenter.default.addObserver(self, selector: #selector(pageDragChanged), name: Self.pageDragChanged, object: nil)
+            }
+            pageRows = Dictionary(rows.map { ($0.row.item.id, $0) }, uniquingKeysWith: { first, _ in first })
+            let oldIds = entries.map(\.id)
+            entries = rows.map { .row($0.row) }
+            IssueTable.update(table, from: oldIds, to: entries.map(\.id)) { view, row in
+                configure(view, with: entries[row])
+            }
+            if avatarVersion != self.avatarVersion {
+                self.avatarVersion = avatarVersion
+                for row in IssueTable.loadedRows(of: table) {
+                    table.view(atColumn: 0, row: row, makeIfNecessary: false)?.needsDisplay = true
+                }
+            }
+            // Rows that came or went may have moved another one under the pointer or away from it.
+            if oldIds != entries.map(\.id) { queueHoverCheck() }
+        }
+
+        @objc private func pageDragChanged() {
+            guard let table else { return }
+            for loaded in IssueTable.loadedRows(of: table) { configureView(at: loaded, in: table) }
+        }
+
+        private static func setPageDrag(_ ids: Set<String>) {
+            pageDragIds = ids
+            NotificationCenter.default.post(name: pageDragChanged, object: nil)
+        }
+
+        /// The page came over the list, or went: nothing in the list is under the pointer while it is covered.
+        func setCovered(_ covered: Bool) {
+            guard covered != isCovered else { return }
+            isCovered = covered
+            // After this update of the views: the pointer's issue is part of what they show.
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                if covered {
+                    hover(row: -1)
+                    hoverPart(row: -1, pointInTable: .zero)
+                } else {
+                    table?.updateHoverFromCurrentMouseLocation()
+                }
+            }
+        }
+
+        /// Looks again at what is under the pointer, once however often this is asked in one turn of the run loop.
+        func queueHoverCheck() {
+            guard !hoverCheckQueued else { return }
+            hoverCheckQueued = true
+            DispatchQueue.main.async { [weak self] in
+                self?.hoverCheckQueued = false
+                self?.table?.updateHoverFromCurrentMouseLocation()
+            }
         }
 
         func apply(sections: [IssueSectionModel], focusedId: String?, focusScrollToken: Int, avatarVersion: Int) {
@@ -263,7 +340,18 @@ struct IssueTable: NSViewRepresentable {
                 let cell = view as? IssueRowCell
                 cell?.model = model
                 cell?.configure(row, highlighted: row.item.id == hoveredId || row.item.id == focusedId)
-                cell?.alphaValue = draggedIds.contains(row.item.id) ? 0.35 : 1
+                let dragged = draggedIds.contains(row.item.id) || (isOnPage && Self.pageDragIds.contains(row.item.id))
+                cell?.alphaValue = dragged ? 0.35 : 1
+                if let actions = pageRows?[row.item.id]?.actions {
+                    cell?.pressAction = actions.open
+                    // A sub-issue known only from GitHub is closed or opened again from its row, also with VoiceOver.
+                    cell?.setAccessibilityCustomActions(row.standIn == .subIssue ? [
+                        NSAccessibilityCustomAction(name: String(localized: row.item.isClosed ? .reopenSubIssue : .markSubIssueAsDone)) {
+                            actions.toggleClosed()
+                            return true
+                        },
+                    ] : [])
+                }
             case .epic(_, let group):
                 (view as? EpicHeaderRowCell)?.configure(group)
                 view.alphaValue = draggedIds.contains(entry.id) ? 0.35 : 1
@@ -358,7 +446,11 @@ struct IssueTable: NSViewRepresentable {
             guard entries.indices.contains(row) else { return false }
             switch entries[row] {
             case .header: return true
-            case .row(let issue): return canMoveRows || model.canNestSomewhere(issue.item)
+            case .row(let issue):
+                // On an issue's page issues only go under one another; one known only from GitHub can't be told apart
+                // from where it stands, so it stays.
+                if isOnPage { return !issue.item.isStandIn && model.canNestSomewhere(issue.item) }
+                return canMoveRows || model.canNestSomewhere(issue.item)
             case .epic(let sectionId, _): return canMoveRows && section(sectionId)?.kind == .status
             }
         }
@@ -411,6 +503,7 @@ struct IssueTable: NSViewRepresentable {
             case .header:
                 return
             }
+            if isOnPage { Self.setPageDrag(draggedIds) }
             for loaded in IssueTable.loadedRows(of: tableView) { configureView(at: loaded, in: tableView) }
         }
 
@@ -420,6 +513,7 @@ struct IssueTable: NSViewRepresentable {
         ) {
             let ids = draggedIds
             draggedIds = []
+            if isOnPage { Self.setPageDrag([]) }
             nestable = [:]
             lifted = nil
             showNestTarget(nil)
@@ -463,6 +557,7 @@ struct IssueTable: NSViewRepresentable {
         /// The picked issues a drag that starts on issue `id` carries: all of them, when it is one of two or more.
         func picked(from id: String) -> PickedIssues? {
             guard let item = model.item(id: id) else { return nil }
+            if isOnPage { return PickedIssues(subIssuesFrom: item, model: model) }
             return PickedIssues(from: item, among: groups(of: item), model: model)
         }
 
@@ -636,7 +731,14 @@ struct IssueTable: NSViewRepresentable {
             _ tableView: NSTableView, validateDrop info: NSDraggingInfo, proposedRow row: Int,
             proposedDropOperation dropOperation: NSTableView.DropOperation
         ) -> NSDragOperation {
-            guard info.draggingSource as? NSTableView === tableView else { return [] }
+            guard !isCovered else { return [] }
+            // The lists of an issue's page take issues from one another.
+            let source = info.draggingSource as? HoverTableView
+            guard source === tableView || (isOnPage && source?.coordinator?.isOnPage == true) else { return [] }
+            if nestableDrag != info.draggingSequenceNumber {
+                nestableDrag = info.draggingSequenceNumber
+                nestable = [:]
+            }
             // In the middle of an issue that can take the dragged ones as its sub-issues: they would go under it, and it
             // lights up. Near its top or bottom edge they go in front of it or after it, as anywhere else.
             if dropOperation == .on, let target = nestTarget(at: row), canNest(info, under: target) {
@@ -740,7 +842,7 @@ struct IssueTable: NSViewRepresentable {
         private func nestTarget(at row: Int) -> Item? {
             guard entries.indices.contains(row) else { return nil }
             switch entries[row] {
-            case .row(let issue): return issue.item
+            case .row(let issue): return issue.item.isStandIn ? nil : issue.item
             case .epic(_, let group): return group.epic
             case .header: return nil
             }
@@ -756,7 +858,8 @@ struct IssueTable: NSViewRepresentable {
         /// Over an issue they would go under, the dragged issues show as a smaller card under the pointer, which says
         /// so, and leave the issue in sight: the card they lifted off as covers the row under the pointer.
         private func showLifted(nestingUnder parent: Item?, _ info: NSDraggingInfo, in tableView: NSTableView) {
-            guard let lifted else { return }
+            // What was lifted, which on an issue's page may have been in another of its lists.
+            guard let lifted = (info.draggingSource as? HoverTableView)?.coordinator?.lifted ?? lifted else { return }
             let pointer = tableView.convert(info.draggingLocation, from: nil)
             var image = lifted.image
             var origin = NSPoint(x: pointer.x + lifted.offset.x, y: pointer.y + lifted.offset.y)
@@ -843,8 +946,40 @@ struct IssueTable: NSViewRepresentable {
         var debugDraggedIds: Set<String> { draggedIds }
         #endif
 
+        /// A click on a row of an issue's page: in the order the list takes them, picking first, then the checkbox, the
+        /// arrow, the parts, and the issue.
+        private func clickedOnPage(_ row: Int, in table: NSTableView) {
+            guard entries.indices.contains(row), case .row(let issue) = entries[row],
+                  let actions = pageRows?[issue.item.id]?.actions, let event = NSApp.currentEvent,
+                  let cell = table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell else { return }
+            let local = cell.convert(event.locationInWindow, from: nil)
+            if actions.pick(false) { return }
+            if issue.pickable, cell.checkboxRect.contains(local) {
+                _ = actions.pick(true)
+            } else if cell.isOnFold(local) {
+                actions.fold()
+            } else if cell.isOnRemove(local) {
+                actions.remove()
+            } else if let part = cell.part(at: local) {
+                guard issue.editable else {
+                    actions.toggleClosed()
+                    return
+                }
+                actions.willOpenPart()
+                Dropdown.show(below: part.rect, in: cell, model: model) { close in
+                    ItemPicker(kind: part.kind, itemId: issue.item.id, close: close)
+                }
+            } else {
+                actions.open()
+            }
+        }
+
         @objc func clicked(_ sender: NSTableView) {
             let row = sender.clickedRow
+            if isOnPage {
+                clickedOnPage(row, in: sender)
+                return
+            }
             // A click below the issues lets the picked ones go.
             guard row >= 0 else {
                 model.clearSelection()
@@ -908,6 +1043,7 @@ struct IssueTable: NSViewRepresentable {
                 let local = cell.convert(point, from: table)
                 cell.hoveredPart = loaded == row ? cell.part(at: local)?.kind : nil
                 cell.hoveringFold = loaded == row && cell.isOnFold(local)
+                cell.hoveringRemove = loaded == row && cell.isOnRemove(local)
             }
         }
 
@@ -916,8 +1052,11 @@ struct IssueTable: NSViewRepresentable {
             guard id != hoveredId else { return }
             let previous = hoveredId
             hoveredId = id
-            if let previous { model.pointer(.left, previous) }
-            if let id { model.pointer(.entered, id) }
+            // Keys act on the issue under the pointer in the main list; on a page, on the page's issue.
+            if !isOnPage {
+                if let previous { model.pointer(.left, previous) }
+                if let id { model.pointer(.entered, id) }
+            }
             refreshHighlight(for: [previous, id])
         }
 
@@ -928,6 +1067,7 @@ struct IssueTable: NSViewRepresentable {
         }
 
         func menu(forRow row: Int) -> NSMenu? {
+            if isOnPage { return item(at: row).flatMap { pageRows?[$0.id]?.actions.menu() } }
             if entries.indices.contains(row), case .header(let section) = entries[row] {
                 return SectionMenu.menu(section, model: model)
             }
@@ -1042,6 +1182,63 @@ enum SectionMenu {
     }
 }
 
+/// A list of issues on an issue's page, part of the page and scrolling with it: the list's own table, without its
+/// section headers, so that its rows follow the pointer, take clicks, lift and take dropped issues as in the list.
+struct IssueRowList: View {
+    @Environment(AppModel.self) private var model
+    var rows: [IssueListRow]
+
+    var body: some View {
+        IssueRowListTable(rows: rows, avatarVersion: model.avatarVersion)
+            .frame(height: CGFloat(rows.count) * Theme.rowHeight)
+    }
+}
+
+private struct IssueRowListTable: NSViewRepresentable {
+    @Environment(AppModel.self) private var model
+    var rows: [IssueListRow]
+    var avatarVersion: Int
+
+    func makeCoordinator() -> IssueTable.Coordinator {
+        IssueTable.Coordinator(model: model)
+    }
+
+    func makeNSView(context: Context) -> IssueRowListView {
+        let table = IssueTable.makeTable(context.coordinator)
+        // On an issue's page issues only go under one another, so no gap opens: the dragged row stays where it is,
+        // faded. In a table with gaps the dragged row closes up, and when the drop took it off the list, the row
+        // that moved into its place stayed closed up, blank.
+        table.draggingDestinationFeedbackStyle = .none
+        return IssueRowListView(table: table)
+    }
+
+    func updateNSView(_ view: IssueRowListView, context: Context) {
+        context.coordinator.apply(rows: rows, avatarVersion: avatarVersion)
+    }
+}
+
+/// Holds the table at the size of the room the page gives it.
+final class IssueRowListView: NSView {
+    private let table: HoverTableView
+
+    init(table: HoverTableView) {
+        self.table = table
+        super.init(frame: .zero)
+        addSubview(table)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("Not used") }
+
+    override var isFlipped: Bool { true }
+
+    override func layout() {
+        super.layout()
+        table.frame = bounds
+        table.tableColumns.first?.width = bounds.width
+    }
+}
+
 /// A table that reports the row under the pointer and builds a context menu per row.
 final class HoverTableView: NSTableView {
     weak var coordinator: IssueTable.Coordinator?
@@ -1050,12 +1247,31 @@ final class HoverTableView: NSTableView {
     // The app's own key handling moves through issues; the table should not take the keyboard.
     override var acceptsFirstResponder: Bool { false }
 
+    /// On an issue's page a click in a window in the background acts at once, as on the page's other buttons.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        coordinator?.isOnPage == true
+    }
+
+    private var keyObserver: NSObjectProtocol?
+
+    /// Back in front the pointer may be somewhere else: no event told the table that it left a row meanwhile.
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let keyObserver { NotificationCenter.default.removeObserver(keyObserver) }
+        keyObserver = window.map { window in
+            NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.coordinator?.queueHoverCheck() }
+            }
+        }
+    }
+
     /// A press on an issue is followed here until it is clearly a click, a drag or a deep press: the table's own tracking
     /// leaves pressure events in the queue until the button is up, too late to peek. A click or drag then goes to the
     /// table as it came, and a deep press never does, so it can't open the issue as well.
+    /// An issue's page has no peek to open, so its rows skip this.
     override func mouseDown(with event: NSEvent) {
         let row = self.row(at: convert(event.locationInWindow, from: nil))
-        guard let coordinator, let window, let item = coordinator.item(at: row),
+        guard let coordinator, !coordinator.isOnPage, let window, let item = coordinator.item(at: row),
               event.modifierFlags.intersection(.deviceIndependentFlagsMask).isDisjoint(with: [.command, .shift, .option, .control]) else {
             super.mouseDown(with: event)
             return
@@ -1076,6 +1292,17 @@ final class HoverTableView: NSTableView {
                 return
             }
         }
+    }
+
+    /// The row under `point`, in the table's coordinates; none where something else lies over the list, as the comment
+    /// field or the toolbar over an issue's page.
+    private func rowUnderPointer(_ point: NSPoint) -> Int {
+        guard coordinator?.isCovered != true, visibleRect.contains(point) else { return -1 }
+        if coordinator?.isOnPage == true {
+            let inWindow = convert(point, to: nil)
+            guard let hit = window?.contentView?.superview?.hitTest(inWindow), hit.isDescendant(of: self) else { return -1 }
+        }
+        return row(at: point)
     }
 
     /// Only rows that can go somewhere lift. On macOS 27 the table hides a row it starts to drag before it asks for
@@ -1099,12 +1326,16 @@ final class HoverTableView: NSTableView {
         )
         addTrackingArea(area)
         tracking = area
+        // A table inside a page gets a new area with each step the page scrolls, and the old one never says that the
+        // pointer left: without looking again, every row passing under a resting pointer stayed lit.
+        if coordinator?.isOnPage == true { coordinator?.queueHoverCheck() }
     }
 
     override func mouseMoved(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
-        coordinator?.hover(row: row(at: point))
-        coordinator?.hoverPart(row: row(at: point), pointInTable: point)
+        let row = rowUnderPointer(point)
+        coordinator?.hover(row: row)
+        coordinator?.hoverPart(row: row, pointInTable: point)
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -1115,7 +1346,7 @@ final class HoverTableView: NSTableView {
     func updateHoverFromCurrentMouseLocation() {
         guard let window, window.isKeyWindow else { return }
         let point = convert(window.mouseLocationOutsideOfEventStream, from: nil)
-        let row = visibleRect.contains(point) ? row(at: point) : -1
+        let row = rowUnderPointer(point)
         coordinator?.hover(row: row)
         // The part under the pointer too: a part lit before the scroll would go on with its row, and with whichever
         // issue later takes that row's view over, until the pointer moved.

@@ -53,7 +53,8 @@ open an issue that describes the change instead.
   if you can't translate it, say so in the pull request. `swift test` checks this.
 - **Colours and animation timings come from `UI/Theme.swift`.** Every colour needs a light and a dark value.
 - **What shows in several places is one component.** An issue in a list, among an issue's sub-issues or in search is
-  the same row (`IssueRowView` on the Mac, `IssueRow` on iPhone and iPad), a card is `CardView` on every board, an
+  the same row (`IssueRowCell` in `IssueTable` on the Mac, as `IssueRowList` on an issue's page; `IssueRow` on iPhone
+  and iPad), a card is `CardView` on every board, an
   epic's header is `EpicHeader` in every list and on every board (the Mac's list paints it from `EpicHeaderLook`), an
   issue lit up to take the issues dropped onto it is `NestTargetMark`, and a card being dragged has `liftedShadow` (the
   Mac's list draws its drag image from the board's views, in `LiftedImage`). The marks they carry (status, priority,

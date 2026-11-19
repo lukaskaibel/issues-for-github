@@ -299,6 +299,17 @@ struct PickedIssues: Equatable {
         self.init(from: item, among: columns.map(\.nesting), model: model)
     }
 
+    /// What a drag that starts on `item` on an issue's page carries: the sub-issues picked there, when it is one of two
+    /// or more.
+    @MainActor
+    init?(subIssuesFrom item: Item, model: AppModel) {
+        let picked = model.pickedSubIssues
+        guard picked.count > 1, picked.contains(where: { $0.id == item.id }) else { return nil }
+        items = picked
+        moving = Set(picked.map(\.id))
+        epic = nil
+    }
+
     /// The same among a list's groups, such as My Issues' sections, which are no board's columns.
     @MainActor
     init?(from item: Item, among groups: [Nesting], model: AppModel) {
