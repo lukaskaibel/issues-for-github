@@ -250,3 +250,98 @@ func sentence(_ text: String, emphasizing name: String, _ style: (Text) -> Text)
     guard let range = text.range(of: name) else { return Text(text) }
     return Text("\(Text(text[..<range.lowerBound]))\(style(Text(name)))\(Text(text[range.upperBound...]))")
 }
+
+/// Settings for the Inbox, on this device: which of its categories it offers. Which of them its number counts is
+/// the next section's, so several can be offered while only one counts.
+struct InboxSettingsSection: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        // Row by row rather than a ForEach: in the Mac's grouped form a ForEach's last row slipped out of the section.
+        Section {
+            row(.needsYou)
+            row(.fromYou)
+            row(.updates)
+            row(.all)
+        } header: {
+            Text(.inbox)
+        } footer: {
+            Text(.inboxCategoriesFooter)
+        }
+    }
+
+    private func row(_ category: InboxCategory) -> some View {
+        let shown = !model.inboxHiddenCategories.contains(category)
+        return Toggle(isOn: Binding(
+            get: { shown },
+            set: { on in withAnimation(Theme.spring) { model.setInboxCategory(category, shown: on) } }
+        )) {
+            Label(category.title, systemImage: category.systemImage)
+        }
+        // The last one stays on: the Inbox always shows something.
+        .disabled(shown && model.shownInboxCategories == [category])
+        .accessibilityIdentifier("inbox-category-setting-\(category.rawValue)")
+    }
+}
+
+/// Settings for the number at the Inbox: which of the categories offered it counts, and on the Mac whether the Dock
+/// shows it.
+struct InboxBadgeSettingsSection: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        @Bindable var model = model
+        Section {
+            badgeRow(.needsYou)
+            badgeRow(.fromYou)
+            badgeRow(.updates)
+            badgeRow(.all)
+            #if os(macOS)
+            Toggle(.showDockBadgeSetting, isOn: $model.showsDockBadge)
+            #endif
+        } header: {
+            Text(.inboxBadgeSection)
+        } footer: {
+            Text(.inboxBadgeFooter)
+        }
+    }
+
+    /// Ticked when the category counts. One that isn't offered can't: what it holds is out of sight.
+    @ViewBuilder
+    private func badgeRow(_ category: InboxCategory) -> some View {
+        let offered = model.shownInboxCategories.contains(category)
+        let counted = offered && model.inboxBadgeCategories.contains(category)
+        let binding = Binding(get: { counted }, set: { model.setInboxBadgeCategory(category, counted: $0) })
+        #if os(macOS)
+        Toggle(isOn: binding) {
+            Label(category.title, systemImage: category.systemImage)
+        }
+        .toggleStyle(.checkbox)
+        .disabled(!offered)
+        .accessibilityIdentifier("inbox-badge-setting-\(category.rawValue)")
+        #else
+        Button {
+            binding.wrappedValue.toggle()
+        } label: {
+            HStack {
+                Label {
+                    Text(category.title).foregroundStyle(offered ? Theme.text : Theme.textTertiary)
+                } icon: {
+                    Image(systemName: category.systemImage).foregroundStyle(offered ? Theme.accent : Theme.textTertiary)
+                }
+                Spacer()
+                if counted {
+                    Image(systemName: "checkmark")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!offered)
+        .accessibilityAddTraits(counted ? .isSelected : [])
+        .accessibilityIdentifier("inbox-badge-setting-\(category.rawValue)")
+        #endif
+    }
+}

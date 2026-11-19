@@ -178,6 +178,18 @@ reminder's buttons: Start, Mark as Done and Move to Tomorrow. So do issues your 
 the app, with `gh`, a script or a coding agent signed in as you: GitHub never notifies you of those, so the app finds
 them itself, and leaves out the ones you assigned yourself to in the app.
 
+What lands where follows what an entry asks of you, not why GitHub sent it, as Mail sorts its mail into categories.
+**Needs You**, where the Inbox opens, has your review, a mention, an assignment by someone else, a person writing on an
+open issue or pull request of yours, and issues that are due. **From You** has what your own account assigned you to
+outside the app, until it's closed; a coding agent opening a batch of issues makes one row that unfolds into them.
+**Updates** has what was merged or closed, what bots and project automation did, and repositories you watch, and
+**All** has everything. Only Needs You counts on the sidebar, the Dock and Home, so an agent working under your name
+doesn't bury what people ask of you. On the Mac the four sit in the toolbar with their symbols and how many are unread,
+on iPhone and iPad as pills above the list; `←` and `→` switch between them, and the app keeps the one you chose.
+Settings (on iPhone and iPad, your account) has a switch for each, on your device only: the Inbox offers the ones
+that are on and opens on the first of them, and with a single one left it is a plain list again. Under Badge you tick
+which of them the number counts, so you can see several and count only Needs You, or From You as well.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Design/screenshots/inbox-dark.webp">
   <img alt="The Inbox: notifications on the left, such as Kai Andersen assigned you and Theo Novak mentioned you, and the selected issue on the right with what's new since yesterday" src="Design/screenshots/inbox-light.webp">
@@ -399,7 +411,7 @@ The interface uses the system's own parts.
   drop (touch and hold, then drag), and one dropped onto the middle of another card becomes its sub-issue. A milestone opens as the board's columns or a list, the roadmap as the timeline,
   whose bars move with a finger. An issue shows its properties in a column
   beside it, and the Inbox shows the selected issue beside its list, as in Mail. With a keyboard, the Mac's shortcuts
-  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[, ⌘↵, ⌘Z and ⇧⌘Z, ⇧⌘M, and in the Inbox U, E, H and ⇧S. S, P, A and L open
+  work: J and K, S P A L I, ⌘1 ⌘2 ⌘3 ⌘4, ⌘K, ⌘N, ⌘R, ⌘[, ⌘↵, ⌘Z and ⇧⌘Z, ⇧⌘M, and in the Inbox ← →, U, E, H and ⇧S. S, P, A and L open
   their picker ready to type in; Return picks the first match. While writing, the Mac's Format shortcuts work too
   (⌘B, ⌘I, ⇧⌘H, ⇧⌘L and the others), listed while you hold ⌘, the Markdown shows next to the caret as on the Mac, and
   Tab and the arrow keys go between an issue's title and its description. With a pointer, ⌘-click and Shift-click pick several
@@ -439,7 +451,8 @@ The interface uses the system's own parts.
   with its days left, a roadmap as a timeline.
 - **An Inbox** with GitHub's notifications about issues and pull requests: who did what, the issue beside it, and
   read, archive, snooze and unsubscribe in one key. Read and archived are the same on github.com. Issues your own
-  account assigned you to with `gh` or a coding agent show up too, which GitHub doesn't notify you of.
+  account assigned you to with `gh` or a coding agent show up too, which GitHub doesn't notify you of. It sorts them
+  into Needs You, From You, Updates and All, and only Needs You counts.
 - **Instant.** Every change is written to a local database first and shows in the same frame. GitHub is updated in
   the background.
 - **Works offline.** Changes queue up and are sent when the connection returns.
@@ -651,14 +664,15 @@ Hover an issue or move to it with the arrow keys, then:
 | `⌘Z` / `⌘⇧Z` | Undo / redo the last change, as named in the Edit menu; while you type, the typing |
 | `⌘⌫` | Delete the issue (asks first; needs admin rights in the repository) |
 | `⌘R` | Sync with GitHub now |
-| `⌘,` | Settings: light, dark or system appearance, the app icon, and reminders of due issues |
+| `⌘,` | Settings: light, dark or system appearance, the app icon, the Inbox's categories, and reminders of due issues |
 
 In the Inbox:
 
 | Key | Action |
 |---|---|
 | `J` `K` or `↑` `↓` | Next or previous notification; its issue opens beside the list and counts as read |
-| `Return` | Open the issue full size; `Esc` goes back to the Inbox |
+| `←` `→` | The category to the left or right: Needs You, From You, Updates, All |
+| `Return` | Open the issue full size; `Esc` goes back to the Inbox. On a row of several issues assigned together, show them one by one |
 | `U` / `⌥U` | Mark read or unread / mark everything read |
 | `E` or `⌫` | Archive (GitHub's *Done*); `⌘Z` or the message at the bottom undoes it for a few seconds, until it has gone to GitHub |
 | `⇧⌫` | Archive everything read |
@@ -851,6 +865,8 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap yourself at the foot of the sidebar (iPad) | Your account, Sync Now and the settings |
 | Change Icon… in a project's "…" menu, or touch and hold it on Home (iPhone) | Its glyph and colour: 257 glyphs in groups, with a search field; a colour keeps the sheet open, a glyph closes it |
 | Touch and hold a project on Home (iPhone) or in the sidebar (iPad), or swipe it left | Hide it on that device, or show it again; hidden projects wait folded under "hidden" at the end of the projects, a tap unfolds them |
+| Tap a pill at the top of the Inbox | Needs You, From You, Updates or All; the chosen one shows its name, the others their symbol and how many are unread |
+| Tap a row of several issues in the Inbox | Show the issues your account was assigned to together one by one, or fold them again |
 | Swipe right in the Inbox | Read, or unread |
 | Swipe left in the Inbox | Archive, or snooze |
 | Touch and hold in the Inbox | Read, snooze, archive, unsubscribe, and the issue's status, priority, assignee and labels |

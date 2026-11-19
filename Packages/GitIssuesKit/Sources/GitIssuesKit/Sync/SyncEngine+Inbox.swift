@@ -105,9 +105,20 @@ extension SyncEngine {
         try Outbox.rebase(db)
     }
 
+    /// What the app reads of an entry's issue; when it reads more, every entry is read again once. 1: whether a bot or a
+    /// person did each thing, which decides between Needs You and Updates.
+    static let inboxReading = 1
+
     /// Reads the issues behind entries that changed since they were last read: who did what, and enough of the
     /// issue to show it when it isn't on a board.
     func enrichInbox() async throws {
+        try await db.writer.write { db in
+            var meta = try InboxMeta.read(db)
+            guard meta.reading != Self.inboxReading else { return }
+            try InboxEntry.filter(Column("reason") != InboxEntry.selfAssignReason).updateAll(db, Column("enrichedFor").set(to: nil))
+            meta.reading = Self.inboxReading
+            try meta.write(db)
+        }
         let (viewer, wanted) = try await db.reader.read { db in
             (try KV.viewer(db)?.login, try InboxEntry.fetchAll(db).filter { $0.enrichedFor != $0.updatedAt && !$0.isSelfAssigned })
         }

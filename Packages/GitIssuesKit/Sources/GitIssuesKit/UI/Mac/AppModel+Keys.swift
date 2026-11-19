@@ -359,8 +359,8 @@ extension AppModel {
         return true
     }
 
-    /// The Inbox's own keys, as in Linear: J and K move and show the issue, U reads, E or ⌫ archives, H snoozes,
-    /// ⇧S unsubscribes, ⌥U reads everything and ⇧⌫ archives everything read. Returns nil for keys it leaves to the
+    /// The Inbox's own keys, as in Linear: J and K move and show the issue, ← and → switch the category, U reads, E or
+    /// ⌫ archives, H snoozes, ⇧S unsubscribes, ⌥U reads everything and ⇧⌫ archives everything read. Returns nil for keys it leaves to the
     /// rest, such as S, P, A, L and I, which act on the selected entry's issue as anywhere else.
     private func handleInboxKey(_ event: NSEvent, key: String, modifiers: NSEvent.ModifierFlags) -> Bool? {
         let shift = event.modifierFlags.contains(.shift)
@@ -388,6 +388,11 @@ extension AppModel {
             inboxPicked = []
             return true
         }
+        // ← and →: the category to the left or right, as the arrows go between tabs.
+        if !shift, let delta = [123: -1, 124: 1][Int(event.keyCode)] {
+            withAnimation(Theme.spring) { stepInboxCategory(delta) }
+            return true
+        }
         // One picked notification counts as none, as for the pane, the toolbar and S, P, A, L, I: the keys act on
         // the one on screen then, not on a picked one that may be another.
         let targets = inboxPicked.count <= 1
@@ -410,8 +415,12 @@ extension AppModel {
             return true
         }
         switch event.keyCode {
-        case 36: // return
-            if let entry = inboxSelected, let item = inboxItem(for: entry), !item.isDetached { open(item) }
+        case 36: // return: an issue full size, or a run of them one by one
+            if let id = inboxSelectedId, inboxBatchSelected, let (batch, _) = inboxBatch(id: id) {
+                withAnimation(Theme.spring) { toggleInboxBatch(batch) }
+            } else if let entry = inboxSelected, let item = inboxItem(for: entry), !item.isDetached {
+                open(item)
+            }
             return true
         case 51: // delete
             if shift { archiveAllRead() } else { archive(targets) }

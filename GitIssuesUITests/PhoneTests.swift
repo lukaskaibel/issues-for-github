@@ -1058,7 +1058,8 @@ final class PhoneTests: AppTestCase {
         launch(["-mobile.tab", "home"])
         let inbox = element("home-inbox")
         wait(inbox)
-        waitForValue(inbox, equalTo: "8")
+        // Needs You's unread entries; what Jordan's own account assigned (#38, #45 to #47) isn't counted.
+        waitForValue(inbox, equalTo: "7")
         wait(labelled("Git Issues", type: .button))
         wait(labelled("Website", type: .button))
         XCTAssertFalse(app.tabBars.firstMatch.exists)

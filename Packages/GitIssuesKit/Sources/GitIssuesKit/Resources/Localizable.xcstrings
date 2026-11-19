@@ -28345,6 +28345,66 @@
         }
       }
     },
+    "inboxAll" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): name of the last category (a pill like the categories in Apple Mail): every notification, newest first. Shown with a tray. Very short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべて"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전체"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tudo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Все"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部"
+          }
+        }
+      }
+    },
     "inboxApprovedIt" : {
       "comment" : "Inbox row, line under the title: a reviewer approved the pull request. %(who)@ is a person's name or GitHub login.",
       "extractionState" : "manual",
@@ -28581,6 +28641,246 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ 将其分配给了你"
+          }
+        }
+      }
+    },
+    "inboxBadgeFooter" : {
+      "comment" : "Settings (Mac, iPhone, iPad), Badge section: under the ticks that choose which Inbox categories the number at the Inbox counts (in the sidebar, on Home, on the Dock). Categories turned off above can't be ticked.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Zahl am Eingang zählt die ungelesenen Mitteilungen der hier abgehakten Kategorien. So kannst du mehrere sehen und nur eine zählen. Ist keine abgehakt, erscheint keine Zahl. Nur auf diesem Gerät."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The number at the Inbox counts the unread notifications of the categories ticked here, so you can see several and count only one. With none ticked, it shows no number. On this device only."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El número de Entrada cuenta las notificaciones sin leer de las categorías marcadas aquí, así puedes ver varias y contar solo una. Si no hay ninguna marcada, no aparece ningún número. Solo en este dispositivo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le nombre affiché à côté de Réception compte les notifications non lues des catégories cochées ici : vous pouvez en voir plusieurs et n’en compter qu’une. Si aucune n’est cochée, aucun nombre ne s’affiche. Sur cet appareil uniquement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "受信トレイの数字は、ここでチェックしたカテゴリの未読通知を数えます。複数のカテゴリを表示しながら、1つだけを数えることもできます。何もチェックしないと数字は表示されません。このデバイスのみの設定です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "수신함의 숫자는 여기에서 체크한 카테고리의 읽지 않은 알림을 셉니다. 여러 카테고리를 보면서 하나만 셀 수 있습니다. 아무것도 체크하지 않으면 숫자가 표시되지 않습니다. 이 기기에만 적용됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O número da Entrada conta as notificações não lidas das categorias marcadas aqui, para você ver várias e contar só uma. Sem nenhuma marcada, nenhum número aparece. Somente neste dispositivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Число у Входящих считает непрочитанные уведомления отмеченных здесь категорий: можно видеть несколько, а считать только одну. Если ничего не отмечено, число не показывается. Только на этом устройстве."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收件箱旁的数字会统计此处勾选的类别中的未读通知，因此你可以显示多个类别，只统计其中一个。若都不勾选，则不显示数字。仅限此设备。"
+          }
+        }
+      }
+    },
+    "inboxBadgeSection" : {
+      "comment" : "Settings (Mac, iPhone, iPad): header of the section that chooses which Inbox categories (Needs You, From You, Updates, All) the number at the Inbox counts, as Apple's notification settings call that number on an app icon. One word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kennzeichen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Badge"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Globo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pastille"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バッジ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "배지"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indicador"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Наклейка"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标记"
+          }
+        }
+      }
+    },
+    "inboxCategoriesFooter" : {
+      "comment" : "Settings (Mac, iPhone, iPad), Inbox section: under the switches that turn the Inbox's categories (Needs You, From You, Updates, All) on and off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Eingang zeigt die eingeschalteten Kategorien und öffnet die erste davon. Mitteilungen einer ausgeschalteten Kategorie erscheinen weiter unter Alle. Nur auf diesem Gerät."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Inbox offers the categories that are on and opens on the first of them. Notifications of a category that's off still show in All. On this device only."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entrada ofrece las categorías activadas y se abre en la primera de ellas. Las notificaciones de una categoría desactivada siguen apareciendo en Todo. Solo en este dispositivo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réception propose les catégories activées et s’ouvre sur la première d’entre elles. Les notifications d’une catégorie désactivée restent visibles dans Tout. Sur cet appareil uniquement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "受信トレイはオンにしたカテゴリを表示し、その最初のカテゴリで開きます。オフにしたカテゴリの通知は「すべて」に引き続き表示されます。このデバイスのみの設定です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "수신함은 켜진 카테고리를 보여 주며 그중 첫 번째로 열립니다. 꺼진 카테고리의 알림은 계속 전체에 표시됩니다. 이 기기에만 적용됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Entrada oferece as categorias ativadas e abre na primeira delas. As notificações de uma categoria desativada continuam aparecendo em Tudo. Somente neste dispositivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Входящие показывают включенные категории и открываются на первой из них. Уведомления выключенной категории по-прежнему видны в разделе «Все». Только на этом устройстве."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收件箱会显示已开启的类别，并打开其中第一个。已关闭类别中的通知仍会显示在“全部”中。仅限此设备。"
+          }
+        }
+      }
+    },
+    "inboxCategoriesHint" : {
+      "comment" : "Mac, Inbox: tooltip of the four categories in the toolbar (Needs You, From You, Updates, All): the left and right arrow keys move between them.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit ← und → wechseln"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch with ← and →"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambia con ← y →"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passez de l’une à l’autre avec ← et →"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "←と→で切り替え"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "← 및 →로 전환"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alterne com ← e →"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переключайтесь клавишами ← и →"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 ← 和 → 切换"
           }
         }
       }
@@ -29005,62 +29305,182 @@
         }
       }
     },
-    "inboxForYou" : {
-      "comment" : "Inbox (Mac, iPhone, iPad): name of the half of the Inbox with notifications that involve the user (assigned, mentioned, asked for a review, their own issues). Segment of a picker. Short.",
+    "inboxFoldRun" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): tooltip of the arrow on several issues assigned together that are shown one by one, and menu item and VoiceOver action: folds them back into one row.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Für dich"
+            "value" : "Als eine Zeile zeigen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "For you"
+            "value" : "Show as One Row"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Para ti"
+            "value" : "Mostrar en una fila"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pour vous"
+            "value" : "Afficher sur une ligne"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "自分宛て"
+            "value" : "1行にまとめる"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "나와 관련"
+            "value" : "한 줄로 보기"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Para você"
+            "value" : "Mostrar em uma linha"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Для вас"
+            "value" : "Показать одной строкой"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "与你相关"
+            "value" : "合并为一行"
+          }
+        }
+      }
+    },
+    "inboxFromYou" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): name of the second category (a pill like the categories in Apple Mail): issues the user's own GitHub account assigned to them outside the app, with the command line, a script or an AI coding agent signed in as them. Shown with a paper plane, like Sent in Mail. Very short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von dir"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From You"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De ti"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De vous"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自分で割り当て"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "직접 할당"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De você"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "От вас"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自己分配"
+          }
+        }
+      }
+    },
+    "inboxFromYouEmpty" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): under 'You're all caught up' when the From You category is empty, saying what would show there. 'gh' is GitHub's command line tool; keep it as is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues, die du dir mit gh, einem Skript oder einem Coding-Agenten selbst zuweist, erscheinen hier, bis sie geschlossen sind."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues you assign to yourself with gh, a script or a coding agent show up here until they're closed."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las incidencias que te asignas con gh, un script o un agente de código aparecen aquí hasta que se cierran."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les tickets que vous vous assignez avec gh, un script ou un agent de code s’affichent ici jusqu’à leur fermeture."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "gh、スクリプト、コーディングエージェントで自分に割り当てたIssueは、クローズされるまでここに表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "gh, 스크립트 또는 코딩 에이전트로 나에게 직접 할당한 이슈는 닫힐 때까지 여기에 표시됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As issues que você atribui a si mesmo com gh, um script ou um agente de código aparecem aqui até serem fechadas."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Задачи, которые вы назначаете себе через gh, скрипт или агента для кода, появляются здесь, пока их не закроют."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你通过 gh、脚本或编码代理分配给自己的议题会显示在这里，直到它们被关闭。"
           }
         }
       }
@@ -30565,6 +30985,126 @@
         }
       }
     },
+    "inboxNeedsYou" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): name of the first category, a tab shown as a pill like the categories in Apple Mail. It holds notifications where someone needs the user: a review asked of them, a mention, an assignment by someone else, a person writing on an open issue or pull request of theirs, and their issues that are due. The Inbox starts here. Very short: it sits beside three others, with a raised hand.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Braucht dich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs You"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Te necesita"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous attend"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要対応"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "확인 필요"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Precisa de você"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ждёт вас"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "待你处理"
+          }
+        }
+      }
+    },
+    "inboxNeedsYouEmpty" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): under 'You're all caught up' when the Needs You category is empty, saying what would show there.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn jemand dein Review möchte, dich erwähnt, dir etwas zuweist oder bei einem Issue von dir schreibt, erscheint es hier."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When someone asks for your review, mentions you, assigns you or writes on an issue of yours, it shows up here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuando alguien te pida una revisión, te mencione, te asigne algo o escriba en una incidencia tuya, aparecerá aquí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quand quelqu’un demande votre revue, vous mentionne, vous assigne un ticket ou écrit sur l’un de vos tickets, cela s’affiche ici."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "レビューを依頼されたり、メンションされたり、担当者に割り当てられたり、あなたのIssueに誰かが書き込んだりすると、ここに表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "누군가 리뷰를 요청하거나, 나를 멘션하거나, 나에게 할당하거나, 내 이슈에 글을 쓰면 여기에 표시됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando alguém pedir sua revisão, mencionar você, atribuir algo a você ou escrever em uma issue sua, isso aparece aqui."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Когда кто-то запросит ваше ревью, упомянет вас, назначит исполнителем или напишет в вашей задаче, это появится здесь."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当有人请你审查、提及你、给你分配议题或在你的议题中留言时，会显示在这里。"
+          }
+        }
+      }
+    },
     "inboxNew" : {
       "comment" : "Inbox, issue beside the list: heading above the list of what happened on the issue since the user last read it (an adjective: new activity).",
       "extractionState" : "manual",
@@ -30921,6 +31461,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "自昨天以来的新动态"
+          }
+        }
+      }
+    },
+    "inboxNextCategory" : {
+      "comment" : "iPad with a keyboard, Inbox: name of the right arrow key in the keyboard shortcuts overlay (hold ⌘); it shows the category (Needs You, From You, Updates, All) to the right.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nächste Kategorie"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next Category"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Categoría siguiente"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catégorie suivante"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次のカテゴリ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다음 카테고리"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Próxima categoria"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Следующая категория"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一个类别"
           }
         }
       }
@@ -31447,6 +32047,66 @@
         }
       }
     },
+    "inboxPreviousCategory" : {
+      "comment" : "iPad with a keyboard, Inbox: name of the left arrow key in the keyboard shortcuts overlay (hold ⌘); it shows the category (Needs You, From You, Updates, All) to the left.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorherige Kategorie"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous Category"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Categoría anterior"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catégorie précédente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前のカテゴリ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이전 카테고리"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Categoria anterior"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Предыдущая категория"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上一个类别"
+          }
+        }
+      }
+    },
     "inboxReopened" : {
       "comment" : "Inbox row, line under the title, before the details have been read from GitHub: the issue or pull request was opened again. Past participle about it.",
       "extractionState" : "manual",
@@ -31927,6 +32587,168 @@
         }
       }
     },
+    "inboxRunAssigned" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): one row standing for several issues the user's own account was assigned to together outside the app, such as an AI coding agent opening a batch of them; the row unfolds into one row per issue. %(count)lld is how many (3 or more). Short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Issue dir zugewiesen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Issues dir zugewiesen"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld issue assigned to you"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld issues assigned to you"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld incidencia asignada a ti"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld incidencias asignadas a ti"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ticket qui vous est assigné"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld tickets qui vous sont assignés"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld件のIssueが割り当てられました"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "이슈 %lld개가 나에게 할당됨"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld issue atribuída a você"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld issues atribuídas a você"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld задачи назначены вам"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld задач назначено вам"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld задача назначена вам"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld задачи назначено вам"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld 个议题已分配给你"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "inboxShortcutTooltip" : {
       "comment" : "Mac sidebar: tooltip of the Inbox row. 'G then I' means pressing the G key and then the I key: keep the letters, translate 'then'.",
       "extractionState" : "manual",
@@ -31988,7 +32810,7 @@
       }
     },
     "inboxShowPicker" : {
-      "comment" : "iPhone and iPad Inbox: name of the switch between the notifications for you and the ones you're watching (read by VoiceOver). A verb: which notifications to show.",
+      "comment" : "iPhone and iPad Inbox: name of the row of categories above the list (Needs You, From You, Updates, All), read by VoiceOver. A verb: which notifications to show.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -32527,62 +33349,182 @@
         }
       }
     },
-    "inboxWatching" : {
-      "comment" : "Inbox (Mac, iPhone, iPad): name of the half of the Inbox with notifications from repositories the user watches on GitHub. Segment of a picker. Short.",
+    "inboxUnfoldRun" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): tooltip of the arrow on a row standing for several issues assigned together, and menu item and VoiceOver action: shows them as one row each.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beobachtet"
+            "value" : "Einzeln zeigen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Watching"
+            "value" : "Show Each Issue"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Siguiendo"
+            "value" : "Mostrar cada incidencia"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Suivis"
+            "value" : "Afficher chaque ticket"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ウォッチ中"
+            "value" : "1件ずつ表示"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "구독 중"
+            "value" : "하나씩 보기"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Acompanhando"
+            "value" : "Mostrar cada issue"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Подписки"
+            "value" : "Показать каждую задачу"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "关注中"
+            "value" : "逐个显示"
+          }
+        }
+      }
+    },
+    "inboxUpdates" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): name of the third category (a pill like the categories in Apple Mail): everything that needs nothing from the user, such as issues and pull requests that were closed or merged, changes by bots and project automation, and repositories they watch. Shown with a bell. Very short.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updates"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updates"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Novedades"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mises à jour"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アップデート"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "업데이트"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atualizações"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обновления"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新"
+          }
+        }
+      }
+    },
+    "inboxUpdatesEmpty" : {
+      "comment" : "Inbox (Mac, iPhone, iPad): under 'You're all caught up' when the Updates category is empty, saying what would show there.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Was bei Issues, denen du folgst, gemergt, geschlossen oder geändert wird, erscheint hier."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What's merged, closed or changed on issues you follow shows up here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que se fusiona, se cierra o cambia en las incidencias que sigues aparece aquí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce qui est fusionné, fermé ou modifié dans les tickets que vous suivez s’affiche ici."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フォロー中のIssueでマージ、クローズ、変更されたものがここに表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "구독 중인 이슈에서 병합, 닫힘 또는 변경된 내용이 여기에 표시됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O que é mesclado, fechado ou alterado nas issues que você acompanha aparece aqui."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Здесь появляется то, что слито, закрыто или изменено в задачах, за которыми вы следите."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你关注的议题中被合并、关闭或更改的内容会显示在这里。"
           }
         }
       }

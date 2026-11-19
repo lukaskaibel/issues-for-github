@@ -29,14 +29,24 @@ struct InboxSnoozeRequest: Equatable {
 extension AppModel {
     // MARK: What shows
 
-    /// Entries in a half of the Inbox, newest first: not archived, not snoozed. Issues of yours that are due, and
-    /// assignments your own account made outside the app, join GitHub's notifications in For you.
-    func inbox(_ bucket: InboxBucket) -> [InboxEntry] {
+    /// Entries in a pill, newest first: not archived, not snoozed. Issues of yours that are due, and assignments your
+    /// own account made outside the app, join GitHub's notifications; an assignment whose issue GitHub notified you of
+    /// anyway shows once, as GitHub's.
+    func inbox(_ category: InboxCategory) -> [InboxEntry] {
         let now = inboxClock
-        let shown = inboxEntries.filter { $0.bucket == bucket && isShown($0, now: now) }
-        let own = bucket == .forYou ? (dueInboxEntries + selfAssignedInboxEntries).filter { isShown($0, now: now) } : []
+        let viewer = self.viewer?.login
+        let github = inboxEntries.filter { isShown($0, now: now) }
+        let notified = Set(github.compactMap(\.contentId))
+        let own = (dueInboxEntries + selfAssignedInboxEntries.filter { $0.contentId.map { !notified.contains($0) } ?? true })
+            .filter { isShown($0, now: now) }
+        let shown = (github + own).filter { entry in
+            guard category != .all else { return true }
+            // From You keeps what is still to do: an assignment whose issue is closed has had its answer.
+            if category == .fromYou, entry.state == "CLOSED" { return false }
+            return entry.category(viewer: viewer) == category
+        }
         guard !own.isEmpty else { return shown }
-        return (shown + own).sorted { $0.updatedAt != $1.updatedAt ? $0.updatedAt > $1.updatedAt : $0.id < $1.id }
+        return shown.sorted { $0.updatedAt != $1.updatedAt ? $0.updatedAt > $1.updatedAt : $0.id < $1.id }
     }
 
     /// Issues of yours as Inbox entries: from the reminder on the day they are due, and from the reminder the morning
@@ -93,18 +103,73 @@ extension AppModel {
         }
     }
 
-    /// The half on screen. Watching is offered only while it has something.
-    var currentInboxBucket: InboxBucket {
-        inboxBucket == .watching && !inbox(.watching).isEmpty ? .watching : .forYou
-    }
-
     var visibleInbox: [InboxEntry] {
-        inbox(currentInboxBucket)
+        inbox(currentInboxCategory)
     }
 
-    /// Unread entries in For you: the number at the Inbox in the sidebar, on the tab and on the app icon.
+    /// The categories offered, in their order: the ones not switched off in Settings, or All if every one is.
+    var shownInboxCategories: [InboxCategory] {
+        let shown = InboxCategory.allCases.filter { !inboxHiddenCategories.contains($0) }
+        return shown.isEmpty ? [.all] : shown
+    }
+
+    /// The category on screen: the one picked last, or the first one offered once that was switched off.
+    var currentInboxCategory: InboxCategory {
+        let shown = shownInboxCategories
+        return shown.contains(inboxCategory) ? inboxCategory : shown[0]
+    }
+
+    /// Settings: offers a category or stops offering it. The last one stays, so the Inbox always shows something.
+    func setInboxCategory(_ category: InboxCategory, shown: Bool) {
+        if shown {
+            inboxHiddenCategories.remove(category)
+        } else if shownInboxCategories != [category] {
+            inboxHiddenCategories.insert(category)
+        }
+    }
+
+    /// The categories the number at the Inbox counts: those chosen for it in Settings that are offered.
+    var countedInboxCategories: [InboxCategory] {
+        shownInboxCategories.filter { inboxBadgeCategories.contains($0) }
+    }
+
+    /// Settings: counts a category's unread notifications in the number at the Inbox, or stops counting them.
+    func setInboxBadgeCategory(_ category: InboxCategory, counted: Bool) {
+        if counted { inboxBadgeCategories.insert(category) } else { inboxBadgeCategories.remove(category) }
+    }
+
+    /// Unread entries in the categories chosen for it, Needs You unless chosen otherwise: the number at the Inbox in
+    /// the sidebar, on Home and on the Dock, whichever category is on screen. Each entry counts once, also when All is
+    /// among them.
     var inboxUnreadCount: Int {
-        inbox(.forYou).filter(isUnread).count
+        let counted = countedInboxCategories
+        guard !counted.isEmpty else { return 0 }
+        if counted.contains(.all) { return inbox(.all).filter(isUnread).count }
+        var ids = Set<String>()
+        for category in counted { ids.formUnion(inbox(category).filter(isUnread).map(\.id)) }
+        return ids.count
+    }
+
+    /// What a pill shows beside its name: its unread entries. All has none, its parts say it.
+    func inboxPillCount(_ category: InboxCategory) -> Int {
+        category == .all ? 0 : inbox(category).filter(isUnread).count
+    }
+
+    /// Shows another pill; what was shown or picked belongs to the one before.
+    func showInboxCategory(_ category: InboxCategory) {
+        guard category != currentInboxCategory else { return }
+        inboxCategory = category
+        inboxPicked = []
+        inboxPickRange = []
+        if let selected = inboxSelectedId, !inboxRows.contains(where: { $0.id == selected }) { inboxSelectedId = nil }
+    }
+
+    /// ← and →: the pill before or after, stopping at the ends.
+    func stepInboxCategory(_ delta: Int) {
+        let all = shownInboxCategories
+        guard let index = all.firstIndex(of: currentInboxCategory) else { return }
+        let next = min(max(index + delta, 0), all.count - 1)
+        showInboxCategory(all[next])
     }
 
     #if os(macOS)
@@ -220,22 +285,30 @@ extension AppModel {
         if let item = inboxItem(for: entry) { loadRepoMeta(for: item) }
     }
 
-    /// J and K, and the arrow keys: the next or previous entry, which opens beside the list.
+    /// J and K, and the arrow keys: the next or previous row. An entry opens beside the list; a run of assignments
+    /// made together is picked whole, to read, snooze or archive at once.
     func stepInbox(_ delta: Int) {
-        let entries = visibleInbox
-        guard !entries.isEmpty else { return }
-        let next: InboxEntry
-        if let index = entries.firstIndex(where: { $0.id == inboxSelectedId }) {
-            next = entries[min(max(index + delta, 0), entries.count - 1)]
+        let rows = inboxRows
+        guard !rows.isEmpty else { return }
+        let next: InboxListRow
+        if let index = rows.firstIndex(where: { $0.id == inboxSelectedId }) {
+            next = rows[min(max(index + delta, 0), rows.count - 1)]
         } else {
-            next = delta > 0 ? entries[0] : entries[entries.count - 1]
+            next = delta > 0 ? rows[0] : rows[rows.count - 1]
         }
-        // Picks stay while moving, as in the list, so X picks one after another; without any, a run starts here.
-        if inboxPicked.isEmpty {
-            inboxPickAnchor = next.id
-            inboxPickRange = []
+        switch next {
+        case .batch(let batch, _):
+            selectInboxBatch(batch)
+        case .entry(let entry, _):
+            // A run's picks go with it; otherwise picks stay while moving, as in the list, so X picks one after
+            // another, and without any a run starts here.
+            if inboxBatchSelected { inboxPicked = [] }
+            if inboxPicked.isEmpty {
+                inboxPickAnchor = entry.id
+                inboxPickRange = []
+            }
+            selectInboxEntry(entry)
         }
-        selectInboxEntry(next)
         focusScrollToken += 1
     }
 
@@ -255,17 +328,80 @@ extension AppModel {
         }
     }
 
-    /// After an entry left the list (archived, snoozed), the one that took its place, as Mail does.
-    private func selectNeighbour(after removed: Set<String>, in before: [InboxEntry]) {
-        guard let selected = inboxSelectedId, removed.contains(selected),
-              let index = before.firstIndex(where: { $0.id == selected }) else { return }
-        let remaining = before.filter { !removed.contains($0.id) }
+    /// After entries left the list (archived, snoozed), the row that took the selected one's place, as Mail does.
+    private func selectNeighbour(after removed: Set<String>, in before: [InboxListRow]) {
+        guard let selected = inboxSelectedId, let index = before.firstIndex(where: { $0.id == selected }) else { return }
+        let remaining: [InboxListRow] = before.compactMap { row in
+            switch row {
+            case .entry(let entry, let inBatch): return removed.contains(entry.id) ? nil : .entry(entry, inBatch: inBatch)
+            case .batch(var batch, let unfolded):
+                batch.entries.removeAll { removed.contains($0.id) }
+                return batch.entries.isEmpty ? nil : .batch(batch, unfolded: unfolded)
+            }
+        }
+        // Still there: a run that lost some of its entries, or an entry that stayed.
+        if remaining.contains(where: { $0.id == selected }) { return }
         guard !remaining.isEmpty else {
             inboxSelectedId = nil
             return
         }
+        switch remaining[min(index, remaining.count - 1)] {
         // Shown beside the list means read, as in Mail.
-        selectInboxEntry(remaining[min(index, remaining.count - 1)])
+        case .entry(let entry, _): selectInboxEntry(entry)
+        case .batch(let batch, _): selectInboxBatch(batch)
+        }
+    }
+
+    // MARK: Runs of assignments
+
+    /// The list on screen: its entries, and in From You and All the runs of assignments made together, each as one
+    /// row that unfolds into its entries.
+    var inboxRows: [InboxListRow] {
+        let entries = visibleInbox
+        let category = currentInboxCategory
+        guard category == .fromYou || category == .all else { return entries.map { .entry($0, inBatch: false) } }
+        var rows: [InboxListRow] = []
+        for part in InboxBatch.group(entries) {
+            switch part {
+            case .entry(let entry):
+                rows.append(.entry(entry, inBatch: false))
+            case .batch(let batch):
+                let unfolded = inboxUnfoldedBatches.contains(batch.id)
+                rows.append(.batch(batch, unfolded: unfolded))
+                if unfolded { rows += batch.entries.map { .entry($0, inBatch: true) } }
+            }
+        }
+        return rows
+    }
+
+    /// The run in the list with this id, and whether it's unfolded.
+    func inboxBatch(id: String) -> (InboxBatch, Bool)? {
+        for row in inboxRows {
+            if case .batch(let batch, let unfolded) = row, batch.id == id { return (batch, unfolded) }
+        }
+        return nil
+    }
+
+    /// A run is on screen beside the list, picked whole.
+    var inboxBatchSelected: Bool { inboxSelectedId?.hasPrefix(InboxBatch.idPrefix) ?? false }
+
+    /// Picks a run's entries, to act on together; nothing is read by it.
+    func selectInboxBatch(_ batch: InboxBatch) {
+        inboxSelectedId = batch.id
+        inboxPicked = Set(batch.entries.map(\.id))
+        inboxPickAnchor = nil
+        inboxPickRange = []
+    }
+
+    /// Shows a run's entries one by one, or folds them back into its row.
+    func toggleInboxBatch(_ batch: InboxBatch) {
+        if inboxUnfoldedBatches.contains(batch.id) {
+            inboxUnfoldedBatches.remove(batch.id)
+            // What was on screen inside it goes with it.
+            if let selected = inboxSelectedId, batch.entries.contains(where: { $0.id == selected }) { selectInboxBatch(batch) }
+        } else {
+            inboxUnfoldedBatches.insert(batch.id)
+        }
     }
 
     // MARK: Picking several (Mac and iPad)
@@ -378,7 +514,7 @@ extension AppModel {
         _ entries: [InboxEntry], message: String, icon: String, name: LocalizedStringResource,
         again: @escaping @MainActor (AppModel, [InboxEntry]) -> Void, mutations: (InboxEntry) -> [Mutation]
     ) {
-        let before = visibleInbox
+        let before = inboxRows
         let ids = entries.map(\.id)
         var records: [String: PersonalStore.Record?] = [:]
         var unread: [String: Bool] = [:]
@@ -454,7 +590,7 @@ extension AppModel {
     /// H: gone from the Inbox on all devices until `until`, or until something new happens; then it's back, unread.
     func snooze(_ entries: [InboxEntry], until: Date) {
         guard !entries.isEmpty else { return }
-        let before = visibleInbox
+        let before = inboxRows
         var records: [String: PersonalStore.Record?] = [:]
         for entry in entries { records[entry.id] = personal.records[entry.id] }
         recordUndo(.restore { model in
