@@ -25,6 +25,8 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- **The board scrolls sideways again on the Mac** when you hold a card at its left or right edge, or move the keyboard
+  to a column out of sight. With the sidebar shown it stayed where it was, or stopped short of the column.
 - **Rows on an issue's page no longer stay grey on the Mac.** Scrolling the page under a resting pointer left every
   row that passed beneath it lit up until the pointer went over it again. These rows now are the list's own, so only
   the row under the pointer lights up, and none under the comment field or the toolbar.
