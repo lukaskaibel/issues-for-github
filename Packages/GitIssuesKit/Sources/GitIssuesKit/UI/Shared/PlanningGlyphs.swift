@@ -1,4 +1,9 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 /// How a milestone's diamond reads: the one the board works towards is marked, as in Linear; a completed one is filled.
 enum MilestoneMark: Equatable {
@@ -145,6 +150,61 @@ struct RoadmapIcon: View {
         .frame(width: size, height: size)
         .accessibilityHidden(true)
     }
+}
+
+/// The roadmap's bars as a template image for the sidebar, where the system draws the other rows' symbols: drawn to
+/// the measure of `list.bullet` there (three lines 5 pt apart, as wide and as heavy), it takes their tint as they
+/// do, the accent colour in an active window and white on a selected row. `RoadmapIcon` draws it everywhere else.
+enum RoadmapSymbol {
+    /// The bars in a box of `size`, `lineWidth` thick, as in `RoadmapIcon`'s drawing but spread over the whole box.
+    static func path(in size: CGSize, lineWidth: CGFloat) -> Path {
+        let inset = lineWidth / 2
+        let w = size.width - lineWidth
+        let rows = [inset, size.height / 2, size.height - inset]
+        // Where each bar starts and ends, as a share of the width: three tasks, offset like a timeline.
+        let bars: [(CGFloat, CGFloat)] = [(0, 0.55), (0.32, 1), (0.14, 0.62)]
+        var path = Path()
+        for (row, bar) in zip(rows, bars) {
+            path.move(to: CGPoint(x: inset + w * bar.0, y: row))
+            path.addLine(to: CGPoint(x: inset + w * bar.1, y: row))
+        }
+        return path
+    }
+
+    #if os(macOS)
+    /// For the Mac sidebar, drawn at whatever size it is shown, with lines as heavy for that size as the symbols'.
+    /// `list.bullet` is 16.5 by 11.5 pt there in its medium size.
+    static let image: NSImage = {
+        let image = NSImage(size: CGSize(width: 16.5, height: 11.5), flipped: true) { rect in
+            guard let context = NSGraphicsContext.current?.cgContext else { return false }
+            let lineWidth = 1.5 * rect.width / 16.5
+            context.addPath(path(in: rect.size, lineWidth: lineWidth).cgPath)
+            context.setLineWidth(lineWidth)
+            context.setLineCap(.round)
+            context.setStrokeColor(NSColor.black.cgColor)
+            context.strokePath()
+            return true
+        }
+        image.isTemplate = true
+        return image
+    }()
+    #else
+    /// For the iPad sidebar, whose symbols are larger: `list.bullet` there is 22 by 15.5 pt. The image is as wide as
+    /// the sidebar's other images (`PlanningImages`), which sets an image's title after it.
+    static let image: UIImage = {
+        let bars = CGSize(width: 22, height: 15)
+        return UIGraphicsImageRenderer(size: CGSize(width: 28, height: bars.height)).image { renderer in
+            let context = renderer.cgContext
+            context.translateBy(x: 3, y: 0)
+            context.addPath(path(in: bars, lineWidth: 2).cgPath)
+            context.setLineWidth(2)
+            context.setLineCap(.round)
+            context.setStrokeColor(UIColor.black.cgColor)
+            context.strokePath()
+        }
+        .withRenderingMode(.alwaysTemplate)
+    }()
+    #endif
 }
 
 /// Done of all, as a ring that fills, like the progress of Linear's projects.

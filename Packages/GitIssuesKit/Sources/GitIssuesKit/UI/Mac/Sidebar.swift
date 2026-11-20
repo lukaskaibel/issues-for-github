@@ -137,6 +137,7 @@ private struct SidebarReselect: ViewModifier {
 /// needs you. Nothing else shows there while everything is on GitHub.
 private struct SidebarFoot: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarRowSize) private var rowSize
 
     var body: some View {
         VStack(spacing: 8) {
@@ -146,16 +147,62 @@ private struct SidebarFoot: View {
             }
             AccountMenuButton()
         }
-        .padding(.horizontal, 10)
+        // As wide as a selected row's fill above.
+        .padding(.horizontal, SidebarGrid(rowSize).fillEdge)
         .padding(.top, 6)
         .padding(.bottom, 10)
         .animation(Theme.overlay, value: model.syncAttention)
     }
 }
 
+/// Where the sidebar's rows put their symbols and titles, from the sidebar's left edge, at each size of sidebar
+/// (System Settings › Appearance › Sidebar icon size). What sits outside the list, as you at its foot, keeps to them;
+/// what sits in it is a `Label`, which the list lays out itself.
+struct SidebarGrid {
+    /// Where a selected row's fill starts; it ends as far from the right edge.
+    var fillEdge: CGFloat = 12
+    /// The middle of the symbols' column.
+    var iconCentre: CGFloat
+    /// Where the titles start.
+    var titleEdge: CGFloat
+    /// The project's tile and your picture, a little larger than the symbols and as far from the titles as they are.
+    var badge: CGFloat
+    /// The milestone's diamond, as large as the symbols; the roadmap's bars are as wide as `list.bullet`.
+    var glyph: CGFloat
+    /// How large the rows' titles are; the project's name is a point larger, your name as large.
+    var title: CGFloat
+    /// How large a second line under a name is: the project's repositories, how syncing is going.
+    var detail: CGFloat
+    /// From the line above the project, at the top of its row, to the project's button: so that the tile stands as
+    /// far under the line as My Issues' symbol stands above it.
+    var headGap: CGFloat
+
+    init(_ size: SidebarRowSize) {
+        switch size {
+        case .small: (iconCentre, titleEdge, badge, glyph, title, detail, headGap) = (26.75, 42.25, 20, 13, 11, 10, 7.5)
+        case .large: (iconCentre, titleEdge, badge, glyph, title, detail, headGap) = (29.75, 48.5, 24, 17.5, 15, 12, 10)
+        default: (iconCentre, titleEdge, badge, glyph, title, detail, headGap) = (28.75, 46.25, 22, 15, 13, 11, 8)
+        }
+    }
+}
+
+/// The roadmap's bars in a row of the sidebar, drawn to the measure of its symbols (`RoadmapSymbol`) and tinted as
+/// they are.
+struct SidebarRoadmapSymbol: View {
+    @Environment(\.sidebarRowSize) private var rowSize
+
+    var body: some View {
+        let glyph = SidebarGrid(rowSize).glyph
+        Image(nsImage: RoadmapSymbol.image)
+            .resizable()
+            .frame(width: glyph * 1.1, height: glyph * 0.77)
+    }
+}
+
 /// A milestone of the sidebar's project: its diamond, its name and when it is due.
 struct MilestoneRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarRowSize) private var rowSize
     /// Increased on the selected row, which is filled with the accent colour.
     @Environment(\.backgroundProminence) private var prominence
     var projectId: String
@@ -167,7 +214,7 @@ struct MilestoneRow: View {
         Label {
             Text(group.title).lineLimit(1)
         } icon: {
-            MilestoneIcon(mark: model.mark(of: group, projectId: projectId), size: 13, tint: prominence == .increased ? .white : nil)
+            MilestoneIcon(mark: model.mark(of: group, projectId: projectId), size: SidebarGrid(rowSize).glyph, tint: prominence == .increased ? .white : nil)
         }
         .badge(dueBadge)
         .help(group.due.map { Text(.dueOn(date: $0.longLabel)) } ?? Text(group.title))
@@ -196,7 +243,7 @@ struct RoadmapRow: View {
         Label {
             Text(.roadmap).lineLimit(1)
         } icon: {
-            RoadmapIcon(size: 14)
+            SidebarRoadmapSymbol()
         }
         .help(Text(.roadmapShortcutTooltip))
         .glassSidebarMenu { [model, projectId] in
@@ -240,31 +287,37 @@ struct AllIssuesRow: View {
 /// your name, and how syncing is going. A click opens the account menu above it.
 struct AccountMenuButton: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarRowSize) private var rowSize
     @State private var open = false
     @State private var hovering = false
 
     var body: some View {
+        let grid = SidebarGrid(rowSize)
+        // As large as the project's tile at the head of its part.
+        let avatar = grid.badge
         TimelineView(.periodic(from: .now, by: 20)) { context in
             Button {
                 open = true
             } label: {
-                HStack(spacing: 9) {
-                    StatusAvatar(size: 26)
+                // Your picture in the column of the symbols above, your name on the edge of their titles.
+                HStack(spacing: grid.titleEdge - grid.iconCentre - avatar / 2) {
+                    StatusAvatar(size: avatar)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(model.viewerName)
-                            .font(.uiMedium)
+                            .font(.system(size: grid.title, weight: .medium))
                             .foregroundStyle(Theme.text)
                         Text(model.syncLine(at: context.date))
-                            .font(.tiny)
+                            .font(.system(size: grid.detail))
                             .foregroundStyle(Theme.textSecondary)
                     }
                     .lineLimit(1)
                     .truncationMode(.tail)
                     Spacer(minLength: 0)
                 }
-                // In line with the project's tile above.
-                .padding(.horizontal, 10)
-                .frame(height: 42)
+                // The foot starts where a selected row's fill does.
+                .padding(.leading, grid.iconCentre - avatar / 2 - grid.fillEdge)
+                .padding(.trailing, 8)
+                .frame(height: 40)
                 .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(open || hovering ? Theme.field : .clear))
                 .contentShape(Rectangle())
             }

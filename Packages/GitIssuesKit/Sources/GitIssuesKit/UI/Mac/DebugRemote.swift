@@ -60,7 +60,7 @@ enum DebugRemote {
     private static func run(_ line: String, model: AppModel) {
         let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
         let argument = parts.count > 1 ? parts[1] : ""
-        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat", "rowcheck", "vscroll", "repaintcheck", "nesttarget", "statuses", "sweepdrag", "sweepspots"]
+        let readOnly: Set<String> = ["foldepic", "swipe", "clickepic", "roadmap", "planningdump", "complete?", "select", "dump", "snapshot", "notice", "mode", "open", "close", "focus", "scrolltest", "appearance", "icon", "settings", "back", "forward", "wait", "rendersync", "phase", "responder", "click", "clickmove", "key", "keycode", "keycmd", "overlay", "focusdesc", "scrolllist", "rightclick", "listdump", "togglesection", "nav", "leave", "trace", "renderhover", "hideproject", "showproject", "rendersidebar", "pick", "picks", "peek", "window", "demo", "dragimage", "entry", "inboxdump", "menudump", "fold", "view", "viewdump", "filter", "display", "menu", "snapshotmenu", "tables", "toolbar", "splits", "inspector", "regions", "windows", "sidebarrow", "menusweep", "mdfocus", "mdcaret", "mddump", "mdseen", "mdfold", "winkeycode", "mainmenu", "subtree", "picksub", "recents", "boardsweep", "pointer", "rendercards", "hidecolumn", "showcolumn", "iterations", "menuat", "rowcheck", "vscroll", "repaintcheck", "nesttarget", "statuses", "sweepdrag", "sweepspots", "snapshotsidebar"]
         // Sample data never reaches GitHub, so everything may be tried there.
         if let command = parts.first, !readOnly.contains(command), !model.isDemo, model.currentProject?.title != sandboxTitle {
             log("refused \"\(line)\": the open project is not the sandbox")
@@ -931,6 +931,42 @@ enum DebugRemote {
                 view.subviews.forEach { walk($0, depth: depth + 1) }
             }
             if let root = model.mainWindow?.contentView?.superview { walk(root, depth: 0) }
+        case "snapshotsidebar":
+            // snapshotsidebar <path>: the sidebar's rows as a PNG at 2x, each drawn by the app itself on the window's
+            // colour, for checking its layout while the screen is locked, when `snapshot` can't draw the glass sidebar.
+            // Without a selected row's fill, which comes out black, and without the foot, which the list's bottom bar
+            // shows through a portal. It also draws what stands outside a row, which the window cuts off: take a
+            // capture before trusting it.
+            guard let window = model.mainWindow, let root = window.contentView?.superview ?? window.contentView else { break }
+            func hostingViews(in view: NSView) -> [NSView] {
+                let frame = view.convert(view.bounds, to: nil)
+                let found = frame.maxX <= window.frame.width / 2 && frame.width > 100 && view.layer != nil
+                    && String(describing: type(of: view)).contains("Hosting")
+                return (found ? [view] : []) + view.subviews.flatMap(hostingViews)
+            }
+            // The column's own hosting view first, then the rows over it.
+            let views = hostingViews(in: root).sorted { $0.bounds.height > $1.bounds.height }
+            let width = views.map { $0.convert($0.bounds, to: nil).maxX }.max() ?? 0, height = root.bounds.height, scale = 2.0
+            guard width > 0, let context = CGContext(data: nil, width: Int(width * scale), height: Int(height * scale), bitsPerComponent: 8, bytesPerRow: 0,
+                                                     space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { break }
+            context.setFillColor(window.backgroundColor.cgColor)
+            context.fill(CGRect(x: 0, y: 0, width: width * scale, height: height * scale))
+            context.scaleBy(x: scale, y: scale)
+            for view in views {
+                guard let layer = view.layer else { continue }
+                let frame = view.convert(view.bounds, to: nil)
+                context.saveGState()
+                context.translateBy(x: frame.minX, y: frame.minY)
+                if view.isFlipped {
+                    context.translateBy(x: 0, y: frame.height)
+                    context.scaleBy(x: 1, y: -1)
+                }
+                layer.render(in: context)
+                context.restoreGState()
+            }
+            if let image = context.makeImage(), let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) {
+                do { try png.write(to: URL(fileURLWithPath: argument)) } catch { log("snapshotsidebar: \(error)") }
+            }
         case "tables":
             // tables: every table in the window (the sidebar's list, the issue list) with its rows' text, for checking
             // what a snapshot can't draw, such as the glass sidebar.
@@ -990,12 +1026,14 @@ enum DebugRemote {
             // screen, where the window is out of the way. With "onscreen", at the top left of the main screen
             // instead, where a capture of the screen sees it and dropdowns open beside it as they do for people.
             // Either way the pointer goes through it, so it can't put hover states into the picture; with "interactive"
-            // it takes the pointer, to be tried with a real one.
+            // it takes the pointer, to be tried with a real one. "retina" picks the sharpest screen instead of the main
+            // one, so a capture is taken at 2x while the main screen is an external one at 1x.
             let size = argument.split(separator: " ").compactMap { Double($0) }
             if size.count == 2, let window = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 }) {
                 window.ignoresMouseEvents = !argument.contains("interactive")
                 Dropdown.offscreen = !argument.contains("onscreen")
-                if argument.contains("onscreen"), let screen = NSScreen.main?.visibleFrame {
+                let target = argument.contains("retina") ? NSScreen.screens.max { $0.backingScaleFactor < $1.backingScaleFactor } : NSScreen.main
+                if argument.contains("onscreen"), let screen = target?.visibleFrame {
                     window.setFrame(CGRect(x: screen.minX, y: screen.maxY - size[1], width: size[0], height: size[1]), display: true)
                 } else {
                     let screens = NSScreen.screens.map(\.frame).reduce(CGRect.null) { $0.union($1) }
