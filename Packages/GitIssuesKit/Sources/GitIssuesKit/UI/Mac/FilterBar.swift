@@ -1,16 +1,17 @@
 #if os(macOS)
 import SwiftUI
 
-/// Under a view's header: its filter as chips, a button to add one, and while the filter is changed here, Reset and
-/// Save. Without a filter there is nothing to show, and the bar isn't there.
+/// Under a view's header: Mine while Only My Issues narrows it, its filter as chips, a button to add one, and while the
+/// filter is changed here, Reset and Save. Without either there is nothing to show, and the bar isn't there.
 struct FilterBar: View {
     @Environment(AppModel.self) private var model
     var view: ProjectView
 
     var body: some View {
         let changed = model.filterChanged(view)
-        if !model.filter(of: view).isEmpty || changed {
+        if !model.filter(of: view).isEmpty || changed || model.narrowsToMine {
             HStack(spacing: 6) {
+                if model.narrowsToMine { OnlyMineChip() }
                 FilterChipsRow(
                     filter: Binding(get: { model.filter(of: view) }, set: { model.setFilter($0, of: view) }),
                     scope: .project(view.projectId)
@@ -361,75 +362,11 @@ struct FilterTextEditor: View {
     }
 }
 
-// MARK: - The header's buttons
-
-/// The header's filter button: adds a filter to the view open, or to My Issues (F).
-struct HeaderFilterButton: View {
-    @Environment(AppModel.self) private var model
-    @Binding var filter: ProjectFilter
-    var scope: FilterScope
-    @State private var open = false
-
-    var body: some View {
-        Button {
-            open = true
-        } label: {
-            Image(systemName: "line.3.horizontal.decrease")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Theme.textBody)
-                .frame(width: 32, height: 30)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(PlainPressStyle())
-        .help(Text(.filterTooltip))
-        .accessibilityLabel(.filter)
-        .dropdown(isPresented: $open) { close in
-            FilterMenu(filter: $filter, scope: scope, close: close)
-        }
-        .onChange(of: model.filterMenuRequest) { open = true }
-    }
-}
-
-/// The header's Display button (⇧V), with a dot while you see the page differently from how it starts out: a view
-/// as it is on GitHub, My Issues as it comes.
-struct DisplayButton<Options: View>: View {
-    @Environment(AppModel.self) private var model
-    var changed: Bool
-    @ViewBuilder var options: (_ close: @escaping () -> Void) -> Options
-    @State private var open = false
-
-    var body: some View {
-        Button {
-            open = true
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "slider.horizontal.3").font(.system(size: 12, weight: .medium))
-                Text(.display)
-                if changed {
-                    Circle().fill(Theme.accent).frame(width: 5, height: 5)
-                }
-            }
-            .font(.ui)
-            .foregroundStyle(Theme.textBody)
-            .padding(.horizontal, 10)
-            .frame(height: 30)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(PlainPressStyle())
-        .help(Text(.displayTooltip))
-        .dropdown(isPresented: $open) { close in
-            options(close)
-        }
-        .onChange(of: model.displayMenuRequest) { open = true }
-    }
-}
-
-/// How you see a view: board or list, the columns of a board, the groups and order of a list, and the fields cards
-/// and rows show. Changes are yours; Save for Everyone writes what GitHub takes to the view.
+/// How you see a view, in the filter panel: the columns of a board, the groups and order of a list, the fields cards and
+/// rows show, and the columns hidden. Changes are yours until the panel's Save for Everyone writes what GitHub takes.
 struct DisplayOptions: View {
     @Environment(AppModel.self) private var model
     var view: ProjectView
-    var close: () -> Void
 
     var body: some View {
         let view = model.view(id: self.view.id) ?? self.view
@@ -437,12 +374,11 @@ struct DisplayOptions: View {
         let mode = model.layout(of: view)
         VStack(alignment: .leading, spacing: 12) {
             Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
-                GridRow {
-                    Text(.layout).foregroundStyle(Theme.textSecondary)
-                    if view.layout == .roadmap {
+                // Board or List is in the middle of the toolbar; a roadmap view's timeline or list only here.
+                if view.layout == .roadmap {
+                    GridRow {
+                        Text(.layout).foregroundStyle(Theme.textSecondary)
                         ShapeSwitch(shape: Binding(get: { model.shape(of: view) }, set: { model.setShape($0, of: view) }))
-                    } else {
-                        LayoutSwitch(mode: Binding(get: { mode }, set: { model.viewMode = $0 }))
                     }
                 }
                 if mode == .board {
@@ -531,40 +467,7 @@ struct DisplayOptions: View {
                     }
                 }
             }
-            if model.displayDiffers(view) {
-                PopoverDivider(outset: 14)
-                HStack(spacing: 8) {
-                    Text(.changedForYou).font(.small).foregroundStyle(Theme.textTertiary)
-                    Spacer(minLength: 8)
-                    Button(.reset) { model.resetDisplay(of: view) }
-                        .buttonStyle(QuietButtonStyle())
-                    if model.displayCanBeSaved(view) {
-                        Button {
-                            model.saveDisplay(of: view)
-                        } label: {
-                            HStack(spacing: 6) {
-                                if model.savingViewIds.contains(view.id) { ProgressView().controlSize(.mini) }
-                                Text(.saveForEveryone)
-                            }
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
-                        .disabled(!model.canReachGitHub || model.savingViewIds.contains(view.id))
-                        .help(Text(model.canReachGitHub ? .saveForEveryoneTooltip : .needsConnection))
-                    }
-                }
-                if model.displayStaysYours(view) {
-                    Text(.displayStaysYoursHint)
-                        .font(.tiny)
-                        .foregroundStyle(Theme.textTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
         }
-        .padding(14)
-        .frame(width: 340)
-        .font(.ui)
-        .foregroundStyle(Theme.text)
-        .background(MenuKeys(onMove: { _ in }, onActivate: {}, onBack: close))
     }
 }
 #endif

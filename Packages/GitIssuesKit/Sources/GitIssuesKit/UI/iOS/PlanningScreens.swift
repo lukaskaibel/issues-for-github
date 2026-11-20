@@ -65,7 +65,7 @@ struct MilestoneScreen: View {
                 .sharedBackgroundVisibility(.hidden)
             }
             ToolbarItemGroup(placement: .primaryAction) {
-                OnlyMineToolbarButton()
+                FilterToolbarMenu(scope: .milestone(projectId: projectId, title: title))
                 if let group {
                     MilestoneOptionsMenu(projectId: projectId, group: group, showsViewMode: wide && !roomy)
                 }
@@ -169,7 +169,6 @@ struct MilestoneOptionsMenu: View {
                 .pickerStyle(.inline)
                 Divider()
             }
-            OnlyMineMenuToggle()
             Button {
                 navigation.sheet = .milestoneEditor(projectId: projectId, title: group.title, assigning: [])
             } label: {
@@ -272,7 +271,7 @@ struct RoadmapScreen: View {
                 .sharedBackgroundVisibility(.hidden)
             }
             ToolbarItemGroup(placement: .primaryAction) {
-                OnlyMineToolbarButton()
+                FilterToolbarMenu(scope: .roadmap(projectId))
                 if wide, model.roadmapLayout == .timeline {
                     Menu {
                         TimelineZoomMenuItems()

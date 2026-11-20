@@ -25,11 +25,110 @@ struct InboxTests {
 
     // MARK: What a row says
 
-    @Test func onlyWatchingARepositoryGoesToWatching() {
-        #expect(InboxBucket(reason: "subscribed") == .watching)
-        for reason in ["assign", "mention", "team_mention", "review_requested", "author", "comment", "manual", "state_change"] {
-            #expect(InboxBucket(reason: reason) == .forYou)
+    // MARK: Which category
+
+    static let bot = Person(id: "b-actions", login: "github-actions")
+
+    static func open(_ entry: InboxEntry, author: String? = nil, assignees: [Person] = []) -> InboxEntry {
+        var entry = entry
+        entry.state = "OPEN"
+        entry.authorLogin = author
+        entry.assignees = assignees
+        return entry
+    }
+
+    @Test func whatSomeoneAsksOfYouNeedsYou() {
+        // GitHub never notifies your own actions: someone else asked for your review, mentioned you or assigned you.
+        for reason in ["review_requested", "mention", "team_mention", "assign"] {
+            #expect(Self.open(Self.entry(reason: reason)).category(viewer: Self.viewer) == .needsYou)
         }
+        // Not read yet: GitHub's reason decides alone.
+        #expect(Self.entry(reason: "assign").category(viewer: Self.viewer) == .needsYou)
+        #expect(Self.entry(reason: "author").category(viewer: Self.viewer) == .updates)
+    }
+
+    @Test func aPersonWritingOnAnIssueOfYoursNeedsYou() {
+        let comment = InboxActivity(kind: .commented, actor: Self.theo, at: Self.now, text: "What is meant here?", byBot: false)
+        let opened = Self.entry(reason: "author", activity: [comment])
+        #expect(Self.open(opened, author: "Jordan").category(viewer: Self.viewer) == .needsYou)
+        // Assigned to you, or you took part in it.
+        #expect(Self.open(opened, assignees: [Person(id: "u-j", login: "jordan")]).category(viewer: Self.viewer) == .needsYou)
+        #expect(Self.open(Self.entry(reason: "comment", activity: [comment])).category(viewer: Self.viewer) == .needsYou)
+        // Someone else's issue in a project you follow is an update, unless it mentions you.
+        #expect(Self.open(Self.entry(reason: "subscribed", activity: [comment])).category(viewer: Self.viewer) == .updates)
+        #expect(Self.open(Self.entry(reason: "state_change", activity: [comment])).category(viewer: Self.viewer) == .updates)
+        let mention = InboxActivity(kind: .commented, actor: Self.theo, at: Self.now, text: "@jordan have a look", byBot: false)
+        #expect(Self.open(Self.entry(reason: "state_change", activity: [mention])).category(viewer: Self.viewer) == .needsYou)
+    }
+
+    @Test func botsAndStatusChangesAreUpdates() {
+        let bot = InboxActivity(kind: .commented, actor: Self.bot, at: Self.now, text: "Preview deployed", byBot: true)
+        #expect(Self.open(Self.entry(reason: "author", activity: [bot]), author: "jordan").category(viewer: Self.viewer) == .updates)
+        // Read before the app asked about bots: the login tells.
+        let old = InboxActivity(kind: .commented, actor: Person(id: "b", login: "dependabot[bot]"), at: Self.now, text: "Rebased")
+        #expect(Self.open(Self.entry(reason: "author", activity: [old]), author: "jordan").category(viewer: Self.viewer) == .updates)
+        let moved = InboxActivity(kind: .statusChanged, actor: Self.kai, at: Self.now, detail: "Done", byBot: false)
+        #expect(Self.open(Self.entry(reason: "author", activity: [moved]), author: "jordan").category(viewer: Self.viewer) == .updates)
+    }
+
+    @Test func whatIsClosedOrMergedOrWatchedIsAnUpdate() {
+        let comment = InboxActivity(kind: .commented, actor: Self.theo, at: Self.now, text: "Thanks!", byBot: false)
+        for state in ["CLOSED", "MERGED"] {
+            var entry = Self.entry(reason: "review_requested", activity: [comment])
+            entry.state = state
+            entry.authorLogin = "jordan"
+            #expect(entry.category(viewer: Self.viewer) == .updates)
+        }
+        #expect(Self.open(Self.entry(reason: "subscribed")).category(viewer: Self.viewer) == .updates)
+        #expect(Self.entry(reason: "subscribed").isWatched)
+    }
+
+    // MARK: Runs of assignments
+
+    static func assigned(_ number: Int, at: Date, repo: String = "acme/app") -> InboxEntry {
+        var entry = InboxEntry(
+            id: "self_assign:AE_\(number)", reason: "self_assign", unread: true, updatedAt: at, subjectType: "Issue",
+            title: "Cluster \(number)", repo: repo, number: number
+        )
+        entry.state = "OPEN"
+        return entry
+    }
+
+    @Test func assignmentsMadeTogetherAreOneRun() {
+        // Newest first, as the list has them: three a minute apart, then one an hour earlier.
+        let entries = [
+            Self.assigned(13, at: Self.now),
+            Self.assigned(12, at: Self.now.addingTimeInterval(-60)),
+            Self.assigned(11, at: Self.now.addingTimeInterval(-120)),
+            Self.assigned(10, at: Self.now.addingTimeInterval(-3600)),
+        ]
+        let grouped = InboxBatch.group(entries)
+        #expect(grouped.count == 2)
+        guard case .batch(let run) = grouped[0], case .entry(let alone) = grouped[1] else {
+            Issue.record("expected a run, then an entry")
+            return
+        }
+        #expect(run.entries.map(\.number) == [13, 12, 11])
+        #expect(run.numbers == "#11–#13")
+        // Named after its first assignment, so a later one joining keeps it the same.
+        #expect(run.id == "batch:self_assign:AE_11")
+        #expect(alone.number == 10)
+    }
+
+    @Test func twoAssignmentsOrAnotherEntryBetweenThemStayRows() {
+        let two = [Self.assigned(2, at: Self.now), Self.assigned(1, at: Self.now.addingTimeInterval(-60))]
+        #expect(InboxBatch.group(two).allSatisfy { if case .entry = $0 { true } else { false } })
+        let interrupted = [
+            Self.assigned(3, at: Self.now), Self.assigned(2, at: Self.now.addingTimeInterval(-30)),
+            Self.entry("t9", reason: "mention", updatedAt: Self.now.addingTimeInterval(-40)),
+            Self.assigned(1, at: Self.now.addingTimeInterval(-60)),
+        ]
+        #expect(InboxBatch.group(interrupted).count == 4)
+        let otherRepo = [
+            Self.assigned(3, at: Self.now), Self.assigned(2, at: Self.now.addingTimeInterval(-30), repo: "acme/web"),
+            Self.assigned(1, at: Self.now.addingTimeInterval(-60)),
+        ]
+        #expect(InboxBatch.group(otherRepo).count == 3)
     }
 
     @Test func anAssignmentLeadsEvenWhenACommentCameAfterIt() {
@@ -287,7 +386,7 @@ struct InboxTests {
         let db = try DemoData.database()
         let (entries, meta) = try db.reader.read { (try InboxEntry.fetchAll($0), try InboxMeta.read($0)) }
         #expect(entries.count >= 6)
-        #expect(entries.contains { $0.bucket == .watching })
+        #expect(entries.contains { $0.isWatched })
         #expect(entries.contains { $0.unread })
         #expect(meta.otherCount == 2)
     }

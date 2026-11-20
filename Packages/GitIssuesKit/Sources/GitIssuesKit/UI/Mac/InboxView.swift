@@ -34,15 +34,57 @@ struct InboxToolbarControls: View {
     }
 }
 
-/// For You and Watching, in the middle of the toolbar once something is watched.
-struct InboxBuckets: View {
-    var body: some View {
-        BucketSwitch()
-    }
-}
+/// Needs You, From You, Updates and All in the middle of the toolbar, each with its symbol, its name and how many are
+/// unread in it, where a board has Board and List. Buttons of its own rather than a segmented picker: the toolbar's
+/// segmented control drops the symbols. ← and → move between them.
+struct InboxCategories: View {
+    @Environment(AppModel.self) private var model
 
-extension AppModel {
-    var showsInboxBuckets: Bool { !inbox(.watching).isEmpty }
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(model.shownInboxCategories) { category in
+                segment(category)
+            }
+        }
+        .padding(.horizontal, 2)
+        .help(Text(.inboxCategoriesHint))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text(.inboxShowPicker))
+        .accessibilityIdentifier("inbox-categories")
+    }
+
+    private func segment(_ category: InboxCategory) -> some View {
+        let selected = category == model.currentInboxCategory
+        let count = model.inboxPillCount(category)
+        return Button {
+            withAnimation(Theme.spring) { model.showInboxCategory(category) }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: category.systemImage)
+                    .symbolVariant(selected ? .fill : .none)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(selected ? Theme.accent : Theme.textSecondary)
+                Text(category.title)
+                    .foregroundStyle(selected ? Theme.text : Theme.textBody)
+                if count > 0 {
+                    Text("\(count)")
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.textTertiary)
+                }
+            }
+            .font(.system(size: 12, weight: selected ? .semibold : .regular))
+            .lineLimit(1)
+            .padding(.horizontal, 10)
+            .frame(height: 26)
+            .background(Capsule().fill(selected ? Theme.controlActive : .clear))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .frame(height: 30)
+        .accessibilityLabel(Text(category.title))
+        .accessibilityValue(count > 0 ? Text(.unreadCount(count: count)) : Text(""))
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+    }
 }
 
 /// Snooze, archive, read or unread, the link, the issue full size and GitHub, in one piece of glass as Mail groups
@@ -109,7 +151,7 @@ private struct InboxList: View {
 
     @ViewBuilder
     private var content: some View {
-        let entries = model.visibleInbox
+        let rows = model.inboxRows
         if model.inboxMeta.access == .denied {
             EmptyState(
                 title: String(localized: .inboxTokenCantReadTitle),
@@ -126,23 +168,32 @@ private struct InboxList: View {
                     title: String(localized: .loadingNotifications), message: String(localized: .fetchingNotifications), showsProgress: true
                 )
             }
-        } else if entries.isEmpty {
-            InboxCaughtUp()
+        } else if rows.isEmpty {
+            InboxCaughtUp(category: model.currentInboxCategory)
         } else {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(entries) { entry in
-                            InboxRow(entry: entry, sweepRows: sweepRows)
-                                .id(entry.id)
-                                .transition(.opacity.combined(with: .move(edge: .leading)))
+                        ForEach(rows) { row in
+                            switch row {
+                            case .entry(let entry, let inBatch):
+                                InboxRow(entry: entry, inBatch: inBatch, sweepRows: sweepRows)
+                                    .id(entry.id)
+                                    .transition(.opacity.combined(with: .move(edge: .leading)))
+                            case .batch(let batch, let unfolded):
+                                // Not one to sweep over: ⌘-drags pick notifications, and the run's own rows are those.
+                                InboxBatchRow(batch: batch, unfolded: unfolded)
+                                    .id(batch.id)
+                                    .transition(.opacity.combined(with: .move(edge: .leading)))
+                            }
                         }
-                        if model.inboxMeta.otherCount > 0 {
+                        // Releases, CI runs and discussions are no issues of anyone's: they'd be updates.
+                        if model.inboxMeta.otherCount > 0, [.updates, .all].contains(model.currentInboxCategory) {
                             OtherNotifications(count: model.inboxMeta.otherCount)
                         }
                     }
                     .padding(.vertical, 6)
-                    .animation(Theme.spring, value: entries.map(\.id))
+                    .animation(Theme.spring, value: rows.map(\.id))
                 }
                 .scrollIndicators(.never)
                 .pageUnderToolbar()
@@ -162,34 +213,6 @@ private struct InboxList: View {
                 }
             }
         }
-    }
-}
-
-/// For you and Watching, with what's unread in each, as a segmented control in the toolbar.
-private struct BucketSwitch: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        Picker(selection: Binding(
-            get: { model.currentInboxBucket },
-            set: { bucket in
-                withAnimation(Theme.spring) {
-                    model.inboxBucket = bucket
-                    model.inboxPicked = []
-                    // What was shown beside the list belongs to the other half.
-                    if let selected = model.inboxSelected, !model.visibleInbox.contains(selected) { model.inboxSelectedId = nil }
-                }
-            }
-        )) {
-            ForEach([InboxBucket.forYou, .watching], id: \.self) { bucket in
-                let unread = model.inbox(bucket).filter(model.isUnread).count
-                Text(unread > 0 ? "\(bucket.title) \(unread)" : bucket.title).tag(bucket)
-            }
-        } label: {
-            Text(.inbox)
-        }
-        .pickerStyle(.segmented)
-        .fixedSize()
     }
 }
 
@@ -241,6 +264,8 @@ private struct InboxActionsMenu: View {
 private struct InboxRow: View {
     @Environment(AppModel.self) private var model
     var entry: InboxEntry
+    /// One of a run of assignments, shown under the run's row: set in a little, as sub-issues are under their parent.
+    var inBatch = false
     var sweepRows: SweepRowFrames
     @State private var hovering = false
     @State private var menuRegion = UUID()
@@ -328,6 +353,7 @@ private struct InboxRow: View {
                 Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 56).padding(.trailing, 6)
             }
         }
+        .padding(.leading, inBatch ? InboxBatchRow.indent : 0)
         .padding(.horizontal, 6)
         // Placed as a whole: without it the avatar, the issue's icon and every text, even one that stays as it is, each
         // take on the hover fade themselves, so they are drawn again on every frame of it, each time waiting for the
@@ -380,6 +406,140 @@ private struct InboxRow: View {
     }
 }
 
+/// A run of issues your own account was assigned to together, such as an agent opening a batch of them, as one row:
+/// how many, their numbers and titles. A click picks them all, to read, snooze or archive at once; the arrow, or
+/// Return, shows them one by one under it.
+struct InboxBatchRow: View {
+    @Environment(AppModel.self) private var model
+    var batch: InboxBatch
+    var unfolded: Bool
+    @State private var hovering = false
+    @State private var menuRegion = UUID()
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// How far the run's own rows are set in under it.
+    static let indent: CGFloat = 20
+
+    var body: some View {
+        let unread = batch.entries.contains(where: model.isUnread)
+        let selected = model.inboxSelectedId == batch.id
+        let ground = selected ? Theme.accentFill : hovering ? Theme.hover : Theme.panel
+        let onAccent = selected
+        let quiet = onAccent ? Color.white.opacity(0.8) : Theme.textTertiary
+        HStack(alignment: .top, spacing: 10) {
+            Circle()
+                .fill(unread ? (onAccent ? Color.white : Theme.accent) : .clear)
+                .frame(width: 8, height: 8)
+                .padding(.top, 13)
+            // Where a row has the person, the run has how many it holds.
+            Text("\(batch.entries.count)")
+                .font(.system(size: 12, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(onAccent ? Color.white : Theme.textSecondary)
+                .frame(width: 30, height: 30)
+                .background(Circle().fill(onAccent ? Color.white.opacity(0.2) : Theme.field))
+                .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(.inboxRunAssigned(count: batch.entries.count))
+                        .font(unread ? .uiSemibold : .ui)
+                        .foregroundStyle(onAccent ? Color.white : Theme.text)
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Text(inboxTime(batch.entries[0].updatedAt, now: model.inboxClock))
+                        .font(.small)
+                        .monospacedDigit()
+                        .foregroundStyle(quiet)
+                        .opacity(hovering ? 0 : 1)
+                }
+                HStack(spacing: 6) {
+                    Button {
+                        withAnimation(Theme.spring) { model.toggleInboxBatch(batch) }
+                    } label: {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .rotationEffect(.degrees(unfolded ? 90 : 0))
+                            .frame(width: 14, height: 14)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PlainPressStyle())
+                    .foregroundStyle(quiet)
+                    .help(Text(unfolded ? .inboxFoldRun : .inboxUnfoldRun))
+                    Text(batch.numbers)
+                        .font(.small)
+                        .monospacedDigit()
+                        .foregroundStyle(quiet)
+                        .lineLimit(1)
+                        .layoutPriority(1)
+                    // Oldest first, as they were made: "Fehlercluster 01 · …, Fehlercluster 02 · …".
+                    Text(batch.entries.reversed().map(\.title).joined(separator: ", "))
+                        .font(.ui)
+                        .foregroundStyle(onAccent ? Color.white.opacity(0.92) : unread ? Theme.text : Theme.textBody)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            HStack(spacing: 2) {
+                IconButton(systemName: unread ? "circle.inset.filled" : "circle", label: String(localized: unread ? .markAsReadWithShortcut : .markAsUnreadWithShortcut), size: 24) {
+                    model.toggleRead(batch.entries)
+                }
+                IconButton(systemName: "archivebox", label: String(localized: .archiveWithShortcut), size: 24) {
+                    model.archive(batch.entries)
+                }
+            }
+            .environment(\.colorScheme, onAccent ? .dark : colorScheme)
+            .padding(.top, 2)
+            .padding(.leading, 18)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .background(LinearGradient(stops: [.init(color: ground.opacity(0), location: 0), .init(color: ground, location: 18 / 68)], startPoint: .leading, endPoint: .trailing))
+            .opacity(hovering ? 1 : 0)
+        }
+        .padding(.leading, 4)
+        .padding(.trailing, 10)
+        .padding(.vertical, 9)
+        .frame(minHeight: 58)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(ground))
+        .overlay(alignment: .bottom) {
+            if !selected, !hovering, !unfolded {
+                Rectangle().fill(Theme.rowSeparator).frame(height: 1).padding(.leading, 56).padding(.trailing, 6)
+            }
+        }
+        .padding(.horizontal, 6)
+        .geometryGroup()
+        .contentShape(Rectangle())
+        .onHover { inside in withAnimation(Theme.quick) { hovering = inside } }
+        .onTapGesture { model.selectInboxBatch(batch) }
+        .onGeometryChange(for: CGRect.self) { proxy in
+            proxy.frame(in: .global)
+        } action: { frame in
+            let id = batch.id
+            ContextMenus.shared.register(menuRegion, frame: frame) { [model] _ in
+                guard let (batch, unfolded) = model.inboxBatch(id: id) else { return nil }
+                // As a click does: the menu acts on the whole run.
+                model.selectInboxBatch(batch)
+                let menu = InboxMenuBuilder(model: model, entry: batch.entries[0]).menu()
+                let fold = ClosureMenuItem(String(localized: unfolded ? .inboxFoldRun : .inboxUnfoldRun)) { [model] in
+                    withAnimation(Theme.spring) { model.toggleInboxBatch(batch) }
+                }
+                fold.image = MenuIcons.symbol(unfolded ? "chevron.up" : "chevron.down")
+                menu.insertItem(fold, at: min(1, menu.items.count))
+                menu.insertItem(.separator(), at: min(2, menu.items.count))
+                return menu
+            }
+        }
+        .onDisappear { ContextMenus.shared.remove(menuRegion) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("\(String(localized: .inboxRunAssigned(count: batch.entries.count))), \(batch.entries.reversed().map(\.title).joined(separator: ", "))"))
+        .accessibilityValue(unread ? Text(.unreadEntry) : Text(""))
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { model.selectInboxBatch(batch) }
+        .accessibilityAction(named: Text(unfolded ? .inboxFoldRun : .inboxUnfoldRun)) { model.toggleInboxBatch(batch) }
+        .accessibilityAction(named: unread ? Text(.markAsRead) : Text(.markAsUnread)) { model.toggleRead(batch.entries) }
+        .accessibilityAction(named: Text(.archive)) { model.archive(batch.entries) }
+    }
+}
+
 /// Notifications that aren't about issues stay on GitHub; the list says how many, and where.
 private struct OtherNotifications: View {
     var count: Int
@@ -403,9 +563,12 @@ private struct OtherNotifications: View {
     }
 }
 
+/// The pill is empty: what would show in it.
 private struct InboxCaughtUp: View {
+    var category: InboxCategory
+
     var body: some View {
-        EmptyState(title: String(localized: .allCaughtUp), message: String(localized: .allCaughtUpMessage), systemImage: "tray")
+        EmptyState(title: String(localized: .allCaughtUp), message: category.emptyMessage, systemImage: category.systemImage)
             .padding(.horizontal, 24)
     }
 }
@@ -610,10 +773,20 @@ private struct InboxPickedSummary: View {
 
     var body: some View {
         let entries = model.visibleInbox.filter { model.inboxPicked.contains($0.id) }
+        // A run picked by its row: what the row says, and the way to see each of them.
+        let run = model.inboxBatchSelected ? model.inboxSelectedId.flatMap(model.inboxBatch(id:)) : nil
         VStack(spacing: 0) {
             VStack(spacing: 12) {
-                Text(.notificationsPicked(count: entries.count)).font(.uiSemibold)
+                if let run {
+                    Text(.inboxRunAssigned(count: entries.count)).font(.uiSemibold)
+                } else {
+                    Text(.notificationsPicked(count: entries.count)).font(.uiSemibold)
+                }
                 HStack(spacing: 8) {
+                    if let (batch, unfolded) = run {
+                        Button(unfolded ? .inboxFoldRun : .inboxUnfoldRun) { withAnimation(Theme.spring) { model.toggleInboxBatch(batch) } }
+                            .buttonStyle(SecondaryButtonStyle())
+                    }
                     Button(entries.contains(where: model.isUnread) ? .markAsRead : .markAsUnread) { model.toggleRead(entries) }
                         .buttonStyle(SecondaryButtonStyle())
                     SnoozeButton(entries: entries, titled: true)

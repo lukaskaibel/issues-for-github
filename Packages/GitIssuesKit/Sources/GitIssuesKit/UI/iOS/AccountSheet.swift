@@ -54,6 +54,10 @@ struct AccountSheet: View {
                     .labelsHidden()
                 }
 
+                InboxSettingsSection()
+
+                InboxBadgeSettingsSection()
+
                 SubIssueSettingsSection()
 
                 EpicSettingsSection()

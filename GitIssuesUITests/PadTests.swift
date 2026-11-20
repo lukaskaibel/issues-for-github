@@ -188,7 +188,7 @@ final class PadTests: AppTestCase {
         app.buttons["Options for Done"].tap()
         button("Hide Column").tap()
         waitGone(element("column-Done"))
-        app.navigationBars.buttons["Options"].firstMatch.tap()
+        app.navigationBars.buttons["Filter"].firstMatch.tap()
         button("Display").tap()
         let item = app.buttons["Done"].firstMatch
         wait(item)

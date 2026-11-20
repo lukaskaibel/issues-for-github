@@ -560,9 +560,10 @@ public enum DemoData {
     }
 
     /// The Inbox of the sample data: what Mira, Theo and Kai did that Jordan should know about, as GitHub would
-    /// report it, and an issue Jordan's own account opened for them outside the app. Most of the issues are on the
-    /// boards; #27, #38 and a new issue on the website are on none but in their repositories, and a pull request and
-    /// an issue in a repository no board uses are only in the Inbox.
+    /// report it, what was merged, closed or opened by a bot, and issues Jordan's own account opened for them outside
+    /// the app, one and then three together. Most of the issues are on the boards; #27, #38, #45 to #47 and a new issue on
+    /// the website are on none but in their repositories, and pull requests and an issue in repositories no board uses
+    /// are only in the Inbox.
     private static func seedInbox(_ db: Database, now: Date) throws {
         func ago(_ hours: Double) -> Date { now.addingTimeInterval(-hours * 3600) }
         func entry(
@@ -650,6 +651,23 @@ public enum DemoData {
                 InboxActivity(kind: .commented, actor: kai, at: ago(22), text: comments[14]?.first?.1, commentId: "demo-comment-14-0"),
             ]
         )
+        // Updates: Jordan's pull request merged, and a bot's in a repository Jordan watches.
+        try entry(
+            "39", reason: "author", unread: true, hours: 5, type: "PullRequest", repo: app.repo, repoId: app.repoId,
+            number: 39, title: "Place board rows from their known heights", state: "MERGED",
+            body: "Rows are placed from heights the board already knows, so scrolling a long column lays nothing out again.",
+            author: viewer.person, activity: [
+                InboxActivity(kind: .merged, actor: theo, at: ago(5), byBot: false),
+            ]
+        )
+        let bump = "Bumps GRDB from 7.10.0 to 7.11.1. Release notes: faster observation of large tables."
+        try entry(
+            "brand-9", reason: "subscribed", unread: true, hours: 7, type: "PullRequest", repo: brand,
+            repoId: "demo-repo-brand", number: 9, title: "Bump GRDB from 7.10.0 to 7.11.1", body: bump,
+            author: Person(id: "demo-bot-dependabot", login: "dependabot"), activity: [
+                InboxActivity(kind: .opened, actor: Person(id: "demo-bot-dependabot", login: "dependabot"), at: ago(7), text: bump, byBot: true),
+            ]
+        )
         let tokensComment = "@jordan the iOS names should follow the Mac ones. Can you take a look?"
         try entry(
             "brand-4", reason: "mention", unread: false, hours: 96, readHoursAgo: 90, repo: brand, repoId: "demo-repo-brand", number: 4,
@@ -695,6 +713,34 @@ public enum DemoData {
                 assignees: wake.assignees, labels: wake.labels, activity: []
             )
         )).insert(db)
+
+        // Three more, opened together by an agent working through a list of missing tests: one row in From You.
+        let tests = [
+            (45, "Test replaying the change queue after a conflict"),
+            (46, "Test sign-in when the device code expires"),
+            (47, "Test a column renamed on GitHub while offline"),
+        ]
+        for (offset, (number, title)) in tests.enumerated() {
+            let at = ago(2.2 - Double(offset) * 0.01)
+            let issue = Item(
+                id: Item.idWithoutProject(contentId(number)), projectId: nil, kind: .issue,
+                position: Item.positionWithoutProject(updatedAt: at),
+                contentId: contentId(number), number: number, title: title,
+                body: "Found missing while going through the sync engine's tests.",
+                state: "OPEN", url: "https://github.com/\(app.repo)/issues/\(number)", repoId: app.repoId, repo: app.repo,
+                authorLogin: viewer.login, createdAt: at, updatedAt: at,
+                assignees: [viewer.person], labels: appLabels.filter { $0.name == "sync" }
+            )
+            try issue.insert(db)
+            try InboxEntry(selfAssignment: RemoteSelfAssignment(
+                eventId: "demo-event-\(number)", at: at, actor: viewer.person, repo: app.repo, number: number,
+                issue: RemoteInboxDetail(
+                    contentId: contentId(number), url: issue.url ?? "", title: title, body: issue.body, state: "OPEN",
+                    stateReason: nil, repoId: app.repoId, authorLogin: viewer.login, createdAt: at,
+                    assignees: issue.assignees, labels: issue.labels, activity: []
+                )
+            )).insert(db)
+        }
 
         var meta = InboxMeta()
         meta.access = .ok

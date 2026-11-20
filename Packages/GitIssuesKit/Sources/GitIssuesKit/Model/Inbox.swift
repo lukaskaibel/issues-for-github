@@ -1,22 +1,49 @@
 import Foundation
 import GRDB
 
-/// Which half of the Inbox an entry is in. For you: things that involve you (you were assigned, mentioned, asked
-/// for a review, opened or commented on the issue, or subscribed to it yourself). Watching: activity in
-/// repositories you watch, which can be a lot and shouldn't bury the rest.
-public enum InboxBucket: String, Codable, Sendable, CaseIterable {
-    case forYou
-    case watching
+/// The Inbox's pills, as Mail has its categories: what an entry asks of you decides where it goes, not why GitHub
+/// sent it. GitHub's reason says little when a coding agent works under your account, since everything it opens is
+/// "yours" and every change to it reaches you. Needs You is where the Inbox starts, and the only part the badge counts.
+public enum InboxCategory: String, Codable, Sendable, CaseIterable, Identifiable {
+    /// Someone needs you: a review, a mention, an assignment by someone else, a person writing on an open issue or
+    /// pull request of yours; and issues of yours that are due.
+    case needsYou
+    /// Issues your own account assigned you to outside the app, with `gh`, a script or a coding agent signed in as you.
+    case fromYou
+    /// The rest: what was merged or closed, what bots and project automation did, repositories you watch.
+    case updates
+    /// Everything, newest first.
+    case all
 
-    /// GitHub's reason for a notification decides the bucket. Only watching a repository puts it in Watching.
-    public init(reason: String) {
-        self = reason == "subscribed" ? .watching : .forYou
-    }
+    public var id: Self { self }
 
     public var title: String {
         switch self {
-        case .forYou: String(localized: .inboxForYou)
-        case .watching: String(localized: .inboxWatching)
+        case .needsYou: String(localized: .inboxNeedsYou)
+        case .fromYou: String(localized: .inboxFromYou)
+        case .updates: String(localized: .inboxUpdates)
+        case .all: String(localized: .inboxAll)
+        }
+    }
+
+    /// Someone raising a hand for you; sent by you, as Mail's Sent; the bell you can also silence (unsubscribe); and the
+    /// tray of the Inbox itself. No person: that is My Issues' and the assignee's.
+    public var systemImage: String {
+        switch self {
+        case .needsYou: "hand.raised"
+        case .fromYou: "paperplane"
+        case .updates: "bell"
+        case .all: "tray"
+        }
+    }
+
+    /// What the empty pill says it would show.
+    public var emptyMessage: String {
+        switch self {
+        case .needsYou: String(localized: .inboxNeedsYouEmpty)
+        case .fromYou: String(localized: .inboxFromYouEmpty)
+        case .updates: String(localized: .inboxUpdatesEmpty)
+        case .all: String(localized: .allCaughtUpMessage)
         }
     }
 }
@@ -49,8 +76,14 @@ public struct InboxActivity: Codable, Hashable, Sendable {
     public var project: String?
     /// The comment's node id, so the issue view can point at it.
     public var commentId: String?
+    /// Done by a bot (GitHub Actions, Dependabot, Copilot, an app) rather than a person. Nil when read before the app
+    /// asked; the login's "[bot]" ending tells then.
+    public var byBot: Bool?
 
-    public init(kind: Kind, actor: Person?, at: Date, text: String? = nil, detail: String? = nil, project: String? = nil, commentId: String? = nil) {
+    public init(
+        kind: Kind, actor: Person?, at: Date, text: String? = nil, detail: String? = nil, project: String? = nil,
+        commentId: String? = nil, byBot: Bool? = nil
+    ) {
         self.kind = kind
         self.actor = actor
         self.at = at
@@ -58,6 +91,13 @@ public struct InboxActivity: Codable, Hashable, Sendable {
         self.detail = detail
         self.project = project
         self.commentId = commentId
+        self.byBot = byBot
+    }
+
+    /// Done by a person, as far as the app can tell.
+    public var byPerson: Bool {
+        guard let actor else { return false }
+        return !(byBot ?? actor.login.lowercased().hasSuffix("[bot]"))
     }
 }
 
@@ -125,7 +165,8 @@ public struct InboxEntry: Codable, FetchableRecord, PersistableRecord, Identifia
         self.number = number
     }
 
-    public var bucket: InboxBucket { InboxBucket(reason: reason) }
+    /// Watching a repository, not anything about you, brought it.
+    public var isWatched: Bool { reason == "subscribed" }
     public var isPullRequest: Bool { subjectType == "PullRequest" }
     public var isArchived: Bool { archivedFor.map { updatedAt <= $0 } ?? false }
     public var repoShortName: String { repo.split(separator: "/").last.map(String.init) ?? repo }
@@ -242,7 +283,7 @@ extension InboxEntry {
             if Self.mentions(event.text, login: viewer) {
                 return summary(.inboxMentionedYouQuote(who: who), excerpt: event.text, sign: .mentioned)
             }
-            let lead: LocalizedStringResource = bucket == .watching
+            let lead: LocalizedStringResource = isWatched
                 ? .inboxOpenedItInRepository(who: who, repository: repo)
                 : .inboxOpenedIt(who: who)
             return summary(lead, sign: .opened)
@@ -327,6 +368,119 @@ extension InboxEntry {
     static func teamMention(in text: String?) -> String? {
         guard let text, let range = text.range(of: "@[A-Za-z0-9-]+/[A-Za-z0-9_.-]+", options: .regularExpression) else { return nil }
         return String(text[range])
+    }
+}
+
+// MARK: - Which pill
+
+extension InboxEntry {
+    /// The pill the entry belongs in, never All. Due issues and what someone asks of you are Needs You; assignments
+    /// your own account made outside the app are From You; everything else, closed and merged things above all, is
+    /// Updates. Until the issue has been read, GitHub's reason decides alone.
+    public func category(viewer: String?) -> InboxCategory {
+        if isSelfAssigned { return .fromYou }
+        if isDue { return .needsYou }
+        if isWatched { return .updates }
+        // Closed or merged: whatever happened, it's done. Not read yet: still open, as far as anyone knows.
+        guard state == nil || state == "OPEN" else { return .updates }
+        switch reason {
+        case "review_requested", "mention", "team_mention", "assign":
+            // GitHub never notifies your own actions, so someone else asked for your review, mentioned you or assigned
+            // you.
+            return .needsYou
+        default:
+            break
+        }
+        let me = viewer?.lowercased()
+        func isMe(_ login: String?) -> Bool { me != nil && login?.lowercased() == me }
+        // Yours: you opened it, it's assigned to you, or you took part in it.
+        let yours = isMe(authorLogin) || assignees.contains { isMe($0.login) } || reason == "comment"
+        let asked = activity.contains { event in
+            guard event.byPerson else { return false }
+            switch event.kind {
+            case .commented, .reviewed, .mentioned: return yours || Self.mentions(event.text, login: viewer)
+            case .assigned, .reviewRequested: return isMe(event.detail)
+            default: return false
+            }
+        }
+        return asked ? .needsYou : .updates
+    }
+}
+
+// MARK: - Runs of assignments
+
+/// A run of issues your own account was assigned to together, such as a coding agent opening a batch of them: one row
+/// in From You and All, which unfolds into its entries.
+public struct InboxBatch: Hashable, Sendable {
+    /// Newest first.
+    public var entries: [InboxEntry]
+
+    static let idPrefix = "batch:"
+    /// How far apart two assignments of one run may be.
+    static let gap: TimeInterval = 15 * 60
+    /// Fewer than this are shown one by one.
+    static let least = 3
+
+    /// The run's first assignment names it, so it stays the same while later ones join.
+    public var id: String { Self.idPrefix + (entries.last?.id ?? "") }
+
+    /// The run's issue numbers, "#866–#882", when they follow on from one another, else "#866, #870, …".
+    public var numbers: String {
+        let numbers = entries.compactMap(\.number).sorted()
+        guard let first = numbers.first, let last = numbers.last else { return "" }
+        if numbers.count > 2, last - first + 1 == numbers.count || last - first < numbers.count * 2 {
+            return "#\(first)–#\(last)"
+        }
+        return numbers.prefix(3).map { "#\($0)" }.joined(separator: ", ") + (numbers.count > 3 ? ", …" : "")
+    }
+
+    /// Entries, newest first, as the list shows them: on their own, or as runs of at least three assignments your own
+    /// account made in one repository, each within 15 minutes of the next. The order stays as it was.
+    static func group(_ entries: [InboxEntry]) -> [InboxGrouped] {
+        var result: [InboxGrouped] = []
+        var run: [InboxEntry] = []
+        func close() {
+            if run.count >= least {
+                result.append(.batch(InboxBatch(entries: run)))
+            } else {
+                result += run.map { .entry($0) }
+            }
+            run = []
+        }
+        for entry in entries {
+            if entry.isSelfAssigned, let last = run.last, last.repo == entry.repo,
+               last.updatedAt.timeIntervalSince(entry.updatedAt) <= gap {
+                run.append(entry)
+                continue
+            }
+            close()
+            if entry.isSelfAssigned {
+                run = [entry]
+            } else {
+                result.append(.entry(entry))
+            }
+        }
+        close()
+        return result
+    }
+}
+
+/// An entry on its own, or a run of them.
+public enum InboxGrouped: Hashable, Sendable {
+    case entry(InboxEntry)
+    case batch(InboxBatch)
+}
+
+/// A line of the Inbox's list: an entry, folded into a run's row or shown under it, or the run's row.
+public enum InboxListRow: Identifiable, Hashable, Sendable {
+    case entry(InboxEntry, inBatch: Bool)
+    case batch(InboxBatch, unfolded: Bool)
+
+    public var id: String {
+        switch self {
+        case .entry(let entry, _): entry.id
+        case .batch(let batch, _): batch.id
+        }
     }
 }
 
@@ -487,6 +641,9 @@ public struct InboxMeta: Codable, Equatable, Sendable {
     public var selfAssignedFrom: Date?
     /// When it last looked; the next look starts a little before.
     public var selfAssignedChecked: Date?
+    /// Which reading of the issues the entries have, so a newer app reads them again once for what it now asks
+    /// (`SyncEngine.inboxReading`).
+    public var reading: Int?
 
     public init() {}
 

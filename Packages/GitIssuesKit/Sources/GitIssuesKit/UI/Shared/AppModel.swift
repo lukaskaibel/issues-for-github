@@ -538,10 +538,24 @@ public final class AppModel {
     var peekItemId: String?
 
     // The Inbox.
-    /// For you or Watching, as last chosen on this device.
-    var inboxBucket: InboxBucket {
-        didSet { UserDefaults.standard.set(inboxBucket.rawValue, forKey: "inbox.bucket") }
+    /// The pill on screen, as last chosen on this device: Needs You until another is picked.
+    var inboxCategory: InboxCategory {
+        didSet { UserDefaults.standard.set(inboxCategory.rawValue, forKey: "inbox.category") }
     }
+    /// Categories switched off in Settings on this device; one always stays on.
+    var inboxHiddenCategories: Set<InboxCategory> = Set(
+        (UserDefaults.standard.stringArray(forKey: "inbox.hiddenCategories") ?? []).compactMap(InboxCategory.init(rawValue:))
+    ) {
+        didSet { UserDefaults.standard.set(inboxHiddenCategories.map(\.rawValue).sorted(), forKey: "inbox.hiddenCategories") }
+    }
+    /// Categories whose unread notifications the number at the Inbox counts (sidebar, Home, the Dock), on this device:
+    /// Needs You until chosen otherwise. Only the ones offered count.
+    var inboxBadgeCategories: Set<InboxCategory> = (UserDefaults.standard.stringArray(forKey: "inbox.badgeCategories"))
+        .map { Set($0.compactMap(InboxCategory.init(rawValue:))) } ?? [.needsYou] {
+        didSet { UserDefaults.standard.set(inboxBadgeCategories.map(\.rawValue).sorted(), forKey: "inbox.badgeCategories") }
+    }
+    /// Runs of issues your account was assigned to together that are shown one by one, by the run's id.
+    var inboxUnfoldedBatches: Set<String> = []
     /// The entry whose issue is shown beside the list.
     var inboxSelectedId: String?
     /// Entries picked to act on together (⌘-click, Shift-click).
@@ -633,7 +647,7 @@ public final class AppModel {
         statusKinds = StatusKinds(persistent: false)
         overviewArrangement = OverviewArrangementStore(persistent: false)
         viewMode = .board
-        inboxBucket = .forYou
+        inboxCategory = .needsYou
         appearance = .system
         appIcon = .standard
     }
@@ -661,7 +675,7 @@ public final class AppModel {
         isDemo = demo
         signedIn = demo || auth.isSignedIn
         viewMode = ViewMode(rawValue: UserDefaults.standard.string(forKey: "viewMode") ?? "") ?? .board
-        inboxBucket = InboxBucket(rawValue: UserDefaults.standard.string(forKey: "inbox.bucket") ?? "") ?? .forYou
+        inboxCategory = InboxCategory(rawValue: UserDefaults.standard.string(forKey: "inbox.category") ?? "") ?? .needsYou
         appearance = AppearanceSetting(rawValue: UserDefaults.standard.string(forKey: "appearance") ?? "") ?? .system
         #if os(macOS)
         appIcon = AppIconChoice(rawValue: UserDefaults.standard.string(forKey: AppIconChoice.defaultsKey) ?? "") ?? .standard

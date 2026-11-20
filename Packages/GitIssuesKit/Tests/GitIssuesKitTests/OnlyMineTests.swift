@@ -126,6 +126,28 @@ struct OnlyMineTests {
         #expect(shown(model.roadmap(projectId: "P")) == all)
     }
 
+    @Test("The filter button fills in while Only My Issues or a filter narrows the page, and not in the Inbox")
+    func filterButton() throws {
+        let model = try model(shared)
+        defer { model.onlyMine = false }
+        model.select(.allIssues("P"))
+        #expect(!model.pageIsNarrowed)
+        #expect(model.hasFilterPanel)
+        model.onlyMine = true
+        #expect(model.pageIsNarrowed)
+        #expect(model.isNarrowed(.milestone(projectId: "P", title: "1.0")))
+        // My Issues is yours already: only its own filter narrows it.
+        #expect(!model.isNarrowed(.myIssues))
+        model.setMineFilter(ProjectFilter("priority:urgent"))
+        #expect(model.isNarrowed(.myIssues))
+        model.setMineFilter(ProjectFilter(""))
+        model.select(.inbox)
+        #expect(!model.pageIsNarrowed)
+        #expect(!model.hasFilterPanel)
+        // The Inbox is remembered in the defaults; other tests' models must not open on it.
+        model.select(.project("P"))
+    }
+
     @Test("A page with issues, none of them yours, says so; a page with none doesn't")
     func emptyPage() throws {
         let theirs = try model([item("theirs", [Self.other])])
