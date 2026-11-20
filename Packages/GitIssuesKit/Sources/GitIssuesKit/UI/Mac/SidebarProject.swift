@@ -29,6 +29,7 @@ struct SidebarProject: View {
 /// other projects to switch to and what can be done with this one; right-click gives the same actions.
 struct ProjectMenuButton: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarRowSize) private var rowSize
     var project: Project
     @State private var open = false
     @State private var iconOpen = false
@@ -37,35 +38,56 @@ struct ProjectMenuButton: View {
     var body: some View {
         let hidden = model.hiddenProjectIds.contains(project.id)
         let repositories = model.repositoryLine(of: project)
-        VStack(alignment: .leading, spacing: 6) {
+        let grid = SidebarGrid(rowSize)
+        VStack(alignment: .leading, spacing: 0) {
             Rectangle()
                 .fill(Theme.popoverBorder)
                 .frame(height: 1)
-                .padding(.horizontal, 2)
+                // From the tile's edge to where the counts end. At the row's top, as high as it can go: the list cuts
+                // off what stands outside a row.
+                .padding(.leading, 2)
+                .padding(.trailing, 5)
+                .padding(.bottom, grid.headGap)
             Button {
                 open = true
             } label: {
-                HStack(spacing: 9) {
-                    ProjectTile(projectId: project.id, size: 26)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(project.title)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Theme.text)
-                        Text(repositories)
-                            .font(.tiny)
-                            .foregroundStyle(Theme.textSecondary)
+                // A label like the rows under it, so the list puts the tile in their symbols' column and the name on
+                // their titles' edge, at every size of sidebar.
+                Label {
+                    HStack(spacing: 6) {
+                        // The list sets a label's icon beside the first line of its title; the tile stands beside both.
+                        WholeTitle {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(project.title)
+                                    .font(.system(size: grid.title + 1))
+                                    .foregroundStyle(Theme.text)
+                                    // The list sets its labels' weight, regular or bold when picked; the name is
+                                    // the part's heading.
+                                    .fontWeight(.semibold)
+                                Text(repositories)
+                                    .font(.system(size: grid.detail))
+                                    .foregroundStyle(Theme.textSecondary)
+                            }
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        }
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(Theme.textTertiary)
+                            // Ends where the counts of the rows below do.
+                            .padding(.trailing, 4)
                     }
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    Spacer(minLength: 4)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(Theme.textTertiary)
-                        .padding(.trailing, 2)
+                } icon: {
+                    ProjectTile(projectId: project.id, size: grid.badge)
                 }
-                .padding(.horizontal, 4)
-                .frame(height: 42)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(open || hovering ? Theme.field : .clear))
+                .padding(.vertical, 6)
+                // As wide as a selected row's fill.
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(open || hovering ? Theme.field : .clear)
+                        .padding(.horizontal, -4)
+                )
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -103,7 +125,23 @@ struct ProjectMenuButton: View {
                 return menu.build()
             }
         }
-        .padding(.top, 4)
+    }
+}
+
+/// Lays out its content as it is, but has a label set its icon beside the middle of it rather than beside its first
+/// line of text, as the sidebar's labels do: for a title of two lines beside a larger icon. Every vertical guide but
+/// the top and bottom is the middle, the one the label uses among them.
+struct WholeTitle: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        subviews.first?.sizeThatFits(proposal) ?? .zero
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: CGPoint(x: bounds.minX, y: bounds.midY), anchor: .leading, proposal: ProposedViewSize(bounds.size))
+    }
+
+    func explicitAlignment(of guide: VerticalAlignment, in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGFloat? {
+        guide == .top || guide == .bottom ? nil : bounds.midY
     }
 }
 
@@ -356,6 +394,7 @@ private struct SidebarViews: View {
         Section {
             ProjectMenuButton(project: project)
                 .selectionDisabled()
+                .listRowInsets(.vertical, 0)
             AllIssuesRow(projectId: project.id, current: current)
             if views.isEmpty {
                 // Until GitHub's views have been read: the board, as before there were views.
@@ -485,7 +524,7 @@ private struct SidebarViewRow: View {
         if let symbol = model.layoutSymbol(of: view) {
             Image(systemName: symbol)
         } else {
-            RoadmapIcon(size: 14)
+            SidebarRoadmapSymbol()
         }
     }
 

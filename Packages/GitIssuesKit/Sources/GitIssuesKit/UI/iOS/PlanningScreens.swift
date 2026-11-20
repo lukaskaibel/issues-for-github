@@ -474,21 +474,18 @@ enum PlanningImages {
         image("milestone-\(mark)", scheme) { MilestoneIcon(mark: mark, size: 15) }
     }
 
-    static func roadmap(_ scheme: ColorScheme) -> UIImage {
-        image("roadmap", scheme) { RoadmapIcon(size: 17).foregroundStyle(Theme.textSecondary) }
-    }
-
     /// A project's glyph in its colour, for its row in the sidebar.
     static func project(_ look: ProjectLook, _ scheme: ColorScheme) -> UIImage {
-        image("project-\(look.glyph.systemName)-\(look.color)", scheme) { ProjectGlyphImage(look: look, size: 19) }
+        image("project-\(look.glyph.systemName)-\(look.color)", scheme) { ProjectGlyphImage(look: look, size: 20) }
     }
 
     private static func image<Content: View>(_ key: String, _ scheme: ColorScheme, @ViewBuilder _ content: () -> Content) -> UIImage {
         let fullKey = "\(key)-\(scheme == .dark ? "dark" : "light")"
         if let cached = cache[fullKey] { return cached }
-        // As wide as the sidebar's symbol column, so names line up with the projects'.
+        // As wide as the sidebar's symbol column, so names line up with the symbols' rows, and no taller than the
+        // symbols: the sidebar makes a row with a taller image taller than the others.
         let renderer = ImageRenderer(content: content()
-            .frame(width: 28, height: 28)
+            .frame(width: 28, height: 22)
             .environment(\.colorScheme, scheme))
         renderer.scale = 3
         let image = renderer.uiImage?.withRenderingMode(.alwaysOriginal) ?? UIImage()

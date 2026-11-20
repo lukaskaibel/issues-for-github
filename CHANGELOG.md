@@ -32,6 +32,13 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- **A tidier sidebar.** On the Mac, the project at the head of its part and you at the foot stand in the column of the
+  rows' symbols, with the names on the edge of their titles, at every sidebar icon size set in System Settings, and
+  their names grow and shrink with the rows' titles. The project's tile sits beside both its lines, the line above it
+  halfway between it and My Issues, and its rows follow closer under it. The roadmap's symbol is drawn like the others, as large, as heavy and in the accent colour, and a
+  milestone's diamond is as large as the symbols around it. On iPad, the projects, milestones and roadmap views have
+  rows as high as the others, the roadmap's symbol is the accent colour too, and your name at the foot lines up with
+  the titles above.
 - **More room inside a card.** Cards have 2 points less padding at the sides and the top, and 5 less at the bottom,
   where they had more than anywhere else, so a title has more width before it wraps and a column shows more cards.
 
