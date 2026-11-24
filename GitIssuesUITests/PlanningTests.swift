@@ -541,8 +541,11 @@ final class PadPlanningTests: AppTestCase {
         // Under the header, one level further in; the header itself is one level into the epic's group.
         XCTAssertGreaterThan(first.frame.minY, header.frame.maxY - 1)
         XCTAssertGreaterThan(first.frame.minX, header.frame.minX + 8)
-        let epic = element("epic-group-Drag and drop on the board")
-        XCTAssertGreaterThan(header.frame.minY, epic.frame.maxY - 1)
+        // The epic's header in the same column: In Progress has one of the epic too.
+        let epics = app.descendants(matching: .any).matching(identifier: "epic-group-Drag and drop on the board").allElementsBoundByIndex
+        let epic = epics.first { abs($0.frame.minX - header.frame.minX) < 40 }
+        XCTAssertNotNil(epic)
+        if let epic { XCTAssertGreaterThan(header.frame.minY, epic.frame.maxY - 1) }
         snapshot("iPad sub-issues under their parent's header")
     }
 
