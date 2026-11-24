@@ -192,37 +192,79 @@ struct SharedPiecesTests {
     @MainActor
     func epicHeader() {
         let epic = Item(id: "e", kind: .issue, position: 0, title: "Offline-first sync", body: "", state: "OPEN")
-        let group = Nesting.EpicGroup(epic: epic, count: 2, folded: false)
-        let look = EpicHeaderLook.self
-        let oneLine = EpicHeader.height(of: group, width: 240, iconColumn: (0, 16), trailing: 6, lineLimit: 3)
+        let group = Nesting.Group(kind: .epic, head: epic, count: 2, folded: false)
+        let look = GroupHeaderLook.self
+        let oneLine = GroupHeader.height(of: group, detail: nil, place: .init(), width: 240, iconColumn: (0, 16), trailing: 6, lineLimit: 3)
         #expect(oneLine == look.line + look.top + look.bottom)
         // A long name wraps on a narrow board, up to the limit.
         var long = group
-        long.epic.title = String(repeating: "A long name for an epic ", count: 8)
-        let wrapped = EpicHeader.height(of: long, width: 240, iconColumn: (0, 16), trailing: 6, lineLimit: 3)
+        long.head.title = String(repeating: "A long name for an epic ", count: 8)
+        let wrapped = GroupHeader.height(of: long, detail: nil, place: .init(), width: 240, iconColumn: (0, 16), trailing: 6, lineLimit: 3)
         #expect(wrapped > oneLine)
         #expect(wrapped <= MeasuredHeights.textHeight(lines: 3, font: look.nameFont) + look.top + look.bottom)
         // The arrow's square ends `trailing` before the header's edge, on the first line.
         let frame = CGRect(x: 100, y: 200, width: 240, height: oneLine)
-        let fold = EpicHeader.foldFrame(in: frame, trailing: 6)
+        let fold = GroupHeader.foldFrame(in: frame, trailing: 6)
         #expect(fold.maxX == frame.maxX - 6)
         #expect(abs(fold.midY - (frame.minY + look.top + look.line / 2)) < 0.01)
     }
 
-    @Test("The list's epic header draws its arrow where a click folds it, under the section header's +")
+    @Test("A parent's header has its number and status on a line of their own under its name, where a click finds them")
+    @MainActor
+    func parentHeader() {
+        let parent = Item(id: "p", kind: .issue, position: 0, contentId: "issue-9", number: 9, title: "Drag cards", body: "", state: "OPEN")
+        let group = Nesting.Group(kind: .parent, head: parent, count: 2, folded: false)
+        let look = GroupHeaderLook.self
+        let plain = GroupHeader.height(of: group, detail: nil, place: .init(), width: 240, iconColumn: (0, 16), trailing: 6, lineLimit: 3)
+        let height = GroupHeader.height(of: group, detail: "#9 · In Review", place: .init(), width: 240, iconColumn: (0, 16), trailing: 6, lineLimit: 3)
+        #expect(height == plain + look.detailGap + look.detailLine)
+        // Its line sits at the bottom of the header, from where the name starts; one level in, it starts one level further in.
+        let frame = CGRect(x: 100, y: 200, width: 240, height: height)
+        let detail = GroupHeader.detailFrame("#9 · In Review", in: frame, place: .init(), iconColumn: (0, 16))
+        #expect(detail.maxY == frame.maxY - look.bottom)
+        #expect(detail.minX == frame.minX + 16 + look.spacing - 5)
+        let inside = GroupHeader.detailFrame("#9 · In Review", in: frame, place: .init(depth: 1, continues: [false]), iconColumn: (0, 16))
+        #expect(inside.minX == detail.minX + CardTreeLines.indent)
+    }
+
+    @Test("The list's group header draws its arrow where a click folds it, under the section header's +")
     @MainActor
     func listEpicHeaderFold() {
         let epic = Item(id: "e", kind: .issue, position: 0, title: "Offline-first sync", body: "", state: "OPEN")
-        let cell = EpicHeaderRowCell(frame: NSRect(x: 0, y: 0, width: 900, height: Theme.rowHeight))
-        cell.configure(Nesting.EpicGroup(epic: epic, count: 2, folded: false))
+        let cell = GroupHeaderRowCell(frame: NSRect(x: 0, y: 0, width: 900, height: Theme.rowHeight))
+        cell.configure(GroupHeaderLine(group: Nesting.Group(kind: .epic, head: epic, count: 2, folded: false)))
         let image = NSImage(size: cell.bounds.size, flipped: true) { _ in
             cell.draw(cell.bounds)
             return true
         }
         _ = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
-        let arrow = NSPoint(x: 900 - EpicHeaderRowCell.trailing - EpicHeaderLook.arrowBox / 2, y: Theme.rowHeight - EpicHeaderLook.bottom - EpicHeaderLook.line / 2)
+        let arrow = NSPoint(x: 900 - GroupHeaderRowCell.trailing - GroupHeaderLook.arrowBox / 2, y: Theme.rowHeight - GroupHeaderLook.bottom - GroupHeaderLook.line / 2)
         #expect(cell.isOnFold(arrow))
         #expect(!cell.isOnFold(NSPoint(x: 200, y: arrow.y)))
+    }
+
+    @Test("The list's parent header takes clicks on the status after its name only where the parent is on the board")
+    @MainActor
+    func listParentHeaderStatus() throws {
+        let parent = Item(id: "p", kind: .issue, position: 0, contentId: "issue-9", number: 9, title: "Drag cards", body: "", state: "OPEN")
+        let group = Nesting.Group(kind: .parent, head: parent, count: 2, folded: false)
+        let cell = GroupHeaderRowCell(frame: NSRect(x: 0, y: 0, width: 900, height: Theme.rowHeight))
+        func paint() {
+            let image = NSImage(size: cell.bounds.size, flipped: true) { _ in
+                cell.draw(cell.bounds)
+                return true
+            }
+            _ = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        }
+        cell.configure(GroupHeaderLine(group: group, detail: "#9 · In Review", statusTooltip: "Status: In Review"))
+        paint()
+        let detail = try #require(cell.detailRect)
+        #expect(cell.isOnDetail(NSPoint(x: detail.midX, y: detail.midY)))
+        #expect(!cell.isOnFold(NSPoint(x: detail.midX, y: detail.midY)))
+        cell.configure(GroupHeaderLine(group: group, detail: "#9"))
+        paint()
+        let number = try #require(cell.detailRect)
+        #expect(!cell.isOnDetail(NSPoint(x: number.midX, y: number.midY)))
     }
     #endif
 }

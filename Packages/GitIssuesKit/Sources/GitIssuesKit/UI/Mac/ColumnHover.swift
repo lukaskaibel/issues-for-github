@@ -2,8 +2,8 @@
 import Observation
 import SwiftUI
 
-/// What the pointer is on in a board column: a card and the part of it, or the header over an epic's issues and
-/// whether on its arrow. Each card and header asks only about itself, so the pointer going from one card to the next
+/// What the pointer is on in a board column: a card and the part of it, or the header over an epic's or a parent's
+/// issues and whether on its arrow or the line under a parent's name. Each card and header asks only about itself, so the pointer going from one card to the next
 /// redraws those two and nothing else: the column keeps what it worked out for its other cards, however many it has.
 @MainActor @Observable
 final class ColumnHover {
@@ -18,9 +18,11 @@ final class ColumnHover {
     }
 
     struct Header: Equatable {
-        /// The epic's content id.
-        var epic: String
+        /// The node id of the epic or the parent.
+        var head: String
         var onFold = false
+        /// On the line under a parent's name, which changes the parent's status.
+        var onDetail = false
     }
 
     struct State: Equatable {
@@ -44,9 +46,9 @@ final class ColumnHover {
     }
 
     /// The header's hover, nil when the pointer isn't on it.
-    subscript(header epic: String) -> Header? {
-        access(keyPath: \.[header: epic])
-        return state.header?.epic == epic ? state.header : nil
+    subscript(header head: String) -> Header? {
+        access(keyPath: \.[header: head])
+        return state.header?.head == head ? state.header : nil
     }
 
     func update(_ new: State) {
@@ -56,8 +58,8 @@ final class ColumnHover {
         let cards = Set([old.card?.id, new.card?.id].compactMap { $0 }).filter { id in
             (old.card?.id == id ? old.card : nil) != (new.card?.id == id ? new.card : nil)
         }
-        let headers = Set([old.header?.epic, new.header?.epic].compactMap { $0 }).filter { epic in
-            (old.header?.epic == epic ? old.header : nil) != (new.header?.epic == epic ? new.header : nil)
+        let headers = Set([old.header?.head, new.header?.head].compactMap { $0 }).filter { head in
+            (old.header?.head == head ? old.header : nil) != (new.header?.head == head ? new.header : nil)
         }
         let cardPaths = cards.map { \ColumnHover.[card: $0] }
         let headerPaths = headers.map { \ColumnHover.[header: $0] }

@@ -174,11 +174,16 @@ struct EpicGroupTests {
         items.compactMap(\.number)
     }
 
+    /// The group of epic `number`'s issues, as dragging its header moves it.
+    static func epicGroup(_ number: Int) -> Nesting.Group {
+        Nesting.Group(kind: .epic, head: epics.first { $0.number == number }!, count: 2, folded: false)
+    }
+
     private func rows(_ nesting: Nesting) -> [String] {
         nesting.rows.map { row in
             switch row {
             case .item(let item): "\(item.number ?? 0)"
-            case .epic(let group): "E\(group.epic.number ?? 0)×\(group.count)"
+            case .group(let group): "\(group.kind == .epic ? "E" : "P")\(group.head.number ?? 0)×\(group.count)"
             }
         }
     }
@@ -336,14 +341,14 @@ struct EpicGroupTests {
         let others = shown.filter { !moving.contains($0.id) }
         #expect(nesting.rows(without: moving).map(\.id) == ["item-1", "item-3"])
 
-        let top = nesting.landing(ofGroup: "issue-40", moving: moving, at: 0, shown: others)
+        let top = nesting.landing(ofGroup: Self.epicGroup(40), moving: moving, at: 0, shown: others)
         #expect(top.epic == nil)
         #expect(numbers(top.peers) == [1, 3])
         #expect(top.rank == 0)
         #expect(top.depth == 0)
         #expect(top.row == 0)
 
-        let end = nesting.landing(ofGroup: "issue-40", moving: moving, at: 2, shown: others)
+        let end = nesting.landing(ofGroup: Self.epicGroup(40), moving: moving, at: 2, shown: others)
         #expect(end.rank == 2)
         #expect(end.slot == 2)
         #expect(end.row == 2)
@@ -353,7 +358,7 @@ struct EpicGroupTests {
     func passesAnotherGroup() {
         let (shown, nesting) = Self.arrange([Self.item(5, parent: 41), Self.item(6, parent: 41), Self.item(7)])
         #expect(rows(nesting) == ["E41×2", "5", "6", "7"])
-        let landing = nesting.landing(ofGroup: "issue-40", moving: ids(2, 4), at: 1, shown: shown)
+        let landing = nesting.landing(ofGroup: Self.epicGroup(40), moving: ids(2, 4), at: 1, shown: shown)
         #expect(landing.epic == nil)
         // Its peers: the group of #41, by #5, and #7.
         #expect(numbers(landing.peers) == [5, 7])
@@ -366,7 +371,7 @@ struct EpicGroupTests {
     @Test("An epic's issues dropped where the epic has an issue already join it")
     func joinsTheEpicsIssue() {
         let (shown, nesting) = Self.arrange([Self.item(8), Self.item(9, parent: 40), Self.item(10)])
-        let landing = nesting.landing(ofGroup: "issue-40", moving: ids(2, 4), at: 3, shown: shown)
+        let landing = nesting.landing(ofGroup: Self.epicGroup(40), moving: ids(2, 4), at: 3, shown: shown)
         #expect(landing.epic == "issue-40")
         #expect(numbers(landing.peers) == [9])
         #expect(landing.rank == 1)
@@ -379,7 +384,7 @@ struct EpicGroupTests {
     func joinsTheEpicsGroup() {
         let (shown, nesting) = Self.arrange([Self.item(10), Self.item(11, parent: 40), Self.item(12, parent: 40)])
         #expect(rows(nesting) == ["10", "E40×2", "11", "12"])
-        let landing = nesting.landing(ofGroup: "issue-40", moving: ids(2, 4), at: 0, shown: shown)
+        let landing = nesting.landing(ofGroup: Self.epicGroup(40), moving: ids(2, 4), at: 0, shown: shown)
         #expect(landing.epic == "issue-40")
         #expect(numbers(landing.peers) == [11, 12])
         #expect(landing.rank == 0)
@@ -395,7 +400,7 @@ struct EpicGroupTests {
         )
         let moving = ids(2, 3)
         #expect(nesting.rows(without: moving).map(\.id) == ["item-1", "item-5"])
-        let landing = nesting.landing(ofGroup: "issue-40", moving: moving, at: 2, shown: shown)
+        let landing = nesting.landing(ofGroup: Self.epicGroup(40), moving: moving, at: 2, shown: shown)
         #expect(landing.rank == 2)
         #expect(landing.row == 2)
     }
@@ -456,5 +461,209 @@ struct EpicGroupTests {
         let landing = nesting.landing(ofPicked: ids(8, 9), epic: nil, parents: ["issue-8", "issue-9"], at: 3, shown: shown)
         #expect(numbers(landing.peers) == [1, 2])
         #expect(landing.rank == 2)
+    }
+}
+
+@Suite("Sub-issues of a parent elsewhere standing together under a quiet header of the parent")
+struct ParentGroupTests {
+    static func item(_ number: Int, parent: Int? = nil) -> Item {
+        NestingTests.item(number, parent: parent)
+    }
+
+    /// What the header names: the parent as the app has it, here made from what its sub-issue knows.
+    static let grouping = Nesting.ParentGrouping(head: { item in
+        item.parentNumber.map { Item(id: "item-\($0)", kind: .issue, position: 0, number: $0, title: "Issue \($0)", body: "", state: "OPEN") }
+    })
+
+    static func arrange(_ items: [Item], folded: Set<String> = [], parents: Bool = true) -> (items: [Item], nesting: Nesting) {
+        var grouping = grouping
+        grouping.folded = folded
+        return Nesting.arrange(items, parents: parents ? grouping : nil)
+    }
+
+    private func numbers(_ items: [Item]) -> [Int] {
+        items.compactMap(\.number)
+    }
+
+    private func rows(_ nesting: Nesting) -> [String] {
+        nesting.rows.map { row in
+            switch row {
+            case .item(let item): "\(item.number ?? 0)"
+            case .group(let group): "\(group.kind == .epic ? "E" : "P")\(group.head.number ?? 0)×\(group.count)"
+            }
+        }
+    }
+
+    private func ids(_ numbers: Int...) -> Set<String> {
+        Set(numbers.map { "item-\($0)" })
+    }
+
+    private static func parentGroup(_ number: Int) -> Nesting.Group {
+        let head = Item(id: "item-\(number)", kind: .issue, position: 0, contentId: "issue-\(number)", number: number, title: "", body: "", state: "OPEN")
+        return Nesting.Group(kind: .parent, head: head, count: 2, folded: false)
+    }
+
+    @Test("Two sub-issues of a parent elsewhere stand together under its header, where the first of them stands")
+    func groupsSiblings() {
+        let (shown, nesting) = Self.arrange([Self.item(1), Self.item(13, parent: 9), Self.item(2), Self.item(28, parent: 9)])
+        #expect(rows(nesting) == ["1", "P9×2", "13", "28", "2"])
+        #expect(numbers(shown) == [1, 13, 28, 2])
+        #expect(nesting.place(of: "item-13") == Nesting.Place(depth: 1, continues: [true]))
+        #expect(nesting.place(of: "item-28") == Nesting.Place(depth: 1, continues: [false]))
+        #expect(nesting.parentGroupOf["item-13"] == "issue-9")
+        #expect(nesting.groups.first?.contentId == "issue-9")
+        // Under the parent's header, an issue doesn't name the parent again.
+        #expect(!nesting.namesParent(of: Self.item(13, parent: 9)))
+        #expect(nesting.members(of: Self.parentGroup(9)).map(\.id) == ["item-13", "item-28"])
+    }
+
+    @Test("A single sub-issue of a parent elsewhere stands alone and names its parent")
+    func leavesASingleSubIssueAlone() {
+        let (_, nesting) = Self.arrange([Self.item(1), Self.item(13, parent: 9), Self.item(2)])
+        #expect(rows(nesting) == ["1", "13", "2"])
+        #expect(nesting.namesParent(of: Self.item(13, parent: 9)))
+    }
+
+    @Test("Switched off, sub-issues of a parent elsewhere stand where they are, each naming its parent")
+    func staysApartWhenOff() {
+        let (_, nesting) = Self.arrange([Self.item(1), Self.item(13, parent: 9), Self.item(2), Self.item(28, parent: 9)], parents: false)
+        #expect(rows(nesting) == ["1", "13", "2", "28"])
+        #expect(nesting.namesParent(of: Self.item(28, parent: 9)))
+    }
+
+    @Test("Sub-issues of a parent in the group hang under its card, not under a header")
+    func hangsUnderAParentHere() {
+        let (_, nesting) = Self.arrange([Self.item(9), Self.item(13, parent: 9), Self.item(28, parent: 9)])
+        #expect(rows(nesting) == ["9", "13", "28"])
+        #expect(nesting.groups.isEmpty)
+    }
+
+    @Test("A sub-issue's own sub-issues hang under it inside the group, and count for the header")
+    func nestsInsideTheGroup() {
+        let (_, nesting) = Self.arrange([Self.item(13, parent: 9), Self.item(40, parent: 13), Self.item(28, parent: 9)])
+        #expect(rows(nesting) == ["P9×3", "13", "40", "28"])
+        #expect(nesting.place(of: "item-40") == Nesting.Place(depth: 2, continues: [true, false]))
+        #expect(nesting.parentGroupOf["item-40"] == "issue-9")
+    }
+
+    @Test("Folding a parent's group leaves its header, which still counts them")
+    func foldsAGroup() {
+        let (shown, nesting) = Self.arrange([Self.item(1), Self.item(13, parent: 9), Self.item(28, parent: 9), Self.item(2)], folded: ["issue-9"])
+        #expect(rows(nesting) == ["1", "P9×2", "2"])
+        #expect(numbers(shown) == [1, 2])
+        #expect(nesting.members.count == 4)
+        #expect(nesting.groups.first?.folded == true)
+    }
+
+    @Test("Inside an epic's group, a parent's header hangs one level in, with its sub-issues under it")
+    func nestsInAnEpic() {
+        let epic = EpicGroupTests.epics[0]
+        let items = [Self.item(5, parent: 40), Self.item(13, parent: 9), Self.item(28, parent: 9), Self.item(7)]
+        // #9 is an issue of epic #40 in another column.
+        let (_, nesting) = Nesting.arrange(items, epic: { $0.number == 7 ? nil : epic }, parents: Self.grouping)
+        #expect(rows(nesting) == ["E40×3", "5", "P9×2", "13", "28", "7"])
+        #expect(nesting.place(of: "item-5") == Nesting.Place(depth: 1, continues: [true]))
+        #expect(nesting.place(of: Nesting.Group.id(parent: "issue-9")) == Nesting.Place(depth: 1, continues: [false]))
+        #expect(nesting.place(of: "item-13") == Nesting.Place(depth: 2, continues: [false, true]))
+        #expect(nesting.place(of: "item-28") == Nesting.Place(depth: 2, continues: [false, false]))
+        #expect(nesting.groupOf["item-13"] == "issue-40")
+        #expect(nesting.parentGroupOf["item-13"] == "issue-9")
+    }
+
+    @Test("Sub-issues of an epic itself stand under the epic's header only")
+    func leavesEpicsToTheirHeader() {
+        let items = [Self.item(2, parent: 40), Self.item(4, parent: 40)]
+        let (_, nesting) = Nesting.arrange(items, epic: { _ in EpicGroupTests.epics[0] }, parents: Self.grouping)
+        #expect(rows(nesting) == ["E40×2", "2", "4"])
+    }
+
+    // MARK: Dropping
+
+    /// #1, the header of #9 over #13 and #28, and #2.
+    private var column: (items: [Item], nesting: Nesting) {
+        Self.arrange([Self.item(1), Self.item(13, parent: 9), Self.item(28, parent: 9), Self.item(2)])
+    }
+
+    @Test("A sub-issue dropped anywhere in a column joins the other sub-issues of its parent there")
+    func joinsItsSiblings() {
+        let (shown, nesting) = column
+        let top = nesting.landing(of: Self.item(30, parent: 9), at: 0, shown: shown)
+        #expect(top.parentGroup == "issue-9")
+        #expect(numbers(top.peers) == [13, 28])
+        #expect(top.rank == 0)
+        #expect(top.depth == 1)
+        // Rows: 1, header, [here], 13, 28, 2.
+        #expect(top.row == 2)
+
+        let end = nesting.landing(of: Self.item(30, parent: 9), at: shown.count, shown: shown)
+        #expect(end.rank == 2)
+        #expect(end.slot == 3)
+        // Rows: 1, header, 13, 28, [here], 2.
+        #expect(end.row == 4)
+    }
+
+    @Test("Another issue dropped among the sub-issues under a parent's header goes past the whole group")
+    func passesAGroup() {
+        let (shown, nesting) = column
+        let landing = nesting.landing(of: Self.item(7), at: 2, shown: shown)
+        #expect(landing.parentGroup == nil)
+        // Its peers: #1, the group (by #13) and #2.
+        #expect(numbers(landing.peers) == [1, 13, 2])
+        #expect(landing.rank == 2)
+        #expect(landing.depth == 0)
+        #expect(landing.row == 4)
+    }
+
+    @Test("A sub-issue moved within its group stays in it")
+    func staysInItsGroup() {
+        let (shown, nesting) = column
+        let moving = Self.item(28, parent: 9)
+        let others = shown.filter { $0.id != moving.id }
+        let landing = nesting.landing(of: moving, at: 0, shown: others)
+        #expect(landing.parentGroup == "issue-9")
+        #expect(numbers(landing.peers) == [13])
+        #expect(landing.rank == 0)
+    }
+
+    @Test("A parent's sub-issues lifted by their header hang under the parent where it stands")
+    func groupJoinsItsParent() {
+        let (shown, nesting) = Self.arrange([Self.item(9), Self.item(5)])
+        let landing = nesting.landing(ofGroup: Self.parentGroup(9), moving: ids(13, 28), at: 2, shown: shown)
+        #expect(landing.parentId == "item-9")
+        #expect(landing.depth == 1)
+        #expect(landing.slot == 1)
+        #expect(landing.row == 1)
+    }
+
+    @Test("A parent's sub-issues lifted by their header join its other sub-issues in another column")
+    func groupJoinsItsSiblings() {
+        let (shown, nesting) = Self.arrange([Self.item(1), Self.item(30, parent: 9), Self.item(31, parent: 9), Self.item(2)])
+        let landing = nesting.landing(ofGroup: Self.parentGroup(9), moving: ids(13, 28), at: 0, shown: shown)
+        #expect(landing.parentGroup == "issue-9")
+        #expect(numbers(landing.peers) == [30, 31])
+        #expect(landing.depth == 1)
+    }
+
+    @Test("Where the last of a parent's sub-issues leave, its header goes too")
+    func headerLeavesWithItsIssues() {
+        let (_, nesting) = column
+        #expect(nesting.rows(without: ids(13, 28)).map(\.id) == ["item-1", "item-2"])
+        #expect(nesting.rows(without: ids(13)).map(\.id) == ["item-1", Nesting.Group.id(parent: "issue-9"), "item-28", "item-2"])
+    }
+}
+
+extension ParentGroupTests {
+    @Test("Picked sub-issues of one parent elsewhere join its other sub-issues where those stand together")
+    func pickedJoinTheirSiblings() {
+        let (shown, nesting) = Self.arrange([Self.item(1), Self.item(13, parent: 9), Self.item(28, parent: 9), Self.item(2)])
+        let moving: Set<String> = ["item-30", "item-31"]
+        let landing = nesting.landing(ofPicked: moving, epic: nil, parent: "issue-9", parents: ["issue-30", "issue-31"], at: 0, shown: shown)
+        #expect(landing.parentGroup == "issue-9")
+        #expect(landing.peers.compactMap(\.number) == [13, 28])
+        #expect(landing.depth == 1)
+        // Picked issues of different parents go past the group as before.
+        let mixed = nesting.landing(ofPicked: moving, epic: nil, parents: ["issue-30", "issue-31"], at: 2, shown: shown)
+        #expect(mixed.parentGroup == nil)
+        #expect(mixed.depth == 0)
     }
 }

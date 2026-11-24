@@ -365,6 +365,11 @@ public final class AppModel {
     @ObservationIgnored var foldedEpics = Set(UserDefaults.standard.stringArray(forKey: "foldedEpicGroups") ?? []) {
         didSet { UserDefaults.standard.set(Array(foldedEpics), forKey: "foldedEpicGroups") }
     }
+    /// Parents (node ids) whose sub-issues are folded away under the header they stand together under where the
+    /// parent is elsewhere, on boards and in their lists. Kept on this device.
+    @ObservationIgnored var foldedParentGroups = Set(UserDefaults.standard.stringArray(forKey: "foldedParentGroups") ?? []) {
+        didSet { UserDefaults.standard.set(Array(foldedParentGroups), forKey: "foldedParentGroups") }
+    }
     /// Sub-issues (node ids) whose own sub-issues are unfolded under them in an issue's list of sub-issues. Kept on
     /// this device.
     var unfoldedSubIssues = Set(UserDefaults.standard.stringArray(forKey: "unfoldedSubIssues") ?? []) {
@@ -591,6 +596,15 @@ public final class AppModel {
     /// Whether finishing the last open sub-issue of a parent marks the parent done too, as Linear can.
     var completesParents = UserDefaults.standard.object(forKey: "subIssues.completeParent") as? Bool ?? true {
         didSet { UserDefaults.standard.set(completesParents, forKey: "subIssues.completeParent") }
+    }
+    /// Whether two or more sub-issues of a parent that stands elsewhere stand together under a header of the parent
+    /// on boards and in their lists, as an epic's issues do.
+    var groupsByParent = UserDefaults.standard.object(forKey: "subIssues.groupByParent") as? Bool ?? true {
+        didSet {
+            guard groupsByParent != oldValue else { return }
+            UserDefaults.standard.set(groupsByParent, forKey: "subIssues.groupByParent")
+            rebuild()
+        }
     }
     /// How issues list their sub-issues: by priority until another order is picked.
     var subIssueOrder = UserDefaults.standard.string(forKey: "subIssues.order").flatMap(SubIssueOrder.init(rawValue:)) ?? .priority {
@@ -1338,9 +1352,12 @@ public final class AppModel {
         let known = Set(statuses.map(\.id))
         var result: [BoardColumn] = []
         let unsorted = items.filter { $0.statusId == nil || !known.contains($0.statusId!) }
-        // The issues of an epic stand together in each column, under a header of the epic.
+        // The issues of an epic stand together in each column, under a header of the epic, and so do sub-issues of a
+        // parent elsewhere.
         func arranged(_ items: [Item]) -> (items: [Item], nesting: Nesting) {
-            Nesting.arrange(items, folded: foldedParents, epic: { self.epic(of: $0) }, foldedEpics: foldedEpics)
+            Nesting.arrange(
+                items, folded: foldedParents, epic: { self.epic(of: $0) }, foldedEpics: foldedEpics, parents: parentGrouping
+            )
         }
         if !unsorted.isEmpty {
             let (shown, nesting) = arranged(unsorted)

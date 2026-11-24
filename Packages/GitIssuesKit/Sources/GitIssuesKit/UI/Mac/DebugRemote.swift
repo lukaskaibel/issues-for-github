@@ -632,10 +632,11 @@ enum DebugRemote {
             // subtree <number>: shows or hides a sub-issue's own sub-issues under it in an issue's list of them.
             if let contentId = item(argument, model)?.contentId { model.toggleSubIssues(of: contentId) }
         case "foldepic":
-            // foldepic <number>: folds the issues of an epic away under its headers, or shows them.
+            // foldepic <number>: folds the issues of an epic, or the sub-issues of a parent elsewhere, away under their
+            // headers, or shows them.
             if let epic = item(argument, model), let group = (model.columns.flatMap(\.nesting.groups) + model.sections.flatMap(\.nesting.groups))
                 .first(where: { $0.contentId == epic.contentId }) {
-                model.toggleEpicGroup(group)
+                model.toggleGroup(group)
             }
         case "done":
             // done <number>: marks an issue done, or back to the first column, as its swipe and menu do.
@@ -739,7 +740,8 @@ enum DebugRemote {
                 log("label: no such issue or label")
             }
         case "listdropepic":
-            // listdropepic <epic number> <row>: drops the header over the epic's issues in the list above that row.
+            // listdropepic <epic or parent number> <row>: drops the header over the epic's issues, or over the parent's
+            // sub-issues, in the list above that row.
             let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
             guard bits.count == 2, let epic = item(bits[0], model), let row = Int(bits[1]),
                   let root = NSApp.windows.first(where: { $0.isVisible && $0.frame.width > 600 })?.contentView else { break }
@@ -749,18 +751,19 @@ enum DebugRemote {
                 return nil
             }
             if let coordinator = find(root)?.coordinator, let epicId = epic.contentId {
-                log("listdropepic: \(coordinator.dropGroup(epic: epicId, above: row))")
+                log("listdropepic: \(coordinator.dropGroup(head: epicId, above: row))")
             }
         case "retitle":
             // retitle <number> <title>: renames an issue, as editing its title does.
             let bits = argument.split(separator: " ", maxSplits: 1).map(String.init)
             if bits.count == 2, let item = item(bits[0], model) { model.rename(item, to: bits[1]) }
         case "clickepic":
-            // clickepic <epic number> [fold]: what a click on the header over the epic's issues does, or one on its arrow.
+            // clickepic <epic or parent number> [fold]: what a click on the header over the epic's issues, or the parent's
+            // sub-issues, does, or one on its arrow.
             let bits = argument.split(separator: " ").map(String.init)
             if let epic = item(bits.first ?? "", model), let group = (model.columns.flatMap(\.nesting.groups) + model.sections.flatMap(\.nesting.groups))
                 .first(where: { $0.contentId == epic.contentId }) {
-                if bits.count > 1, bits[1] == "fold" { model.toggleEpicGroup(group) } else { model.open(group.epic) }
+                if bits.count > 1, bits[1] == "fold" { model.toggleGroup(group) } else if let head = model.headIssue(of: group) { model.open(head) }
             }
         case "listdrop", "dragimage":
             // listdrop <number> <row>: drops the issue in the list above that row, as a drag would, with the other
@@ -787,7 +790,7 @@ enum DebugRemote {
             } else if let row = (0..<table.numberOfRows).first(where: {
                 coordinator.item(at: $0)?.id == item.id
                     // An epic's number: the card its issues lift off as by its header.
-                    || (table.view(atColumn: 0, row: $0, makeIfNecessary: false) as? EpicHeaderRowCell)?.shownGroup?.epic.id == item.id
+                    || (table.view(atColumn: 0, row: $0, makeIfNecessary: false) as? GroupHeaderRowCell)?.shownGroup?.head.id == item.id
             }),
                       let image = parent.flatMap({ parent in
                           (table.view(atColumn: 0, row: row, makeIfNecessary: false) as? IssueRowCell)?.liftedContent().flatMap {
@@ -1080,7 +1083,7 @@ enum DebugRemote {
             }
             for column in model.columns {
                 for group in column.nesting.groups {
-                    log("  header \(column.title)/\(group.epic.title) frame=\(drag.headerFrame(column: column.id, epic: group.contentId).map { "\(Int($0.minY))…\(Int($0.maxY))" } ?? "nil")")
+                    log("  header \(column.title)/\(group.head.title) frame=\(drag.headerFrame(column: column.id, head: group.contentId).map { "\(Int($0.minY))…\(Int($0.maxY))" } ?? "nil")")
                 }
             }
             // Rows taller or shorter than the column first took them for, which moved the rows under them.
@@ -1361,10 +1364,11 @@ enum DebugRemote {
     private static func dragGroup(of epic: Item, toColumn name: String, index: Int, hold: Bool, model: AppModel) {
         let drag = model.boardDrag
         guard let source = model.columns.first(where: { column in column.nesting.groups.contains { $0.contentId == epic.contentId } }),
-              let epicId = epic.contentId, let from = drag.headerFrame(column: source.id, epic: epicId),
+              let epicId = epic.contentId, let from = drag.headerFrame(column: source.id, head: epicId),
               let column = model.columns.first(where: { $0.title.caseInsensitiveCompare(name) == .orderedSame }),
               let columnFrame = drag.columnFrames[column.id] else { return }
-        let members = Set(source.nesting.members.filter { source.nesting.groupOf[$0.id] == epicId }.map(\.id))
+        guard let group = source.nesting.groups.first(where: { $0.contentId == epicId }) else { return }
+        let members = Set(source.members(of: group).map(\.id))
         let others = column.items.filter { !members.contains($0.id) }
         var y = columnFrame.minY + 40 + from.height / 2
         if index < others.count, let frame = drag.cardFrames[others[index].id] {
@@ -1891,8 +1895,8 @@ extension IssueTable.Coordinator {
                 }
             case .header(let section):
                 if (view as? IssueHeaderCell)?.shownSection != section { stale.append("\(row) [\(section.title)]") }
-            case .epic(_, let group):
-                if (view as? EpicHeaderRowCell)?.shownGroup != group { stale.append("\(row) <\(group.epic.title)>") }
+            case .group(_, let line):
+                if (view as? GroupHeaderRowCell)?.shownGroup != line.group { stale.append("\(row) <\(line.group.head.title)>") }
             }
         }
         loaded.sort()

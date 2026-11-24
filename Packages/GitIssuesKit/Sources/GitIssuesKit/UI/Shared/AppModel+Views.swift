@@ -574,7 +574,7 @@ extension AppModel {
     }
 
     func arranged(_ items: [Item]) -> (items: [Item], nesting: Nesting) {
-        Nesting.arrange(items, folded: foldedParents, epic: { self.epic(of: $0) }, foldedEpics: foldedEpics)
+        Nesting.arrange(items, folded: foldedParents, epic: { self.epic(of: $0) }, foldedEpics: foldedEpics, parents: parentGrouping)
     }
 
     /// A board's columns by a single select or an iteration: one per option or iteration, and one for cards

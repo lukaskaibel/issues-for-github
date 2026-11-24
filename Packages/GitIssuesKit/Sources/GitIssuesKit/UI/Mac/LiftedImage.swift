@@ -5,7 +5,7 @@ import SwiftUI
 /// What a row of the list lifts off as when it is dragged: the board's lifted card, with the row on it. It is drawn
 /// from the views the board's drag shows, so that it is the same card: its colour and corners, no border, the deep
 /// shadow of a lifted card (`liftedShadow`), a card under it for each other one it carries along (up to three), how
-/// many on its corner (`PickedCount`), an epic's issues as `EpicGroupCard`, and over an issue it would go under, the
+/// many on its corner (`PickedCount`), the issues under a header as `GroupCard`, and over an issue it would go under, the
 /// smaller card with "Sub-issue of" under it (`NestHint`). A row as wide as the list doesn't tilt as a card does.
 @MainActor
 enum LiftedImage {
@@ -25,9 +25,9 @@ enum LiftedImage {
         return render(card, appearance: appearance).map { ($0, NSPoint(x: inset - margin.left, y: 1 - margin.top)) }
     }
 
-    /// The header over an epic's issues as the card they lift off as together, as on the board.
-    static func group(_ group: Nesting.EpicGroup, rowWidth: CGFloat, inset: CGFloat, appearance: NSAppearance) -> (image: NSImage, origin: NSPoint)? {
-        let card = EpicGroupCard(group: group, width: rowWidth - 2 * inset).liftedShadow()
+    /// The header over an epic's or a parent's issues as the card they lift off as together, as on the board.
+    static func group(_ group: Nesting.Group, rowWidth: CGFloat, inset: CGFloat, appearance: NSAppearance) -> (image: NSImage, origin: NSPoint)? {
+        let card = GroupCard(group: group, width: rowWidth - 2 * inset).liftedShadow()
         return render(card, appearance: appearance).map { ($0, NSPoint(x: inset - margin.left, y: -margin.top)) }
     }
 

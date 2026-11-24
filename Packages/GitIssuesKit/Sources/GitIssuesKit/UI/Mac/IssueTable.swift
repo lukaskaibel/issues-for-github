@@ -34,10 +34,22 @@ struct IssueSectionModel: Equatable {
     }
 }
 
-/// One line of a section: an issue, or the header over the issues of an epic standing together.
+/// One line of a section: an issue, or the header over issues standing together, an epic's or a parent's.
 enum IssueLine: Equatable {
     case row(IssueRowModel)
-    case epic(Nesting.EpicGroup)
+    case group(GroupHeaderLine)
+}
+
+/// The header over issues standing together in a section, as the list shows it.
+struct GroupHeaderLine: Equatable {
+    var group: Nesting.Group
+    /// Under a parent's name: its number and its status.
+    var detail: String? = nil
+    /// Where it hangs inside an epic's group.
+    var place = Nesting.Place()
+    /// What the parent's status says under the pointer, where a click on it changes the status: the parent is on
+    /// this board.
+    var statusTooltip: String? = nil
 }
 
 /// The issue list. It is an AppKit table rather than a SwiftUI stack because a table recycles its rows
@@ -86,7 +98,7 @@ struct IssueTable: NSViewRepresentable {
         table.coordinator = coordinator
         coordinator.table = table
         // Issues, epics' headers and section headers can be dragged to a new place; rows open a gap where it would land.
-        table.registerForDraggedTypes([Coordinator.itemType, Coordinator.pickedType, Coordinator.epicType, Coordinator.sectionType])
+        table.registerForDraggedTypes([Coordinator.itemType, Coordinator.pickedType, Coordinator.groupType, Coordinator.sectionType])
         table.setDraggingSourceOperationMask(.move, forLocal: true)
         table.draggingDestinationFeedbackStyle = .gap
         return table
@@ -144,15 +156,15 @@ struct IssueTable: NSViewRepresentable {
         enum Entry: Equatable {
             case header(IssueSectionModel)
             case row(IssueRowModel)
-            /// The header over an epic's issues in a section, which is named with it: an epic can have issues in
-            /// several sections.
-            case epic(sectionId: String, group: Nesting.EpicGroup)
+            /// The header over issues standing together in a section, an epic's or a parent's, which is named with
+            /// the section: an epic or a parent can have issues in several sections.
+            case group(sectionId: String, line: GroupHeaderLine)
 
             var id: String {
                 switch self {
                 case .header(let section): "section:\(section.id)"
                 case .row(let row): row.item.id
-                case .epic(let sectionId, let group): "epic:\(sectionId):\(group.contentId)"
+                case .group(let sectionId, let line): "\(line.group.kind == .epic ? "epic" : "parent"):\(sectionId):\(line.group.contentId)"
                 }
             }
 
@@ -275,7 +287,7 @@ struct IssueTable: NSViewRepresentable {
                 next += section.lines.map { line in
                     switch line {
                     case .row(let row): .row(row)
-                    case .epic(let group): .epic(sectionId: section.id, group: group)
+                    case .group(let line): .group(sectionId: section.id, line: line)
                     }
                 }
             }
@@ -352,8 +364,8 @@ struct IssueTable: NSViewRepresentable {
                         },
                     ] : [])
                 }
-            case .epic(_, let group):
-                (view as? EpicHeaderRowCell)?.configure(group)
+            case .group(_, let line):
+                (view as? GroupHeaderRowCell)?.configure(line)
                 view.alphaValue = draggedIds.contains(entry.id) ? 0.35 : 1
             }
         }
@@ -408,10 +420,10 @@ struct IssueTable: NSViewRepresentable {
                 }()
                 configure(view, with: entry)
                 return view
-            case .epic:
-                let identifier = NSUserInterfaceItemIdentifier("epic-header")
-                let view = (tableView.makeView(withIdentifier: identifier, owner: nil) as? EpicHeaderRowCell) ?? {
-                    let cell = EpicHeaderRowCell()
+            case .group:
+                let identifier = NSUserInterfaceItemIdentifier("group-header")
+                let view = (tableView.makeView(withIdentifier: identifier, owner: nil) as? GroupHeaderRowCell) ?? {
+                    let cell = GroupHeaderRowCell()
                     cell.identifier = identifier
                     return cell
                 }()
@@ -433,7 +445,7 @@ struct IssueTable: NSViewRepresentable {
 
         static let itemType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.item")
         /// An epic's header, as its section's id and the epic's, which brings the epic's issues there along.
-        static let epicType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.epic-group")
+        static let groupType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.epic-group")
         static let sectionType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.section")
         /// A picked issue, which brings the other picked ones along.
         static let pickedType = NSPasteboard.PasteboardType("com.lukaskbl.GitIssues.picked")
@@ -451,7 +463,7 @@ struct IssueTable: NSViewRepresentable {
                 // from where it stands, so it stays.
                 if isOnPage { return !issue.item.isStandIn && model.canNestSomewhere(issue.item) }
                 return canMoveRows || model.canNestSomewhere(issue.item)
-            case .epic(let sectionId, _): return canMoveRows && section(sectionId)?.kind == .status
+            case .group(let sectionId, _): return canMoveRows && section(sectionId)?.kind == .status
             }
         }
 
@@ -463,8 +475,8 @@ struct IssueTable: NSViewRepresentable {
                 item.setString(section.id, forType: Self.sectionType)
             case .row(let issue):
                 item.setString(issue.item.id, forType: picked(from: issue.item.id) == nil ? Self.itemType : Self.pickedType)
-            case .epic(let sectionId, let group):
-                item.setString("\(sectionId)\u{1F}\(group.contentId)", forType: Self.epicType)
+            case .group(let sectionId, let line):
+                item.setString("\(sectionId)\u{1F}\(line.group.contentId)", forType: Self.groupType)
             }
             return item
         }
@@ -497,8 +509,8 @@ struct IssueTable: NSViewRepresentable {
             switch entries[row] {
             case .row(let issue):
                 draggedIds = picked?.moving ?? [issue.item.id]
-            case .epic(let sectionId, let group):
-                let members = statusColumn(sectionId)?.members(of: group) ?? []
+            case .group(let sectionId, let line):
+                let members = statusColumn(sectionId)?.members(of: line.group) ?? []
                 draggedIds = Set(members.map(\.id)).union([entries[row].id])
             case .header:
                 return
@@ -548,7 +560,7 @@ struct IssueTable: NSViewRepresentable {
             if let cell = cell as? IssueRowCell, let content = cell.liftedContent() {
                 return LiftedImage.row(content, inset: IssueTable.inset, count: picked?.items.count, appearance: appearance).map { ($0.image, $0.origin, content) }
             }
-            if let cell = cell as? EpicHeaderRowCell, let group = cell.shownGroup {
+            if let cell = cell as? GroupHeaderRowCell, let group = cell.shownGroup {
                 return LiftedImage.group(group, rowWidth: cell.bounds.width, inset: IssueTable.inset, appearance: appearance).map { ($0.image, $0.origin, nil) }
             }
             return nil
@@ -677,7 +689,7 @@ struct IssueTable: NSViewRepresentable {
             while current < entries.count, !entries[current].isHeader {
                 let id: String? = switch entries[current] {
                 case .row(let issue): issue.item.id
-                case .epic(_, let group): group.id
+                case .group(_, let line): line.group.id
                 case .header: nil
                 }
                 if let id, kept.contains(id) {
@@ -689,13 +701,13 @@ struct IssueTable: NSViewRepresentable {
             return current
         }
 
-        /// Drops the issues of an epic's group above `row`, together. `epic` is the epic's node id; the group is the
-        /// first one of it in the list.
-        func dropGroup(epic: String, above row: Int) -> Bool {
+        /// Drops the issues under a header above `row`, together. `head` is the node id of the epic or the parent;
+        /// the group is the first one of it in the list.
+        func dropGroup(head: String, above row: Int) -> Bool {
             guard let section = entries.first(where: { entry in
-                if case .epic(_, let group) = entry { group.contentId == epic } else { false }
-            }), case .epic(let sectionId, _) = section else { return false }
-            return dropGroup("\(sectionId)\u{1F}\(epic)", above: row)
+                if case .group(_, let line) = entry { line.group.contentId == head } else { false }
+            }), case .group(let sectionId, _) = section else { return false }
+            return dropGroup("\(sectionId)\u{1F}\(head)", above: row)
         }
 
         private func dropGroup(_ payload: String, above row: Int) -> Bool {
@@ -704,22 +716,22 @@ struct IssueTable: NSViewRepresentable {
             return true
         }
 
-        /// The epic's header a drag carries, with the issues it brings along: the section it comes from, its group
-        /// there and the group's issues.
-        private func draggedGroup(_ info: NSDraggingInfo) -> (group: Nesting.EpicGroup, members: [Item])? {
-            info.draggingPasteboard.string(forType: Self.epicType).flatMap(draggedGroup)
+        /// The header a drag carries, an epic's or a parent's, with the issues it brings along: the section it comes
+        /// from, its group there and the group's issues.
+        private func draggedGroup(_ info: NSDraggingInfo) -> (group: Nesting.Group, members: [Item])? {
+            info.draggingPasteboard.string(forType: Self.groupType).flatMap(draggedGroup)
         }
 
-        private func draggedGroup(_ payload: String) -> (group: Nesting.EpicGroup, members: [Item])? {
+        private func draggedGroup(_ payload: String) -> (group: Nesting.Group, members: [Item])? {
             let parts = payload.split(separator: "\u{1F}", maxSplits: 1).map(String.init)
             guard parts.count == 2, let source = statusColumn(parts[0]),
                   let group = source.nesting.groups.first(where: { $0.contentId == parts[1] }) else { return nil }
             return (group, source.members(of: group))
         }
 
-        /// Where an epic's issues dropped above `row` land: the section and their place among its issues. Only the
-        /// board's columns take them, as a whole.
-        private func groupLanding(_ dragged: (group: Nesting.EpicGroup, members: [Item]), above row: Int)
+        /// Where the issues under a header dropped above `row` land: the section and their place among its issues.
+        /// Only the board's columns take them, as a whole.
+        private func groupLanding(_ dragged: (group: Nesting.Group, members: [Item]), above row: Int)
             -> (column: BoardColumn, header: Int, index: Int)? {
             let moving = Set(dragged.members.map(\.id))
             guard let landing = landing(above: max(row, 1), moving: moving), section(landing.sectionId)?.kind == .status,
@@ -749,12 +761,13 @@ struct IssueTable: NSViewRepresentable {
                 return .move
             }
             leaveNestTarget(info)
-            if info.draggingPasteboard.string(forType: Self.epicType) != nil {
-                // The gap opens where the epic's issues will land, together, as a whole.
+            if info.draggingPasteboard.string(forType: Self.groupType) != nil {
+                // The gap opens where the header's issues will land, together, as a whole.
                 guard let dragged = draggedGroup(info), let target = groupLanding(dragged, above: row),
                       !staysPut(dragged.members, in: target.column.id) else { return [] }
                 let moving = Set(dragged.members.map(\.id))
-                let slot = target.column.landing(ofGroup: dragged.group.contentId, moving: moving, at: target.index).row
+                let epic = dragged.members.first.flatMap { model.epic(of: $0)?.contentId }
+                let slot = target.column.landing(ofGroup: dragged.group, moving: moving, at: target.index, epic: epic).row
                 tableView.setDropRow(tableRow(slot, afterHeader: target.header, shown: target.column.nesting.rows(without: moving)), dropOperation: .above)
                 return .move
             }
@@ -809,7 +822,7 @@ struct IssueTable: NSViewRepresentable {
                 return true
             }
             if let id = info.draggingPasteboard.string(forType: Self.itemType) { return dropItem(id, above: row) }
-            if let payload = info.draggingPasteboard.string(forType: Self.epicType) {
+            if let payload = info.draggingPasteboard.string(forType: Self.groupType) {
                 return dropGroup(payload, above: row)
             }
             if let picked = picked(info) { return dropPicked(picked, above: row) }
@@ -837,13 +850,13 @@ struct IssueTable: NSViewRepresentable {
             return result
         }
 
-        /// The issue a row stands for when issues are dropped onto it: its own, or an epic's for the header over the
-        /// epic's issues.
+        /// The issue a row stands for when issues are dropped onto it: its own, or for a header over an epic's or a
+        /// parent's issues that epic or parent, where the app has it.
         private func nestTarget(at row: Int) -> Item? {
             guard entries.indices.contains(row) else { return nil }
             switch entries[row] {
             case .row(let issue): return issue.item.isStandIn ? nil : issue.item
-            case .epic(_, let group): return group.epic
+            case .group(_, let line): return model.headIssue(of: line.group)
             case .header: return nil
             }
         }
@@ -933,7 +946,7 @@ struct IssueTable: NSViewRepresentable {
                 switch entry {
                 case .header(let section): "[\(section.title)\(section.collapsed ? " folded" : "")]"
                 case .row(let row): row.item.displayNumber
-                case .epic(_, let group): "<\(group.epic.title)\(group.folded ? " folded" : "") \(group.count)>"
+                case .group(_, let line): "<\(line.group.head.title)\(line.group.folded ? " folded" : "") \(line.group.count)>"
                 }
             }
             let shown = sticky.map { !$0.isHidden } ?? false
@@ -989,14 +1002,20 @@ struct IssueTable: NSViewRepresentable {
                 if let event = NSApp.currentEvent { header.click(at: header.convert(event.locationInWindow, from: nil)) }
                 return
             }
-            // A click on an epic's header opens the epic; one on its arrow folds its issues away or shows them again.
-            if entries.indices.contains(row), case .epic(_, let group) = entries[row] {
-                if let event = NSApp.currentEvent,
-                   let cell = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? EpicHeaderRowCell,
-                   cell.isOnFold(cell.convert(event.locationInWindow, from: nil)) {
-                    model.toggleEpicGroup(group)
-                } else {
-                    model.openFromClick(group.epic)
+            // A click on a header opens the epic or the parent; one on its arrow folds its issues away or shows them
+            // again, and one on the line beside a parent's name changes the parent's status.
+            if entries.indices.contains(row), case .group(_, let line) = entries[row] {
+                let cell = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? GroupHeaderRowCell
+                let point = NSApp.currentEvent.flatMap { event in cell?.convert(event.locationInWindow, from: nil) }
+                if let cell, let point, cell.isOnFold(point) {
+                    model.toggleGroup(line.group)
+                } else if let cell, let point, let detail = cell.detailRect, detail.contains(point),
+                          let head = model.headIssue(of: line.group), cell.changesStatus {
+                    Dropdown.show(below: detail, in: cell, model: model) { close in
+                        ItemPicker(kind: .status, itemId: head.id, close: close)
+                    }
+                } else if let head = model.headIssue(of: line.group) {
+                    model.openFromClick(head)
                 }
                 return
             }
@@ -1032,11 +1051,12 @@ struct IssueTable: NSViewRepresentable {
             guard let table else { return }
             // Rows made ready off screen too, or one would come back into view lit up where the pointer left it.
             for loaded in IssueTable.loadedRows(of: table) {
-                // An epic's header lights up as a whole, or just its arrow.
-                if let header = table.view(atColumn: 0, row: loaded, makeIfNecessary: false) as? EpicHeaderRowCell {
+                // A header lights up as a whole, or just its arrow, or the line beside a parent's name.
+                if let header = table.view(atColumn: 0, row: loaded, makeIfNecessary: false) as? GroupHeaderRowCell {
                     let local = header.convert(point, from: table)
                     header.hoveringFold = loaded == row && header.isOnFold(local)
-                    header.highlighted = loaded == row && !header.hoveringFold && draggedIds.isEmpty
+                    header.hoveringDetail = loaded == row && !header.hoveringFold && header.isOnDetail(local)
+                    header.highlighted = loaded == row && !header.hoveringFold && !header.hoveringDetail && draggedIds.isEmpty
                     continue
                 }
                 guard let cell = table.view(atColumn: 0, row: loaded, makeIfNecessary: false) as? IssueRowCell else { continue }
@@ -1071,8 +1091,8 @@ struct IssueTable: NSViewRepresentable {
             if entries.indices.contains(row), case .header(let section) = entries[row] {
                 return SectionMenu.menu(section, model: model)
             }
-            if entries.indices.contains(row), case .epic(let sectionId, let group) = entries[row] {
-                return EpicGroupMenu.menu(group, in: statusColumn(sectionId), model: model)
+            if entries.indices.contains(row), case .group(let sectionId, let line) = entries[row] {
+                return GroupMenu.menu(line.group, in: statusColumn(sectionId), model: model)
             }
             guard let item = item(at: row) else { return nil }
             return ItemMenuBuilder(model: model, item: item).menu()
@@ -1436,20 +1456,27 @@ final class HoverTableView: NSTableView {
     }
 }
 
-/// The header over the issues of an epic standing together in a section, with the marks `EpicHeader` draws on the board
-/// and on iPhone and iPad: the epic's icon at the start of the row, in the column of the priorities, where the line down
-/// to its issues starts, its name, in line with the issues' priorities, how many of its issues are there, and at the end
-/// of the row, under the section header's +, the arrow that folds them away. All of it stands in the middle of the row,
-/// and so of the highlight under the pointer. A click opens the epic, one on the arrow folds its issues or shows them
-/// again, and dragging it moves them all.
-final class EpicHeaderRowCell: PaintedCell {
-    private var group: Nesting.EpicGroup?
+/// The header over issues standing together in a section, with the marks `GroupHeader` draws on the board and on iPhone
+/// and iPad: an epic's icon, or for sub-issues of a parent elsewhere the sub-issue arrow in grey, at the start of the
+/// row, in the column of the priorities, where the line down to its issues starts; the name, in line with the issues'
+/// priorities, how many of its issues are there, for a parent its number and status after them in grey, and at the end
+/// of the row, under the section header's +, the arrow that folds them away. Inside an epic's group a parent's header
+/// hangs one level in, as an issue there does. All of it stands in the middle of the row, and so of the highlight under
+/// the pointer. A click opens the epic or the parent, one on the arrow folds its issues or shows them again, one on a
+/// parent's status changes it, and dragging it moves them all.
+final class GroupHeaderRowCell: PaintedCell {
+    private var line: GroupHeaderLine?
     /// What the header shows now.
-    var shownGroup: Nesting.EpicGroup? { group }
+    var shownGroup: Nesting.Group? { line?.group }
     private var title = NSAttributedString()
     private var count = NSAttributedString()
+    private var detail = NSAttributedString()
+    /// Whether a click on the line beside a parent's name changes its status: the parent is on this board.
+    private(set) var changesStatus = false
     /// The arrow, where it was drawn last.
     private(set) var foldRect: NSRect?
+    /// The parent's number and status, where they were drawn last.
+    private(set) var detailRect: NSRect?
     var highlighted = false {
         didSet { if highlighted != oldValue { needsDisplay = true } }
     }
@@ -1457,7 +1484,14 @@ final class EpicHeaderRowCell: PaintedCell {
         didSet {
             guard hoveringFold != oldValue else { return }
             needsDisplay = true
-            toolTip = hoveringFold ? group.map { String(localized: $0.folded ? .unfoldEpicGroupTooltip(count: $0.count) : .foldEpicGroupTooltip) } : nil
+            updateToolTip()
+        }
+    }
+    var hoveringDetail = false {
+        didSet {
+            guard hoveringDetail != oldValue else { return }
+            needsDisplay = true
+            updateToolTip()
         }
     }
 
@@ -1471,32 +1505,50 @@ final class EpicHeaderRowCell: PaintedCell {
     required init?(coder: NSCoder) { fatalError("Not used") }
 
     override func viewDidChangeEffectiveAppearance() {
-        configure(group, force: true)
+        configure(line, force: true)
     }
 
-    func configure(_ group: Nesting.EpicGroup?, force: Bool = false) {
-        guard force || group != self.group else { return }
-        // A row used again for another epic starts without the pointer on it.
-        if group?.id != self.group?.id {
+    private func updateToolTip() {
+        toolTip = if hoveringFold {
+            line?.group.foldLabel
+        } else if hoveringDetail {
+            line?.statusTooltip
+        } else {
+            nil
+        }
+    }
+
+    func configure(_ line: GroupHeaderLine?, force: Bool = false) {
+        guard force || line != self.line else { return }
+        // A row used again for another group starts without the pointer on it.
+        if line?.group.id != self.line?.group.id {
             highlighted = false
             hoveringFold = false
+            hoveringDetail = false
         }
-        self.group = group
+        self.line = line
+        changesStatus = line?.statusTooltip != nil
+        let parent = line?.group.kind == .parent
         let truncating = NSMutableParagraphStyle()
         truncating.lineBreakMode = .byTruncatingTail
-        title = NSAttributedString(string: group?.epic.title ?? "", attributes: [
-            .font: EpicHeaderLook.nameFont,
-            .foregroundColor: NSColor(Theme.text),
+        title = NSAttributedString(string: line?.group.head.title ?? "", attributes: [
+            .font: parent ? GroupHeaderLook.parentNameFont : GroupHeaderLook.nameFont,
+            .foregroundColor: NSColor(parent ? Theme.textSecondary : Theme.text),
             .paragraphStyle: truncating,
         ])
-        count = NSAttributedString(string: group.map { "\($0.count)" } ?? "", attributes: [
-            .font: EpicHeaderLook.countFont,
+        count = NSAttributedString(string: line.map { "\($0.group.count)" } ?? "", attributes: [
+            .font: GroupHeaderLook.countFont,
             .foregroundColor: NSColor(Theme.textTertiary),
         ])
-        if let group {
-            setAccessibilityLabel(String(localized: .epicGroupSpoken(epic: group.epic.title, count: group.count)))
-            setAccessibilityValue(String(localized: group.folded ? .sectionFolded : .sectionOpen))
+        detail = NSAttributedString(string: line?.detail ?? "", attributes: [
+            .font: GroupHeaderLook.detailFont,
+            .foregroundColor: NSColor(Theme.textTertiary),
+        ])
+        if let line {
+            setAccessibilityLabel(line.group.spoken(detail: line.detail))
+            setAccessibilityValue(String(localized: line.group.folded ? .sectionFolded : .sectionOpen))
         }
+        updateToolTip()
         needsDisplay = true
     }
 
@@ -1504,33 +1556,65 @@ final class EpicHeaderRowCell: PaintedCell {
         foldRect?.insetBy(dx: -3, dy: -4).contains(point) ?? false
     }
 
+    func isOnDetail(_ point: NSPoint) -> Bool {
+        changesStatus && (detailRect?.contains(point) ?? false)
+    }
+
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { .button }
 
-    /// The icon stands where a row's priority does, and the line down to the epic's issues starts under it.
+    /// The icon stands where a row's priority does, and the line down to the group's issues starts under it.
     static let iconColumn = (x: IssueRowCell.firstColumn, width: CGFloat(14))
     /// The arrow stands under the section headers' + button.
     static let trailing = IssueTable.inset + 12
 
     override func draw(_ dirtyRect: NSRect) {
-        guard let group, let context = NSGraphicsContext.current?.cgContext else { return }
-        let look = EpicHeaderLook.self
+        guard let line, let context = NSGraphicsContext.current?.cgContext else { return }
+        let group = line.group
+        let look = GroupHeaderLook.self
+        let depth = min(line.place.depth, IssueRowCell.deepestIndent)
+        let shift = CGFloat(depth) * IssueRowCell.indent
         if highlighted {
             // As the rows around it light up.
             NSColor(Theme.selected).setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: IssueTable.inset, dy: 1), xRadius: look.highlightRadius, yRadius: look.highlightRadius).fill()
+            let shape = bounds.insetBy(dx: IssueTable.inset, dy: 1)
+            NSBezierPath(
+                roundedRect: NSRect(x: shape.minX + shift, y: shape.minY, width: shape.width - shift, height: shape.height),
+                xRadius: look.highlightRadius, yRadius: look.highlightRadius
+            ).fill()
         }
         let midY = bounds.midY
-        let column = Self.iconColumn
+        let column = (x: Self.iconColumn.x + shift, width: Self.iconColumn.width)
         let icon = CGRect(x: column.x + (column.width - look.iconSize) / 2, y: midY - look.iconSize / 2, width: look.iconSize, height: look.iconSize)
+        // On a whole device pixel, as the lines through the rows under it are.
+        let scale = window?.backingScaleFactor ?? 2
         if !group.folded {
-            // On a whole device pixel, as the lines through the rows under it are.
-            let scale = window?.backingScaleFactor ?? 2
             let x = ((column.x + column.width / 2 - 0.5) * scale).rounded() / scale
             NSColor(Theme.treeLine).setFill()
             NSRect(x: x, y: icon.maxY + 3, width: 1, height: max(0, bounds.height - icon.maxY - 3)).fill()
         }
-        PlanningGlyph.drawEpic(in: icon, cg: context)
+        if depth > 0 {
+            // The epic's line beside a parent's header inside the epic's group, as beside an issue there.
+            let base = Self.iconColumn.x
+            let path = Marks.treeLines(
+                line.place, deepest: IssueRowCell.deepestIndent, lineX: { base + CGFloat($0) * IssueRowCell.indent + 7 },
+                branchY: midY, branchEnd: icon.minX - 3, height: bounds.height
+            )
+            context.draw(
+                [Marks.Shape(path: path, stroke: StrokeStyle(lineWidth: 1))],
+                mark: NSColor(Theme.treeLine).cgColor, onColor: NSColor(Theme.treeLine).cgColor
+            )
+        }
+        switch group.kind {
+        case .epic:
+            PlanningGlyph.drawEpic(in: icon, cg: context)
+        case .parent:
+            if let arrow = Self.parentArrow {
+                arrow.draw(in: NSRect(
+                    x: icon.midX - arrow.size.width / 2, y: icon.midY - arrow.size.height / 2, width: arrow.size.width, height: arrow.size.height
+                ))
+            }
+        }
         let arrow = NSRect(x: bounds.width - Self.trailing - look.arrowBox, y: midY - look.arrowBox / 2, width: look.arrowBox, height: look.arrowBox)
         foldRect = arrow
         if hoveringFold {
@@ -1541,16 +1625,42 @@ final class EpicHeaderRowCell: PaintedCell {
             folded: group.folded, center: NSPoint(x: arrow.midX, y: arrow.midY),
             color: NSColor(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
         )
-        // The name starts where the priorities of the issues under it do.
+        // The name starts where the priorities of the issues under it do; a parent's number and status follow the
+        // count, and the name gives way to them.
         var x = column.x + IssueRowCell.indent
         let titleSize = title.size()
         let countSize = count.size()
+        let detailSize = detail.size()
         let gap = (look.countGap as NSString).size(withAttributes: [.font: look.countFont]).width
-        let room = arrow.minX - look.arrowGap - countSize.width - gap - x
+        let detailGap: CGFloat = detail.length > 0 ? 14 : 0
+        let room = arrow.minX - look.arrowGap - countSize.width - gap - detailGap - detailSize.width - x
         let titleWidth = min(titleSize.width, max(room, 40))
         title.draw(in: NSRect(x: x, y: midY - titleSize.height / 2, width: titleWidth, height: titleSize.height))
         x += titleWidth + gap
         count.draw(at: NSPoint(x: x, y: midY - countSize.height / 2))
+        x += countSize.width + detailGap
+        detailRect = nil
+        if detail.length > 0 {
+            let width = min(detailSize.width, max(0, arrow.minX - look.arrowGap - x))
+            let rect = NSRect(x: x - 5, y: midY - look.detailLine / 2 - 1, width: width + 10, height: look.detailLine + 2)
+            if hoveringDetail {
+                NSColor(Theme.partHover).setFill()
+                NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2).fill()
+            }
+            let text = hoveringDetail
+                ? NSAttributedString(string: detail.string, attributes: [.font: look.detailFont, .foregroundColor: NSColor(Theme.textSecondary)])
+                : detail
+            text.draw(in: NSRect(x: x, y: midY - detailSize.height / 2, width: width, height: detailSize.height))
+            detailRect = rect
+        }
+    }
+
+    /// The sub-issue arrow before a parent's name, in grey.
+    private static var parentArrow: NSImage? {
+        NSImage(systemSymbolName: GroupHeaderLook.parentSymbol, accessibilityDescription: nil)?.withSymbolConfiguration(
+            NSImage.SymbolConfiguration(pointSize: GroupHeaderLook.parentArrowSize, weight: .semibold)
+                .applying(.init(paletteColors: [NSColor(Theme.textTertiary)]))
+        )
     }
 }
 
@@ -1623,7 +1733,7 @@ final class NestMarkView: NSView {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         let shape = bounds.insetBy(dx: Marks.nestOutset, dy: Marks.nestOutset)
         context.draw(
-            Marks.nestTarget(around: shape, cornerRadius: EpicHeaderLook.highlightRadius),
+            Marks.nestTarget(around: shape, cornerRadius: GroupHeaderLook.highlightRadius),
             mark: NSColor(Theme.accent).cgColor, off: NSColor(Theme.nestTint).cgColor, onColor: NSColor(Theme.onColor).cgColor
         )
     }
@@ -1875,38 +1985,61 @@ extension StatusPainter {
 
 // MARK: - Context menu
 
-/// The menu of the header over an epic's issues in a board column or list section: open the epic, move all of its
-/// issues there to another column, fold them away or show them.
+/// The menu of the header over issues standing together in a board column or list section, an epic's or a parent's:
+/// open the epic or the parent, change the parent's status, move all of the issues there to another column, fold them
+/// away or show them.
 @MainActor
-enum EpicGroupMenu {
-    static func menu(_ group: Nesting.EpicGroup, in column: BoardColumn?, model: AppModel) -> NSMenu {
+enum GroupMenu {
+    static func menu(_ group: Nesting.Group, in column: BoardColumn?, model: AppModel) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
-        let open = ClosureMenuItem(String(localized: .openEpicCommand)) { [model] in model.open(group.epic) }
-        open.image = MenuIcons.epic
-        menu.addItem(open)
-        if let column {
-            let members = column.members(of: group)
-            let projectId = members.first?.projectId
-            let statuses = model.statusOptions(projectId: projectId)
-            if !statuses.isEmpty {
-                let move = NSMenu()
+        let members = column?.members(of: group) ?? []
+        let projectId = members.first?.projectId
+        let statuses = model.statusOptions(projectId: projectId)
+        switch group.kind {
+        case .epic:
+            let open = ClosureMenuItem(String(localized: .openEpicCommand)) { [model] in model.open(group.head) }
+            open.image = MenuIcons.epic
+            menu.addItem(open)
+        case .parent:
+            let head = model.headIssue(of: group)
+            let open = ClosureMenuItem(String(localized: .openParentIssueCommand)) { [model] in if let head { model.open(head) } }
+            open.image = MenuIcons.symbol(GroupHeaderLook.parentSymbol)
+            open.isEnabled = head != nil
+            menu.addItem(open)
+            // The parent's own status, where it is on this board.
+            if let head, let current = model.headStatus(of: group, projectId: projectId) {
+                let status = NSMenu()
                 for option in statuses {
-                    let entry = ClosureMenuItem(option.name, checked: option.id == column.option?.id) { [model] in
-                        model.setStatus(of: group, members: members, to: option)
+                    let entry = ClosureMenuItem(option.name, checked: option.id == current.id) { [model] in
+                        model.setStatus(head, to: option)
                     }
                     entry.image = MenuIcons.status(model.glyph(projectId: projectId, optionId: option.id))
-                    move.addItem(entry)
+                    status.addItem(entry)
                 }
-                let title = String(localized: .moveEpicIssuesTo)
-                let submenu = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-                submenu.image = MenuIcons.status(column.glyph)
-                submenu.submenu = move
+                let submenu = NSMenuItem(title: String(localized: .status), action: nil, keyEquivalent: "")
+                submenu.image = MenuIcons.status(model.glyph(projectId: projectId, optionId: current.id))
+                submenu.submenu = status
                 menu.addItem(submenu)
             }
         }
-        let fold = ClosureMenuItem(String(localized: group.folded ? .showEpicIssues : .foldEpicIssues)) { [model] in
-            model.toggleEpicGroup(group)
+        if let column, !statuses.isEmpty {
+            let move = NSMenu()
+            for option in statuses {
+                let entry = ClosureMenuItem(option.name, checked: option.id == column.option?.id) { [model] in
+                    model.setStatus(of: group, members: members, to: option)
+                }
+                entry.image = MenuIcons.status(model.glyph(projectId: projectId, optionId: option.id))
+                move.addItem(entry)
+            }
+            let title = String(localized: group.kind == .epic ? .moveEpicIssuesTo : .moveSubIssuesTo)
+            let submenu = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+            submenu.image = MenuIcons.status(column.glyph)
+            submenu.submenu = move
+            menu.addItem(submenu)
+        }
+        let fold = ClosureMenuItem(String(localized: group.foldAction)) { [model] in
+            model.toggleGroup(group)
         }
         fold.image = MenuIcons.symbol(group.folded ? "chevron.down" : "chevron.right")
         menu.addItem(fold)

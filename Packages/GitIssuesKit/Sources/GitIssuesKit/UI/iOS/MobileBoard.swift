@@ -205,13 +205,13 @@ struct BoardDropTarget: Equatable {
     var gapless = false
 }
 
-/// The issues of an epic standing together in a column, lifted by their header: what the drag carries, in place of a
-/// card's id, so that a drop in any window moves the issues that were lifted.
+/// The issues standing together in a column under a header, an epic's or a parent's, lifted by the header: what the
+/// drag carries, in place of a card's id, so that a drop in any window moves the issues that were lifted.
 struct DraggedGroup: Equatable {
     static let prefix = "epic-group\u{1F}"
 
     var columnId: String
-    /// The epic's node id.
+    /// The node id of the epic or the parent.
     var epic: String
     var ids: Set<String>
 
@@ -234,7 +234,7 @@ struct DraggedGroup: Equatable {
 
     /// The group as the board shows it now.
     @MainActor
-    func group(model: AppModel, projectId: String, milestone: String?, allIssues: Bool = false) -> Nesting.EpicGroup? {
+    func group(model: AppModel, projectId: String, milestone: String?, allIssues: Bool = false) -> Nesting.Group? {
         let columns = model.columns(for: MobileBoard.scope(projectId: projectId, milestone: milestone, allIssues: allIssues))
         return (columns.first { $0.id == columnId }?.nesting.groups ?? columns.flatMap(\.nesting.groups))
             .first { $0.contentId == epic }
@@ -275,6 +275,9 @@ final class CardFrames {
 /// One column of the board: its header, and its cards in a scroll of their own, taking cards dropped on it. The
 /// iPad's board puts them side by side, the iPhone's one at a time.
 struct MobileColumn: View {
+    /// The room between the column's cards and headers, which the lines between them bridge.
+    static let spacing: CGFloat = 8
+
     @Environment(AppModel.self) private var model
     @Environment(MobileNavigation.self) private var navigation
     @Environment(\.openRoute) private var openRoute
@@ -298,7 +301,7 @@ struct MobileColumn: View {
             MobileColumnHeader(projectId: projectId, milestone: milestone, allIssues: allIssues, column: column)
                 .padding(.horizontal, Self.inset)
             ScrollView(.vertical) {
-                LazyVStack(spacing: 8) {
+                LazyVStack(spacing: Self.spacing) {
                     ForEach(Array(column.nesting.rows.enumerated()), id: \.element.id) { index, row in
                         if gapPosition == index {
                             gap
@@ -306,7 +309,7 @@ struct MobileColumn: View {
                         switch row {
                         case .item(let item):
                             nestedCard(item, space: space)
-                        case .epic(let group):
+                        case .group(let group):
                             groupHeader(group)
                         }
                     }
@@ -380,16 +383,20 @@ struct MobileColumn: View {
         dragging.flatMap(DraggedGroup.init)?.ids ?? []
     }
 
-    /// The header over an epic's issues. Touch and hold, then drag, to move them all.
-    private func groupHeader(_ group: Nesting.EpicGroup) -> some View {
+    /// The header over an epic's issues, or a parent's sub-issues. Touch and hold, then drag, to move them all.
+    private func groupHeader(_ group: Nesting.Group) -> some View {
         let lifted = DraggedGroup(columnId: column.id, epic: group.contentId, ids: Set(column.members(of: group).map(\.id)))
-        return EpicGroupCardHeader(group: group, column: column, open: { openRoute(.issue(group.epic.id)) }, step: { step(group, by: $0) })
+        let projectId = model.projectId(of: group, in: column.nesting)
+        return GroupCardHeader(
+            group: group, detail: model.headDetail(of: group, projectId: projectId), place: column.nesting.place(of: group.id),
+            column: column, open: { if let head = model.headIssue(of: group) { openRoute(.issue(head.id)) } }, step: { step(group, by: $0) }
+        )
             .opacity(dragging == lifted.token && target != nil ? 0.35 : 1)
             .onDrag {
                 CardDragMark.lifted = lifted.token
-                return CardDragMark.provider(id: lifted.token, text: group.epic.url ?? group.epic.title)
+                return CardDragMark.provider(id: lifted.token, text: group.head.url ?? group.head.title)
             } preview: {
-                EpicGroupCard(group: group, width: inner)
+                GroupCard(group: group, width: inner)
                     .padding(.bottom, CardStackEdge.height(CardStackEdge.layers(group.count)))
             }
     }
@@ -475,8 +482,8 @@ struct MobileColumn: View {
         MobileBoard.land(item.id, in: next, at: nil, model: model, projectId: projectId, milestone: milestone, allIssues: allIssues)
     }
 
-    /// For VoiceOver: moves an epic's issues here to the neighbouring column.
-    private func step(_ group: Nesting.EpicGroup, by delta: Int) {
+    /// For VoiceOver: moves the issues under a header here to the neighbouring column.
+    private func step(_ group: Nesting.Group, by delta: Int) {
         guard let next = neighbour(delta) else { return }
         let members = column.members(of: group)
         withAnimation(Theme.spring) { model.drop(group, members: members, in: next, at: next.items.count, milestone: milestone, inAllIssues: allIssues) }
@@ -601,10 +608,21 @@ private struct ColumnDrop: DropDelegate {
         }
         var depth = 0
         var row: Int?
-        // An epic's issues land together: among the epic's other issues where the column has some, or as one.
+        // The issues under a header land together: among the epic's other issues where the column has some, under the
+        // parent or among its other sub-issues, or as one.
         if let dragging, let lifted = DraggedGroup(dragging) {
             let others = column.items.filter { !lifted.ids.contains($0.id) }
-            let landing = column.landing(ofGroup: lifted.epic, moving: lifted.ids, at: column.items.prefix(slot).filter { !lifted.ids.contains($0.id) }.count)
+            let (group, epic) = MainActor.assumeIsolated { () -> (Nesting.Group?, String?) in
+                let columns = model.columns(for: scope)
+                let group = (columns.first { $0.id == lifted.columnId }?.nesting.groups ?? columns.flatMap(\.nesting.groups))
+                    .first { $0.contentId == lifted.epic }
+                let first = columns.flatMap(\.nesting.members).first { lifted.ids.contains($0.id) }
+                return (group, first.flatMap { model.epic(of: $0)?.contentId })
+            }
+            guard let group else { return }
+            let landing = column.landing(
+                ofGroup: group, moving: lifted.ids, at: column.items.prefix(slot).filter { !lifted.ids.contains($0.id) }.count, epic: epic
+            )
             slot = landing.slot < others.count ? column.items.firstIndex { $0.id == others[landing.slot].id } ?? column.items.count : column.items.count
             row = fullRow(landing.row, shown: column.nesting.rows(without: lifted.ids))
             let next = BoardDropTarget(columnId: column.id, slot: slot, depth: landing.depth, row: row, group: true)

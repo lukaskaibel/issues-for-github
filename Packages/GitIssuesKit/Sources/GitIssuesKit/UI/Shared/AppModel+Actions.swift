@@ -180,10 +180,14 @@ extension AppModel {
            let move = placement(of: item, in: column, at: landing, projectId: projectId) {
             mutations.append(move)
         }
-        // A sub-issue dropped onto a folded parent would vanish into it, so the parent opens.
+        // A sub-issue dropped onto a folded parent would vanish into it, so the parent opens; so do the sub-issues
+        // folded under their parent's header.
         if let parentId = landing.parentId, column.nesting.folded.contains(parentId),
            let parent = column.nesting.members.first(where: { $0.id == parentId }) {
             setFolded(parent, false)
+        }
+        if let head = landing.parentGroup, foldedParentGroups.contains(head) {
+            setGroup(.parent, head, folded: false)
         }
         perform(mutations)
     }
@@ -241,31 +245,34 @@ extension AppModel {
         }
     }
 
-    // MARK: An epic's issues together
+    // MARK: Issues under a header together
 
-    /// Drops `members`, the issues of an epic's group in a column, all of them together into a column at `index`,
-    /// counted among that column's issues as shown without them. They take the column's status and keep their
-    /// order, in front of or after what stands there on its own, or among the epic's issues the column has already.
+    /// Drops `members`, the issues under a header in a column, an epic's or a parent's, all of them together into a
+    /// column at `index`, counted among that column's issues as shown without them. They take the column's status and
+    /// keep their order, in front of or after what stands there on its own, among the epic's issues the column has
+    /// already, or under the parent or among its other sub-issues there.
     func drop(
-        _ group: Nesting.EpicGroup, members: [Item], in column: BoardColumn, at index: Int, milestone: String? = nil,
+        _ group: Nesting.Group, members: [Item], in column: BoardColumn, at index: Int, milestone: String? = nil,
         inAllIssues: Bool = false
     ) {
         guard let projectId = members.first?.projectId, !column.isOnNoBoard else { return }
-        let landing = column.landing(ofGroup: group.contentId, moving: Set(members.map(\.id)), at: index)
+        let landing = column.landing(
+            ofGroup: group, moving: Set(members.map(\.id)), at: index, epic: members.first.flatMap { epic(of: $0)?.contentId }
+        )
         let placing = isOrdered(projectId: projectId, milestone: milestone, inAllIssues: inAllIssues)
             ? [] : placements(of: members, in: column, at: landing, projectId: projectId)
         if column.value != nil {
             withAnimation(Theme.spring) { perform(members.flatMap { columnMutations($0, column) } + placing) }
             return
         }
-        moveIssues(members, to: column.option, title: column.title, message: group.epic.title, placing: placing)
+        moveIssues(members, to: column.option, title: column.title, message: group.head.title, placing: placing)
     }
 
-    /// Gives `members`, the issues of an epic's group in a column, another status, as the group's menu does. They
-    /// keep their places on the board, as an issue does whose status changes.
-    func setStatus(of group: Nesting.EpicGroup, members: [Item], to option: FieldOption) {
+    /// Gives `members`, the issues under a header in a column, another status, as the header's menu does. They keep
+    /// their places on the board, as an issue does whose status changes.
+    func setStatus(of group: Nesting.Group, members: [Item], to option: FieldOption) {
         withAnimation(Theme.spring) {
-            moveIssues(members, to: option, title: option.name, message: group.epic.title, placing: [])
+            moveIssues(members, to: option, title: option.name, message: group.head.title, placing: [])
         }
     }
 

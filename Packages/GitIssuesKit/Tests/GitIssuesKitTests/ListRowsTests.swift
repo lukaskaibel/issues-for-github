@@ -204,15 +204,15 @@ struct ListRowsTests {
 
     @Test("An epic's header stands in the middle of its row, and so of the highlight under the pointer")
     func epicHeaderIsCentredInItsRow() throws {
-        let cell = EpicHeaderRowCell()
-        cell.configure(Nesting.EpicGroup(epic: Self.row(1).item, count: 2, folded: false))
+        let cell = GroupHeaderRowCell()
+        cell.configure(GroupHeaderLine(group: Nesting.Group(kind: .epic, head: Self.row(1).item, count: 2, folded: false)))
         try Self.paint(cell)
         #expect(try #require(cell.foldRect).midY == cell.bounds.midY)
     }
 
     @Test("The list's rows and headers paint themselves again when their size changes")
     func cellsArePaintedAgainOnResize() {
-        let cells: [NSView] = [IssueRowCell(), IssueHeaderCell(), EpicHeaderRowCell()]
+        let cells: [NSView] = [IssueRowCell(), IssueHeaderCell(), GroupHeaderRowCell()]
         #expect(cells.allSatisfy { $0 is PaintedCell })
     }
 

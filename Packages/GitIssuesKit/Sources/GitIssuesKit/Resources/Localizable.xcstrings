@@ -27403,6 +27403,126 @@
         }
       }
     },
+    "groupByParentFooter" : {
+      "comment" : "Settings › Sub-issues, footer under the toggle that puts sub-issues together under their parent issue on boards and in lists.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liegen zwei oder mehr Sub-Issues eines Issues in einem Status, in dem das Issue selbst nicht liegt, stehen sie dort zusammen unter einer schlichten Überschrift mit Titel, Nummer und Status des Issues."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where two or more sub-issues of an issue are in a status the issue isn't in, they stand together there under a quiet header with the issue's title, number and status."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuando dos o más subincidencias de una incidencia están en un estado en el que no está la incidencia, aparecen juntas allí bajo un encabezado discreto con el título, el número y el estado de la incidencia."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lorsque deux sous-tickets ou plus d’un ticket sont dans un statut où le ticket lui-même n’est pas, ils y sont regroupés sous un en-tête discret avec le titre, le numéro et le statut du ticket."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あるIssueのサブIssueが2件以上、そのIssue自体とは別のステータスにある場合、そこで控えめな見出しの下にまとめて表示します。見出しにはIssueのタイトル、番号、ステータスが表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "한 이슈의 하위 이슈 두 개 이상이 그 이슈가 없는 상태에 있으면, 그 상태에서 이슈의 제목, 번호, 상태를 보여 주는 차분한 머리글 아래에 함께 표시됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando duas ou mais sub-issues de uma issue estão em um status em que a própria issue não está, elas ficam juntas ali sob um cabeçalho discreto com o título, o número e o status da issue."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Если две или больше подзадач одной задачи находятся в статусе, в котором нет самой задачи, они собираются там вместе под неброским заголовком с названием, номером и статусом задачи."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当某个议题的两个或更多子议题处于该议题本身不在的状态时，它们会在那里归在一个低调的标题下，标题显示该议题的标题、编号和状态。"
+          }
+        }
+      }
+    },
+    "groupByParentSetting" : {
+      "comment" : "Settings › Sub-issues, toggle: on boards and in lists, two or more sub-issues of one issue that are in a status (column) their parent issue isn't in stand together under a small grey header naming the parent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-Issues unter ihrem übergeordneten Issue zusammenfassen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put sub-issues together under their parent issue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agrupar las subincidencias bajo su incidencia principal"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regrouper les sous-tickets sous leur ticket parent"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サブIssueを親Issueの下にまとめる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하위 이슈를 상위 이슈 아래에 모으기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agrupar sub-issues sob a issue principal"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Собирать подзадачи под родительской задачей"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将子议题归到父议题下"
+          }
+        }
+      }
+    },
     "groupingFixedHint" : {
       "comment" : "Hint in the new-view form: GitHub's API takes a view's columns, grouping and order only when it is created.",
       "extractionState" : "manual",
@@ -41821,6 +41941,66 @@
         }
       }
     },
+    "moveSubIssuesTo" : {
+      "comment" : "Submenu on the quiet header over sub-issues standing together in a board column or list section while their parent issue is elsewhere: lists the columns (statuses); picking one moves all of those sub-issues there. The parent stays where it is. Title case in English.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sub-Issues verschieben nach"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Sub-issues To"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mover subincidencias a"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déplacer les sous-tickets vers"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サブIssueの移動先"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "하위 이슈 이동"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mover sub-issues para"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перенести подзадачи в"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将子议题移到"
+          }
+        }
+      }
+    },
     "moveToIterationCommand" : {
       "comment" : "Mac, command palette (⌘K), command for the issue in focus: choose the iteration (a week or sprint of a GitHub project) for the issue (⇧C).",
       "extractionState" : "manual",
@@ -50131,6 +50311,66 @@
         }
       }
     },
+    "openParentIssueCommand" : {
+      "comment" : "Menu item on the quiet header over sub-issues standing together in a board column or list section while their parent issue is in another status (or elsewhere): opens that parent issue. Title case in English.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übergeordnetes Issue öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Parent Issue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir incidencia principal"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir le ticket parent"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "親Issueを開く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "상위 이슈 열기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir issue principal"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыть родительскую задачу"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开父议题"
+          }
+        }
+      }
+    },
     "openSubIssuePlaceholder" : {
       "comment" : "Mac: placeholder in the search field of the picker that lists an issue's sub-issues: typing finds a sub-issue to open. 'Sub-issue' is a GitHub term.",
       "extractionState" : "manual",
@@ -52095,6 +52335,168 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "所有子议题已完成，因此 %@ 也已完成"
+          }
+        }
+      }
+    },
+    "parentGroupSpoken" : {
+      "comment" : "VoiceOver label of the quiet header over sub-issues standing together in a board column or list section while their parent issue is in another status (or elsewhere). Arguments: how many of its sub-issues are there, the parent issue's title. The app may add the parent's number and status after a comma.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld Sub-Issue von %2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld Sub-Issues von %2$@"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld sub-issue of %(parent)@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%(count)lld sub-issues of %(parent)@"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld subincidencia de %2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld subincidencias de %2$@"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld sous-ticket de %2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld sous-tickets de %2$@"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "「%2$@」のサブIssue %1$lld件"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%2$@의 하위 이슈 %1$lld개"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld sub-issue de %2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld sub-issues de %2$@"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld подзадачи задачи %2$@"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld подзадач задачи %2$@"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld подзадача задачи %2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld подзадачи задачи %2$@"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "“%2$@”的 %1$lld 个子议题"
+                }
+              }
+            }
           }
         }
       }
