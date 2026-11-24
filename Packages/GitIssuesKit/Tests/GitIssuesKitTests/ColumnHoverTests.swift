@@ -52,8 +52,8 @@ struct ColumnHoverTests {
     @Test func goingFromACardOntoAnEpicsHeaderRedrawsBoth() {
         let hover = ColumnHover()
         hover.update(.init(card: .init(id: "card-9")))
-        #expect(redrawn(hover) { hover.update(.init(header: .init(epic: "epic-2"))) } == ["card-9", "epic-2"])
-        #expect(redrawn(hover) { hover.update(.init(header: .init(epic: "epic-2", onFold: true))) } == ["epic-2"])
+        #expect(redrawn(hover) { hover.update(.init(header: .init(head: "epic-2"))) } == ["card-9", "epic-2"])
+        #expect(redrawn(hover) { hover.update(.init(header: .init(head: "epic-2", onFold: true))) } == ["epic-2"])
         #expect(redrawn(hover) { hover.update(.init()) } == ["epic-2"])
     }
 

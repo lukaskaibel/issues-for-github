@@ -72,10 +72,10 @@ struct BoardView: View {
                 ContextMenus.shared.register(menuRegion, frame: frame) { [model, drag] point in
                     guard model.openItem == nil, model.overlay == nil else { return nil }
                     let local = CGPoint(x: point.x - frame.minX, y: point.y - frame.minY)
-                    // The header over an epic's issues has the epic's menu.
+                    // The header over an epic's issues has the epic's menu, and one over a parent's sub-issues the parent's.
                     if let header = drag.header(at: local), let column = model.columns.first(where: { $0.id == header.columnId }),
-                       let group = column.nesting.groups.first(where: { $0.contentId == header.epic }) {
-                        return EpicGroupMenu.menu(group, in: column, model: model)
+                       let group = column.nesting.groups.first(where: { $0.contentId == header.head }) {
+                        return GroupMenu.menu(group, in: column, model: model)
                     }
                     guard let item = drag.card(at: local, in: model.columns.flatMap(\.items)) else { return nil }
                     return ItemMenuBuilder(model: model, item: item).menu()
@@ -121,7 +121,7 @@ struct BoardView: View {
                         ZStack(alignment: .topLeading) {
                             // The issue the lifted card would go under lights up beneath it.
                             if let nest = drag.target?.nest, !active.settling {
-                                NestTargetMark(cornerRadius: nest.isHeader ? EpicHeaderLook.highlightRadius : CardView.cornerRadius)
+                                NestTargetMark(cornerRadius: nest.isHeader ? GroupHeaderLook.highlightRadius : CardView.cornerRadius)
                                     .frame(width: nest.frame.width, height: nest.frame.height)
                                     .offset(x: nest.frame.minX, y: nest.frame.minY)
                                     .transition(.opacity)
@@ -309,10 +309,10 @@ struct PickedCount: View {
 /// edge of a second one.
 private struct LiftedGroup: View {
     var active: BoardDrag.Active
-    var group: Nesting.EpicGroup
+    var group: Nesting.Group
 
     var body: some View {
-        EpicGroupCard(group: group, width: active.size.width)
+        GroupCard(group: group, width: active.size.width)
             .scaleEffect(active.lifted ? 1.03 : 1)
             .rotationEffect(.degrees(active.lifted ? 1.5 + active.tilt : 0))
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: active.tilt)
@@ -365,7 +365,7 @@ struct ColumnView: View {
         var kind: Int {
             switch self {
             case .row(.item): 0
-            case .row(.epic): 1
+            case .row(.group): 1
             case .groupSlot: 2
             }
         }
@@ -417,7 +417,9 @@ struct ColumnView: View {
                                     onNumber: drag.number(at: point, in: [item]) != nil
                                 )
                             },
-                            header: header.map { ColumnHover.Header(epic: $0.epic, onFold: drag.isOnFold(point, of: $0)) }
+                            header: header.map { header in
+                                ColumnHover.Header(head: header.head, onFold: drag.isOnFold(point, of: header), onDetail: drag.isOnDetail(point, of: header))
+                            }
                         ))
                     case .ended:
                         report(nil)
@@ -427,10 +429,19 @@ struct ColumnView: View {
                 .gesture(SpatialTapGesture(coordinateSpace: .named(BoardDrag.space)).onEnded { value in
                     // The release of a deep press, which has opened the peek instead of being a click.
                     if model.deepPress.openedPeek { return }
-                    // A click on an epic's header opens the epic, one on its arrow folds its issues away or shows them.
+                    // A click on a header opens the epic or the parent, one on its arrow folds its issues away or shows them,
+                    // and one on the line under a parent's name changes the parent's status.
                     if let header = drag.header(at: value.location, in: column.id),
-                       let group = column.nesting.groups.first(where: { $0.contentId == header.epic }) {
-                        if drag.isOnFold(value.location, of: header) { model.toggleEpicGroup(group) } else { model.openFromClick(group.epic) }
+                       let group = column.nesting.groups.first(where: { $0.contentId == header.head }) {
+                        if drag.isOnFold(value.location, of: header) {
+                            model.toggleGroup(group)
+                        } else if drag.isOnDetail(value.location, of: header), let head = model.headIssue(of: group),
+                                  model.headStatus(of: group, projectId: model.projectId(of: group, in: column.nesting)) != nil {
+                            let origin = drag.boardFrameInWindow.origin
+                            model.showPicker(.status, for: head, below: header.detail.offsetBy(dx: origin.x, dy: origin.y))
+                        } else if let head = model.headIssue(of: group) {
+                            model.openFromClick(head)
+                        }
                         return
                     }
                     // ⌘- and Shift-clicks pick cards. Otherwise a click on a card's priority, labels, sub-issues or
@@ -515,9 +526,12 @@ struct ColumnView: View {
     @ViewBuilder private func row(_ line: Line, width: CGFloat) -> some View {
         switch line {
         case .groupSlot(let group, let depth):
-            EpicGroupSlot(group: group.group, width: width, depth: depth, measured: measured)
-        case .row(.epic(let group)):
-            EpicGroupHeader(group: group, width: width, hover: hover, dragging: model.isDragging, measured: measured)
+            GroupSlot(group: group.group, width: width, depth: depth, measured: measured)
+        case .row(.group(let group)):
+            GroupHeaderView(
+                group: group, detail: detail(of: group), place: column.nesting.place(of: group.id), width: width, hover: hover,
+                dragging: model.isDragging, measured: measured
+            )
         case .row(.item(let item)):
             BoardCell(
                 card: model.cardModel(for: item, in: column.nesting, showsMilestone: model.currentMilestoneTitle == nil), width: width, drag: drag,
@@ -536,8 +550,13 @@ struct ColumnView: View {
         switch line {
         case .groupSlot:
             Color.clear.accessibilityHidden(true)
-        case .row(.epic(let group)):
-            EpicGroupHeader.Spoken(group: group, width: width, height: measured.height(EpicGroupHeader.measure(group, width: width)))
+        case .row(.group(let group)):
+            let detail = detail(of: group)
+            let place = column.nesting.place(of: group.id)
+            GroupHeaderView.Spoken(
+                group: group, detail: detail, width: width,
+                height: measured.height(GroupHeaderView.measure(group, detail: detail, place: place, width: width))
+            )
         case .row(.item(let item)):
             BoardCell.Spoken(
                 item: item, nesting: column.nesting, showsMilestone: model.currentMilestoneTitle == nil, width: width,
@@ -560,18 +579,33 @@ struct ColumnView: View {
                 let height = at.cardHeight(of: item, width: width)
                 heights.append(height + at.edge)
                 rows.append(.init(part: .card(item.id), indent: at.indent, height: height))
-            case .row(.epic(let group)):
-                let height = measured.height(EpicGroupHeader.measure(group, width: width))
+            case .row(.group(let group)):
+                let detail = detail(of: group)
+                let place = column.nesting.place(of: group.id)
+                let height = measured.height(GroupHeaderView.measure(group, detail: detail, place: place, width: width))
                 heights.append(height)
-                rows.append(.init(part: .header(group.contentId), indent: 0, height: height))
+                // The line under a parent's name, for the pointer and clicks, from the row's top left corner: where the
+                // parent is on this board, a click there changes its status.
+                let changesStatus = model.headStatus(of: group, projectId: model.projectId(of: group, in: column.nesting)) != nil
+                let detailFrame = detail.flatMap { detail in
+                    changesStatus
+                        ? GroupHeader.detailFrame(detail, in: CGRect(x: 0, y: 0, width: width, height: height), place: place, iconColumn: GroupHeaderView.iconColumn)
+                        : nil
+                }
+                rows.append(.init(part: .header(group.contentId, detail: detailFrame), indent: 0, height: height))
             case .groupSlot(let group, let depth):
                 let indent = CGFloat(min(depth, CardTreeLines.deepest)) * CardTreeLines.indent
-                let height = measured.height(EpicGroupSlot.measure(group.group, width: width - indent))
+                let height = measured.height(GroupSlot.measure(group.group, width: width - indent))
                 heights.append(height + CardStackEdge.height(CardStackEdge.layers(group.group.count)))
-                rows.append(.init(part: .card(group.group.epic.id), indent: indent, height: height))
+                rows.append(.init(part: .card(group.group.head.id), indent: indent, height: height))
             }
         }
         return ColumnLayout(plan: RowPlan(heights: heights, gap: CardTreeLines.boardGap, bottom: 40), rows: rows, width: width)
+    }
+
+    /// The line under a parent's name in its header: its number, and its status on this board.
+    private func detail(of group: Nesting.Group) -> String? {
+        model.headDetail(of: group, projectId: model.projectId(of: group, in: column.nesting))
     }
 
     /// Tells the board where this column's cards and headers on screen are, and the window which rows to build.
@@ -631,8 +665,10 @@ private struct ColumnTooltip: ViewModifier {
 
     private var tooltip: String {
         let pointer = hover.current
-        if let header = pointer.header, header.onFold, let group = column.nesting.groups.first(where: { $0.contentId == header.epic }) {
-            return String(localized: group.folded ? .unfoldEpicGroupTooltip(count: group.count) : .foldEpicGroupTooltip)
+        if let header = pointer.header, let group = column.nesting.groups.first(where: { $0.contentId == header.head }) {
+            if header.onFold { return group.foldLabel }
+            if header.onDetail, let head = model.headIssue(of: group) { return model.tooltip(.status, for: head) }
+            return ""
         }
         guard let card = pointer.card, let item = column.items.first(where: { $0.id == card.id }) else { return "" }
         if card.onFold {
@@ -646,18 +682,22 @@ private struct ColumnTooltip: ViewModifier {
     }
 }
 
-/// Over the issues of an epic standing together in a column: the header they have in every list and on every board
-/// (`EpicHeader`), its name on up to three lines. A click opens the epic, one on the arrow folds its issues or shows
-/// them again, and dragging it moves them all. The column handles the clicks and the board the drag, from where the
-/// column placed the header.
-private struct EpicGroupHeader: View {
-    var group: Nesting.EpicGroup
+/// Over issues standing together in a column, an epic's or a parent's: the header they have in every list and on every
+/// board (`GroupHeader`), its name on up to three lines. A click opens the epic or the parent, one on the arrow folds its
+/// issues or shows them again, one on the line under a parent's name changes the parent's status, and dragging it moves
+/// them all. The column handles the clicks and the board the drag, from where the column placed the header.
+private struct GroupHeaderView: View {
+    var group: Nesting.Group
+    /// Under a parent's name: its number and its status.
+    var detail: String?
+    /// Where it hangs inside an epic's group.
+    var place: Nesting.Place
     var width: CGFloat
     var hover: ColumnHover
     var dragging: Bool
     var measured: MeasuredHeights
 
-    /// The icon stands in the gutter sub-issue cards hang in, where the line down to the epic's cards runs.
+    /// The icon stands in the gutter sub-issue cards hang in, where the line down to the group's cards runs.
     static let iconColumn = (x: CGFloat(0), width: CardTreeLines.indent)
     /// The arrow ends about where the text of the cards under it does.
     static let trailing: CGFloat = 6
@@ -665,80 +705,86 @@ private struct EpicGroupHeader: View {
 
     /// Where the fold arrow is in a header with this frame.
     static func foldFrame(in frame: CGRect) -> CGRect {
-        EpicHeader.foldFrame(in: frame, trailing: trailing)
+        GroupHeader.foldFrame(in: frame, trailing: trailing)
     }
 
-    /// How tall a header is depends on how many lines its name takes beside the count and the arrow. Until its view
-    /// has been drawn, that is worked out from the name's width.
-    static func measure(_ group: Nesting.EpicGroup, width: CGFloat) -> MeasuredHeights.Measure {
-        MeasuredHeights.Measure(key: "header \(Int(width)) \(group.count) \(group.epic.title)") {
-            EpicHeader.height(of: group, width: width, iconColumn: iconColumn, trailing: trailing, lineLimit: lineLimit)
+    /// How tall a header is depends on how many lines its name takes beside the count and the arrow, and on the line
+    /// under a parent's name. Until its view has been drawn, that is worked out from the name's width.
+    static func measure(_ group: Nesting.Group, detail: String?, place: Nesting.Place, width: CGFloat) -> MeasuredHeights.Measure {
+        let key = "header \(Int(width)) \(group.kind) \(place.depth) \(group.count) \(detail != nil) \(group.head.title)"
+        return MeasuredHeights.Measure(key: key) {
+            GroupHeader.height(
+                of: group, detail: detail, place: place, width: width, iconColumn: iconColumn, trailing: trailing, lineLimit: lineLimit
+            )
         }
     }
 
     var body: some View {
         let pointer = dragging ? nil : hover[header: group.contentId]
-        EpicHeader(
-            group: group, iconColumn: Self.iconColumn, trailing: Self.trailing, lineLimit: Self.lineLimit,
-            highlighted: pointer != nil, hoveringFold: pointer?.onFold ?? false
+        GroupHeader(
+            group: group, detail: detail, place: place, iconColumn: Self.iconColumn, gap: CardTreeLines.boardGap,
+            trailing: Self.trailing, lineLimit: Self.lineLimit, highlighted: pointer != nil, hoveringFold: pointer?.onFold ?? false,
+            hoveringDetail: pointer?.onDetail ?? false
         )
         .animation(Theme.quick, value: pointer != nil)
         // Placed as a whole: without it the name and the count each take on the hover fade themselves, so they are
-        // drawn again on every frame of it, each time waiting for the window server, and the pointer stutters over an
-        // epic's header.
+        // drawn again on every frame of it, each time waiting for the window server, and the pointer stutters over a
+        // header.
         .geometryGroup()
         .contentShape(Rectangle())
-        .reportsHeight(Self.measure(group, width: width).key, to: measured)
+        .reportsHeight(Self.measure(group, detail: detail, place: place, width: width).key, to: measured)
     }
 
     /// What VoiceOver finds in the header's place, for every header of the column, drawn or not.
     struct Spoken: View {
         @Environment(AppModel.self) private var model
-        var group: Nesting.EpicGroup
+        var group: Nesting.Group
+        var detail: String?
         var width: CGFloat
         var height: CGFloat
 
         var body: some View {
+            let head = model.headIssue(of: group)
             Color.clear
                 .frame(width: width, height: height)
                 .accessibilityElement()
-                .accessibilityLabel(Text(.epicGroupSpoken(epic: group.epic.title, count: group.count)))
+                .accessibilityLabel(Text(group.spoken(detail: detail)))
                 .accessibilityValue(Text(group.folded ? .sectionFolded : .sectionOpen))
                 .accessibilityAddTraits(.isButton)
-                .accessibilityAction { model.open(group.epic) }
-                .accessibilityAction(named: Text(group.folded ? .showEpicIssues : .foldEpicIssues)) { model.toggleEpicGroup(group) }
+                .accessibilityAction { if let head { model.open(head) } }
+                .accessibilityAction(named: Text(group.foldAction)) { model.toggleGroup(group) }
         }
     }
 }
 
 extension BoardDrag {
-    /// Where the fold arrow is in an epic's header with this frame.
-    static func epicFoldFrame(in frame: CGRect) -> CGRect {
-        EpicGroupHeader.foldFrame(in: frame)
+    /// Where the fold arrow is in a header with this frame.
+    static func groupFoldFrame(in frame: CGRect) -> CGRect {
+        GroupHeaderView.foldFrame(in: frame)
     }
 }
 
-/// Where the issues of an epic lifted by their header would land: a dashed card as big as the lifted one.
-private struct EpicGroupSlot: View {
-    var group: Nesting.EpicGroup
+/// Where the issues lifted by their header would land: a dashed card as big as the lifted one.
+private struct GroupSlot: View {
+    var group: Nesting.Group
     var width: CGFloat
     var depth: Int
     var measured: MeasuredHeights
 
-    /// As tall as the card the lifted issues show as, which depends on how many lines the epic's name takes.
-    static func measure(_ group: Nesting.EpicGroup, width: CGFloat) -> MeasuredHeights.Measure {
-        MeasuredHeights.Measure(key: "slot \(Int(width)) \(group.count) \(group.epic.title)") {
+    /// As tall as the card the lifted issues show as, which depends on how many lines the name takes.
+    static func measure(_ group: Nesting.Group, width: CGFloat) -> MeasuredHeights.Measure {
+        MeasuredHeights.Measure(key: "slot \(Int(width)) \(group.count) \(group.head.title)") {
             let font = NSFont.systemFont(ofSize: CardView.titleSize, weight: .medium)
             let count = MeasuredHeights.width(of: "\(group.count)", font: .monospacedDigitSystemFont(ofSize: CardView.metaSize, weight: .regular))
             let name = width - 2 * CardView.padding.width - (CardView.lineHeight - 2) - 2 * 8 - count
-            let lines = MeasuredHeights.lines(of: group.epic.title, font: font, width: name, limit: 3)
+            let lines = MeasuredHeights.lines(of: group.head.title, font: font, width: name, limit: 3)
             return max(CardView.lineHeight, MeasuredHeights.textHeight(lines: lines, font: font)) + 2 * CardView.padding.height
         }
     }
 
     var body: some View {
         let indent = CGFloat(min(depth, CardTreeLines.deepest)) * CardTreeLines.indent
-        EpicGroupCard(group: group, width: width - indent)
+        GroupCard(group: group, width: width - indent)
             .hidden()
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)

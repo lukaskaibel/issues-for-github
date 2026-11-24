@@ -56,8 +56,14 @@ struct IssueListView: View {
                         canAdd: canAdd && section.id != ListSection.noProjectId, count: section.count,
                         lines: model.isFolded(section) ? [] : section.nesting.rows.map { row -> IssueLine in
                             switch row {
-                            case .epic(let group):
-                                return .epic(group)
+                            case .group(let group):
+                                let projectId = model.projectId(of: group, in: section.nesting)
+                                return .group(GroupHeaderLine(
+                                    group: group, detail: model.headDetail(of: group, projectId: projectId),
+                                    place: section.nesting.place(of: group.id),
+                                    statusTooltip: model.headStatus(of: group, projectId: projectId) == nil
+                                        ? nil : model.headIssue(of: group).map { model.tooltip(.status, for: $0) }
+                                ))
                             case .item(let item):
                                 return .row(model.issueRow(
                                     item,

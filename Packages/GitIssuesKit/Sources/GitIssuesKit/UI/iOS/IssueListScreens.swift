@@ -584,15 +584,21 @@ struct IssueList: View {
                         switch line {
                         case .item(let item):
                             row(item, in: section)
-                        case .epic(let group):
-                            EpicGroupRow(group: group, column: column(of: section)) { openRoute(.issue(group.epic.id)) }
+                        case .group(let group):
+                            let projectId = model.projectId(of: group, in: section.nesting)
+                            GroupRow(
+                                group: group, detail: model.headDetail(of: group, projectId: projectId),
+                                place: section.nesting.place(of: group.id), column: column(of: section)
+                            ) {
+                                if let head = model.headIssue(of: group) { openRoute(.issue(head.id)) }
+                            }
                                 .listRowInsets(EdgeInsets())
                                 .listRowSeparator(.hidden)
                                 .listRowBackground(Theme.panel)
                         }
                     }
-                    // Touch and hold, then drag, to give an issue a new place in its section, or an epic's
-                    // issues by their header.
+                    // Touch and hold, then drag, to give an issue a new place in its section, or the issues under
+                    // a header, an epic's or a parent's, by the header.
                     // Only sections by status are columns of the board; a group by another field has no order.
                     .onMove(perform: canMove && column(of: section) != nil ? { move(in: section, from: $0, to: $1) } : nil)
                 }
@@ -705,8 +711,8 @@ struct IssueList: View {
     private func move(in section: ListSection, from source: IndexSet, to destination: Int) {
         let rows = section.nesting.rows
         guard let from = source.first, rows.indices.contains(from), let column = column(of: section) else { return }
-        if case .epic(let group) = rows[from] {
-            // The epic's issues go together, to where its header was put.
+        if case .group(let group) = rows[from] {
+            // The header's issues go together, to where the header was put.
             let members = column.members(of: group)
             let moving = Set(members.map(\.id))
             let index = rows.prefix(destination).compactMap(\.item).filter { !moving.contains($0.id) }.count
@@ -720,7 +726,7 @@ struct IssueList: View {
         let index = rows.prefix(destination).compactMap(\.item).filter { others.contains($0.id) }.count
         // Put right below an epic's header, it joins the epic, as it shows.
         let above = rows.prefix(destination).last { row in row.item.map { others.contains($0.id) } ?? true }
-        let header: String? = if case .epic(let group)? = above { group.contentId } else { nil }
+        let header: String? = if case .group(let group)? = above, group.kind == .epic { group.contentId } else { nil }
         model.drop(item, in: column, at: index, belowEpicHeader: header)
     }
 

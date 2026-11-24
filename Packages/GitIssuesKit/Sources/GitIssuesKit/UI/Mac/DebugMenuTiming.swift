@@ -194,7 +194,7 @@ enum MenuTiming {
                     let header = drag.header(at: point)
                     let under = [
                         card?.id, drag.part(at: point, in: items).map { "\($0.kind)" }, drag.fold(at: point, in: items)?.id,
-                        drag.number(at: point, in: items)?.id, header?.epic, header.map { drag.isOnFold(point, of: $0) ? "fold" : nil } ?? nil,
+                        drag.number(at: point, in: items)?.id, header?.head, header.map { drag.isOnFold(point, of: $0) ? "fold" : nil } ?? nil,
                     ].map { $0 ?? "-" }.joined(separator: "|")
                     defer { previous = under }
                     places.append("\(Int(y))\t\(under)")

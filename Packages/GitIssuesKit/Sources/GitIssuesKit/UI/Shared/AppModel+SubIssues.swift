@@ -145,17 +145,74 @@ extension AppModel {
         }
     }
 
-    /// Folds the issues of an epic away under its header on boards and in lists, or shows them again. The
-    /// keyboard focus on one of them is let go.
-    func toggleEpicGroup(_ group: Nesting.EpicGroup) {
-        let folding = !foldedEpics.contains(group.contentId)
+    /// Folds the issues under a group's header away on boards and in lists, or shows them again: an epic's issues, or
+    /// the sub-issues of a parent elsewhere. The keyboard focus on one of them is let go.
+    func toggleGroup(_ group: Nesting.Group) {
+        setGroup(group.kind, group.contentId, folded: !isFolded(group.kind, group.contentId))
+    }
+
+    /// Folds the issues under the header of an epic or a parent (`contentId`) away, or shows them again.
+    func setGroup(_ kind: Nesting.Group.Kind, _ contentId: String, folded: Bool) {
+        guard isFolded(kind, contentId) != folded else { return }
         withAnimation(Theme.spring) {
-            if folding { foldedEpics.insert(group.contentId) } else { foldedEpics.remove(group.contentId) }
+            switch kind {
+            case .epic: if folded { foldedEpics.insert(contentId) } else { foldedEpics.remove(contentId) }
+            case .parent: if folded { foldedParentGroups.insert(contentId) } else { foldedParentGroups.remove(contentId) }
+            }
             rebuild()
         }
         if let focused = focusedItemId, !orderedItems.contains(where: { $0.id == focused }) {
             focusedItemId = nil
         }
+    }
+
+    private func isFolded(_ kind: Nesting.Group.Kind, _ contentId: String) -> Bool {
+        switch kind {
+        case .epic: foldedEpics.contains(contentId)
+        case .parent: foldedParentGroups.contains(contentId)
+        }
+    }
+
+    /// How boards and lists put sub-issues of a parent elsewhere together, or nil while that is switched off. The
+    /// header names the parent as the app has it, or as its sub-issue knows it; one that is an epic has its own.
+    var parentGrouping: Nesting.ParentGrouping? {
+        guard groupsByParent else { return nil }
+        return Nesting.ParentGrouping(head: { [self] item in
+            guard let id = item.parentId else { return nil }
+            if let parent = issue(contentId: id) { return parent.isEpic ? nil : parent }
+            return Item(
+                id: Item.standInPrefix + id, kind: .issue, position: 0, contentId: id, number: item.parentNumber,
+                title: item.parentTitle ?? item.parentNumber.map { "#\($0)" } ?? "", body: "", state: "OPEN"
+            )
+        }, folded: foldedParentGroups)
+    }
+
+    /// The parent a header over its sub-issues names, as the app has it: nil for one known only from its sub-issues,
+    /// which opens nowhere.
+    func headIssue(of group: Nesting.Group) -> Item? {
+        group.head.id.hasPrefix(Item.standInPrefix) ? nil : group.head
+    }
+
+    /// The status of the parent a header over its sub-issues names, where the parent is on the board `projectId`.
+    func headStatus(of group: Nesting.Group, projectId: String?) -> FieldOption? {
+        guard group.kind == .parent, let head = headIssue(of: group), let projectId, head.projectId == projectId,
+              let statusId = head.statusId else { return nil }
+        return statusOptions(projectId: projectId).first { $0.id == statusId }
+    }
+
+    /// The board a group's issues are on, from the issues under its header.
+    func projectId(of group: Nesting.Group, in nesting: Nesting) -> String? {
+        nesting.members(of: group).first?.projectId
+    }
+
+    /// The quiet line under the name in a header over a parent's sub-issues: the parent's number, and its status
+    /// where it is on the same board, as "#9 · In Review".
+    func headDetail(of group: Nesting.Group, projectId: String?) -> String? {
+        guard group.kind == .parent else { return nil }
+        let number = group.head.number.map { "#\($0)" }
+        let status = headStatus(of: group, projectId: projectId)?.name
+        let parts = [number, status].compactMap(\.self)
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     /// The column or group an issue is shown in right now, for what hangs under it there.
@@ -371,7 +428,8 @@ extension SubIssueLine.Progress {
     }
 }
 
-/// Settings for sub-issues: whether finishing the last one finishes the parent too.
+/// Settings for sub-issues: whether finishing the last one finishes the parent too, and whether sub-issues of a parent
+/// elsewhere stand together under a header of it on boards and in lists.
 struct SubIssueSettingsSection: View {
     @Environment(AppModel.self) private var model
 
@@ -383,6 +441,11 @@ struct SubIssueSettingsSection: View {
             Text(.subIssues)
         } footer: {
             Text(.completeParentFooter)
+        }
+        Section {
+            Toggle(.groupByParentSetting, isOn: $model.groupsByParent)
+        } footer: {
+            Text(.groupByParentFooter)
         }
     }
 }

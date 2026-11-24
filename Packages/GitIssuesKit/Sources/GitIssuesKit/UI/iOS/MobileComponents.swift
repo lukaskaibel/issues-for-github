@@ -453,13 +453,17 @@ struct MobileChip<Content: View>: View {
     }
 }
 
-/// The header over the issues of an epic standing together in a list's section, as every list and board shows it
-/// (`EpicHeader`): its icon in the issues' status column, where the line down to them starts, and its name on up to two
-/// lines. A tap opens the epic, one on the arrow at the end folds its issues or shows them again; touching and holding
-/// offers its menu.
-struct EpicGroupRow: View {
-    var group: Nesting.EpicGroup
-    /// The board's column the section shows, whose issues of the epic its menu can move.
+/// The header over issues standing together in a list's section, an epic's or a parent's, as every list and board
+/// shows it (`GroupHeader`): its icon in the issues' status column, where the line down to them starts, and its name on
+/// up to two lines, for a parent with its number and status under it. A tap opens the epic or the parent, one on the
+/// arrow at the end folds its issues or shows them again; touching and holding offers its menu.
+struct GroupRow: View {
+    var group: Nesting.Group
+    /// Under a parent's name: its number and its status.
+    var detail: String? = nil
+    /// Where it hangs inside an epic's group.
+    var place = Nesting.Place()
+    /// The board's column the section shows, whose issues under the header its menu can move.
     var column: BoardColumn?
     var open: () -> Void
     /// As wide as the issues' status icons, whose column the icon stands in.
@@ -467,42 +471,52 @@ struct EpicGroupRow: View {
 
     var body: some View {
         // The arrow under the section header's +.
-        EpicHeaderTaps(group: group, open: open) {
-            EpicHeader(group: group, iconColumn: (IssueRow.leading, statusSize), trailing: 16, lineLimit: 2)
+        GroupHeaderTaps(group: group, detail: detail, open: open) {
+            GroupHeader(
+                group: group, detail: detail, place: place, iconColumn: (IssueRow.leading, statusSize),
+                indent: (IssueRow.indent, IssueRow.deepestIndent), trailing: 16, lineLimit: 2
+            )
         }
         .contextMenu {
-            EpicGroupMenuItems(group: group, column: column, open: open)
+            GroupMenuItems(group: group, column: column, open: open)
         }
     }
 }
 
-/// The header over the issues of an epic standing together in a column of the board (`EpicHeader`): its icon in the
-/// gutter the epic's cards hang in, and its name on up to three lines. As in the list, a tap opens the epic and one on
-/// the arrow folds its issues; touching and holding offers its menu, and dragging it moves them all.
-struct EpicGroupCardHeader: View {
-    var group: Nesting.EpicGroup
+/// The header over issues standing together in a column of the board, an epic's or a parent's (`GroupHeader`): its icon
+/// in the gutter the cards hang in, and its name on up to three lines, for a parent with its number and status under
+/// it. As in the list, a tap opens the epic or the parent and one on the arrow folds its issues; touching and holding
+/// offers its menu, and dragging it moves them all.
+struct GroupCardHeader: View {
+    var group: Nesting.Group
+    var detail: String? = nil
+    var place = Nesting.Place()
     var column: BoardColumn
     var open: () -> Void
-    /// Moves the epic's issues to the column beside this one, for VoiceOver, which can't drag.
+    /// Moves the header's issues to the column beside this one, for VoiceOver, which can't drag.
     var step: (Int) -> Void = { _ in }
 
     var body: some View {
-        EpicHeaderTaps(group: group, open: open, step: step) {
-            EpicHeader(group: group, iconColumn: (0, CardTreeLines.indent), trailing: 6, lineLimit: 3)
+        GroupHeaderTaps(group: group, detail: detail, open: open, step: step) {
+            GroupHeader(
+                group: group, detail: detail, place: place, iconColumn: (0, CardTreeLines.indent), gap: MobileColumn.spacing,
+                trailing: 6, lineLimit: 3
+            )
         }
         .contextMenu {
-            EpicGroupMenuItems(group: group, column: column, open: open)
+            GroupMenuItems(group: group, column: column, open: open)
         }
     }
 }
 
-/// What a tap on an epic's header does on iPhone and iPad: anywhere it opens the epic, on the arrow at its end it folds
-/// the epic's issues or shows them again, with room around the arrow for a finger.
-private struct EpicHeaderTaps<Header: View>: View {
+/// What a tap on a header does on iPhone and iPad: anywhere it opens the epic or the parent, on the arrow at its end it
+/// folds the issues under it or shows them again, with room around the arrow for a finger.
+private struct GroupHeaderTaps<Header: View>: View {
     @Environment(AppModel.self) private var model
-    var group: Nesting.EpicGroup
+    var group: Nesting.Group
+    var detail: String?
     var open: () -> Void
-    /// Moves the epic's issues to a neighbouring column, for VoiceOver on the board.
+    /// Moves the header's issues to a neighbouring column, for VoiceOver on the board.
     var step: ((Int) -> Void)? = nil
     @ViewBuilder var header: Header
 
@@ -511,13 +525,13 @@ private struct EpicHeaderTaps<Header: View>: View {
             header.contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(.epicGroupSpoken(epic: group.epic.title, count: group.count)))
+        .accessibilityLabel(Text(group.spoken(detail: detail)))
         .accessibilityValue(Text(group.folded ? .sectionFolded : .sectionOpen))
         .modifier(StepActions(step: step))
-        .accessibilityIdentifier("epic-group-\(group.epic.title)")
+        .accessibilityIdentifier("\(group.kind == .epic ? "epic" : "parent")-group-\(group.head.title)")
         .overlay(alignment: .trailing) {
             Button {
-                model.toggleEpicGroup(group)
+                model.toggleGroup(group)
             } label: {
                 Color.clear
                     .frame(width: 44)
@@ -526,12 +540,12 @@ private struct EpicHeaderTaps<Header: View>: View {
             }
             .buttonStyle(.plain)
             .hoverEffect(.highlight)
-            .accessibilityLabel(Text(group.folded ? .unfoldEpicGroupTooltip(count: group.count) : .foldEpicGroupTooltip))
-            .accessibilityIdentifier("fold-epic-\(group.epic.title)")
+            .accessibilityLabel(Text(group.foldLabel))
+            .accessibilityIdentifier("fold-\(group.kind == .epic ? "epic" : "parent")-\(group.head.title)")
         }
     }
 
-    /// On the board, VoiceOver moves the epic's issues to a neighbouring column, as it can't drag them.
+    /// On the board, VoiceOver moves the header's issues to a neighbouring column, as it can't drag them.
     private struct StepActions: ViewModifier {
         var step: ((Int) -> Void)?
 
@@ -547,24 +561,36 @@ private struct EpicHeaderTaps<Header: View>: View {
     }
 }
 
-/// The menu of the header over an epic's issues: open the epic, move all of its issues there to another column, fold
-/// them away or show them.
-struct EpicGroupMenuItems: View {
+/// The menu of a header over issues standing together: open the epic or the parent, change the parent's status, move
+/// all of the issues there to another column, fold them away or show them.
+struct GroupMenuItems: View {
     @Environment(AppModel.self) private var model
     @Environment(\.colorScheme) private var scheme
-    var group: Nesting.EpicGroup
+    var group: Nesting.Group
     var column: BoardColumn?
     var open: () -> Void
 
     var body: some View {
-        Button(action: open) { Label(.openEpicCommand, systemImage: "square.stack.3d.up") }
+        let members = column?.members(of: group) ?? []
+        let projectId = members.first?.projectId
+        switch group.kind {
+        case .epic:
+            Button(action: open) { Label(.openEpicCommand, systemImage: "square.stack.3d.up") }
+        case .parent:
+            let head = model.headIssue(of: group)
+            Button(action: open) { Label(.openParentIssueCommand, systemImage: GroupHeaderLook.parentSymbol) }
+                .disabled(head == nil)
+            // The parent's own status, where it is on this board.
+            if let head, model.headStatus(of: group, projectId: projectId) != nil {
+                StatusMenu(item: head)
+            }
+        }
         if let column {
-            let members = column.members(of: group)
-            let projectId = members.first?.projectId
             let statuses = model.statusOptions(projectId: projectId)
             if !statuses.isEmpty {
+                let title: LocalizedStringResource = group.kind == .epic ? .moveEpicIssuesTo : .moveSubIssuesTo
                 Menu {
-                    Picker(.moveEpicIssuesTo, selection: Binding(
+                    Picker(title, selection: Binding(
                         get: { column.option?.id },
                         set: { id in
                             guard let option = statuses.first(where: { $0.id == id }) else { return }
@@ -583,7 +609,7 @@ struct EpicGroupMenuItems: View {
                     .pickerStyle(.inline)
                 } label: {
                     Label {
-                        Text(.moveEpicIssuesTo)
+                        Text(title)
                     } icon: {
                         MenuImages.status(column.glyph, scheme)
                     }
@@ -591,9 +617,9 @@ struct EpicGroupMenuItems: View {
             }
         }
         Button {
-            model.toggleEpicGroup(group)
+            model.toggleGroup(group)
         } label: {
-            Label(group.folded ? LocalizedStringResource.showEpicIssues : .foldEpicIssues, systemImage: group.folded ? "chevron.down" : "chevron.right")
+            Label(group.foldAction, systemImage: group.folded ? "chevron.down" : "chevron.right")
         }
     }
 }

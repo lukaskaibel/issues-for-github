@@ -25,6 +25,13 @@ All notable changes to this project are recorded here. The format follows
   issue, on the Mac, iPhone and iPad: the issue lights up, a message says what happened, and **Undo** takes it back.
   Picked sub-issues go together. On the Mac this also works from an epic's milestones and from the issues it is blocked
   by or blocks. An issue the app knows only from GitHub stays where it is.
+- **Sub-issues stand together where their parent isn't.** When two or more sub-issues of an issue are in a status
+  the issue isn't in, they stand together in that column or section under a quiet grey header: the sub-issue arrow, the
+  parent's title, how many of its sub-issues are there, and under it the parent's number and status, as "#9 · In
+  Review". Click the header to open the parent, its arrow to fold the sub-issues away, and on the Mac the status to
+  change the parent's status; drag the header to move them all to another column, where they hang under the parent
+  if it is there. Inside an epic's issues the header hangs one level in. On the Mac, iPhone and iPad, on boards and in
+  lists; **Settings › Sub-issues** turns it off.
 - **A card with sub-issues stands on a small pile of cards.** While its sub-issues aren't hanging under it, because
   they are folded in or have another status, a card stands on one card for one sub-issue, two for two and three for
   more, each further back a little narrower and peeking out less, on the Mac, iPhone and iPad boards. A card you drag

@@ -282,6 +282,37 @@ final class PhonePlanningTests: AppTestCase {
         XCTAssertEqual(title.value as? String, "Offline-first sync")
     }
 
+    /// Sub-issues whose parent is in another status stand together under a quiet header of the parent, which names
+    /// its number and status, folds them, and opens the parent.
+    func testSubIssuesOfAParentElsewhereStandTogetherUnderItsHeader() {
+        launch()
+        openProjectTab("Git Issues")
+        // The board view, as a list. In Done, #10, #11, #12 and #23 are sub-issues of #9, which is In Progress.
+        showLayout("List")
+        let header = element("parent-group-Drag cards between columns with spring physics")
+        scrollTo(header)
+        wait(header)
+        XCTAssertTrue(header.label.contains("4 sub-issues of Drag cards between columns with spring physics"), header.label)
+        XCTAssertTrue(header.label.contains("#9 · In Progress"), header.label)
+        let first = element("row-#10")
+        scrollTo(first)
+        wait(first)
+        XCTAssertGreaterThan(first.frame.minY, header.frame.maxY - 1)
+        snapshot("Sub-issues under their parent's header")
+
+        // The arrow folds them away; the header itself opens the parent.
+        let fold = element("fold-parent-Drag cards between columns with spring physics")
+        fold.tap()
+        waitGone(first)
+        waitForValue(header, equalTo: "Folded")
+        fold.tap()
+        wait(first)
+        header.tap()
+        let title = element("issue-title")
+        wait(title)
+        XCTAssertEqual(title.value as? String, "Drag cards between columns with spring physics")
+    }
+
     /// The header's menu moves all of the epic's issues in the section to another status, and the message takes it
     /// back.
     func testAnEpicsHeaderMovesItsIssuesToAnotherStatus() {
@@ -493,6 +524,26 @@ final class PadPlanningTests: AppTestCase {
         let title = element("issue-title")
         wait(title)
         XCTAssertEqual(title.value as? String, "Offline-first sync")
+    }
+
+    /// In Done, the sub-issues of #9, which is In Progress, stand together under a quiet header of #9, one level
+    /// into the group of its epic, and its arrow folds them.
+    func testSubIssuesOfAParentElsewhereStandTogetherInTheColumn() {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        launch()
+        openPadProject("Git Issues")
+        let header = element("parent-group-Drag cards between columns with spring physics")
+        wait(header)
+        XCTAssertTrue(header.label.contains("4 sub-issues of Drag cards between columns with spring physics"), header.label)
+        XCTAssertTrue(header.label.contains("#9 · In Progress"), header.label)
+        let first = element("card-#10")
+        wait(first)
+        // Under the header, one level further in; the header itself is one level into the epic's group.
+        XCTAssertGreaterThan(first.frame.minY, header.frame.maxY - 1)
+        XCTAssertGreaterThan(first.frame.minX, header.frame.minX + 8)
+        let epic = element("epic-group-Drag and drop on the board")
+        XCTAssertGreaterThan(header.frame.minY, epic.frame.maxY - 1)
+        snapshot("iPad sub-issues under their parent's header")
     }
 
     /// Dragging the header over an epic's cards moves them all to the column it is dropped on, and the message

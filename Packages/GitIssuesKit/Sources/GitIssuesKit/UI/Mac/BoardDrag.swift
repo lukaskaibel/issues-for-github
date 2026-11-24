@@ -11,9 +11,10 @@ final class BoardDrag {
     nonisolated static let space = "board"
 
     struct Active: Equatable {
-        /// The card lifted, or the epic whose issues are lifted together.
+        /// The card lifted, or the epic or parent whose issues are lifted together.
         var item: Item
-        /// The issues of an epic standing together in a column, lifted by their header to move them all.
+        /// The issues standing together in a column under a header, an epic's or a parent's, lifted by the header to
+        /// move them all.
         var group: GroupDrag?
         /// The picked cards, lifted together by one of them.
         var picked: PickedIssues?
@@ -28,7 +29,7 @@ final class BoardDrag {
     }
 
     struct GroupDrag: Equatable {
-        var group: Nesting.EpicGroup
+        var group: Nesting.Group
         var columnId: String
         /// Its issues there, folded ones included.
         var ids: Set<String>
@@ -52,7 +53,7 @@ final class BoardDrag {
         var item: Item
         var columnId: String
         var frame: CGRect
-        /// An epic's header rather than a card.
+        /// A header, an epic's or a parent's, rather than a card.
         var isHeader = false
     }
 
@@ -110,53 +111,53 @@ final class BoardDrag {
         frameOwners[id] = nil
     }
 
-    // MARK: Epic headers
+    // MARK: Group headers
 
-    /// Where the header over an epic's issues is, and its fold arrow, in board coordinates.
+    /// Where the header over an epic's or a parent's issues is, its fold arrow, and the line under a parent's name, in
+    /// board coordinates.
     struct HeaderFrame {
         var columnId: String
-        var epic: String
+        /// The node id of the epic or the parent.
+        var head: String
         var frame: CGRect
         var fold: CGRect = .null
+        var detail: CGRect = .null
     }
 
     @ObservationIgnored private var headerFrames: [String: HeaderFrame] = [:]
-    @ObservationIgnored private var headerFolds: [String: CGRect] = [:]
     @ObservationIgnored private var headerOwners: [String: UUID] = [:]
 
-    private static func headerKey(_ column: String, _ epic: String) -> String {
-        "\(column)\u{1F}\(epic)"
+    private static func headerKey(_ column: String, _ head: String) -> String {
+        "\(column)\u{1F}\(head)"
     }
 
-    func setHeaderFrame(_ frame: CGRect, column: String, epic: String, owner: UUID) {
-        let key = Self.headerKey(column, epic)
-        headerFrames[key] = HeaderFrame(columnId: column, epic: epic, frame: frame)
+    func setHeaderFrame(_ frame: CGRect, fold: CGRect, detail: CGRect?, column: String, head: String, owner: UUID) {
+        let key = Self.headerKey(column, head)
+        headerFrames[key] = HeaderFrame(columnId: column, head: head, frame: frame, fold: fold, detail: detail ?? .null)
         headerOwners[key] = owner
     }
 
-    func setHeaderFold(_ frame: CGRect, column: String, epic: String) {
-        headerFolds[Self.headerKey(column, epic)] = frame
-    }
-
-    func removeHeaderFrame(column: String, epic: String, owner: UUID) {
-        let key = Self.headerKey(column, epic)
+    func removeHeaderFrame(column: String, head: String, owner: UUID) {
+        let key = Self.headerKey(column, head)
         guard headerOwners[key] == owner else { return }
         headerFrames[key] = nil
-        headerFolds[key] = nil
         headerOwners[key] = nil
     }
 
-    /// The header over an epic's issues under a point, in one column or any.
+    /// The header over a group's issues under a point, in one column or any.
     func header(at point: CGPoint, in columnId: String? = nil) -> HeaderFrame? {
-        guard var found = headerFrames.values.first(where: { header in
+        headerFrames.values.first { header in
             (columnId == nil || header.columnId == columnId) && header.frame.contains(point)
-        }) else { return nil }
-        found.fold = headerFolds[Self.headerKey(found.columnId, found.epic)] ?? .null
-        return found
+        }
     }
 
-    func headerFrame(column: String, epic: String) -> CGRect? {
-        headerFrames[Self.headerKey(column, epic)]?.frame
+    func headerFrame(column: String, head: String) -> CGRect? {
+        headerFrames[Self.headerKey(column, head)]?.frame
+    }
+
+    /// Whether a point is on the line under a parent's name in its header.
+    func isOnDetail(_ point: CGPoint, of header: HeaderFrame) -> Bool {
+        !header.detail.isNull && header.detail.insetBy(dx: 0, dy: -2).contains(point)
     }
 
     /// Whether a point is on the fold arrow of a header.
@@ -317,19 +318,21 @@ final class BoardDrag {
         return true
     }
 
-    /// Lifts the issues of an epic standing together in a column by their header.
+    /// Lifts the issues standing together in a column under a header, an epic's or a parent's, by the header.
     private func begin(_ header: HeaderFrame, at point: CGPoint, model: AppModel) -> Bool {
         guard let column = model.columns.first(where: { $0.id == header.columnId }),
-              let group = column.nesting.groups.first(where: { $0.contentId == header.epic }),
+              let group = column.nesting.groups.first(where: { $0.contentId == header.head }),
               let row = column.nesting.rows.firstIndex(where: { $0.id == group.id }) else { return false }
-        let ids = Set(column.members(of: group).map(\.id))
+        let members = column.members(of: group)
+        let ids = Set(members.map(\.id))
         // Where the group stands now, counted as a drop there would count it.
         let index = column.nesting.rows[..<row].filter { line in line.item.map { !ids.contains($0.id) } ?? false }.count
-        let landing = column.landing(ofGroup: group.contentId, moving: ids, at: index)
+        let epic = members.first.flatMap { model.epic(of: $0)?.contentId }
+        let landing = column.landing(ofGroup: group, moving: ids, at: index, epic: epic)
         origin = Target(columnId: column.id, index: landing.slot, depth: landing.depth, row: landing.row)
         target = origin
         active = Active(
-            item: group.epic, group: GroupDrag(group: group, columnId: column.id, ids: ids), size: header.frame.size,
+            item: group.head, group: GroupDrag(group: group, columnId: column.id, ids: ids), size: header.frame.size,
             grab: CGSize(width: point.x - header.frame.minX, height: point.y - header.frame.minY),
             location: point
         )
@@ -435,7 +438,10 @@ final class BoardDrag {
         // A sub-issue goes among its parent's sub-issues, any other card never between a parent and its sub-issues.
         // An epic's issues go together, among the epic's other issues where the column has some.
         let landing = if let group = current.group {
-            column.landing(ofGroup: group.group.contentId, moving: group.ids, at: index)
+            column.landing(
+                ofGroup: group.group, moving: group.ids, at: index,
+                epic: model.columns.flatMap(\.nesting.members).first { group.ids.contains($0.id) }.flatMap { model.epic(of: $0)?.contentId }
+            )
         } else if let picked = current.picked {
             column.landing(of: picked, at: index)
         } else {
@@ -456,9 +462,9 @@ final class BoardDrag {
         }
     }
 
-    /// The issue whose card, or whose header as an epic, the pointer is in the middle of, if the lifted issues can go
-    /// under it: the middle half of a card, between edges of at least 10 points where they go in front or after; all
-    /// of an epic's header but its outer 5 points, as it is only one line high.
+    /// The issue whose card, or whose header as an epic or a parent, the pointer is in the middle of, if the lifted
+    /// issues can go under it: the middle half of a card, between edges of at least 10 points where they go in front
+    /// or after; all of a header but its outer 5 points, as it is only a line or two high.
     private func nestTarget(at point: CGPoint, model: AppModel) -> Nest? {
         guard let current = active, current.group == nil else { return nil }
         let moving = current.picked?.moving ?? [current.item.id]
@@ -467,8 +473,9 @@ final class BoardDrag {
             return frame.minX <= point.x && point.x <= frame.maxX && frame.minY + edge <= point.y && point.y <= frame.maxY - edge
         }
         let found: Nest? = if let header = header(at: point), middle(header.frame, edge: 5),
-           let epic = model.columns.first(where: { $0.id == header.columnId })?.nesting.groups.first(where: { $0.contentId == header.epic })?.epic {
-            Nest(item: epic, columnId: header.columnId, frame: header.frame, isHeader: true)
+           let group = model.columns.first(where: { $0.id == header.columnId })?.nesting.groups.first(where: { $0.contentId == header.head }),
+           let head = model.headIssue(of: group) {
+            Nest(item: head, columnId: header.columnId, frame: header.frame, isHeader: true)
         } else if let (id, frame) = cardFrames.first(where: { !moving.contains($0.key) && middle($0.value) }),
                   let column = model.columns.first(where: { $0.items.contains { $0.id == id } }),
                   let item = column.items.first(where: { $0.id == id }) {
@@ -628,10 +635,11 @@ final class BoardDrag {
 struct ColumnLayout: Equatable {
     struct Row: Equatable {
         enum Part: Equatable {
-            /// A card, or the slot for the card being dragged, or for an epic's issues, by the item's id.
+            /// A card, or the slot for the card being dragged, or for a group's issues, by the item's id.
             case card(String)
-            /// An epic's header, by the epic's node id.
-            case header(String)
+            /// A group's header, by the node id of the epic or the parent, with the line under a parent's name, from the
+            /// row's top left corner.
+            case header(String, detail: CGRect?)
         }
 
         var part: Part
@@ -680,14 +688,16 @@ final class ColumnFrames {
             case .card(let id):
                 drag.setCardFrame(frame, for: id, owner: owner)
                 cards.insert(id)
-            case .header(let epic):
-                drag.setHeaderFrame(frame, column: column, epic: epic, owner: owner)
-                drag.setHeaderFold(BoardDrag.epicFoldFrame(in: frame), column: column, epic: epic)
-                headers.insert(epic)
+            case .header(let head, let detail):
+                drag.setHeaderFrame(
+                    frame, fold: BoardDrag.groupFoldFrame(in: frame), detail: detail?.offsetBy(dx: frame.minX, dy: frame.minY),
+                    column: column, head: head, owner: owner
+                )
+                headers.insert(head)
             }
         }
         for id in self.cards where !cards.contains(id) { drag.removeCardFrame(for: id, owner: owner) }
-        for epic in self.headers where !headers.contains(epic) { drag.removeHeaderFrame(column: column, epic: epic, owner: owner) }
+        for head in self.headers where !headers.contains(head) { drag.removeHeaderFrame(column: column, head: head, owner: owner) }
         self.cards = cards
         self.headers = headers
     }
@@ -710,7 +720,7 @@ final class ColumnFrames {
     func clear(_ drag: BoardDrag, column: String) {
         drag.removeColumnRows(self, column: column)
         for id in cards { drag.removeCardFrame(for: id, owner: owner) }
-        for epic in headers { drag.removeHeaderFrame(column: column, epic: epic, owner: owner) }
+        for head in headers { drag.removeHeaderFrame(column: column, head: head, owner: owner) }
         cards = []
         headers = []
     }
