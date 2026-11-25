@@ -454,9 +454,11 @@ struct MobileChip<Content: View>: View {
 }
 
 /// The header over issues standing together in a list's section, an epic's or a parent's, as every list and board
-/// shows it (`GroupHeader`): its icon in the issues' status column, where the line down to them starts, and its name on
-/// up to two lines, for a parent with its number and status under it. A tap opens the epic or the parent, one on the
-/// arrow at the end folds its issues or shows them again; touching and holding offers its menu.
+/// shows it (`GroupHeader`): an epic's icon in the issues' status column, where the line down to them starts, and its
+/// name on up to two lines; a parent's name where the status icons of the issues beside it are, with its number and
+/// status under it. A tap on an epic's header opens the epic, one on
+/// a parent's folds its sub-issues or shows them again, as one on the arrow at the end does; touching and holding offers
+/// its menu, which opens the parent.
 struct GroupRow: View {
     var group: Nesting.Group
     /// Under a parent's name: its number and its status.
@@ -483,10 +485,10 @@ struct GroupRow: View {
     }
 }
 
-/// The header over issues standing together in a column of the board, an epic's or a parent's (`GroupHeader`): its icon
-/// in the gutter the cards hang in, and its name on up to three lines, for a parent with its number and status under
-/// it. As in the list, a tap opens the epic or the parent and one on the arrow folds its issues; touching and holding
-/// offers its menu, and dragging it moves them all.
+/// The header over issues standing together in a column of the board, an epic's or a parent's (`GroupHeader`): an epic's
+/// icon in the gutter the cards hang in and its name on up to three lines; a parent's name where the text of the cards
+/// beside it is, with its number and status under it. As in the list, a tap opens the epic or folds a parent's sub-issues, and one on the arrow folds the issues;
+/// touching and holding offers its menu, and dragging it moves them all.
 struct GroupCardHeader: View {
     var group: Nesting.Group
     var detail: String? = nil
@@ -499,7 +501,8 @@ struct GroupCardHeader: View {
     var body: some View {
         GroupHeaderTaps(group: group, detail: detail, open: open, step: step) {
             GroupHeader(
-                group: group, detail: detail, place: place, iconColumn: (0, CardTreeLines.indent), gap: MobileColumn.spacing,
+                group: group, detail: detail, place: place, iconColumn: (0, CardTreeLines.indent), nameInset: CardView.padding.width,
+                gap: MobileColumn.spacing,
                 trailing: 6, lineLimit: 3
             )
         }
@@ -509,8 +512,9 @@ struct GroupCardHeader: View {
     }
 }
 
-/// What a tap on a header does on iPhone and iPad: anywhere it opens the epic or the parent, on the arrow at its end it
-/// folds the issues under it or shows them again, with room around the arrow for a finger.
+/// What a tap on a header does on iPhone and iPad: on an epic's it opens the epic, and on the arrow at its end, with room
+/// around the arrow for a finger, it folds the epic's issues or shows them again; anywhere on a parent's it folds the
+/// sub-issues, and the parent opens from the menu, or for VoiceOver from an action.
 private struct GroupHeaderTaps<Header: View>: View {
     @Environment(AppModel.self) private var model
     var group: Nesting.Group
@@ -521,27 +525,47 @@ private struct GroupHeaderTaps<Header: View>: View {
     @ViewBuilder var header: Header
 
     var body: some View {
-        Button(action: open) {
+        let parent = group.kind == .parent
+        Button {
+            if parent { model.toggleGroup(group) } else { open() }
+        } label: {
             header.contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(group.spoken(detail: detail)))
         .accessibilityValue(Text(group.folded ? .sectionFolded : .sectionOpen))
+        .modifier(OpenParent(open: parent && model.headIssue(of: group) != nil ? open : nil))
         .modifier(StepActions(step: step))
-        .accessibilityIdentifier("\(group.kind == .epic ? "epic" : "parent")-group-\(group.head.title)")
+        .accessibilityIdentifier("\(parent ? "parent" : "epic")-group-\(group.head.title)")
         .overlay(alignment: .trailing) {
-            Button {
-                model.toggleGroup(group)
-            } label: {
-                Color.clear
-                    .frame(width: 44)
-                    .frame(maxHeight: .infinity)
-                    .contentShape(Rectangle())
+            // A parent's header folds wherever it is tapped.
+            if !parent {
+                Button {
+                    model.toggleGroup(group)
+                } label: {
+                    Color.clear
+                        .frame(width: 44)
+                        .frame(maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .hoverEffect(.highlight)
+                .accessibilityLabel(Text(group.foldLabel))
+                .accessibilityIdentifier("fold-epic-\(group.head.title)")
             }
-            .buttonStyle(.plain)
-            .hoverEffect(.highlight)
-            .accessibilityLabel(Text(group.foldLabel))
-            .accessibilityIdentifier("fold-\(group.kind == .epic ? "epic" : "parent")-\(group.head.title)")
+        }
+    }
+
+    /// On a parent's header, which folds when tapped, VoiceOver opens the parent with an action of its own.
+    private struct OpenParent: ViewModifier {
+        var open: (() -> Void)?
+
+        func body(content: Content) -> some View {
+            if let open {
+                content.accessibilityAction(named: Text(.openParentIssueCommand), open)
+            } else {
+                content
+            }
         }
     }
 

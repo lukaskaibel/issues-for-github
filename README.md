@@ -94,8 +94,8 @@ A sub-issue with the same status as its parent hangs right under it, indented, s
 work on with it read as one instead of as separate cards in the same column. The arrow on the parent folds them in. A
 sub-issue whose parent has another status stays in its own column and says which issue it belongs to; two or more of
 them stand together there under a quiet grey header with the parent's title, number and status ("#9 · In Review"),
-which opens the parent, folds them, and changes the parent's status with a click on it (Settings › Sub-issues turns
-that off). A card whose sub-issues aren't under it stands on a small pile: one card for one sub-issue, two for two,
+where the parent itself would stand. A click on it folds them, its right-click menu opens the parent, and a click on
+the status changes the parent's status (Settings › Sub-issues turns that off). A card whose sub-issues aren't under it stands on a small pile: one card for one sub-issue, two for two,
 three for more. When the last one is done, the parent moves to Done by itself. The issues of an epic in the same
 column stand together the same way, under the epic's name; drag the name to another column and they all go.
 
@@ -388,7 +388,8 @@ The interface uses the system's own parts.
   each paging sideways through its project's columns, and Needs you. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
   and drag after holding to give an issue a new place in its section.
   Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them; two
-  or more with another status stand together under a quiet header of their parent, whose menu changes its status; a
+  or more with another status stand together under a quiet header of their parent, which folds them when you tap it
+  and whose menu opens the parent and changes its status; a
   card whose sub-issues aren't under it stands on a small pile of cards.
   A milestone is a list grouped by epic,
   the roadmap a list of epics by milestone. The open view's filter is a line over its list or board; tap it to change

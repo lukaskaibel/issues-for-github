@@ -429,16 +429,17 @@ struct ColumnView: View {
                 .gesture(SpatialTapGesture(coordinateSpace: .named(BoardDrag.space)).onEnded { value in
                     // The release of a deep press, which has opened the peek instead of being a click.
                     if model.deepPress.openedPeek { return }
-                    // A click on a header opens the epic or the parent, one on its arrow folds its issues away or shows them,
-                    // and one on the line under a parent's name changes the parent's status.
+                    // A click on an epic's header opens the epic, one on a parent's folds its sub-issues away or shows
+                    // them (the parent opens from its menu), and so does one on a header's arrow; one on the line under a
+                    // parent's name changes the parent's status.
                     if let header = drag.header(at: value.location, in: column.id),
                        let group = column.nesting.groups.first(where: { $0.contentId == header.head }) {
-                        if drag.isOnFold(value.location, of: header) {
-                            model.toggleGroup(group)
-                        } else if drag.isOnDetail(value.location, of: header), let head = model.headIssue(of: group),
-                                  model.headStatus(of: group, projectId: model.projectId(of: group, in: column.nesting)) != nil {
+                        if drag.isOnDetail(value.location, of: header), let head = model.headIssue(of: group),
+                           model.headStatus(of: group, projectId: model.projectId(of: group, in: column.nesting)) != nil {
                             let origin = drag.boardFrameInWindow.origin
                             model.showPicker(.status, for: head, below: header.detail.offsetBy(dx: origin.x, dy: origin.y))
+                        } else if group.kind == .parent || drag.isOnFold(value.location, of: header) {
+                            model.toggleGroup(group)
                         } else if let head = model.headIssue(of: group) {
                             model.openFromClick(head)
                         }
@@ -589,7 +590,10 @@ struct ColumnView: View {
                 let changesStatus = model.headStatus(of: group, projectId: model.projectId(of: group, in: column.nesting)) != nil
                 let detailFrame = detail.flatMap { detail in
                     changesStatus
-                        ? GroupHeader.detailFrame(detail, in: CGRect(x: 0, y: 0, width: width, height: height), place: place, iconColumn: GroupHeaderView.iconColumn)
+                        ? GroupHeader.detailFrame(
+                            detail, in: CGRect(x: 0, y: 0, width: width, height: height), place: place,
+                            iconColumn: GroupHeaderView.iconColumn, nameInset: GroupHeaderView.nameInset
+                        )
                         : nil
                 }
                 rows.append(.init(part: .header(group.contentId, detail: detailFrame), indent: 0, height: height))
@@ -666,8 +670,9 @@ private struct ColumnTooltip: ViewModifier {
     private var tooltip: String {
         let pointer = hover.current
         if let header = pointer.header, let group = column.nesting.groups.first(where: { $0.contentId == header.head }) {
-            if header.onFold { return group.foldLabel }
             if header.onDetail, let head = model.headIssue(of: group) { return model.tooltip(.status, for: head) }
+            // A click anywhere on a parent's header folds its sub-issues.
+            if header.onFold || group.kind == .parent { return group.foldLabel }
             return ""
         }
         guard let card = pointer.card, let item = column.items.first(where: { $0.id == card.id }) else { return "" }
@@ -683,9 +688,10 @@ private struct ColumnTooltip: ViewModifier {
 }
 
 /// Over issues standing together in a column, an epic's or a parent's: the header they have in every list and on every
-/// board (`GroupHeader`), its name on up to three lines. A click opens the epic or the parent, one on the arrow folds its
-/// issues or shows them again, one on the line under a parent's name changes the parent's status, and dragging it moves
-/// them all. The column handles the clicks and the board the drag, from where the column placed the header.
+/// board (`GroupHeader`), its name on up to three lines. A click on an epic's header opens the epic, one on a parent's
+/// folds its sub-issues or shows them again, as one on the arrow does; one on the line under a parent's name changes the
+/// parent's status, and dragging it moves them all. The column handles the clicks and the board the drag, from where the
+/// column placed the header.
 private struct GroupHeaderView: View {
     var group: Nesting.Group
     /// Under a parent's name: its number and its status.
@@ -699,6 +705,8 @@ private struct GroupHeaderView: View {
 
     /// The icon stands in the gutter sub-issue cards hang in, where the line down to the group's cards runs.
     static let iconColumn = (x: CGFloat(0), width: CardTreeLines.indent)
+    /// A parent's name stands where the text of the cards beside it does.
+    static let nameInset = CardView.padding.width
     /// The arrow ends about where the text of the cards under it does.
     static let trailing: CGFloat = 6
     static let lineLimit = 3
@@ -714,7 +722,8 @@ private struct GroupHeaderView: View {
         let key = "header \(Int(width)) \(group.kind) \(place.depth) \(group.count) \(detail != nil) \(group.head.title)"
         return MeasuredHeights.Measure(key: key) {
             GroupHeader.height(
-                of: group, detail: detail, place: place, width: width, iconColumn: iconColumn, trailing: trailing, lineLimit: lineLimit
+                of: group, detail: detail, place: place, width: width, iconColumn: iconColumn, nameInset: nameInset, trailing: trailing,
+                lineLimit: lineLimit
             )
         }
     }
@@ -722,7 +731,7 @@ private struct GroupHeaderView: View {
     var body: some View {
         let pointer = dragging ? nil : hover[header: group.contentId]
         GroupHeader(
-            group: group, detail: detail, place: place, iconColumn: Self.iconColumn, gap: CardTreeLines.boardGap,
+            group: group, detail: detail, place: place, iconColumn: Self.iconColumn, nameInset: Self.nameInset, gap: CardTreeLines.boardGap,
             trailing: Self.trailing, lineLimit: Self.lineLimit, highlighted: pointer != nil, hoveringFold: pointer?.onFold ?? false,
             hoveringDetail: pointer?.onDetail ?? false
         )
@@ -751,8 +760,32 @@ private struct GroupHeaderView: View {
                 .accessibilityLabel(Text(group.spoken(detail: detail)))
                 .accessibilityValue(Text(group.folded ? .sectionFolded : .sectionOpen))
                 .accessibilityAddTraits(.isButton)
-                .accessibilityAction { if let head { model.open(head) } }
-                .accessibilityAction(named: Text(group.foldAction)) { model.toggleGroup(group) }
+                .modifier(GroupHeaderActions(group: group, open: head.map { head in { model.open(head) } }) { model.toggleGroup(group) })
+        }
+    }
+}
+
+/// What VoiceOver does with a header, as a click does: on an epic's it opens the epic and folds its issues as a named
+/// action; on a parent's it folds the sub-issues and opens the parent as a named action, where the app has it.
+private struct GroupHeaderActions: ViewModifier {
+    var group: Nesting.Group
+    var open: (() -> Void)?
+    var fold: () -> Void
+
+    func body(content: Content) -> some View {
+        switch group.kind {
+        case .epic:
+            content
+                .accessibilityAction { open?() }
+                .accessibilityAction(named: Text(group.foldAction), fold)
+        case .parent:
+            if let open {
+                content
+                    .accessibilityAction(.default, fold)
+                    .accessibilityAction(named: Text(.openParentIssueCommand), open)
+            } else {
+                content.accessibilityAction(.default, fold)
+            }
         }
     }
 }

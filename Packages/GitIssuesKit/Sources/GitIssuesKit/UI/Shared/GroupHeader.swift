@@ -9,9 +9,11 @@ import AppKit
 /// issues than to what is above it. Under the pointer it lights up in the rounded shape a row of the list does.
 ///
 /// Over an epic's issues it has the epic's icon and name. Over sub-issues of a parent that stands elsewhere it is
-/// quieter, as that parent isn't one of the cards there: the sub-issue arrow in grey, the parent's name in grey, and
-/// under it, smaller, the parent's number and its status ("#9 · In Review"). Inside an epic's group it hangs one level
-/// in, with the epic's line beside it, as an issue there does.
+/// quieter, as that parent isn't one of the cards there, and reads like the parent itself would: no icon, the parent's
+/// name in grey where the issues beside it start (their first mark in a list, their text on a board), and under it,
+/// smaller, the parent's number and its status ("#9 · In Review"); the line down to the sub-issues starts right under
+/// it, as from a parent issue. Inside an epic's group it hangs one level in, with the epic's line beside it, as an
+/// issue there does.
 ///
 /// `GroupHeader` draws it in SwiftUI, for the Mac's board and for iPhone and iPad; the Mac's list paints its header
 /// itself (`GroupHeaderRowCell`) with the same marks and fonts, as a row of the list, centred in the row's height.
@@ -31,8 +33,6 @@ enum GroupHeaderLook {
     /// The line under a parent's name: its number and its status.
     static let detailFont = NSFont.systemFont(ofSize: 11, weight: .regular)
     static let detailLine: CGFloat = 14
-    /// The sub-issue arrow before a parent's name.
-    static let parentArrowSize: CGFloat = 11
     #else
     static let iconSize: CGFloat = 16
     static let line: CGFloat = 20
@@ -40,7 +40,6 @@ enum GroupHeaderLook {
     static let bottom: CGFloat = 6
     static let arrowBox: CGFloat = 20
     static let detailLine: CGFloat = 16
-    static let parentArrowSize: CGFloat = 13
     #endif
     /// From the icon's column to the name.
     static let spacing: CGFloat = 8
@@ -51,7 +50,9 @@ enum GroupHeaderLook {
     static let highlightRadius: CGFloat = 8
     /// From the name to the line under it.
     static let detailGap: CGFloat = 1
-    /// The symbol of a parent, as sub-issues name theirs.
+    /// From the bottom of a parent's name, or the line under it, to the start of the line down to its sub-issues.
+    static let lineGap: CGFloat = 2
+    /// The symbol of a parent, as sub-issues name theirs, in menus.
     static let parentSymbol = "arrow.turn.left.up"
 }
 
@@ -61,9 +62,12 @@ struct GroupHeader: View {
     var detail: String? = nil
     /// Where it hangs inside an epic's group: one level in, with the epic's line beside it.
     var place = Nesting.Place()
-    /// Where the column the line down to the group's issues runs in starts, and how wide it is; the icon stands in its
-    /// middle. In a list that is the issues' status column, on a board the gutter sub-issue cards hang in.
+    /// Where the column the line down to the group's issues runs in starts, and how wide it is; an epic's icon stands
+    /// in its middle. In a list that is the issues' status column, on a board the gutter sub-issue cards hang in.
     var iconColumn: (x: CGFloat, width: CGFloat)
+    /// How far into that column a parent's name starts, to stand where the issues beside it start: 0 in a list, where
+    /// that is their first mark, the cards' padding on a board, where it is their text.
+    var nameInset: CGFloat = 0
     /// How much further in each level hangs, down to a few levels, as the issues under it do.
     var indent: (step: CGFloat, deepest: Int) = (CardTreeLines.indent, CardTreeLines.deepest)
     /// The room above it to the row before, which the epic's line beside a header inside the epic's group bridges, as
@@ -83,7 +87,6 @@ struct GroupHeader: View {
     @ScaledMetric(relativeTo: .subheadline) private var iconSize: CGFloat = GroupHeaderLook.iconSize
     @ScaledMetric(relativeTo: .subheadline) private var line: CGFloat = GroupHeaderLook.line
     @ScaledMetric(relativeTo: .subheadline) private var arrowScale: CGFloat = 1.2
-    @ScaledMetric(relativeTo: .subheadline) private var parentArrowSize: CGFloat = GroupHeaderLook.parentArrowSize
     private var nameFont: Font { .subheadline.weight(.semibold) }
     private var parentNameFont: Font { .subheadline.weight(.medium) }
     private var countFont: Font { .subheadline }
@@ -92,7 +95,6 @@ struct GroupHeader: View {
     private var iconSize: CGFloat { GroupHeaderLook.iconSize }
     private var line: CGFloat { GroupHeaderLook.line }
     private var arrowScale: CGFloat { 1 }
-    private var parentArrowSize: CGFloat { GroupHeaderLook.parentArrowSize }
     private var nameFont: Font { Font(GroupHeaderLook.nameFont as CTFont) }
     private var parentNameFont: Font { Font(GroupHeaderLook.parentNameFont as CTFont) }
     private var countFont: Font { Font(GroupHeaderLook.countFont as CTFont) }
@@ -135,7 +137,7 @@ struct GroupHeader: View {
             // The arrow's place; the Canvas behind draws it.
             Color.clear.frame(width: GroupHeaderLook.arrowBox, height: line)
         }
-        .padding(.leading, column.x + column.width + GroupHeaderLook.spacing)
+        .padding(.leading, parent ? column.x + nameInset : column.x + column.width + GroupHeaderLook.spacing)
         .padding(.trailing, trailing)
         .padding(.top, GroupHeaderLook.top)
         .padding(.bottom, GroupHeaderLook.bottom)
@@ -149,19 +151,14 @@ struct GroupHeader: View {
                 let scale = context.environment.displayScale
                 func pixel(_ x: CGFloat) -> CGFloat { ((x - 0.5) * scale).rounded() / scale }
                 if !group.folded {
+                    // From under the epic's icon, or from under a parent's name and the line below it, as from a parent
+                    // issue.
                     let x = pixel(column.x + column.width / 2)
-                    context.fill(Path(CGRect(x: x, y: icon.maxY + 3, width: 1, height: max(0, size.height - icon.maxY - 3))), with: .color(Theme.treeLine))
+                    let top = parent ? size.height - GroupHeaderLook.bottom + GroupHeaderLook.lineGap : icon.maxY + 3
+                    context.fill(Path(CGRect(x: x, y: top, width: 1, height: max(0, size.height - top))), with: .color(Theme.treeLine))
                 }
-                switch group.kind {
-                case .epic:
+                if !parent {
                     context.draw(Marks.epic(in: icon), mark: Theme.epic)
-                case .parent:
-                    context.draw(
-                        Text(Image(systemName: GroupHeaderLook.parentSymbol))
-                            .font(.system(size: parentArrowSize, weight: .semibold))
-                            .foregroundStyle(Theme.textTertiary),
-                        at: CGPoint(x: icon.midX, y: icon.midY), anchor: .center
-                    )
                 }
                 let arrow = CGRect(x: size.width - trailing - GroupHeaderLook.arrowBox, y: midY - GroupHeaderLook.arrowBox / 2, width: GroupHeaderLook.arrowBox, height: GroupHeaderLook.arrowBox)
                 if hoveringFold {
@@ -180,9 +177,11 @@ struct GroupHeader: View {
                     let scale = context.environment.displayScale
                     func pixel(_ x: CGFloat) -> CGFloat { ((x - 0.5) * scale).rounded() / scale + 0.5 }
                     let column = column
+                    // To the epic's icon, or to a parent's name.
+                    let branchEnd = parent ? column.x + nameInset - 3 : column.x + (column.width - iconSize) / 2 - 3
                     let lines = Marks.treeLines(
                         place, deepest: indent.deepest, lineX: { pixel(iconColumn.x + CGFloat($0) * indent.step + iconColumn.width / 2) },
-                        branchY: gap + GroupHeaderLook.top + line / 2, branchEnd: column.x + (column.width - iconSize) / 2 - 3, height: size.height
+                        branchY: gap + GroupHeaderLook.top + line / 2, branchEnd: branchEnd, height: size.height
                     )
                     context.stroke(lines, with: .color(Theme.treeLine), lineWidth: 1)
                 }
@@ -233,19 +232,21 @@ extension GroupHeader {
     /// line under a parent's name: what a board places its rows with before the header has been drawn.
     static func height(
         of group: Nesting.Group, detail: String?, place: Nesting.Place, width: CGFloat, iconColumn: (x: CGFloat, width: CGFloat),
-        trailing: CGFloat, lineLimit: Int
+        nameInset: CGFloat = 0, trailing: CGFloat, lineLimit: Int
     ) -> CGFloat {
         let look = GroupHeaderLook.self
         let font = group.kind == .parent ? look.parentNameFont : look.nameFont
-        let name = width - nameX(place: place, iconColumn: iconColumn) - look.arrowGap - look.arrowBox - trailing
+        let name = width - nameX(of: group.kind, place: place, iconColumn: iconColumn, nameInset: nameInset) - look.arrowGap - look.arrowBox - trailing
         let lines = MeasuredHeights.lines(of: group.head.title + look.countGap + "\(group.count)", font: font, width: name, limit: lineLimit)
         let detailHeight = detail == nil ? 0 : look.detailGap + look.detailLine
         return max(look.line, MeasuredHeights.textHeight(lines: lines, font: font)) + detailHeight + look.top + look.bottom
     }
 
-    /// Where the name starts, at the header's depth.
-    static func nameX(place: Nesting.Place, iconColumn: (x: CGFloat, width: CGFloat)) -> CGFloat {
-        iconColumn.x + CGFloat(min(place.depth, CardTreeLines.deepest)) * CardTreeLines.indent + iconColumn.width + GroupHeaderLook.spacing
+    /// Where the name starts, at the header's depth: after an epic's icon, or for a parent where the issues beside it
+    /// start.
+    static func nameX(of kind: Nesting.Group.Kind, place: Nesting.Place, iconColumn: (x: CGFloat, width: CGFloat), nameInset: CGFloat) -> CGFloat {
+        let column = iconColumn.x + CGFloat(min(place.depth, CardTreeLines.deepest)) * CardTreeLines.indent
+        return kind == .parent ? column + nameInset : column + iconColumn.width + GroupHeaderLook.spacing
     }
 
     /// Where the arrow is in a header with this frame, for clicks: its square, centred on the first line.
@@ -259,11 +260,14 @@ extension GroupHeader {
 
     /// Where the line under a parent's name is in a header with this frame, for clicks: as wide as its text, with a
     /// little room around it.
-    static func detailFrame(_ detail: String, in frame: CGRect, place: Nesting.Place, iconColumn: (x: CGFloat, width: CGFloat)) -> CGRect {
+    static func detailFrame(
+        _ detail: String, in frame: CGRect, place: Nesting.Place, iconColumn: (x: CGFloat, width: CGFloat), nameInset: CGFloat
+    ) -> CGRect {
         let look = GroupHeaderLook.self
         let width = MeasuredHeights.width(of: detail, font: look.detailFont)
         return CGRect(
-            x: frame.minX + nameX(place: place, iconColumn: iconColumn) - 5, y: frame.maxY - look.bottom - look.detailLine,
+            x: frame.minX + nameX(of: .parent, place: place, iconColumn: iconColumn, nameInset: nameInset) - 5,
+            y: frame.maxY - look.bottom - look.detailLine,
             width: width + 10, height: look.detailLine
         )
     }

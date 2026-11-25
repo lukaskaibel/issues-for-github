@@ -1365,7 +1365,7 @@ public final class AppModel {
         }
         for option in statuses {
             let (shown, nesting) = arranged(items.filter { $0.statusId == option.id })
-            if inMilestone, shown.isEmpty, option.statusCategory == .backlog { continue }
+            if inMilestone, nesting.members.isEmpty, option.statusCategory == .backlog { continue }
             result.append(BoardColumn(
                 id: option.id, option: option, glyph: glyph(projectId: projectId, optionId: option.id),
                 items: shown, nesting: nesting
@@ -1430,8 +1430,8 @@ public final class AppModel {
         return result
     }
 
-    /// A board's columns as the list's sections, empty ones left out. The list leads with what is being worked on,
-    /// like Linear does.
+    /// A board's columns as the list's sections, empty ones left out: those without issues, not those whose issues
+    /// are all folded away under a header. The list leads with what is being worked on, like Linear does.
     private func listSections(_ columns: [BoardColumn]) -> [ListSection] {
         func rank(_ column: BoardColumn) -> Int {
             guard let option = column.option else { return 3 }
@@ -1449,7 +1449,7 @@ public final class AppModel {
             // Within "started", later columns (closer to done) come first.
             return ra == 0 ? a.offset > b.offset : a.offset < b.offset
         }.map(\.element)
-        return ordered.filter { !$0.items.isEmpty }.map {
+        return ordered.filter { !$0.nesting.members.isEmpty }.map {
             ListSection(id: $0.id, title: $0.title, glyph: $0.glyph, option: $0.option, items: $0.items, nesting: $0.nesting)
         }
     }

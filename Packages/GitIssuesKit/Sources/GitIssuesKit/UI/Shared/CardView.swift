@@ -853,26 +853,19 @@ struct CardTreeLines: View {
 }
 
 /// The issues standing together in a column under a header, an epic's or a parent's, while they are dragged by their
-/// header to move them all: a card with the name, its icon, and how many of its issues come along, on a card for each
-/// of them (`CardStackEdge`).
+/// header to move them all: a card with the name, an epic's icon, and how many of its issues come along, on a card for
+/// each of them (`CardStackEdge`).
 struct GroupCard: View {
     var group: Nesting.Group
     var width: CGFloat
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
-            Group {
-                switch group.kind {
-                case .epic:
-                    EpicIcon(size: CardView.lineHeight - 2)
-                case .parent:
-                    Image(systemName: GroupHeaderLook.parentSymbol)
-                        .font(.system(size: CardView.metaSize, weight: .semibold))
-                        .foregroundStyle(Theme.textTertiary)
-                        .frame(width: CardView.lineHeight - 2)
-                }
+            // A parent's sub-issues come as the parent's card would, without an icon, as their header shows it.
+            if group.kind == .epic {
+                EpicIcon(size: CardView.lineHeight - 2)
+                    .frame(height: CardView.lineHeight)
             }
-            .frame(height: CardView.lineHeight)
             Text(group.head.title)
                 .font(.system(size: CardView.titleSize, weight: .medium))
                 .foregroundStyle(Theme.text)

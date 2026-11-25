@@ -218,13 +218,19 @@ struct SharedPiecesTests {
         let plain = GroupHeader.height(of: group, detail: nil, place: .init(), width: 240, iconColumn: (0, 16), trailing: 6, lineLimit: 3)
         let height = GroupHeader.height(of: group, detail: "#9 · In Review", place: .init(), width: 240, iconColumn: (0, 16), trailing: 6, lineLimit: 3)
         #expect(height == plain + look.detailGap + look.detailLine)
-        // Its line sits at the bottom of the header, from where the name starts; one level in, it starts one level further in.
+        // Its line sits at the bottom of the header, from where the name starts: with no icon before it, where the text
+        // of the cards beside it does. One level in, it starts one level further in.
         let frame = CGRect(x: 100, y: 200, width: 240, height: height)
-        let detail = GroupHeader.detailFrame("#9 · In Review", in: frame, place: .init(), iconColumn: (0, 16))
+        let detail = GroupHeader.detailFrame("#9 · In Review", in: frame, place: .init(), iconColumn: (0, 16), nameInset: 10)
         #expect(detail.maxY == frame.maxY - look.bottom)
-        #expect(detail.minX == frame.minX + 16 + look.spacing - 5)
-        let inside = GroupHeader.detailFrame("#9 · In Review", in: frame, place: .init(depth: 1, continues: [false]), iconColumn: (0, 16))
+        let start: CGFloat = 10 - 5
+        #expect(detail.minX == frame.minX + start)
+        let inside = GroupHeader.detailFrame("#9 · In Review", in: frame, place: .init(depth: 1, continues: [false]), iconColumn: (0, 16), nameInset: 10)
         #expect(inside.minX == detail.minX + CardTreeLines.indent)
+        // An epic's name comes after its icon; a parent's, without one, has more room.
+        let epicX = GroupHeader.nameX(of: .epic, place: .init(), iconColumn: (0, 16), nameInset: 10)
+        #expect(epicX == 16 + look.spacing)
+        #expect(GroupHeader.nameX(of: .parent, place: .init(), iconColumn: (0, 16), nameInset: 10) == 10)
     }
 
     @Test("The list's group header draws its arrow where a click folds it, under the section header's +")
