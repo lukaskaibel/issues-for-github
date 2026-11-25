@@ -1002,18 +1002,19 @@ struct IssueTable: NSViewRepresentable {
                 if let event = NSApp.currentEvent { header.click(at: header.convert(event.locationInWindow, from: nil)) }
                 return
             }
-            // A click on a header opens the epic or the parent; one on its arrow folds its issues away or shows them
-            // again, and one on the line beside a parent's name changes the parent's status.
+            // A click on an epic's header opens the epic, one on a parent's folds its sub-issues away or shows them
+            // again (the parent opens from its menu), and so does one on a header's arrow; one on the line beside a
+            // parent's name changes the parent's status.
             if entries.indices.contains(row), case .group(_, let line) = entries[row] {
                 let cell = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? GroupHeaderRowCell
                 let point = NSApp.currentEvent.flatMap { event in cell?.convert(event.locationInWindow, from: nil) }
-                if let cell, let point, cell.isOnFold(point) {
-                    model.toggleGroup(line.group)
-                } else if let cell, let point, let detail = cell.detailRect, detail.contains(point),
-                          let head = model.headIssue(of: line.group), cell.changesStatus {
+                if let cell, let point, let detail = cell.detailRect, detail.contains(point),
+                   let head = model.headIssue(of: line.group), cell.changesStatus {
                     Dropdown.show(below: detail, in: cell, model: model) { close in
                         ItemPicker(kind: .status, itemId: head.id, close: close)
                     }
+                } else if line.group.kind == .parent || (cell.flatMap { cell in point.map(cell.isOnFold) } ?? false) {
+                    model.toggleGroup(line.group)
                 } else if let head = model.headIssue(of: line.group) {
                     model.openFromClick(head)
                 }
@@ -1457,13 +1458,15 @@ final class HoverTableView: NSTableView {
 }
 
 /// The header over issues standing together in a section, with the marks `GroupHeader` draws on the board and on iPhone
-/// and iPad: an epic's icon, or for sub-issues of a parent elsewhere the sub-issue arrow in grey, at the start of the
-/// row, in the column of the priorities, where the line down to its issues starts; the name, in line with the issues'
-/// priorities, how many of its issues are there, for a parent its number and status after them in grey, and at the end
-/// of the row, under the section header's +, the arrow that folds them away. Inside an epic's group a parent's header
-/// hangs one level in, as an issue there does. All of it stands in the middle of the row, and so of the highlight under
-/// the pointer. A click opens the epic or the parent, one on the arrow folds its issues or shows them again, one on a
-/// parent's status changes it, and dragging it moves them all.
+/// and iPad: an epic's icon at the start of the row, in the column of the priorities, where the line down to its
+/// issues starts, and its name in line with the issues' priorities; for sub-issues of a parent elsewhere, the parent's
+/// name in grey where the priorities of the issues beside it are, as the parent's row would start, with the line down
+/// to its sub-issues from under it. Then how many of its issues are there, for a parent its number and status after
+/// them in grey, and at the end of the row, under the section header's +, the arrow that folds them away. Inside an
+/// epic's group a parent's header hangs one level in, as an issue there does. All of it stands in the middle of the
+/// row, and so of the highlight under the pointer. A click on an epic's header opens the epic, one on a parent's folds
+/// its sub-issues or shows them again, as one on the arrow does; one on a parent's status changes it, and dragging it
+/// moves them all.
 final class GroupHeaderRowCell: PaintedCell {
     private var line: GroupHeaderLine?
     /// What the header shows now.
@@ -1509,10 +1512,11 @@ final class GroupHeaderRowCell: PaintedCell {
     }
 
     private func updateToolTip() {
-        toolTip = if hoveringFold {
-            line?.group.foldLabel
-        } else if hoveringDetail {
+        toolTip = if hoveringDetail {
             line?.statusTooltip
+        } else if hoveringFold || line?.group.kind == .parent {
+            // A click anywhere on a parent's header folds its sub-issues.
+            line?.group.foldLabel
         } else {
             nil
         }
@@ -1584,36 +1588,32 @@ final class GroupHeaderRowCell: PaintedCell {
             ).fill()
         }
         let midY = bounds.midY
+        let parent = group.kind == .parent
         let column = (x: Self.iconColumn.x + shift, width: Self.iconColumn.width)
         let icon = CGRect(x: column.x + (column.width - look.iconSize) / 2, y: midY - look.iconSize / 2, width: look.iconSize, height: look.iconSize)
         // On a whole device pixel, as the lines through the rows under it are.
         let scale = window?.backingScaleFactor ?? 2
         if !group.folded {
+            // From under the epic's icon, or from under the parent's name, as from a parent's row.
             let x = ((column.x + column.width / 2 - 0.5) * scale).rounded() / scale
+            let top = parent ? midY + look.line / 2 + look.lineGap : icon.maxY + 3
             NSColor(Theme.treeLine).setFill()
-            NSRect(x: x, y: icon.maxY + 3, width: 1, height: max(0, bounds.height - icon.maxY - 3)).fill()
+            NSRect(x: x, y: top, width: 1, height: max(0, bounds.height - top)).fill()
         }
         if depth > 0 {
             // The epic's line beside a parent's header inside the epic's group, as beside an issue there.
             let base = Self.iconColumn.x
             let path = Marks.treeLines(
                 line.place, deepest: IssueRowCell.deepestIndent, lineX: { base + CGFloat($0) * IssueRowCell.indent + 7 },
-                branchY: midY, branchEnd: icon.minX - 3, height: bounds.height
+                branchY: midY, branchEnd: (parent ? column.x : icon.minX) - 3, height: bounds.height
             )
             context.draw(
                 [Marks.Shape(path: path, stroke: StrokeStyle(lineWidth: 1))],
                 mark: NSColor(Theme.treeLine).cgColor, onColor: NSColor(Theme.treeLine).cgColor
             )
         }
-        switch group.kind {
-        case .epic:
+        if !parent {
             PlanningGlyph.drawEpic(in: icon, cg: context)
-        case .parent:
-            if let arrow = Self.parentArrow {
-                arrow.draw(in: NSRect(
-                    x: icon.midX - arrow.size.width / 2, y: icon.midY - arrow.size.height / 2, width: arrow.size.width, height: arrow.size.height
-                ))
-            }
         }
         let arrow = NSRect(x: bounds.width - Self.trailing - look.arrowBox, y: midY - look.arrowBox / 2, width: look.arrowBox, height: look.arrowBox)
         foldRect = arrow
@@ -1625,9 +1625,9 @@ final class GroupHeaderRowCell: PaintedCell {
             folded: group.folded, center: NSPoint(x: arrow.midX, y: arrow.midY),
             color: NSColor(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
         )
-        // The name starts where the priorities of the issues under it do; a parent's number and status follow the
-        // count, and the name gives way to them.
-        var x = column.x + IssueRowCell.indent
+        // An epic's name starts where the priorities of the issues under it do, a parent's where those of the issues
+        // beside it do; a parent's number and status follow the count, and the name gives way to them.
+        var x = parent ? column.x : column.x + IssueRowCell.indent
         let titleSize = title.size()
         let countSize = count.size()
         let detailSize = detail.size()
@@ -1653,14 +1653,6 @@ final class GroupHeaderRowCell: PaintedCell {
             text.draw(in: NSRect(x: x, y: midY - detailSize.height / 2, width: width, height: detailSize.height))
             detailRect = rect
         }
-    }
-
-    /// The sub-issue arrow before a parent's name, in grey.
-    private static var parentArrow: NSImage? {
-        NSImage(systemSymbolName: GroupHeaderLook.parentSymbol, accessibilityDescription: nil)?.withSymbolConfiguration(
-            NSImage.SymbolConfiguration(pointSize: GroupHeaderLook.parentArrowSize, weight: .semibold)
-                .applying(.init(paletteColors: [NSColor(Theme.textTertiary)]))
-        )
     }
 }
 

@@ -283,7 +283,7 @@ final class PhonePlanningTests: AppTestCase {
     }
 
     /// Sub-issues whose parent is in another status stand together under a quiet header of the parent, which names
-    /// its number and status, folds them, and opens the parent.
+    /// its number and status and folds them when tapped; its menu opens the parent.
     func testSubIssuesOfAParentElsewhereStandTogetherUnderItsHeader() {
         launch()
         openProjectTab("Git Issues")
@@ -300,14 +300,15 @@ final class PhonePlanningTests: AppTestCase {
         XCTAssertGreaterThan(first.frame.minY, header.frame.maxY - 1)
         snapshot("Sub-issues under their parent's header")
 
-        // The arrow folds them away; the header itself opens the parent.
-        let fold = element("fold-parent-Drag cards between columns with spring physics")
-        fold.tap()
+        // A tap on the header folds them away and shows them again; its menu opens the parent.
+        header.tap()
         waitGone(first)
         waitForValue(header, equalTo: "Folded")
-        fold.tap()
-        wait(first)
         header.tap()
+        wait(first)
+        openCardMenu(header, showing: "Open Parent Issue")
+        button("Open Parent Issue").tap()
+        closedCardMenu()
         let title = element("issue-title")
         wait(title)
         XCTAssertEqual(title.value as? String, "Drag cards between columns with spring physics")
@@ -527,7 +528,7 @@ final class PadPlanningTests: AppTestCase {
     }
 
     /// In Done, the sub-issues of #9, which is In Progress, stand together under a quiet header of #9, one level
-    /// into the group of its epic, and its arrow folds them.
+    /// into the group of its epic, and a tap on it folds them.
     func testSubIssuesOfAParentElsewhereStandTogetherInTheColumn() {
         XCUIDevice.shared.orientation = .landscapeLeft
         launch()
@@ -547,6 +548,14 @@ final class PadPlanningTests: AppTestCase {
         XCTAssertNotNil(epic)
         if let epic { XCTAssertGreaterThan(header.frame.minY, epic.frame.maxY - 1) }
         snapshot("iPad sub-issues under their parent's header")
+
+        // A tap on the header folds them away and shows them again.
+        header.tap()
+        waitGone(first)
+        waitForValue(header, equalTo: "Folded")
+        snapshot("iPad sub-issues folded under their parent's header")
+        header.tap()
+        wait(first)
     }
 
     /// Dragging the header over an epic's cards moves them all to the column it is dropped on, and the message
