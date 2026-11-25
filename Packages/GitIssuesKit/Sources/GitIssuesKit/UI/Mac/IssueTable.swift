@@ -1003,8 +1003,8 @@ struct IssueTable: NSViewRepresentable {
                 return
             }
             // A click on an epic's header opens the epic, one on a parent's folds its sub-issues away or shows them
-            // again (the parent opens from its menu), and so does one on a header's arrow; one on the line beside a
-            // parent's name changes the parent's status.
+            // again (the parent opens from its menu), and so does one on a header's arrow; over a single issue, which
+            // doesn't fold, a click opens the parent too. One on the line beside a parent's name changes its status.
             if entries.indices.contains(row), case .group(_, let line) = entries[row] {
                 let cell = sender.view(atColumn: 0, row: row, makeIfNecessary: false) as? GroupHeaderRowCell
                 let point = NSApp.currentEvent.flatMap { event in cell?.convert(event.locationInWindow, from: nil) }
@@ -1013,7 +1013,7 @@ struct IssueTable: NSViewRepresentable {
                     Dropdown.show(below: detail, in: cell, model: model) { close in
                         ItemPicker(kind: .status, itemId: head.id, close: close)
                     }
-                } else if line.group.kind == .parent || (cell.flatMap { cell in point.map(cell.isOnFold) } ?? false) {
+                } else if line.group.canFold, line.group.kind == .parent || (cell.flatMap { cell in point.map(cell.isOnFold) } ?? false) {
                     model.toggleGroup(line.group)
                 } else if let head = model.headIssue(of: line.group) {
                     model.openFromClick(head)
@@ -1514,8 +1514,8 @@ final class GroupHeaderRowCell: PaintedCell {
     private func updateToolTip() {
         toolTip = if hoveringDetail {
             line?.statusTooltip
-        } else if hoveringFold || line?.group.kind == .parent {
-            // A click anywhere on a parent's header folds its sub-issues.
+        } else if line?.group.canFold == true, hoveringFold || line?.group.kind == .parent {
+            // A click anywhere on a parent's header folds its sub-issues, where there are two or more.
             line?.group.foldLabel
         } else {
             nil
@@ -1540,7 +1540,8 @@ final class GroupHeaderRowCell: PaintedCell {
             .foregroundColor: NSColor(parent ? Theme.textSecondary : Theme.text),
             .paragraphStyle: truncating,
         ])
-        count = NSAttributedString(string: line.map { "\($0.group.count)" } ?? "", attributes: [
+        // Over a single issue the header has no count.
+        count = NSAttributedString(string: line.flatMap { $0.group.canFold ? "\($0.group.count)" : nil } ?? "", attributes: [
             .font: GroupHeaderLook.countFont,
             .foregroundColor: NSColor(Theme.textTertiary),
         ])
@@ -1550,7 +1551,7 @@ final class GroupHeaderRowCell: PaintedCell {
         ])
         if let line {
             setAccessibilityLabel(line.group.spoken(detail: line.detail))
-            setAccessibilityValue(String(localized: line.group.folded ? .sectionFolded : .sectionOpen))
+            setAccessibilityValue(line.group.canFold ? String(localized: line.group.folded ? .sectionFolded : .sectionOpen) : nil)
         }
         updateToolTip()
         needsDisplay = true
@@ -1615,25 +1616,29 @@ final class GroupHeaderRowCell: PaintedCell {
         if !parent {
             PlanningGlyph.drawEpic(in: icon, cg: context)
         }
+        // Over a single issue there is no arrow, and the texts have the row up to where it would be.
         let arrow = NSRect(x: bounds.width - Self.trailing - look.arrowBox, y: midY - look.arrowBox / 2, width: look.arrowBox, height: look.arrowBox)
-        foldRect = arrow
-        if hoveringFold {
-            NSColor(Theme.partHover).setFill()
-            NSBezierPath(roundedRect: arrow, xRadius: 5, yRadius: 5).fill()
+        let end = group.canFold ? arrow.minX - look.arrowGap : bounds.width - Self.trailing
+        foldRect = group.canFold ? arrow : nil
+        if group.canFold {
+            if hoveringFold {
+                NSColor(Theme.partHover).setFill()
+                NSBezierPath(roundedRect: arrow, xRadius: 5, yRadius: 5).fill()
+            }
+            IssueRowCell.drawFoldArrow(
+                folded: group.folded, center: NSPoint(x: arrow.midX, y: arrow.midY),
+                color: NSColor(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
+            )
         }
-        IssueRowCell.drawFoldArrow(
-            folded: group.folded, center: NSPoint(x: arrow.midX, y: arrow.midY),
-            color: NSColor(hoveringFold ? Theme.textSecondary : Theme.textTertiary)
-        )
         // An epic's name starts where the priorities of the issues under it do, a parent's where those of the issues
         // beside it do; a parent's number and status follow the count, and the name gives way to them.
         var x = parent ? column.x : column.x + IssueRowCell.indent
         let titleSize = title.size()
         let countSize = count.size()
         let detailSize = detail.size()
-        let gap = (look.countGap as NSString).size(withAttributes: [.font: look.countFont]).width
+        let gap = count.length > 0 ? (look.countGap as NSString).size(withAttributes: [.font: look.countFont]).width : 0
         let detailGap: CGFloat = detail.length > 0 ? 14 : 0
-        let room = arrow.minX - look.arrowGap - countSize.width - gap - detailGap - detailSize.width - x
+        let room = end - countSize.width - gap - detailGap - detailSize.width - x
         let titleWidth = min(titleSize.width, max(room, 40))
         title.draw(in: NSRect(x: x, y: midY - titleSize.height / 2, width: titleWidth, height: titleSize.height))
         x += titleWidth + gap
@@ -1641,7 +1646,7 @@ final class GroupHeaderRowCell: PaintedCell {
         x += countSize.width + detailGap
         detailRect = nil
         if detail.length > 0 {
-            let width = min(detailSize.width, max(0, arrow.minX - look.arrowGap - x))
+            let width = min(detailSize.width, max(0, end - x))
             let rect = NSRect(x: x - 5, y: midY - look.detailLine / 2 - 1, width: width + 10, height: look.detailLine + 2)
             if hoveringDetail {
                 NSColor(Theme.partHover).setFill()
@@ -2030,11 +2035,14 @@ enum GroupMenu {
             submenu.submenu = move
             menu.addItem(submenu)
         }
-        let fold = ClosureMenuItem(String(localized: group.foldAction)) { [model] in
-            model.toggleGroup(group)
+        // A single issue doesn't fold away.
+        if group.canFold {
+            let fold = ClosureMenuItem(String(localized: group.foldAction)) { [model] in
+                model.toggleGroup(group)
+            }
+            fold.image = MenuIcons.symbol(group.folded ? "chevron.down" : "chevron.right")
+            menu.addItem(fold)
         }
-        fold.image = MenuIcons.symbol(group.folded ? "chevron.down" : "chevron.right")
-        menu.addItem(fold)
         ItemMenuBuilder.showImages(in: menu)
         return menu
     }

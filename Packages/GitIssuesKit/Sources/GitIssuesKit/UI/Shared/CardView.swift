@@ -872,11 +872,13 @@ struct GroupCard: View {
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, minHeight: CardView.lineHeight, alignment: .leading)
-            Text("\(group.count)")
-                .font(.system(size: CardView.metaSize))
-                .monospacedDigit()
-                .foregroundStyle(Theme.textTertiary)
-                .frame(height: CardView.lineHeight)
+            if group.canFold {
+                Text("\(group.count)")
+                    .font(.system(size: CardView.metaSize))
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.textTertiary)
+                    .frame(height: CardView.lineHeight)
+            }
         }
         .padding(.horizontal, CardView.padding.width)
         .padding(.vertical, CardView.padding.height)

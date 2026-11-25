@@ -514,7 +514,8 @@ struct GroupCardHeader: View {
 
 /// What a tap on a header does on iPhone and iPad: on an epic's it opens the epic, and on the arrow at its end, with room
 /// around the arrow for a finger, it folds the epic's issues or shows them again; anywhere on a parent's it folds the
-/// sub-issues, and the parent opens from the menu, or for VoiceOver from an action.
+/// sub-issues, and the parent opens from the menu, or for VoiceOver from an action. Over a single issue, which doesn't
+/// fold, a tap opens the epic or the parent.
 private struct GroupHeaderTaps<Header: View>: View {
     @Environment(AppModel.self) private var model
     var group: Nesting.Group
@@ -526,20 +527,22 @@ private struct GroupHeaderTaps<Header: View>: View {
 
     var body: some View {
         let parent = group.kind == .parent
+        // A parent's header folds wherever it is tapped, where there is something to fold.
+        let folds = parent && group.canFold
         Button {
-            if parent { model.toggleGroup(group) } else { open() }
+            if folds { model.toggleGroup(group) } else { open() }
         } label: {
             header.contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(group.spoken(detail: detail)))
-        .accessibilityValue(Text(group.folded ? .sectionFolded : .sectionOpen))
-        .modifier(OpenParent(open: parent && model.headIssue(of: group) != nil ? open : nil))
+        .accessibilityValue(group.canFold ? Text(group.folded ? .sectionFolded : .sectionOpen) : Text(verbatim: ""))
+        .modifier(OpenParent(open: folds && model.headIssue(of: group) != nil ? open : nil))
         .modifier(StepActions(step: step))
         .accessibilityIdentifier("\(parent ? "parent" : "epic")-group-\(group.head.title)")
         .overlay(alignment: .trailing) {
-            // A parent's header folds wherever it is tapped.
-            if !parent {
+            // A parent's header folds wherever it is tapped; a single issue doesn't fold.
+            if !parent, group.canFold {
                 Button {
                     model.toggleGroup(group)
                 } label: {
@@ -640,10 +643,12 @@ struct GroupMenuItems: View {
                 }
             }
         }
-        Button {
-            model.toggleGroup(group)
-        } label: {
-            Label(group.foldAction, systemImage: group.folded ? "chevron.down" : "chevron.right")
+        if group.canFold {
+            Button {
+                model.toggleGroup(group)
+            } label: {
+                Label(group.foldAction, systemImage: group.folded ? "chevron.down" : "chevron.right")
+            }
         }
     }
 }

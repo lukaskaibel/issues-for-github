@@ -430,15 +430,16 @@ struct ColumnView: View {
                     // The release of a deep press, which has opened the peek instead of being a click.
                     if model.deepPress.openedPeek { return }
                     // A click on an epic's header opens the epic, one on a parent's folds its sub-issues away or shows
-                    // them (the parent opens from its menu), and so does one on a header's arrow; one on the line under a
-                    // parent's name changes the parent's status.
+                    // them (the parent opens from its menu), and so does one on a header's arrow; over a single issue,
+                    // which doesn't fold, a click opens the parent too. One on the line under a parent's name changes
+                    // the parent's status.
                     if let header = drag.header(at: value.location, in: column.id),
                        let group = column.nesting.groups.first(where: { $0.contentId == header.head }) {
                         if drag.isOnDetail(value.location, of: header), let head = model.headIssue(of: group),
                            model.headStatus(of: group, projectId: model.projectId(of: group, in: column.nesting)) != nil {
                             let origin = drag.boardFrameInWindow.origin
                             model.showPicker(.status, for: head, below: header.detail.offsetBy(dx: origin.x, dy: origin.y))
-                        } else if group.kind == .parent || drag.isOnFold(value.location, of: header) {
+                        } else if group.canFold, group.kind == .parent || drag.isOnFold(value.location, of: header) {
                             model.toggleGroup(group)
                         } else if let head = model.headIssue(of: group) {
                             model.openFromClick(head)
@@ -596,7 +597,7 @@ struct ColumnView: View {
                         )
                         : nil
                 }
-                rows.append(.init(part: .header(group.contentId, detail: detailFrame), indent: 0, height: height))
+                rows.append(.init(part: .header(group.contentId, detail: detailFrame, folds: group.canFold), indent: 0, height: height))
             case .groupSlot(let group, let depth):
                 let indent = CGFloat(min(depth, CardTreeLines.deepest)) * CardTreeLines.indent
                 let height = measured.height(GroupSlot.measure(group.group, width: width - indent))
@@ -671,8 +672,8 @@ private struct ColumnTooltip: ViewModifier {
         let pointer = hover.current
         if let header = pointer.header, let group = column.nesting.groups.first(where: { $0.contentId == header.head }) {
             if header.onDetail, let head = model.headIssue(of: group) { return model.tooltip(.status, for: head) }
-            // A click anywhere on a parent's header folds its sub-issues.
-            if header.onFold || group.kind == .parent { return group.foldLabel }
+            // A click anywhere on a parent's header folds its sub-issues, where there are two or more.
+            if group.canFold, header.onFold || group.kind == .parent { return group.foldLabel }
             return ""
         }
         guard let card = pointer.card, let item = column.items.first(where: { $0.id == card.id }) else { return "" }
@@ -758,7 +759,7 @@ private struct GroupHeaderView: View {
                 .frame(width: width, height: height)
                 .accessibilityElement()
                 .accessibilityLabel(Text(group.spoken(detail: detail)))
-                .accessibilityValue(Text(group.folded ? .sectionFolded : .sectionOpen))
+                .accessibilityValue(group.canFold ? Text(group.folded ? .sectionFolded : .sectionOpen) : Text(verbatim: ""))
                 .accessibilityAddTraits(.isButton)
                 .modifier(GroupHeaderActions(group: group, open: head.map { head in { model.open(head) } }) { model.toggleGroup(group) })
         }
@@ -766,26 +767,26 @@ private struct GroupHeaderView: View {
 }
 
 /// What VoiceOver does with a header, as a click does: on an epic's it opens the epic and folds its issues as a named
-/// action; on a parent's it folds the sub-issues and opens the parent as a named action, where the app has it.
+/// action; on a parent's it folds the sub-issues and opens the parent as a named action, where the app has it. Over a
+/// single issue, which doesn't fold, it opens the epic or the parent.
 private struct GroupHeaderActions: ViewModifier {
     var group: Nesting.Group
     var open: (() -> Void)?
     var fold: () -> Void
 
     func body(content: Content) -> some View {
-        switch group.kind {
-        case .epic:
+        if !group.canFold {
+            content.accessibilityAction { open?() }
+        } else if group.kind == .epic {
             content
                 .accessibilityAction { open?() }
                 .accessibilityAction(named: Text(group.foldAction), fold)
-        case .parent:
-            if let open {
-                content
-                    .accessibilityAction(.default, fold)
-                    .accessibilityAction(named: Text(.openParentIssueCommand), open)
-            } else {
-                content.accessibilityAction(.default, fold)
-            }
+        } else if let open {
+            content
+                .accessibilityAction(.default, fold)
+                .accessibilityAction(named: Text(.openParentIssueCommand), open)
+        } else {
+            content.accessibilityAction(.default, fold)
         }
     }
 }

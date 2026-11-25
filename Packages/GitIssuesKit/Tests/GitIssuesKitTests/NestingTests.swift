@@ -201,13 +201,21 @@ struct EpicGroupTests {
         #expect(!nesting.namesParent(of: Self.item(2, parent: 40)))
     }
 
-    @Test("A single issue of an epic stands alone and names the epic")
-    func leavesASingleIssueAlone() {
-        let (_, nesting) = Self.arrange([Self.item(1, parent: 40), Self.item(2), Self.item(3, parent: 41), Self.item(4, parent: 41)])
-        #expect(rows(nesting) == ["1", "2", "E41×2", "3", "4"])
-        #expect(nesting.groupOf["item-1"] == nil)
+    @Test("A single issue of an epic stands under the epic's header too, which doesn't fold and doesn't name the epic again")
+    func groupsASingleIssue() {
+        let items = [Self.item(1, parent: 40), Self.item(2), Self.item(3, parent: 41), Self.item(4, parent: 41)]
+        let (shown, nesting) = Self.arrange(items)
+        #expect(rows(nesting) == ["E40×1", "1", "2", "E41×2", "3", "4"])
+        #expect(numbers(shown) == [1, 2, 3, 4])
+        #expect(nesting.groupOf["item-1"] == "issue-40")
         #expect(nesting.epicOf["item-1"] == "issue-40")
-        #expect(nesting.namesParent(of: Self.item(1, parent: 40)))
+        #expect(nesting.place(of: "item-1") == Nesting.Place(depth: 1, continues: [false]))
+        #expect(!nesting.namesParent(of: Self.item(1, parent: 40)))
+        #expect(nesting.groups.map(\.canFold) == [false, true])
+        // Folded while it had more, the header over one issue still shows it.
+        let (folded, foldedNesting) = Self.arrange(items, foldedEpics: ["issue-40", "issue-41"])
+        #expect(numbers(folded) == [1, 2])
+        #expect(foldedNesting.groups.map(\.folded) == [false, true])
     }
 
     @Test("Sub-issues in an epic's group hang one level further in, and count for the epic")
@@ -375,9 +383,10 @@ struct EpicGroupTests {
         #expect(landing.epic == "issue-40")
         #expect(numbers(landing.peers) == [9])
         #expect(landing.rank == 1)
-        // Right after #9, before #10.
+        // Right after #9 under the epic's header, before #10. Rows: 8, the header, 9, [here], 10.
         #expect(landing.slot == 2)
-        #expect(landing.row == 2)
+        #expect(landing.depth == 1)
+        #expect(landing.row == 3)
     }
 
     @Test("An epic's issues dropped on the epic's group in another column join it, one level in")
@@ -517,11 +526,28 @@ struct ParentGroupTests {
         #expect(nesting.members(of: Self.parentGroup(9)).map(\.id) == ["item-13", "item-28"])
     }
 
-    @Test("A single sub-issue of a parent elsewhere stands alone and names its parent")
-    func leavesASingleSubIssueAlone() {
-        let (_, nesting) = Self.arrange([Self.item(1), Self.item(13, parent: 9), Self.item(2)])
-        #expect(rows(nesting) == ["1", "13", "2"])
-        #expect(nesting.namesParent(of: Self.item(13, parent: 9)))
+    @Test("A single sub-issue of a parent elsewhere stands under its header too, which doesn't fold")
+    func groupsASingleSubIssue() {
+        let items = [Self.item(1), Self.item(13, parent: 9), Self.item(2)]
+        let (shown, nesting) = Self.arrange(items)
+        #expect(rows(nesting) == ["1", "P9×1", "13", "2"])
+        #expect(numbers(shown) == [1, 13, 2])
+        #expect(nesting.place(of: "item-13") == Nesting.Place(depth: 1, continues: [false]))
+        #expect(!nesting.namesParent(of: Self.item(13, parent: 9)))
+        #expect(nesting.groups.first?.canFold == false)
+        // Folded while it had more, the header over one issue still shows it.
+        let (folded, foldedNesting) = Self.arrange(items, folded: ["issue-9"])
+        #expect(numbers(folded) == [1, 13, 2])
+        #expect(foldedNesting.groups.first?.folded == false)
+    }
+
+    @Test("A single sub-issue with its own sub-issue under it still folds under its parent's header")
+    func foldsASingleSubIssueWithItsOwn() {
+        let (shown, nesting) = Self.arrange([Self.item(13, parent: 9), Self.item(30, parent: 13)], folded: ["issue-9"])
+        #expect(rows(nesting) == ["P9×2"])
+        #expect(shown.isEmpty)
+        #expect(nesting.groups.first?.canFold == true)
+        #expect(nesting.groups.first?.folded == true)
     }
 
     @Test("Switched off, sub-issues of a parent elsewhere stand where they are, each naming its parent")

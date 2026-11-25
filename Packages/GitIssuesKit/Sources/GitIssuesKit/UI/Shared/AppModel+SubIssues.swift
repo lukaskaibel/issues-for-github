@@ -148,6 +148,8 @@ extension AppModel {
     /// Folds the issues under a group's header away on boards and in lists, or shows them again: an epic's issues, or
     /// the sub-issues of a parent elsewhere. The keyboard focus on one of them is let go.
     func toggleGroup(_ group: Nesting.Group) {
+        // A single issue doesn't fold away under its header.
+        guard group.canFold else { return }
         setGroup(group.kind, group.contentId, folded: !isFolded(group.kind, group.contentId))
     }
 

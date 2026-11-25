@@ -151,8 +151,13 @@ final class DropOntoIssueTests: AppTestCase {
         drag(child, onto: parent)
         wait(notice("1 issue made a sub-issue of #7"), 15)
         waitForLabel(child, containing: "Sub-issue of #7")
-        // Back in Todo, beside the cards it stood with.
-        XCTAssertEqual(child.frame.minX, neighbour.frame.minX, accuracy: 1)
+        // Back in Todo, beside the cards it stood with, under a grey header of #7, which is in another column.
+        let header = element("parent-group-Sub-issue tree in issue detail")
+        wait(header)
+        XCTAssertTrue(neighbour.frame.minX < header.frame.midX && header.frame.midX < neighbour.frame.maxX, "the header is in Todo")
+        XCTAssertGreaterThan(child.frame.minX, neighbour.frame.minX)
+        XCTAssertLessThan(child.frame.minX, neighbour.frame.minX + 30)
+        XCTAssertGreaterThan(child.frame.minY, header.frame.maxY - 1)
     }
 
     private func waitUntil(_ condition: @autoclosure @escaping () -> Bool, _ message: String, file: StaticString = #filePath, line: UInt = #line) {

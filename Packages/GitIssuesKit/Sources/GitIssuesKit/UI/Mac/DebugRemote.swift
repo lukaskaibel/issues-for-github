@@ -759,11 +759,12 @@ enum DebugRemote {
             if bits.count == 2, let item = item(bits[0], model) { model.rename(item, to: bits[1]) }
         case "clickepic":
             // clickepic <epic or parent number> [fold]: what a click on the header over the epic's issues, or the parent's
-            // sub-issues, does, or one on its arrow: an epic's opens the epic, a parent's folds the sub-issues.
+            // sub-issues, does, or one on its arrow: an epic's opens the epic, a parent's folds the sub-issues; over a
+            // single issue it opens the epic or the parent.
             let bits = argument.split(separator: " ").map(String.init)
             if let epic = item(bits.first ?? "", model), let group = (model.columns.flatMap(\.nesting.groups) + model.sections.flatMap(\.nesting.groups))
                 .first(where: { $0.contentId == epic.contentId }) {
-                if (bits.count > 1 && bits[1] == "fold") || group.kind == .parent {
+                if group.canFold, (bits.count > 1 && bits[1] == "fold") || group.kind == .parent {
                     model.toggleGroup(group)
                 } else if let head = model.headIssue(of: group) {
                     model.open(head)
