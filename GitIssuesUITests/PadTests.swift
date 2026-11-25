@@ -509,10 +509,13 @@ final class PadTests: AppTestCase {
         XCTAssertLessThan(noBoard.frame.minX, element("column-Backlog").frame.minX)
         snapshot("iPad All Issues as a board")
 
-        // Dropped on a status, an issue on no board goes on the board with it.
+        // Dropped on a status, below its cards rather than onto one, an issue on no board goes on the board with it.
         let card = element("card-#27")
         let todo = element("column-Todo")
-        card.press(forDuration: 1.0, thenDragTo: todo, withVelocity: .slow, thenHoldForDuration: 0.5)
+        card.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(
+            forDuration: 1.0, thenDragTo: todo.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)),
+            withVelocity: .slow, thenHoldForDuration: 0.5
+        )
         let inTodo = NSPredicate { _, _ in todo.frame.minX < card.frame.midX && card.frame.midX < todo.frame.maxX }
         XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: inTodo, object: nil)], timeout: 6), .completed,
                        "#27 should have gone into Todo")

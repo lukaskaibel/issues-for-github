@@ -638,8 +638,8 @@ struct ColumnLayout: Equatable {
             /// A card, or the slot for the card being dragged, or for a group's issues, by the item's id.
             case card(String)
             /// A group's header, by the node id of the epic or the parent, with the line under a parent's name, from the
-            /// row's top left corner.
-            case header(String, detail: CGRect?)
+            /// row's top left corner, and whether it has an arrow that folds its issues: not over a single one.
+            case header(String, detail: CGRect?, folds: Bool = true)
         }
 
         var part: Part
@@ -688,9 +688,9 @@ final class ColumnFrames {
             case .card(let id):
                 drag.setCardFrame(frame, for: id, owner: owner)
                 cards.insert(id)
-            case .header(let head, let detail):
+            case .header(let head, let detail, let folds):
                 drag.setHeaderFrame(
-                    frame, fold: BoardDrag.groupFoldFrame(in: frame), detail: detail?.offsetBy(dx: frame.minX, dy: frame.minY),
+                    frame, fold: folds ? BoardDrag.groupFoldFrame(in: frame) : .null, detail: detail?.offsetBy(dx: frame.minX, dy: frame.minY),
                     column: column, head: head, owner: owner
                 )
                 headers.insert(head)

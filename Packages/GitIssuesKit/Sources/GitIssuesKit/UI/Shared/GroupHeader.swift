@@ -5,7 +5,8 @@ import AppKit
 
 /// The header over issues standing together in a list's section or a board's column, one look on Mac, iPhone and
 /// iPad: an icon where the line down to its issues starts, a name, how many of its issues are there, and at the end of
-/// the line the arrow that folds them away, shown always, as every fold arrow is. It stands a little closer to its
+/// the line the arrow that folds them away, shown always, as every fold arrow is. Over a single issue it only says
+/// whose the issue is: no count and no arrow. It stands a little closer to its
 /// issues than to what is above it. Under the pointer it lights up in the rounded shape a row of the list does.
 ///
 /// Over an epic's issues it has the epic's icon and name. Over sub-issues of a parent that stands elsewhere it is
@@ -115,7 +116,7 @@ struct GroupHeader: View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: GroupHeaderLook.detailGap) {
                 // The count follows the name's last word, on whichever line that ends.
-                Text("\(name)\(GroupHeaderLook.countGap)\(count)")
+                (group.canFold ? Text("\(name)\(GroupHeaderLook.countGap)\(count)") : name)
                     .lineLimit(lineLimit)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -133,9 +134,13 @@ struct GroupHeader: View {
                         }
                 }
             }
-            Spacer(minLength: GroupHeaderLook.arrowGap)
-            // The arrow's place; the Canvas behind draws it.
-            Color.clear.frame(width: GroupHeaderLook.arrowBox, height: line)
+            if group.canFold {
+                Spacer(minLength: GroupHeaderLook.arrowGap)
+                // The arrow's place; the Canvas behind draws it.
+                Color.clear.frame(width: GroupHeaderLook.arrowBox, height: line)
+            } else {
+                Spacer(minLength: 0)
+            }
         }
         .padding(.leading, parent ? column.x + nameInset : column.x + column.width + GroupHeaderLook.spacing)
         .padding(.trailing, trailing)
@@ -160,6 +165,7 @@ struct GroupHeader: View {
                 if !parent {
                     context.draw(Marks.epic(in: icon), mark: Theme.epic)
                 }
+                guard group.canFold else { return }
                 let arrow = CGRect(x: size.width - trailing - GroupHeaderLook.arrowBox, y: midY - GroupHeaderLook.arrowBox / 2, width: GroupHeaderLook.arrowBox, height: GroupHeaderLook.arrowBox)
                 if hoveringFold {
                     context.fill(Path(roundedRect: arrow, cornerRadius: 5, style: .continuous), with: .color(Theme.partHover))
@@ -236,8 +242,11 @@ extension GroupHeader {
     ) -> CGFloat {
         let look = GroupHeaderLook.self
         let font = group.kind == .parent ? look.parentNameFont : look.nameFont
-        let name = width - nameX(of: group.kind, place: place, iconColumn: iconColumn, nameInset: nameInset) - look.arrowGap - look.arrowBox - trailing
-        let lines = MeasuredHeights.lines(of: group.head.title + look.countGap + "\(group.count)", font: font, width: name, limit: lineLimit)
+        // Over a single issue, without a count and an arrow, the name has the whole line.
+        let arrow = group.canFold ? look.arrowGap + look.arrowBox : 0
+        let name = width - nameX(of: group.kind, place: place, iconColumn: iconColumn, nameInset: nameInset) - arrow - trailing
+        let text = group.canFold ? group.head.title + look.countGap + "\(group.count)" : group.head.title
+        let lines = MeasuredHeights.lines(of: text, font: font, width: name, limit: lineLimit)
         let detailHeight = detail == nil ? 0 : look.detailGap + look.detailLine
         return max(look.line, MeasuredHeights.textHeight(lines: lines, font: font)) + detailHeight + look.top + look.bottom
     }

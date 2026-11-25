@@ -210,6 +210,16 @@ struct ListRowsTests {
         #expect(try #require(cell.foldRect).midY == cell.bounds.midY)
     }
 
+    @Test("A header over a single issue has no arrow to fold it, and VoiceOver hears no folded state")
+    func singleHeaderHasNoArrow() throws {
+        let cell = GroupHeaderRowCell()
+        cell.configure(GroupHeaderLine(group: Nesting.Group(kind: .parent, head: Self.row(1).item, count: 1, folded: false)))
+        try Self.paint(cell)
+        #expect(cell.foldRect == nil)
+        #expect(!cell.isOnFold(NSPoint(x: cell.bounds.maxX - IssueTable.inset - 12 - 9, y: cell.bounds.midY)))
+        #expect(cell.accessibilityValue() == nil)
+    }
+
     @Test("The list's rows and headers paint themselves again when their size changes")
     func cellsArePaintedAgainOnResize() {
         let cells: [NSView] = [IssueRowCell(), IssueHeaderCell(), GroupHeaderRowCell()]

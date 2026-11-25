@@ -27404,67 +27404,67 @@
       }
     },
     "groupByParentFooter" : {
-      "comment" : "Settings › Sub-issues, footer under the toggle that puts sub-issues together under their parent issue on boards and in lists.",
+      "comment" : "Settings › Sub-issues, footer under the toggle that puts sub-issues under their parent issue on boards and in lists, a single one too.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Liegen zwei oder mehr Sub-Issues eines Issues in einem Status, in dem das Issue selbst nicht liegt, stehen sie dort zusammen unter einer schlichten Überschrift mit Titel, Nummer und Status des Issues."
+            "value" : "Liegen Sub-Issues eines Issues in einem Status, in dem das Issue selbst nicht liegt, stehen sie dort unter einer schlichten Überschrift mit Titel, Nummer und Status des Issues."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Where two or more sub-issues of an issue are in a status the issue isn't in, they stand together there under a quiet header with the issue's title, number and status."
+            "value" : "Where sub-issues of an issue are in a status the issue isn't in, they stand there under a quiet header with the issue's title, number and status."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cuando dos o más subincidencias de una incidencia están en un estado en el que no está la incidencia, aparecen juntas allí bajo un encabezado discreto con el título, el número y el estado de la incidencia."
+            "value" : "Cuando las subincidencias de una incidencia están en un estado en el que no está la incidencia, aparecen allí bajo un encabezado discreto con el título, el número y el estado de la incidencia."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lorsque deux sous-tickets ou plus d’un ticket sont dans un statut où le ticket lui-même n’est pas, ils y sont regroupés sous un en-tête discret avec le titre, le numéro et le statut du ticket."
+            "value" : "Lorsque des sous-tickets d’un ticket sont dans un statut où le ticket lui-même n’est pas, ils y apparaissent sous un en-tête discret avec le titre, le numéro et le statut du ticket."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "あるIssueのサブIssueが2件以上、そのIssue自体とは別のステータスにある場合、そこで控えめな見出しの下にまとめて表示します。見出しにはIssueのタイトル、番号、ステータスが表示されます。"
+            "value" : "あるIssueのサブIssueが、そのIssue自体とは別のステータスにある場合、そこで控えめな見出しの下に表示します。見出しにはIssueのタイトル、番号、ステータスが表示されます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "한 이슈의 하위 이슈 두 개 이상이 그 이슈가 없는 상태에 있으면, 그 상태에서 이슈의 제목, 번호, 상태를 보여 주는 차분한 머리글 아래에 함께 표시됩니다."
+            "value" : "한 이슈의 하위 이슈가 그 이슈가 없는 상태에 있으면, 그 상태에서 이슈의 제목, 번호, 상태를 보여 주는 차분한 머리글 아래에 표시됩니다."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quando duas ou mais sub-issues de uma issue estão em um status em que a própria issue não está, elas ficam juntas ali sob um cabeçalho discreto com o título, o número e o status da issue."
+            "value" : "Quando sub-issues de uma issue estão em um status em que a própria issue não está, elas ficam ali sob um cabeçalho discreto com o título, o número e o status da issue."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Если две или больше подзадач одной задачи находятся в статусе, в котором нет самой задачи, они собираются там вместе под неброским заголовком с названием, номером и статусом задачи."
+            "value" : "Если подзадачи одной задачи находятся в статусе, в котором нет самой задачи, они показываются там под неброским заголовком с названием, номером и статусом задачи."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "当某个议题的两个或更多子议题处于该议题本身不在的状态时，它们会在那里归在一个低调的标题下，标题显示该议题的标题、编号和状态。"
+            "value" : "当某个议题的子议题处于该议题本身不在的状态时，它们会在那里显示在一个低调的标题下，标题显示该议题的标题、编号和状态。"
           }
         }
       }
     },
     "groupByParentSetting" : {
-      "comment" : "Settings › Sub-issues, toggle: on boards and in lists, two or more sub-issues of one issue that are in a status (column) their parent issue isn't in stand together under a small grey header naming the parent.",
+      "comment" : "Settings › Sub-issues, toggle: on boards and in lists, the sub-issues of one issue that are in a status (column) their parent issue isn't in stand under a small grey header naming the parent, a single one too.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

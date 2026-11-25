@@ -261,9 +261,14 @@ final class PhonePlanningTests: AppTestCase {
         XCTAssertGreaterThan(second.frame.minY, first.frame.minY)
         // Under the epic's header, a row doesn't name the epic again.
         XCTAssertFalse(first.label.contains("Epic:"), first.label)
-        // A single issue of an epic stands alone and names it.
-        scrollTo(element("row-#24"))
-        XCTAssertTrue(element("row-#24").label.contains("Epic: Drag and drop on the board"), element("row-#24").label)
+        // A single issue of an epic stands under the epic's header too, and doesn't name it either.
+        let single = element("row-#24")
+        scrollTo(single)
+        XCTAssertFalse(single.label.contains("Epic:"), single.label)
+        let headers = app.descendants(matching: .any).matching(identifier: "epic-group-Drag and drop on the board").allElementsBoundByIndex
+        let above = headers.first { abs($0.frame.maxY - single.frame.minY) < 12 }
+        XCTAssertNotNil(above, "the epic's header right above #24")
+        if let above { XCTAssertTrue(above.label.contains("1 issue"), above.label) }
         app.swipeDown()
         snapshot("An epic's issues under its header")
 
@@ -321,9 +326,13 @@ final class PhonePlanningTests: AppTestCase {
         openProjectTab("Git Issues")
         // The board view, as a list.
         showLayout("List")
-        let header = element("epic-group-Offline-first sync")
-        wait(header)
-        openCardMenu(header, showing: "Move Issues To")
+        // The epic has a header in every status that has its issues; In Progress has two of them.
+        let headers = app.descendants(matching: .any).matching(identifier: "epic-group-Offline-first sync")
+        func header(_ count: String) -> XCUIElement {
+            headers.matching(NSPredicate(format: "label CONTAINS %@", count)).firstMatch
+        }
+        wait(header("2 issues"))
+        openCardMenu(header("2 issues"), showing: "Move Issues To")
         button("Move Issues To").tap()
         button("In Review").tap()
         closedCardMenu()
@@ -331,11 +340,12 @@ final class PhonePlanningTests: AppTestCase {
         wait(undo)
         snapshot("An epic's issues moved to In Review")
         // In Review has #6 of the epic already: the three stand together there, and In Progress has none left.
-        waitForLabel(header, containing: "3 issues")
+        wait(header("3 issues"))
+        XCTAssertFalse(header("2 issues").exists)
         XCTAssertTrue(element("row-#8").label.contains("In Review"), element("row-#8").label)
         XCTAssertTrue(element("row-#15").label.contains("In Review"), element("row-#15").label)
         undo.tap()
-        waitForLabel(header, containing: "2 issues")
+        wait(header("2 issues"))
         XCTAssertTrue(element("row-#8").label.contains("In Progress"), element("row-#8").label)
     }
 

@@ -2,10 +2,10 @@ import Foundation
 
 /// How a column of the board or a group of the list shows sub-issues. A sub-issue whose parent is in the same
 /// group hangs right under it, indented, so a parent and the sub-issues being worked on with it read as one. On a
-/// board's columns and in its list, the issues of an epic that has two or more of them in the group stand together,
-/// under a header of the epic, one level in; so do two or more sub-issues of a parent that stands elsewhere, under a
-/// quiet header of that parent, where that is switched on. A single sub-issue whose parent is elsewhere stands on its
-/// own and names its parent.
+/// board's columns and in its list, the issues of an epic stand together under a header of the epic, one level in,
+/// even a single one; so do the sub-issues of a parent that stands elsewhere, under a quiet header of that parent,
+/// where that is switched on. The header over a single issue only says whose it is: it has no count and doesn't fold.
+/// Where parents don't make headers, a sub-issue whose parent is elsewhere names its parent.
 struct Nesting: Equatable {
     /// Where an issue shown in the group hangs, or a header inside an epic's group.
     struct Place: Equatable {
@@ -30,9 +30,8 @@ struct Nesting: Equatable {
     /// Whether sub-issues of a parent that stands elsewhere stand together here (`ParentGrouping`).
     var groupsByParent = false
 
-    /// Issues standing together in the group under a header: the issues of an epic, two or more of them at any
-    /// level, or two or more sub-issues of a parent that isn't among the group's cards, with what hangs under them.
-    /// A single issue of an epic names the epic itself instead, and a single sub-issue its parent.
+    /// Issues standing together in the group under a header: the issues of an epic, at any level, or the sub-issues
+    /// of a parent that isn't among the group's cards, with what hangs under them; a single one too.
     struct Group: Equatable, Identifiable {
         enum Kind: Equatable {
             case epic
@@ -46,6 +45,10 @@ struct Nesting: Equatable {
         /// The issues under the header, at every level, folded ones included.
         var count: Int
         var folded: Bool
+
+        /// Whether its issues fold away under it: two or more. Over a single issue the header only says whose it is,
+        /// without a count or an arrow, and a click on it opens the epic or the parent.
+        var canFold: Bool { count > 1 }
 
         /// The head's node id.
         var contentId: String { head.contentId ?? head.id }
@@ -145,9 +148,9 @@ struct Nesting: Equatable {
 
     /// Puts a group's issues in reading order: each sub-issue right after its parent, when the parent is in the
     /// group too, among the parent's other sub-issues in board order. `items` come in board order; `folded` are
-    /// the issues (node ids) whose sub-issues are folded away, which are left out of the result. With `parents`, two
-    /// or more sub-issues of a parent that isn't in the group stand together under a header of it, one level in,
-    /// where the first of them stands.
+    /// the issues (node ids) whose sub-issues are folded away, which are left out of the result. With `parents`, the
+    /// sub-issues of a parent that isn't in the group stand together under a header of it, one level in, where the
+    /// first of them stands; a single one too.
     static func arrange(
         _ items: [Item], folded foldedIssues: Set<String> = [], parents grouping: ParentGrouping? = nil
     ) -> (items: [Item], nesting: Nesting) {
@@ -213,14 +216,15 @@ struct Nesting: Equatable {
 
         var headed = Set<String>()
         for root in roots {
-            guard let parentId = items[root].parentId, let together = siblings[parentId], together.count >= 2,
-                  let head = heads[parentId] else {
+            guard let parentId = items[root].parentId, let together = siblings[parentId], let head = heads[parentId] else {
                 visit(root, continues: [], hidden: false)
                 continue
             }
-            // The header goes where the first of them stands, and all of them under it.
+            // The header goes where the first of them stands, and all of them under it. Over a single issue, with
+            // nothing hanging under it, it doesn't fold.
             guard headed.insert(parentId).inserted else { continue }
-            let folds = grouping?.folded.contains(parentId) ?? false
+            let foldable = together.count > 1 || together.contains { !(children[$0] ?? []).isEmpty }
+            let folds = foldable && (grouping?.folded.contains(parentId) ?? false)
             let header = rows.count
             let first = nesting.members.count
             rows.append(.group(Group(kind: .parent, head: head, count: 0, folded: folds)))
@@ -238,8 +242,8 @@ struct Nesting: Equatable {
         return (rows.compactMap(\.item), nesting)
     }
 
-    /// Arranges a group as `arrange(_:folded:parents:)` does, and puts the issues of each epic that has two or more
-    /// of them here together, under a header of the epic, where the first of them stands on the board. `epic` finds
+    /// Arranges a group as `arrange(_:folded:parents:)` does, and puts the issues of each epic here together, under a
+    /// header of the epic, where the first of them stands on the board; a single one too. `epic` finds
     /// an issue's epic; `foldedEpics` are the epics (node ids) whose issues are folded away under their header. A
     /// header over sub-issues of a parent elsewhere stands inside the epic's group, one level in, like an issue.
     static func arrange(
@@ -247,16 +251,14 @@ struct Nesting: Equatable {
         parents grouping: ParentGrouping? = nil
     ) -> (items: [Item], nesting: Nesting) {
         var epics: [Int: Item] = [:]
-        var counts: [String: Int] = [:]
         for (index, item) in items.enumerated() {
-            guard let found = epic(item), let id = found.contentId, id != item.contentId else { continue }
+            guard let found = epic(item), found.contentId != nil, found.contentId != item.contentId else { continue }
             epics[index] = found
-            counts[id, default: 0] += 1
         }
         var loose: [Int] = []
         var grouped: [String: [Int]] = [:]
         for index in items.indices {
-            if let id = epics[index]?.contentId, counts[id, default: 0] >= 2 {
+            if let id = epics[index]?.contentId {
                 grouped[id, default: []].append(index)
             } else {
                 loose.append(index)
@@ -293,7 +295,7 @@ struct Nesting: Equatable {
             guard let found = epics[indices[0]] else { continue }
             let members = indices.map { items[$0] }
             let (_, inner) = arrange(members, folded: foldedIssues, parents: byParent)
-            let group = Group(kind: .epic, head: found, count: members.count, folded: foldedEpics.contains(id))
+            let group = Group(kind: .epic, head: found, count: members.count, folded: members.count > 1 && foldedEpics.contains(id))
             for member in inner.members { nesting.groupOf[member.id] = id }
             nesting.parents.merge(inner.parents) { first, _ in first }
             nesting.nestedCounts.merge(inner.nestedCounts) { first, _ in first }

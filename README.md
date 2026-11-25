@@ -92,12 +92,13 @@ Issues go under another issue the same way, and so do cards on the iPhone and iP
 
 A sub-issue with the same status as its parent hangs right under it, indented, so a parent and the sub-issues you
 work on with it read as one instead of as separate cards in the same column. The arrow on the parent folds them in. A
-sub-issue whose parent has another status stays in its own column and says which issue it belongs to; two or more of
-them stand together there under a quiet grey header with the parent's title, number and status ("#9 · In Review"),
-where the parent itself would stand. A click on it folds them, its right-click menu opens the parent, and a click on
-the status changes the parent's status (Settings › Sub-issues turns that off). A card whose sub-issues aren't under it stands on a small pile: one card for one sub-issue, two for two,
-three for more. When the last one is done, the parent moves to Done by itself. The issues of an epic in the same
-column stand together the same way, under the epic's name; drag the name to another column and they all go.
+sub-issue whose parent has another status stays in its own column, under a quiet grey header with the parent's title,
+number and status ("#9 · In Review") where the parent itself would stand, and its other sub-issues there join it. Over
+two or more, a click on the header folds them; over a single one it opens the parent, as the header's right-click menu
+does, and a click on the status changes the parent's status (Settings › Sub-issues turns that off). A card whose
+sub-issues aren't under it stands on a small pile: one card for one sub-issue, two for two, three for more. When the
+last one is done, the parent moves to Done by itself. The issues of an epic in the same column stand together the same
+way, under the epic's name, a single one too; drag the name to another column and they all go.
 
 Every property is one click away: click a card's priority, status, type, labels, assignees, due date or sub-issue count
 and a dropdown opens right there. Type to filter, press a number to pick; the pick closes it, and so does another click on
@@ -387,10 +388,10 @@ The interface uses the system's own parts.
   column of their own); My Issues shows its cards, one under another on iPhone and two or three to a row on iPad,
   each paging sideways through its project's columns, and Needs you. Swipe right to mark an issue done, swipe left to assign it to yourself or delete it, touch and hold for the same menu as the Mac's right-click,
   and drag after holding to give an issue a new place in its section.
-  Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them; two
-  or more with another status stand together under a quiet header of their parent, which folds them when you tap it
-  and whose menu opens the parent and changes its status; a
-  card whose sub-issues aren't under it stands on a small pile of cards.
+  Sub-issues with their parent's status hang under it, as on the Mac, and the arrow beside the parent folds them; those
+  with another status stand under a quiet header of their parent, a single one too, which folds two or more when you
+  tap it and opens the parent over one, and whose menu opens the parent and changes its status; a card whose
+  sub-issues aren't under it stands on a small pile of cards.
   A milestone is a list grouped by epic,
   the roadmap a list of epics by milestone. The open view's filter is a line over its list or board; tap it to change
   the filter, and Display in the filter menu (the filter symbol in the bar) turns a view into a list or back. Touch and hold a view on the
@@ -443,7 +444,7 @@ The interface uses the system's own parts.
 - **Sub-issues and blockers.** Put any issue under another one, also by dropping it onto that issue on the Mac, add
   issues that exist already as sub-issues, and mark which issues block which; a blocked issue carries a red flag that
   names what blocks it, on its card and in its parent's sub-issues. Sub-issues with their parent's status hang under it
-  on the board and in the list, two or more with another status stand together under a quiet header of the parent, and
+  on the board and in the list, those with another status stand under a quiet header of the parent, and
   a parent is done when its last sub-issue is. An issue lists its sub-issues by
   priority, or by status, newest first or in GitHub's order, and unfolds sub-issues of sub-issues as a tree.
 - **Issue types.** Bug, Feature, Task and the types your organisation adds, in their GitHub colours on cards, rows and
@@ -726,9 +727,9 @@ change their status, priority, assignee or labels together. `Esc` lets them go.
 
 A project's next two milestones and its roadmap are listed under Milestones in the sidebar. In a milestone, click its date to change it, the text under the header to edit its name and description,
 and **Complete** (or the "…" menu) to close it: what isn't done moves to the next milestone or stays, as you choose.
-In its list, drag an issue into an epic's group to make it a sub-issue of that epic. On a board and in its list, two
-or more issues of an epic in the same column stand together under the epic's name; click it to open the epic, or its
-arrow to fold them away. Drag the name to another column, or another place in its column, and all of them go along,
+In its list, drag an issue into an epic's group to make it a sub-issue of that epic. On a board and in its list, the
+issues of an epic in the same column stand together under the epic's name, a single one too; click it to open the
+epic, or its arrow to fold two or more away. Drag the name to another column, or another place in its column, and all of them go along,
 with a message that undoes it; its right-click menu moves them to another status too. Drop an issue among them to put
 it into the epic. On the roadmap's timeline, drag
 an epic's bar onto another milestone, or down to Later, and its unfinished issues go with it; drag a milestone's
@@ -822,8 +823,10 @@ Settings › General › Language & Region › Applications; on iPhone and iPad 
 | Tap a section header | Fold it in or out |
 | Tap the arrow beside an issue | Fold the sub-issues hanging under it in or out |
 | Tap an issue's status circle | Pick its status, in every list, in search and among an issue's sub-issues |
-| Tap an epic's name over its issues | Open the epic; the arrow beside its icon folds them in or out |
+| Tap an epic's name over its issues | Open the epic; the arrow at the end folds two or more in or out |
 | Touch and hold an epic's name over its issues | Open the epic, move all of them to another status, fold them |
+| Tap a parent's grey name over its sub-issues | Fold two or more in or out; over a single one, open the parent |
+| Touch and hold a parent's grey name | Open the parent, change its status, move its sub-issues to another status |
 | Touch and hold an epic's name, then drag | Move all of its issues there to another column (iPad) or another place in their section |
 | Swipe right on an issue | Done, or reopen |
 | Swipe left on an issue | Assign to me (or unassign), delete |
