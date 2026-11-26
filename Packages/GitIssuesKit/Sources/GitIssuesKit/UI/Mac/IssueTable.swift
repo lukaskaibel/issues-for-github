@@ -389,7 +389,8 @@ struct IssueTable: NSViewRepresentable {
         }
 
         func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
-            Theme.rowHeight
+            guard entries.indices.contains(row), case .group(_, let line) = entries[row] else { return Theme.rowHeight }
+            return GroupHeaderRowCell.height(of: line.group)
         }
 
         func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
@@ -1459,12 +1460,12 @@ final class HoverTableView: NSTableView {
 
 /// The header over issues standing together in a section, with the marks `GroupHeader` draws on the board and on iPhone
 /// and iPad: an epic's icon at the start of the row, in the column of the priorities, where the line down to its
-/// issues starts, and its name in line with the issues' priorities; for sub-issues of a parent elsewhere, the parent's
-/// name in grey where the priorities of the issues beside it are, as the parent's row would start, with the line down
-/// to its sub-issues from under it. Then how many of its issues are there, for a parent its number and status after
-/// them in grey, and at the end of the row, under the section header's +, the arrow that folds them away. Inside an
-/// epic's group a parent's header hangs one level in, as an issue there does. All of it stands in the middle of the
-/// row, and so of the highlight under the pointer. A click on an epic's header opens the epic, one on a parent's folds
+/// issues starts, and its name in line with the issues' priorities; for sub-issues of a parent elsewhere, in a shorter
+/// row than an issue's, the parent's name smaller and in grey where the priorities of the issues beside it are, as the
+/// parent's row would start, with the line down to its sub-issues from under it. Then how many of its issues are
+/// there, for a parent its number and status after them in grey, and at the end of the row, under the section header's
+/// +, the arrow that folds them away. Inside an epic's group a parent's header hangs one level in, as an issue there
+/// does. All of it stands in the middle of the row, and so of the highlight under the pointer. A click on an epic's header opens the epic, one on a parent's folds
 /// its sub-issues or shows them again, as one on the arrow does; one on a parent's status changes it, and dragging it
 /// moves them all.
 final class GroupHeaderRowCell: PaintedCell {
@@ -1542,7 +1543,7 @@ final class GroupHeaderRowCell: PaintedCell {
         ])
         // Over a single issue the header has no count.
         count = NSAttributedString(string: line.flatMap { $0.group.canFold ? "\($0.group.count)" : nil } ?? "", attributes: [
-            .font: GroupHeaderLook.countFont,
+            .font: parent ? GroupHeaderLook.parentCountFont : GroupHeaderLook.countFont,
             .foregroundColor: NSColor(Theme.textTertiary),
         ])
         detail = NSAttributedString(string: line?.detail ?? "", attributes: [
@@ -1572,6 +1573,11 @@ final class GroupHeaderRowCell: PaintedCell {
     static let iconColumn = (x: IssueRowCell.firstColumn, width: CGFloat(14))
     /// The arrow stands under the section headers' + button.
     static let trailing = IssueTable.inset + 12
+
+    /// How tall the header's row is: an epic's as an issue's, a parent's shorter, a heading for the sub-issues under it.
+    static func height(of group: Nesting.Group) -> CGFloat {
+        group.kind == .parent ? GroupHeaderLook.parentRowHeight : Theme.rowHeight
+    }
 
     override func draw(_ dirtyRect: NSRect) {
         guard let line, let context = NSGraphicsContext.current?.cgContext else { return }
@@ -1636,7 +1642,7 @@ final class GroupHeaderRowCell: PaintedCell {
         let titleSize = title.size()
         let countSize = count.size()
         let detailSize = detail.size()
-        let gap = count.length > 0 ? (look.countGap as NSString).size(withAttributes: [.font: look.countFont]).width : 0
+        let gap = count.length > 0 ? (look.countGap as NSString).size(withAttributes: [.font: parent ? look.parentCountFont : look.countFont]).width : 0
         let detailGap: CGFloat = detail.length > 0 ? 14 : 0
         let room = end - countSize.width - gap - detailGap - detailSize.width - x
         let titleWidth = min(titleSize.width, max(room, 40))
