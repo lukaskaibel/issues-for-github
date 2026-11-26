@@ -26,9 +26,10 @@ All notable changes to this project are recorded here. The format follows
   Picked sub-issues go together. On the Mac this also works from an epic's milestones and from the issues it is blocked
   by or blocks. An issue the app knows only from GitHub stays where it is.
 - **Sub-issues stand together where their parent isn't.** When sub-issues of an issue are in a status the issue isn't
-  in, they stand in that column or section under a quiet grey header that reads like the parent itself: its title
-  where the issues beside it start, how many of its sub-issues are there, and under it the parent's number and status,
-  as "#9 · In Review"; the line down to the sub-issues starts right under it. A single one stands under it too, so its
+  in, they stand in that column or section under a quiet grey header that reads like the parent itself: its title,
+  smaller than the issues' and not bold, where the issues beside it start, how many of its sub-issues are there, and
+  under it the parent's number and status, as "#9 · In Review"; in a list the header is a shorter row than an issue's.
+  The line down to the sub-issues starts under the title, a little way in. A single one stands under it too, so its
   card no longer carries the parent's name next to its number; over a single one the header has no count and no
   arrow. Click the header to fold two or more sub-issues away or show them again, or over a single one to open the
   parent; right-click it, or touch and hold, to open the parent. On the Mac a click on the status changes the parent's

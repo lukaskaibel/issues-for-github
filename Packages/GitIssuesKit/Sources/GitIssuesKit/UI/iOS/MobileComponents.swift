@@ -486,8 +486,8 @@ struct GroupRow: View {
 }
 
 /// The header over issues standing together in a column of the board, an epic's or a parent's (`GroupHeader`): an epic's
-/// icon in the gutter the cards hang in and its name on up to three lines; a parent's name where the text of the cards
-/// beside it is, with its number and status under it. As in the list, a tap opens the epic or folds a parent's sub-issues, and one on the arrow folds the issues;
+/// icon in the gutter the cards hang in and its name on up to three lines; a parent's name at the edge of the cards
+/// beside it, over the line down to its sub-issues, with its number and status under it. As in the list, a tap opens the epic or folds a parent's sub-issues, and one on the arrow folds the issues;
 /// touching and holding offers its menu, and dragging it moves them all.
 struct GroupCardHeader: View {
     var group: Nesting.Group
@@ -501,8 +501,7 @@ struct GroupCardHeader: View {
     var body: some View {
         GroupHeaderTaps(group: group, detail: detail, open: open, step: step) {
             GroupHeader(
-                group: group, detail: detail, place: place, iconColumn: (0, CardTreeLines.indent), nameInset: CardView.padding.width,
-                gap: MobileColumn.spacing,
+                group: group, detail: detail, place: place, iconColumn: (0, CardTreeLines.indent), gap: MobileColumn.spacing,
                 trailing: 6, lineLimit: 3
             )
         }

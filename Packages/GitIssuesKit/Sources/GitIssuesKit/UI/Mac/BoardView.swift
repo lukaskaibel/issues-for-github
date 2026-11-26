@@ -593,7 +593,7 @@ struct ColumnView: View {
                     changesStatus
                         ? GroupHeader.detailFrame(
                             detail, in: CGRect(x: 0, y: 0, width: width, height: height), place: place,
-                            iconColumn: GroupHeaderView.iconColumn, nameInset: GroupHeaderView.nameInset
+                            iconColumn: GroupHeaderView.iconColumn
                         )
                         : nil
                 }
@@ -704,10 +704,9 @@ private struct GroupHeaderView: View {
     var dragging: Bool
     var measured: MeasuredHeights
 
-    /// The icon stands in the gutter sub-issue cards hang in, where the line down to the group's cards runs.
+    /// The icon stands in the gutter sub-issue cards hang in, where the line down to the group's cards runs; a parent's
+    /// name starts where it does, at the edge of the cards beside it, so that the line comes from under the name.
     static let iconColumn = (x: CGFloat(0), width: CardTreeLines.indent)
-    /// A parent's name stands where the text of the cards beside it does.
-    static let nameInset = CardView.padding.width
     /// The arrow ends about where the text of the cards under it does.
     static let trailing: CGFloat = 6
     static let lineLimit = 3
@@ -723,8 +722,7 @@ private struct GroupHeaderView: View {
         let key = "header \(Int(width)) \(group.kind) \(place.depth) \(group.count) \(detail != nil) \(group.head.title)"
         return MeasuredHeights.Measure(key: key) {
             GroupHeader.height(
-                of: group, detail: detail, place: place, width: width, iconColumn: iconColumn, nameInset: nameInset, trailing: trailing,
-                lineLimit: lineLimit
+                of: group, detail: detail, place: place, width: width, iconColumn: iconColumn, trailing: trailing, lineLimit: lineLimit
             )
         }
     }
@@ -732,7 +730,7 @@ private struct GroupHeaderView: View {
     var body: some View {
         let pointer = dragging ? nil : hover[header: group.contentId]
         GroupHeader(
-            group: group, detail: detail, place: place, iconColumn: Self.iconColumn, nameInset: Self.nameInset, gap: CardTreeLines.boardGap,
+            group: group, detail: detail, place: place, iconColumn: Self.iconColumn, gap: CardTreeLines.boardGap,
             trailing: Self.trailing, lineLimit: Self.lineLimit, highlighted: pointer != nil, hoveringFold: pointer?.onFold ?? false,
             hoveringDetail: pointer?.onDetail ?? false
         )

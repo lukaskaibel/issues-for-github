@@ -177,8 +177,8 @@ struct ListRowsTests {
     }
 
     /// Paints a cell at a row's size, which is when it places its parts.
-    private static func paint(_ cell: NSView) throws {
-        cell.frame = NSRect(x: 0, y: 0, width: 900, height: Theme.rowHeight)
+    private static func paint(_ cell: NSView, height: CGFloat = Theme.rowHeight) throws {
+        cell.frame = NSRect(x: 0, y: 0, width: 900, height: height)
         let bitmap = try #require(cell.bitmapImageRepForCachingDisplay(in: cell.bounds))
         cell.cacheDisplay(in: cell.bounds, to: bitmap)
     }
@@ -208,6 +208,20 @@ struct ListRowsTests {
         cell.configure(GroupHeaderLine(group: Nesting.Group(kind: .epic, head: Self.row(1).item, count: 2, folded: false)))
         try Self.paint(cell)
         #expect(try #require(cell.foldRect).midY == cell.bounds.midY)
+    }
+
+    @Test("A parent's header in the list is a shorter row than an issue's, an epic's as tall, and both stand in its middle")
+    func parentHeaderRowIsShorter() throws {
+        let parent = Nesting.Group(kind: .parent, head: Self.row(1).item, count: 2, folded: false)
+        let epic = Nesting.Group(kind: .epic, head: Self.row(1).item, count: 2, folded: false)
+        #expect(GroupHeaderRowCell.height(of: parent) < Theme.rowHeight)
+        #expect(GroupHeaderRowCell.height(of: epic) == Theme.rowHeight)
+        let cell = GroupHeaderRowCell()
+        cell.configure(GroupHeaderLine(group: parent, detail: "#9 · In Review"))
+        try Self.paint(cell, height: GroupHeaderRowCell.height(of: parent))
+        #expect(cell.bounds.height == GroupHeaderLook.parentRowHeight)
+        #expect(try #require(cell.foldRect).midY == cell.bounds.midY)
+        #expect(try #require(cell.detailRect).midY == cell.bounds.midY)
     }
 
     @Test("A header over a single issue has no arrow to fold it, and VoiceOver hears no folded state")
